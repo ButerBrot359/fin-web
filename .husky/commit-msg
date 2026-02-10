@@ -1,0 +1,20 @@
+#!/bin/sh
+
+commit_msg=$(cat "$1")
+pattern="^(feat|fix|add|refactor)(\(.+\))?: .+"
+
+if ! echo "$commit_msg" | grep -Eq "$pattern"; then
+  echo "❌ Invalid commit message format!"
+  echo ""
+  echo "Commit message must start with: feat, fix, add, or refactor"
+  echo ""
+  echo "Examples:"
+  echo "  feat: add user authentication"
+  echo "  fix: resolve login bug"
+  echo "  add: new payment module"
+  echo "  refactor: simplify api calls"
+  echo "  feat(auth): implement OAuth"
+  echo ""
+  echo "Your message: $commit_msg"
+  exit 1
+fi

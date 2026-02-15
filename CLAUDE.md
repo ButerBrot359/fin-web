@@ -59,5 +59,6 @@ npm run format    # Prettier
 ## API документация
 
 - [Dictionary API (Универсальный справочник)](docs/api/dictionary-api.md) — CRUD типов справочников, записей, атрибутов
-- OpenAPI spec: `docs/api/dictionary-api.openapi.json`
+- [Enums API (Перечисления)](docs/api/enums-api.md) — CRUD перечислений и их значений
+- OpenAPI specs: `docs/api/*.openapi.json`
 - **Base URL:** `http://92.38.49.213:31880`

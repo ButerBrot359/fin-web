@@ -1,0 +1,302 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "OpenAPI definition", "version": "v0" },
+  "servers": [
+    {
+      "url": "http://92.38.49.213:31880",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [{ "name": "Enums", "description": "Управление перечислениями" }],
+  "paths": {
+    "/api/enums": {
+      "get": {
+        "tags": ["Enums"],
+        "summary": "Получить список всех перечислений",
+        "description": "Возвращает список всех доступных перечислений с пагинацией.",
+        "operationId": "getAllEnums",
+        "parameters": [
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": { "$ref": "#/components/schemas/Pageable" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешное получение списка перечислений",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiListResponseEnumDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Enums"],
+        "summary": "Создать новое перечисление",
+        "description": "Создает новый тип перечисления (метаданные).",
+        "operationId": "createEnum",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Enums" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Перечисление успешно создано",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Enums" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enums/{code}/values": {
+      "get": {
+        "tags": ["Enums"],
+        "summary": "Получить значения перечисления",
+        "description": "Возвращает список всех возможных значений для указанного перечисления.",
+        "operationId": "getEnumValues",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "description": "Код перечисления",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "document_status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список значений перечисления",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EnumValueDtoList" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Enums"],
+        "summary": "Добавить значение в перечисление",
+        "description": "Добавляет новое возможное значение в существующее перечисление.",
+        "operationId": "addEnumValue",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "description": "Код перечисления",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "document_status"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EnumsValue" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Значение успешно добавлено",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EnumsValue" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enums/{code}": {
+      "get": {
+        "tags": ["Enums"],
+        "summary": "Получить перечисление по коду",
+        "description": "Возвращает детальную информацию о перечислении и всех его значениях.",
+        "operationId": "getEnumByCode",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "description": "Код перечисления",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "document_status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Перечисление найдено",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Enums" }
+              }
+            }
+          },
+          "404": {
+            "description": "Перечисление с таким кодом не найдено",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/Enums" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Enums": {
+        "type": "object",
+        "description": "Перечисление (метаданные)",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Уникальный идентификатор",
+            "example": 1,
+            "readOnly": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Уникальный код перечисления",
+            "example": "document_status"
+          },
+          "code1C": {
+            "type": "string",
+            "description": "Код в системе 1С",
+            "example": "СтатусыДокументов"
+          },
+          "name": {
+            "type": "string",
+            "description": "Название перечисления",
+            "example": "Статус документа"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": "true",
+            "description": "Активно ли перечисление",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время создания",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время последнего обновления",
+            "readOnly": true
+          },
+          "values": {
+            "type": "array",
+            "description": "Список возможных значений перечисления",
+            "items": { "$ref": "#/components/schemas/EnumsValue" }
+          }
+        },
+        "required": ["code", "name"]
+      },
+      "EnumsValue": {
+        "type": "object",
+        "description": "Значение перечисления",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Уникальный идентификатор",
+            "example": 1,
+            "readOnly": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Уникальный код значения в рамках перечисления",
+            "example": "DRAFT"
+          },
+          "code1C": {
+            "type": "string",
+            "description": "Код в системе 1С",
+            "example": "Черновик"
+          },
+          "name": {
+            "type": "string",
+            "description": "Название значения",
+            "example": "Черновик"
+          },
+          "enumCode": {
+            "type": "string",
+            "description": "Код перечисления, которому принадлежит значение",
+            "example": "document_status"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": "true",
+            "description": "Активно ли значение",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время создания",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время последнего обновления",
+            "readOnly": true
+          }
+        },
+        "required": ["code", "name"]
+      },
+      "Pageable": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "format": "int32", "minimum": 0 },
+          "size": { "type": "integer", "format": "int32", "minimum": 1 },
+          "sort": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "ApiListResponseEnumDto": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "description": "Список элементов",
+            "items": { "$ref": "#/components/schemas/Enums" }
+          },
+          "totalSize": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Общее количество элементов",
+            "example": 10
+          }
+        }
+      },
+      "EnumValueDtoList": {
+        "type": "array",
+        "items": { "$ref": "#/components/schemas/EnumsValue" },
+        "properties": {
+          "empty": { "type": "boolean" },
+          "first": { "$ref": "#/components/schemas/EnumsValue" },
+          "last": { "$ref": "#/components/schemas/EnumsValue" }
+        }
+      }
+    }
+  }
+}

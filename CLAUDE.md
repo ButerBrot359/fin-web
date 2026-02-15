@@ -55,3 +55,9 @@ npm run format    # Prettier
 ## API клиент
 
 `@/shared/api` — базовый HTTP клиент с методами get/post/put/delete.
+
+## API документация
+
+- [Dictionary API (Универсальный справочник)](docs/api/dictionary-api.md) — CRUD типов справочников, записей, атрибутов
+- OpenAPI spec: `docs/api/dictionary-api.openapi.json`
+- **Base URL:** `http://92.38.49.213:31880`

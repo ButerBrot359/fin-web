@@ -1,0 +1,974 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "OpenAPI definition", "version": "v0" },
+  "servers": [
+    {
+      "url": "http://92.38.49.213:31880",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Универсальный справочник",
+      "description": "API для работы с универсальными справочниками"
+    }
+  ],
+  "paths": {
+    "/api/dictionaries/entries/{id}": {
+      "get": {
+        "tags": ["Универсальный справочник", "Записи справочников"],
+        "summary": "Получить запись по ID",
+        "description": "Возвращает полную информацию о записи, включая все значения дополнительных атрибутов.\n\n**Используется для:**\n- Открытия формы редактирования\n- Просмотра детальной информации\n\n**Пример ответа:**\n```json\n{\n  \"id\": 1,\n  \"code\": \"HALYK\",\n  \"nameRu\": \"Народный банк Казахстана\",\n  \"attributes\": {\n    \"bic\": \"HSBKKZKX\",\n    \"bin\": \"941240000030\",\n    \"city\": \"Алматы\",\n    \"country_id\": 5\n  }\n}\n```\n",
+        "operationId": "getEntryById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID записи",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Запись справочника с атрибутами",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryEntry" }
+              }
+            }
+          },
+          "404": {
+            "description": "Запись не найдена",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryEntry" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Универсальный справочник", "Записи справочников"],
+        "summary": "Обновить запись справочника",
+        "description": "Обновляет существующую запись справочника.\n\n**Важно:**\n- Передавайте только те поля, которые нужно обновить\n- Атрибуты объединяются с существующими (не заменяются полностью)\n\n**Пример запроса:**\n```json\n{\n  \"nameRu\": \"Форте Банк (обновлено)\",\n  \"attributes\": {\n    \"city\": \"Нур-Султан\"\n  }\n}\n```\n",
+        "operationId": "updateEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID записи",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "description": "Обновляемые данные",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DictionaryEntryCreate" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Ошибка валидации",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryEntry" }
+              }
+            }
+          },
+          "404": {
+            "description": "Запись не найдена",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryEntry" }
+              }
+            }
+          },
+          "200": {
+            "description": "Запись обновлена",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryEntry" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Универсальный справочник", "Записи справочников"],
+        "summary": "Удалить запись (мягкое удаление)",
+        "description": "Выполняет мягкое удаление записи — устанавливает deletedAt в текущую дату/время.\n\nЗапись не удаляется физически и может быть восстановлена через endpoint `/entries/{id}/restore`.\n\nУдалённые записи:\n- Не возвращаются в списках\n- Не отображаются в выпадающих списках\n- Остаются в базе данных для истории\n",
+        "operationId": "deleteEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID записи",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "404": { "description": "Запись не найдена" },
+          "204": { "description": "Запись удалена" }
+        }
+      }
+    },
+    "/api/dictionaries/{typeCode}/entries": {
+      "get": {
+        "tags": ["Универсальный справочник", "Записи справочников"],
+        "summary": "Получить все записи справочника",
+        "description": "Возвращает все записи указанного справочника (кроме удалённых).\n\n**Примечание:** Для больших справочников рекомендуется использовать\nendpoint с пагинацией: `GET /{typeCode}/entries/paged`\n\n**Пример использования:**\n```javascript\nconst banks = await fetch('/api/dictionaries/banks/entries');\n```\n",
+        "operationId": "getEntries",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа справочника",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "banks"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список записей справочника",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/DictionaryEntry" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Универсальный справочник", "Записи справочников"],
+        "summary": "Создать запись справочника",
+        "description": "Создаёт новую запись в указанном справочнике.\n\n**Важно:**\n- Код записи должен быть уникальным в рамках типа справочника\n- Для REFERENCE атрибутов передавайте ID связанной записи\n\n**Пример запроса:**\n```json\n{\n  \"code\": \"FORTE\",\n  \"nameRu\": \"Форте Банк\",\n  \"nameKz\": \"Форте Банк\",\n  \"sortOrder\": 3,\n  \"attributes\": {\n    \"bic\": \"IRTYKZKA\",\n    \"bin\": \"980540000093\",\n    \"country_id\": 5,\n    \"city\": \"Алматы\"\n  }\n}\n```\n",
+        "operationId": "createEntry",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа справочника",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "banks"
+          }
+        ],
+        "requestBody": {
+          "description": "Данные новой записи",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DictionaryEntryCreate"
+              },
+              "examples": {
+                "Пример создания банка": {
+                  "description": "Пример создания банка",
+                  "value": {
+                    "code": "FORTE",
+                    "nameRu": "Форте Банк",
+                    "nameKz": "Форте Банк",
+                    "attributes": { "bic": "IRTYKZKA", "bin": "980540000093" }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "404": {
+            "description": "Тип справочника не найден",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryEntry" }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации или запись с таким кодом уже существует",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryEntry" }
+              }
+            }
+          },
+          "201": {
+            "description": "Запись создана",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryEntry" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dictionaries/types": {
+      "get": {
+        "tags": ["Универсальный справочник", "Типы справочников"],
+        "summary": "Получить все типы справочников",
+        "description": "Возвращает список всех активных типов справочников.\n\nИспользуется для:\n- Построения навигационного меню справочников\n- Отображения списка доступных справочников\n\n**Пример использования на фронтенде:**\n```javascript\nconst types = await fetch('/api/dictionaries/types');\n// Построить меню из types\n```\n",
+        "operationId": "getAllTypes",
+        "parameters": [
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": { "$ref": "#/components/schemas/Pageable" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список типов справочников",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiListResponseDictionaryTypeDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Универсальный справочник", "Типы справочников"],
+        "summary": "Создать новый тип справочника",
+        "description": "Создаёт новый тип справочника с указанными атрибутами.\n\n**Важно:**\n- Код типа должен быть уникальным\n- Атрибуты можно добавить сразу или позже через отдельный endpoint\n\n**Пример запроса:**\n```json\n{\n  \"code\": \"currencies\",\n  \"nameRu\": \"Валюты\",\n  \"nameKz\": \"Валюталар\",\n  \"description\": \"Справочник валют\",\n  \"isHierarchical\": false,\n  \"attributes\": [\n    {\n      \"code\": \"iso_code\",\n      \"nameRu\": \"ISO код\",\n      \"dataType\": \"STRING\",\n      \"maxLength\": 3,\n      \"isRequired\": true,\n      \"showInList\": true\n    }\n  ]\n}\n```\n",
+        "operationId": "createType",
+        "requestBody": {
+          "description": "Данные нового типа справочника",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DictionaryType" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Тип справочника с таким кодом уже существует",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryType" }
+              }
+            }
+          },
+          "201": {
+            "description": "Тип справочника создан",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryType" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dictionaries/types/{code}/attributes": {
+      "post": {
+        "tags": ["Универсальный справочник", "Типы справочников"],
+        "summary": "Добавить атрибут к типу справочника",
+        "description": "Добавляет новое поле (атрибут) к существующему типу справочника.\n\n**Типы данных атрибутов:**\n| Тип | Описание | UI компонент |\n|-----|----------|--------------|\n| STRING | Строка | input text |\n| TEXT | Многострочный текст | textarea |\n| INTEGER | Целое число | input number |\n| DECIMAL | Дробное число | input number step=0.01 |\n| BOOLEAN | Да/Нет | checkbox |\n| DATE | Дата | datepicker |\n| DATETIME | Дата и время | datetimepicker |\n| REFERENCE | Ссылка на другой справочник | select |\n\n**Пример для REFERENCE типа:**\n```json\n{\n  \"code\": \"country_id\",\n  \"nameRu\": \"Страна\",\n  \"dataType\": \"REFERENCE\",\n  \"referenceTypeCode\": \"countries\",\n  \"showInList\": true\n}\n```\n",
+        "operationId": "addAttribute",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "description": "Код типа справочника",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "banks"
+          }
+        ],
+        "requestBody": {
+          "description": "Данные нового атрибута",
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DictionaryAttribute" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "404": {
+            "description": "Тип справочника не найден",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryAttribute" }
+              }
+            }
+          },
+          "201": {
+            "description": "Атрибут добавлен",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryAttribute" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dictionaries/entries/{id}/restore": {
+      "post": {
+        "tags": ["Универсальный справочник", "Записи справочников"],
+        "summary": "Восстановить удалённую запись",
+        "description": "Восстанавливает ранее удалённую запись — устанавливает deletedAt в null.\n\nПосле восстановления запись снова будет отображаться в списках и выпадающих списках.\n",
+        "operationId": "restoreEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID записи",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Запись восстановлена",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryEntry" }
+              }
+            }
+          },
+          "404": {
+            "description": "Запись не найдена",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryEntry" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dictionaries/{typeCode}/entries/tree": {
+      "get": {
+        "tags": ["Универсальный справочник", "Записи справочников"],
+        "summary": "Получить дерево записей",
+        "description": "Возвращает иерархическую структуру для древовидных справочников.\n\n**Используется для:**\n- TreeView компонентов\n- Иерархических выпадающих списков\n- Отображения организационной структуры\n\nВозвращает только корневые элементы (parent = null) со вложенными children.\n\n**Пример ответа:**\n```json\n[\n  {\n    \"id\": 1,\n    \"nameRu\": \"Казахстан\",\n    \"children\": [\n      { \"id\": 2, \"nameRu\": \"Алматинская область\", \"children\": [...] },\n      { \"id\": 3, \"nameRu\": \"Астана\", \"children\": [] }\n    ]\n  }\n]\n```\n",
+        "operationId": "getRootEntries",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа справочника",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "regions"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Дерево записей",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/DictionaryEntry" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dictionaries/{typeCode}/entries/search": {
+      "get": {
+        "tags": ["Универсальный справочник", "Записи справочников"],
+        "summary": "Поиск записей",
+        "description": "Поиск записей по названию (nameRu, nameKz) и коду.\n\nПоиск регистронезависимый, ищет вхождение подстроки.\n\n**Примеры:**\n```\nGET /api/dictionaries/banks/entries/search?q=народ\nGET /api/dictionaries/banks/entries/search?q=HALYK\n```\n",
+        "operationId": "searchEntries",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа справочника",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "banks"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Поисковый запрос",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "народ"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Найденные записи",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/DictionaryEntry" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dictionaries/{typeCode}/entries/paged": {
+      "get": {
+        "tags": ["Универсальный справочник", "Записи справочников"],
+        "summary": "Получить записи с пагинацией",
+        "description": "Возвращает записи справочника с поддержкой пагинации и сортировки.\n\n**Параметры пагинации:**\n- `page` — номер страницы (начиная с 0)\n- `size` — количество записей на странице (по умолчанию 20)\n- `sort` — поле сортировки (например: `nameRu,asc` или `createdAt,desc`)\n\n**Примеры:**\n```\nGET /api/dictionaries/banks/entries/paged?page=0&size=10\nGET /api/dictionaries/banks/entries/paged?page=0&size=20&sort=nameRu,asc\n```\n",
+        "operationId": "getEntriesPaged",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа справочника",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "banks"
+          },
+          {
+            "name": "pageable",
+            "in": "query",
+            "description": "Параметры пагинации",
+            "required": true,
+            "schema": { "$ref": "#/components/schemas/Pageable" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Страница записей справочника",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiListResponseDictionaryEntryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dictionaries/{typeCode}/entries/active": {
+      "get": {
+        "tags": ["Универсальный справочник", "Записи справочников"],
+        "summary": "Получить только активные записи",
+        "description": "Возвращает только активные записи справочника (isActive = true, deletedAt = null).\n\n**Используется для:**\n- Выпадающих списков (select/combobox)\n- Автокомплита\n- Любых UI компонентов выбора значения\n\n**Пример использования:**\n```javascript\n// Заполнение выпадающего списка банков\nconst banks = await fetch('/api/dictionaries/banks/entries/active');\nconst options = banks.map(b => ({ value: b.id, label: b.nameRu }));\n```\n",
+        "operationId": "getActiveEntries",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа справочника",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "banks"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список активных записей",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/DictionaryEntry" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dictionaries/types/{code}": {
+      "get": {
+        "tags": ["Универсальный справочник", "Типы справочников"],
+        "summary": "Получить тип справочника по коду",
+        "description": "Возвращает детальную информацию о типе справочника, включая все его атрибуты (поля).\n\n**Используется для:**\n- Построения динамической формы создания/редактирования записи\n- Настройки колонок таблицы (showInList = true)\n- Определения типов полей ввода (dataType)\n\n**Пример использования на фронтенде:**\n```javascript\nconst typeInfo = await fetch('/api/dictionaries/types/banks');\n\n// Построить форму на основе typeInfo.attributes\ntypeInfo.attributes.forEach(attr => {\n    if (attr.dataType === 'STRING') renderTextField(attr);\n    if (attr.dataType === 'REFERENCE') renderSelect(attr);\n    // ...\n});\n```\n",
+        "operationId": "getTypeByCode",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "description": "Уникальный код типа справочника",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "banks"
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Тип справочника не найден",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DictionaryType" }
+              }
+            }
+          },
+          "200": {
+            "description": "Тип справочника с атрибутами",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DictionaryType" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DictionaryEntryCreate": {
+        "type": "object",
+        "description": "Данные для создания или обновления записи справочника",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Уникальный код записи в рамках типа справочника.\n\nОпционально при создании — может генерироваться автоматически.\nДолжен быть уникальным в рамках типа.\n",
+            "example": "FORTE",
+            "maxLength": 100
+          },
+          "nameRu": {
+            "type": "string",
+            "description": "Название на русском языке",
+            "example": "Форте Банк",
+            "maxLength": 1000
+          },
+          "nameKz": {
+            "type": "string",
+            "description": "Название на казахском языке",
+            "example": "Форте Банк",
+            "maxLength": 1000
+          },
+          "parentId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "ID родительской записи (для иерархических справочников).\n\nУкажите для создания дочернего элемента в дереве.\n",
+            "example": null
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "default": "0",
+            "description": "Порядок сортировки в списке",
+            "example": 3
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": { "type": "object" },
+            "description": "Дополнительные атрибуты записи в формате: код атрибута → значение.\n\n**Формат значений по типам данных:**\n\n| Тип | Формат | Пример |\n|-----|--------|--------|\n| STRING | string | `\"IRTYKZKA\"` |\n| TEXT | string | `\"Длинный текст...\"` |\n| INTEGER | number | `123` |\n| DECIMAL | number | `123.45` |\n| BOOLEAN | boolean | `true` |\n| DATE | string (ISO) | `\"2024-01-15\"` |\n| DATETIME | string (ISO) | `\"2024-01-15T10:30:00\"` |\n| REFERENCE | number (ID) | `5` |\n\n**Пример:**\n```json\n{\n  \"bic\": \"IRTYKZKA\",\n  \"bin\": \"980540000093\",\n  \"country_id\": 5,\n  \"opening_date\": \"2020-01-01\",\n  \"is_main\": true\n}\n```\n",
+            "example": {
+              "bic": "IRTYKZKA",
+              "bin": "980540000093",
+              "country_id": 5
+            }
+          }
+        },
+        "required": ["nameRu"]
+      },
+      "DictionaryEntry": {
+        "type": "object",
+        "description": "Запись справочника",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Уникальный идентификатор записи",
+            "example": 1,
+            "readOnly": true
+          },
+          "dictionaryTypeCode": {
+            "type": "string",
+            "description": "Код типа справочника, которому принадлежит запись",
+            "example": "banks",
+            "readOnly": true
+          },
+          "dictionaryTypeCode1C": {
+            "type": "string",
+            "description": "Код типа справочника 1С",
+            "example": "Банки",
+            "maxLength": 100,
+            "minLength": 2
+          },
+          "code": {
+            "type": "string",
+            "description": "Уникальный код записи в рамках типа справочника.\n\nМожет использоваться для идентификации записи вместо ID.\nНапример: \"HALYK\", \"KZ\", \"USD\"\n",
+            "example": "HALYK",
+            "maxLength": 100
+          },
+          "nameRu": {
+            "type": "string",
+            "description": "Название на русском языке",
+            "example": "Народный банк Казахстана",
+            "maxLength": 1000
+          },
+          "nameKz": {
+            "type": "string",
+            "description": "Название на казахском языке",
+            "example": "Қазақстан Халық банкі",
+            "maxLength": 1000
+          },
+          "parentId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "ID родительской записи (для иерархических справочников)",
+            "example": null
+          },
+          "parentName": {
+            "type": "string",
+            "description": "Название родительской записи (для удобства отображения)",
+            "example": "Алматинская область",
+            "readOnly": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "default": "0",
+            "description": "Порядок сортировки в списке",
+            "example": 1
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": "true",
+            "description": "Активна ли запись.\n\nНеактивные записи не возвращаются в endpoint /entries/active\nи не должны отображаться в выпадающих списках.\n",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время создания записи",
+            "example": "2024-01-15T10:30:00",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время последнего обновления",
+            "example": "2024-01-15T14:45:00",
+            "readOnly": true
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время удаления (soft delete).",
+            "example": null,
+            "readOnly": true
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "Кем создано",
+            "readOnly": true
+          },
+          "updatedBy": {
+            "type": "string",
+            "description": "Кем обновлено",
+            "readOnly": true
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": { "type": "object" },
+            "description": "Дополнительные атрибуты записи в формате: код атрибута → значение.\n\nТипы значений зависят от dataType атрибута:\n- STRING, TEXT → string\n- INTEGER → number\n- DECIMAL → number\n- BOOLEAN → boolean\n- DATE → string (ISO format: \"2024-01-15\")\n- DATETIME → string (ISO format: \"2024-01-15T10:30:00\")\n- REFERENCE → number (ID связанной записи)\n\nПример:\n```json\n{\n  \"bic\": \"HSBKKZKX\",\n  \"bin\": \"941240000030\",\n  \"country_id\": 5,\n  \"is_active\": true\n}\n```\n",
+            "example": {
+              "bic": "HSBKKZKX",
+              "bin": "941240000030",
+              "country_id": 5
+            }
+          },
+          "children": {
+            "type": "array",
+            "description": "Дочерние записи (для иерархических справочников).\n\nЗаполняется только при запросе /entries/tree.\nСодержит рекурсивную структуру с вложенными children.\n",
+            "items": { "$ref": "#/components/schemas/DictionaryEntry" }
+          }
+        },
+        "required": ["dictionaryTypeCode1C", "nameRu"]
+      },
+      "AttributeDataType": {
+        "type": "string",
+        "description": "Тип данных атрибута справочника",
+        "enum": [
+          "STRING",
+          "TEXT",
+          "INTEGER",
+          "DECIMAL",
+          "BOOLEAN",
+          "DATE",
+          "DATETIME",
+          "REFERENCE",
+          "TABLE",
+          "ENUMS",
+          "ACCOUNT_PLAN",
+          "CHARACTERISTICS_TYPE_PLAN",
+          "DOCUMENT",
+          "EXCHANGE_PLAN"
+        ]
+      },
+      "DictionaryAttribute": {
+        "type": "object",
+        "description": "Атрибут (дополнительное поле) справочника.\n\nОпределяет тип данных, валидацию и отображение поля.\nИспользуйте для динамического построения форм ввода.\n",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Уникальный идентификатор атрибута",
+            "example": 1,
+            "readOnly": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Код атрибута. Используется как ключ в объекте attributes записи",
+            "example": "bic",
+            "maxLength": 100,
+            "minLength": 1
+          },
+          "code1C": {
+            "type": "string",
+            "description": "Код атрибута 1С",
+            "example": "Банки",
+            "maxLength": 100,
+            "minLength": 2
+          },
+          "nameRu": {
+            "type": "string",
+            "description": "Название поля на русском языке (для label в форме)",
+            "example": "БИК",
+            "maxLength": 500
+          },
+          "nameKz": {
+            "type": "string",
+            "description": "Название поля на казахском языке",
+            "example": "БСК",
+            "maxLength": 500
+          },
+          "dataType": {
+            "$ref": "#/components/schemas/AttributeDataType",
+            "description": "Тип данных атрибута. Определяет UI компонент для отображения:\n\n| Тип | Описание | UI компонент |\n|-----|----------|--------------|\n| STRING | Строка | `<input type=\"text\">` |\n| TEXT | Многострочный текст | `<textarea>` |\n| INTEGER | Целое число | `<input type=\"number\">` |\n| DECIMAL | Дробное число | `<input type=\"number\" step=\"0.01\">` |\n| BOOLEAN | Да/Нет | `<input type=\"checkbox\">` |\n| DATE | Дата | `<input type=\"date\">` |\n| DATETIME | Дата и время | `<input type=\"datetime-local\">` |\n| REFERENCE | Ссылка на другой справочник | `<select>` |\n| TABLE | Табличная часть | `Таблица` |\n| ENUMS | Ссылка на перечисление | `<select>` |\n",
+            "example": "STRING"
+          },
+          "isRequired": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Обязательное ли поле для заполнения",
+            "example": true
+          },
+          "maxLength": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Максимальная длина строки (для STRING). Используйте для maxLength в input",
+            "example": 11
+          },
+          "referenceTypeCode": {
+            "type": "string",
+            "description": "Код типа справочника или перечисления, на который ссылается атрибут.\n\nЗаполняется если dataType = REFERENCE, dataType = TABLE или dataType = ENUM.\nДля REFERENCE и ENUM используйте для загрузки данных в выпадающий список.\nДля TABLE указывает структуру строк таблицы.\n",
+            "example": "countries"
+          },
+          "referenceSelectionMode": {
+            "type": "string",
+            "default": "GROUP_AND_ELEMENT",
+            "description": "Режим выбора значения для ссылочного атрибута: ELEMENT — только конечные элементы (листья); GROUP_AND_ELEMENT — можно выбирать группы и элементы",
+            "enum": ["ELEMENT", "GROUP_AND_ELEMENT"],
+            "example": "ELEMENT"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "default": "0",
+            "description": "Порядок сортировки для отображения полей в форме",
+            "example": 1
+          },
+          "showInList": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Показывать ли атрибут в таблице (списке записей).\n\nИспользуйте для формирования колонок таблицы:\n```javascript\nconst columns = attributes\n  .filter(a => a.showInList)\n  .map(a => ({ key: a.code, title: a.nameRu }));\n```\n",
+            "example": true
+          },
+          "showInForm": {
+            "type": "boolean",
+            "default": "true",
+            "description": "Показывать ли атрибут в форме редактирования",
+            "example": true
+          },
+          "defaultValue": {
+            "type": "string",
+            "description": "Значение по умолчанию (в строковом формате)",
+            "example": "KZ"
+          }
+        },
+        "required": ["code", "code1C", "dataType", "nameRu"]
+      },
+      "DictionaryType": {
+        "type": "object",
+        "description": "Тип справочника (метаданные)",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Уникальный идентификатор",
+            "example": 1,
+            "readOnly": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Уникальный код типа справочника. Используется в URL и для идентификации",
+            "example": "banks",
+            "maxLength": 100,
+            "minLength": 2
+          },
+          "code1C": {
+            "type": "string",
+            "description": "Уникальный код типа справочника 1С",
+            "example": "banks",
+            "maxLength": 100,
+            "minLength": 2
+          },
+          "nameRu": {
+            "type": "string",
+            "description": "Название на русском языке",
+            "example": "Банки",
+            "maxLength": 500
+          },
+          "nameKz": {
+            "type": "string",
+            "description": "Название на казахском языке",
+            "example": "Банктер",
+            "maxLength": 500
+          },
+          "description": {
+            "type": "string",
+            "description": "Описание справочника",
+            "example": "Справочник банков Республики Казахстан",
+            "maxLength": 1000
+          },
+          "isHierarchical": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Является ли справочник иерархическим (древовидным).\n\nЕсли true, записи могут иметь родительские связи (parentId).\nИспользуйте endpoint /entries/tree для получения иерархии.\n",
+            "example": false
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": "true",
+            "description": "Активен ли справочник. Неактивные справочники не отображаются в списках",
+            "example": true
+          },
+          "isTablePart": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Является ли этот тип табличной частью",
+            "example": false
+          },
+          "parentTypeId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "ID основного справочника (для табличных частей)",
+            "example": 1
+          },
+          "hasPredefinedName": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Есть ли у справочника ИмяПредопределенное",
+            "example": true
+          },
+          "groupByAttribute": {
+            "type": "string",
+            "description": "Атрибут, по которому группируются записи при отображении",
+            "example": "group_name"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время создания",
+            "example": "2024-01-15T10:30:00",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время последнего обновления",
+            "example": "2024-01-15T14:45:00",
+            "readOnly": true
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время удаления (soft delete). Null если не удалён",
+            "example": null,
+            "readOnly": true
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "Кем создано",
+            "readOnly": true
+          },
+          "updatedBy": {
+            "type": "string",
+            "description": "Кем обновлено",
+            "readOnly": true
+          },
+          "attributes": {
+            "type": "array",
+            "description": "Список атрибутов (дополнительных полей) справочника.\n\nОпределяет структуру данных для записей этого типа.\nИспользуйте для динамического построения форм и таблиц.\n",
+            "items": { "$ref": "#/components/schemas/DictionaryAttribute" }
+          }
+        },
+        "required": ["code", "code1C", "nameRu"]
+      },
+      "Pageable": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "format": "int32", "minimum": 0 },
+          "size": { "type": "integer", "format": "int32", "minimum": 1 },
+          "sort": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "ApiListResponseDictionaryEntryDto": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "description": "Список элементов",
+            "items": { "$ref": "#/components/schemas/DictionaryEntry" }
+          },
+          "totalSize": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Общее количество элементов",
+            "example": 10
+          }
+        }
+      },
+      "ApiListResponseDictionaryTypeDto": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "description": "Список элементов",
+            "items": { "$ref": "#/components/schemas/DictionaryType" }
+          },
+          "totalSize": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Общее количество элементов",
+            "example": 10
+          }
+        }
+      }
+    }
+  }
+}

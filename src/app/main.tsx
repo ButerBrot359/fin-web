@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@/app/config/i18n'
 import { QueryProvider } from './providers/query-provider'
 import { MuiProvider } from './providers/mui-provider'
 import './index.css'

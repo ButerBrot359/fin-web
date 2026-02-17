@@ -1,6 +1,10 @@
 @import 'tailwindcss' important;
 @config '../../tailwind.config.ts';
 
+* {
+  box-sizing: border-box;
+}
+
 :root {
   font-family: 'Google Sans', system-ui, sans-serif;
   line-height: 1.5;

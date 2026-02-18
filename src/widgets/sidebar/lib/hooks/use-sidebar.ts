@@ -1,7 +1,9 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 
 import { fetchNavigationItems } from '../../api/fetch-navigation-items'
+import type { NavigationItem } from '../../types/types'
 
 export function useSidebar() {
   const { data: navigationItems = [] } = useQuery({
@@ -9,16 +11,23 @@ export function useSidebar() {
     queryFn: fetchNavigationItems,
   })
 
-  const [activeItemId, setActiveItemId] = useState<string>('bank')
+  const navigate = useNavigate()
+  const location = useLocation()
 
   const activeItem = useMemo(
-    () => navigationItems.find((item) => item.id === activeItemId) ?? null,
-    [navigationItems, activeItemId]
+    () =>
+      navigationItems.find((item) => item.path === location.pathname) ?? null,
+    [navigationItems, location.pathname]
   )
 
-  const handleSelectItem = useCallback((id: string) => {
-    setActiveItemId(id)
-  }, [])
+  const handleSelectItem = useCallback(
+    async (item: NavigationItem) => {
+      if (item.path) {
+        await navigate(item.path)
+      }
+    },
+    [navigate]
+  )
 
   return {
     navigationItems,

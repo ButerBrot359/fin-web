@@ -1,22 +1,21 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+
 import { Sidebar } from '@/widgets/sidebar'
 import { TopBar } from '@/widgets/top-bar'
-import { PageToolbar } from '@/features/page-toolbar'
+import { BankPage } from '@/pages/bank'
 
 import { Layout } from './layout/layout'
 
 function App() {
   return (
-    <Layout
-      sidebar={<Sidebar />}
-      header={
-        <>
-          <TopBar />
-          <PageToolbar title="Банк и касса" />
-        </>
-      }
-    >
-      {/* page content */}
-    </Layout>
+    <BrowserRouter>
+      <Layout sidebar={<Sidebar />} header={<TopBar />}>
+        <Routes>
+          <Route path="/" element={<div />} />
+          <Route path="/bank" element={<BankPage />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
   )
 }
 

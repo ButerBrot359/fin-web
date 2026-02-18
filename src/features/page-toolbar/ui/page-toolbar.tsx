@@ -17,7 +17,9 @@ export const PageToolbar = ({ title }: PageToolbarProps) => {
 
   return (
     <div className="flex items-center justify-between">
-      <Typography variant="h6">{title}</Typography>
+      <Typography variant="h5" fontWeight={600}>
+        {title}
+      </Typography>
 
       <div className="flex gap-1">
         <SearchInput

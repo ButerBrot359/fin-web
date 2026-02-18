@@ -31,7 +31,7 @@ export const TopBar = () => {
 
         <div className="mx-1 h-5 w-px bg-ui-04" aria-hidden="true" />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mx-1">
           <UserIcon className="h-5 w-5 text-ui-03" />
           <Typography variant="body2" className="text-ui-06">
             {t('topBar.userName')}

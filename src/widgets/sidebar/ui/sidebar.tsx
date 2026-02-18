@@ -48,7 +48,7 @@ export const Sidebar = () => {
                   type="button"
                   disabled={isDisabled}
                   onClick={() => {
-                    handleSelectItem(item.id)
+                    void handleSelectItem(item)
                   }}
                   className={getButtonStyles(isActive, isDisabled)}
                 >

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 
@@ -10,6 +10,12 @@ export function useSidebar() {
     queryKey: ['navigation-items'],
     queryFn: fetchNavigationItems,
   })
+
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  const toggleCollapsed = useCallback(() => {
+    setIsCollapsed((prev) => !prev)
+  }, [])
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -33,5 +39,7 @@ export function useSidebar() {
     navigationItems,
     activeItem,
     handleSelectItem,
+    isCollapsed,
+    toggleCollapsed,
   }
 }

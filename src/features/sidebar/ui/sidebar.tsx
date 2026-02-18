@@ -18,9 +18,15 @@ export const Sidebar = () => {
                   onClick={() => {
                     handleSelectItem(item.id)
                   }}
-                  className={`flex w-full items-center gap-4 rounded-lg px-4 py-3 text-left text-base text-ui-01 transition-colors ${isActive ? 'bg-ui-01 text-ui-06' : 'hover:bg-ui-01/10'}`}
+                  className={`flex w-full justify-start max-h-14 items-center gap-3 rounded-lg pl-4 py-2 text-left text-base text-ui-01 transition-colors ${isActive ? 'bg-ui-01 text-ui-06' : 'hover:bg-ui-01/10'}`}
                 >
-                  <Icon className="size-8 shrink-0" />
+                  <div
+                    className={`flex justify-center min-w-10 min-h-10 rounded-lg items-center ${isActive ? 'bg-accent-01' : 'bg-ui-06'}`}
+                  >
+                    <Icon
+                      className={`w-6 h-6 shrink-0 ${isActive ? 'text-ui-06' : 'text-ui-01'}`}
+                    />
+                  </div>
                   <span>{item.label}</span>
                 </button>
               </li>

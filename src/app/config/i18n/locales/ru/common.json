@@ -30,6 +30,53 @@
     "back": "Назад",
     "confirm": "Подтвердить"
   },
+  "bankPage": {
+    "financing": {
+      "title": "Финансирование",
+      "financingPlan": "План финансирования организации",
+      "financingPlanUpload": "Загрузка плана финансирования"
+    },
+    "bank": {
+      "title": "Банк",
+      "invoice": "Счёт к оплате",
+      "incomingPaymentOrder": "Платежное поручение входящее"
+    },
+    "treasury": {
+      "title": "Казначейство",
+      "civilDealRegistration": "Заявка на регистрацию гражданско-правовой сделки"
+    },
+    "cashDesk": {
+      "title": "Касса",
+      "advanceReport": "Авансовый отчет",
+      "cashDesks": "Кассы",
+      "receiptOrder": "Приходный кассовый ордер",
+      "expenseOrder": "Расходный кассовый ордер",
+      "businessTrips": "Командировки",
+      "reconciliationAct": "Акт сверки взаиморасчетов"
+    },
+    "statements": {
+      "title": "Ведомости",
+      "individualPayments": "Ведомость выплаты физическим лицам",
+      "accountableAmounts": "Ведомость по подотчётным суммам",
+      "individualRefunds": "Ведомость на возврат сумм от физических лиц",
+      "mealPayments": "Ведомость выплаты по суммам питания"
+    },
+    "directories": {
+      "title": "Справочники",
+      "banks": "Банки",
+      "budgetPayments": "Бюджетные выплаты",
+      "paymentPurposeTypes": "Виды назначений платежа",
+      "paymentDocExpenses": "Описание расходов платежного документа",
+      "bicDirectory": "Справочник БИК",
+      "cashFlowItems": "Статьи движения денежных средств",
+      "ddsItemFilling": "Настройка заполнения статьей ДДС"
+    },
+    "reports": {
+      "title": "Отчёты",
+      "financingPlanUpload1": "Загрузка плана финансирования",
+      "financingPlanUpload2": "Загрузка плана финансирования"
+    }
+  },
   "errors": {
     "required": "Обязательное поле",
     "network": "Ошибка сети",

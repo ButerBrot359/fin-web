@@ -30,6 +30,53 @@
     "back": "Артқа",
     "confirm": "Растау"
   },
+  "bankPage": {
+    "financing": {
+      "title": "Қаржыландыру",
+      "financingPlan": "Ұйымды қаржыландыру жоспары",
+      "financingPlanUpload": "Қаржыландыру жоспарын жүктеу"
+    },
+    "bank": {
+      "title": "Банк",
+      "invoice": "Төлемге шот",
+      "incomingPaymentOrder": "Кіріс төлем тапсырмасы"
+    },
+    "treasury": {
+      "title": "Қазынашылық",
+      "civilDealRegistration": "Азаматтық-құқықтық мәмілені тіркеуге өтінім"
+    },
+    "cashDesk": {
+      "title": "Касса",
+      "advanceReport": "Аванстық есеп",
+      "cashDesks": "Кассалар",
+      "receiptOrder": "Кіріс касса ордері",
+      "expenseOrder": "Шығыс касса ордері",
+      "businessTrips": "Іссапарлар",
+      "reconciliationAct": "Өзара есеп айырысу актісі"
+    },
+    "statements": {
+      "title": "Ведомостар",
+      "individualPayments": "Жеке тұлғаларға төлем ведомосі",
+      "accountableAmounts": "Есеп берілетін сомалар бойынша ведомось",
+      "individualRefunds": "Жеке тұлғалардан сомаларды қайтару ведомосі",
+      "mealPayments": "Тамақтану сомалары бойынша төлем ведомосі"
+    },
+    "directories": {
+      "title": "Анықтамалықтар",
+      "banks": "Банктер",
+      "budgetPayments": "Бюджеттік төлемдер",
+      "paymentPurposeTypes": "Төлем мақсаттарының түрлері",
+      "paymentDocExpenses": "Төлем құжатының шығыстар сипаттамасы",
+      "bicDirectory": "БИК анықтамалығы",
+      "cashFlowItems": "Ақша қаражатының қозғалысы баптары",
+      "ddsItemFilling": "ДДС бабын толтыруды баптау"
+    },
+    "reports": {
+      "title": "Есептер",
+      "financingPlanUpload1": "Қаржыландыру жоспарын жүктеу",
+      "financingPlanUpload2": "Қаржыландыру жоспарын жүктеу"
+    }
+  },
   "errors": {
     "required": "Міндетті өріс",
     "network": "Желі қатесі",

@@ -17,6 +17,9 @@
   "topBar": {
     "userName": "Имя пользователя"
   },
+  "pageToolbar": {
+    "search": "Поиск"
+  },
   "actions": {
     "save": "Сохранить",
     "cancel": "Отмена",

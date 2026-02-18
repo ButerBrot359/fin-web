@@ -17,6 +17,9 @@
   "topBar": {
     "userName": "Пайдаланушы аты"
   },
+  "pageToolbar": {
+    "search": "Іздеу"
+  },
   "actions": {
     "save": "Сақтау",
     "cancel": "Болдырмау",

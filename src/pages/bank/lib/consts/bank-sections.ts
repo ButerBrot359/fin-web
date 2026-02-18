@@ -1,6 +1,7 @@
 export interface BankSectionItem {
   labelKey: string
   selectable?: boolean
+  path?: string
 }
 
 interface BankSection {
@@ -33,7 +34,11 @@ export const BANK_COLUMNS: BankSection[][] = [
       items: [
         { labelKey: 'bankPage.cashDesk.advanceReport' },
         { labelKey: 'bankPage.cashDesk.cashDesks' },
-        { labelKey: 'bankPage.cashDesk.receiptOrder', selectable: true },
+        {
+          labelKey: 'bankPage.cashDesk.receiptOrder',
+          selectable: true,
+          path: '/bank/cash-receipt-order',
+        },
         { labelKey: 'bankPage.cashDesk.expenseOrder' },
         { labelKey: 'bankPage.cashDesk.businessTrips' },
         { labelKey: 'bankPage.cashDesk.reconciliationAct' },

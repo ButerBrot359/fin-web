@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
@@ -11,6 +12,7 @@ import { BANK_COLUMNS, type BankSectionItem } from '../lib/consts/bank-sections'
 
 const NavItem = ({ item }: { item: BankSectionItem }) => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const selectable = Boolean(item.selectable)
   const [isFavorite, setIsFavorite] = useState(false)
 
@@ -19,12 +21,19 @@ const NavItem = ({ item }: { item: BankSectionItem }) => {
     setIsFavorite((prev) => !prev)
   }
 
+  const handleClick = async () => {
+    if (item.path) {
+      await navigate(item.path)
+    }
+  }
+
   const Icon = isFavorite ? StarBlueIcon : StarIcon
 
   return (
     <li
+      onClick={handleClick}
       className={cn(
-        'group flex items-center gap-2 rounded-md px-2 py-1 -mx-2',
+        'group flex items-center gap-2 rounded-md px-2 py-1',
         selectable && 'cursor-pointer hover:bg-ui-01',
         !selectable && 'cursor-not-allowed'
       )}

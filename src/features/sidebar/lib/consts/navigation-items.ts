@@ -12,22 +12,49 @@ import RegulatedFinReportIcon from '@/shared/assets/navigation/regulated-fin-rep
 import type { NavigationItem } from '../../types/types'
 
 export const NAVIGATION_ITEMS: NavigationItem[] = [
-  { id: 'main', label: 'Главная', icon: MainIcon },
-  { id: 'bank', label: 'Банк и касса', icon: BankIcon },
-  { id: 'warehouse', label: 'Склад', icon: WarehouseIcon },
+  { id: 'main', labelKey: 'sidebar.nav.main', icon: MainIcon },
+  { id: 'bank', labelKey: 'sidebar.nav.bank', icon: BankIcon },
+  {
+    id: 'warehouse',
+    labelKey: 'sidebar.nav.warehouse',
+    icon: WarehouseIcon,
+    disabled: true,
+  },
   {
     id: 'actives',
-    label: 'Основные средства и нематериальные активы',
+    labelKey: 'sidebar.nav.actives',
     icon: ActivesIcon,
+    disabled: true,
   },
-  { id: 'tarifs', label: 'Тарификация', icon: TarifsIcon },
-  { id: 'salary', label: 'Зарплата и кадры', icon: SalaryIcon },
-  { id: 'reports', label: 'Отчёты', icon: ReportIcon },
-  { id: 'our-company', label: 'Наше учреждение', icon: OurCompanyIcon },
-  { id: 'flk', label: 'ФЛК', icon: FlkIcon },
+  {
+    id: 'tariffs',
+    labelKey: 'sidebar.nav.tariffs',
+    icon: TarifsIcon,
+    disabled: true,
+  },
+  {
+    id: 'salary',
+    labelKey: 'sidebar.nav.salary',
+    icon: SalaryIcon,
+    disabled: true,
+  },
+  {
+    id: 'reports',
+    labelKey: 'sidebar.nav.reports',
+    icon: ReportIcon,
+    disabled: true,
+  },
+  {
+    id: 'our-company',
+    labelKey: 'sidebar.nav.ourCompany',
+    icon: OurCompanyIcon,
+    disabled: true,
+  },
+  { id: 'flk', labelKey: 'sidebar.nav.flk', icon: FlkIcon, disabled: true },
   {
     id: 'regulated-fin-report',
-    label: 'Регламентированная настраиваемая отчётность',
+    labelKey: 'sidebar.nav.regulatedFinReport',
     icon: RegulatedFinReportIcon,
+    disabled: true,
   },
 ]

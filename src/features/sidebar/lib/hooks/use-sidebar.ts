@@ -9,7 +9,7 @@ export function useSidebar() {
     queryFn: fetchNavigationItems,
   })
 
-  const [activeItemId, setActiveItemId] = useState<string>('main')
+  const [activeItemId, setActiveItemId] = useState<string>('bank')
 
   const activeItem = useMemo(
     () => navigationItems.find((item) => item.id === activeItemId) ?? null,

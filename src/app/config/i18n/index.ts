@@ -5,7 +5,7 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import ru from './locales/ru/common.json'
 import kz from './locales/kz/common.json'
 
-export const supportedLanguages = ['ru', 'en', 'kz'] as const
+export const supportedLanguages = ['ru', 'kz'] as const
 export type SupportedLanguage = (typeof supportedLanguages)[number]
 
 void i18n
@@ -17,6 +17,7 @@ void i18n
       kz: { common: kz },
     },
     defaultNS: 'common',
+    lng: 'ru',
     fallbackLng: 'ru',
     supportedLngs: supportedLanguages,
     interpolation: {

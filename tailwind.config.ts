@@ -13,6 +13,11 @@ export default {
         body1: ['16px', { lineHeight: 'auto', fontWeight: '500' }],
         body2: ['14px', { lineHeight: 'auto', fontWeight: '500' }],
       },
+      borderRadius: {
+        sm: '4px',
+        md: '8px',
+        lg: '12px',
+      },
       colors: {
         ui: {
           '01': '#ffffff',

@@ -10,7 +10,7 @@ export const TopBar = () => {
   const { t } = useTranslation()
 
   return (
-    <div className="flex justify-end px-10 py-6">
+    <div className="flex justify-end">
       <nav className="flex items-center bg-ui-01 rounded-md">
         <div className="flex items-center">
           {TOOLBAR_ACTIONS.map((action, index) => (

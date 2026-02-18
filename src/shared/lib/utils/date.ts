@@ -1,12 +1,11 @@
 import { format, parseISO, isValid } from 'date-fns'
 import type { Locale } from 'date-fns'
-import { ru, enUS, kk } from 'date-fns/locale'
+import { ru, kk } from 'date-fns/locale'
 import i18n from '@/app/config/i18n'
 import type { SupportedLanguage } from '@/app/config/i18n'
 
 const dateFnsLocales: Record<SupportedLanguage, Locale> = {
   ru,
-  en: enUS,
   kz: kk,
 }
 

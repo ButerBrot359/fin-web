@@ -34,6 +34,20 @@ src/
 └── assets/               # Статика
 ```
 
+### Структура внутри FSD-слайса
+
+```
+features/example/
+├── index.ts              # Публичный API слайса (единственный barrel-экспорт)
+├── ui/                   # React-компоненты
+├── lib/
+│   ├── hooks/            # Хуки
+│   ├── consts/           # Константы
+│   └── utils/            # Утилиты
+├── types/                # Типы
+└── api/                  # Запросы к бэкенду
+```
+
 ## Команды
 
 ```bash
@@ -47,6 +61,10 @@ npm run format    # Prettier
 
 - `pre-commit`: lint-staged (ESLint + Prettier)
 - `commit-msg`: проверка формата `feat|fix|add|refactor: описание`
+
+## FSD экспорты
+
+Barrel-экспорты (`index.ts`) делать **только на уровне FSD-сегментов** (слайсов), например `src/features/sidebar/index.ts`. Внутри сегмента (model/, ui/, lib/) barrel-файлы НЕ создавать — импортировать напрямую из конкретных файлов.
 
 ## Алиасы
 

@@ -75,6 +75,12 @@
       "title": "Отчёты",
       "financingPlanUpload1": "Загрузка плана финансирования",
       "financingPlanUpload2": "Загрузка плана финансирования"
+    },
+    "demo": {
+      "title": "Демо",
+      "v1": "V1 — Flat Schema",
+      "v2": "V2 — Nested Layout",
+      "v3": "V3 — Action-Driven"
     }
   },
   "noContent": {

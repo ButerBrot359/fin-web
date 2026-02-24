@@ -75,6 +75,12 @@
       "title": "Есептер",
       "financingPlanUpload1": "Қаржыландыру жоспарын жүктеу",
       "financingPlanUpload2": "Қаржыландыру жоспарын жүктеу"
+    },
+    "demo": {
+      "title": "Демо",
+      "v1": "V1 — Flat Schema",
+      "v2": "V2 — Nested Layout",
+      "v3": "V3 — Action-Driven"
     }
   },
   "noContent": {

@@ -5,6 +5,9 @@ import { TopBar } from '@/widgets/top-bar'
 import { BankPage } from '@/pages/bank'
 import { CashReceiptOrderPage } from '@/pages/cash-receipt-order'
 import { MainPage } from '@/pages/main'
+import { DemoV1Page } from '@/pages/demo-v1'
+import { DemoV2Page } from '@/pages/demo-v2'
+import { DemoV3Page } from '@/pages/demo-v3'
 
 import { Layout } from './layout/layout'
 
@@ -19,6 +22,9 @@ function App() {
             path="/bank/cash-receipt-order"
             element={<CashReceiptOrderPage />}
           />
+          <Route path="/demo/v1" element={<DemoV1Page />} />
+          <Route path="/demo/v2" element={<DemoV2Page />} />
+          <Route path="/demo/v3" element={<DemoV3Page />} />
         </Routes>
       </Layout>
     </BrowserRouter>

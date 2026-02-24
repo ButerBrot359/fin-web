@@ -76,5 +76,25 @@ export const BANK_COLUMNS: BankSection[][] = [
         { labelKey: 'bankPage.reports.financingPlanUpload2' },
       ],
     },
+    {
+      titleKey: 'bankPage.demo.title',
+      items: [
+        {
+          labelKey: 'bankPage.demo.v1',
+          selectable: true,
+          path: '/demo/v1',
+        },
+        {
+          labelKey: 'bankPage.demo.v2',
+          selectable: true,
+          path: '/demo/v2',
+        },
+        {
+          labelKey: 'bankPage.demo.v3',
+          selectable: true,
+          path: '/demo/v3',
+        },
+      ],
+    },
   ],
 ]

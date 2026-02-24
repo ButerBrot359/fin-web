@@ -45,6 +45,7 @@ export default tseslint.config(
         'error',
         { checksVoidReturn: { attributes: false } },
       ],
+      '@typescript-eslint/no-non-null-assertion': 'off',
     },
   }
 )

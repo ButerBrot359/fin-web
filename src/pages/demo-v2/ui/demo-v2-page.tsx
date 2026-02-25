@@ -78,7 +78,7 @@ const RenderNode = ({
   switch (node.type) {
     case 'page':
       return (
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4 overflow-hidden">
           {node.children?.map((child, i) => (
             <RenderNode
               key={child.id ?? i}
@@ -290,7 +290,7 @@ export const DemoV2Page = () => {
   if (!schema) return null
 
   return (
-    <div className="flex flex-col gap-4 p-6">
+    <div className="flex min-w-0 flex-col gap-4 overflow-hidden p-6">
       <div className="flex items-center gap-2">
         <Typography variant="h5" fontWeight={600}>
           {`V2 Nested Layout \u2014 ${schema.title}`}

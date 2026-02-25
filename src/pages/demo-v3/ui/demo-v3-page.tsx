@@ -152,7 +152,7 @@ export const DemoV3Page = () => {
   if (!schema) return null
 
   return (
-    <div className="flex flex-col gap-4 p-6">
+    <div className="flex min-w-0 flex-col gap-4 overflow-hidden p-6">
       <div className="flex items-center gap-2">
         <Typography variant="h5" fontWeight={600}>
           {`V3 Action-Driven — ${schema.meta.title}`}

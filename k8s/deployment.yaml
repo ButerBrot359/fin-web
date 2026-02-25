@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: fin-web
-        image: ghcr.io/${{ github.repository }}:latest
+        image: DOCKER_IMAGE_PLACEHOLDER
         ports:
         - containerPort: 5173
           name: web

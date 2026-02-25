@@ -54,9 +54,10 @@ jobs:
 
       - name: Set up Kubeconfig
         run: |
-          mkdir -p ${{ github.workspace }}/.kube
-          echo "${{ secrets.KUBER_CONFIG }}" | base64 --decode > ${{ github.workspace }}/.kube/config
-          chmod 600 ${{ github.workspace }}/.kube/config
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+          echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
@@ -64,8 +65,6 @@ jobs:
           version: 'latest'
 
       - name: Deploy to K8s
-        env:
-          KUBECONFIG: ${{ github.workspace }}/.kube/config
         run: |
           # Превращаем имя репозитория в нижний регистр для Docker image
           REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')

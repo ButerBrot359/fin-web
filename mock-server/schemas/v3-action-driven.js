@@ -65,13 +65,22 @@ export const schemaV3 = {
           {
             id: 'print-list',
             label: 'Печать списка',
-            execute: { type: 'api-call', method: 'POST', endpoint: '/api/print/cash-receipt-orders' },
+            execute: {
+              type: 'api-call',
+              method: 'POST',
+              endpoint: '/api/print/cash-receipt-orders',
+            },
           },
           {
             id: 'print-selected',
             label: 'Печать выделенных',
             visibility: { condition: 'selectedRows.length > 0' },
-            execute: { type: 'api-call', method: 'POST', endpoint: '/api/print/cash-receipt-orders', body: { ids: '{selectedRows}' } },
+            execute: {
+              type: 'api-call',
+              method: 'POST',
+              endpoint: '/api/print/cash-receipt-orders',
+              body: { ids: '{selectedRows}' },
+            },
           },
         ],
       },
@@ -80,8 +89,22 @@ export const schemaV3 = {
         trigger: 'dropdown',
         label: 'Отчёты',
         items: [
-          { id: 'report-summary', label: 'Сводный отчёт', execute: { type: 'navigate', path: '/reports/cash-receipt-summary' } },
-          { id: 'report-period', label: 'По периодам', execute: { type: 'navigate', path: '/reports/cash-receipt-by-period' } },
+          {
+            id: 'report-summary',
+            label: 'Сводный отчёт',
+            execute: {
+              type: 'navigate',
+              path: '/reports/cash-receipt-summary',
+            },
+          },
+          {
+            id: 'report-period',
+            label: 'По периодам',
+            execute: {
+              type: 'navigate',
+              path: '/reports/cash-receipt-by-period',
+            },
+          },
         ],
       },
     ],
@@ -117,32 +140,89 @@ export const schemaV3 = {
     // Колонки таблицы
     table: {
       columns: [
-        { id: 'date', label: 'Дата', fieldType: 'datetime', sortable: true, width: 160 },
-        { id: 'number', label: 'Номер', fieldType: 'text', sortable: true, width: 120 },
-        { id: 'organization', label: 'Организация', fieldType: 'text', width: 140 },
-        { id: 'subdivision', label: 'Подразделение', fieldType: 'text', width: 130 },
-        { id: 'operationType', label: 'Вид операции', fieldType: 'text', width: 130 },
-        { id: 'counterparty', label: 'Контрагент', fieldType: 'text', width: 130 },
-        { id: 'fundingSource', label: 'Источник финансирования', fieldType: 'text', width: 130 },
+        {
+          id: 'date',
+          label: 'Дата',
+          fieldType: 'datetime',
+          sortable: true,
+          width: 160,
+        },
+        {
+          id: 'number',
+          label: 'Номер',
+          fieldType: 'text',
+          sortable: true,
+          width: 120,
+        },
+        {
+          id: 'organization',
+          label: 'Организация',
+          fieldType: 'text',
+          width: 140,
+        },
+        {
+          id: 'subdivision',
+          label: 'Подразделение',
+          fieldType: 'text',
+          width: 130,
+        },
+        {
+          id: 'operationType',
+          label: 'Вид операции',
+          fieldType: 'text',
+          width: 130,
+        },
+        {
+          id: 'counterparty',
+          label: 'Контрагент',
+          fieldType: 'text',
+          width: 130,
+        },
+        {
+          id: 'fundingSource',
+          label: 'Источник финансирования',
+          fieldType: 'text',
+          width: 130,
+        },
         { id: 'fkr', label: 'ФКР', fieldType: 'text', width: 80 },
-        { id: 'paymentCode', label: 'Код платежа', fieldType: 'text', width: 110 },
+        {
+          id: 'paymentCode',
+          label: 'Код платежа',
+          fieldType: 'text',
+          width: 110,
+        },
         { id: 'spec', label: 'Спецификация', fieldType: 'text', width: 80 },
         { id: 'comment', label: 'Комментарий', fieldType: 'text', width: 140 },
-        { id: 'responsible', label: 'Ответственный', fieldType: 'text', width: 140 },
+        {
+          id: 'responsible',
+          label: 'Ответственный',
+          fieldType: 'text',
+          width: 140,
+        },
         { id: 'link', label: 'Ссылка', fieldType: 'link', width: 120 },
       ],
       rowActions: [
         {
           id: 'open',
           trigger: 'click',
-          execute: { type: 'navigate', path: '/bank/cash-receipt-order/{row.id}' },
+          execute: {
+            type: 'navigate',
+            path: '/bank/cash-receipt-order/{row.id}',
+          },
         },
         {
           id: 'delete',
           trigger: 'context-menu',
           label: 'Удалить',
-          confirm: { title: 'Удалить запись?', message: 'Запись будет удалена безвозвратно.' },
-          execute: { type: 'api-call', method: 'DELETE', endpoint: '/api/data/cash-receipt-orders/{row.id}' },
+          confirm: {
+            title: 'Удалить запись?',
+            message: 'Запись будет удалена безвозвратно.',
+          },
+          execute: {
+            type: 'api-call',
+            method: 'DELETE',
+            endpoint: '/api/data/cash-receipt-orders/{row.id}',
+          },
         },
       ],
       pagination: {
@@ -220,7 +300,11 @@ export const schemaV3 = {
           type: 'sequence',
           steps: [
             { type: 'validate-form' },
-            { type: 'api-call', method: 'POST', endpoint: '/api/data/cash-receipt-orders/{id}/post' },
+            {
+              type: 'api-call',
+              method: 'POST',
+              endpoint: '/api/data/cash-receipt-orders/{id}/post',
+            },
             { type: 'navigate', path: '/bank/cash-receipt-order' },
           ],
         },
@@ -234,8 +318,16 @@ export const schemaV3 = {
           type: 'sequence',
           steps: [
             { type: 'validate-form' },
-            { type: 'api-call', method: 'PUT', endpoint: '/api/data/cash-receipt-orders/{id}' },
-            { type: 'show-notification', message: 'Сохранено', severity: 'success' },
+            {
+              type: 'api-call',
+              method: 'PUT',
+              endpoint: '/api/data/cash-receipt-orders/{id}',
+            },
+            {
+              type: 'show-notification',
+              message: 'Сохранено',
+              severity: 'success',
+            },
           ],
         },
       },
@@ -248,7 +340,11 @@ export const schemaV3 = {
           type: 'sequence',
           steps: [
             { type: 'validate-form' },
-            { type: 'api-call', method: 'POST', endpoint: '/api/data/cash-receipt-orders/{id}/post' },
+            {
+              type: 'api-call',
+              method: 'POST',
+              endpoint: '/api/data/cash-receipt-orders/{id}/post',
+            },
           ],
         },
       },
@@ -257,7 +353,15 @@ export const schemaV3 = {
         trigger: 'dropdown',
         label: 'Печать',
         items: [
-          { id: 'print-order', label: 'Печать ордера', execute: { type: 'api-call', method: 'POST', endpoint: '/api/print/cash-receipt-orders/{id}' } },
+          {
+            id: 'print-order',
+            label: 'Печать ордера',
+            execute: {
+              type: 'api-call',
+              method: 'POST',
+              endpoint: '/api/print/cash-receipt-orders/{id}',
+            },
+          },
         ],
       },
     ],
@@ -270,8 +374,20 @@ export const schemaV3 = {
         type: 'section',
         columns: 2, // сетка 2 колонки
         fields: [
-          { id: 'operationType', fieldType: 'select', label: 'Вид операции', col: 1, source: { type: 'api', endpoint: '/api/enums/operation-types' } },
-          { id: 'basis', fieldType: 'heading', label: 'Основание', col: 2, link: true },
+          {
+            id: 'operationType',
+            fieldType: 'select',
+            label: 'Вид операции',
+            col: 1,
+            source: { type: 'api', endpoint: '/api/enums/operation-types' },
+          },
+          {
+            id: 'basis',
+            fieldType: 'heading',
+            label: 'Основание',
+            col: 2,
+            link: true,
+          },
         ],
       },
 
@@ -301,7 +417,10 @@ export const schemaV3 = {
             fieldType: 'reference',
             label: 'Источник финансирования',
             col: 2,
-            source: { type: 'api', endpoint: '/api/references/funding-sources' },
+            source: {
+              type: 'api',
+              endpoint: '/api/references/funding-sources',
+            },
           },
 
           {
@@ -380,7 +499,9 @@ export const schemaV3 = {
             id: 'payment_from_buyer',
             label: 'Оплата от покупателя',
             // Показывать только при соответствующем виде операции
-            visibility: { condition: "fields.operationType == 'payment_from_buyer'" },
+            visibility: {
+              condition: "fields.operationType == 'payment_from_buyer'",
+            },
             type: 'section',
             columns: 3,
             fields: [
@@ -403,7 +524,10 @@ export const schemaV3 = {
                 fieldType: 'reference',
                 label: 'Контрагент',
                 col: 3,
-                source: { type: 'api', endpoint: '/api/references/counterparties' },
+                source: {
+                  type: 'api',
+                  endpoint: '/api/references/counterparties',
+                },
                 validation: { required: true },
               },
               {
@@ -423,7 +547,9 @@ export const schemaV3 = {
           {
             id: 'cash_from_bank',
             label: 'Получение наличных',
-            visibility: { condition: "fields.operationType == 'cash_from_bank'" },
+            visibility: {
+              condition: "fields.operationType == 'cash_from_bank'",
+            },
             type: 'section',
             columns: 2,
             fields: [
@@ -432,14 +558,20 @@ export const schemaV3 = {
                 fieldType: 'reference',
                 label: 'Банковский счёт',
                 col: 1,
-                source: { type: 'api', endpoint: '/api/references/bank-accounts' },
+                source: {
+                  type: 'api',
+                  endpoint: '/api/references/bank-accounts',
+                },
               },
               {
                 id: 'withdrawalOrder',
                 fieldType: 'reference',
                 label: 'Заявка на снятие',
                 col: 2,
-                source: { type: 'api', endpoint: '/api/references/withdrawal-orders' },
+                source: {
+                  type: 'api',
+                  endpoint: '/api/references/withdrawal-orders',
+                },
               },
             ],
           },

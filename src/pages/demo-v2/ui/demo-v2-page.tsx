@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Typography, CircularProgress } from '@mui/material'
+import {
+  Typography,
+  CircularProgress,
+  IconButton,
+  Tooltip,
+} from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import { GreenAccentButton } from '@/shared/ui/buttons'
 import { Button } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
 import { NoContent } from '@/shared/ui/no-content/no-content'
+import { JsonViewer } from '@/shared/ui/json-viewer/json-viewer'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 
 // ============================================================
@@ -255,6 +261,7 @@ export const DemoV2Page = () => {
   const [data, setData] = useState<DataResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [jsonOpen, setJsonOpen] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -284,9 +291,21 @@ export const DemoV2Page = () => {
 
   return (
     <div className="flex flex-col gap-4 p-6">
-      <Typography variant="h5" fontWeight={600}>
-        {`V2 Nested Layout \u2014 ${schema.title}`}
-      </Typography>
+      <div className="flex items-center gap-2">
+        <Typography variant="h5" fontWeight={600}>
+          {`V2 Nested Layout \u2014 ${schema.title}`}
+        </Typography>
+        <Tooltip title="JSON">
+          <IconButton
+            size="small"
+            onClick={() => {
+              setJsonOpen(true)
+            }}
+          >
+            <span className="text-base">{'{ }'}</span>
+          </IconButton>
+        </Tooltip>
+      </div>
 
       {/* Весь UI рендерится рекурсивно из layout дерева */}
       <RenderNode
@@ -294,6 +313,17 @@ export const DemoV2Page = () => {
         data={data}
         search={search}
         onSearchChange={setSearch}
+      />
+
+      <JsonViewer
+        open={jsonOpen}
+        onClose={() => {
+          setJsonOpen(false)
+        }}
+        tabs={[
+          { label: 'Schema', data: schema },
+          { label: 'Data', data: data },
+        ]}
       />
     </div>
   )

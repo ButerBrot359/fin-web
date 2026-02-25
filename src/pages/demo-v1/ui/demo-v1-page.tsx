@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Typography, CircularProgress } from '@mui/material'
+import {
+  Typography,
+  CircularProgress,
+  IconButton,
+  Tooltip,
+} from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import { GreenAccentButton } from '@/shared/ui/buttons'
 import { Button } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
 import { NoContent } from '@/shared/ui/no-content/no-content'
+import { JsonViewer } from '@/shared/ui/json-viewer/json-viewer'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 
 // ============================================================
@@ -65,6 +71,7 @@ export const DemoV1Page = () => {
   const [data, setData] = useState<DataResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [jsonOpen, setJsonOpen] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -95,9 +102,21 @@ export const DemoV1Page = () => {
   return (
     <div className="flex flex-col gap-4 p-6">
       {/* Заголовок */}
-      <Typography variant="h5" fontWeight={600}>
-        {`V1 Flat — ${schema.title}`}
-      </Typography>
+      <div className="flex items-center gap-2">
+        <Typography variant="h5" fontWeight={600}>
+          {`V1 Flat — ${schema.title}`}
+        </Typography>
+        <Tooltip title="JSON">
+          <IconButton
+            size="small"
+            onClick={() => {
+              setJsonOpen(true)
+            }}
+          >
+            <span className="text-base">{'{ }'}</span>
+          </IconButton>
+        </Tooltip>
+      </div>
 
       {/* Тулбар — рендерим из schema.actions */}
       <div className="flex items-center justify-between">
@@ -206,6 +225,17 @@ export const DemoV1Page = () => {
       ) : (
         <NoContent />
       )}
+
+      <JsonViewer
+        open={jsonOpen}
+        onClose={() => {
+          setJsonOpen(false)
+        }}
+        tabs={[
+          { label: 'Schema', data: schema },
+          { label: 'Data', data: data },
+        ]}
+      />
     </div>
   )
 }

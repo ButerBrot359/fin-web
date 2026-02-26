@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "vite --mode development",
+    "build": "tsc -b && vite build --mode production",
+    "preview": "vite preview --mode production",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "preview": "vite preview",
     "prepare": "husky"
   },
   "lint-staged": {

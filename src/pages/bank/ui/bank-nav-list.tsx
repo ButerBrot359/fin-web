@@ -8,13 +8,20 @@ import StarBlueIcon from '@/shared/assets/icons/star-blue.svg'
 import StarIcon from '@/shared/assets/icons/star.svg'
 import { cn } from '@/shared/lib/utils/cn'
 
-import { BANK_COLUMNS, type BankSectionItem } from '../lib/consts/bank-sections'
+import type { ModuleElement, ModuleItems } from '../types/bank-module'
 
-const NavItem = ({ item }: { item: BankSectionItem }) => {
-  const { t } = useTranslation()
+const ELEMENT_ROUTES: Record<string, string> = {
+  PrikhodnyyKassovyyOrder: '/bank/cash-receipt-order',
+}
+
+const NavItem = ({ item }: { item: ModuleElement }) => {
+  const { i18n } = useTranslation()
   const navigate = useNavigate()
-  const selectable = Boolean(item.selectable)
+  const path = ELEMENT_ROUTES[item.code]
+  const selectable = Boolean(path)
   const [isFavorite, setIsFavorite] = useState(false)
+
+  const label = i18n.language === 'kz' ? item.nameKz : item.nameRu
 
   const handleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -22,8 +29,8 @@ const NavItem = ({ item }: { item: BankSectionItem }) => {
   }
 
   const handleClick = async () => {
-    if (item.path) {
-      await navigate(item.path)
+    if (path) {
+      await navigate(path)
     }
   }
 
@@ -49,7 +56,7 @@ const NavItem = ({ item }: { item: BankSectionItem }) => {
         <Icon className="h-4 w-4" />
       </button>
       <Typography variant="body2" className="text-ui-06 flex-1">
-        {t(item.labelKey as never)}
+        {label}
       </Typography>
       {selectable && (
         <ArrowRightIcon className="h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -58,29 +65,38 @@ const NavItem = ({ item }: { item: BankSectionItem }) => {
   )
 }
 
-export const BankNavList = () => {
-  const { t } = useTranslation()
+interface BankNavListProps {
+  items: ModuleItems
+}
+
+export const BankNavList = ({ items }: BankNavListProps) => {
+  const { i18n } = useTranslation()
 
   return (
     <div className="grid grid-cols-3 gap-x-10">
-      {BANK_COLUMNS.map((column, colIdx) => (
+      {items.map((column, colIdx) => (
         <div key={colIdx} className="flex flex-col gap-6">
-          {column.map((section) => (
-            <div key={section.titleKey} className="flex flex-col gap-2">
-              <Typography
-                variant="subtitle1"
-                fontWeight={600}
-                className="text-accent-02"
-              >
-                {t(section.titleKey as never)}
-              </Typography>
-              <ul className="flex flex-col gap-1">
-                {section.items.map((item) => (
-                  <NavItem key={item.labelKey} item={item} />
-                ))}
-              </ul>
-            </div>
-          ))}
+          {column.map((section) => {
+            const title =
+              i18n.language === 'kz' ? section.nameKz : section.nameRu
+
+            return (
+              <div key={title} className="flex flex-col gap-2">
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={600}
+                  className="text-accent-02"
+                >
+                  {title}
+                </Typography>
+                <ul className="flex flex-col gap-1">
+                  {section.elements.map((element) => (
+                    <NavItem key={element.code} item={element} />
+                  ))}
+                </ul>
+              </div>
+            )
+          })}
         </div>
       ))}
     </div>

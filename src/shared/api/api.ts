@@ -1,76 +1,65 @@
-const API_BASE_URL: string =
-  (import.meta.env.VITE_API_URL as string | undefined) ?? '/api'
+import axios, {
+  AxiosError,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+} from 'axios'
 
-interface RequestOptions extends Omit<RequestInit, 'headers'> {
-  params?: Record<string, string>
-  headers?: Record<string, string>
-}
+import type {
+  BlobRequestConfig,
+  RequestConfig,
+  RequestWithDataConfig,
+} from '@/shared/types/api.types'
 
-class ApiClient {
-  private baseUrl: string
+const instance = axios.create({
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl
-  }
-
-  private async request<T>(
-    endpoint: string,
-    options: RequestOptions = {}
-  ): Promise<T> {
-    const { params, headers, ...fetchOptions } = options
-
-    let url = `${this.baseUrl}${endpoint}`
-    if (params) {
-      const searchParams = new URLSearchParams(params)
-      url += `?${searchParams.toString()}`
+const makeRequest = (
+  config: AxiosRequestConfig
+): Promise<AxiosResponse<unknown>> =>
+  instance.request(config).catch((error: unknown) => {
+    if (error instanceof AxiosError) {
+      throw error.response?.data
     }
+    throw error
+  })
 
-    const response = await fetch(url, {
-      ...fetchOptions,
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-    })
+const get = ({ url, params, signal }: RequestConfig) =>
+  makeRequest({ method: 'GET', url, params, signal })
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${String(response.status)}`)
-    }
+const post = ({ url, data, params, signal }: RequestWithDataConfig) =>
+  makeRequest({ method: 'POST', url, data, params, signal })
 
-    return response.json() as Promise<T>
-  }
+const put = ({ url, data, signal }: RequestWithDataConfig) =>
+  makeRequest({ method: 'PUT', url, data, signal })
 
-  get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'GET' })
-  }
+const patch = ({ url, data, signal }: RequestWithDataConfig) =>
+  makeRequest({ method: 'PATCH', url, data, signal })
 
-  post<T>(
-    endpoint: string,
-    data: unknown,
-    options?: RequestOptions
-  ): Promise<T> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
+const _delete = ({ url, data, params, signal }: RequestWithDataConfig) =>
+  makeRequest({ method: 'DELETE', url, data, params, signal })
 
-  put<T>(
-    endpoint: string,
-    data: unknown,
-    options?: RequestOptions
-  ): Promise<T> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
-  }
+const getFileBlob = ({ url, params, signal }: RequestConfig) =>
+  makeRequest({ method: 'GET', url, params, responseType: 'blob', signal })
 
-  delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'DELETE' })
-  }
+const postFileBlob = ({ url, data, params, signal }: BlobRequestConfig) =>
+  makeRequest({
+    method: 'POST',
+    url,
+    data,
+    params,
+    responseType: 'blob',
+    signal,
+  })
+
+export const apiService = {
+  get,
+  post,
+  put,
+  patch,
+  delete: _delete,
+  getFileBlob,
+  postFileBlob,
 }
-
-export const api = new ApiClient(API_BASE_URL)

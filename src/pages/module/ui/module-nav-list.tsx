@@ -1,11 +1,9 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
+import { FavoriteButton } from '@/features/favorite-button'
 import ArrowRightIcon from '@/shared/assets/icons/arrow-right-small-blue.svg'
-import StarBlueIcon from '@/shared/assets/icons/star-blue.svg'
-import StarIcon from '@/shared/assets/icons/star.svg'
 import { cn } from '@/shared/lib/utils/cn'
 
 import type { ModuleElement, ModuleItems } from '../types/module'
@@ -18,14 +16,8 @@ interface NavItemProps {
 const NavItem = ({ item, pageCode }: NavItemProps) => {
   const { i18n } = useTranslation()
   const navigate = useNavigate()
-  const [isFavorite, setIsFavorite] = useState(false)
 
   const label = i18n.language === 'kz' ? item.nameKz : item.nameRu
-
-  const handleFavorite = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setIsFavorite((prev) => !prev)
-  }
 
   const handleClick = async () => {
     await navigate(
@@ -33,25 +25,20 @@ const NavItem = ({ item, pageCode }: NavItemProps) => {
     )
   }
 
-  const Icon = isFavorite ? StarBlueIcon : StarIcon
-
   return (
     <li
       onClick={handleClick}
       className={cn(
-        'group flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-ui-01'
+        'group flex cursor-pointer items-center gap-2 rounded-md px-2 hover:bg-ui-01'
       )}
     >
-      <button
-        type="button"
-        onClick={handleFavorite}
-        className={cn(
-          'shrink-0 cursor-pointer transition-opacity',
-          !isFavorite && 'opacity-0 group-hover:opacity-100'
-        )}
-      >
-        <Icon className="h-4 w-4" />
-      </button>
+      <FavoriteButton
+        iconClassName="h-4 w-4"
+        showOnlyOnHover
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
+      />
       <Typography variant="body2" className="text-ui-06 flex-1">
         {label}
       </Typography>

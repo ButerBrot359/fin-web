@@ -22,7 +22,11 @@ export function useSidebar() {
 
   const activeItem = useMemo(
     () =>
-      navigationItems.find((item) => item.path === location.pathname) ?? null,
+      navigationItems.find((item) => {
+        if (!item.path) return false
+        if (item.path === '/') return location.pathname === '/'
+        return location.pathname.startsWith(item.path)
+      }) ?? null,
     [navigationItems, location.pathname]
   )
 

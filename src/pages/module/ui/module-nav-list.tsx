@@ -8,17 +8,16 @@ import StarBlueIcon from '@/shared/assets/icons/star-blue.svg'
 import StarIcon from '@/shared/assets/icons/star.svg'
 import { cn } from '@/shared/lib/utils/cn'
 
-import type { ModuleElement, ModuleItems } from '../types/bank-module'
+import type { ModuleElement, ModuleItems } from '../types/module'
 
-const ELEMENT_ROUTES: Record<string, string> = {
-  PrikhodnyyKassovyyOrder: '/bank/cash-receipt-order',
+interface NavItemProps {
+  item: ModuleElement
+  pageCode: string
 }
 
-const NavItem = ({ item }: { item: ModuleElement }) => {
+const NavItem = ({ item, pageCode }: NavItemProps) => {
   const { i18n } = useTranslation()
   const navigate = useNavigate()
-  const path = ELEMENT_ROUTES[item.code]
-  const selectable = Boolean(path)
   const [isFavorite, setIsFavorite] = useState(false)
 
   const label = i18n.language === 'kz' ? item.nameKz : item.nameRu
@@ -29,9 +28,7 @@ const NavItem = ({ item }: { item: ModuleElement }) => {
   }
 
   const handleClick = async () => {
-    if (path) {
-      await navigate(path)
-    }
+    await navigate(`/modules/${pageCode}/${item.code}`)
   }
 
   const Icon = isFavorite ? StarBlueIcon : StarIcon
@@ -40,9 +37,7 @@ const NavItem = ({ item }: { item: ModuleElement }) => {
     <li
       onClick={handleClick}
       className={cn(
-        'group flex items-center gap-2 rounded-md px-2 py-1',
-        selectable && 'cursor-pointer hover:bg-ui-01',
-        !selectable && 'cursor-not-allowed'
+        'group flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-ui-01'
       )}
     >
       <button
@@ -58,18 +53,17 @@ const NavItem = ({ item }: { item: ModuleElement }) => {
       <Typography variant="body2" className="text-ui-06 flex-1">
         {label}
       </Typography>
-      {selectable && (
-        <ArrowRightIcon className="h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-      )}
+      <ArrowRightIcon className="h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
     </li>
   )
 }
 
-interface BankNavListProps {
+interface ModuleNavListProps {
   items: ModuleItems
+  pageCode: string
 }
 
-export const BankNavList = ({ items }: BankNavListProps) => {
+export const ModuleNavList = ({ items, pageCode }: ModuleNavListProps) => {
   const { i18n } = useTranslation()
 
   return (
@@ -91,7 +85,11 @@ export const BankNavList = ({ items }: BankNavListProps) => {
                 </Typography>
                 <ul className="flex flex-col gap-1">
                   {section.elements.map((element) => (
-                    <NavItem key={element.code} item={element} />
+                    <NavItem
+                      key={element.code}
+                      item={element}
+                      pageCode={pageCode}
+                    />
                   ))}
                 </ul>
               </div>

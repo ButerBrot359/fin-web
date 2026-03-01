@@ -15,6 +15,7 @@ export const useModule = (pageCode: string) => {
   return useSuspenseQuery({
     queryKey: ['settings', 'modules', pageCode],
     queryFn: () => settingsApi.getModule(pageCode),
+    staleTime: 5 * 60 * 1000,
     select: (response) => (response.data as ModuleResponseData).data.items,
   })
 }

@@ -9,9 +9,5 @@ export function getStorageItem<T>(key: string, fallback: T): T {
 }
 
 export function setStorageItem(key: string, value: unknown): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    /* quota exceeded — silently ignore */
-  }
+  localStorage.setItem(key, JSON.stringify(value))
 }

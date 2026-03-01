@@ -26,7 +26,7 @@ function App() {
             <Route path="/" element={<MainPage />} />
             <Route path="/modules/:pageCode" element={<ModulePage />} />
             <Route
-              path="/modules/:pageCode/:moduleCode"
+              path="/modules/:pageCode/:moduleType/:moduleCode"
               element={<ModuleDetailPage />}
             />
           </Routes>

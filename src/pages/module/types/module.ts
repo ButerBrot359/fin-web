@@ -1,6 +1,12 @@
+export enum ModuleElementType {
+  Document = 'Document',
+  Dictionary = 'Dictionary',
+  Report = 'Report',
+}
+
 export interface ModuleElement {
   code: string
-  type: 'Document' | 'Dictionary' | 'Report'
+  type: ModuleElementType
   nameRu: string
   nameKz: string
 }

@@ -28,7 +28,9 @@ const NavItem = ({ item, pageCode }: NavItemProps) => {
   }
 
   const handleClick = async () => {
-    await navigate(`/modules/${pageCode}/${item.code}`)
+    await navigate(
+      `/modules/${pageCode}/${item.type.toLowerCase()}/${item.code}`
+    )
   }
 
   const Icon = isFavorite ? StarBlueIcon : StarIcon

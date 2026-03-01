@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { useParams } from 'react-router-dom'
 
-import { PageToolbar } from '@/features/page-toolbar'
+import { PageToolbar } from '@/widgets/page-toolbar'
 
 import { useModule } from '../lib/hooks/use-module'
 import { usePageTitle } from '../lib/hooks/use-page-title'

@@ -7,11 +7,11 @@ import GearIcon from '@/shared/assets/icons/gear.svg'
 import CrossIcon from '@/shared/assets/icons/cross.svg'
 import { SearchInput } from '@/shared/ui/inputs'
 
-interface PageToolbarProps {
+interface ModuleToolbarProps {
   title: string
 }
 
-export const PageToolbar = ({ title }: PageToolbarProps) => {
+export const ModuleToolbar = ({ title }: ModuleToolbarProps) => {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
 

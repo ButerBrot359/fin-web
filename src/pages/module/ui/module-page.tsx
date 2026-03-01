@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { useParams } from 'react-router-dom'
 
-import { PageToolbar } from '@/widgets/page-toolbar'
+import { ModuleToolbar } from '@/widgets/module-toolbar'
 
 import { useModule } from '../lib/hooks/use-module'
 import { usePageTitle } from '../lib/hooks/use-page-title'
@@ -14,7 +14,7 @@ export const ModulePage = () => {
 
   return (
     <div className="flex flex-col gap-8 pt-5">
-      <PageToolbar title={title} />
+      <ModuleToolbar title={title} />
       <Suspense fallback={<ModuleNavSkeleton />}>
         <ModuleContent pageCode={pageCode} />
       </Suspense>

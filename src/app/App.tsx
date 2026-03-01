@@ -11,10 +11,8 @@ import { Layout } from './layout/layout'
 const ModulePage = lazy(() =>
   import('@/pages/module').then((m) => ({ default: m.ModulePage }))
 )
-const ModuleDetailPage = lazy(() =>
-  import('@/pages/module-detail').then((m) => ({
-    default: m.ModuleDetailPage,
-  }))
+const DocumentPage = lazy(() =>
+  import('@/pages/document').then((m) => ({ default: m.DocumentPage }))
 )
 
 function App() {
@@ -26,8 +24,8 @@ function App() {
             <Route path="/" element={<MainPage />} />
             <Route path="/modules/:pageCode" element={<ModulePage />} />
             <Route
-              path="/modules/:pageCode/:moduleType/:moduleCode"
-              element={<ModuleDetailPage />}
+              path="/modules/:pageCode/document/:moduleCode"
+              element={<DocumentPage />}
             />
           </Routes>
         </Suspense>

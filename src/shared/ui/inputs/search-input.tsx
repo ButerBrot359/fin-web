@@ -25,7 +25,7 @@ export const SearchInput = ({
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className={cn('h-9 rounded-lg', className)}
+      className={cn('h-9 rounded-md', className)}
       slotProps={{
         input: {
           disableUnderline: true,

@@ -77,6 +77,12 @@
       "financingPlanUpload2": "Қаржыландыру жоспарын жүктеу"
     }
   },
+  "documentListToolbar": {
+    "editSelected": "Таңдалғандарды өзгерту...",
+    "print": "Басып шығару",
+    "reports": "Есептер",
+    "more": "Тағы"
+  },
   "noContent": {
     "title": "Сәйкес нәтижелер жоқ",
     "description": "Іздеу сұрауын қайта тексеріп,\nқайталап көріңіз"

@@ -13,7 +13,12 @@ import type { NavigationItem } from '../../types/types'
 
 export const NAVIGATION_ITEMS: NavigationItem[] = [
   { id: 'main', labelKey: 'sidebar.nav.main', icon: MainIcon, path: '/' },
-  { id: 'bank', labelKey: 'sidebar.nav.bank', icon: BankIcon, path: '/bank' },
+  {
+    id: 'bank',
+    labelKey: 'sidebar.nav.bank',
+    icon: BankIcon,
+    path: '/modules/BankiIKassy',
+  },
   {
     id: 'warehouse',
     labelKey: 'sidebar.nav.warehouse',

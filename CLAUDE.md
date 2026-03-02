@@ -87,5 +87,8 @@ Barrel-экспорты (`index.ts`) делать **только на уровн
 
 - [Dictionary API (Универсальный справочник)](docs/api/dictionary-api.md) — CRUD типов справочников, записей, атрибутов
 - [Enums API (Перечисления)](docs/api/enums-api.md) — CRUD перечислений и их значений
+- [Document Types API (Типы документов)](docs/api/document-types-api.md) — метаданные типов документов, атрибуты, данные форм
+- [Document Entries API (Записи документов)](docs/api/document-entries-api.md) — CRUD записей документов, печатные формы (PDF)
+- [Settings API (Настройки)](docs/api/settings-api.md) — настройки модулей
 - OpenAPI specs: `docs/api/*.openapi.json`
 - **Base URL:** `http://92.38.49.213:31880`

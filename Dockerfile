@@ -1,15 +1,21 @@
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Зависимости фронта
-COPY package.json package-lock.json* ./
-RUN npm install
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package.json ./
+RUN npm install vite
 
-# Исходники
-COPY . .
+EXPOSE 4173
 
-EXPOSE 5173
-
-# Запуск dev-сервера
-CMD ["npx", "vite", "--host", "0.0.0.0"]
+CMD ["npx", "vite", "preview", "--host", "0.0.0.0"]

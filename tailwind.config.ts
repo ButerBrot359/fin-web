@@ -4,6 +4,15 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      keyframes: {
+        shimmer: {
+          '0%': { backgroundPosition: '-400px 0' },
+          '100%': { backgroundPosition: '400px 0' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 1.5s ease-in-out infinite',
+      },
       fontFamily: {
         sans: ['Google Sans', 'system-ui', 'sans-serif'],
       },
@@ -26,6 +35,7 @@ export default {
           '04': '#dbe7fd',
           '05': '#9fa9ba',
           '06': '#222124',
+          '07': '#E0EAFC',
         },
         accent: {
           '01': '#daf449',

@@ -2,8 +2,22 @@ import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 
+import {
+  getStorageItem,
+  setStorageItem,
+} from '@/shared/lib/utils/local-storage'
 import { fetchNavigationItems } from '../../api/fetch-navigation-items'
 import type { NavigationItem } from '../../types/types'
+
+interface SidebarSettings {
+  isCollapsed: boolean
+}
+
+const STORAGE_KEY = 'sidebar-settings'
+
+const DEFAULT_SETTINGS: SidebarSettings = {
+  isCollapsed: false,
+}
 
 export function useSidebar() {
   const { data: navigationItems = [] } = useQuery({
@@ -11,18 +25,32 @@ export function useSidebar() {
     queryFn: fetchNavigationItems,
   })
 
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [settings, setSettings] = useState<SidebarSettings>(() =>
+    getStorageItem(STORAGE_KEY, DEFAULT_SETTINGS)
+  )
+
+  const updateSettings = useCallback((patch: Partial<SidebarSettings>) => {
+    setSettings((prev) => {
+      const next = { ...prev, ...patch }
+      setStorageItem(STORAGE_KEY, next)
+      return next
+    })
+  }, [])
 
   const toggleCollapsed = useCallback(() => {
-    setIsCollapsed((prev) => !prev)
-  }, [])
+    updateSettings({ isCollapsed: !settings.isCollapsed })
+  }, [settings.isCollapsed, updateSettings])
 
   const navigate = useNavigate()
   const location = useLocation()
 
   const activeItem = useMemo(
     () =>
-      navigationItems.find((item) => item.path === location.pathname) ?? null,
+      navigationItems.find((item) => {
+        if (!item.path) return false
+        if (item.path === '/') return location.pathname === '/'
+        return location.pathname.startsWith(item.path)
+      }) ?? null,
     [navigationItems, location.pathname]
   )
 
@@ -39,7 +67,7 @@ export function useSidebar() {
     navigationItems,
     activeItem,
     handleSelectItem,
-    isCollapsed,
+    isCollapsed: settings.isCollapsed,
     toggleCollapsed,
   }
 }

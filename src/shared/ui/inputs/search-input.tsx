@@ -25,12 +25,12 @@ export const SearchInput = ({
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className={cn('h-9 rounded-lg', className)}
+      className={cn('h-9 rounded-md', className)}
       slotProps={{
         input: {
           disableUnderline: true,
           className:
-            'h-9 gap-[17px] py-2 pr-4 pl-2 text-ui-05 placeholder:text-ui-05',
+            'h-9 gap-[17px] py-2.5 pr-4 pl-2 text-ui-05 placeholder:text-ui-05',
           startAdornment: startIcon ? (
             <InputAdornment position="start">{startIcon}</InputAdornment>
           ) : undefined,

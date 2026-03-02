@@ -1,0 +1,434 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Document Types API",
+    "description": "API для управления типами документов",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local Development Server"
+    },
+    {
+      "url": "https://api.asiaservis.kz",
+      "description": "Production Server"
+    }
+  ],
+  "paths": {
+    "/api/document-types": {
+      "get": {
+        "tags": ["Типы документов"],
+        "summary": "Получить все типы документов",
+        "description": "Возвращает список всех доступных типов документов.",
+        "operationId": "getAllTypes_3",
+        "responses": {
+          "200": {
+            "description": "Список типов документов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentType"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/document-types/{code}": {
+      "get": {
+        "tags": ["Типы документов"],
+        "summary": "Получить тип документа по коду",
+        "description": "Возвращает детальную информацию о типе документа, включая его атрибуты и табличные части.",
+        "operationId": "getTypeByCode_2",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "description": "Код типа документа",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Тип документа не найден",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiDataResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Тип документа найден",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentType"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/document-types/{code}/on-get-form": {
+      "get": {
+        "tags": ["Типы документов"],
+        "summary": "Получить данные формы документа",
+        "description": "Возвращает данные, необходимые для построения формы создания/редактирования документа (списки справочников, значения по умолчанию и т.д.).",
+        "operationId": "onGetForm",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "description": "Код типа документа",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Данные формы",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnGetFormResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Тип документа не найден",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DocumentType": {
+        "type": "object",
+        "description": "Тип документа (метаданные)",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Уникальный идентификатор",
+            "example": 1,
+            "readOnly": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Уникальный код типа документа",
+            "example": "prihodniy_kassoviy_order"
+          },
+          "code1C": {
+            "type": "string",
+            "description": "Код типа документа 1С",
+            "example": "ПриходныйКассовыйОрдер"
+          },
+          "nameRu": {
+            "type": "string",
+            "description": "Название на русском языке",
+            "example": "Приходный кассовый ордер"
+          },
+          "nameKz": {
+            "type": "string",
+            "description": "Название на казахском языке",
+            "example": "Кіріс касса ордері"
+          },
+          "description": {
+            "type": "string",
+            "description": "Описание типа документа"
+          },
+          "isHierarchical": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Является ли документ иерархическим",
+            "example": false
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": "true",
+            "description": "Активен ли тип документа",
+            "example": true
+          },
+          "isTablePart": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Является ли этот тип табличной частью",
+            "example": false
+          },
+          "parentTypeId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "ID основного типа (для табличных частей)"
+          },
+          "hasPredefinedName": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Есть ли предопределённое имя",
+            "example": false
+          },
+          "groupByAttribute": {
+            "type": "string",
+            "description": "Атрибут для группировки записей"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время создания",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время последнего обновления",
+            "readOnly": true
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время удаления (soft delete)",
+            "readOnly": true
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "Кем создано",
+            "readOnly": true
+          },
+          "updatedBy": {
+            "type": "string",
+            "description": "Кем обновлено",
+            "readOnly": true
+          },
+          "attributes": {
+            "type": "array",
+            "description": "Список атрибутов (полей) документа",
+            "items": {
+              "$ref": "#/components/schemas/DocumentAttribute"
+            }
+          }
+        },
+        "required": ["code", "nameRu"]
+      },
+      "DocumentAttribute": {
+        "type": "object",
+        "description": "Атрибут (дополнительное поле) документа",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Уникальный идентификатор атрибута",
+            "example": 1,
+            "readOnly": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Код атрибута",
+            "example": "summa"
+          },
+          "code1C": {
+            "type": "string",
+            "description": "Код атрибута 1С",
+            "example": "Сумма"
+          },
+          "nameRu": {
+            "type": "string",
+            "description": "Название на русском языке",
+            "example": "Сумма"
+          },
+          "nameKz": {
+            "type": "string",
+            "description": "Название на казахском языке",
+            "example": "Сомасы"
+          },
+          "dataType": {
+            "$ref": "#/components/schemas/AttributeDataType",
+            "description": "Тип данных атрибута",
+            "example": "DECIMAL"
+          },
+          "isRequired": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Обязательное ли поле",
+            "example": true
+          },
+          "maxLength": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Максимальная длина строки (для STRING)",
+            "example": 255
+          },
+          "referenceTypeCode": {
+            "type": "string",
+            "description": "Код типа справочника/перечисления для ссылочных атрибутов",
+            "example": "kontragenty"
+          },
+          "referenceSelectionMode": {
+            "type": "string",
+            "default": "GROUP_AND_ELEMENT",
+            "description": "Режим выбора значения для ссылочного атрибута",
+            "enum": ["ELEMENT", "GROUP_AND_ELEMENT"],
+            "example": "ELEMENT"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "default": "0",
+            "description": "Порядок сортировки в форме",
+            "example": 1
+          },
+          "tableSortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "default": "0",
+            "description": "Порядок сортировки в таблице",
+            "example": 1
+          },
+          "showInList": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Показывать в таблице (списке)",
+            "example": true
+          },
+          "showInForm": {
+            "type": "boolean",
+            "default": "true",
+            "description": "Показывать в форме",
+            "example": true
+          },
+          "defaultValue": {
+            "type": "string",
+            "description": "Значение по умолчанию",
+            "example": 0
+          }
+        },
+        "required": ["code", "dataType", "nameRu"]
+      },
+      "AttributeDataType": {
+        "type": "string",
+        "description": "Тип данных атрибута справочника",
+        "enum": [
+          "STRING",
+          "TEXT",
+          "INTEGER",
+          "DECIMAL",
+          "BOOLEAN",
+          "DATE",
+          "DATETIME",
+          "DICTIONARY",
+          "TABLE",
+          "ENUMS",
+          "ACCOUNT_PLAN",
+          "CHARACTERISTICS_PLAN",
+          "DOCUMENT",
+          "EXCHANGE_PLAN",
+          "CALCULATION_PLAN",
+          "ACCUMULATION_REGISTER",
+          "INFORMATION_REGISTER"
+        ]
+      },
+      "OnGetFormResponse": {
+        "type": "object",
+        "description": "Список элементов доступных для выбора при создании документа",
+        "properties": {
+          "fieldName": {
+            "type": "string",
+            "description": "Имя поля",
+            "example": "VidOperatsii"
+          },
+          "elements": {
+            "type": "array",
+            "description": "Список элементов доступных для выбора при создании документа",
+            "items": {
+              "$ref": "#/components/schemas/EnumsValue"
+            }
+          }
+        }
+      },
+      "EnumsValue": {
+        "type": "object",
+        "description": "Значение перечисления",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Уникальный идентификатор",
+            "example": 1,
+            "readOnly": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Уникальный код значения в рамках перечисления",
+            "example": "DRAFT"
+          },
+          "code1C": {
+            "type": "string",
+            "description": "Код в системе 1С",
+            "example": "Черновик"
+          },
+          "name": {
+            "type": "string",
+            "description": "Название значения",
+            "example": "Черновик"
+          },
+          "enumCode": {
+            "type": "string",
+            "description": "Код перечисления, которому принадлежит значение",
+            "example": "document_status"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": "true",
+            "description": "Активно ли значение",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время создания",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время последнего обновления",
+            "readOnly": true
+          }
+        },
+        "required": ["code", "name"]
+      },
+      "ApiDataResponse": {
+        "type": "object",
+        "description": "Ответ API с данными",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Признак успешности операции",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "description": "Данные ответа"
+          }
+        }
+      }
+    }
+  }
+}

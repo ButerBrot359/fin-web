@@ -83,6 +83,11 @@
     "reports": "Есептер",
     "more": "Тағы"
   },
+  "documentTable": {
+    "createdAt": "Күні",
+    "number": "Нөмір",
+    "link": "Сілтеме"
+  },
   "noContent": {
     "title": "Сәйкес нәтижелер жоқ",
     "description": "Іздеу сұрауын қайта тексеріп,\nқайталап көріңіз"

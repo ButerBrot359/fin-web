@@ -4,6 +4,6 @@ export const getDocumentType = (code: string) =>
   apiService.get({ url: `/api/document-types/${code}` })
 
 export const getDocumentEntries = (typeCode: string) =>
-  apiService.get({ url: `/api/document-entries/${typeCode}` })
+  apiService.get({ url: `/api/document-entries/${typeCode}/paged` })
 
-export const documentTypeApi = { getDocumentType, getDocumentEntries }
+export const documentService = { getDocumentType, getDocumentEntries }

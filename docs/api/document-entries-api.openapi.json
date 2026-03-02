@@ -1,0 +1,538 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Document Entries API",
+    "description": "API для управления записями документов и печатными формами",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local Development Server"
+    },
+    {
+      "url": "https://api.asiaservis.kz",
+      "description": "Production Server"
+    }
+  ],
+  "paths": {
+    "/api/document-entries/{typeCode}": {
+      "get": {
+        "tags": ["Записи документов"],
+        "summary": "Получить все записи документа",
+        "description": "Возвращает список всех записей для указанного типа документа.",
+        "operationId": "getEntriesByTypeCode_2",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа документа",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список записей документа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentEntry"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Записи документов"],
+        "summary": "Создать запись документа",
+        "description": "Создаёт новую запись (экземпляр) указанного типа документа.",
+        "operationId": "createEntry_2",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа документа",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentEntryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Документ успешно создан",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/document-entries/{typeCode}/reset-number": {
+      "post": {
+        "tags": ["Записи документов"],
+        "summary": "Сбросить счетчик номеров",
+        "description": "Сбрасывает счетчик номеров для указанного типа документа до 0. Опционально можно задать длину номера.",
+        "operationId": "resetNumberSequence",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа документа",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "numberLength",
+            "in": "query",
+            "description": "Длина номера (количество знаков)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Счетчик успешно сброшен",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/document-entries/{typeCode}/{id}/print": {
+      "get": {
+        "tags": ["Печатные формы"],
+        "summary": "Сформировать печатную форму документа (PDF)",
+        "description": "Заполняет XLSX-шаблон данными документа и конвертирует результат в PDF\nчерез LibreOffice (headless).\n\nПараметр `language`:\n- не указан или пустой → русскоязычный шаблон\n- `Kz` → казахскоязычный шаблон\n",
+        "operationId": "print",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа документа",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "PrikhodnyyKassovyyOrder"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID записи документа",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "description": "Язык формы: пусто — русский, Kz — казахский",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Документ не найден",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Тип документа не поддерживает печать",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "PDF-файл печатной формы",
+            "content": {
+              "application/pdf": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/document-entries/{typeCode}/paged": {
+      "get": {
+        "tags": ["Записи документов"],
+        "summary": "Получить записи документа с пагинацией",
+        "description": "Возвращает записи для указанного типа документа с поддержкой пагинации и сортировки.",
+        "operationId": "getEntriesPaged_2",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа документа",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Страница записей документа",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/document-entries/{typeCode}/new": {
+      "get": {
+        "tags": ["Записи документов"],
+        "summary": "Получить шаблон нового документа",
+        "description": "Возвращает предзаполненный шаблон нового документа с значениями по умолчанию и вычисленными полями.",
+        "operationId": "getNewEntry",
+        "parameters": [
+          {
+            "name": "typeCode",
+            "in": "path",
+            "description": "Код типа документа",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "params",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Шаблон нового документа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/document-entries/id/{id}": {
+      "get": {
+        "tags": ["Записи документов"],
+        "summary": "Получить запись документа по ID",
+        "description": "Возвращает запись документа по её уникальному идентификатору.",
+        "operationId": "getEntryById_3",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID записи документа",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Документ не найден",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiDataResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Документ найден",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/document-entries/{id}": {
+      "delete": {
+        "tags": ["Записи документов"],
+        "summary": "Удалить запись документа",
+        "description": "Помечает запись документа как удалённую (мягкое удаление).",
+        "operationId": "deleteEntry_2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID записи документа",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Документ не найден",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiDataResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Документ успешно удалён",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DocumentEntry": {
+        "type": "object",
+        "description": "Запись (экземпляр) документа",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Уникальный идентификатор записи",
+            "example": 1,
+            "readOnly": true
+          },
+          "documentTypeCode": {
+            "type": "string",
+            "description": "Код типа документа",
+            "example": "prihodniy_kassoviy_order",
+            "readOnly": true
+          },
+          "documentTypeCode1C": {
+            "type": "string",
+            "description": "Код типа документа 1С",
+            "example": "ПриходныйКассовыйОрдер"
+          },
+          "code": {
+            "type": "string",
+            "description": "Код записи",
+            "example": "PKO-000001"
+          },
+          "nameRu": {
+            "type": "string",
+            "description": "Название на русском языке",
+            "example": "Приходный кассовый ордер №1"
+          },
+          "nameKz": {
+            "type": "string",
+            "description": "Название на казахском языке"
+          },
+          "parentId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "ID родительской записи (для иерархических документов)"
+          },
+          "parentName": {
+            "type": "string",
+            "description": "Название родительской записи",
+            "readOnly": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "default": "0",
+            "description": "Порядок сортировки",
+            "example": 1
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": "true",
+            "description": "Активна ли запись",
+            "example": true
+          },
+          "isPosted": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Проведён ли документ",
+            "example": false
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время создания",
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время последнего обновления",
+            "readOnly": true
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Дата и время удаления (soft delete)",
+            "readOnly": true
+          },
+          "createdBy": {
+            "type": "string",
+            "description": "Кем создано",
+            "readOnly": true
+          },
+          "updatedBy": {
+            "type": "string",
+            "description": "Кем обновлено",
+            "readOnly": true
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            },
+            "description": "Дополнительные атрибуты записи: код атрибута -> значение"
+          },
+          "children": {
+            "type": "array",
+            "description": "Дочерние записи (для иерархических документов)",
+            "items": {
+              "$ref": "#/components/schemas/DocumentEntry"
+            }
+          }
+        }
+      },
+      "DocumentEntryCreate": {
+        "type": "object",
+        "description": "Данные для создания/обновления записи документа",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Код записи",
+            "example": "PKO-000001"
+          },
+          "nameRu": {
+            "type": "string",
+            "description": "Название на русском языке",
+            "example": "Приходный кассовый ордер №1"
+          },
+          "nameKz": {
+            "type": "string",
+            "description": "Название на казахском языке"
+          },
+          "parentId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "ID родительской записи (для иерархических документов)"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "default": "0",
+            "description": "Порядок сортировки",
+            "example": 1
+          },
+          "isPosted": {
+            "type": "boolean",
+            "default": "false",
+            "description": "Проведён ли документ",
+            "example": false
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            },
+            "description": "Дополнительные атрибуты записи: код атрибута -> значение"
+          }
+        }
+      },
+      "ApiDataResponse": {
+        "type": "object",
+        "description": "Ответ API с данными",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Признак успешности операции",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "description": "Данные ответа"
+          }
+        }
+      }
+    }
+  }
+}

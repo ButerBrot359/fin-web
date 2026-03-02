@@ -1,0 +1,140 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Settings API",
+    "description": "API для получения настроек модулей",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local Development Server"
+    },
+    {
+      "url": "https://api.asiaservis.kz",
+      "description": "Production Server"
+    }
+  ],
+  "paths": {
+    "/api/settings/modules/{moduleCode}": {
+      "get": {
+        "tags": ["Настройки"],
+        "summary": "Получить настройки модуля",
+        "description": "Возвращает настройки элементов (справочники, документы, регистры и т.д.) для указанного модуля.",
+        "operationId": "getSettings",
+        "parameters": [
+          {
+            "name": "moduleCode",
+            "in": "path",
+            "description": "Код модуля",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Настройки модуля",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleItemsSettings"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Модуль не найден",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ModuleItemsSettings": {
+        "type": "object",
+        "description": "Настройка доступности элементов модуля",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "Список разделов модуля (разбитый по колонка)",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ModuleItem"
+              }
+            }
+          }
+        }
+      },
+      "ModuleItem": {
+        "type": "object",
+        "description": "Раздел модуля",
+        "properties": {
+          "nameRu": {
+            "type": "string",
+            "description": "Название модуля на русском"
+          },
+          "nameKz": {
+            "type": "string",
+            "description": "Название модуля на казахском"
+          },
+          "elements": {
+            "type": "array",
+            "description": "Список элементов модуля",
+            "items": {
+              "$ref": "#/components/schemas/ModuleItemElement"
+            }
+          }
+        }
+      },
+      "ModuleItemElement": {
+        "type": "object",
+        "description": "Элемент раздела модуля",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Код элемента"
+          },
+          "type": {
+            "type": "string",
+            "description": "Тип элемента",
+            "example": "Document"
+          },
+          "nameRu": {
+            "type": "string",
+            "description": "Название элемента на русском"
+          },
+          "nameKz": {
+            "type": "string",
+            "description": "Название элемента на казахском"
+          }
+        }
+      },
+      "ApiDataResponse": {
+        "type": "object",
+        "description": "Ответ API с данными",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Признак успешности операции",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "description": "Данные ответа"
+          }
+        }
+      }
+    }
+  }
+}

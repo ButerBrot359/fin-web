@@ -35,6 +35,7 @@ export default {
           '04': '#dbe7fd',
           '05': '#9fa9ba',
           '06': '#222124',
+          '07': '#E0EAFC',
         },
         accent: {
           '01': '#daf449',

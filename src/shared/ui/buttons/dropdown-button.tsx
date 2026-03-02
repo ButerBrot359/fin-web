@@ -18,7 +18,7 @@ export const DropdownButton = ({
     type="button"
     onClick={onClick}
     className={cn(
-      'flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 bg-ui-01 text-ui-06 hover:bg-ui-01/60',
+      'flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-md px-3 py-2.5 bg-ui-01 text-ui-06 hover:bg-ui-01/60',
       className
     )}
   >

@@ -17,6 +17,7 @@ spec:
       containers:
       - name: fin-web
         image: DOCKER_IMAGE_PLACEHOLDER
+        imagePullPolicy: Always
         ports:
         - containerPort: 5173
           name: web

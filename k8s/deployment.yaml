@@ -19,7 +19,7 @@ spec:
         image: DOCKER_IMAGE_PLACEHOLDER
         imagePullPolicy: Always
         ports:
-        - containerPort: 5173
+        - containerPort: 4173
           name: web
         - containerPort: 3001
           name: mock

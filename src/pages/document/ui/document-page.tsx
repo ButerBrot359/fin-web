@@ -8,7 +8,7 @@ export const DocumentPage = () => {
   const { title, attributes } = useDocumentType()
 
   return (
-    <div className="flex flex-col gap-5 pt-5">
+    <div className="flex flex-col gap-5 pt-5 h-full">
       <PageHeader title={title} />
       <DocumentListToolbar />
       <DocumentTable attributes={attributes} />

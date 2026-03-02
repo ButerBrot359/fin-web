@@ -18,7 +18,7 @@ export const DocumentListToolbar = () => {
   const [search, setSearch] = useState('')
 
   return (
-    <div className="flex items-center justify-between border-b border-accent-01 pb-3">
+    <div className="flex items-center justify-between pb-3">
       <div className="flex items-center gap-2">
         <GreenAccentButton sx={{ textTransform: 'none' }}>
           <Typography variant="body2"> {t('actions.create')}</Typography>

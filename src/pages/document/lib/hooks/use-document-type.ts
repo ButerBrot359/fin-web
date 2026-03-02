@@ -2,7 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 
-import { documentTypeApi } from '../../api/document-type'
+import { documentService } from '../../api/document'
 import type { DocumentTypeResponseData } from '../../types/document-type'
 
 export const useDocumentType = () => {
@@ -14,7 +14,7 @@ export const useDocumentType = () => {
 
   const { data } = useSuspenseQuery({
     queryKey: ['document-types', moduleCode],
-    queryFn: () => documentTypeApi.getDocumentType(moduleCode),
+    queryFn: () => documentService.getDocumentType(moduleCode),
     staleTime: 5 * 60 * 1000,
     select: (response) => (response.data as DocumentTypeResponseData).data,
   })

@@ -9,10 +9,8 @@ import {
   type ColumnDef,
 } from '@tanstack/react-table'
 
-import type { DocumentAttribute } from '../types/document-type'
-import { MOCK_DOCUMENT_ENTRIES } from '../lib/consts/mock-document-entries'
-
-type DocumentEntry = Record<string, string | number>
+import type { DocumentAttribute, DocumentEntry } from '../types/document-type'
+import { useDocumentEntries } from '../lib/hooks/use-document-entries'
 
 interface DocumentTableProps {
   attributes: DocumentAttribute[]
@@ -20,20 +18,19 @@ interface DocumentTableProps {
 
 export const DocumentTable = ({ attributes }: DocumentTableProps) => {
   const { i18n } = useTranslation()
+  const entries = useDocumentEntries()
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
 
-  const visibleAttributes = useMemo(
-    () =>
-      attributes
-        .filter((attr) => attr.showInList)
-        .sort((a, b) => a.tableSortOrder - b.tableSortOrder),
+  const sortedAttributes = useMemo(
+    () => [...attributes].sort((a, b) => a.tableSortOrder - b.tableSortOrder),
     [attributes]
   )
 
   const columns = useMemo<ColumnDef<DocumentEntry>[]>(
     () =>
-      visibleAttributes.map((attr, index) => ({
-        accessorKey: attr.code,
+      sortedAttributes.map((attr, index) => ({
+        id: attr.code,
+        accessorFn: (row) => row.attributes[attr.code],
         header: () => {
           const name =
             i18n.language === 'kz' ? attr.nameKz || attr.nameRu : attr.nameRu
@@ -61,12 +58,12 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
           )
         },
       })),
-    [visibleAttributes, i18n.language]
+    [sortedAttributes, i18n.language]
   )
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
-    data: MOCK_DOCUMENT_ENTRIES as DocumentEntry[],
+    data: entries,
     columns,
     getCoreRowModel: getCoreRowModel(),
   })
@@ -95,14 +92,13 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
         </thead>
         <tbody>
           {table.getRowModel().rows.map((row, rowIndex) => {
-            const entryId = (row.original as { id?: number }).id ?? rowIndex
-            const isSelected = selectedRowId === entryId
+            const isSelected = selectedRowId === row.original.id
 
             return (
               <tr
                 key={row.id}
                 onClick={() => {
-                  setSelectedRowId(entryId)
+                  setSelectedRowId(row.original.id)
                 }}
                 className={`cursor-pointer transition-colors ${
                   isSelected

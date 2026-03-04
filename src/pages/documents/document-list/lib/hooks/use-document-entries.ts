@@ -2,7 +2,7 @@ import type { AxiosResponse } from 'axios'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 
-import { documentService } from '../../api/document'
+import { getDocumentEntries } from '../../api/document'
 import type {
   DocumentEntriesResponseData,
   DocumentEntry,
@@ -20,7 +20,7 @@ export const useDocumentEntries = (): DocumentEntry[] => {
     DocumentEntry[]
   >({
     queryKey: ['document-entries', moduleCode],
-    queryFn: () => documentService.getDocumentEntries(moduleCode),
+    queryFn: () => getDocumentEntries(moduleCode),
     select: (response): DocumentEntry[] => {
       const body = response.data as DocumentEntriesResponseData
 

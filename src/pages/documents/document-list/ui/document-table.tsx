@@ -10,7 +10,8 @@ import {
 } from '@tanstack/react-table'
 
 import { formatDate } from '@/shared/lib/utils/date'
-import type { DocumentAttribute, DocumentEntry } from '../types/document-type'
+import type { DocumentAttribute } from '@/entities/document-type'
+import type { DocumentEntry } from '../types/document-type'
 import { useDocumentEntries } from '../lib/hooks/use-document-entries'
 
 interface DocumentTableProps {

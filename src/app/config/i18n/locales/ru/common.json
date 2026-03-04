@@ -91,6 +91,10 @@
     "reports": "Отчёты",
     "more": "Ещё"
   },
+  "documentEntry": {
+    "newTitle": "{{name}} — новый",
+    "editTitle": "{{name}} — {{number}}"
+  },
   "documentTable": {
     "createdAt": "Дата",
     "number": "Номер",

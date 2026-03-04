@@ -91,6 +91,10 @@
     "reports": "Есептер",
     "more": "Тағы"
   },
+  "documentEntry": {
+    "newTitle": "{{name}} — жаңа",
+    "editTitle": "{{name}} — {{number}}"
+  },
   "documentTable": {
     "createdAt": "Күні",
     "number": "Нөмір",

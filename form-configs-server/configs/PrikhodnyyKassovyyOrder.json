@@ -1,0 +1,180 @@
+{
+  "name": "PrihodniKassoviiOrder",
+  "title": "Приходный кассовый ордер",
+  "layout": {
+    "type": "VStack",
+    "gap": 4,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              { "type": "Field", "code": "VidOperacii", "fieldType": "select" },
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "Nomer",
+                    "fieldType": "text",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Data",
+                    "fieldType": "datetime",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "Organizaciya",
+                "fieldType": "reference"
+              },
+              {
+                "type": "Field",
+                "code": "Podrazdelenie",
+                "fieldType": "reference"
+              },
+              { "type": "Field", "code": "Kassa", "fieldType": "reference" },
+              {
+                "type": "Field",
+                "code": "SummaDokumenta",
+                "fieldType": "decimal"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              { "type": "Label", "text": "Основание", "variant": "link" },
+              {
+                "type": "Field",
+                "code": "IstochnikFinansirovaniya",
+                "fieldType": "reference"
+              },
+              {
+                "type": "Field",
+                "code": "Specifika",
+                "fieldType": "reference"
+              },
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "SchetKassy",
+                    "fieldType": "reference",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "StatyaDDS",
+                    "fieldType": "reference",
+                    "flex": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      { "type": "Separator" },
+      {
+        "type": "Tabs",
+        "panes": [
+          {
+            "key": "payment",
+            "label": "Оплата от покупателя",
+            "children": [
+              {
+                "type": "HStack",
+                "gap": 6,
+                "align": "stretch",
+                "children": [
+                  {
+                    "type": "VStack",
+                    "flex": 1,
+                    "gap": 3,
+                    "children": [
+                      {
+                        "type": "HStack",
+                        "gap": 3,
+                        "children": [
+                          {
+                            "type": "Field",
+                            "code": "SchetUcheta",
+                            "fieldType": "reference",
+                            "flex": 1
+                          },
+                          {
+                            "type": "Field",
+                            "code": "SchetAvansov",
+                            "fieldType": "reference",
+                            "flex": 1
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Field",
+                        "code": "DogovorKontragenta",
+                        "fieldType": "reference"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "VStack",
+                    "flex": 1,
+                    "gap": 3,
+                    "children": [
+                      {
+                        "type": "Field",
+                        "code": "Kontragent",
+                        "fieldType": "reference"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "print",
+            "label": "Печать",
+            "children": []
+          }
+        ]
+      },
+      { "type": "Separator" },
+      {
+        "type": "HStack",
+        "gap": 3,
+        "children": [
+          {
+            "type": "Field",
+            "code": "Kommentariy",
+            "fieldType": "textarea",
+            "flex": 1
+          },
+          {
+            "type": "Field",
+            "code": "Otvetstvennyy",
+            "fieldType": "reference",
+            "flex": 1
+          }
+        ]
+      }
+    ]
+  }
+}

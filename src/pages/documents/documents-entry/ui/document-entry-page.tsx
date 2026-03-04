@@ -63,7 +63,7 @@ export const DocumentEntryPage = () => {
       <PageHeader title={pageTitle} />
       <DocumentFormToolbar />
 
-      <div className="flex flex-1 flex-col gap-4 rounded-md border border-ui-03 p-6">
+      <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">
         {isLoading ? (
           <div className="flex items-center justify-center py-8 text-ui-05">
             ...

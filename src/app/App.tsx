@@ -22,11 +22,6 @@ const DocumentEntryPage = lazy(() =>
     default: m.DocumentEntryPage,
   }))
 )
-const FormConfigsPage = lazy(() =>
-  import('@/pages/form-configs').then((m) => ({
-    default: m.FormConfigsPage,
-  }))
-)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -49,7 +44,6 @@ const AppRoutes = () => {
             path="/modules/:pageCode/document/:moduleCode/:entryId"
             element={<DocumentEntryPage />}
           />
-          <Route path="/form-configs/:name?" element={<FormConfigsPage />} />
         </Routes>
       </Suspense>
     </ErrorBoundary>

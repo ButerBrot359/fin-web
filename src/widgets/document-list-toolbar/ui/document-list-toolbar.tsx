@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
@@ -15,12 +16,22 @@ import { SearchInput } from '@/shared/ui/inputs'
 
 export const DocumentListToolbar = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { pageCode, moduleCode } = useParams()
   const [search, setSearch] = useState('')
+
+  const handleCreate = () => {
+    if (!pageCode || !moduleCode) return
+    void navigate(`/modules/${pageCode}/document/${moduleCode}/new`)
+  }
 
   return (
     <div className="flex items-center justify-between pb-3">
       <div className="flex items-center gap-2">
-        <GreenAccentButton sx={{ textTransform: 'none' }}>
+        <GreenAccentButton
+          onClick={handleCreate}
+          sx={{ textTransform: 'none' }}
+        >
           <Typography variant="body2"> {t('actions.create')}</Typography>
         </GreenAccentButton>
 

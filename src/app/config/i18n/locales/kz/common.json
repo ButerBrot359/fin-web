@@ -83,6 +83,14 @@
     "reports": "Есептер",
     "more": "Тағы"
   },
+  "documentFormToolbar": {
+    "postAndClose": "Өткізу және жабу",
+    "save": "Жазу",
+    "post": "Өткізу",
+    "print": "Басып шығару",
+    "reports": "Есептер",
+    "more": "Тағы"
+  },
   "documentTable": {
     "createdAt": "Күні",
     "number": "Нөмір",

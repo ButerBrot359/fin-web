@@ -85,15 +85,11 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
     return [createdAtColumn, ...attributeColumns, nameColumn]
   }, [attributes, i18n.language, t])
 
-  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: entries,
     columns,
     getCoreRowModel: getCoreRowModel(),
   })
-
-  console.log(entries)
-  console.log(columns)
 
   return (
     <div className="min-h-0 flex-1 overflow-auto pb-2">

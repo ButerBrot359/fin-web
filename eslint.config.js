@@ -46,6 +46,7 @@ export default tseslint.config(
         { checksVoidReturn: { attributes: false } },
       ],
       '@typescript-eslint/no-non-null-assertion': 'off',
+      'react-hooks/incompatible-library': 'off',
     },
   }
 )

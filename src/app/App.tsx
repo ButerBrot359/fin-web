@@ -12,7 +12,14 @@ const ModulePage = lazy(() =>
   import('@/pages/module').then((m) => ({ default: m.ModulePage }))
 )
 const DocumentPage = lazy(() =>
-  import('@/pages/document').then((m) => ({ default: m.DocumentPage }))
+  import('@/pages/documents/document-list').then((m) => ({
+    default: m.DocumentPage,
+  }))
+)
+const DocumentEntryPage = lazy(() =>
+  import('@/pages/documents/documents-entry').then((m) => ({
+    default: m.DocumentEntryPage,
+  }))
 )
 
 function App() {
@@ -26,6 +33,14 @@ function App() {
             <Route
               path="/modules/:pageCode/document/:moduleCode"
               element={<DocumentPage />}
+            />
+            <Route
+              path="/modules/:pageCode/document/:moduleCode/new"
+              element={<DocumentEntryPage />}
+            />
+            <Route
+              path="/modules/:pageCode/document/:moduleCode/:entryId"
+              element={<DocumentEntryPage />}
             />
           </Routes>
         </Suspense>

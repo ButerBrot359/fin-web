@@ -83,6 +83,14 @@
     "reports": "Отчёты",
     "more": "Ещё"
   },
+  "documentFormToolbar": {
+    "postAndClose": "Провести и закрыть",
+    "save": "Записать",
+    "post": "Провести",
+    "print": "Печать",
+    "reports": "Отчёты",
+    "more": "Ещё"
+  },
   "documentTable": {
     "createdAt": "Дата",
     "number": "Номер",

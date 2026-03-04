@@ -1,7 +1,18 @@
 export { getFormConfig, getFormConfigList } from './api/form-config'
-export { useFormConfig } from './lib/hooks/use-form-config'
+export {
+  useFormConfig,
+  useOptionalFormConfig,
+} from './lib/hooks/use-form-config'
 export type {
   FormConfig,
-  FormConfigField,
-  FormConfigFieldOption,
+  FormNode,
+  VStackNode,
+  HStackNode,
+  FieldNode,
+  SeparatorNode,
+  LabelNode,
+  TabsNode,
+  TabPane,
+  FieldType,
+  LabelVariant,
 } from './types/form-config'

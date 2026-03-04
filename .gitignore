@@ -12,6 +12,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+mock-server/dist
 *.local
 
 # Editor directories and files

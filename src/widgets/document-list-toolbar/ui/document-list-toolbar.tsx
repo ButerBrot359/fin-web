@@ -39,10 +39,10 @@ export const DocumentListToolbar = () => {
           <IconButtonWrapper ariaLabel={t('actions.create')}>
             <AddDocumentIcon className="h-5 w-5" />
           </IconButtonWrapper>
-          <IconButtonWrapper ariaLabel="Дт/Кт">
+          <IconButtonWrapper ariaLabel={t('actions.debitCredit')}>
             <DebetKreditIcon className="h-5 w-5" />
           </IconButtonWrapper>
-          <IconButtonWrapper ariaLabel="Layers">
+          <IconButtonWrapper ariaLabel={t('actions.layers')}>
             <LayersIcon className="h-5 w-5" />
           </IconButtonWrapper>
         </div>

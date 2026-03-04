@@ -49,13 +49,13 @@ export const DocumentFormToolbar = ({
           </Typography>
         </button>
         <DropdownButton label={t('documentFormToolbar.print')} />
-        <IconButtonWrapper ariaLabel="Debet/Kredit">
+        <IconButtonWrapper ariaLabel={t('actions.debitCredit')}>
           <DebetKreditIcon className="h-5 w-5" />
         </IconButtonWrapper>
-        <IconButtonWrapper ariaLabel="Layers">
+        <IconButtonWrapper ariaLabel={t('actions.layers')}>
           <LayersIcon className="h-5 w-5" />
         </IconButtonWrapper>
-        <IconButtonWrapper ariaLabel="Link">
+        <IconButtonWrapper ariaLabel={t('actions.link')}>
           <LinkIcon className="h-5 w-5" />
         </IconButtonWrapper>
         <DropdownButton label={t('documentFormToolbar.reports')} />

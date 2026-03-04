@@ -1,3 +1,5 @@
+import type { ApiResponse } from '@/shared/types/api.types'
+
 export enum ModuleElementType {
   Document = 'Document',
   Dictionary = 'Dictionary',
@@ -20,3 +22,5 @@ export interface ModuleSection {
 export type ModuleColumn = ModuleSection[]
 
 export type ModuleItems = ModuleColumn[]
+
+export type ModuleResponseData = ApiResponse<{ items: ModuleItems }>

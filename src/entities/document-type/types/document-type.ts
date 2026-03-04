@@ -1,18 +1,19 @@
-export interface DocumentTypeResponseData {
-  data: {
-    id: number
-    code: string
-    code1C: string
-    nameRu: string
-    nameKz: string
-    description: string
-    isHierarchical: boolean
-    isActive: boolean
-    isTablePart: boolean
-    attributes: DocumentAttribute[]
-  }
-  success: boolean
+import type { ApiResponse } from '@/shared/types/api.types'
+
+export interface DocumentType {
+  id: number
+  code: string
+  code1C: string
+  nameRu: string
+  nameKz: string
+  description: string
+  isHierarchical: boolean
+  isActive: boolean
+  isTablePart: boolean
+  attributes: DocumentAttribute[]
 }
+
+export type DocumentTypeResponseData = ApiResponse<DocumentType>
 
 export interface DocumentAttribute {
   id: number

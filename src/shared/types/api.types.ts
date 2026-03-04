@@ -11,3 +11,19 @@ export interface RequestWithDataConfig extends RequestConfig {
 export interface BlobRequestConfig extends RequestConfig {
   data?: unknown
 }
+
+export interface ApiResponse<T> {
+  data: T
+  success: boolean
+}
+
+export interface PagedResponse<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  number: number
+  size: number
+  first: boolean
+  last: boolean
+  empty: boolean
+}

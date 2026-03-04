@@ -11,8 +11,10 @@ import {
 
 import { formatDate } from '@/shared/lib/utils/date'
 import type { DocumentAttribute } from '@/entities/document-type'
-import type { DocumentEntry } from '../types/document-type'
-import { useDocumentEntries } from '../lib/hooks/use-document-entries'
+import {
+  useDocumentEntries,
+  type DocumentEntry,
+} from '@/entities/document-entry'
 
 interface DocumentTableProps {
   attributes: DocumentAttribute[]

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { IconButton, Typography } from '@mui/material'
+import { useTranslation } from 'react-i18next'
 
 import { FavoriteButton } from '@/features/favorite-button'
 import { NavigationButtons } from '@/features/navigation-buttons'
@@ -12,6 +13,7 @@ interface PageHeaderProps {
 }
 
 export const PageHeader = ({ title }: PageHeaderProps) => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const handleClose = async () => {
@@ -30,13 +32,13 @@ export const PageHeader = ({ title }: PageHeaderProps) => {
       </div>
 
       <div className="flex items-center">
-        <IconButton aria-label="Link">
+        <IconButton aria-label={t('actions.link')}>
           <LinkIcon className="h-5 w-5" />
         </IconButton>
-        <IconButton aria-label="More">
+        <IconButton aria-label={t('actions.more')}>
           <DotsIcon className="h-5 w-5" />
         </IconButton>
-        <IconButton aria-label="Close" onClick={handleClose}>
+        <IconButton aria-label={t('actions.close')} onClick={handleClose}>
           <CrossIcon className="h-5 w-5" />
         </IconButton>
       </div>

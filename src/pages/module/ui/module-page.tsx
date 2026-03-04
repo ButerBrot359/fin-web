@@ -1,9 +1,9 @@
 import { Suspense } from 'react'
 import { useParams } from 'react-router-dom'
 
+import { useModule } from '@/entities/module'
 import { ModuleToolbar } from '@/widgets/module-toolbar'
 
-import { useModule } from '../lib/hooks/use-module'
 import { usePageTitle } from '../lib/hooks/use-page-title'
 import { ModuleNavList } from './module-nav-list'
 import { ModuleNavSkeleton } from './module-nav-skeleton'

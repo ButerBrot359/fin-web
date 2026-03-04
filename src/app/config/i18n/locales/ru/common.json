@@ -28,7 +28,12 @@
     "create": "Создать",
     "search": "Поиск",
     "back": "Назад",
-    "confirm": "Подтвердить"
+    "confirm": "Подтвердить",
+    "debitCredit": "Дт/Кт",
+    "layers": "Слои",
+    "link": "Ссылка",
+    "more": "Ещё",
+    "close": "Закрыть"
   },
   "bankPage": {
     "financing": {
@@ -110,6 +115,8 @@
   "errors": {
     "required": "Обязательное поле",
     "network": "Ошибка сети",
-    "unknown": "Неизвестная ошибка"
+    "unknown": "Неизвестная ошибка",
+    "somethingWentWrong": "Что-то пошло не так",
+    "tryAgain": "Попробовать снова"
   }
 }

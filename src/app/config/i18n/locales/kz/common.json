@@ -28,7 +28,12 @@
     "create": "Жасау",
     "search": "Іздеу",
     "back": "Артқа",
-    "confirm": "Растау"
+    "confirm": "Растау",
+    "debitCredit": "Дт/Кт",
+    "layers": "Қабаттар",
+    "link": "Сілтеме",
+    "more": "Тағы",
+    "close": "Жабу"
   },
   "bankPage": {
     "financing": {
@@ -110,6 +115,8 @@
   "errors": {
     "required": "Міндетті өріс",
     "network": "Желі қатесі",
-    "unknown": "Белгісіз қате"
+    "unknown": "Белгісіз қате",
+    "somethingWentWrong": "Бір нәрсе дұрыс болмады",
+    "tryAgain": "Қайталап көру"
   }
 }

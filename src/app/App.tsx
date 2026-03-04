@@ -5,6 +5,7 @@ import { Sidebar } from '@/widgets/sidebar'
 import { TopBar } from '@/widgets/top-bar'
 import { MainPage } from '@/pages/main'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
+import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
 
 import { Layout } from './layout/layout'
 
@@ -26,24 +27,26 @@ function App() {
   return (
     <BrowserRouter>
       <Layout sidebar={<Sidebar />} header={<TopBar />}>
-        <Suspense fallback={<PageSkeleton />}>
-          <Routes>
-            <Route path="/" element={<MainPage />} />
-            <Route path="/modules/:pageCode" element={<ModulePage />} />
-            <Route
-              path="/modules/:pageCode/document/:moduleCode"
-              element={<DocumentPage />}
-            />
-            <Route
-              path="/modules/:pageCode/document/:moduleCode/new"
-              element={<DocumentEntryPage />}
-            />
-            <Route
-              path="/modules/:pageCode/document/:moduleCode/:entryId"
-              element={<DocumentEntryPage />}
-            />
-          </Routes>
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<PageSkeleton />}>
+            <Routes>
+              <Route path="/" element={<MainPage />} />
+              <Route path="/modules/:pageCode" element={<ModulePage />} />
+              <Route
+                path="/modules/:pageCode/document/:moduleCode"
+                element={<DocumentPage />}
+              />
+              <Route
+                path="/modules/:pageCode/document/:moduleCode/new"
+                element={<DocumentEntryPage />}
+              />
+              <Route
+                path="/modules/:pageCode/document/:moduleCode/:entryId"
+                element={<DocumentEntryPage />}
+              />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </Layout>
     </BrowserRouter>
   )

@@ -17,36 +17,52 @@ const instance = axios.create({
   },
 })
 
-const makeRequest = (
+const makeRequest = <T>(
   config: AxiosRequestConfig
-): Promise<AxiosResponse<unknown>> =>
-  instance.request(config).catch((error: unknown) => {
+): Promise<AxiosResponse<T>> =>
+  instance.request<T>(config).catch((error: unknown) => {
     if (error instanceof AxiosError) {
       throw error.response?.data
     }
     throw error
   })
 
-const get = ({ url, params, signal }: RequestConfig) =>
-  makeRequest({ method: 'GET', url, params, signal })
+const get = <T = unknown>({ url, params, signal }: RequestConfig) =>
+  makeRequest<T>({ method: 'GET', url, params, signal })
 
-const post = ({ url, data, params, signal }: RequestWithDataConfig) =>
-  makeRequest({ method: 'POST', url, data, params, signal })
+const post = <T = unknown>({
+  url,
+  data,
+  params,
+  signal,
+}: RequestWithDataConfig) =>
+  makeRequest<T>({ method: 'POST', url, data, params, signal })
 
-const put = ({ url, data, signal }: RequestWithDataConfig) =>
-  makeRequest({ method: 'PUT', url, data, signal })
+const put = <T = unknown>({ url, data, signal }: RequestWithDataConfig) =>
+  makeRequest<T>({ method: 'PUT', url, data, signal })
 
-const patch = ({ url, data, signal }: RequestWithDataConfig) =>
-  makeRequest({ method: 'PATCH', url, data, signal })
+const patch = <T = unknown>({ url, data, signal }: RequestWithDataConfig) =>
+  makeRequest<T>({ method: 'PATCH', url, data, signal })
 
-const _delete = ({ url, data, params, signal }: RequestWithDataConfig) =>
-  makeRequest({ method: 'DELETE', url, data, params, signal })
+const _delete = <T = unknown>({
+  url,
+  data,
+  params,
+  signal,
+}: RequestWithDataConfig) =>
+  makeRequest<T>({ method: 'DELETE', url, data, params, signal })
 
 const getFileBlob = ({ url, params, signal }: RequestConfig) =>
-  makeRequest({ method: 'GET', url, params, responseType: 'blob', signal })
+  makeRequest<Blob>({
+    method: 'GET',
+    url,
+    params,
+    responseType: 'blob',
+    signal,
+  })
 
 const postFileBlob = ({ url, data, params, signal }: BlobRequestConfig) =>
-  makeRequest({
+  makeRequest<Blob>({
     method: 'POST',
     url,
     data,

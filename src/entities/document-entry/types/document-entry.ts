@@ -1,3 +1,5 @@
+import type { ApiResponse, PagedResponse } from '@/shared/types/api.types'
+
 export interface DocumentEntry {
   id: number
   documentTypeCode: string
@@ -19,18 +21,6 @@ export interface DocumentEntry {
   updatedBy: string
 }
 
-export interface PagedResponse<T> {
-  content: T[]
-  totalElements: number
-  totalPages: number
-  number: number
-  size: number
-  first: boolean
-  last: boolean
-  empty: boolean
-}
-
-export interface DocumentEntriesResponseData {
-  data: PagedResponse<DocumentEntry>
-  success: boolean
-}
+export type DocumentEntriesResponseData = ApiResponse<
+  PagedResponse<DocumentEntry>
+>

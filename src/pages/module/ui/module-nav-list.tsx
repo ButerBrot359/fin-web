@@ -6,7 +6,7 @@ import { FavoriteButton } from '@/features/favorite-button'
 import ArrowRightIcon from '@/shared/assets/icons/arrow-right-small-blue.svg'
 import { cn } from '@/shared/lib/utils/cn'
 
-import type { ModuleElement, ModuleItems } from '../types/module'
+import type { ModuleElement, ModuleItems } from '@/entities/module'
 
 interface NavItemProps {
   item: ModuleElement

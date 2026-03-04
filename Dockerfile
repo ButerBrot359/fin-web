@@ -3,12 +3,24 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 ARG VITE_API_BASE_URL
+ARG VITE_FORM_CONFIGS_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_FORM_CONFIGS_URL=$VITE_FORM_CONFIGS_URL
 
 COPY package.json package-lock.json* ./
 RUN npm ci
 
 COPY . .
+RUN npm run build
+
+FROM node:20-alpine AS configs-build
+
+WORKDIR /form-configs-server
+
+COPY form-configs-server/package.json form-configs-server/package-lock.json* ./
+RUN npm ci
+
+COPY form-configs-server/ .
 RUN npm run build
 
 FROM node:20-alpine
@@ -19,6 +31,14 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
 RUN npm install vite
 
-EXPOSE 4173
+COPY --from=configs-build /form-configs-server/dist ./form-configs-server/dist
+COPY --from=configs-build /form-configs-server/configs ./form-configs-server/configs
+COPY --from=configs-build /form-configs-server/package.json ./form-configs-server/
+RUN cd form-configs-server && npm install --omit=dev
 
-CMD ["npx", "vite", "preview", "--host", "0.0.0.0"]
+COPY start.sh ./
+RUN chmod +x start.sh
+
+EXPOSE 4173 3001
+
+CMD ["./start.sh"]

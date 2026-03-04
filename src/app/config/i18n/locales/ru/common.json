@@ -11,7 +11,8 @@
       "reports": "Отчёты",
       "ourCompany": "Наше учреждение",
       "flk": "ФЛК",
-      "regulatedFinReport": "Регламентированная настраиваемая отчётность"
+      "regulatedFinReport": "Регламентированная настраиваемая отчётность",
+      "formConfigs": "Конфиги форм"
     }
   },
   "topBar": {
@@ -28,7 +29,12 @@
     "create": "Создать",
     "search": "Поиск",
     "back": "Назад",
-    "confirm": "Подтвердить"
+    "confirm": "Подтвердить",
+    "debitCredit": "Дт/Кт",
+    "layers": "Слои",
+    "link": "Ссылка",
+    "more": "Ещё",
+    "close": "Закрыть"
   },
   "bankPage": {
     "financing": {
@@ -83,6 +89,18 @@
     "reports": "Отчёты",
     "more": "Ещё"
   },
+  "documentFormToolbar": {
+    "postAndClose": "Провести и закрыть",
+    "save": "Записать",
+    "post": "Провести",
+    "print": "Печать",
+    "reports": "Отчёты",
+    "more": "Ещё"
+  },
+  "documentEntry": {
+    "newTitle": "{{name}} — новый",
+    "editTitle": "{{name}} — {{number}}"
+  },
   "documentTable": {
     "createdAt": "Дата",
     "number": "Номер",
@@ -98,6 +116,8 @@
   "errors": {
     "required": "Обязательное поле",
     "network": "Ошибка сети",
-    "unknown": "Неизвестная ошибка"
+    "unknown": "Неизвестная ошибка",
+    "somethingWentWrong": "Что-то пошло не так",
+    "tryAgain": "Попробовать снова"
   }
 }

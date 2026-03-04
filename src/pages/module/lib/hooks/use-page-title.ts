@@ -11,6 +11,8 @@ export const usePageTitle = (path: string, fallback: string) => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
+  // Navigation items are fetched by Sidebar (always mounted).
+  // TODO: Move fetchNavigationItems to entities/navigation and use useQuery here.
   const navigationItems =
     queryClient.getQueryData<NavigationItem[]>(['navigation-items']) ?? []
   const navItem = navigationItems.find((item) => item.path === path)

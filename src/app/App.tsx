@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 
 import { Sidebar } from '@/widgets/sidebar'
 import { TopBar } from '@/widgets/top-bar'
@@ -23,30 +23,38 @@ const DocumentEntryPage = lazy(() =>
   }))
 )
 
+const AppRoutes = () => {
+  const location = useLocation()
+
+  return (
+    <ErrorBoundary key={location.pathname}>
+      <Suspense fallback={<PageSkeleton />}>
+        <Routes>
+          <Route path="/" element={<MainPage />} />
+          <Route path="/modules/:pageCode" element={<ModulePage />} />
+          <Route
+            path="/modules/:pageCode/document/:moduleCode"
+            element={<DocumentPage />}
+          />
+          <Route
+            path="/modules/:pageCode/document/:moduleCode/new"
+            element={<DocumentEntryPage />}
+          />
+          <Route
+            path="/modules/:pageCode/document/:moduleCode/:entryId"
+            element={<DocumentEntryPage />}
+          />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
+  )
+}
+
 function App() {
   return (
     <BrowserRouter>
       <Layout sidebar={<Sidebar />} header={<TopBar />}>
-        <ErrorBoundary>
-          <Suspense fallback={<PageSkeleton />}>
-            <Routes>
-              <Route path="/" element={<MainPage />} />
-              <Route path="/modules/:pageCode" element={<ModulePage />} />
-              <Route
-                path="/modules/:pageCode/document/:moduleCode"
-                element={<DocumentPage />}
-              />
-              <Route
-                path="/modules/:pageCode/document/:moduleCode/new"
-                element={<DocumentEntryPage />}
-              />
-              <Route
-                path="/modules/:pageCode/document/:moduleCode/:entryId"
-                element={<DocumentEntryPage />}
-              />
-            </Routes>
-          </Suspense>
-        </ErrorBoundary>
+        <AppRoutes />
       </Layout>
     </BrowserRouter>
   )

@@ -9,6 +9,7 @@ interface ErrorBoundaryProps {
 
 interface ErrorBoundaryState {
   hasError: boolean
+  error: Error | null
 }
 
 export class ErrorBoundary extends Component<
@@ -17,11 +18,11 @@ export class ErrorBoundary extends Component<
 > {
   constructor(props: ErrorBoundaryProps) {
     super(props)
-    this.state = { hasError: false }
+    this.state = { hasError: false, error: null }
   }
 
-  static getDerivedStateFromError(): ErrorBoundaryState {
-    return { hasError: true }
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -29,7 +30,7 @@ export class ErrorBoundary extends Component<
   }
 
   private handleReset = () => {
-    this.setState({ hasError: false })
+    this.setState({ hasError: false, error: null })
   }
 
   render() {
@@ -43,10 +44,18 @@ export class ErrorBoundary extends Component<
           <Typography variant="h5" className="text-ui-06">
             {i18n.t('errors.somethingWentWrong')}
           </Typography>
+          {this.state.error && (
+            <Typography
+              variant="body2"
+              className="max-w-md text-center text-support-01"
+            >
+              {this.state.error.message}
+            </Typography>
+          )}
           <button
             type="button"
             onClick={this.handleReset}
-            className="cursor-pointer rounded-lg bg-accent-01 px-4 py-2.5 text-white hover:bg-accent-01/80"
+            className="cursor-pointer rounded-lg bg-accent-01 px-4 py-2.5 text-ui-06 hover:bg-accent-01/80"
           >
             <Typography variant="body2">{i18n.t('errors.tryAgain')}</Typography>
           </button>

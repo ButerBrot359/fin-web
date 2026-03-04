@@ -62,4 +62,10 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     icon: RegulatedFinReportIcon,
     disabled: true,
   },
+  {
+    id: 'form-configs',
+    labelKey: 'sidebar.nav.formConfigs',
+    icon: ReportIcon,
+    path: '/form-configs',
+  },
 ]

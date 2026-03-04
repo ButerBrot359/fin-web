@@ -11,7 +11,8 @@
       "reports": "Есептер",
       "ourCompany": "Біздің мекеме",
       "flk": "ФЛК",
-      "regulatedFinReport": "Реттелетін теңшелетін есептілік"
+      "regulatedFinReport": "Реттелетін теңшелетін есептілік",
+      "formConfigs": "Форма конфигтері"
     }
   },
   "topBar": {

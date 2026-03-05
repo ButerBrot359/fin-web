@@ -10,7 +10,9 @@ interface LabelNodeProps {
 
 export const LabelNode = ({ node }: LabelNodeProps) => {
   const { t } = useTranslation()
-  const text = node.textKey ? t(node.textKey) : (node.text ?? '')
+  const text = node.textKey
+    ? (t(node.textKey as never) as string)
+    : (node.text ?? '')
 
   const variant = node.variant ?? 'default'
 

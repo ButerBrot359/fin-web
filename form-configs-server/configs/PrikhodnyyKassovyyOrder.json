@@ -15,7 +15,11 @@
             "flex": 1,
             "gap": 3,
             "children": [
-              { "type": "Field", "code": "VidOperacii", "fieldType": "select" },
+              {
+                "type": "Field",
+                "code": "VidOperatsii",
+                "fieldType": "select"
+              },
               {
                 "type": "HStack",
                 "gap": 3,
@@ -36,12 +40,12 @@
               },
               {
                 "type": "Field",
-                "code": "Organizaciya",
+                "code": "Organizatsiya",
                 "fieldType": "reference"
               },
               {
                 "type": "Field",
-                "code": "Podrazdelenie",
+                "code": "PodrazdelenieOrganizatsii",
                 "fieldType": "reference"
               },
               { "type": "Field", "code": "Kassa", "fieldType": "reference" },
@@ -65,7 +69,7 @@
               },
               {
                 "type": "Field",
-                "code": "Specifika",
+                "code": "Spetsifika",
                 "fieldType": "reference"
               },
               {
@@ -113,13 +117,13 @@
                         "children": [
                           {
                             "type": "Field",
-                            "code": "SchetUcheta",
+                            "code": "SchetUchetaBU",
                             "fieldType": "reference",
                             "flex": 1
                           },
                           {
                             "type": "Field",
-                            "code": "SchetAvansov",
+                            "code": "SchetAvansovBU",
                             "fieldType": "reference",
                             "flex": 1
                           }
@@ -151,7 +155,44 @@
           {
             "key": "print",
             "label": "Печать",
-            "children": []
+            "children": [
+              {
+                "type": "HStack",
+                "gap": 6,
+                "align": "stretch",
+                "children": [
+                  {
+                    "type": "VStack",
+                    "flex": 1,
+                    "gap": 3,
+                    "children": [
+                      {
+                        "type": "Field",
+                        "code": "PrinyatoOt",
+                        "fieldType": "text"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "Osnovanie",
+                        "fieldType": "text"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "VStack",
+                    "flex": 1,
+                    "gap": 3,
+                    "children": [
+                      {
+                        "type": "Field",
+                        "code": "Prilozhenie",
+                        "fieldType": "text"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       },

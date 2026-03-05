@@ -97,6 +97,10 @@
     "reports": "Отчёты",
     "more": "Ещё"
   },
+  "selectOperationDialog": {
+    "title": "Выберите операцию",
+    "next": "Далее"
+  },
   "documentEntry": {
     "newTitle": "{{name}} — новый",
     "editTitle": "{{name}} — {{number}}"

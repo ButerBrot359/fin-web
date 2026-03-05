@@ -1,12 +1,14 @@
-import { useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useMemo } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
+import { useQuery } from '@tanstack/react-query'
 
 import {
   useDocumentType,
   type DocumentAttribute,
 } from '@/entities/document-type'
+import { getNewDocumentEntry } from '@/entities/document-entry'
 import {
   useOptionalFormConfig,
   type FormConfig,
@@ -33,15 +35,35 @@ const buildFallbackConfig = (attributes: DocumentAttribute[]): FormConfig => ({
 
 export const DocumentEntryPage = () => {
   const { moduleCode = '', entryId } = useParams()
+  const [searchParams] = useSearchParams()
   const { t } = useTranslation()
   const { title, attributes } = useDocumentType(moduleCode)
   const { config, isLoading } = useOptionalFormConfig(moduleCode)
+
+  const isNew = !entryId || entryId === 'new'
+  const vidOperatsii = searchParams.get('VidOperatsii')
+
+  const newEntryParams = useMemo(() => {
+    if (!vidOperatsii) return undefined
+    return { VidOperatsii: vidOperatsii }
+  }, [vidOperatsii])
+
+  const { data: newEntryData } = useQuery({
+    queryKey: ['document-entry-new', moduleCode, newEntryParams],
+    queryFn: () => getNewDocumentEntry(moduleCode, newEntryParams),
+    enabled: isNew && !!newEntryParams,
+    select: (response) => response.data.data,
+  })
 
   const form = useForm<Record<string, unknown>>({
     defaultValues: {},
   })
 
-  const isNew = !entryId || entryId === 'new'
+  useEffect(() => {
+    if (newEntryData?.attributes) {
+      form.reset(newEntryData.attributes)
+    }
+  }, [newEntryData, form])
 
   const pageTitle = isNew
     ? t('documentEntry.newTitle', { name: title })

@@ -24,3 +24,5 @@ export interface DocumentEntry {
 export type DocumentEntriesResponseData = ApiResponse<
   PagedResponse<DocumentEntry>
 >
+
+export type DocumentEntryNewResponseData = ApiResponse<DocumentEntry>

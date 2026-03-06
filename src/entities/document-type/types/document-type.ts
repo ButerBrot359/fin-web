@@ -15,6 +15,24 @@ export interface DocumentType {
 
 export type DocumentTypeResponseData = ApiResponse<DocumentType>
 
+export interface EnumsValue {
+  id: number
+  code: string
+  code1C: string
+  name: string
+  enumCode: string
+  isActive: boolean
+}
+
+export interface OnGetFormField {
+  fieldName: string
+  elements: EnumsValue[]
+}
+
+export type OnGetFormResponseData = ApiResponse<
+  OnGetFormField | OnGetFormField[]
+>
+
 export interface DocumentAttribute {
   id: number
   code: string

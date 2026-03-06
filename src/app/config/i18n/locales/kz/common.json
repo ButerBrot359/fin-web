@@ -97,6 +97,10 @@
     "reports": "Есептер",
     "more": "Тағы"
   },
+  "selectOperationDialog": {
+    "title": "Операцияны таңдаңыз",
+    "next": "Келесі"
+  },
   "documentEntry": {
     "newTitle": "{{name}} — жаңа",
     "editTitle": "{{name}} — {{number}}"

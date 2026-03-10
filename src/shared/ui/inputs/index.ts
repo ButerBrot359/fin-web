@@ -1,1 +1,7 @@
 export { SearchInput } from './search-input'
+export { TextInput } from './text-input'
+export { NumberInput } from './number-input'
+export { TextareaInput } from './textarea-input'
+export { DateTimeInput } from './datetime-input'
+export { SelectInput } from './select-input'
+export { ReferenceInput } from './reference-input'

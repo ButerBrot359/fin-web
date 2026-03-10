@@ -55,8 +55,6 @@ export const DocumentEntryPage = () => {
     select: (response) => response.data.data,
   })
 
-  console.log(newEntryData, 1231)
-
   const form = useForm<Record<string, unknown>>({
     defaultValues: {},
   })

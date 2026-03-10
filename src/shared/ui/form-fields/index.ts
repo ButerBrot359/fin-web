@@ -1,4 +1,3 @@
-export { FormFieldWrapper } from './form-field-wrapper'
 export { TextField } from './text-field'
 export { NumberField } from './number-field'
 export { SelectField } from './select-field'

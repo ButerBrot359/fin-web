@@ -11,6 +11,8 @@ const DATA_TYPE_MAP: Record<string, FieldType> = {
   DICTIONARY: 'reference',
   REFERENCE: 'reference',
   ENUM: 'select',
+  ENUMS: 'select',
+  ACCOUNT_PLAN: 'reference',
 }
 
 export const mapDataType = (dataType: string): FieldType =>

@@ -1,5 +1,7 @@
 import { Controller, type Control } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 
+import { getDisplayValue } from '@/shared/lib/utils/get-display-value'
 import { SelectInput } from '@/shared/ui/inputs/select-input'
 
 interface SelectFieldProps {
@@ -14,20 +16,24 @@ export const SelectField = ({
   label,
   control,
   readOnly,
-}: SelectFieldProps) => (
-  <Controller
-    name={name}
-    control={control}
-    render={({ field: { ref, ...field }, fieldState }) => (
-      <SelectInput
-        {...field}
-        inputRef={ref}
-        value={(field.value as string | undefined) ?? ''}
-        label={label}
-        readOnly={readOnly}
-        error={!!fieldState.error}
-        helperText={fieldState.error?.message}
-      />
-    )}
-  />
-)
+}: SelectFieldProps) => {
+  const { i18n } = useTranslation()
+
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field: { ref, ...field }, fieldState }) => (
+        <SelectInput
+          {...field}
+          inputRef={ref}
+          value={getDisplayValue(field.value, i18n.language)}
+          label={label}
+          readOnly={readOnly}
+          error={!!fieldState.error}
+          helperText={fieldState.error?.message}
+        />
+      )}
+    />
+  )
+}

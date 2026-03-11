@@ -16,7 +16,8 @@ interface FieldNodeProps {
 }
 
 export const FieldNode = ({ node }: FieldNodeProps) => {
-  const { attributeMap, form, readOnly, language } = useFormRendererContext()
+  const { attributeMap, form, readOnly, language, optionsMap } =
+    useFormRendererContext()
   const attribute = attributeMap.get(node.code)
 
   const label =
@@ -37,6 +38,8 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
     readOnly,
   }
 
+  const options = optionsMap[node.code] ?? []
+
   const wrapper = (content: React.ReactNode) => (
     <div style={{ flex: node.flex }}>{content}</div>
   )
@@ -49,9 +52,9 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
     case 'decimal':
       return wrapper(<NumberField {...commonProps} decimal />)
     case 'select':
-      return wrapper(<SelectField {...commonProps} />)
+      return wrapper(<SelectField {...commonProps} options={options} />)
     case 'reference':
-      return wrapper(<ReferenceField {...commonProps} />)
+      return wrapper(<ReferenceField {...commonProps} options={options} />)
     case 'datetime':
       return wrapper(<DateTimeField {...commonProps} />)
     case 'date':

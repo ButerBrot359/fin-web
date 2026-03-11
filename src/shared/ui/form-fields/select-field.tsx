@@ -1,7 +1,6 @@
 import { Controller, type Control } from 'react-hook-form'
-import { useTranslation } from 'react-i18next'
 
-import { getDisplayValue } from '@/shared/lib/utils/get-display-value'
+import type { SelectOption } from '@/shared/types/select-option'
 import { SelectInput } from '@/shared/ui/inputs/select-input'
 
 interface SelectFieldProps {
@@ -9,6 +8,8 @@ interface SelectFieldProps {
   label: string
   control: Control<Record<string, unknown>>
   readOnly?: boolean
+  options?: SelectOption[]
+  loading?: boolean
 }
 
 export const SelectField = ({
@@ -16,24 +17,36 @@ export const SelectField = ({
   label,
   control,
   readOnly,
-}: SelectFieldProps) => {
-  const { i18n } = useTranslation()
+  options = [],
+  loading,
+}: SelectFieldProps) => (
+  <Controller
+    name={name}
+    control={control}
+    render={({ field, fieldState }) => {
+      const currentValue =
+        options.find((opt) => {
+          const raw = field.value as Record<string, unknown> | null | undefined
+          if (!raw) return false
+          if (typeof raw === 'object' && 'id' in raw) return opt.id === raw.id
+          if (typeof raw === 'string') return opt.code === raw
+          return false
+        }) ?? null
 
-  return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field: { ref, ...field }, fieldState }) => (
+      return (
         <SelectInput
-          {...field}
-          inputRef={ref}
-          value={getDisplayValue(field.value, i18n.language)}
+          value={currentValue}
+          options={options}
+          onChange={(newOption) => {
+            field.onChange(newOption?.raw ?? null)
+          }}
           label={label}
           readOnly={readOnly}
+          loading={loading}
           error={!!fieldState.error}
           helperText={fieldState.error?.message}
         />
-      )}
-    />
-  )
-}
+      )
+    }}
+  />
+)

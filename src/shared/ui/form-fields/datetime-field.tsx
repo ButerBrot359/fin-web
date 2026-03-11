@@ -20,11 +20,12 @@ export const DateTimeField = ({
   <Controller
     name={name}
     control={control}
-    render={({ field: { ref, ...field }, fieldState }) => (
+    render={({ field, fieldState }) => (
       <DateTimeInput
-        {...field}
-        inputRef={ref}
         value={(field.value as string | undefined) ?? ''}
+        onChange={(value) => {
+          field.onChange(value)
+        }}
         label={label}
         readOnly={readOnly}
         dateOnly={dateOnly}

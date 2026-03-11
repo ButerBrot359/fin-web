@@ -1,12 +1,5 @@
-import {
-  TextField,
-  type TextFieldProps,
-  InputAdornment,
-  IconButton,
-} from '@mui/material'
+import { TextField, type TextFieldProps, IconButton } from '@mui/material'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
-
-import { baseInputSx } from './input-sx'
 
 type NumberInputProps = Omit<TextFieldProps, 'variant'> & {
   readOnly?: boolean
@@ -36,21 +29,17 @@ export const NumberInput = ({
   return (
     <TextField
       {...rest}
-      variant="filled"
-      fullWidth
       onChange={handleChange}
-      sx={baseInputSx}
       slotProps={{
         ...slotProps,
         input: {
           ...(slotProps?.input as object),
           readOnly,
+          sx: { paddingRight: '4px' },
           endAdornment: (
-            <InputAdornment position="end">
-              <IconButton size="small" tabIndex={-1}>
-                <ArrowDropDownIcon className="text-ui-05" fontSize="small" />
-              </IconButton>
-            </InputAdornment>
+            <IconButton sx={{ p: '4px', borderRadius: '6px' }} tabIndex={-1}>
+              <ArrowDropDownIcon className="text-ui-05" sx={{ fontSize: 20 }} />
+            </IconButton>
           ),
         },
         htmlInput: {

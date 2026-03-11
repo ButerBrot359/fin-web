@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react'
 import { StyledEngineProvider } from '@mui/material'
+import { ThemeProvider } from '@mui/material/styles'
 import { LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { useTranslation } from 'react-i18next'
 import type { Locale } from 'date-fns'
 import { ru, kk } from 'date-fns/locale'
 import type { SupportedLanguage } from '@/app/config/i18n'
+
+import { theme } from '@/app/theme/theme'
 
 const dateFnsLocales: Record<SupportedLanguage, Locale> = {
   ru,
@@ -24,9 +27,14 @@ export const MuiProvider = ({ children }: MuiProviderProps) => {
 
   return (
     <StyledEngineProvider injectFirst>
-      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={locale}>
-        {children}
-      </LocalizationProvider>
+      <ThemeProvider theme={theme}>
+        <LocalizationProvider
+          dateAdapter={AdapterDateFns}
+          adapterLocale={locale}
+        >
+          {children}
+        </LocalizationProvider>
+      </ThemeProvider>
     </StyledEngineProvider>
   )
 }

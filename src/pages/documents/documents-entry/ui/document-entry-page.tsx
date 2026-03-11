@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import {
   useDocumentType,
+  getOnGetForm,
   type DocumentAttribute,
 } from '@/entities/document-type'
 import { getNewDocumentEntry } from '@/entities/document-entry'
@@ -55,7 +56,15 @@ export const DocumentEntryPage = () => {
     select: (response) => response.data.data,
   })
 
-  console.log(attributes, config, newEntryData)
+  const { data: onGetFormData } = useQuery({
+    queryKey: ['on-get-form', moduleCode],
+    queryFn: () => getOnGetForm(moduleCode),
+    staleTime: 5 * 60 * 1000,
+    select: (response) => {
+      const payload = response.data.data
+      return Array.isArray(payload) ? payload : [payload]
+    },
+  })
 
   const form = useForm<Record<string, unknown>>({
     defaultValues: {},
@@ -97,6 +106,7 @@ export const DocumentEntryPage = () => {
             config={formConfig}
             attributes={formAttributes}
             form={form}
+            onGetFormData={onGetFormData}
           />
         )}
       </div>

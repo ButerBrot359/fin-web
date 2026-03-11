@@ -1,44 +1,88 @@
 import {
+  Autocomplete,
   TextField,
-  type TextFieldProps,
-  InputAdornment,
   IconButton,
+  type TextFieldProps,
 } from '@mui/material'
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import { useTranslation } from 'react-i18next'
 
-import { baseInputSx } from './input-sx'
+import type { SelectOption } from '@/shared/types/select-option'
 
-type ReferenceInputProps = Omit<TextFieldProps, 'variant'> & {
+interface ReferenceInputProps {
+  value: SelectOption | null
+  options: SelectOption[]
+  onChange: (value: SelectOption | null) => void
+  label?: string
   readOnly?: boolean
+  error?: boolean
+  helperText?: string
+  loading?: boolean
+  onCopy?: () => void
+  slotProps?: TextFieldProps['slotProps']
 }
 
 export const ReferenceInput = ({
+  value,
+  options,
+  onChange,
+  label,
   readOnly,
+  error,
+  helperText,
+  loading,
+  onCopy,
   slotProps,
-  ...rest
-}: ReferenceInputProps) => (
-  <TextField
-    {...rest}
-    variant="filled"
-    fullWidth
-    sx={baseInputSx}
-    slotProps={{
-      ...slotProps,
-      input: {
-        ...(slotProps?.input as object),
-        readOnly,
-        endAdornment: (
-          <InputAdornment position="end">
-            <IconButton size="small" tabIndex={-1}>
-              <ArrowDropDownIcon className="text-ui-05" fontSize="small" />
-            </IconButton>
-            <IconButton size="small" tabIndex={-1}>
-              <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 16 }} />
-            </IconButton>
-          </InputAdornment>
-        ),
-      },
-    }}
-  />
-)
+}: ReferenceInputProps) => {
+  const { t } = useTranslation()
+
+  return (
+    <Autocomplete
+      value={value}
+      options={options}
+      onChange={(_e, newValue) => {
+        onChange(newValue)
+      }}
+      getOptionLabel={(option) => option.label}
+      isOptionEqualToValue={(option, val) => option.id === val.id}
+      readOnly={readOnly}
+      loading={loading}
+      loadingText={t('inputs.loading')}
+      noOptionsText={t('inputs.noOptions')}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label={label}
+          error={error}
+          helperText={helperText}
+          slotProps={{
+            ...slotProps,
+            input: {
+              ...params.InputProps,
+              ...(slotProps?.input as object),
+              endAdornment: (
+                <>
+                  <IconButton
+                    sx={{ p: '4px', borderRadius: '6px' }}
+                    tabIndex={-1}
+                    onClick={onCopy}
+                  >
+                    <ContentCopyIcon
+                      className="text-ui-05"
+                      sx={{ fontSize: 20 }}
+                    />
+                  </IconButton>
+                  {params.InputProps.endAdornment}
+                </>
+              ),
+            },
+            htmlInput: {
+              ...params.inputProps,
+              ...(slotProps?.htmlInput as object),
+            },
+          }}
+        />
+      )}
+    />
+  )
+}

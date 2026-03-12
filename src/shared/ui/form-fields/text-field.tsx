@@ -1,6 +1,8 @@
 import { Controller, type Control } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 
-import { FormFieldWrapper } from './form-field-wrapper'
+import { getDisplayValue } from '@/shared/lib/utils/get-display-value'
+import { TextInput } from '@/shared/ui/inputs/text-input'
 
 interface TextFieldProps {
   name: string
@@ -15,24 +17,23 @@ export const TextField = ({
   control,
   readOnly,
 }: TextFieldProps) => {
+  const { i18n } = useTranslation()
+
   return (
     <Controller
       name={name}
       control={control}
-      render={({ field }) => {
-        const hasValue = field.value !== undefined && field.value !== ''
-        return (
-          <FormFieldWrapper label={label} hasValue={hasValue}>
-            <input
-              {...field}
-              value={(field.value as string | undefined) ?? ''}
-              placeholder={hasValue ? undefined : label}
-              readOnly={readOnly}
-              className="w-full bg-transparent text-[16px] text-ui-06 outline-none placeholder:text-ui-05"
-            />
-          </FormFieldWrapper>
-        )
-      }}
+      render={({ field: { ref, ...field }, fieldState }) => (
+        <TextInput
+          {...field}
+          inputRef={ref}
+          value={getDisplayValue(field.value, i18n.language)}
+          label={label}
+          readOnly={readOnly}
+          error={!!fieldState.error}
+          helperText={fieldState.error?.message}
+        />
+      )}
     />
   )
 }

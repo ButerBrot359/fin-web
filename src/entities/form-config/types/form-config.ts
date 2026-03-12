@@ -1,13 +1,11 @@
 export type FieldType =
   | 'text'
   | 'number'
-  | 'decimal'
-  | 'select'
-  | 'reference'
-  | 'datetime'
-  | 'date'
   | 'textarea'
   | 'checkbox'
+  | 'datetime'
+  | 'dict'
+  | 'enum'
 
 export type LabelVariant = 'default' | 'link' | 'heading'
 

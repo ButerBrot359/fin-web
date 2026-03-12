@@ -103,7 +103,11 @@
   },
   "documentEntry": {
     "newTitle": "{{name}} — жаңа",
-    "editTitle": "{{name}} — {{number}}"
+    "editTitle": "{{name}} — {{number}}",
+    "saved": "Жазба сақталды",
+    "posted": "Құжат өткізілді",
+    "saveError": "Сақтау қатесі",
+    "postError": "Өткізу қатесі"
   },
   "documentTable": {
     "createdAt": "Күні",
@@ -116,6 +120,10 @@
   },
   "main": {
     "title": "Веб-бухгалтерия"
+  },
+  "inputs": {
+    "noOptions": "Нұсқалар жоқ",
+    "loading": "Жүктелуде..."
   },
   "errors": {
     "required": "Міндетті өріс",

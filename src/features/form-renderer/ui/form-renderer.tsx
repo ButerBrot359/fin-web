@@ -6,6 +6,7 @@ import type { FormConfig } from '@/entities/form-config'
 import type { DocumentAttribute } from '@/entities/document-type'
 
 import { FormRendererContext } from '../lib/hooks/use-form-renderer-context'
+import { useFieldOptions } from '../lib/hooks/use-field-options'
 import { NodeRenderer } from './node-renderer'
 
 interface FormRendererProps {
@@ -22,6 +23,7 @@ export const FormRenderer = ({
   readOnly = false,
 }: FormRendererProps) => {
   const { i18n } = useTranslation()
+  const { optionsMap } = useFieldOptions({ attributes })
 
   const contextValue = useMemo(
     () => ({
@@ -29,8 +31,9 @@ export const FormRenderer = ({
       form,
       readOnly,
       language: i18n.language,
+      optionsMap,
     }),
-    [attributes, form, readOnly, i18n.language]
+    [attributes, form, readOnly, i18n.language, optionsMap]
   )
 
   return (

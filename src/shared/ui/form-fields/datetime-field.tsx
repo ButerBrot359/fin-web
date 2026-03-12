@@ -1,6 +1,6 @@
 import { Controller, type Control } from 'react-hook-form'
 
-import { FormFieldWrapper } from './form-field-wrapper'
+import { DateTimeInput } from '@/shared/ui/inputs/datetime-input'
 
 interface DateTimeFieldProps {
   name: string
@@ -16,26 +16,22 @@ export const DateTimeField = ({
   control,
   readOnly,
   dateOnly,
-}: DateTimeFieldProps) => {
-  return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field }) => {
-        const hasValue = field.value !== undefined && field.value !== ''
-        return (
-          <FormFieldWrapper label={label} hasValue={hasValue}>
-            <input
-              {...field}
-              type={dateOnly ? 'date' : 'datetime-local'}
-              value={(field.value as string | undefined) ?? ''}
-              placeholder={hasValue ? undefined : label}
-              readOnly={readOnly}
-              className="w-full bg-transparent text-[16px] text-ui-06 outline-none placeholder:text-ui-05"
-            />
-          </FormFieldWrapper>
-        )
-      }}
-    />
-  )
-}
+}: DateTimeFieldProps) => (
+  <Controller
+    name={name}
+    control={control}
+    render={({ field, fieldState }) => (
+      <DateTimeInput
+        value={(field.value as string | undefined) ?? ''}
+        onChange={(value) => {
+          field.onChange(value)
+        }}
+        label={label}
+        readOnly={readOnly}
+        dateOnly={dateOnly}
+        error={!!fieldState.error}
+        helperText={fieldState.error?.message}
+      />
+    )}
+  />
+)

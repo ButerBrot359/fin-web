@@ -21,8 +21,20 @@ export interface DocumentEntry {
   updatedBy: string
 }
 
+export interface CreateDocumentEntryPayload {
+  code: string
+  nameRu: string
+  nameKz: string
+  parentId: number | null
+  sortOrder: number
+  isPosted: boolean
+  attributes: Record<string, unknown>
+}
+
 export type DocumentEntriesResponseData = ApiResponse<
   PagedResponse<DocumentEntry>
 >
 
 export type DocumentEntryNewResponseData = ApiResponse<DocumentEntry>
+
+export type DocumentEntryResponseData = ApiResponse<DocumentEntry>

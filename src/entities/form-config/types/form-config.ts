@@ -4,6 +4,7 @@ export type FieldType =
   | 'decimal'
   | 'select'
   | 'reference'
+  | 'dictionary'
   | 'datetime'
   | 'date'
   | 'textarea'

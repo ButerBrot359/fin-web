@@ -8,7 +8,7 @@ const DATA_TYPE_MAP: Record<string, FieldType> = {
   DATE: 'date',
   DATETIME: 'datetime',
   TEXT: 'textarea',
-  DICTIONARY: 'reference',
+  DICTIONARY: 'dictionary',
   REFERENCE: 'reference',
   ENUM: 'select',
   ENUMS: 'select',

@@ -4,6 +4,7 @@ import {
   NumberField,
   SelectField,
   ReferenceField,
+  DictionaryField,
   DateTimeField,
   TextareaField,
 } from '@/shared/ui/form-fields'
@@ -28,8 +29,12 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
         : attribute.nameRu
       : node.code)
 
-  const fieldType =
+  const baseFieldType =
     node.fieldType ?? (attribute ? mapDataType(attribute.dataType) : 'text')
+  const fieldType =
+    baseFieldType === 'reference' && attribute?.dataType === 'DICTIONARY'
+      ? 'dictionary'
+      : baseFieldType
 
   const commonProps = {
     name: node.code,
@@ -55,6 +60,16 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
       return wrapper(<SelectField {...commonProps} options={options} />)
     case 'reference':
       return wrapper(<ReferenceField {...commonProps} options={options} />)
+    case 'dictionary': {
+      const refTypeCode =
+        attribute?.referenceTypeCode ??
+        (attribute?.allowedTypes as { typeCode: string }[] | undefined)?.[0]
+          ?.typeCode ??
+        ''
+      return wrapper(
+        <DictionaryField {...commonProps} referenceTypeCode={refTypeCode} />
+      )
+    }
     case 'datetime':
       return wrapper(<DateTimeField {...commonProps} />)
     case 'date':

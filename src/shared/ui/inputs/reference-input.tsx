@@ -13,6 +13,7 @@ interface ReferenceInputProps {
   value: SelectOption | null
   options: SelectOption[]
   onChange: (value: SelectOption | null) => void
+  onInputChange?: (event: unknown, value: string, reason: string) => void
   label?: string
   readOnly?: boolean
   error?: boolean
@@ -26,6 +27,7 @@ export const ReferenceInput = ({
   value,
   options,
   onChange,
+  onInputChange,
   label,
   readOnly,
   error,
@@ -43,6 +45,8 @@ export const ReferenceInput = ({
       onChange={(_e, newValue) => {
         onChange(newValue)
       }}
+      onInputChange={onInputChange}
+      filterOptions={onInputChange ? (x) => x : undefined}
       getOptionLabel={(option) => option.label}
       isOptionEqualToValue={(option, val) => option.id === val.id}
       readOnly={readOnly}

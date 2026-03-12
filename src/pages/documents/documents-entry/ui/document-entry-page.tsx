@@ -56,8 +56,6 @@ export const DocumentEntryPage = () => {
     select: (response) => response.data.data,
   })
 
-  console.log(attributes, 123, newEntryData)
-
   const { data: onGetFormData } = useQuery({
     queryKey: ['on-get-form', moduleCode],
     queryFn: () => getOnGetForm(moduleCode),

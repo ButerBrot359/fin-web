@@ -33,6 +33,14 @@ export type OnGetFormResponseData = ApiResponse<
   OnGetFormField | OnGetFormField[]
 >
 
+export interface AllowedType {
+  domainKind: string
+  typeCode: string
+  typeCode1C: string
+  typeNameRu: string
+  typeNameKz: string
+}
+
 export interface DocumentAttribute {
   id: number
   code: string
@@ -43,6 +51,7 @@ export interface DocumentAttribute {
   isRequired: boolean
   maxLength: number | null
   referenceTypeCode: string | null
+  allowedTypes?: AllowedType[]
   referenceSelectionMode: string
   sortOrder: number
   tableSortOrder: number

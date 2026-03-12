@@ -66,9 +66,7 @@ export const useFieldOptions = ({
     () =>
       attributes.filter(
         (attr) =>
-          (attr.dataType === 'DICTIONARY' ||
-            attr.dataType === 'REFERENCE' ||
-            attr.dataType === 'ACCOUNT_PLAN') &&
+          (attr.dataType === 'REFERENCE' || attr.dataType === 'ACCOUNT_PLAN') &&
           attr.referenceTypeCode
       ),
     [attributes]

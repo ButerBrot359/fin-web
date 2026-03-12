@@ -6,6 +6,7 @@ import { TopBar } from '@/widgets/top-bar'
 import { MainPage } from '@/pages/main'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
+import { Toaster } from '@/shared/ui/toast/toast'
 
 import { Layout } from './layout/layout'
 
@@ -56,6 +57,7 @@ function App() {
       <Layout sidebar={<Sidebar />} header={<TopBar />}>
         <AppRoutes />
       </Layout>
+      <Toaster />
     </BrowserRouter>
   )
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Typography } from '@mui/material'
 import { ArrowUpward } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
@@ -21,6 +22,8 @@ interface DocumentTableProps {
 }
 
 export const DocumentTable = ({ attributes }: DocumentTableProps) => {
+  const { moduleCode = '', pageCode = '' } = useParams()
+  const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const entries = useDocumentEntries()
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
@@ -128,6 +131,11 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
                 key={row.id}
                 onClick={() => {
                   setSelectedRowId(row.original.id)
+                }}
+                onDoubleClick={() => {
+                  void navigate(
+                    `/modules/${pageCode}/document/${moduleCode}/${String(row.original.id)}`
+                  )
                 }}
                 className={`cursor-pointer transition-colors ${
                   isSelected

@@ -1,5 +1,6 @@
 export {
   getDocumentEntries,
+  getDocumentEntry,
   getNewDocumentEntry,
   createDocumentEntry,
 } from './api/document-entry'

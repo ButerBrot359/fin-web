@@ -20,6 +20,11 @@ export const getNewDocumentEntry = (
     params,
   })
 
+export const getDocumentEntry = (id: string) =>
+  apiService.get<DocumentEntryResponseData>({
+    url: `/api/document-entries/id/${id}`,
+  })
+
 export const createDocumentEntry = (
   typeCode: string,
   payload: CreateDocumentEntryPayload

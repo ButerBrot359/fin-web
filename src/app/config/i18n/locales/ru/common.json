@@ -103,7 +103,11 @@
   },
   "documentEntry": {
     "newTitle": "{{name}} — новый",
-    "editTitle": "{{name}} — {{number}}"
+    "editTitle": "{{name}} — {{number}}",
+    "saved": "Запись сохранена",
+    "posted": "Документ проведён",
+    "saveError": "Ошибка сохранения",
+    "postError": "Ошибка проведения"
   },
   "documentTable": {
     "createdAt": "Дата",

@@ -6,7 +6,8 @@ import type { AxiosResponse } from 'axios'
 import type { EnumsValue } from '@/entities/document-type'
 import { apiService } from '@/shared/api/api'
 import type { SelectOption } from '@/shared/types/select-option'
-import { SelectInput } from '@/shared/ui/inputs/select-input'
+import { resolveSelectValue } from '@/shared/lib/utils/resolve-select-value'
+import { AutocompleteInput } from '@/shared/ui/inputs/autocomplete-input'
 
 interface EnumFieldProps {
   name: string
@@ -52,30 +53,10 @@ export const EnumField = ({
       name={name}
       control={control}
       render={({ field, fieldState }) => {
-        const raw = field.value as Record<string, unknown> | null | undefined
-        const currentValue =
-          options.find((opt) => {
-            if (!raw) return false
-            if (typeof raw === 'object' && 'id' in raw) return opt.id === raw.id
-            if (typeof raw === 'string') return opt.code === raw
-            return false
-          }) ??
-          (raw && typeof raw === 'object' && 'id' in raw
-            ? {
-                id: raw.id as number,
-                code: typeof raw.code === 'string' ? raw.code : '',
-                label:
-                  typeof raw.name === 'string'
-                    ? raw.name
-                    : typeof raw.nameRu === 'string'
-                      ? raw.nameRu
-                      : '',
-                raw,
-              }
-            : null)
+        const currentValue = resolveSelectValue(field.value, options)
 
         return (
-          <SelectInput
+          <AutocompleteInput
             value={currentValue}
             options={options}
             onChange={(newOption) => {

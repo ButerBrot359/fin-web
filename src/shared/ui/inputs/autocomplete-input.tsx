@@ -1,15 +1,10 @@
-import {
-  Autocomplete,
-  TextField,
-  IconButton,
-  type TextFieldProps,
-} from '@mui/material'
-import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import type { ReactNode } from 'react'
+import { Autocomplete, TextField, type TextFieldProps } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import type { SelectOption } from '@/shared/types/select-option'
 
-interface ReferenceInputProps {
+interface AutocompleteInputProps {
   value: SelectOption | null
   options: SelectOption[]
   onChange: (value: SelectOption | null) => void
@@ -20,11 +15,11 @@ interface ReferenceInputProps {
   helperText?: string
   loading?: boolean
   onOpen?: () => void
-  onCopy?: () => void
+  endAction?: ReactNode
   slotProps?: TextFieldProps['slotProps']
 }
 
-export const ReferenceInput = ({
+export const AutocompleteInput = ({
   value,
   options,
   onChange,
@@ -35,9 +30,9 @@ export const ReferenceInput = ({
   helperText,
   loading,
   onOpen,
-  onCopy,
+  endAction,
   slotProps,
-}: ReferenceInputProps) => {
+}: AutocompleteInputProps) => {
   const { t } = useTranslation()
 
   return (
@@ -70,16 +65,7 @@ export const ReferenceInput = ({
               endAdornment: (
                 <>
                   {params.InputProps.endAdornment}
-                  <IconButton
-                    sx={{ p: '4px', borderRadius: '6px' }}
-                    tabIndex={-1}
-                    onClick={onCopy}
-                  >
-                    <ContentCopyIcon
-                      className="text-ui-05"
-                      sx={{ fontSize: 20 }}
-                    />
-                  </IconButton>
+                  {endAction}
                 </>
               ),
             },

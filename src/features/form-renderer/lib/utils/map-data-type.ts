@@ -3,16 +3,16 @@ import type { FieldType } from '@/entities/form-config'
 const DATA_TYPE_MAP: Record<string, FieldType> = {
   STRING: 'text',
   INTEGER: 'number',
-  DECIMAL: 'decimal',
+  DECIMAL: 'number',
   BOOLEAN: 'checkbox',
-  DATE: 'date',
+  DATE: 'datetime',
   DATETIME: 'datetime',
   TEXT: 'textarea',
-  DICTIONARY: 'dictionary',
-  REFERENCE: 'reference',
-  ENUM: 'select',
-  ENUMS: 'select',
-  ACCOUNT_PLAN: 'reference',
+  DICTIONARY: 'dict',
+  REFERENCE: 'dict',
+  ACCOUNT_PLAN: 'dict',
+  ENUM: 'enum',
+  ENUMS: 'enum',
 }
 
 export const mapDataType = (dataType: string): FieldType =>

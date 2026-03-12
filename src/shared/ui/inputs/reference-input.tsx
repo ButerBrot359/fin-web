@@ -66,6 +66,7 @@ export const ReferenceInput = ({
               ...(slotProps?.input as object),
               endAdornment: (
                 <>
+                  {params.InputProps.endAdornment}
                   <IconButton
                     sx={{ p: '4px', borderRadius: '6px' }}
                     tabIndex={-1}
@@ -76,7 +77,6 @@ export const ReferenceInput = ({
                       sx={{ fontSize: 20 }}
                     />
                   </IconButton>
-                  {params.InputProps.endAdornment}
                 </>
               ),
             },

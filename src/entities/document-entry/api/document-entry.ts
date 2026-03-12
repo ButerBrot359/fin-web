@@ -1,7 +1,9 @@
 import { apiService } from '@/shared/api/api'
 import type {
+  CreateDocumentEntryPayload,
   DocumentEntriesResponseData,
   DocumentEntryNewResponseData,
+  DocumentEntryResponseData,
 } from '../types/document-entry'
 
 export const getDocumentEntries = (typeCode: string) =>
@@ -16,4 +18,13 @@ export const getNewDocumentEntry = (
   apiService.get<DocumentEntryNewResponseData>({
     url: `/api/document-entries/${typeCode}/new`,
     params,
+  })
+
+export const createDocumentEntry = (
+  typeCode: string,
+  payload: CreateDocumentEntryPayload
+) =>
+  apiService.post<DocumentEntryResponseData>({
+    url: `/api/document-entries/${typeCode}`,
+    data: payload,
   })

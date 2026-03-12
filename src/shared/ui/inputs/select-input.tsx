@@ -11,6 +11,7 @@ interface SelectInputProps {
   readOnly?: boolean
   error?: boolean
   helperText?: string
+  onOpen?: () => void
   loading?: boolean
   slotProps?: TextFieldProps['slotProps']
 }
@@ -23,6 +24,7 @@ export const SelectInput = ({
   readOnly,
   error,
   helperText,
+  onOpen,
   loading,
   slotProps,
 }: SelectInputProps) => {
@@ -38,6 +40,7 @@ export const SelectInput = ({
       getOptionLabel={(option) => option.label}
       isOptionEqualToValue={(option, val) => option.id === val.id}
       readOnly={readOnly}
+      onOpen={onOpen}
       loading={loading}
       loadingText={t('inputs.loading')}
       noOptionsText={t('inputs.noOptions')}

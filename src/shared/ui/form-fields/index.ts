@@ -1,6 +1,7 @@
 export { TextField } from './text-field'
 export { NumberField } from './number-field'
 export { SelectField } from './select-field'
+export { EnumField } from './enum-field'
 export { ReferenceField } from './reference-field'
 export { DictionaryField } from './dictionary-field'
 export { DateTimeField } from './datetime-field'

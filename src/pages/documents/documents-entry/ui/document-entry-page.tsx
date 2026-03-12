@@ -1,14 +1,18 @@
-import { useEffect, useMemo } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo } from 'react'
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 
 import {
   useDocumentType,
   type DocumentAttribute,
 } from '@/entities/document-type'
-import { getNewDocumentEntry } from '@/entities/document-entry'
+import {
+  getNewDocumentEntry,
+  createDocumentEntry,
+  type CreateDocumentEntryPayload,
+} from '@/entities/document-entry'
 import {
   useOptionalFormConfig,
   type FormConfig,
@@ -34,8 +38,9 @@ const buildFallbackConfig = (attributes: DocumentAttribute[]): FormConfig => ({
 })
 
 export const DocumentEntryPage = () => {
-  const { moduleCode = '', entryId } = useParams()
+  const { moduleCode = '', pageCode = '', entryId } = useParams()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const { t } = useTranslation()
   const { title, attributes } = useDocumentType(moduleCode)
   const { config, isLoading } = useOptionalFormConfig(moduleCode)
@@ -80,10 +85,48 @@ export const DocumentEntryPage = () => {
     [config, formAttributes]
   )
 
+  const { mutate } = useMutation({
+    mutationFn: (payload: CreateDocumentEntryPayload) =>
+      createDocumentEntry(moduleCode, payload),
+  })
+
+  const buildPayload = useCallback(
+    (isPosted: boolean): CreateDocumentEntryPayload => ({
+      code: '',
+      nameRu: '',
+      nameKz: '',
+      parentId: null,
+      sortOrder: 0,
+      isPosted,
+      attributes: form.getValues(),
+    }),
+    [form]
+  )
+
+  const handleSave = useCallback(() => {
+    mutate(buildPayload(false))
+  }, [buildPayload, mutate])
+
+  const handlePost = useCallback(() => {
+    mutate(buildPayload(true))
+  }, [buildPayload, mutate])
+
+  const handlePostAndClose = useCallback(() => {
+    mutate(buildPayload(true), {
+      onSuccess: () => {
+        void navigate(`/modules/${pageCode}/document/${moduleCode}`)
+      },
+    })
+  }, [buildPayload, mutate, navigate, pageCode, moduleCode])
+
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={pageTitle} />
-      <DocumentFormToolbar />
+      <DocumentFormToolbar
+        onSave={handleSave}
+        onPost={handlePost}
+        onPostAndClose={handlePostAndClose}
+      />
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">
         {isLoading ? (

@@ -3,6 +3,7 @@ import {
   TextField,
   NumberField,
   SelectField,
+  EnumField,
   ReferenceField,
   DictionaryField,
   DateTimeField,
@@ -34,7 +35,10 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
   const fieldType =
     baseFieldType === 'reference' && attribute?.dataType === 'DICTIONARY'
       ? 'dictionary'
-      : baseFieldType
+      : baseFieldType === 'select' &&
+          (attribute?.dataType === 'ENUM' || attribute?.dataType === 'ENUMS')
+        ? 'enum'
+        : baseFieldType
 
   const commonProps = {
     name: node.code,
@@ -58,6 +62,14 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
       return wrapper(<NumberField {...commonProps} decimal />)
     case 'select':
       return wrapper(<SelectField {...commonProps} options={options} />)
+    case 'enum': {
+      const enumTypeCode =
+        attribute?.referenceTypeCode ??
+        (attribute?.allowedTypes as { typeCode: string }[] | undefined)?.[0]
+          ?.typeCode ??
+        ''
+      return wrapper(<EnumField {...commonProps} enumTypeCode={enumTypeCode} />)
+    }
     case 'reference':
       return wrapper(<ReferenceField {...commonProps} options={options} />)
     case 'dictionary': {

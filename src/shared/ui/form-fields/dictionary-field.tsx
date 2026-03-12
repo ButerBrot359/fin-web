@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Controller, type Control } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
+import type { AxiosResponse } from 'axios'
 import { useTranslation } from 'react-i18next'
 
 import { apiService } from '@/shared/api/api'
@@ -50,7 +51,11 @@ export const DictionaryField = ({
     }
   }, [inputValue])
 
-  const { data: options = [], isFetching } = useQuery({
+  const { data: options = [], isFetching } = useQuery<
+    AxiosResponse<DictionarySearchResponse>,
+    unknown,
+    SelectOption[]
+  >({
     queryKey: ['dictionary-search', referenceTypeCode, debouncedSearch],
     queryFn: () =>
       apiService.get<DictionarySearchResponse>({

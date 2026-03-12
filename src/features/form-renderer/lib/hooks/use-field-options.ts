@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import type {
   DocumentAttribute,
+  EnumsValue,
   OnGetFormField,
 } from '@/entities/document-type'
 import { apiService } from '@/shared/api/api'
@@ -32,12 +33,7 @@ const toSelectOption = (
   raw: entry as unknown as Record<string, unknown>,
 })
 
-const enumToSelectOption = (item: {
-  id: number
-  code: string
-  name: string
-  [key: string]: unknown
-}): SelectOption => ({
+const enumToSelectOption = (item: EnumsValue): SelectOption => ({
   id: item.id,
   code: item.code,
   label: item.name,

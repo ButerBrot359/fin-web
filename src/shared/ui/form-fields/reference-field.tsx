@@ -24,14 +24,27 @@ export const ReferenceField = ({
     name={name}
     control={control}
     render={({ field, fieldState }) => {
+      const raw = field.value as Record<string, unknown> | null | undefined
       const currentValue =
         options.find((opt) => {
-          const raw = field.value as Record<string, unknown> | null | undefined
           if (!raw) return false
           if (typeof raw === 'object' && 'id' in raw) return opt.id === raw.id
           if (typeof raw === 'string') return opt.code === raw
           return false
-        }) ?? null
+        }) ??
+        (raw && typeof raw === 'object' && 'id' in raw
+          ? {
+              id: raw.id as number,
+              code: typeof raw.code === 'string' ? raw.code : '',
+              label:
+                typeof raw.nameRu === 'string'
+                  ? raw.nameRu
+                  : typeof raw.name === 'string'
+                    ? raw.name
+                    : '',
+              raw,
+            }
+          : null)
 
       return (
         <ReferenceInput

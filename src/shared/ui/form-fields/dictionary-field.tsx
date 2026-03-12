@@ -37,6 +37,7 @@ export const DictionaryField = ({
   referenceTypeCode,
 }: DictionaryFieldProps) => {
   const { i18n } = useTranslation()
+  const [opened, setOpened] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
@@ -56,7 +57,7 @@ export const DictionaryField = ({
         url: `/api/dictionaries/entries/${referenceTypeCode}/search`,
         params: { q: debouncedSearch, size: 30 },
       }),
-    enabled: true,
+    enabled: opened,
     select: (response) =>
       response.data.list.map(
         (entry): SelectOption => ({
@@ -108,6 +109,9 @@ export const DictionaryField = ({
               if (reason === 'input') {
                 setInputValue(value)
               }
+            }}
+            onOpen={() => {
+              setOpened(true)
             }}
             label={label}
             readOnly={readOnly}

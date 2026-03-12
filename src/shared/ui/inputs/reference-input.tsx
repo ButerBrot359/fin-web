@@ -19,6 +19,7 @@ interface ReferenceInputProps {
   error?: boolean
   helperText?: string
   loading?: boolean
+  onOpen?: () => void
   onCopy?: () => void
   slotProps?: TextFieldProps['slotProps']
 }
@@ -33,6 +34,7 @@ export const ReferenceInput = ({
   error,
   helperText,
   loading,
+  onOpen,
   onCopy,
   slotProps,
 }: ReferenceInputProps) => {
@@ -46,6 +48,7 @@ export const ReferenceInput = ({
         onChange(newValue)
       }}
       onInputChange={onInputChange}
+      onOpen={onOpen}
       filterOptions={onInputChange ? (x) => x : undefined}
       getOptionLabel={(option) => option.label}
       isOptionEqualToValue={(option, val) => option.id === val.id}

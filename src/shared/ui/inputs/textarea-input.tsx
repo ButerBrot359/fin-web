@@ -13,7 +13,17 @@ export const TextareaInput = ({
     {...rest}
     multiline
     rows={2}
-    sx={{ '& .MuiFilledInput-root': { height: 'auto' } }}
+    sx={{
+      '& .MuiFilledInput-root': {
+        height: 'auto',
+        paddingLeft: '20px',
+        paddingRight: '20px',
+      },
+      '& .MuiFilledInput-root textarea': {
+        paddingLeft: 0,
+        paddingRight: 0,
+      },
+    }}
     slotProps={{
       ...slotProps,
       input: {

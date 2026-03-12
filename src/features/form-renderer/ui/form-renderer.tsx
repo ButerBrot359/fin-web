@@ -3,10 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { UseFormReturn } from 'react-hook-form'
 
 import type { FormConfig } from '@/entities/form-config'
-import type {
-  DocumentAttribute,
-  OnGetFormField,
-} from '@/entities/document-type'
+import type { DocumentAttribute } from '@/entities/document-type'
 
 import { FormRendererContext } from '../lib/hooks/use-form-renderer-context'
 import { useFieldOptions } from '../lib/hooks/use-field-options'
@@ -17,7 +14,6 @@ interface FormRendererProps {
   attributes: DocumentAttribute[]
   form: UseFormReturn<Record<string, unknown>>
   readOnly?: boolean
-  onGetFormData?: OnGetFormField[]
 }
 
 export const FormRenderer = ({
@@ -25,10 +21,9 @@ export const FormRenderer = ({
   attributes,
   form,
   readOnly = false,
-  onGetFormData,
 }: FormRendererProps) => {
   const { i18n } = useTranslation()
-  const { optionsMap } = useFieldOptions({ attributes, onGetFormData })
+  const { optionsMap } = useFieldOptions({ attributes })
 
   const contextValue = useMemo(
     () => ({

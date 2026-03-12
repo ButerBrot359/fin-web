@@ -2,11 +2,7 @@ import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
-import type {
-  DocumentAttribute,
-  EnumsValue,
-  OnGetFormField,
-} from '@/entities/document-type'
+import type { DocumentAttribute, EnumsValue } from '@/entities/document-type'
 import { apiService } from '@/shared/api/api'
 import type { SelectOption } from '@/shared/types/select-option'
 
@@ -40,27 +36,38 @@ const enumToSelectOption = (item: EnumsValue): SelectOption => ({
   raw: item as unknown as Record<string, unknown>,
 })
 
+const getTypeCode = (attr: DocumentAttribute): string | null =>
+  attr.referenceTypeCode ??
+  (attr.allowedTypes as { typeCode: string }[] | undefined)?.[0]?.typeCode ??
+  null
+
 interface UseFieldOptionsParams {
   attributes: DocumentAttribute[]
-  onGetFormData?: OnGetFormField[]
 }
 
-export const useFieldOptions = ({
-  attributes,
-  onGetFormData,
-}: UseFieldOptionsParams) => {
+export const useFieldOptions = ({ attributes }: UseFieldOptionsParams) => {
   const { i18n } = useTranslation()
 
-  const enumOptionsMap = useMemo(() => {
-    const map: Record<string, SelectOption[]> = {}
-    if (!onGetFormData) return map
+  const enumAttributes = useMemo(
+    () =>
+      attributes.filter(
+        (attr) =>
+          (attr.dataType === 'ENUM' || attr.dataType === 'ENUMS') &&
+          getTypeCode(attr)
+      ),
+    [attributes]
+  )
 
-    for (const field of onGetFormData) {
-      map[field.fieldName] = field.elements.map(enumToSelectOption)
-    }
-
-    return map
-  }, [onGetFormData])
+  const enumQueries = useQueries({
+    queries: enumAttributes.map((attr) => ({
+      queryKey: ['enum-values', getTypeCode(attr)],
+      queryFn: () =>
+        apiService.get<EnumsValue[]>({
+          url: `/api/enums/${getTypeCode(attr)!}/values`,
+        }),
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
 
   const dictionaryAttributes = useMemo(
     () =>
@@ -84,7 +91,14 @@ export const useFieldOptions = ({
   })
 
   const optionsMap = useMemo(() => {
-    const map: Record<string, SelectOption[]> = { ...enumOptionsMap }
+    const map: Record<string, SelectOption[]> = {}
+
+    enumAttributes.forEach((attr, index) => {
+      const query = enumQueries[index]
+      if (query.data) {
+        map[attr.code] = query.data.data.map(enumToSelectOption)
+      }
+    })
 
     dictionaryAttributes.forEach((attr, index) => {
       const query = dictionaryQueries[index]
@@ -96,7 +110,13 @@ export const useFieldOptions = ({
     })
 
     return map
-  }, [enumOptionsMap, dictionaryAttributes, dictionaryQueries, i18n.language])
+  }, [
+    enumAttributes,
+    enumQueries,
+    dictionaryAttributes,
+    dictionaryQueries,
+    i18n.language,
+  ])
 
   return { optionsMap }
 }

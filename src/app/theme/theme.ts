@@ -1,4 +1,5 @@
 import { createTheme } from '@mui/material/styles'
+import type {} from '@mui/x-date-pickers/themeAugmentation'
 
 export const theme = createTheme({
   palette: {
@@ -147,7 +148,7 @@ export const theme = createTheme({
         },
       },
     },
-    MuiPickersPopper: {
+    MuiPickerPopper: {
       styleOverrides: {
         paper: {
           borderRadius: 8,
@@ -226,38 +227,10 @@ export const theme = createTheme({
         },
       },
     },
-    MuiPickersMonth: {
-      styleOverrides: {
-        monthButton: {
-          fontSize: 16,
-          fontWeight: 500,
-          borderRadius: 8,
-          fontFamily: '"Google Sans", system-ui, sans-serif',
-          '&.Mui-selected': {
-            backgroundColor: '#2a75f4',
-            color: '#ffffff',
-          },
-        },
-      },
-    },
     MuiYearCalendar: {
       styleOverrides: {
         root: {
           fontFamily: '"Google Sans", system-ui, sans-serif',
-        },
-      },
-    },
-    MuiPickersYear: {
-      styleOverrides: {
-        yearButton: {
-          fontSize: 16,
-          fontWeight: 500,
-          borderRadius: 8,
-          fontFamily: '"Google Sans", system-ui, sans-serif',
-          '&.Mui-selected': {
-            backgroundColor: '#2a75f4',
-            color: '#ffffff',
-          },
         },
       },
     },

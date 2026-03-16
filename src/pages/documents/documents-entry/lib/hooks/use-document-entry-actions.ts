@@ -138,5 +138,12 @@ export const useDocumentEntryActions = ({
     })
   }, [submitWith, navigate, pageCode, moduleCode, t])
 
-  return { handleSave, handlePost, handlePostAndClose }
+  const handleSaveAndClose = () => {
+    submitWith(false, () => {
+      showToast('info', t('documentEntry.saved'))
+      void navigate(-1)
+    })
+  }
+
+  return { handleSave, handlePost, handlePostAndClose, handleSaveAndClose }
 }

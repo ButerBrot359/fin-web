@@ -6,7 +6,6 @@ import type { SelectOption } from '@/shared/types/select-option'
 export interface FormRendererContextValue {
   attributeMap: Map<string, DocumentAttribute>
   form: UseFormReturn<Record<string, unknown>>
-  readOnly: boolean
   language: string
   optionsMap: Record<string, SelectOption[]>
 }

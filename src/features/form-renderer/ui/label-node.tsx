@@ -17,14 +17,16 @@ export const LabelNode = ({ node }: LabelNodeProps) => {
   const variant = node.variant ?? 'default'
 
   return (
-    <Typography
-      className={cn(
-        variant === 'link' && 'cursor-pointer text-accent-02 underline',
-        variant === 'heading' && 'font-bold'
-      )}
-      variant={variant === 'heading' ? 'subtitle1' : 'body2'}
-    >
-      {text}
-    </Typography>
+    <div className="flex h-[62px] items-end pb-2">
+      <Typography
+        className={cn(
+          variant === 'link' && 'cursor-pointer text-accent-02 underline',
+          variant === 'heading' && 'font-bold'
+        )}
+        variant={variant === 'heading' ? 'subtitle1' : 'body2'}
+      >
+        {text}
+      </Typography>
+    </div>
   )
 }

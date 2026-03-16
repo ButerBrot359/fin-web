@@ -24,8 +24,7 @@ interface FieldNodeProps {
 
 export const FieldNode = ({ node }: FieldNodeProps) => {
   const { t } = useTranslation()
-  const { attributeMap, form, readOnly, language, optionsMap } =
-    useFormRendererContext()
+  const { attributeMap, form, language, optionsMap } = useFormRendererContext()
   const attribute = attributeMap.get(node.code)
 
   if (!attribute) return null
@@ -46,7 +45,7 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
     name: node.code,
     label,
     control: form.control,
-    readOnly,
+    readOnly: attribute.readonly,
     required,
   }
 

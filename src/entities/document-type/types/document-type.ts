@@ -50,6 +50,7 @@ export interface DocumentAttribute {
   nameKz: string
   dataType: DataType
   isRequired: boolean
+  readonly: boolean
   maxLength: number | null
   referenceTypeCode: string | null
   allowedTypes?: AllowedType[]

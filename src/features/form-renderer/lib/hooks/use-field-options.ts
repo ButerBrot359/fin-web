@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { DocumentAttribute } from '@/entities/document-type'
 import { apiService } from '@/shared/api/api'
+import { DICT_DATA_TYPES } from '@/shared/lib/consts/data-types'
 import type { SelectOption } from '@/shared/types/select-option'
 
 interface DictionaryEntry {
@@ -39,9 +40,7 @@ export const useFieldOptions = ({ attributes }: UseFieldOptionsParams) => {
   const dictionaryAttributes = useMemo(
     () =>
       attributes.filter(
-        (attr) =>
-          (attr.dataType === 'REFERENCE' || attr.dataType === 'ACCOUNT_PLAN') &&
-          attr.referenceTypeCode
+        (attr) => DICT_DATA_TYPES.has(attr.dataType) && attr.referenceTypeCode
       ),
     [attributes]
   )

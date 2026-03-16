@@ -1,12 +1,3 @@
-export type FieldType =
-  | 'text'
-  | 'number'
-  | 'textarea'
-  | 'checkbox'
-  | 'datetime'
-  | 'dict'
-  | 'enum'
-
 export type LabelVariant = 'default' | 'link' | 'heading'
 
 export interface VStackNode {
@@ -27,7 +18,6 @@ export interface HStackNode {
 export interface FieldNode {
   type: 'Field'
   code: string
-  fieldType?: FieldType
   label?: string
   flex?: number
 }

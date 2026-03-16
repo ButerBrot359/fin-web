@@ -14,6 +14,7 @@ interface EnumFieldProps {
   label: string
   control: Control<Record<string, unknown>>
   readOnly?: boolean
+  required?: string
   enumTypeCode: string
 }
 
@@ -29,6 +30,7 @@ export const EnumField = ({
   label,
   control,
   readOnly,
+  required,
   enumTypeCode,
 }: EnumFieldProps) => {
   const [opened, setOpened] = useState(false)
@@ -52,6 +54,7 @@ export const EnumField = ({
     <Controller
       name={name}
       control={control}
+      rules={{ required }}
       render={({ field, fieldState }) => {
         const currentValue = resolveSelectValue(field.value, options)
 

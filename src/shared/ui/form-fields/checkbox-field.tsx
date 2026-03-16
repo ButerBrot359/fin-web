@@ -6,6 +6,7 @@ interface CheckboxFieldProps {
   label: string
   control: Control<Record<string, unknown>>
   readOnly?: boolean
+  required?: string
 }
 
 export const CheckboxField = ({
@@ -13,10 +14,12 @@ export const CheckboxField = ({
   label,
   control,
   readOnly,
+  required,
 }: CheckboxFieldProps) => (
   <Controller
     name={name}
     control={control}
+    rules={{ required }}
     render={({ field, fieldState }) => (
       <div>
         <FormControlLabel

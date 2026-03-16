@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 import type { FieldNode as FieldNodeType } from '@/entities/form-config'
 import {
   IGNORED_DATA_TYPES,
@@ -21,6 +23,7 @@ interface FieldNodeProps {
 }
 
 export const FieldNode = ({ node }: FieldNodeProps) => {
+  const { t } = useTranslation()
   const { attributeMap, form, readOnly, language, optionsMap } =
     useFormRendererContext()
   const attribute = attributeMap.get(node.code)
@@ -37,11 +40,14 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
       ? attribute.nameKz || attribute.nameRu
       : attribute.nameRu)
 
+  const required = attribute.isRequired ? t('errors.required') : undefined
+
   const commonProps = {
     name: node.code,
     label,
     control: form.control,
     readOnly,
+    required,
   }
 
   const getTypeCode = () =>

@@ -28,6 +28,7 @@ interface DictFieldProps {
   label: string
   control: Control<Record<string, unknown>>
   readOnly?: boolean
+  required?: string
   options?: SelectOption[]
   searchUrl?: string
   loading?: boolean
@@ -41,6 +42,7 @@ export const DictField = ({
   control,
   readOnly,
   options: staticOptions,
+  required,
   searchUrl,
   loading: externalLoading,
 }: DictFieldProps) => {
@@ -100,6 +102,7 @@ export const DictField = ({
     <Controller
       name={name}
       control={control}
+      rules={{ required }}
       render={({ field, fieldState }) => {
         const currentValue = resolveSelectValue(field.value, options)
 

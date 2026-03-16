@@ -33,3 +33,12 @@ export const createDocumentEntry = (
     url: `/api/document-entries/${typeCode}`,
     data: payload,
   })
+
+export const updateDocumentEntry = (
+  id: number,
+  payload: CreateDocumentEntryPayload
+) =>
+  apiService.put<DocumentEntryResponseData>({
+    url: `/api/document-entries/id/${String(id)}`,
+    data: payload,
+  })

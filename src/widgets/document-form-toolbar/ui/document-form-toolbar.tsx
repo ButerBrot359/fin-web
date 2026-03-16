@@ -10,12 +10,14 @@ import LayersIcon from '@/shared/assets/icons/layers.svg'
 import LinkIcon from '@/shared/assets/icons/link.svg'
 
 interface DocumentFormToolbarProps {
+  isNew?: boolean
   onPostAndClose?: () => void
   onSave?: () => void
   onPost?: () => void
 }
 
 export const DocumentFormToolbar = ({
+  isNew,
   onPostAndClose,
   onSave,
   onPost,
@@ -38,7 +40,8 @@ export const DocumentFormToolbar = ({
         <button
           type="button"
           onClick={onPost}
-          className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60"
+          disabled={isNew}
+          className="whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ui-01"
         >
           {t('documentFormToolbar.post')}
         </button>

@@ -6,17 +6,23 @@ import type { UseFormReturn } from 'react-hook-form'
 
 import {
   createDocumentEntry,
-  type CreateDocumentEntryPayload,
+  updateDocumentEntry,
+} from '@/entities/document-entry/api/document-entry'
+import type {
+  CreateDocumentEntryPayload,
+  DocumentEntry,
 } from '@/entities/document-entry'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 interface UseDocumentEntryActionsParams {
   isNew: boolean
+  existingEntry: DocumentEntry | null
   form: UseFormReturn<Record<string, unknown>>
 }
 
 export const useDocumentEntryActions = ({
   isNew,
+  existingEntry,
   form,
 }: UseDocumentEntryActionsParams) => {
   const { moduleCode = '', pageCode = '' } = useParams()
@@ -24,7 +30,7 @@ export const useDocumentEntryActions = ({
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
-  const { mutate } = useMutation({
+  const { mutate: mutateCreate } = useMutation({
     mutationFn: (payload: CreateDocumentEntryPayload) =>
       createDocumentEntry(moduleCode, payload),
     onSuccess: () => {
@@ -34,7 +40,20 @@ export const useDocumentEntryActions = ({
     },
   })
 
-  const buildPayload = useCallback(
+  const { mutate: mutateUpdate } = useMutation({
+    mutationFn: (payload: CreateDocumentEntryPayload) =>
+      updateDocumentEntry(existingEntry!.id, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ['document-entries', moduleCode],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ['document-entry', String(existingEntry?.id)],
+      })
+    },
+  })
+
+  const buildCreatePayload = useCallback(
     (isPosted: boolean): CreateDocumentEntryPayload => ({
       code: '',
       nameRu: '',
@@ -47,10 +66,28 @@ export const useDocumentEntryActions = ({
     [form]
   )
 
+  const buildUpdatePayload = useCallback(
+    (isPosted: boolean): CreateDocumentEntryPayload => ({
+      code: existingEntry?.code ?? '',
+      nameRu: existingEntry?.nameRu ?? '',
+      nameKz: existingEntry?.nameKz ?? '',
+      parentId: existingEntry?.parentId ?? null,
+      sortOrder: existingEntry?.sortOrder ?? 0,
+      isPosted,
+      attributes: form.getValues(),
+    }),
+    [existingEntry, form]
+  )
+
   const submitWith = useCallback(
     (isPosted: boolean, onSuccess: (entry: { id: number }) => void) => {
       void form.handleSubmit(() => {
-        mutate(buildPayload(isPosted), {
+        const payload = isNew
+          ? buildCreatePayload(isPosted)
+          : buildUpdatePayload(isPosted)
+        const mutate = isNew ? mutateCreate : mutateUpdate
+
+        mutate(payload, {
           onSuccess: (response) => {
             onSuccess(response.data.data as { id: number })
           },
@@ -65,7 +102,15 @@ export const useDocumentEntryActions = ({
         })
       })()
     },
-    [form, mutate, buildPayload, t]
+    [
+      form,
+      isNew,
+      mutateCreate,
+      mutateUpdate,
+      buildCreatePayload,
+      buildUpdatePayload,
+      t,
+    ]
   )
 
   const handleSave = useCallback(() => {
@@ -81,16 +126,10 @@ export const useDocumentEntryActions = ({
   }, [submitWith, isNew, navigate, pageCode, moduleCode, t])
 
   const handlePost = useCallback(() => {
-    submitWith(true, (entry) => {
+    submitWith(true, () => {
       showToast('info', t('documentEntry.posted'))
-      if (isNew) {
-        void navigate(
-          `/modules/${pageCode}/document/${moduleCode}/${String(entry.id)}`,
-          { replace: true }
-        )
-      }
     })
-  }, [submitWith, isNew, navigate, pageCode, moduleCode, t])
+  }, [submitWith, t])
 
   const handlePostAndClose = useCallback(() => {
     submitWith(true, () => {

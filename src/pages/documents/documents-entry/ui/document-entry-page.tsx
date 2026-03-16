@@ -28,7 +28,11 @@ export const DocumentEntryPage = () => {
   const { form, isNew, existingEntry, isLoadingEntry } = useDocumentEntryForm()
 
   const { handleSave, handlePost, handlePostAndClose } =
-    useDocumentEntryActions({ isNew, form })
+    useDocumentEntryActions({
+      isNew,
+      existingEntry: existingEntry ?? null,
+      form,
+    })
 
   const pageTitle = isNew
     ? t('documentEntry.newTitle', { name: title })
@@ -49,6 +53,7 @@ export const DocumentEntryPage = () => {
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={pageTitle} />
       <DocumentFormToolbar
+        isNew={isNew}
         onSave={handleSave}
         onPost={handlePost}
         onPostAndClose={handlePostAndClose}

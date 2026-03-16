@@ -71,11 +71,22 @@ export const DocumentEntryPage = () => {
     defaultValues: {},
   })
 
+  const todayISO = useMemo(() => new Date().toISOString(), [])
+
   useEffect(() => {
     if (isNew && newEntryData?.attributes) {
-      form.reset(newEntryData.attributes)
+      form.reset({
+        Data: todayISO,
+        ...newEntryData.attributes,
+      })
     }
-  }, [newEntryData, form, isNew])
+  }, [newEntryData, form, isNew, todayISO])
+
+  useEffect(() => {
+    if (isNew && !newEntryParams && !form.getValues('Data')) {
+      form.setValue('Data', todayISO)
+    }
+  }, [isNew, newEntryParams, form, todayISO])
 
   useEffect(() => {
     if (!isNew && existingEntry?.attributes) {

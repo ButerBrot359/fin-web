@@ -8,6 +8,7 @@ import type { DocumentAttribute } from '@/entities/document-type'
 import { FormRendererContext } from '../lib/hooks/use-form-renderer-context'
 import { useFieldOptions } from '../lib/hooks/use-field-options'
 import { useFormEvents } from '../lib/hooks/use-form-events'
+import { useTypeDependencies } from '../lib/hooks/use-type-dependencies'
 import { NodeRenderer } from './node-renderer'
 
 interface FormRendererProps {
@@ -25,6 +26,7 @@ export const FormRenderer = ({
 }: FormRendererProps) => {
   const { i18n } = useTranslation()
   const { optionsMap } = useFieldOptions({ attributes })
+  const { dependencyMap } = useTypeDependencies({ attributes })
 
   const { onFieldChange } = useFormEvents({ typeCode, attributes, form })
 
@@ -35,8 +37,9 @@ export const FormRenderer = ({
       language: i18n.language,
       optionsMap,
       onFieldChange,
+      dependencyMap,
     }),
-    [attributes, form, i18n.language, optionsMap, onFieldChange]
+    [attributes, form, i18n.language, optionsMap, onFieldChange, dependencyMap]
   )
 
   return (

@@ -47,53 +47,57 @@ export const useDocumentEntryActions = ({
     [form]
   )
 
+  const submitWith = useCallback(
+    (isPosted: boolean, onSuccess: (entry: { id: number }) => void) => {
+      void form.handleSubmit(() => {
+        mutate(buildPayload(isPosted), {
+          onSuccess: (response) => {
+            onSuccess(response.data.data as { id: number })
+          },
+          onError: () => {
+            showToast(
+              'error',
+              t(
+                isPosted ? 'documentEntry.postError' : 'documentEntry.saveError'
+              )
+            )
+          },
+        })
+      })()
+    },
+    [form, mutate, buildPayload, t]
+  )
+
   const handleSave = useCallback(() => {
-    mutate(buildPayload(false), {
-      onSuccess: (response) => {
-        const entry = response.data.data
-        showToast('info', t('documentEntry.saved'))
-        if (isNew) {
-          void navigate(
-            `/modules/${pageCode}/document/${moduleCode}/${String(entry.id)}`,
-            { replace: true }
-          )
-        }
-      },
-      onError: () => {
-        showToast('error', t('documentEntry.saveError'))
-      },
+    submitWith(false, (entry) => {
+      showToast('info', t('documentEntry.saved'))
+      if (isNew) {
+        void navigate(
+          `/modules/${pageCode}/document/${moduleCode}/${String(entry.id)}`,
+          { replace: true }
+        )
+      }
     })
-  }, [buildPayload, mutate, isNew, navigate, pageCode, moduleCode, t])
+  }, [submitWith, isNew, navigate, pageCode, moduleCode, t])
 
   const handlePost = useCallback(() => {
-    mutate(buildPayload(true), {
-      onSuccess: (response) => {
-        const entry = response.data.data
-        showToast('info', t('documentEntry.posted'))
-        if (isNew) {
-          void navigate(
-            `/modules/${pageCode}/document/${moduleCode}/${String(entry.id)}`,
-            { replace: true }
-          )
-        }
-      },
-      onError: () => {
-        showToast('error', t('documentEntry.postError'))
-      },
+    submitWith(true, (entry) => {
+      showToast('info', t('documentEntry.posted'))
+      if (isNew) {
+        void navigate(
+          `/modules/${pageCode}/document/${moduleCode}/${String(entry.id)}`,
+          { replace: true }
+        )
+      }
     })
-  }, [buildPayload, mutate, isNew, navigate, pageCode, moduleCode, t])
+  }, [submitWith, isNew, navigate, pageCode, moduleCode, t])
 
   const handlePostAndClose = useCallback(() => {
-    mutate(buildPayload(true), {
-      onSuccess: () => {
-        showToast('info', t('documentEntry.posted'))
-        void navigate(`/modules/${pageCode}/document/${moduleCode}`)
-      },
-      onError: () => {
-        showToast('error', t('documentEntry.postError'))
-      },
+    submitWith(true, () => {
+      showToast('info', t('documentEntry.posted'))
+      void navigate(`/modules/${pageCode}/document/${moduleCode}`)
     })
-  }, [buildPayload, mutate, navigate, pageCode, moduleCode, t])
+  }, [submitWith, navigate, pageCode, moduleCode, t])
 
   return { handleSave, handlePost, handlePostAndClose }
 }

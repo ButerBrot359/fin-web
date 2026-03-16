@@ -70,6 +70,7 @@ export const EnumField = ({
             }}
             label={label}
             readOnly={readOnly}
+            required={!!required}
             loading={isFetching}
             error={!!fieldState.error}
             helperText={fieldState.error?.message}

@@ -29,6 +29,9 @@ export const theme = createTheme({
             backgroundColor: '#ffffff',
             borderColor: '#2a75f4',
           },
+          '&.Mui-error': {
+            borderColor: '#f4482a',
+          },
           '&::before, &::after': { display: 'none' },
         },
         input: {
@@ -58,10 +61,22 @@ export const theme = createTheme({
     MuiFormHelperText: {
       styleOverrides: {
         root: {
+          position: 'absolute',
+          bottom: -18,
+          left: 0,
           marginLeft: 0,
+          fontSize: 12,
           '&.Mui-error': {
             color: '#f4482a',
           },
+        },
+      },
+    },
+    MuiFormControl: {
+      styleOverrides: {
+        root: {
+          position: 'relative',
+          marginBottom: 4,
         },
       },
     },
@@ -129,6 +144,9 @@ export const theme = createTheme({
           '&.Mui-focused': {
             backgroundColor: '#ffffff',
             borderColor: '#2a75f4',
+          },
+          '&.Mui-error': {
+            borderColor: '#f4482a',
           },
           '&::before, &::after': { display: 'none' },
         },

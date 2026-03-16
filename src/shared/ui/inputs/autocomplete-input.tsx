@@ -11,6 +11,7 @@ interface AutocompleteInputProps {
   onInputChange?: (event: unknown, value: string, reason: string) => void
   label?: string
   readOnly?: boolean
+  required?: boolean
   error?: boolean
   helperText?: string
   loading?: boolean
@@ -26,6 +27,7 @@ export const AutocompleteInput = ({
   onInputChange,
   label,
   readOnly,
+  required,
   error,
   helperText,
   loading,
@@ -55,6 +57,7 @@ export const AutocompleteInput = ({
         <TextField
           {...params}
           label={label}
+          required={required}
           error={error}
           helperText={helperText}
           slotProps={{

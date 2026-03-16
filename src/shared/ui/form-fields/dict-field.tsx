@@ -127,6 +127,7 @@ export const DictField = ({
             }}
             label={label}
             readOnly={readOnly}
+            required={!!required}
             loading={loading}
             error={!!fieldState.error}
             helperText={fieldState.error?.message}

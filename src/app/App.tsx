@@ -1,12 +1,14 @@
 import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 
-import { Sidebar } from '@/widgets/sidebar'
-import { TopBar } from '@/widgets/top-bar'
 import { MainPage } from '@/pages/main'
+
+import { TopBar } from '@/widgets/top-bar'
+import { Sidebar } from '@/widgets/sidebar'
+
+import { Toaster } from '@/shared/ui/toast/toast'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
-import { Toaster } from '@/shared/ui/toast/toast'
 
 import { Layout } from './layout/layout'
 

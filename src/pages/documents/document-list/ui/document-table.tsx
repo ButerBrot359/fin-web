@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Typography } from '@mui/material'
-import { ArrowUpward } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
+import { useNavigate, useParams } from 'react-router-dom'
+
+import { Typography } from '@mui/material'
 import {
   useReactTable,
   getCoreRowModel,
@@ -10,12 +10,22 @@ import {
   type ColumnDef,
 } from '@tanstack/react-table'
 
-import { formatDate } from '@/shared/lib/utils/date'
-import type { DocumentAttribute } from '@/entities/document-type'
 import {
   useDocumentEntries,
   type DocumentEntry,
 } from '@/entities/document-entry'
+import type { DocumentAttribute } from '@/entities/document-type'
+
+import { formatDate } from '@/shared/lib/utils/date'
+import DocPostedIcon from '@/shared/assets/icons/doc-posted.svg'
+import DocDraftIcon from '@/shared/assets/icons/doc-draft.svg'
+import DocDeletedIcon from '@/shared/assets/icons/doc-deleted.svg'
+
+const getStatusIcon = (entry: DocumentEntry) => {
+  if (entry.isPosted) return <DocPostedIcon className="h-4 w-4 shrink-0" />
+  if (entry.isActive) return <DocDraftIcon className="h-4 w-4 shrink-0" />
+  return <DocDeletedIcon className="h-4 w-4 shrink-0" />
+}
 
 interface DocumentTableProps {
   attributes: DocumentAttribute[]
@@ -33,20 +43,11 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
       .filter((attr) => attr.showInList)
       .sort((a, b) => a.tableSortOrder - b.tableSortOrder)
 
-    const createdAtColumn: ColumnDef<DocumentEntry> = {
-      id: 'createdAt',
-      accessorKey: 'createdAt',
-      header: () => (
-        <div className="flex items-center gap-1">
-          <span>{t('documentTable.createdAt')}</span>
-          <ArrowUpward className="text-ui-05" sx={{ fontSize: 14 }} />
-        </div>
-      ),
-      cell: (info) => (
-        <Typography variant="body2" noWrap className="text-ui-06">
-          {formatDate(info.getValue() as string, 'dd.MM.yyyy HH:mm:ss')}
-        </Typography>
-      ),
+    const statusColumn: ColumnDef<DocumentEntry> = {
+      id: 'status',
+      header: () => null,
+      size: 24,
+      cell: ({ row }) => getStatusIcon(row.original),
     }
 
     const attributeColumns: ColumnDef<DocumentEntry>[] = visibleAttributes.map(
@@ -60,6 +61,20 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
         },
         cell: (info: { getValue: () => unknown }) => {
           const value = info.getValue()
+
+          if (
+            (attr.dataType === 'DATE' || attr.dataType === 'DATETIME') &&
+            typeof value === 'string'
+          ) {
+            const fmt =
+              attr.dataType === 'DATE' ? 'dd.MM.yyyy' : 'dd.MM.yyyy HH:mm:ss'
+            return (
+              <Typography variant="body2" noWrap className="text-ui-06">
+                {formatDate(value, fmt)}
+              </Typography>
+            )
+          }
+
           const display =
             typeof value === 'object' && value !== null
               ? ((value as Record<string, unknown>).name ??
@@ -88,7 +103,7 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
       ),
     }
 
-    return [createdAtColumn, ...attributeColumns, nameColumn]
+    return [statusColumn, ...attributeColumns, nameColumn]
   }, [attributes, i18n.language, t])
 
   const table = useReactTable({
@@ -109,7 +124,7 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="px-3 py-2 text-left text-body2 font-medium text-ui-05 whitespace-nowrap border-b-2 border-ui-06"
+                  className="px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06"
                 >
                   {header.isPlaceholder
                     ? null

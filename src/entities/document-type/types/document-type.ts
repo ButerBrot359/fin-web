@@ -1,4 +1,5 @@
 import type { ApiResponse } from '@/shared/types/api.types'
+import type { DataType } from '@/shared/lib/consts/data-types'
 
 export interface DocumentType {
   id: number
@@ -47,8 +48,9 @@ export interface DocumentAttribute {
   code1C: string
   nameRu: string
   nameKz: string
-  dataType: string
+  dataType: DataType
   isRequired: boolean
+  readonly: boolean
   maxLength: number | null
   referenceTypeCode: string | null
   allowedTypes?: AllowedType[]

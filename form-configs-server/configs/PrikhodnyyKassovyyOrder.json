@@ -17,8 +17,7 @@
             "children": [
               {
                 "type": "Field",
-                "code": "VidOperatsii",
-                "fieldType": "select"
+                "code": "VidOperatsii"
               },
               {
                 "type": "HStack",
@@ -27,32 +26,27 @@
                   {
                     "type": "Field",
                     "code": "Nomer",
-                    "fieldType": "text",
                     "flex": 1
                   },
                   {
                     "type": "Field",
                     "code": "Data",
-                    "fieldType": "datetime",
                     "flex": 1
                   }
                 ]
               },
               {
                 "type": "Field",
-                "code": "Organizatsiya",
-                "fieldType": "reference"
+                "code": "Organizatsiya"
               },
               {
                 "type": "Field",
-                "code": "PodrazdelenieOrganizatsii",
-                "fieldType": "reference"
+                "code": "PodrazdelenieOrganizatsii"
               },
-              { "type": "Field", "code": "Kassa", "fieldType": "reference" },
+              { "type": "Field", "code": "Kassa" },
               {
                 "type": "Field",
-                "code": "SummaDokumenta",
-                "fieldType": "decimal"
+                "code": "SummaDokumenta"
               }
             ]
           },
@@ -64,13 +58,11 @@
               { "type": "Label", "text": "Основание", "variant": "link" },
               {
                 "type": "Field",
-                "code": "IstochnikFinansirovaniya",
-                "fieldType": "reference"
+                "code": "IstochnikFinansirovaniya"
               },
               {
                 "type": "Field",
-                "code": "Spetsifika",
-                "fieldType": "reference"
+                "code": "Spetsifika"
               },
               {
                 "type": "HStack",
@@ -79,13 +71,11 @@
                   {
                     "type": "Field",
                     "code": "SchetKassy",
-                    "fieldType": "reference",
                     "flex": 1
                   },
                   {
                     "type": "Field",
                     "code": "StatyaDDS",
-                    "fieldType": "reference",
                     "flex": 1
                   }
                 ]
@@ -118,21 +108,18 @@
                           {
                             "type": "Field",
                             "code": "SchetUchetaBU",
-                            "fieldType": "reference",
                             "flex": 1
                           },
                           {
                             "type": "Field",
                             "code": "SchetAvansovBU",
-                            "fieldType": "reference",
                             "flex": 1
                           }
                         ]
                       },
                       {
                         "type": "Field",
-                        "code": "DogovorKontragenta",
-                        "fieldType": "reference"
+                        "code": "DogovorKontragenta"
                       }
                     ]
                   },
@@ -143,8 +130,7 @@
                     "children": [
                       {
                         "type": "Field",
-                        "code": "Kontragent",
-                        "fieldType": "reference"
+                        "code": "Kontragent"
                       }
                     ]
                   }
@@ -168,13 +154,11 @@
                     "children": [
                       {
                         "type": "Field",
-                        "code": "PrinyatoOt",
-                        "fieldType": "text"
+                        "code": "PrinyatoOt"
                       },
                       {
                         "type": "Field",
-                        "code": "Osnovanie",
-                        "fieldType": "text"
+                        "code": "Osnovanie"
                       }
                     ]
                   },
@@ -185,8 +169,7 @@
                     "children": [
                       {
                         "type": "Field",
-                        "code": "Prilozhenie",
-                        "fieldType": "text"
+                        "code": "Prilozhenie"
                       }
                     ]
                   }
@@ -204,13 +187,11 @@
           {
             "type": "Field",
             "code": "Kommentariy",
-            "fieldType": "textarea",
             "flex": 1
           },
           {
             "type": "Field",
             "code": "Otvetstvennyy",
-            "fieldType": "reference",
             "flex": 1
           }
         ]

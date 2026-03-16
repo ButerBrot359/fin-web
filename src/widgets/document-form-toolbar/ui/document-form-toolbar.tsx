@@ -1,7 +1,5 @@
 import { useTranslation } from 'react-i18next'
 
-import { Typography } from '@mui/material'
-
 import {
   GreenAccentButton,
   DropdownButton,
@@ -12,12 +10,14 @@ import LayersIcon from '@/shared/assets/icons/layers.svg'
 import LinkIcon from '@/shared/assets/icons/link.svg'
 
 interface DocumentFormToolbarProps {
+  isNew?: boolean
   onPostAndClose?: () => void
   onSave?: () => void
   onPost?: () => void
 }
 
 export const DocumentFormToolbar = ({
+  isNew,
   onPostAndClose,
   onSave,
   onPost,
@@ -33,20 +33,17 @@ export const DocumentFormToolbar = ({
         <button
           type="button"
           onClick={onSave}
-          className="cursor-pointer whitespace-nowrap rounded-lg bg-ui-01 px-4 py-2.5 text-ui-06 hover:bg-ui-01/60"
+          className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60"
         >
-          <Typography variant="body2">
-            {t('documentFormToolbar.save')}
-          </Typography>
+          {t('documentFormToolbar.save')}
         </button>
         <button
           type="button"
           onClick={onPost}
-          className="cursor-pointer whitespace-nowrap rounded-lg bg-ui-01 px-4 py-2.5 text-ui-06 hover:bg-ui-01/60"
+          disabled={isNew}
+          className="whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ui-01"
         >
-          <Typography variant="body2">
-            {t('documentFormToolbar.post')}
-          </Typography>
+          {t('documentFormToolbar.post')}
         </button>
         <DropdownButton label={t('documentFormToolbar.print')} />
         <IconButtonWrapper ariaLabel={t('actions.debitCredit')}>

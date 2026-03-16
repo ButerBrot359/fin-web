@@ -3,6 +3,7 @@ export {
   getDocumentEntry,
   getNewDocumentEntry,
   createDocumentEntry,
+  updateDocumentEntry,
 } from './api/document-entry'
 export { useDocumentEntries } from './lib/hooks/use-document-entries'
 export type {

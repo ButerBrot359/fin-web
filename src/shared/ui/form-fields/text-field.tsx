@@ -9,6 +9,7 @@ interface TextFieldProps {
   label: string
   control: Control<Record<string, unknown>>
   readOnly?: boolean
+  required?: string
 }
 
 export const TextField = ({
@@ -16,6 +17,7 @@ export const TextField = ({
   label,
   control,
   readOnly,
+  required,
 }: TextFieldProps) => {
   const { i18n } = useTranslation()
 
@@ -23,12 +25,14 @@ export const TextField = ({
     <Controller
       name={name}
       control={control}
+      rules={{ required }}
       render={({ field: { ref, ...field }, fieldState }) => (
         <TextInput
           {...field}
           inputRef={ref}
           value={getDisplayValue(field.value, i18n.language)}
           label={label}
+          required={!!required}
           readOnly={readOnly}
           error={!!fieldState.error}
           helperText={fieldState.error?.message}

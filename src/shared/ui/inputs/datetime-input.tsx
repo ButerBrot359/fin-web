@@ -2,12 +2,13 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
 import { parseISO, isValid } from 'date-fns'
 
-interface DateTimeInputProps {
+export interface DateTimeInputProps {
   value?: string
   onChange: (value: string) => void
   label?: string
   readOnly?: boolean
   dateOnly?: boolean
+  required?: boolean
   error?: boolean
   helperText?: string
 }
@@ -18,6 +19,7 @@ export const DateTimeInput = ({
   label,
   readOnly,
   dateOnly,
+  required,
   error,
   helperText,
 }: DateTimeInputProps) => {
@@ -33,7 +35,7 @@ export const DateTimeInput = ({
   }
 
   const slotProps = {
-    textField: { error, helperText },
+    textField: { error, helperText, required },
   }
 
   if (dateOnly) {

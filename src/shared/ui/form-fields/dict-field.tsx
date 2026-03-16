@@ -28,8 +28,9 @@ interface DictFieldProps {
   label: string
   control: Control<Record<string, unknown>>
   readOnly?: boolean
+  required?: string
   options?: SelectOption[]
-  referenceTypeCode?: string
+  searchUrl?: string
   loading?: boolean
 }
 
@@ -41,7 +42,8 @@ export const DictField = ({
   control,
   readOnly,
   options: staticOptions,
-  referenceTypeCode,
+  required,
+  searchUrl,
   loading: externalLoading,
 }: DictFieldProps) => {
   const { i18n } = useTranslation()
@@ -49,7 +51,7 @@ export const DictField = ({
   const [inputValue, setInputValue] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
-  const isServerSearch = !!referenceTypeCode
+  const isServerSearch = !!searchUrl
 
   useEffect(() => {
     if (!isServerSearch) return
@@ -66,10 +68,10 @@ export const DictField = ({
     unknown,
     SelectOption[]
   >({
-    queryKey: ['dictionary-search', referenceTypeCode, debouncedSearch],
+    queryKey: ['dictionary-search', searchUrl, debouncedSearch],
     queryFn: () =>
       apiService.get<DictionarySearchResponse>({
-        url: `/api/dictionaries/entries/${referenceTypeCode!}/search`,
+        url: searchUrl!,
         params: { q: debouncedSearch, size: 30 },
       }),
     enabled: isServerSearch && opened,
@@ -100,6 +102,7 @@ export const DictField = ({
     <Controller
       name={name}
       control={control}
+      rules={{ required }}
       render={({ field, fieldState }) => {
         const currentValue = resolveSelectValue(field.value, options)
 
@@ -124,6 +127,7 @@ export const DictField = ({
             }}
             label={label}
             readOnly={readOnly}
+            required={!!required}
             loading={loading}
             error={!!fieldState.error}
             helperText={fieldState.error?.message}

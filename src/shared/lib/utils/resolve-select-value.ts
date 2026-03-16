@@ -1,4 +1,17 @@
+import i18n from '@/app/config/i18n'
 import type { SelectOption } from '@/shared/types/select-option'
+
+const resolveLabel = (obj: Record<string, unknown>): string => {
+  if (typeof obj.displayName === 'string' && obj.displayName)
+    return obj.displayName
+  if (typeof obj.name === 'string' && obj.name) return obj.name
+
+  const isKz = i18n.language === 'kz'
+  const nameKz = typeof obj.nameKz === 'string' ? obj.nameKz : ''
+  const nameRu = typeof obj.nameRu === 'string' ? obj.nameRu : ''
+
+  return (isKz ? nameKz || nameRu : nameRu || nameKz) || ''
+}
 
 export const resolveSelectValue = (
   raw: unknown,
@@ -14,12 +27,7 @@ export const resolveSelectValue = (
   return {
     id: obj.id as number,
     code: typeof obj.code === 'string' ? obj.code : '',
-    label:
-      typeof obj.nameRu === 'string'
-        ? obj.nameRu
-        : typeof obj.name === 'string'
-          ? obj.name
-          : '',
+    label: resolveLabel(obj),
     raw: obj,
   }
 }

@@ -1,5 +1,6 @@
-import { Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
+
+import { Typography } from '@mui/material'
 
 import noContentImg from '@/shared/assets/info/no-content.png'
 

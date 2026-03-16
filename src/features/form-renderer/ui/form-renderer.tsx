@@ -13,14 +13,12 @@ interface FormRendererProps {
   config: FormConfig
   attributes: DocumentAttribute[]
   form: UseFormReturn<Record<string, unknown>>
-  readOnly?: boolean
 }
 
 export const FormRenderer = ({
   config,
   attributes,
   form,
-  readOnly = false,
 }: FormRendererProps) => {
   const { i18n } = useTranslation()
   const { optionsMap } = useFieldOptions({ attributes })
@@ -29,11 +27,10 @@ export const FormRenderer = ({
     () => ({
       attributeMap: new Map(attributes.map((attr) => [attr.code, attr])),
       form,
-      readOnly,
       language: i18n.language,
       optionsMap,
     }),
-    [attributes, form, readOnly, i18n.language, optionsMap]
+    [attributes, form, i18n.language, optionsMap]
   )
 
   return (

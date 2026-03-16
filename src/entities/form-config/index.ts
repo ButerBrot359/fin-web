@@ -13,6 +13,5 @@ export type {
   LabelNode,
   TabsNode,
   TabPane,
-  FieldType,
   LabelVariant,
 } from './types/form-config'

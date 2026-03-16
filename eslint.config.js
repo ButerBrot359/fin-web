@@ -47,6 +47,7 @@ export default tseslint.config(
       ],
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/prefer-nullish-coalescing': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
       'react-hooks/incompatible-library': 'off',
     },
   }

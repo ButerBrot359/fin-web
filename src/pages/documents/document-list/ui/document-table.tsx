@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { Typography } from '@mui/material'
-import { ArrowUpward } from '@mui/icons-material'
 import {
   useReactTable,
   getCoreRowModel,
@@ -44,23 +43,11 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
       .filter((attr) => attr.showInList)
       .sort((a, b) => a.tableSortOrder - b.tableSortOrder)
 
-    const createdAtColumn: ColumnDef<DocumentEntry> = {
-      id: 'createdAt',
-      accessorKey: 'createdAt',
-      header: () => (
-        <div className="flex items-center gap-1">
-          <span>{t('documentTable.createdAt')}</span>
-          <ArrowUpward className="text-ui-05" sx={{ fontSize: 14 }} />
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          {getStatusIcon(row.original)}
-          <Typography variant="body2" noWrap className="text-ui-06">
-            {formatDate(row.original.createdAt, 'dd.MM.yyyy HH:mm:ss')}
-          </Typography>
-        </div>
-      ),
+    const statusColumn: ColumnDef<DocumentEntry> = {
+      id: 'status',
+      header: () => null,
+      size: 24,
+      cell: ({ row }) => getStatusIcon(row.original),
     }
 
     const attributeColumns: ColumnDef<DocumentEntry>[] = visibleAttributes.map(
@@ -74,6 +61,20 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
         },
         cell: (info: { getValue: () => unknown }) => {
           const value = info.getValue()
+
+          if (
+            (attr.dataType === 'DATE' || attr.dataType === 'DATETIME') &&
+            typeof value === 'string'
+          ) {
+            const fmt =
+              attr.dataType === 'DATE' ? 'dd.MM.yyyy' : 'dd.MM.yyyy HH:mm:ss'
+            return (
+              <Typography variant="body2" noWrap className="text-ui-06">
+                {formatDate(value, fmt)}
+              </Typography>
+            )
+          }
+
           const display =
             typeof value === 'object' && value !== null
               ? ((value as Record<string, unknown>).name ??
@@ -102,7 +103,7 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
       ),
     }
 
-    return [createdAtColumn, ...attributeColumns, nameColumn]
+    return [statusColumn, ...attributeColumns, nameColumn]
   }, [attributes, i18n.language, t])
 
   const table = useReactTable({

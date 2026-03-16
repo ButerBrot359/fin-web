@@ -14,8 +14,9 @@ import { AutocompleteInput } from '@/shared/ui/inputs/autocomplete-input'
 interface DictionaryEntry {
   id: number
   code: string
-  nameRu: string
-  nameKz: string
+  displayName?: string
+  nameRu?: string
+  nameKz?: string
   [key: string]: unknown
 }
 
@@ -81,9 +82,11 @@ export const DictField = ({
           id: entry.id,
           code: entry.code,
           label:
-            i18n.language === 'kz' && entry.nameKz
+            entry.displayName ??
+            (i18n.language === 'kz' && entry.nameKz
               ? entry.nameKz
-              : entry.nameRu,
+              : entry.nameRu) ??
+            entry.code,
           raw: entry as unknown as Record<string, unknown>,
         })
       ),

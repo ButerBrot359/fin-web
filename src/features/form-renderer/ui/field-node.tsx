@@ -1,3 +1,4 @@
+import { useEffect, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { FieldNode as FieldNodeType } from '@/entities/form-config'
@@ -17,6 +18,7 @@ import {
 } from '@/shared/ui/form-fields'
 
 import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
+import type { FieldDependency } from '../types/renderer-context'
 
 interface FieldNodeProps {
   node: FieldNodeType
@@ -24,9 +26,46 @@ interface FieldNodeProps {
 
 export const FieldNode = ({ node }: FieldNodeProps) => {
   const { t } = useTranslation()
-  const { attributeMap, form, language, optionsMap, onFieldChange } =
-    useFormRendererContext()
+  const {
+    attributeMap,
+    form,
+    language,
+    optionsMap,
+    onFieldChange,
+    dependencyMap,
+  } = useFormRendererContext()
   const attribute = attributeMap.get(node.code)
+
+  const dependency: FieldDependency | undefined = dependencyMap.get(node.code)
+  const sourceValue = form.watch(dependency?.sourceFieldCode ?? '') as
+    | { id: number | string; [key: string]: unknown }
+    | null
+    | undefined
+
+  const isFirstRender = useRef(true)
+  const prevSourceId = useRef<number | string | undefined>(sourceValue?.id)
+
+  useEffect(() => {
+    if (!dependency) return
+
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      prevSourceId.current = sourceValue?.id
+      return
+    }
+
+    if (prevSourceId.current !== sourceValue?.id) {
+      prevSourceId.current = sourceValue?.id
+      form.setValue(node.code, null)
+    }
+  }, [dependency, sourceValue?.id, form, node.code])
+
+  const disabled = dependency ? !sourceValue : false
+
+  const searchParams = useMemo(() => {
+    if (!dependency || !sourceValue?.id) return undefined
+    return { af: `${dependency.targetAttributeCode}:${String(sourceValue.id)}` }
+  }, [dependency, sourceValue?.id])
 
   if (!attribute) return null
 
@@ -75,6 +114,8 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
           {...commonProps}
           options={optionsMap[node.code] ?? []}
           searchUrl={searchUrl}
+          disabled={disabled}
+          searchParams={searchParams}
         />
       )
     }

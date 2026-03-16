@@ -29,9 +29,11 @@ interface DictFieldProps {
   label: string
   control: Control<Record<string, unknown>>
   readOnly?: boolean
+  disabled?: boolean
   required?: string
   options?: SelectOption[]
   searchUrl?: string
+  searchParams?: Record<string, string>
   loading?: boolean
   onValueChange?: () => void
 }
@@ -43,9 +45,11 @@ export const DictField = ({
   label,
   control,
   readOnly,
+  disabled,
   options: staticOptions,
   required,
   searchUrl,
+  searchParams,
   loading: externalLoading,
   onValueChange,
 }: DictFieldProps) => {
@@ -71,11 +75,11 @@ export const DictField = ({
     unknown,
     SelectOption[]
   >({
-    queryKey: ['dictionary-search', searchUrl, debouncedSearch],
+    queryKey: ['dictionary-search', searchUrl, debouncedSearch, searchParams],
     queryFn: () =>
       apiService.get<DictionarySearchResponse>({
         url: searchUrl!,
-        params: { q: debouncedSearch, size: 30 },
+        params: { q: debouncedSearch, size: 30, ...searchParams },
       }),
     enabled: isServerSearch && opened,
     select: (response) =>
@@ -133,6 +137,7 @@ export const DictField = ({
             }}
             label={label}
             readOnly={readOnly}
+            disabled={disabled}
             required={!!required}
             loading={loading}
             error={!!fieldState.error}

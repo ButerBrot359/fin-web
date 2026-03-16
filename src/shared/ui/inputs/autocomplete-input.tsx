@@ -11,6 +11,7 @@ interface AutocompleteInputProps {
   onInputChange?: (event: unknown, value: string, reason: string) => void
   label?: string
   readOnly?: boolean
+  disabled?: boolean
   required?: boolean
   error?: boolean
   helperText?: string
@@ -27,6 +28,7 @@ export const AutocompleteInput = ({
   onInputChange,
   label,
   readOnly,
+  disabled,
   required,
   error,
   helperText,
@@ -50,7 +52,22 @@ export const AutocompleteInput = ({
       getOptionLabel={(option) => option.label}
       isOptionEqualToValue={(option, val) => option.id === val.id}
       readOnly={readOnly}
+      disabled={disabled}
       loading={loading}
+      sx={
+        disabled
+          ? {
+              '& .MuiFilledInput-root': {
+                backgroundColor: '#e6e9ee',
+                borderColor: '#c3cee0',
+                '&:hover': {
+                  backgroundColor: '#e6e9ee',
+                  borderColor: '#c3cee0',
+                },
+              },
+            }
+          : undefined
+      }
       loadingText={t('inputs.loading')}
       noOptionsText={t('inputs.noOptions')}
       renderInput={(params) => (
@@ -68,7 +85,7 @@ export const AutocompleteInput = ({
               endAdornment: (
                 <>
                   {params.InputProps.endAdornment}
-                  {endAction}
+                  {!disabled && endAction}
                 </>
               ),
             },

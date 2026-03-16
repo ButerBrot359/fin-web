@@ -47,3 +47,20 @@ export const getSearchUrl = (dataType: DataType, typeCode: string) => {
   if (!basePath) return null
   return `${basePath}/${typeCode}/search`
 }
+
+const TYPE_PATHS: Partial<Record<DataType, string>> = {
+  DICTIONARY: '/api/dictionaries/types',
+  DOCUMENT: '/api/document-types',
+  CHARACTERISTICS_PLAN: '/api/characteristicsplan-types',
+  EXCHANGE_PLAN: '/api/exchangeplan-types',
+  CALCULATION_PLAN: '/api/calculationplan-types',
+  ACCOUNT_PLAN: '/api/accountplan-types',
+  ACCUMULATION_REGISTER: '/api/accumulation-register-types',
+  INFORMATION_REGISTER: '/api/information-register-types',
+}
+
+export const getTypeUrl = (dataType: DataType, typeCode: string) => {
+  const basePath = TYPE_PATHS[dataType]
+  if (!basePath) return null
+  return `${basePath}/${typeCode}`
+}

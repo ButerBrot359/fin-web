@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
+
 import { Typography } from '@mui/material'
 import { ArrowUpward } from '@mui/icons-material'
-import { useTranslation } from 'react-i18next'
 import {
   useReactTable,
   getCoreRowModel,
@@ -10,12 +11,22 @@ import {
   type ColumnDef,
 } from '@tanstack/react-table'
 
-import { formatDate } from '@/shared/lib/utils/date'
-import type { DocumentAttribute } from '@/entities/document-type'
 import {
   useDocumentEntries,
   type DocumentEntry,
 } from '@/entities/document-entry'
+import type { DocumentAttribute } from '@/entities/document-type'
+
+import { formatDate } from '@/shared/lib/utils/date'
+import DocPostedIcon from '@/shared/assets/icons/doc-posted.svg'
+import DocDraftIcon from '@/shared/assets/icons/doc-draft.svg'
+import DocDeletedIcon from '@/shared/assets/icons/doc-deleted.svg'
+
+const getStatusIcon = (entry: DocumentEntry) => {
+  if (entry.isPosted) return <DocPostedIcon className="h-4 w-4 shrink-0" />
+  if (entry.isActive) return <DocDraftIcon className="h-4 w-4 shrink-0" />
+  return <DocDeletedIcon className="h-4 w-4 shrink-0" />
+}
 
 interface DocumentTableProps {
   attributes: DocumentAttribute[]
@@ -42,10 +53,13 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
           <ArrowUpward className="text-ui-05" sx={{ fontSize: 14 }} />
         </div>
       ),
-      cell: (info) => (
-        <Typography variant="body2" noWrap className="text-ui-06">
-          {formatDate(info.getValue() as string, 'dd.MM.yyyy HH:mm:ss')}
-        </Typography>
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          {getStatusIcon(row.original)}
+          <Typography variant="body2" noWrap className="text-ui-06">
+            {formatDate(row.original.createdAt, 'dd.MM.yyyy HH:mm:ss')}
+          </Typography>
+        </div>
       ),
     }
 

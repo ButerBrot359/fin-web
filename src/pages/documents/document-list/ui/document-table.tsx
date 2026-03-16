@@ -124,7 +124,7 @@ export const DocumentTable = ({ attributes }: DocumentTableProps) => {
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="px-3 py-2 text-left text-body2 font-medium text-ui-05 whitespace-nowrap border-b-2 border-ui-06"
+                  className="px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06"
                 >
                   {header.isPlaceholder
                     ? null

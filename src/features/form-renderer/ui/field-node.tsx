@@ -29,7 +29,7 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
 
   if (!attribute) return null
 
-  const { dataType } = attribute
+  const { dataType, readonly: isReadOnly } = attribute
 
   if (IGNORED_DATA_TYPES.has(dataType)) return null
 
@@ -45,7 +45,7 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
     name: node.code,
     label,
     control: form.control,
-    readOnly: attribute.readonly,
+    readOnly: isReadOnly,
     required,
   }
 

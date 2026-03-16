@@ -2,6 +2,7 @@ import type { FieldNode as FieldNodeType } from '@/entities/form-config'
 import {
   IGNORED_DATA_TYPES,
   DICT_DATA_TYPES,
+  getSearchUrl,
 } from '@/shared/lib/consts/data-types'
 import {
   TextField,
@@ -51,11 +52,16 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
 
   const renderField = () => {
     if (DICT_DATA_TYPES.has(dataType)) {
+      const typeCode = getTypeCode()
+      const searchUrl = typeCode
+        ? (getSearchUrl(dataType, typeCode) ?? undefined)
+        : undefined
+
       return (
         <DictField
           {...commonProps}
           options={optionsMap[node.code] ?? []}
-          referenceTypeCode={getTypeCode() || undefined}
+          searchUrl={searchUrl}
         />
       )
     }

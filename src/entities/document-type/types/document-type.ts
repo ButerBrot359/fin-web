@@ -60,4 +60,5 @@ export interface DocumentAttribute {
   showInList: boolean
   showInForm: boolean
   defaultValue: string | null
+  formEvent: string | null
 }

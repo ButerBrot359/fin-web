@@ -33,6 +33,7 @@ interface DictFieldProps {
   options?: SelectOption[]
   searchUrl?: string
   loading?: boolean
+  onValueChange?: () => void
 }
 
 const DEBOUNCE_MS = 300
@@ -46,6 +47,7 @@ export const DictField = ({
   required,
   searchUrl,
   loading: externalLoading,
+  onValueChange,
 }: DictFieldProps) => {
   const { i18n } = useTranslation()
   const [opened, setOpened] = useState(false)
@@ -115,6 +117,7 @@ export const DictField = ({
             options={options}
             onChange={(newOption) => {
               field.onChange(newOption?.raw ?? null)
+              onValueChange?.()
             }}
             onInputChange={
               isServerSearch

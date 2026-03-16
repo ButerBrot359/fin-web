@@ -8,6 +8,7 @@ interface TextareaFieldProps {
   control: Control<Record<string, unknown>>
   readOnly?: boolean
   required?: string
+  onValueChange?: () => void
 }
 
 export const TextareaField = ({
@@ -16,14 +17,19 @@ export const TextareaField = ({
   control,
   readOnly,
   required,
+  onValueChange,
 }: TextareaFieldProps) => (
   <Controller
     name={name}
     control={control}
     rules={{ required }}
-    render={({ field: { ref, ...field }, fieldState }) => (
+    render={({ field: { ref, onChange, ...field }, fieldState }) => (
       <TextareaInput
         {...field}
+        onChange={(e) => {
+          onChange(e)
+          onValueChange?.()
+        }}
         inputRef={ref}
         value={(field.value as string | undefined) ?? ''}
         label={label}

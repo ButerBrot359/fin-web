@@ -8,4 +8,5 @@ export interface FormRendererContextValue {
   form: UseFormReturn<Record<string, unknown>>
   language: string
   optionsMap: Record<string, SelectOption[]>
+  onFieldChange: (fieldCode: string) => void
 }

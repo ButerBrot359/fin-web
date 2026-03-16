@@ -9,6 +9,7 @@ interface DateTimeFieldProps {
   readOnly?: boolean
   dateOnly?: boolean
   required?: string
+  onValueChange?: () => void
 }
 
 export const DateTimeField = ({
@@ -18,6 +19,7 @@ export const DateTimeField = ({
   readOnly,
   dateOnly,
   required,
+  onValueChange,
 }: DateTimeFieldProps) => (
   <Controller
     name={name}
@@ -28,6 +30,7 @@ export const DateTimeField = ({
         value={(field.value as string | undefined) ?? ''}
         onChange={(value) => {
           field.onChange(value)
+          onValueChange?.()
         }}
         label={label}
         required={!!required}

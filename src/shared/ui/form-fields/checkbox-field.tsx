@@ -7,6 +7,7 @@ interface CheckboxFieldProps {
   control: Control<Record<string, unknown>>
   readOnly?: boolean
   required?: string
+  onValueChange?: () => void
 }
 
 export const CheckboxField = ({
@@ -15,6 +16,7 @@ export const CheckboxField = ({
   control,
   readOnly,
   required,
+  onValueChange,
 }: CheckboxFieldProps) => (
   <Controller
     name={name}
@@ -29,6 +31,7 @@ export const CheckboxField = ({
               checked={!!field.value}
               onChange={(e) => {
                 field.onChange(e.target.checked)
+                onValueChange?.()
               }}
               disabled={readOnly}
             />

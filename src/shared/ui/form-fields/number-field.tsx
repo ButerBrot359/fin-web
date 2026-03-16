@@ -9,6 +9,7 @@ interface NumberFieldProps {
   readOnly?: boolean
   decimal?: boolean
   required?: string
+  onValueChange?: () => void
 }
 
 export const NumberField = ({
@@ -18,14 +19,19 @@ export const NumberField = ({
   readOnly,
   decimal,
   required,
+  onValueChange,
 }: NumberFieldProps) => (
   <Controller
     name={name}
     control={control}
     rules={{ required }}
-    render={({ field: { ref, ...field }, fieldState }) => (
+    render={({ field: { ref, onChange, ...field }, fieldState }) => (
       <NumberInput
         {...field}
+        onChange={(e) => {
+          onChange(e)
+          onValueChange?.()
+        }}
         inputRef={ref}
         value={(field.value as string | undefined) ?? ''}
         label={label}

@@ -16,6 +16,7 @@ interface EnumFieldProps {
   readOnly?: boolean
   required?: string
   enumTypeCode: string
+  onValueChange?: () => void
 }
 
 const toSelectOption = (item: EnumsValue): SelectOption => ({
@@ -32,6 +33,7 @@ export const EnumField = ({
   readOnly,
   required,
   enumTypeCode,
+  onValueChange,
 }: EnumFieldProps) => {
   const [opened, setOpened] = useState(false)
 
@@ -64,6 +66,7 @@ export const EnumField = ({
             options={options}
             onChange={(newOption) => {
               field.onChange(newOption?.raw ?? null)
+              onValueChange?.()
             }}
             onOpen={() => {
               setOpened(true)

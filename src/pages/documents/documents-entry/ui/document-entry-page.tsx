@@ -67,6 +67,7 @@ export const DocumentEntryPage = () => {
             config={formConfig}
             attributes={formAttributes}
             form={form}
+            typeCode={moduleCode}
           />
         )}
       </div>

@@ -14,8 +14,9 @@ import { AutocompleteInput } from '@/shared/ui/inputs/autocomplete-input'
 interface DictionaryEntry {
   id: number
   code: string
-  nameRu: string
-  nameKz: string
+  displayName?: string
+  nameRu?: string
+  nameKz?: string
   [key: string]: unknown
 }
 
@@ -32,6 +33,7 @@ interface DictFieldProps {
   options?: SelectOption[]
   searchUrl?: string
   loading?: boolean
+  onValueChange?: () => void
 }
 
 const DEBOUNCE_MS = 300
@@ -45,6 +47,7 @@ export const DictField = ({
   required,
   searchUrl,
   loading: externalLoading,
+  onValueChange,
 }: DictFieldProps) => {
   const { i18n } = useTranslation()
   const [opened, setOpened] = useState(false)
@@ -81,9 +84,11 @@ export const DictField = ({
           id: entry.id,
           code: entry.code,
           label:
-            i18n.language === 'kz' && entry.nameKz
+            entry.displayName ??
+            (i18n.language === 'kz' && entry.nameKz
               ? entry.nameKz
-              : entry.nameRu,
+              : entry.nameRu) ??
+            entry.code,
           raw: entry as unknown as Record<string, unknown>,
         })
       ),
@@ -112,6 +117,7 @@ export const DictField = ({
             options={options}
             onChange={(newOption) => {
               field.onChange(newOption?.raw ?? null)
+              onValueChange?.()
             }}
             onInputChange={
               isServerSearch

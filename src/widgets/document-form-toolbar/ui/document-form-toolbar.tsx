@@ -11,16 +11,20 @@ import LinkIcon from '@/shared/assets/icons/link.svg'
 
 interface DocumentFormToolbarProps {
   isNew?: boolean
+  isPrintLoading?: boolean
   onPostAndClose?: () => void
   onSave?: () => void
   onPost?: () => void
+  onPrint?: () => void
 }
 
 export const DocumentFormToolbar = ({
   isNew,
+  isPrintLoading,
   onPostAndClose,
   onSave,
   onPost,
+  onPrint,
 }: DocumentFormToolbarProps) => {
   const { t } = useTranslation()
 
@@ -45,7 +49,12 @@ export const DocumentFormToolbar = ({
         >
           {t('documentFormToolbar.post')}
         </button>
-        <DropdownButton label={t('documentFormToolbar.print')} />
+        <DropdownButton
+          label={t('documentFormToolbar.print')}
+          disabled={isNew}
+          loading={isPrintLoading}
+          onClick={onPrint}
+        />
         <IconButtonWrapper ariaLabel={t('actions.debitCredit')}>
           <DebetKreditIcon className="h-5 w-5" />
         </IconButtonWrapper>

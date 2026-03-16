@@ -42,3 +42,13 @@ export const updateDocumentEntry = (
     url: `/api/document-entries/id/${String(id)}`,
     data: payload,
   })
+
+export const printDocumentEntry = (
+  typeCode: string,
+  id: number,
+  language?: string
+) =>
+  apiService.getFileBlob({
+    url: `/api/document-entries/${typeCode}/${String(id)}/print`,
+    params: language ? { language } : undefined,
+  })

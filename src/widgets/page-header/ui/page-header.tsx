@@ -10,14 +10,19 @@ import CrossIcon from '@/shared/assets/icons/cross.svg'
 
 interface PageHeaderProps {
   title: string
+  onClose?: () => void
 }
 
-export const PageHeader = ({ title }: PageHeaderProps) => {
+export const PageHeader = ({ title, onClose }: PageHeaderProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
-  const handleClose = async () => {
-    await navigate(-1)
+  const handleClose = () => {
+    if (onClose) {
+      onClose()
+    } else {
+      void navigate(-1)
+    }
   }
 
   return (

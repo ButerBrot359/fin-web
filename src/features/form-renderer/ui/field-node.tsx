@@ -54,9 +54,12 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
       return
     }
 
-    if (prevSourceId.current !== sourceValue?.id) {
+    const prevId = prevSourceId.current
+    if (prevId !== sourceValue?.id) {
       prevSourceId.current = sourceValue?.id
-      form.setValue(node.code, null)
+      if (prevId !== undefined) {
+        form.setValue(node.code, null)
+      }
     }
   }, [dependency, sourceValue?.id, form, node.code])
 

@@ -89,6 +89,7 @@ export const useDocumentEntryActions = ({
 
         mutate(payload, {
           onSuccess: (response) => {
+            form.reset(form.getValues())
             onSuccess(response.data.data as { id: number })
           },
           onError: () => {
@@ -126,10 +127,16 @@ export const useDocumentEntryActions = ({
   }, [submitWith, isNew, navigate, pageCode, moduleCode, t])
 
   const handlePost = useCallback(() => {
-    submitWith(true, () => {
+    submitWith(true, (entry) => {
       showToast('info', t('documentEntry.posted'))
+      if (isNew) {
+        void navigate(
+          `/modules/${pageCode}/document/${moduleCode}/${String(entry.id)}`,
+          { replace: true }
+        )
+      }
     })
-  }, [submitWith, t])
+  }, [submitWith, isNew, navigate, pageCode, moduleCode, t])
 
   const handlePostAndClose = useCallback(() => {
     submitWith(true, () => {
@@ -141,7 +148,7 @@ export const useDocumentEntryActions = ({
   const handleSaveAndClose = () => {
     submitWith(false, () => {
       showToast('info', t('documentEntry.saved'))
-      void navigate(-1)
+      void navigate(`/modules/${pageCode}/document/${moduleCode}`)
     })
   }
 

@@ -148,7 +148,7 @@ export const useDocumentEntryActions = ({
   const handleSaveAndClose = () => {
     submitWith(false, () => {
       showToast('info', t('documentEntry.saved'))
-      void navigate(-1)
+      void navigate(`/modules/${pageCode}/document/${moduleCode}`)
     })
   }
 

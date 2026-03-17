@@ -23,7 +23,7 @@ import { useDocumentEntryActions } from '../lib/hooks/use-document-entry-actions
 import { DocumentEntrySkeleton } from './document-entry-skeleton'
 
 export const DocumentEntryPage = () => {
-  const { moduleCode = '' } = useParams()
+  const { moduleCode = '', pageCode = '' } = useParams()
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
@@ -41,11 +41,13 @@ export const DocumentEntryPage = () => {
       form,
     })
 
+  const listPath = `/modules/${pageCode}/document/${moduleCode}`
+
   const handleClose = () => {
     if (isDirty) {
       setShowUnsavedDialog(true)
     } else {
-      void navigate(-1)
+      void navigate(listPath)
     }
   }
 
@@ -56,7 +58,7 @@ export const DocumentEntryPage = () => {
 
   const handleDialogDiscard = () => {
     setShowUnsavedDialog(false)
-    void navigate(-1)
+    void navigate(listPath)
   }
 
   const handleDialogCancel = () => {

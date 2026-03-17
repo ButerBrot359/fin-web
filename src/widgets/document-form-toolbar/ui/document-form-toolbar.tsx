@@ -44,8 +44,7 @@ export const DocumentFormToolbar = ({
         <button
           type="button"
           onClick={onPost}
-          disabled={isNew}
-          className="whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ui-01"
+          className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60"
         >
           {t('documentFormToolbar.post')}
         </button>

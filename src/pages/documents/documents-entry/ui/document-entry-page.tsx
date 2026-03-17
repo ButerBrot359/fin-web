@@ -83,9 +83,11 @@ export const DocumentEntryPage = () => {
     mutatePrint()
   }
 
-  const pageTitle = isNew
+  const baseTitle = isNew
     ? t('documentEntry.newTitle', { name: title })
     : existingEntry?.nameRu || title
+
+  const pageTitle = isDirty ? `${baseTitle} *` : baseTitle
 
   const formAttributes = attributes
     .filter((attr: DocumentAttribute) => attr.showInForm)

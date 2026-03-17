@@ -11,8 +11,10 @@ interface HandleEventPayload {
 }
 
 interface HandleEventResponse {
-  attributes: Record<string, unknown>
-  formConfig: Record<string, unknown>
+  data: {
+    attributes: Record<string, unknown>
+    formConfig: Record<string, unknown>
+  }
 }
 
 interface UseFormEventsParams {
@@ -43,9 +45,10 @@ export const useFormEvents = ({
         data: payload,
       }),
     onSuccess: (response) => {
-      const newAttributes = response.data.attributes as
+      const newAttributes = response.data.data.attributes as
         | Record<string, unknown>
         | undefined
+
       if (!newAttributes) return
 
       for (const [key, value] of Object.entries(newAttributes)) {
@@ -61,7 +64,7 @@ export const useFormEvents = ({
 
       mutate({
         eventName,
-        entry: form.getValues(),
+        entry: { attributes: form.getValues() },
       })
     },
     [eventFieldMap, mutate, form]

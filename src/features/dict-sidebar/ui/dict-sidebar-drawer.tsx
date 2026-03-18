@@ -36,7 +36,7 @@ export const DictSidebarDrawer = () => {
       slotProps={{
         paper: {
           sx: {
-            width: 766,
+            width: 900,
             borderTopLeftRadius: 40,
             borderBottomLeftRadius: 40,
             backgroundColor: '#F2F6FD',

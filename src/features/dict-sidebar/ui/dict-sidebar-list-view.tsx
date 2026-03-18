@@ -8,8 +8,9 @@ import {
   flexRender,
   type ColumnDef,
 } from '@tanstack/react-table'
-import SearchIcon from '@mui/icons-material/Search'
-
+import SearchIcon from '@/shared/assets/icons/search.svg'
+import { SearchInput } from '@/shared/ui/inputs/search-input'
+import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import type { DocumentAttribute } from '@/entities/document-type'
 import type { SelectOption } from '@/shared/types/select-option'
 import { formatDate } from '@/shared/lib/utils/date'
@@ -177,32 +178,30 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
             type="button"
             onClick={handleSelect}
             disabled={!selectedEntry}
-            className="rounded-lg bg-accent-01 px-4 py-2.5 text-body1 font-medium text-ui-06 disabled:bg-ui-05 disabled:text-white"
+            className="cursor-pointer whitespace-nowrap rounded-md bg-accent-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-accent-01/80 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('dictSidebar.select')}
           </button>
           <button
             type="button"
             disabled
-            className="rounded-lg bg-ui-01 px-4 py-2.5 text-body1 font-medium text-ui-05"
+            className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('dictSidebar.create')}
           </button>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex w-[251px] items-center gap-4 rounded-lg bg-ui-01 py-2 pl-2 pr-4">
-            <SearchIcon sx={{ fontSize: 20, color: '#9FA9BA' }} />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-              }}
-              placeholder={t('dictSidebar.search')}
-              className="flex-1 bg-transparent text-body1 text-ui-06 outline-none placeholder:text-ui-05"
-            />
-          </div>
+          <SearchInput
+            placeholder={t('pageToolbar.search')}
+            value={search}
+            className="w-[250px] bg-ui-01"
+            onChange={(e) => {
+              setSearch(e.target.value)
+            }}
+            startIcon={<SearchIcon className="h-5 w-5 text-ui-05" />}
+          />
+          <DropdownButton label={t('actions.more')} disabled />
         </div>
       </div>
 

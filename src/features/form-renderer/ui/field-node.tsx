@@ -127,6 +127,35 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
           }
         : undefined
 
+      const handleAdd = typeCode
+        ? () => {
+            push({
+              mode: 'create',
+              dataType,
+              typeCode,
+              onSelect: (val: SelectOption) => {
+                form.setValue(node.code, val.raw ?? null)
+                handleValueChange?.()
+              },
+            })
+          }
+        : undefined
+
+      const handleOpenEntry = typeCode
+        ? (entryId: number | string) => {
+            push({
+              mode: 'edit',
+              dataType,
+              typeCode,
+              entryId,
+              onSelect: (val: SelectOption) => {
+                form.setValue(node.code, val.raw ?? null)
+                handleValueChange?.()
+              },
+            })
+          }
+        : undefined
+
       return (
         <DictField
           {...commonProps}
@@ -135,7 +164,8 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
           disabled={disabled}
           searchParams={searchParams}
           onShowAll={handleShowAll}
-          onAdd={typeCode ? () => undefined : undefined}
+          onAdd={handleAdd}
+          onOpenEntry={handleOpenEntry}
         />
       )
     }

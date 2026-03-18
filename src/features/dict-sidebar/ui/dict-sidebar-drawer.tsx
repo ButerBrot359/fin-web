@@ -6,9 +6,10 @@ import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
 import { fetchDictTypeMetadata } from '../api/dict-sidebar-api'
 import { DictSidebarHeader } from './dict-sidebar-header'
 import { DictSidebarListView } from './dict-sidebar-list-view'
+import { DictSidebarFormView } from './dict-sidebar-form-view'
 
 export const DictSidebarDrawer = () => {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { stack, closeAll } = useDictSidebarStore()
   const isOpen = stack.length > 0
   const topPanel = stack[stack.length - 1] as (typeof stack)[number] | undefined
@@ -22,11 +23,18 @@ export const DictSidebarDrawer = () => {
     select: (res) => res.data,
   })
 
-  const title = typeData
+  const typeName = typeData
     ? i18n.language === 'kz'
       ? typeData.nameKz || typeData.nameRu
       : typeData.nameRu
     : (topPanel?.typeCode ?? '')
+
+  const title =
+    topPanel?.mode === 'create'
+      ? t('dictSidebar.createTitle', { name: typeName })
+      : topPanel?.mode === 'edit'
+        ? (topPanel.title ?? typeName)
+        : typeName
 
   return (
     <Drawer
@@ -52,6 +60,14 @@ export const DictSidebarDrawer = () => {
         <div className="flex h-full flex-col p-7">
           <DictSidebarHeader title={title} />
           {topPanel.mode === 'list' && <DictSidebarListView panel={topPanel} />}
+          {(topPanel.mode === 'create' || topPanel.mode === 'edit') &&
+            typeData && (
+              <DictSidebarFormView
+                panel={topPanel}
+                typeData={typeData}
+                typeName={typeName}
+              />
+            )}
         </div>
       )}
     </Drawer>

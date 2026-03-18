@@ -7,6 +7,7 @@ interface DictSidebarStore {
   push: (panel: Omit<DictSidebarPanel, 'id'>) => void
   pop: () => void
   closeAll: () => void
+  updateTopTitle: (title: string) => void
 }
 
 export const useDictSidebarStore = create<DictSidebarStore>((set) => ({
@@ -23,5 +24,13 @@ export const useDictSidebarStore = create<DictSidebarStore>((set) => ({
   },
   closeAll: () => {
     set({ stack: [] })
+  },
+  updateTopTitle: (title) => {
+    set((state) => {
+      if (state.stack.length === 0) return state
+      const updated = [...state.stack]
+      updated[updated.length - 1] = { ...updated[updated.length - 1], title }
+      return { stack: updated }
+    })
   },
 }))

@@ -30,7 +30,7 @@ interface DictSidebarListViewProps {
 
 export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   const { t, i18n } = useTranslation()
-  const pop = useDictSidebarStore((s) => s.pop)
+  const { pop, push } = useDictSidebarStore()
 
   const [search, setSearch] = useState('')
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
@@ -184,7 +184,14 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
           </button>
           <button
             type="button"
-            disabled
+            onClick={() => {
+              push({
+                mode: 'create',
+                dataType: panel.dataType,
+                typeCode: panel.typeCode,
+                onSelect: panel.onSelect,
+              })
+            }}
             className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('dictSidebar.create')}

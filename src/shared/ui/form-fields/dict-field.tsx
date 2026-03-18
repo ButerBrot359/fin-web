@@ -38,6 +38,7 @@ interface DictFieldProps {
   onValueChange?: () => void
   onShowAll?: (onSelect: (value: SelectOption) => void) => void
   onAdd?: () => void
+  onOpenEntry?: (entryId: number | string) => void
 }
 
 const DEBOUNCE_MS = 300
@@ -56,6 +57,7 @@ export const DictField = ({
   onValueChange,
   onShowAll,
   onAdd,
+  onOpenEntry,
 }: DictFieldProps) => {
   const { i18n } = useTranslation()
   const [opened, setOpened] = useState(false)
@@ -122,11 +124,25 @@ export const DictField = ({
             }
           : undefined
 
-        const endAction = (
-          <IconButton sx={{ p: '4px', borderRadius: '6px' }} tabIndex={-1}>
-            <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
-          </IconButton>
-        )
+        const currentEntryId = (field.value as { id?: number | string } | null)
+          ?.id
+
+        const endAction =
+          currentEntryId != null && onOpenEntry ? (
+            <IconButton
+              sx={{ p: '4px', borderRadius: '6px' }}
+              tabIndex={-1}
+              onClick={() => {
+                onOpenEntry(currentEntryId)
+              }}
+            >
+              <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
+            </IconButton>
+          ) : (
+            <IconButton sx={{ p: '4px', borderRadius: '6px' }} tabIndex={-1}>
+              <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
+            </IconButton>
+          )
 
         return (
           <AutocompleteInput

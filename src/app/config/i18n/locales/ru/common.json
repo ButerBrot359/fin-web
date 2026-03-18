@@ -137,7 +137,13 @@
     "select": "Выбрать",
     "create": "Создать",
     "search": "Поиск",
-    "noData": "Нет данных"
+    "noData": "Нет данных",
+    "createTitle": "{{name}} создание",
+    "editTitle": "{{name}} — {{entry}}",
+    "saveAndClose": "Записать и закрыть",
+    "save": "Записать",
+    "saved": "Запись сохранена",
+    "saveError": "Ошибка сохранения"
   },
   "errors": {
     "required": "Обязательное поле",

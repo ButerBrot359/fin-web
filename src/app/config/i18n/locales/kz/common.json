@@ -137,7 +137,13 @@
     "select": "Таңдау",
     "create": "Жасау",
     "search": "Іздеу",
-    "noData": "Деректер жоқ"
+    "noData": "Деректер жоқ",
+    "createTitle": "{{name}} жасау",
+    "editTitle": "{{name}} — {{entry}}",
+    "saveAndClose": "Жазу және жабу",
+    "save": "Жазу",
+    "saved": "Жазба сақталды",
+    "saveError": "Сақтау қатесі"
   },
   "errors": {
     "required": "Міндетті өріс",

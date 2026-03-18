@@ -65,3 +65,56 @@ export const searchDictEntries = (
     signal,
   })
 }
+
+export interface DictEntryCreatePayload {
+  code?: string
+  nameRu: string
+  nameKz?: string
+  parentId?: number | null
+  sortOrder?: number
+  attributes: Record<string, unknown>
+}
+
+const ENTRY_BY_ID_PATHS: Partial<Record<DataType, string>> = {
+  DICTIONARY: '/api/dictionaries/entries',
+}
+
+const ENTRY_CREATE_PATHS: Partial<Record<DataType, string>> = {
+  DICTIONARY: '/api/dictionaries/entries',
+}
+
+export const fetchDictEntryById = (
+  dataType: DataType,
+  id: number | string,
+  signal?: AbortSignal
+) => {
+  const basePath = ENTRY_BY_ID_PATHS[dataType]
+  if (!basePath) throw new Error(`No entry URL for ${dataType}`)
+  return apiService.get<DictEntry>({ url: `${basePath}/${String(id)}`, signal })
+}
+
+export const createDictEntry = (
+  dataType: DataType,
+  typeCode: string,
+  payload: DictEntryCreatePayload
+) => {
+  const basePath = ENTRY_CREATE_PATHS[dataType]
+  if (!basePath) throw new Error(`No create URL for ${dataType}`)
+  return apiService.post<DictEntry>({
+    url: `${basePath}/${typeCode}`,
+    data: payload,
+  })
+}
+
+export const updateDictEntry = (
+  dataType: DataType,
+  id: number | string,
+  payload: DictEntryCreatePayload
+) => {
+  const basePath = ENTRY_BY_ID_PATHS[dataType]
+  if (!basePath) throw new Error(`No update URL for ${dataType}`)
+  return apiService.put<DictEntry>({
+    url: `${basePath}/${String(id)}`,
+    data: payload,
+  })
+}

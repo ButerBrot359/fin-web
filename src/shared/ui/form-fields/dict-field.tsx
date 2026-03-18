@@ -36,6 +36,8 @@ interface DictFieldProps {
   searchParams?: Record<string, string>
   loading?: boolean
   onValueChange?: () => void
+  onShowAll?: (onSelect: (value: SelectOption) => void) => void
+  onAdd?: () => void
 }
 
 const DEBOUNCE_MS = 300
@@ -52,6 +54,8 @@ export const DictField = ({
   searchParams,
   loading: externalLoading,
   onValueChange,
+  onShowAll,
+  onAdd,
 }: DictFieldProps) => {
   const { i18n } = useTranslation()
   const [opened, setOpened] = useState(false)
@@ -101,12 +105,6 @@ export const DictField = ({
   const options = isServerSearch ? serverOptions : (staticOptions ?? [])
   const loading = isServerSearch ? isFetching : externalLoading
 
-  const endAction = (
-    <IconButton sx={{ p: '4px', borderRadius: '6px' }} tabIndex={-1}>
-      <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
-    </IconButton>
-  )
-
   return (
     <Controller
       name={name}
@@ -114,6 +112,21 @@ export const DictField = ({
       rules={{ required }}
       render={({ field, fieldState }) => {
         const currentValue = resolveSelectValue(field.value, options)
+
+        const handleShowAll = onShowAll
+          ? () => {
+              onShowAll((val: SelectOption) => {
+                field.onChange(val.raw ?? null)
+                onValueChange?.()
+              })
+            }
+          : undefined
+
+        const endAction = (
+          <IconButton sx={{ p: '4px', borderRadius: '6px' }} tabIndex={-1}>
+            <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
+          </IconButton>
+        )
 
         return (
           <AutocompleteInput
@@ -143,6 +156,8 @@ export const DictField = ({
             error={!!fieldState.error}
             helperText={fieldState.error?.message}
             endAction={endAction}
+            onShowAll={handleShowAll}
+            onAdd={onAdd}
           />
         )
       }}

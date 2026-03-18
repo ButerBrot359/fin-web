@@ -1,8 +1,69 @@
-import type { ReactNode } from 'react'
-import { Autocomplete, TextField, type TextFieldProps } from '@mui/material'
+import { type HTMLAttributes, type ReactNode, useMemo } from 'react'
+import {
+  Autocomplete,
+  Paper,
+  TextField,
+  type TextFieldProps,
+} from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import type { SelectOption } from '@/shared/types/select-option'
+
+interface FooterButtonsProps {
+  onShowAll?: () => void
+  onAdd?: () => void
+  showAllLabel: string
+  addLabel: string
+}
+
+function createFooterPaper({
+  onShowAll,
+  onAdd,
+  showAllLabel,
+  addLabel,
+}: FooterButtonsProps) {
+  function FooterPaper(props: HTMLAttributes<HTMLDivElement>) {
+    return (
+      <Paper
+        {...props}
+        sx={{
+          borderRadius: '8px',
+          boxShadow: '0px 3px 24px 0px rgba(42,117,244,0.4)',
+          overflow: 'hidden',
+        }}
+      >
+        {props.children}
+        <div className="flex items-center justify-between border-t border-ui-04 py-3">
+          {onShowAll && (
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault()
+                onShowAll()
+              }}
+              className="cursor-pointer rounded-lg px-4 py-2.5 text-body1 font-medium text-accent-02"
+            >
+              {showAllLabel}
+            </button>
+          )}
+          {onAdd && (
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault()
+                onAdd()
+              }}
+              className="cursor-pointer rounded-lg px-4 py-2.5 text-body1 font-medium text-accent-02"
+            >
+              {addLabel}
+            </button>
+          )}
+        </div>
+      </Paper>
+    )
+  }
+  return FooterPaper
+}
 
 interface AutocompleteInputProps {
   value: SelectOption | null
@@ -19,6 +80,8 @@ interface AutocompleteInputProps {
   onOpen?: () => void
   endAction?: ReactNode
   slotProps?: TextFieldProps['slotProps']
+  onShowAll?: () => void
+  onAdd?: () => void
 }
 
 export const AutocompleteInput = ({
@@ -36,8 +99,22 @@ export const AutocompleteInput = ({
   onOpen,
   endAction,
   slotProps,
+  onShowAll,
+  onAdd,
 }: AutocompleteInputProps) => {
   const { t } = useTranslation()
+
+  const hasFooter = !!(onShowAll || onAdd)
+
+  const PaperComponent = useMemo(() => {
+    if (!hasFooter) return undefined
+    return createFooterPaper({
+      onShowAll,
+      onAdd,
+      showAllLabel: t('dictSidebar.showAll'),
+      addLabel: t('dictSidebar.add'),
+    })
+  }, [hasFooter, onShowAll, onAdd, t])
 
   return (
     <Autocomplete
@@ -68,6 +145,7 @@ export const AutocompleteInput = ({
             }
           : undefined
       }
+      slots={PaperComponent ? { paper: PaperComponent } : undefined}
       loadingText={t('inputs.loading')}
       noOptionsText={t('inputs.noOptions')}
       renderInput={(params) => (

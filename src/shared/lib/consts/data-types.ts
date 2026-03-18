@@ -64,3 +64,9 @@ export const getTypeUrl = (dataType: DataType, typeCode: string) => {
   if (!basePath) return null
   return `${basePath}/${typeCode}`
 }
+
+export const getPagedUrl = (dataType: DataType, typeCode: string) => {
+  const basePath = SEARCH_PATHS[dataType]
+  if (!basePath) return null
+  return `${basePath}/${typeCode}/paged`
+}

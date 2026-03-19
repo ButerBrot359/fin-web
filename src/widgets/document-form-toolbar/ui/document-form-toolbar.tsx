@@ -5,22 +5,29 @@ import {
   DropdownButton,
   IconButtonWrapper,
 } from '@/shared/ui/buttons'
+import { PrintDropdownButton } from './print-dropdown-button'
 import DebetKreditIcon from '@/shared/assets/icons/debet-kredit.svg'
 import LayersIcon from '@/shared/assets/icons/layers.svg'
 import LinkIcon from '@/shared/assets/icons/link.svg'
 
 interface DocumentFormToolbarProps {
   isNew?: boolean
+  isDirty?: boolean
   isPrintLoading?: boolean
+  printNameRu?: string
+  printNameKz?: string
   onPostAndClose?: () => void
   onSave?: () => void
   onPost?: () => void
-  onPrint?: () => void
+  onPrint?: (language?: string) => void
 }
 
 export const DocumentFormToolbar = ({
   isNew,
+  isDirty,
   isPrintLoading,
+  printNameRu,
+  printNameKz,
   onPostAndClose,
   onSave,
   onPost,
@@ -48,11 +55,12 @@ export const DocumentFormToolbar = ({
         >
           {t('documentFormToolbar.post')}
         </button>
-        <DropdownButton
-          label={t('documentFormToolbar.print')}
-          disabled={isNew}
+        <PrintDropdownButton
+          nameRu={printNameRu ?? ''}
+          nameKz={printNameKz ?? ''}
+          disabled={isNew || isDirty}
           loading={isPrintLoading}
-          onClick={onPrint}
+          onPrint={onPrint}
         />
         <IconButtonWrapper ariaLabel={t('actions.debitCredit')}>
           <DebetKreditIcon className="h-5 w-5" />

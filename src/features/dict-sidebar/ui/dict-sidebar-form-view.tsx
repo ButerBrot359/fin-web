@@ -133,6 +133,7 @@ export const DictSidebarFormView = ({
       const entry = res.data
       setSavedEntryId(entry.id)
       invalidateEntries()
+      panel.onSelect?.(buildSelectOption(entry))
       showToast('success', t('dictSidebar.saved'))
 
       const entryName =

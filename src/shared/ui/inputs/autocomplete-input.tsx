@@ -67,6 +67,7 @@ function createFooterPaper({
 
 interface AutocompleteInputProps {
   value: SelectOption | null
+  inputValue?: string
   options: SelectOption[]
   onChange: (value: SelectOption | null) => void
   onInputChange?: (event: unknown, value: string, reason: string) => void
@@ -86,6 +87,7 @@ interface AutocompleteInputProps {
 
 export const AutocompleteInput = ({
   value,
+  inputValue,
   options,
   onChange,
   onInputChange,
@@ -119,6 +121,7 @@ export const AutocompleteInput = ({
   return (
     <Autocomplete
       value={value}
+      inputValue={inputValue}
       options={options}
       onChange={(_e, newValue) => {
         onChange(newValue)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Controller, type Control } from 'react-hook-form'
+import { Controller, useWatch, type Control } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import type { AxiosResponse } from 'axios'
 import { IconButton } from '@mui/material'
@@ -65,6 +65,20 @@ export const DictField = ({
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
   const isServerSearch = !!searchUrl
+
+  // Sync inputValue when the selected value changes (by id, not by reference)
+  const fieldValue = useWatch({ control, name })
+  const fieldValueId = (fieldValue as { id?: number | string } | null)?.id
+
+  useEffect(() => {
+    if (fieldValueId != null) {
+      const resolved = resolveSelectValue(fieldValue, [])
+      setInputValue(resolved?.label ?? '')
+    } else {
+      setInputValue('')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldValueId])
 
   useEffect(() => {
     if (!isServerSearch) return
@@ -147,6 +161,7 @@ export const DictField = ({
         return (
           <AutocompleteInput
             value={currentValue}
+            inputValue={isServerSearch ? inputValue : undefined}
             options={options}
             onChange={(newOption) => {
               field.onChange(newOption?.raw ?? null)
@@ -155,7 +170,7 @@ export const DictField = ({
             onInputChange={
               isServerSearch
                 ? (_e, value, reason) => {
-                    if (reason === 'input') {
+                    if (reason !== 'reset') {
                       setInputValue(value)
                     }
                   }

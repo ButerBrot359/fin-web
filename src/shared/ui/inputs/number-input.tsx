@@ -1,4 +1,9 @@
-import { TextField, type TextFieldProps, IconButton } from '@mui/material'
+import {
+  TextField,
+  Tooltip,
+  type TextFieldProps,
+  IconButton,
+} from '@mui/material'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 
 type NumberInputProps = Omit<TextFieldProps, 'variant'> & {
@@ -11,6 +16,7 @@ export const NumberInput = ({
   decimal,
   onChange,
   slotProps,
+  value,
   ...rest
 }: NumberInputProps) => {
   const handleChange: TextFieldProps['onChange'] = (e) => {
@@ -27,26 +33,43 @@ export const NumberInput = ({
   }
 
   return (
-    <TextField
-      {...rest}
-      onChange={handleChange}
+    <Tooltip
+      title={typeof value === 'string' ? value : ''}
+      enterDelay={700}
+      placement="bottom-start"
+      disableInteractive
       slotProps={{
-        ...slotProps,
-        input: {
-          ...(slotProps?.input as object),
-          readOnly,
-          sx: { paddingRight: '4px' },
-          endAdornment: (
-            <IconButton sx={{ p: '4px', borderRadius: '6px' }} tabIndex={-1}>
-              <ArrowDropDownIcon className="text-ui-05" sx={{ fontSize: 20 }} />
-            </IconButton>
-          ),
+        popper: {
+          modifiers: [{ name: 'offset', options: { offset: [0, -8] } }],
         },
-        htmlInput: {
-          ...(slotProps?.htmlInput as object),
-          inputMode: decimal ? 'decimal' : 'numeric',
-        },
+        tooltip: { sx: { maxWidth: 500 } },
       }}
-    />
+    >
+      <TextField
+        value={value}
+        {...rest}
+        onChange={handleChange}
+        slotProps={{
+          ...slotProps,
+          input: {
+            ...(slotProps?.input as object),
+            readOnly,
+            sx: { paddingRight: '4px' },
+            endAdornment: (
+              <IconButton sx={{ p: '4px', borderRadius: '6px' }} tabIndex={-1}>
+                <ArrowDropDownIcon
+                  className="text-ui-05"
+                  sx={{ fontSize: 20 }}
+                />
+              </IconButton>
+            ),
+          },
+          htmlInput: {
+            ...(slotProps?.htmlInput as object),
+            inputMode: decimal ? 'decimal' : 'numeric',
+          },
+        }}
+      />
+    </Tooltip>
   )
 }

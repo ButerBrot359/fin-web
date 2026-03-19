@@ -3,6 +3,7 @@ import {
   Autocomplete,
   Paper,
   TextField,
+  Tooltip,
   type TextFieldProps,
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
@@ -119,64 +120,77 @@ export const AutocompleteInput = ({
   }, [hasFooter, onShowAll, onAdd, t])
 
   return (
-    <Autocomplete
-      value={value}
-      inputValue={inputValue}
-      options={options}
-      onChange={(_e, newValue) => {
-        onChange(newValue)
+    <Tooltip
+      title={value?.label ?? ''}
+      enterDelay={700}
+      placement="bottom-start"
+      disableInteractive
+      slotProps={{
+        popper: {
+          modifiers: [{ name: 'offset', options: { offset: [0, -8] } }],
+        },
+        tooltip: { sx: { maxWidth: 500 } },
       }}
-      onInputChange={onInputChange}
-      onOpen={onOpen}
-      filterOptions={onInputChange ? (x) => x : undefined}
-      getOptionLabel={(option) => option.label}
-      isOptionEqualToValue={(option, val) => option.id === val.id}
-      readOnly={readOnly}
-      disabled={disabled}
-      loading={loading}
-      sx={
-        disabled
-          ? {
-              '& .MuiFilledInput-root': {
-                backgroundColor: '#e6e9ee',
-                borderColor: '#c3cee0',
-                '&:hover': {
+    >
+      <Autocomplete
+        value={value}
+        inputValue={inputValue}
+        options={options}
+        onChange={(_e, newValue) => {
+          onChange(newValue)
+        }}
+        onInputChange={onInputChange}
+        onOpen={onOpen}
+        filterOptions={onInputChange ? (x) => x : undefined}
+        getOptionLabel={(option) => option.label}
+        isOptionEqualToValue={(option, val) => option.id === val.id}
+        readOnly={readOnly}
+        disabled={disabled}
+        loading={loading}
+        sx={
+          disabled
+            ? {
+                '& .MuiFilledInput-root': {
                   backgroundColor: '#e6e9ee',
                   borderColor: '#c3cee0',
+                  '&:hover': {
+                    backgroundColor: '#e6e9ee',
+                    borderColor: '#c3cee0',
+                  },
                 },
+              }
+            : undefined
+        }
+        slots={PaperComponent ? { paper: PaperComponent } : undefined}
+        loadingText={t('inputs.loading')}
+        noOptionsText={t('inputs.noOptions')}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label={label}
+            required={required}
+            error={error}
+            helperText={helperText}
+            slotProps={{
+              ...slotProps,
+              input: {
+                ...params.InputProps,
+                ...(slotProps?.input as object),
+                endAdornment: (
+                  <>
+                    {params.InputProps.endAdornment}
+                    {!disabled && endAction}
+                  </>
+                ),
               },
-            }
-          : undefined
-      }
-      slots={PaperComponent ? { paper: PaperComponent } : undefined}
-      loadingText={t('inputs.loading')}
-      noOptionsText={t('inputs.noOptions')}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          label={label}
-          required={required}
-          error={error}
-          helperText={helperText}
-          slotProps={{
-            ...slotProps,
-            input: {
-              ...params.InputProps,
-              ...(slotProps?.input as object),
-              endAdornment: (
-                <>
-                  {params.InputProps.endAdornment}
-                  {!disabled && endAction}
-                </>
-              ),
-            },
-            htmlInput: {
-              ...params.inputProps,
-              ...(slotProps?.htmlInput as object),
-            },
-          }}
-        />
-      )}
-    />
+              htmlInput: {
+                ...params.inputProps,
+                ...(slotProps?.htmlInput as object),
+              },
+            }}
+          />
+        )}
+      />
+    </Tooltip>
   )
 }

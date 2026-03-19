@@ -70,9 +70,9 @@ export const NumberInput = ({
     const raw = stripSpaces(typed)
 
     if (decimal) {
-      if (raw !== '' && !/^-?\d*[,.]?\d*$/.test(raw)) return
+      if (raw !== '' && !/^-?(?:0|[1-9]\d*)?(?:[,.]\d*)?$/.test(raw)) return
     } else {
-      if (raw !== '' && !/^-?\d*$/.test(raw)) return
+      if (raw !== '' && !/^-?(?:0|[1-9]\d*)?$/.test(raw)) return
     }
 
     let charsBefore = 0

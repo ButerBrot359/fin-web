@@ -6,8 +6,18 @@ import MenuIcon from '@/shared/assets/icons/menu.svg'
 
 import { TOOLBAR_ACTIONS } from '../lib/consts/toolbar-actions'
 
+const LANGUAGE_LABELS: Record<string, string> = {
+  ru: 'РУС',
+  kz: 'ҚАЗ',
+}
+
 export const TopBar = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+
+  const toggleLanguage = () => {
+    const nextLang = i18n.language === 'ru' ? 'kz' : 'ru'
+    void i18n.changeLanguage(nextLang)
+  }
 
   return (
     <div className="flex justify-end">
@@ -28,6 +38,19 @@ export const TopBar = () => {
             </div>
           ))}
         </div>
+
+        <div className="mx-1 h-5 w-px bg-ui-04" aria-hidden="true" />
+
+        <button
+          type="button"
+          aria-label="Switch language"
+          onClick={toggleLanguage}
+          className="flex h-10 items-center justify-center rounded-lg px-2 text-black"
+        >
+          <Typography variant="body2" className="font-medium">
+            {LANGUAGE_LABELS[i18n.language] ?? 'РУС'}
+          </Typography>
+        </button>
 
         <div className="mx-1 h-5 w-px bg-ui-04" aria-hidden="true" />
 

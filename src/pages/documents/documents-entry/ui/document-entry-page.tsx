@@ -24,10 +24,10 @@ import { DocumentEntrySkeleton } from './document-entry-skeleton'
 
 export const DocumentEntryPage = () => {
   const { moduleCode = '', pageCode = '' } = useParams()
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
-  const { title, attributes } = useDocumentType(moduleCode)
+  const { title, nameRu, nameKz, attributes } = useDocumentType(moduleCode)
   const { config, isLoading: isLoadingConfig } =
     useOptionalFormConfig(moduleCode)
 
@@ -66,11 +66,11 @@ export const DocumentEntryPage = () => {
   }
 
   const { mutate: mutatePrint, isPending: isPrintLoading } = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (language?: string) => {
       const response: AxiosResponse<Blob> = await printDocumentEntry(
         moduleCode,
         existingEntry!.id,
-        i18n.language === 'kz' ? 'Kz' : undefined
+        language
       )
       return response.data
     },
@@ -80,9 +80,9 @@ export const DocumentEntryPage = () => {
     },
   })
 
-  const handlePrint = () => {
+  const handlePrint = (language?: string) => {
     if (!existingEntry?.id) return
-    mutatePrint()
+    mutatePrint(language)
   }
 
   const baseTitle = isNew
@@ -107,11 +107,14 @@ export const DocumentEntryPage = () => {
       <PageHeader title={pageTitle} onClose={handleClose} />
       <DocumentFormToolbar
         isNew={isNew}
+        isDirty={isDirty}
         onSave={handleSave}
         onPost={handlePost}
         onPostAndClose={handlePostAndClose}
         onPrint={handlePrint}
         isPrintLoading={isPrintLoading}
+        printNameRu={nameRu}
+        printNameKz={nameKz}
       />
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">

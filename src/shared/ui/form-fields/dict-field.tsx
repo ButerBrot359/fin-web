@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Controller, type Control } from 'react-hook-form'
+import { Controller, useWatch, type Control } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import type { AxiosResponse } from 'axios'
 import { IconButton } from '@mui/material'
@@ -36,6 +36,9 @@ interface DictFieldProps {
   searchParams?: Record<string, string>
   loading?: boolean
   onValueChange?: () => void
+  onShowAll?: (onSelect: (value: SelectOption) => void) => void
+  onAdd?: () => void
+  onOpenEntry?: (entryId: number | string) => void
 }
 
 const DEBOUNCE_MS = 300
@@ -52,6 +55,9 @@ export const DictField = ({
   searchParams,
   loading: externalLoading,
   onValueChange,
+  onShowAll,
+  onAdd,
+  onOpenEntry,
 }: DictFieldProps) => {
   const { i18n } = useTranslation()
   const [opened, setOpened] = useState(false)
@@ -59,6 +65,20 @@ export const DictField = ({
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
   const isServerSearch = !!searchUrl
+
+  // Sync inputValue when the selected value changes (by id, not by reference)
+  const fieldValue = useWatch({ control, name })
+  const fieldValueId = (fieldValue as { id?: number | string } | null)?.id
+
+  useEffect(() => {
+    if (fieldValueId != null) {
+      const resolved = resolveSelectValue(fieldValue, [])
+      setInputValue(resolved?.label ?? '')
+    } else {
+      setInputValue('')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldValueId])
 
   useEffect(() => {
     if (!isServerSearch) return
@@ -101,12 +121,6 @@ export const DictField = ({
   const options = isServerSearch ? serverOptions : (staticOptions ?? [])
   const loading = isServerSearch ? isFetching : externalLoading
 
-  const endAction = (
-    <IconButton sx={{ p: '4px', borderRadius: '6px' }} tabIndex={-1}>
-      <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
-    </IconButton>
-  )
-
   return (
     <Controller
       name={name}
@@ -115,9 +129,39 @@ export const DictField = ({
       render={({ field, fieldState }) => {
         const currentValue = resolveSelectValue(field.value, options)
 
+        const handleShowAll = onShowAll
+          ? () => {
+              onShowAll((val: SelectOption) => {
+                field.onChange(val.raw ?? null)
+                onValueChange?.()
+              })
+            }
+          : undefined
+
+        const currentEntryId = (field.value as { id?: number | string } | null)
+          ?.id
+
+        const endAction =
+          currentEntryId != null && onOpenEntry ? (
+            <IconButton
+              sx={{ p: '4px', borderRadius: '6px' }}
+              tabIndex={-1}
+              onClick={() => {
+                onOpenEntry(currentEntryId)
+              }}
+            >
+              <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
+            </IconButton>
+          ) : (
+            <IconButton sx={{ p: '4px', borderRadius: '6px' }} tabIndex={-1}>
+              <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
+            </IconButton>
+          )
+
         return (
           <AutocompleteInput
             value={currentValue}
+            inputValue={isServerSearch ? inputValue : undefined}
             options={options}
             onChange={(newOption) => {
               field.onChange(newOption?.raw ?? null)
@@ -126,7 +170,7 @@ export const DictField = ({
             onInputChange={
               isServerSearch
                 ? (_e, value, reason) => {
-                    if (reason === 'input') {
+                    if (reason !== 'reset') {
                       setInputValue(value)
                     }
                   }
@@ -143,6 +187,8 @@ export const DictField = ({
             error={!!fieldState.error}
             helperText={fieldState.error?.message}
             endAction={endAction}
+            onShowAll={handleShowAll}
+            onAdd={onAdd}
           />
         )
       }}

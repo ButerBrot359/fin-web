@@ -7,6 +7,7 @@ import {
   DICT_DATA_TYPES,
   getSearchUrl,
 } from '@/shared/lib/consts/data-types'
+import type { SelectOption } from '@/shared/types/select-option'
 import {
   TextField,
   NumberField,
@@ -16,6 +17,7 @@ import {
   DateTimeField,
   TextareaField,
 } from '@/shared/ui/form-fields'
+import { useDictSidebarStore } from '@/features/dict-sidebar'
 
 import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
 import type { FieldDependency } from '../types/renderer-context'
@@ -112,6 +114,48 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
         ? (getSearchUrl(dataType, typeCode) ?? undefined)
         : undefined
 
+      const push = useDictSidebarStore.getState().push
+
+      const handleShowAll = typeCode
+        ? (onSelect: (value: SelectOption) => void) => {
+            push({
+              mode: 'list',
+              dataType,
+              typeCode,
+              onSelect,
+            })
+          }
+        : undefined
+
+      const handleAdd = typeCode
+        ? () => {
+            push({
+              mode: 'create',
+              dataType,
+              typeCode,
+              onSelect: (val: SelectOption) => {
+                form.setValue(node.code, val.raw ?? null)
+                handleValueChange?.()
+              },
+            })
+          }
+        : undefined
+
+      const handleOpenEntry = typeCode
+        ? (entryId: number | string) => {
+            push({
+              mode: 'edit',
+              dataType,
+              typeCode,
+              entryId,
+              onSelect: (val: SelectOption) => {
+                form.setValue(node.code, val.raw ?? null)
+                handleValueChange?.()
+              },
+            })
+          }
+        : undefined
+
       return (
         <DictField
           {...commonProps}
@@ -119,6 +163,9 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
           searchUrl={searchUrl}
           disabled={disabled}
           searchParams={searchParams}
+          onShowAll={handleShowAll}
+          onAdd={handleAdd}
+          onOpenEntry={handleOpenEntry}
         />
       )
     }

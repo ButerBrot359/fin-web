@@ -109,7 +109,16 @@ export const DictSidebarFormView = ({
       queryKey: ['dict-sidebar-entries', panel.dataType, panel.typeCode],
     })
     void queryClient.invalidateQueries({
+      queryKey: ['dict-sidebar-entry', panel.dataType, savedEntryId],
+    })
+    void queryClient.invalidateQueries({
       queryKey: ['dictionary-search'],
+    })
+    void queryClient.invalidateQueries({
+      queryKey: ['document-entries'],
+    })
+    void queryClient.invalidateQueries({
+      queryKey: ['document-entry'],
     })
   }
 

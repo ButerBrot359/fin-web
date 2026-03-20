@@ -90,7 +90,10 @@ export const fetchDictEntryById = (
 ) => {
   const basePath = ENTRY_BY_ID_PATHS[dataType]
   if (!basePath) throw new Error(`No entry URL for ${dataType}`)
-  return apiService.get<DictEntry>({ url: `${basePath}/${String(id)}`, signal })
+  return apiService.get<DictEntry>({
+    url: `${basePath}/id/${String(id)}`,
+    signal,
+  })
 }
 
 export const createDictEntry = (

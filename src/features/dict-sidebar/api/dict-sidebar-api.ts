@@ -55,13 +55,14 @@ export const searchDictEntries = (
   dataType: DataType,
   typeCode: string,
   query: string,
+  extraParams?: Record<string, string>,
   signal?: AbortSignal
 ) => {
   const url = getSearchUrl(dataType, typeCode)
   if (!url) throw new Error(`No search URL for ${dataType}`)
   return apiService.get<{ list: DictEntry[] }>({
     url,
-    params: { q: query, size: 50 },
+    params: { q: query, size: 50, ...extraParams },
     signal,
   })
 }

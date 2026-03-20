@@ -122,6 +122,7 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
               mode: 'list',
               dataType,
               typeCode,
+              searchParams,
               onSelect,
             })
           }

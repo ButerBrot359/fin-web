@@ -46,12 +46,18 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   const isSearchMode = search.trim().length > 0
 
   const { data: pagedData, isLoading: isLoadingPaged } = useQuery({
-    queryKey: ['dict-sidebar-entries', panel.dataType, panel.typeCode, 'paged'],
+    queryKey: [
+      'dict-sidebar-entries',
+      panel.dataType,
+      panel.typeCode,
+      'paged',
+      panel.searchParams,
+    ],
     queryFn: ({ signal }) =>
       fetchDictEntriesPaged(
         panel.dataType,
         panel.typeCode,
-        { page: 0, size: 100 },
+        { page: 0, size: 100, ...panel.searchParams },
         signal
       ),
     enabled: !isSearchMode,
@@ -66,9 +72,16 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       panel.typeCode,
       'search',
       search,
+      panel.searchParams,
     ],
     queryFn: ({ signal }) =>
-      searchDictEntries(panel.dataType, panel.typeCode, search.trim(), signal),
+      searchDictEntries(
+        panel.dataType,
+        panel.typeCode,
+        search.trim(),
+        panel.searchParams,
+        signal
+      ),
     enabled: isSearchMode,
     staleTime: 30 * 1000,
     select: (res) => res.data.list,

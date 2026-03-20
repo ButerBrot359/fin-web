@@ -55,13 +55,14 @@ export const searchDictEntries = (
   dataType: DataType,
   typeCode: string,
   query: string,
+  extraParams?: Record<string, string>,
   signal?: AbortSignal
 ) => {
   const url = getSearchUrl(dataType, typeCode)
   if (!url) throw new Error(`No search URL for ${dataType}`)
   return apiService.get<{ list: DictEntry[] }>({
     url,
-    params: { q: query, size: 50 },
+    params: { q: query, size: 50, ...extraParams },
     signal,
   })
 }
@@ -90,7 +91,10 @@ export const fetchDictEntryById = (
 ) => {
   const basePath = ENTRY_BY_ID_PATHS[dataType]
   if (!basePath) throw new Error(`No entry URL for ${dataType}`)
-  return apiService.get<DictEntry>({ url: `${basePath}/${String(id)}`, signal })
+  return apiService.get<DictEntry>({
+    url: `${basePath}/id/${String(id)}`,
+    signal,
+  })
 }
 
 export const createDictEntry = (

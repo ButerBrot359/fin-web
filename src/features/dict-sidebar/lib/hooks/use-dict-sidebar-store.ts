@@ -14,7 +14,17 @@ export const useDictSidebarStore = create<DictSidebarStore>((set) => ({
   stack: [],
   push: (panel) => {
     set((state) => ({
-      stack: [...state.stack, { ...panel, id: crypto.randomUUID() }],
+      // TODO: перейти на crypto.randomUUID() после переезда на HTTPS
+      // stack: [...state.stack, { ...panel, id: crypto.randomUUID() }],
+      stack: [
+        ...state.stack,
+        {
+          ...panel,
+          id: Array.from(crypto.getRandomValues(new Uint8Array(16)))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join(''),
+        },
+      ],
     }))
   },
   pop: () => {

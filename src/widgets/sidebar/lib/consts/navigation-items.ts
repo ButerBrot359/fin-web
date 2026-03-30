@@ -41,7 +41,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     id: 'salary',
     labelKey: 'sidebar.nav.salary',
     icon: SalaryIcon,
-    disabled: true,
+    path: '/modules/ZarplatiIKadri',
   },
   {
     id: 'reports',

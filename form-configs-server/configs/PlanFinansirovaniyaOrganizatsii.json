@@ -1,0 +1,146 @@
+{
+  "name": "PlanFinansirovaniyaOrganizatsii",
+  "title": "План финансирования организации",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "Nomer",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Data",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "VidPlana"
+              },
+              {
+                "type": "Field",
+                "code": "Organizatsiya"
+              },
+              {
+                "type": "Field",
+                "code": "VidOperatsii"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "IstochnikFinansirovaniya"
+              },
+              {
+                "type": "Field",
+                "code": "SummaPlana"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Tabs",
+        "panes": [
+          {
+            "key": "plan",
+            "label": "План финансирования",
+            "children": [
+              {
+                "type": "Field",
+                "code": "PlanFinansirovaniya"
+              }
+            ]
+          },
+          {
+            "key": "print",
+            "label": "Информация для печати",
+            "children": [
+              {
+                "type": "HStack",
+                "gap": 6,
+                "align": "stretch",
+                "children": [
+                  {
+                    "type": "VStack",
+                    "flex": 1,
+                    "gap": 3,
+                    "children": [
+                      {
+                        "type": "Field",
+                        "code": "DokumentOsnovanie"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "Obosnovanie"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "Osnovanie"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "VStack",
+                    "flex": 1,
+                    "gap": 3,
+                    "children": [
+                      {
+                        "type": "Field",
+                        "code": "PeriodPlanirovaniya"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "DvizhenieFinanisrovaniya"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      { "type": "Separator" },
+      {
+        "type": "HStack",
+        "gap": 3,
+        "children": [
+          {
+            "type": "Field",
+            "code": "Kommentariy",
+            "flex": 1
+          },
+          {
+            "type": "Field",
+            "code": "Otvetstvennyy",
+            "flex": 1
+          }
+        ]
+      }
+    ]
+  }
+}

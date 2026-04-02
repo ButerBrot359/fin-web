@@ -1,0 +1,118 @@
+{
+  "name": "AvansovyyOtchet",
+  "title": "Авансовый отчет",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "Nomer",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Data",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "Organizatsiya"
+              },
+              {
+                "type": "Field",
+                "code": "PodrazdelenieOrganizatsii"
+              },
+              {
+                "type": "Field",
+                "code": "PodotchetnoeLitso"
+              },
+              {
+                "type": "Field",
+                "code": "NaznacheniePlatezha"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              { "type": "Label", "text": "Основание:", "variant": "link" },
+              {
+                "type": "Field",
+                "code": "IstochnikFinansirovaniya"
+              },
+              {
+                "type": "Field",
+                "code": "Spetsifika"
+              },
+              {
+                "type": "Field",
+                "code": "SchetRaschetov"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Tabs",
+        "panes": [
+          {
+            "key": "advances",
+            "label": "Авансы",
+            "children": [
+              {
+                "type": "Field",
+                "code": "Avansy"
+              }
+            ]
+          },
+          {
+            "key": "expenses",
+            "label": "Расходы",
+            "children": [
+              {
+                "type": "Field",
+                "code": "Raskhody"
+              }
+            ]
+          }
+        ]
+      },
+      { "type": "Separator" },
+      {
+        "type": "HStack",
+        "gap": 3,
+        "children": [
+          {
+            "type": "Field",
+            "code": "Kommentariy",
+            "flex": 1
+          },
+          {
+            "type": "Field",
+            "code": "Otvetstvennyy",
+            "flex": 1
+          }
+        ]
+      }
+    ]
+  }
+}

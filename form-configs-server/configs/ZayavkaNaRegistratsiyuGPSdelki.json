@@ -1,0 +1,158 @@
+{
+  "name": "ZayavkaNaRegistratsiyuGPSdelki",
+  "title": "Заявка на регистрацию гражданско - правовой сделки",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 3,
+        "children": [
+          {
+            "type": "Field",
+            "code": "Nomer",
+            "flex": 1
+          },
+          {
+            "type": "Field",
+            "code": "Data",
+            "flex": 1
+          }
+        ]
+      },
+      {
+        "type": "HStack",
+        "gap": 6,
+        "children": [
+          {
+            "type": "Field",
+            "code": "IspolzovatGrafikPlatezhey"
+          },
+          {
+            "type": "Field",
+            "code": "ZayavkaUtverzhdena"
+          }
+        ]
+      },
+      {
+        "type": "Tabs",
+        "panes": [
+          {
+            "key": "main",
+            "label": "Основное",
+            "children": [
+              {
+                "type": "HStack",
+                "gap": 6,
+                "align": "stretch",
+                "children": [
+                  {
+                    "type": "VStack",
+                    "flex": 1,
+                    "gap": 3,
+                    "children": [
+                      {
+                        "type": "Field",
+                        "code": "Organizatsiya"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "BankovskiySchetOrganizatsii"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "OpisanieRaskhodaPlatezhnogoDokumenta"
+                      },
+                      {
+                        "type": "HStack",
+                        "gap": 3,
+                        "children": [
+                          {
+                            "type": "Field",
+                            "code": "NomerZakaza",
+                            "flex": 1
+                          },
+                          {
+                            "type": "Field",
+                            "code": "DataZakaza",
+                            "flex": 1
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Label",
+                        "text": "Информация по договору",
+                        "variant": "heading"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "Kontragent"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "BankovskiySchetKontragenta"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "DogovorKontragenta"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "VStack",
+                    "flex": 1,
+                    "gap": 3,
+                    "children": [
+                      {
+                        "type": "Field",
+                        "code": "IstochnikFinansirovaniya"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "Spetsifika"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "SummaGod1"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "SummaGod2"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "SummaGod3"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "SummaDokumenta"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      { "type": "Separator" },
+      {
+        "type": "HStack",
+        "gap": 3,
+        "children": [
+          {
+            "type": "Field",
+            "code": "Kommentariy",
+            "flex": 1
+          },
+          {
+            "type": "Field",
+            "code": "Otvetstvennyy",
+            "flex": 1
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -11,7 +11,10 @@ export const ModuleNavList = ({ items, pageCode }: ModuleNavListProps) => {
   const colCount = items.length || 4
 
   return (
-    <div className={`grid grid-cols-${String(colCount)} gap-x-10`}>
+    <div
+      className="grid gap-x-10"
+      style={{ gridTemplateColumns: `repeat(${String(colCount)}, auto)` }}
+    >
       {items.map((column, colIdx) => (
         <div key={colIdx} className="flex flex-col gap-6 justify-start">
           {column.map((section) => {

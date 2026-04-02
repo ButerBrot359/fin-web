@@ -21,6 +21,7 @@ import { useDictSidebarStore } from '@/features/dict-sidebar'
 
 import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
 import type { FieldDependency } from '../types/renderer-context'
+import { TableField } from './table-field'
 
 interface FieldNodeProps {
   node: FieldNodeType
@@ -77,6 +78,14 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
   const { dataType, readonly: isReadOnly } = attribute
 
   if (IGNORED_DATA_TYPES.has(dataType)) return null
+
+  if (dataType === 'TABLE') {
+    return (
+      <div style={{ flex: node.flex }}>
+        <TableField attribute={attribute} form={form} language={language} />
+      </div>
+    )
+  }
 
   const label =
     node.label ??

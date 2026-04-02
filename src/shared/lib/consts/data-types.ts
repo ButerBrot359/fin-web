@@ -18,7 +18,7 @@ export type DataType =
   | 'INFORMATION_REGISTER'
   | 'OBJECT'
 
-export const IGNORED_DATA_TYPES = new Set<DataType>(['TABLE', 'OBJECT'])
+export const IGNORED_DATA_TYPES = new Set<DataType>(['OBJECT'])
 
 export const DICT_DATA_TYPES = new Set<DataType>([
   'DICTIONARY',

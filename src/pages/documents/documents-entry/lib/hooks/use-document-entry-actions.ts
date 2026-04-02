@@ -12,18 +12,23 @@ import type {
   CreateDocumentEntryPayload,
   DocumentEntry,
 } from '@/entities/document-entry'
+import type { DocumentAttribute } from '@/entities/document-type'
 import { showToast } from '@/shared/ui/toast/show-toast'
+
+import { serializeTableRows } from '../utils/serialize-table-rows'
 
 interface UseDocumentEntryActionsParams {
   isNew: boolean
   existingEntry: DocumentEntry | null
   form: UseFormReturn<Record<string, unknown>>
+  attributes: DocumentAttribute[]
 }
 
 export const useDocumentEntryActions = ({
   isNew,
   existingEntry,
   form,
+  attributes,
 }: UseDocumentEntryActionsParams) => {
   const { moduleCode = '', pageCode = '' } = useParams()
   const navigate = useNavigate()
@@ -61,9 +66,9 @@ export const useDocumentEntryActions = ({
       parentId: null,
       sortOrder: 0,
       isPosted,
-      attributes: form.getValues(),
+      attributes: serializeTableRows(form.getValues(), attributes),
     }),
-    [form]
+    [form, attributes]
   )
 
   const buildUpdatePayload = useCallback(
@@ -74,9 +79,9 @@ export const useDocumentEntryActions = ({
       parentId: existingEntry?.parentId ?? null,
       sortOrder: existingEntry?.sortOrder ?? 0,
       isPosted,
-      attributes: form.getValues(),
+      attributes: serializeTableRows(form.getValues(), attributes),
     }),
-    [existingEntry, form]
+    [existingEntry, form, attributes]
   )
 
   const submitWith = useCallback(

@@ -66,7 +66,7 @@ function createFooterPaper({
   return FooterPaper
 }
 
-interface AutocompleteInputProps {
+export interface AutocompleteInputProps {
   value: SelectOption | null
   inputValue?: string
   options: SelectOption[]
@@ -84,6 +84,7 @@ interface AutocompleteInputProps {
   slotProps?: TextFieldProps['slotProps']
   onShowAll?: () => void
   onAdd?: () => void
+  size?: 'small' | 'medium'
 }
 
 export const AutocompleteInput = ({
@@ -104,6 +105,7 @@ export const AutocompleteInput = ({
   slotProps,
   onShowAll,
   onAdd,
+  size,
 }: AutocompleteInputProps) => {
   const { t } = useTranslation()
 
@@ -133,6 +135,7 @@ export const AutocompleteInput = ({
       }}
     >
       <Autocomplete
+        size={size}
         value={value}
         inputValue={inputValue}
         options={options}
@@ -162,6 +165,9 @@ export const AutocompleteInput = ({
             : undefined
         }
         slots={PaperComponent ? { paper: PaperComponent } : undefined}
+        slotProps={{
+          popper: { style: { minWidth: 300 } },
+        }}
         loadingText={t('inputs.loading')}
         noOptionsText={t('inputs.noOptions')}
         renderInput={(params) => (

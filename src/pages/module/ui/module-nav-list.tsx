@@ -8,10 +8,12 @@ import type { ModuleNavListProps } from '../types/module-nav'
 export const ModuleNavList = ({ items, pageCode }: ModuleNavListProps) => {
   const { i18n } = useTranslation()
 
+  const colCount = items.length || 4
+
   return (
-    <div className="grid grid-cols-3 gap-x-10">
+    <div className={`grid grid-cols-${String(colCount)} gap-x-10`}>
       {items.map((column, colIdx) => (
-        <div key={colIdx} className="flex flex-col gap-6">
+        <div key={colIdx} className="flex flex-col gap-6 justify-start">
           {column.map((section) => {
             const title =
               i18n.language === 'kz' ? section.nameKz : section.nameRu

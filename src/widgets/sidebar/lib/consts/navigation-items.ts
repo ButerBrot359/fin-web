@@ -62,4 +62,10 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     icon: RegulatedFinReportIcon,
     disabled: true,
   },
+  {
+    id: 'administrirovanie',
+    labelKey: 'sidebar.nav.administrirovanie',
+    path: '/modules/Administrirovanie',
+    icon: RegulatedFinReportIcon,
+  },
 ]

@@ -23,7 +23,10 @@ export const theme = createTheme({
           borderRadius: 8,
           backgroundColor: '#ffffff',
           border: '1px solid #c3cee0',
-          minHeight: 50,
+          minHeight: 44,
+          '&.MuiInputBase-sizeSmall': {
+            minHeight: 32,
+          },
           '&:hover': { backgroundColor: '#ffffff' },
           '&.Mui-focused': {
             backgroundColor: '#ffffff',
@@ -35,11 +38,17 @@ export const theme = createTheme({
           '&::before, &::after': { display: 'none' },
         },
         input: {
+          paddingTop: 22,
+          paddingBottom: 6,
           paddingLeft: 20,
           paddingRight: 20,
           fontSize: 16,
           fontWeight: 500,
           color: '#222124',
+          '&.MuiInputBase-inputSizeSmall': {
+            paddingTop: 6,
+            paddingBottom: 6,
+          },
         },
       },
     },
@@ -92,8 +101,8 @@ export const theme = createTheme({
           gap: '4px',
         },
         input: {
-          paddingTop: '25px !important',
-          paddingBottom: '8px !important',
+          paddingTop: '22px !important',
+          paddingBottom: '6px !important',
           paddingLeft: '0 !important',
         },
         endAdornment: {
@@ -139,7 +148,10 @@ export const theme = createTheme({
           borderRadius: 8,
           backgroundColor: '#ffffff',
           border: '1px solid #c3cee0',
-          minHeight: 50,
+          minHeight: 44,
+          '&.MuiInputBase-sizeSmall': {
+            minHeight: 32,
+          },
           '&:hover': { backgroundColor: '#ffffff' },
           '&.Mui-focused': {
             backgroundColor: '#ffffff',
@@ -151,18 +163,30 @@ export const theme = createTheme({
           '&::before, &::after': { display: 'none' },
         },
         input: {
+          paddingTop: 22,
+          paddingBottom: 6,
           paddingLeft: 20,
           paddingRight: 20,
           fontSize: 16,
           fontWeight: 500,
           color: '#222124',
+          '&.MuiInputBase-inputSizeSmall': {
+            paddingTop: 6,
+            paddingBottom: 6,
+          },
         },
         sectionsContainer: {
+          paddingTop: 22,
+          paddingBottom: 6,
           paddingLeft: 20,
           paddingRight: 8,
           fontSize: 16,
           fontWeight: 500,
           color: '#222124',
+          '.MuiInputBase-sizeSmall &': {
+            paddingTop: 6,
+            paddingBottom: 6,
+          },
         },
       },
     },

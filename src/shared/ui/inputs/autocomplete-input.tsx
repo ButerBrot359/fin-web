@@ -150,20 +150,25 @@ export const AutocompleteInput = ({
         readOnly={readOnly}
         disabled={disabled}
         loading={loading}
-        sx={
-          disabled
-            ? {
-                '& .MuiFilledInput-root': {
-                  backgroundColor: '#e6e9ee',
-                  borderColor: '#c3cee0',
-                  '&:hover': {
-                    backgroundColor: '#e6e9ee',
-                    borderColor: '#c3cee0',
-                  },
-                },
-              }
-            : undefined
-        }
+        sx={[
+          disabled && {
+            '& .MuiFilledInput-root': {
+              backgroundColor: '#e6e9ee',
+              borderColor: '#c3cee0',
+              '&:hover': {
+                backgroundColor: '#e6e9ee',
+                borderColor: '#c3cee0',
+              },
+            },
+          },
+          size === 'small' && {
+            '& .MuiFilledInput-root': { minHeight: 32 },
+            '& .MuiAutocomplete-input': {
+              paddingTop: '6px !important',
+              paddingBottom: '6px !important',
+            },
+          },
+        ]}
         slots={PaperComponent ? { paper: PaperComponent } : undefined}
         slotProps={{
           popper: { style: { minWidth: 300 } },

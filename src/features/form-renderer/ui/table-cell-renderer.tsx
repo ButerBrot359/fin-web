@@ -287,6 +287,7 @@ export const TableCellRenderer = ({
               value={(field.value as string | undefined) ?? undefined}
               onChange={field.onChange}
               dateOnly={dataType === 'DATE'}
+              size="small"
             />
           )}
         />

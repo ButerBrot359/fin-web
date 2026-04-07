@@ -58,43 +58,36 @@ export const useDocumentEntryActions = ({
     },
   })
 
-  const buildCreatePayload = useCallback(
-    (isPosted: boolean): CreateDocumentEntryPayload => ({
-      code: '',
-      nameRu: '',
-      nameKz: '',
-      parentId: null,
-      sortOrder: 0,
-      isPosted,
-      attributes: serializeTableRows(form.getValues(), attributes),
-    }),
-    [form, attributes]
-  )
-
-  const buildUpdatePayload = useCallback(
-    (isPosted: boolean): CreateDocumentEntryPayload => ({
-      code: existingEntry?.code ?? '',
-      nameRu: existingEntry?.nameRu ?? '',
-      nameKz: existingEntry?.nameKz ?? '',
-      parentId: existingEntry?.parentId ?? null,
-      sortOrder: existingEntry?.sortOrder ?? 0,
-      isPosted,
-      attributes: serializeTableRows(form.getValues(), attributes),
-    }),
-    [existingEntry, form, attributes]
-  )
-
   const submitWith = useCallback(
     (isPosted: boolean, onSuccess: (entry: { id: number }) => void) => {
-      void form.handleSubmit(() => {
-        const payload = isNew
-          ? buildCreatePayload(isPosted)
-          : buildUpdatePayload(isPosted)
+      void form.handleSubmit((data) => {
+        const serializedAttrs = serializeTableRows(data, attributes)
+
+        const payload: CreateDocumentEntryPayload = isNew
+          ? {
+              code: '',
+              nameRu: '',
+              nameKz: '',
+              parentId: null,
+              sortOrder: 0,
+              isPosted,
+              attributes: serializedAttrs,
+            }
+          : {
+              code: existingEntry?.code ?? '',
+              nameRu: existingEntry?.nameRu ?? '',
+              nameKz: existingEntry?.nameKz ?? '',
+              parentId: existingEntry?.parentId ?? null,
+              sortOrder: existingEntry?.sortOrder ?? 0,
+              isPosted,
+              attributes: serializedAttrs,
+            }
+
         const mutate = isNew ? mutateCreate : mutateUpdate
 
         mutate(payload, {
           onSuccess: (response) => {
-            form.reset(form.getValues())
+            form.reset(data)
             onSuccess(response.data.data as { id: number })
           },
           onError: () => {
@@ -108,15 +101,7 @@ export const useDocumentEntryActions = ({
         })
       })()
     },
-    [
-      form,
-      isNew,
-      mutateCreate,
-      mutateUpdate,
-      buildCreatePayload,
-      buildUpdatePayload,
-      t,
-    ]
+    [form, isNew, existingEntry, attributes, mutateCreate, mutateUpdate, t]
   )
 
   const handleSave = useCallback(() => {

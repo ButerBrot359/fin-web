@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   useFieldArray,
   type UseFormReturn,
@@ -53,11 +53,35 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
   const { columns, isLoading } = useTableColumns(attribute)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
-  const { fields, append, remove, move } = useFieldArray({
+  // Ensure the table field is initialised in form state before useFieldArray
+  useEffect(() => {
+    const current = form.getValues(attribute.code)
+    if (current === undefined) {
+      form.setValue(attribute.code, [])
+    }
+  }, [form, attribute.code])
+
+  const { fields, append, remove, move, replace } = useFieldArray({
     control: form.control as unknown as Control,
     name: attribute.code,
-    keyName: '_rhfId',
   })
+
+  // Sync useFieldArray when form is reset with external data (existing entry)
+  const hasSynced = useRef(false)
+
+  useEffect(() => {
+    const subscription = form.watch((formValues) => {
+      if (hasSynced.current) return
+      const value = formValues[attribute.code]
+      if (Array.isArray(value) && value.length > 0) {
+        hasSynced.current = true
+        replace(value as Record<string, unknown>[])
+      }
+    })
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [form, attribute.code, replace])
 
   const tableColumns = useMemo<ColumnDef<Record<string, unknown>>[]>(() => {
     const rowNumCol: ColumnDef<Record<string, unknown>> = {

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Controller, type Control, useWatch } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
-import { Checkbox } from '@mui/material'
+import { Box, Checkbox } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material'
 import type { AxiosResponse } from 'axios'
 
 import type { DocumentAttribute, EnumsValue } from '@/entities/document-type'
@@ -9,6 +10,7 @@ import { DICT_DATA_TYPES, getSearchUrl } from '@/shared/lib/consts/data-types'
 import { apiService } from '@/shared/api/api'
 import type { SelectOption } from '@/shared/types/select-option'
 import { resolveSelectValue } from '@/shared/lib/utils/resolve-select-value'
+import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 import { TextInput } from '@/shared/ui/inputs/text-input'
 import { NumberInput } from '@/shared/ui/inputs/number-input'
 import { DateTimeInput } from '@/shared/ui/inputs/datetime-input'
@@ -19,6 +21,79 @@ interface TableCellRendererProps {
   column: DocumentAttribute
   control: Control<Record<string, unknown>>
   language: string
+}
+
+const formatWithSpaces = (raw: string): string => {
+  if (!raw) return ''
+  const normalized = raw.replace('.', ',')
+  const negative = normalized.startsWith('-')
+  const withoutMinus = negative ? normalized.slice(1) : normalized
+  const commaIdx = withoutMinus.indexOf(',')
+  const intPart = commaIdx >= 0 ? withoutMinus.slice(0, commaIdx) : withoutMinus
+  const decPart = commaIdx >= 0 ? withoutMinus.slice(commaIdx) : ''
+  const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  return (negative ? '-' : '') + formattedInt + decPart
+}
+
+const formatCellValue = (value: unknown, column: DocumentAttribute): string => {
+  if (value == null || value === '') return ''
+  const { dataType } = column
+
+  switch (dataType) {
+    case 'STRING':
+    case 'TEXT':
+      return value as string
+    case 'INTEGER':
+    case 'DECIMAL':
+      return formatWithSpaces(String(value as number))
+    case 'DATE':
+      return typeof value === 'string' ? formatDate(value) : ''
+    case 'DATETIME':
+      return typeof value === 'string' ? formatDateTime(value) : ''
+    default:
+      if (typeof value === 'object') {
+        const resolved = resolveSelectValue(value, [])
+        return resolved?.label ?? ''
+      }
+      return String(value as string | number)
+  }
+}
+
+const tableCellSx: SxProps<Theme> = {
+  mb: 0,
+  position: 'static',
+  '& .MuiInputBase-root': {
+    backgroundColor: 'transparent !important',
+    border: 'none !important',
+    borderRadius: '0 !important',
+    minHeight: '28px !important',
+  },
+  '& .MuiInputBase-input': {
+    padding: '4px 8px !important',
+    fontSize: '14px !important',
+  },
+}
+
+const tableCellWrapperSx: SxProps<Theme> = {
+  '& .MuiFormControl-root': { mb: 0, position: 'static' },
+  '& .MuiInputBase-root': {
+    backgroundColor: 'transparent !important',
+    border: 'none !important',
+    borderRadius: '0 !important',
+    minHeight: '28px !important',
+  },
+  '& .MuiInputBase-input, & .MuiAutocomplete-input': {
+    padding: '4px 8px !important',
+    fontSize: '14px !important',
+  },
+  '& .MuiAutocomplete-inputRoot': {
+    paddingLeft: '0 !important',
+    paddingRight: '4px !important',
+  },
+  '& .MuiPickersFilledInput-sectionsContainer': {
+    padding: '4px 8px',
+    fontSize: 14,
+  },
 }
 
 interface DictionarySearchResponse {
@@ -198,7 +273,7 @@ const EnumCell = ({
   )
 }
 
-export const TableCellRenderer = ({
+const CellInput = ({
   name,
   column,
   control,
@@ -208,17 +283,23 @@ export const TableCellRenderer = ({
 
   if (DICT_DATA_TYPES.has(dataType)) {
     return (
-      <DictCell
-        name={name}
-        column={column}
-        control={control}
-        language={language}
-      />
+      <Box sx={tableCellWrapperSx}>
+        <DictCell
+          name={name}
+          column={column}
+          control={control}
+          language={language}
+        />
+      </Box>
     )
   }
 
   if (dataType === 'ENUMS') {
-    return <EnumCell name={name} column={column} control={control} />
+    return (
+      <Box sx={tableCellWrapperSx}>
+        <EnumCell name={name} column={column} control={control} />
+      </Box>
+    )
   }
 
   switch (dataType) {
@@ -234,6 +315,8 @@ export const TableCellRenderer = ({
               inputRef={ref}
               value={(field.value as string) || ''}
               size="small"
+              autoFocus
+              sx={tableCellSx}
             />
           )}
         />
@@ -253,24 +336,8 @@ export const TableCellRenderer = ({
               value={field.value != null ? String(field.value as number) : ''}
               decimal={dataType === 'DECIMAL'}
               size="small"
-            />
-          )}
-        />
-      )
-
-    case 'BOOLEAN':
-      return (
-        <Controller
-          name={name}
-          control={control}
-          render={({ field }) => (
-            <Checkbox
-              checked={!!field.value}
-              onChange={(e) => {
-                field.onChange(e.target.checked)
-              }}
-              size="small"
-              sx={{ p: 0 }}
+              autoFocus
+              sx={tableCellSx}
             />
           )}
         />
@@ -283,12 +350,14 @@ export const TableCellRenderer = ({
           name={name}
           control={control}
           render={({ field }) => (
-            <DateTimeInput
-              value={(field.value as string | undefined) ?? undefined}
-              onChange={field.onChange}
-              dateOnly={dataType === 'DATE'}
-              size="small"
-            />
+            <Box sx={tableCellWrapperSx}>
+              <DateTimeInput
+                value={(field.value as string | undefined) ?? undefined}
+                onChange={field.onChange}
+                dateOnly={dataType === 'DATE'}
+                size="small"
+              />
+            </Box>
           )}
         />
       )
@@ -304,9 +373,79 @@ export const TableCellRenderer = ({
               inputRef={ref}
               value={(field.value as string) || ''}
               size="small"
+              autoFocus
+              sx={tableCellSx}
             />
           )}
         />
       )
   }
+}
+
+export const TableCellRenderer = ({
+  name,
+  column,
+  control,
+  language,
+}: TableCellRendererProps) => {
+  const { dataType } = column
+  const [editing, setEditing] = useState(false)
+  const cellRef = useRef<HTMLDivElement>(null)
+  const value = useWatch({ control, name })
+
+  if (dataType === 'BOOLEAN') {
+    return (
+      <Controller
+        name={name}
+        control={control}
+        render={({ field }) => (
+          <Checkbox
+            checked={!!field.value}
+            onChange={(e) => {
+              field.onChange(e.target.checked)
+            }}
+            size="small"
+            sx={{ p: 0 }}
+          />
+        )}
+      />
+    )
+  }
+
+  if (!editing) {
+    const displayText = formatCellValue(value, column)
+    return (
+      <div
+        className="flex min-h-[28px] cursor-text items-center truncate border-b-2 border-transparent px-2 py-1 text-body2 text-ui-06 hover:bg-ui-04"
+        onClick={() => {
+          setEditing(true)
+        }}
+      >
+        {displayText || '\u00A0'}
+      </div>
+    )
+  }
+
+  const handleBlur = () => {
+    requestAnimationFrame(() => {
+      if (!cellRef.current?.contains(document.activeElement)) {
+        setEditing(false)
+      }
+    })
+  }
+
+  return (
+    <div
+      ref={cellRef}
+      className="border-b-2 border-accent-02 hover:bg-ui-04"
+      onBlur={handleBlur}
+    >
+      <CellInput
+        name={name}
+        column={column}
+        control={control}
+        language={language}
+      />
+    </div>
+  )
 }

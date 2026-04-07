@@ -197,7 +197,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
                 <tr
                   key={row.id}
                   className={`border-b border-ui-03 last:border-b-0 cursor-pointer ${
-                    selectedIndex === row.index ? 'bg-ui-07' : 'hover:bg-ui-02'
+                    selectedIndex === row.index ? 'bg-ui-07' : ''
                   }`}
                   onClick={() => {
                     setSelectedIndex(row.index)

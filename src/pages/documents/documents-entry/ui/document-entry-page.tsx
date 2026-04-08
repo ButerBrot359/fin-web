@@ -39,6 +39,7 @@ export const DocumentEntryPage = () => {
       isNew,
       existingEntry: existingEntry ?? null,
       form,
+      attributes,
     })
 
   const listPath = `/modules/${pageCode}/document/${moduleCode}`

@@ -11,6 +11,7 @@ export interface DateTimeInputProps {
   required?: boolean
   error?: boolean
   helperText?: string
+  size?: 'small' | 'medium'
 }
 
 export const DateTimeInput = ({
@@ -22,6 +23,7 @@ export const DateTimeInput = ({
   required,
   error,
   helperText,
+  size,
 }: DateTimeInputProps) => {
   const dateValue = value ? parseISO(value) : null
   const validDate = dateValue && isValid(dateValue) ? dateValue : null
@@ -35,7 +37,7 @@ export const DateTimeInput = ({
   }
 
   const slotProps = {
-    textField: { error, helperText, required },
+    textField: { error, helperText, required, size },
   }
 
   if (dateOnly) {

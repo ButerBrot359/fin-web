@@ -12,18 +12,23 @@ import type {
   CreateDocumentEntryPayload,
   DocumentEntry,
 } from '@/entities/document-entry'
+import type { DocumentAttribute } from '@/entities/document-type'
 import { showToast } from '@/shared/ui/toast/show-toast'
+
+import { serializeTableRows } from '../utils/serialize-table-rows'
 
 interface UseDocumentEntryActionsParams {
   isNew: boolean
   existingEntry: DocumentEntry | null
   form: UseFormReturn<Record<string, unknown>>
+  attributes: DocumentAttribute[]
 }
 
 export const useDocumentEntryActions = ({
   isNew,
   existingEntry,
   form,
+  attributes,
 }: UseDocumentEntryActionsParams) => {
   const { moduleCode = '', pageCode = '' } = useParams()
   const navigate = useNavigate()
@@ -53,43 +58,36 @@ export const useDocumentEntryActions = ({
     },
   })
 
-  const buildCreatePayload = useCallback(
-    (isPosted: boolean): CreateDocumentEntryPayload => ({
-      code: '',
-      nameRu: '',
-      nameKz: '',
-      parentId: null,
-      sortOrder: 0,
-      isPosted,
-      attributes: form.getValues(),
-    }),
-    [form]
-  )
-
-  const buildUpdatePayload = useCallback(
-    (isPosted: boolean): CreateDocumentEntryPayload => ({
-      code: existingEntry?.code ?? '',
-      nameRu: existingEntry?.nameRu ?? '',
-      nameKz: existingEntry?.nameKz ?? '',
-      parentId: existingEntry?.parentId ?? null,
-      sortOrder: existingEntry?.sortOrder ?? 0,
-      isPosted,
-      attributes: form.getValues(),
-    }),
-    [existingEntry, form]
-  )
-
   const submitWith = useCallback(
     (isPosted: boolean, onSuccess: (entry: { id: number }) => void) => {
-      void form.handleSubmit(() => {
-        const payload = isNew
-          ? buildCreatePayload(isPosted)
-          : buildUpdatePayload(isPosted)
+      void form.handleSubmit((data) => {
+        const serializedAttrs = serializeTableRows(data, attributes)
+
+        const payload: CreateDocumentEntryPayload = isNew
+          ? {
+              code: '',
+              nameRu: '',
+              nameKz: '',
+              parentId: null,
+              sortOrder: 0,
+              isPosted,
+              attributes: serializedAttrs,
+            }
+          : {
+              code: existingEntry?.code ?? '',
+              nameRu: existingEntry?.nameRu ?? '',
+              nameKz: existingEntry?.nameKz ?? '',
+              parentId: existingEntry?.parentId ?? null,
+              sortOrder: existingEntry?.sortOrder ?? 0,
+              isPosted,
+              attributes: serializedAttrs,
+            }
+
         const mutate = isNew ? mutateCreate : mutateUpdate
 
         mutate(payload, {
           onSuccess: (response) => {
-            form.reset(form.getValues())
+            form.reset(data)
             onSuccess(response.data.data as { id: number })
           },
           onError: () => {
@@ -103,15 +101,7 @@ export const useDocumentEntryActions = ({
         })
       })()
     },
-    [
-      form,
-      isNew,
-      mutateCreate,
-      mutateUpdate,
-      buildCreatePayload,
-      buildUpdatePayload,
-      t,
-    ]
+    [form, isNew, existingEntry, attributes, mutateCreate, mutateUpdate, t]
   )
 
   const handleSave = useCallback(() => {

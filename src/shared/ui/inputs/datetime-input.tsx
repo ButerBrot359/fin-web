@@ -12,6 +12,8 @@ export interface DateTimeInputProps {
   error?: boolean
   helperText?: string
   size?: 'small' | 'medium'
+  onOpen?: () => void
+  onClose?: () => void
 }
 
 export const DateTimeInput = ({
@@ -24,6 +26,8 @@ export const DateTimeInput = ({
   error,
   helperText,
   size,
+  onOpen,
+  onClose,
 }: DateTimeInputProps) => {
   const dateValue = value ? parseISO(value) : null
   const validDate = dateValue && isValid(dateValue) ? dateValue : null
@@ -45,6 +49,8 @@ export const DateTimeInput = ({
       <DatePicker
         value={validDate}
         onChange={handleChange}
+        onOpen={onOpen}
+        onClose={onClose}
         label={label}
         readOnly={readOnly}
         slotProps={slotProps}
@@ -56,6 +62,8 @@ export const DateTimeInput = ({
     <DateTimePicker
       value={validDate}
       onChange={handleChange}
+      onOpen={onOpen}
+      onClose={onClose}
       label={label}
       readOnly={readOnly}
       slotProps={slotProps}

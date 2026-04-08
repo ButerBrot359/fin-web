@@ -75,12 +75,14 @@ const tableCellSx: SxProps<Theme> = {
 }
 
 const tableCellWrapperSx: SxProps<Theme> = {
-  '& .MuiFormControl-root': { mb: 0, position: 'static' },
+  '& .MuiFormControl-root': { mb: 0, position: 'static', width: '100%' },
   '& .MuiInputBase-root': {
     backgroundColor: 'transparent !important',
     border: 'none !important',
     borderRadius: '0 !important',
     minHeight: '28px !important',
+    height: '28px !important',
+    padding: '0 !important',
   },
   '& .MuiInputBase-input, & .MuiAutocomplete-input': {
     padding: '4px 8px !important',
@@ -90,9 +92,38 @@ const tableCellWrapperSx: SxProps<Theme> = {
     paddingLeft: '0 !important',
     paddingRight: '4px !important',
   },
-  '& .MuiPickersFilledInput-sectionsContainer': {
-    padding: '4px 8px',
-    fontSize: 14,
+  // DatePicker / DateTimePicker overrides
+  '& .MuiPickersInputBase-root': {
+    position: 'relative',
+    backgroundColor: 'transparent !important',
+    border: 'none !important',
+    borderRadius: '0 !important',
+    minHeight: '28px !important',
+    height: '28px !important',
+    padding: '0 8px !important',
+  },
+  '& .MuiPickersInputBase-sectionsContainer': {
+    padding: '0 !important',
+    minHeight: '28px !important',
+    height: '28px !important',
+    fontSize: '14px !important',
+  },
+  '& .MuiPickersInputBase-input': {
+    padding: '0 !important',
+    fontSize: '14px !important',
+    height: '28px !important',
+  },
+  '& .MuiInputAdornment-root': {
+    width: 0,
+    overflow: 'visible',
+    ml: 0,
+    transform: 'translateX(-24px)',
+  },
+  '& .MuiInputAdornment-root .MuiIconButton-root': {
+    p: '2px',
+  },
+  '& .MuiInputAdornment-root .MuiSvgIcon-root': {
+    fontSize: '18px',
   },
 }
 
@@ -273,12 +304,19 @@ const EnumCell = ({
   )
 }
 
+interface CellInputProps extends TableCellRendererProps {
+  onPickerOpen?: () => void
+  onPickerClose?: () => void
+}
+
 const CellInput = ({
   name,
   column,
   control,
   language,
-}: TableCellRendererProps) => {
+  onPickerOpen,
+  onPickerClose,
+}: CellInputProps) => {
   const { dataType } = column
 
   if (DICT_DATA_TYPES.has(dataType)) {
@@ -356,6 +394,8 @@ const CellInput = ({
                 onChange={field.onChange}
                 dateOnly={dataType === 'DATE'}
                 size="small"
+                onOpen={onPickerOpen}
+                onClose={onPickerClose}
               />
             </Box>
           )}
@@ -391,6 +431,7 @@ export const TableCellRenderer = ({
   const { dataType } = column
   const [editing, setEditing] = useState(false)
   const cellRef = useRef<HTMLDivElement>(null)
+  const pickerOpenRef = useRef(false)
   const value = useWatch({ control, name })
 
   if (dataType === 'BOOLEAN') {
@@ -428,6 +469,7 @@ export const TableCellRenderer = ({
 
   const handleBlur = () => {
     requestAnimationFrame(() => {
+      if (pickerOpenRef.current) return
       if (!cellRef.current?.contains(document.activeElement)) {
         setEditing(false)
       }
@@ -445,6 +487,12 @@ export const TableCellRenderer = ({
         column={column}
         control={control}
         language={language}
+        onPickerOpen={() => {
+          pickerOpenRef.current = true
+        }}
+        onPickerClose={() => {
+          pickerOpenRef.current = false
+        }}
       />
     </div>
   )

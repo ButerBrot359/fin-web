@@ -1,5 +1,5 @@
-import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import { useDocumentType } from '@/entities/document-type'
 import { useOptionalFormConfig } from '@/entities/form-config'
@@ -8,16 +8,17 @@ import { FormRenderer } from '@/features/form-renderer'
 
 import { PageHeader } from '@/widgets/page-header'
 import { DocumentFormToolbar } from '@/widgets/document-form-toolbar'
+
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
 
-import { buildFallbackConfig } from '../lib/utils/build-fallback-config'
-import { getDocumentListPath } from '../lib/utils/get-document-paths'
-import { getFormAttributes } from '../lib/utils/get-form-attributes'
-import { useDocumentEntryForm } from '../lib/hooks/use-document-entry-form'
-import { useDocumentEntryActions } from '../lib/hooks/use-document-entry-actions'
-import { useDocumentEntryPrint } from '../lib/hooks/use-document-entry-print'
-import { useUnsavedChangesDialog } from '../lib/hooks/use-unsaved-changes-dialog'
 import { DocumentEntrySkeleton } from './document-entry-skeleton'
+import { getFormAttributes } from '../lib/utils/get-form-attributes'
+import { getDocumentListPath } from '../lib/utils/get-document-paths'
+import { buildFallbackConfig } from '../lib/utils/build-fallback-config'
+import { useDocumentEntryForm } from '../lib/hooks/use-document-entry-form'
+import { useDocumentEntryPrint } from '../lib/hooks/use-document-entry-print'
+import { useDocumentEntryActions } from '../lib/hooks/use-document-entry-actions'
+import { useUnsavedChangesDialog } from '../lib/hooks/use-unsaved-changes-dialog'
 
 export const DocumentEntryPage = () => {
   const { moduleCode = '', pageCode = '' } = useParams()
@@ -72,13 +73,13 @@ export const DocumentEntryPage = () => {
       <DocumentFormToolbar
         isNew={isNew}
         isDirty={isDirty}
-        onSave={actions.handleSave}
-        onPost={actions.handlePost}
-        onPostAndClose={actions.handlePostAndClose}
-        onPrint={handlePrint}
-        isPrintLoading={isPrintLoading}
-        printNameRu={nameRu}
-        printNameKz={nameKz}
+        actions={actions}
+        print={{
+          onPrint: handlePrint,
+          isLoading: isPrintLoading,
+          nameRu,
+          nameKz,
+        }}
       />
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">

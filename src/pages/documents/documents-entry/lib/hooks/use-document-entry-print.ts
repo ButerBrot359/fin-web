@@ -2,10 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 
 import { printDocumentEntry } from '@/entities/document-entry'
 
-interface UseDocumentEntryPrintParams {
-  moduleCode: string
-  entryId: number | undefined
-}
+import type { UseDocumentEntryPrintParams } from '../../types/document-entry-print'
 
 export const useDocumentEntryPrint = ({
   moduleCode,

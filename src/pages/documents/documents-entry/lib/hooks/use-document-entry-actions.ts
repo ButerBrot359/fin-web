@@ -1,58 +1,25 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { UseFormReturn } from 'react-hook-form'
 
 import {
   createDocumentEntry,
   updateDocumentEntry,
 } from '@/entities/document-entry'
-import type {
-  CreateDocumentEntryPayload,
-  DocumentEntry,
-} from '@/entities/document-entry'
-import type { DocumentAttribute } from '@/entities/document-type'
+import type { CreateDocumentEntryPayload } from '@/entities/document-entry'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
+import type {
+  SubmitAction,
+  UseDocumentEntryActionsParams,
+} from '../../types/document-entry-actions'
+import { ACTION_CONFIG } from '../consts/action-config'
+import { buildPayload } from '../utils/build-payload'
 import { serializeTableRows } from '../utils/serialize-table-rows'
 import {
   getDocumentListPath,
   getDocumentEntryPath,
 } from '../utils/get-document-paths'
-
-interface UseDocumentEntryActionsParams {
-  isNew: boolean
-  existingEntry: DocumentEntry | null
-  form: UseFormReturn<Record<string, unknown>>
-  attributes: DocumentAttribute[]
-}
-
-type SubmitAction = 'save' | 'post' | 'saveAndClose' | 'postAndClose'
-
-const ACTION_CONFIG: Record<
-  SubmitAction,
-  { isPosted: boolean; shouldClose: boolean }
-> = {
-  save: { isPosted: false, shouldClose: false },
-  post: { isPosted: true, shouldClose: false },
-  saveAndClose: { isPosted: false, shouldClose: true },
-  postAndClose: { isPosted: true, shouldClose: true },
-}
-
-const buildPayload = (
-  isPosted: boolean,
-  attributes: Record<string, unknown>,
-  isNew: boolean,
-  existingEntry: DocumentEntry | null
-): CreateDocumentEntryPayload => ({
-  code: isNew ? '' : (existingEntry?.code ?? ''),
-  nameRu: isNew ? '' : (existingEntry?.nameRu ?? ''),
-  nameKz: isNew ? '' : (existingEntry?.nameKz ?? ''),
-  parentId: isNew ? null : (existingEntry?.parentId ?? null),
-  sortOrder: isNew ? 0 : (existingEntry?.sortOrder ?? 0),
-  isPosted,
-  attributes,
-})
 
 export const useDocumentEntryActions = ({
   isNew,

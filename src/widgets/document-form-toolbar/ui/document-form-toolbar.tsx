@@ -10,57 +10,60 @@ import DebetKreditIcon from '@/shared/assets/icons/debet-kredit.svg'
 import LayersIcon from '@/shared/assets/icons/layers.svg'
 import LinkIcon from '@/shared/assets/icons/link.svg'
 
+interface DocumentFormActions {
+  handleSave: () => void
+  handlePost: () => void
+  handlePostAndClose: () => void
+}
+
+interface DocumentFormPrint {
+  onPrint: (language?: string) => void
+  isLoading?: boolean
+  nameRu?: string
+  nameKz?: string
+}
+
 interface DocumentFormToolbarProps {
   isNew?: boolean
   isDirty?: boolean
-  isPrintLoading?: boolean
-  printNameRu?: string
-  printNameKz?: string
-  onPostAndClose?: () => void
-  onSave?: () => void
-  onPost?: () => void
-  onPrint?: (language?: string) => void
+  actions: DocumentFormActions
+  print: DocumentFormPrint
 }
 
 export const DocumentFormToolbar = ({
   isNew,
   isDirty,
-  isPrintLoading,
-  printNameRu,
-  printNameKz,
-  onPostAndClose,
-  onSave,
-  onPost,
-  onPrint,
+  actions,
+  print,
 }: DocumentFormToolbarProps) => {
   const { t } = useTranslation()
 
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <GreenAccentButton onClick={onPostAndClose}>
+        <GreenAccentButton onClick={actions.handlePostAndClose}>
           {t('documentFormToolbar.postAndClose')}
         </GreenAccentButton>
         <button
           type="button"
-          onClick={onSave}
+          onClick={actions.handleSave}
           className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none"
         >
           {t('documentFormToolbar.save')}
         </button>
         <button
           type="button"
-          onClick={onPost}
+          onClick={actions.handlePost}
           className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none"
         >
           {t('documentFormToolbar.post')}
         </button>
         <PrintDropdownButton
-          nameRu={printNameRu ?? ''}
-          nameKz={printNameKz ?? ''}
+          nameRu={print.nameRu ?? ''}
+          nameKz={print.nameKz ?? ''}
           disabled={isNew || isDirty}
-          loading={isPrintLoading}
-          onPrint={onPrint}
+          loading={print.isLoading}
+          onPrint={print.onPrint}
         />
         <IconButtonWrapper ariaLabel={t('actions.debitCredit')}>
           <DebetKreditIcon className="h-5 w-5" />

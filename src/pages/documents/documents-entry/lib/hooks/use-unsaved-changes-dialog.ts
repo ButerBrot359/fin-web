@@ -1,9 +1,6 @@
 import { useState } from 'react'
 
-interface UseUnsavedChangesDialogParams {
-  onSave: () => void
-  onDiscard: () => void
-}
+import type { UseUnsavedChangesDialogParams } from '../../types/unsaved-changes-dialog'
 
 export const useUnsavedChangesDialog = ({
   onSave,

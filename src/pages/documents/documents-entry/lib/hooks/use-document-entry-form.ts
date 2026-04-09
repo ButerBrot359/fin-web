@@ -20,7 +20,7 @@ export const useDocumentEntryForm = () => {
     return { VidOperatsii: vidOperatsii }
   }, [vidOperatsii])
 
-  const { data: newEntryData } = useQuery({
+  const { data: newEntryData, isLoading: isLoadingNewEntry } = useQuery({
     queryKey: ['document-entry-new', moduleCode, newEntryParams],
     queryFn: () => getNewDocumentEntry(moduleCode, newEntryParams),
     enabled: isNew && !!newEntryParams,
@@ -38,28 +38,24 @@ export const useDocumentEntryForm = () => {
     defaultValues: {},
   })
 
-  const todayISO = useMemo(() => new Date().toISOString(), [])
-
-  useEffect(() => {
-    if (isNew && newEntryData?.attributes) {
-      form.reset({
-        Data: todayISO,
-        ...newEntryData.attributes,
-      })
-    }
-  }, [newEntryData, form, isNew, todayISO])
-
-  useEffect(() => {
-    if (isNew && !newEntryParams && !form.getValues('Data')) {
-      form.setValue('Data', todayISO)
-    }
-  }, [isNew, newEntryParams, form, todayISO])
-
   useEffect(() => {
     if (!isNew && existingEntry?.attributes) {
       form.reset(existingEntry.attributes)
+      return
     }
-  }, [existingEntry, form, isNew])
+    if (isNew && newEntryData?.attributes) {
+      form.reset({ Data: new Date().toISOString(), ...newEntryData.attributes })
+      return
+    }
+    if (isNew && !newEntryParams) {
+      form.reset({ Data: new Date().toISOString() })
+    }
+  }, [isNew, existingEntry, newEntryData, newEntryParams, form])
 
-  return { form, isNew, existingEntry, isLoadingEntry }
+  return {
+    form,
+    isNew,
+    existingEntry,
+    isLoading: isLoadingEntry || isLoadingNewEntry,
+  }
 }

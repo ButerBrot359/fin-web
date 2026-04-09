@@ -7,7 +7,7 @@ import type { UseFormReturn } from 'react-hook-form'
 import {
   createDocumentEntry,
   updateDocumentEntry,
-} from '@/entities/document-entry/api/document-entry'
+} from '@/entities/document-entry'
 import type {
   CreateDocumentEntryPayload,
   DocumentEntry,
@@ -16,6 +16,10 @@ import type { DocumentAttribute } from '@/entities/document-type'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import { serializeTableRows } from '../utils/serialize-table-rows'
+import {
+  getDocumentListPath,
+  getDocumentEntryPath,
+} from '../utils/get-document-paths'
 
 interface UseDocumentEntryActionsParams {
   isNew: boolean
@@ -23,6 +27,33 @@ interface UseDocumentEntryActionsParams {
   form: UseFormReturn<Record<string, unknown>>
   attributes: DocumentAttribute[]
 }
+
+type SubmitAction = 'save' | 'post' | 'saveAndClose' | 'postAndClose'
+
+const ACTION_CONFIG: Record<
+  SubmitAction,
+  { isPosted: boolean; shouldClose: boolean }
+> = {
+  save: { isPosted: false, shouldClose: false },
+  post: { isPosted: true, shouldClose: false },
+  saveAndClose: { isPosted: false, shouldClose: true },
+  postAndClose: { isPosted: true, shouldClose: true },
+}
+
+const buildPayload = (
+  isPosted: boolean,
+  attributes: Record<string, unknown>,
+  isNew: boolean,
+  existingEntry: DocumentEntry | null
+): CreateDocumentEntryPayload => ({
+  code: isNew ? '' : (existingEntry?.code ?? ''),
+  nameRu: isNew ? '' : (existingEntry?.nameRu ?? ''),
+  nameKz: isNew ? '' : (existingEntry?.nameKz ?? ''),
+  parentId: isNew ? null : (existingEntry?.parentId ?? null),
+  sortOrder: isNew ? 0 : (existingEntry?.sortOrder ?? 0),
+  isPosted,
+  attributes,
+})
 
 export const useDocumentEntryActions = ({
   isNew,
@@ -35,112 +66,84 @@ export const useDocumentEntryActions = ({
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
-  const { mutate: mutateCreate } = useMutation({
-    mutationFn: (payload: CreateDocumentEntryPayload) =>
-      createDocumentEntry(moduleCode, payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['document-entries', moduleCode],
-      })
-    },
-  })
+  const listPath = getDocumentListPath({ pageCode, moduleCode })
 
-  const { mutate: mutateUpdate } = useMutation({
+  const { mutate } = useMutation({
     mutationFn: (payload: CreateDocumentEntryPayload) =>
-      updateDocumentEntry(existingEntry!.id, payload),
+      isNew
+        ? createDocumentEntry(moduleCode, payload)
+        : updateDocumentEntry(existingEntry!.id, payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ['document-entries', moduleCode],
       })
-      void queryClient.invalidateQueries({
-        queryKey: ['document-entry', String(existingEntry?.id)],
-      })
+      if (!isNew && existingEntry) {
+        void queryClient.invalidateQueries({
+          queryKey: ['document-entry', String(existingEntry.id)],
+        })
+      }
     },
   })
 
   const submitWith = useCallback(
-    (isPosted: boolean, onSuccess: (entry: { id: number }) => void) => {
+    (action: SubmitAction) => {
+      const { isPosted, shouldClose } = ACTION_CONFIG[action]
+      const toastKey = isPosted ? 'documentEntry.posted' : 'documentEntry.saved'
+      const errorKey = isPosted
+        ? 'documentEntry.postError'
+        : 'documentEntry.saveError'
+
       void form.handleSubmit((data) => {
-        const serializedAttrs = serializeTableRows(data, attributes)
-
-        const payload: CreateDocumentEntryPayload = isNew
-          ? {
-              code: '',
-              nameRu: '',
-              nameKz: '',
-              parentId: null,
-              sortOrder: 0,
-              isPosted,
-              attributes: serializedAttrs,
-            }
-          : {
-              code: existingEntry?.code ?? '',
-              nameRu: existingEntry?.nameRu ?? '',
-              nameKz: existingEntry?.nameKz ?? '',
-              parentId: existingEntry?.parentId ?? null,
-              sortOrder: existingEntry?.sortOrder ?? 0,
-              isPosted,
-              attributes: serializedAttrs,
-            }
-
-        const mutate = isNew ? mutateCreate : mutateUpdate
+        const serialized = serializeTableRows(data, attributes)
+        const payload = buildPayload(isPosted, serialized, isNew, existingEntry)
 
         mutate(payload, {
           onSuccess: (response) => {
             form.reset(data)
-            onSuccess(response.data.data as { id: number })
+            showToast('info', t(toastKey))
+            const entry = response.data.data as { id: number }
+
+            if (shouldClose) {
+              void navigate(listPath)
+            } else if (isNew) {
+              void navigate(
+                getDocumentEntryPath({ pageCode, moduleCode }, entry.id),
+                { replace: true }
+              )
+            }
           },
           onError: () => {
-            showToast(
-              'error',
-              t(
-                isPosted ? 'documentEntry.postError' : 'documentEntry.saveError'
-              )
-            )
+            showToast('error', t(errorKey))
           },
         })
       })()
     },
-    [form, isNew, existingEntry, attributes, mutateCreate, mutateUpdate, t]
+    [
+      form,
+      isNew,
+      existingEntry,
+      attributes,
+      mutate,
+      t,
+      navigate,
+      listPath,
+      pageCode,
+      moduleCode,
+    ]
   )
 
-  const handleSave = useCallback(() => {
-    submitWith(false, (entry) => {
-      showToast('info', t('documentEntry.saved'))
-      if (isNew) {
-        void navigate(
-          `/modules/${pageCode}/document/${moduleCode}/${String(entry.id)}`,
-          { replace: true }
-        )
-      }
-    })
-  }, [submitWith, isNew, navigate, pageCode, moduleCode, t])
-
-  const handlePost = useCallback(() => {
-    submitWith(true, (entry) => {
-      showToast('info', t('documentEntry.posted'))
-      if (isNew) {
-        void navigate(
-          `/modules/${pageCode}/document/${moduleCode}/${String(entry.id)}`,
-          { replace: true }
-        )
-      }
-    })
-  }, [submitWith, isNew, navigate, pageCode, moduleCode, t])
-
-  const handlePostAndClose = useCallback(() => {
-    submitWith(true, () => {
-      showToast('info', t('documentEntry.posted'))
-      void navigate(`/modules/${pageCode}/document/${moduleCode}`)
-    })
-  }, [submitWith, navigate, pageCode, moduleCode, t])
-
-  const handleSaveAndClose = () => {
-    submitWith(false, () => {
-      showToast('info', t('documentEntry.saved'))
-      void navigate(`/modules/${pageCode}/document/${moduleCode}`)
-    })
+  return {
+    handleSave: useCallback(() => {
+      submitWith('save')
+    }, [submitWith]),
+    handlePost: useCallback(() => {
+      submitWith('post')
+    }, [submitWith]),
+    handleSaveAndClose: useCallback(() => {
+      submitWith('saveAndClose')
+    }, [submitWith]),
+    handlePostAndClose: useCallback(() => {
+      submitWith('postAndClose')
+    }, [submitWith]),
   }
-
-  return { handleSave, handlePost, handlePostAndClose, handleSaveAndClose }
 }

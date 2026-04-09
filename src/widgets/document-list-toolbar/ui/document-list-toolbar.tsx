@@ -31,7 +31,13 @@ interface OnGetFormField {
   elements: EnumsValue[]
 }
 
-export const DocumentListToolbar = () => {
+interface DocumentListToolbarProps {
+  selectedRowId?: number | null
+}
+
+export const DocumentListToolbar = ({
+  selectedRowId,
+}: DocumentListToolbarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { pageCode, moduleCode } = useParams()
@@ -110,12 +116,13 @@ export const DocumentListToolbar = () => {
             </IconButtonWrapper>
           </div>
 
-          <Typography
-            variant="body2"
-            className="cursor-pointer whitespace-nowrap p-2.5 text-ui-05 rounded-md bg-ui-01 transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none"
+          <button
+            type="button"
+            disabled={selectedRowId == null}
+            className="cursor-pointer whitespace-nowrap p-2.5 text-body2 text-ui-05 rounded-md bg-ui-01 transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ui-01 disabled:hover:text-ui-05 disabled:hover:shadow-none"
           >
             {t('documentListToolbar.editSelected')}
-          </Typography>
+          </button>
 
           <DropdownButton label={t('documentListToolbar.print')} />
           <DropdownButton label={t('documentListToolbar.reports')} />

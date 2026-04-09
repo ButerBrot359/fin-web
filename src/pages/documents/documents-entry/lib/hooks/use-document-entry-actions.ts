@@ -1,4 +1,3 @@
-import { useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -85,65 +84,51 @@ export const useDocumentEntryActions = ({
     },
   })
 
-  const submitWith = useCallback(
-    (action: SubmitAction) => {
-      const { isPosted, shouldClose } = ACTION_CONFIG[action]
-      const toastKey = isPosted ? 'documentEntry.posted' : 'documentEntry.saved'
-      const errorKey = isPosted
-        ? 'documentEntry.postError'
-        : 'documentEntry.saveError'
+  const submitWith = (action: SubmitAction) => {
+    const { isPosted, shouldClose } = ACTION_CONFIG[action]
+    const toastKey = isPosted ? 'documentEntry.posted' : 'documentEntry.saved'
+    const errorKey = isPosted
+      ? 'documentEntry.postError'
+      : 'documentEntry.saveError'
 
-      void form.handleSubmit((data) => {
-        const serialized = serializeTableRows(data, attributes)
-        const payload = buildPayload(isPosted, serialized, isNew, existingEntry)
+    void form.handleSubmit((data) => {
+      const serialized = serializeTableRows(data, attributes)
+      const payload = buildPayload(isPosted, serialized, isNew, existingEntry)
 
-        mutate(payload, {
-          onSuccess: (response) => {
-            form.reset(data)
-            showToast('info', t(toastKey))
-            const entry = response.data.data as { id: number }
+      mutate(payload, {
+        onSuccess: (response) => {
+          form.reset(data)
+          showToast('info', t(toastKey))
+          const entry = response.data.data as { id: number }
 
-            if (shouldClose) {
-              void navigate(listPath)
-            } else if (isNew) {
-              void navigate(
-                getDocumentEntryPath({ pageCode, moduleCode }, entry.id),
-                { replace: true }
-              )
-            }
-          },
-          onError: () => {
-            showToast('error', t(errorKey))
-          },
-        })
-      })()
-    },
-    [
-      form,
-      isNew,
-      existingEntry,
-      attributes,
-      mutate,
-      t,
-      navigate,
-      listPath,
-      pageCode,
-      moduleCode,
-    ]
-  )
+          if (shouldClose) {
+            void navigate(listPath)
+          } else if (isNew) {
+            void navigate(
+              getDocumentEntryPath({ pageCode, moduleCode }, entry.id),
+              { replace: true }
+            )
+          }
+        },
+        onError: () => {
+          showToast('error', t(errorKey))
+        },
+      })
+    })()
+  }
 
   return {
-    handleSave: useCallback(() => {
+    handleSave: () => {
       submitWith('save')
-    }, [submitWith]),
-    handlePost: useCallback(() => {
+    },
+    handlePost: () => {
       submitWith('post')
-    }, [submitWith]),
-    handleSaveAndClose: useCallback(() => {
+    },
+    handleSaveAndClose: () => {
       submitWith('saveAndClose')
-    }, [submitWith]),
-    handlePostAndClose: useCallback(() => {
+    },
+    handlePostAndClose: () => {
       submitWith('postAndClose')
-    }, [submitWith]),
+    },
   }
 }

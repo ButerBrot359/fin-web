@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 
 interface UseUnsavedChangesDialogParams {
   onSave: () => void
@@ -11,23 +11,23 @@ export const useUnsavedChangesDialog = ({
 }: UseUnsavedChangesDialogParams) => {
   const [isOpen, setIsOpen] = useState(false)
 
-  const open = useCallback(() => {
+  const open = () => {
     setIsOpen(true)
-  }, [])
+  }
 
-  const handleSave = useCallback(() => {
+  const handleSave = () => {
     setIsOpen(false)
     onSave()
-  }, [onSave])
+  }
 
-  const handleDiscard = useCallback(() => {
+  const handleDiscard = () => {
     setIsOpen(false)
     onDiscard()
-  }, [onDiscard])
+  }
 
-  const handleCancel = useCallback(() => {
+  const handleCancel = () => {
     setIsOpen(false)
-  }, [])
+  }
 
   return { isOpen, open, handleSave, handleDiscard, handleCancel }
 }

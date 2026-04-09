@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
@@ -32,23 +31,13 @@ export const DocumentEntryPage = () => {
   const { isDirty } = form.formState
 
   const listPath = getDocumentListPath({ pageCode, moduleCode })
+  const formAttributes = getFormAttributes(attributes)
+  const formConfig = config ?? buildFallbackConfig(formAttributes)
 
-  const formAttributes = useMemo(
-    () => getFormAttributes(attributes),
-    [attributes]
-  )
-
-  const formConfig = useMemo(
-    () => config ?? buildFallbackConfig(formAttributes),
-    [config, formAttributes]
-  )
-
-  const pageTitle = useMemo(() => {
-    const base = isNew
-      ? t('documentEntry.newTitle', { name: title })
-      : existingEntry?.nameRu || title
-    return isDirty ? `${base} *` : base
-  }, [isNew, t, title, existingEntry?.nameRu, isDirty])
+  const baseTitle = isNew
+    ? t('documentEntry.newTitle', { name: title })
+    : existingEntry?.nameRu || title
+  const pageTitle = isDirty ? `${baseTitle} *` : baseTitle
 
   const actions = useDocumentEntryActions({
     isNew,

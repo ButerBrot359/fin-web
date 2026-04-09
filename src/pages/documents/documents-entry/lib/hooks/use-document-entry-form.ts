@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
@@ -14,16 +14,14 @@ export const useDocumentEntryForm = () => {
 
   const isNew = !entryId || entryId === 'new'
   const vidOperatsii = searchParams.get('VidOperatsii')
-
-  const newEntryParams = useMemo(() => {
-    if (!vidOperatsii) return undefined
-    return { VidOperatsii: vidOperatsii }
-  }, [vidOperatsii])
+  const newEntryParams = vidOperatsii
+    ? { VidOperatsii: vidOperatsii }
+    : undefined
 
   const { data: newEntryData, isLoading: isLoadingNewEntry } = useQuery({
-    queryKey: ['document-entry-new', moduleCode, newEntryParams],
+    queryKey: ['document-entry-new', moduleCode, vidOperatsii],
     queryFn: () => getNewDocumentEntry(moduleCode, newEntryParams),
-    enabled: isNew && !!newEntryParams,
+    enabled: isNew && !!vidOperatsii,
     select: (response) => response.data.data,
   })
 
@@ -47,10 +45,10 @@ export const useDocumentEntryForm = () => {
       form.reset({ Data: new Date().toISOString(), ...newEntryData.attributes })
       return
     }
-    if (isNew && !newEntryParams) {
+    if (isNew && !vidOperatsii) {
       form.reset({ Data: new Date().toISOString() })
     }
-  }, [isNew, existingEntry, newEntryData, newEntryParams, form])
+  }, [isNew, existingEntry, newEntryData, vidOperatsii, form])
 
   return {
     form,

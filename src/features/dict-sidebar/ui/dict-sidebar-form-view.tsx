@@ -10,6 +10,7 @@ import { GreenAccentButton } from '@/shared/ui/buttons/green-accent-button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import type { SelectOption } from '@/shared/types/select-option'
+import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
 import { buildFallbackConfig } from '@/pages/documents/documents-entry/lib/utils/build-fallback-config'
 
@@ -65,12 +66,11 @@ export const DictSidebarFormView = ({
     values.code = entryData.code
     form.reset(values)
 
-    const entryName =
-      i18n.language === 'kz' && entryData.nameKz
-        ? entryData.nameKz
-        : entryData.nameRu
     updateTopTitle(
-      t('dictSidebar.editTitle', { name: typeName, entry: entryName })
+      t('dictSidebar.editTitle', {
+        name: typeName,
+        entry: getLocalizedName(entryData, i18n.language),
+      })
     )
   }, [entryData, form, i18n.language, t, typeName, updateTopTitle])
 
@@ -125,9 +125,7 @@ export const DictSidebarFormView = ({
   const buildSelectOption = (entry: DictEntry): SelectOption => ({
     id: entry.id,
     code: entry.code,
-    label:
-      entry.displayName ??
-      (i18n.language === 'kz' && entry.nameKz ? entry.nameKz : entry.nameRu),
+    label: entry.displayName ?? getLocalizedName(entry, i18n.language),
     raw: entry as unknown as Record<string, unknown>,
   })
 
@@ -145,10 +143,11 @@ export const DictSidebarFormView = ({
       panel.onSelect?.(buildSelectOption(entry))
       showToast('success', t('dictSidebar.saved'))
 
-      const entryName =
-        i18n.language === 'kz' && entry.nameKz ? entry.nameKz : entry.nameRu
       updateTopTitle(
-        t('dictSidebar.editTitle', { name: typeName, entry: entryName })
+        t('dictSidebar.editTitle', {
+          name: typeName,
+          entry: getLocalizedName(entry, i18n.language),
+        })
       )
     },
     onError: () => {

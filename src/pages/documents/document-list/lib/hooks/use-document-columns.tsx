@@ -6,6 +6,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { DocumentEntry } from '@/entities/document-entry'
 import type { DocumentAttribute } from '@/entities/document-type'
 import { formatCellValue } from '@/shared/lib/utils/format-cell-value'
+import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import DocPostedIcon from '@/shared/assets/icons/doc-posted.svg'
 import DocDraftIcon from '@/shared/assets/icons/doc-draft.svg'
 import DocDeletedIcon from '@/shared/assets/icons/doc-deleted.svg'
@@ -32,11 +33,7 @@ const buildAttributeColumns = (
     .map((attr) => ({
       id: attr.code,
       accessorFn: (row: DocumentEntry) => row.attributes[attr.code],
-      header: () => (
-        <span>
-          {language === 'kz' ? attr.nameKz || attr.nameRu : attr.nameRu}
-        </span>
-      ),
+      header: () => <span>{getLocalizedName(attr, language)}</span>,
       cell: ({ getValue }: { getValue: () => unknown }) => (
         <CellText>{formatCellValue(getValue(), attr)}</CellText>
       ),
@@ -57,8 +54,7 @@ export const useDocumentColumns = (
 
     const nameColumn: ColumnDef<DocumentEntry> = {
       id: 'nameRu',
-      accessorFn: (row) =>
-        i18n.language === 'kz' ? row.nameKz || row.nameRu : row.nameRu,
+      accessorFn: (row) => getLocalizedName(row, i18n.language),
       header: () => <span>{t('documentTable.link')}</span>,
       cell: (info) => <CellText>{info.getValue() as string}</CellText>,
     }

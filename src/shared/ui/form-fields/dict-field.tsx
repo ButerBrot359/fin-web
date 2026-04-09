@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { apiService } from '@/shared/api/api'
 import type { SelectOption } from '@/shared/types/select-option'
 import { resolveSelectValue } from '@/shared/lib/utils/resolve-select-value'
+import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { AutocompleteInput } from '@/shared/ui/inputs/autocomplete-input'
 
 interface DictionaryEntry {
@@ -108,10 +109,7 @@ export const DictField = ({
           id: entry.id,
           code: entry.code,
           label:
-            entry.displayName ??
-            (i18n.language === 'kz' && entry.nameKz
-              ? entry.nameKz
-              : entry.nameRu) ??
+            (entry.displayName ?? getLocalizedName(entry, i18n.language)) ||
             entry.code,
           raw: entry as unknown as Record<string, unknown>,
         })

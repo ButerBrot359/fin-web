@@ -8,8 +8,9 @@ import { DocumentListToolbar } from '@/widgets/document-list-toolbar'
 import { DocumentTable } from './document-table'
 
 export const DocumentPage = () => {
-  const { moduleCode = '', pageCode = '' } = useParams()
   const navigate = useNavigate()
+
+  const { moduleCode = '', pageCode = '' } = useParams()
   const { title, attributes } = useDocumentType(moduleCode)
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
 

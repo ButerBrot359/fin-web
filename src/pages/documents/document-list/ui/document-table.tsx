@@ -1,14 +1,15 @@
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
+
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
 } from '@tanstack/react-table'
-
 import { Typography } from '@mui/material'
-import { useTranslation } from 'react-i18next'
 
 import { useDocumentEntries } from '@/entities/document-entry'
+
 import { cn } from '@/shared/lib/utils/cn'
 import emptyImage from '@/shared/assets/info/empty.png'
 
@@ -21,8 +22,9 @@ export const DocumentTable = ({
   onSelectRow,
 }: DocumentTableProps) => {
   const { t } = useTranslation()
-  const { moduleCode = '', pageCode = '' } = useParams()
   const navigate = useNavigate()
+
+  const { moduleCode = '', pageCode = '' } = useParams()
   const entries = useDocumentEntries()
   const columns = useDocumentColumns(attributes)
 

@@ -9,9 +9,10 @@ import { SearchInput } from '@/shared/ui/inputs'
 
 interface ModuleToolbarProps {
   title: string
+  onClose?: () => void
 }
 
-export const ModuleToolbar = ({ title }: ModuleToolbarProps) => {
+export const ModuleToolbar = ({ title, onClose }: ModuleToolbarProps) => {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
 
@@ -42,6 +43,7 @@ export const ModuleToolbar = ({ title }: ModuleToolbarProps) => {
           <button
             type="button"
             aria-label="Close"
+            onClick={onClose}
             className="w-10 h-10 flex cursor-pointer justify-center items-center rounded-lg transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none"
           >
             <CrossIcon />

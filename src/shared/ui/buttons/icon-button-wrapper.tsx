@@ -20,7 +20,7 @@ export const IconButtonWrapper = ({
     aria-label={ariaLabel}
     onClick={onClick}
     className={cn(
-      'flex p-2.5 cursor-pointer items-center justify-center rounded-md bg-ui-01 hover:bg-ui-01/60',
+      'flex p-2.5 cursor-pointer items-center justify-center rounded-md bg-ui-01 transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none',
       className
     )}
   >

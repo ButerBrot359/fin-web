@@ -35,14 +35,14 @@ export const ModuleToolbar = ({ title }: ModuleToolbarProps) => {
           <button
             type="button"
             aria-label="Settings"
-            className="w-10 h-10 flex justify-center items-center"
+            className="w-10 h-10 flex cursor-pointer justify-center items-center rounded-lg transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none"
           >
             <GearIcon />
           </button>
           <button
             type="button"
             aria-label="Close"
-            className="w-10 h-10 flex justify-center items-center"
+            className="w-10 h-10 flex cursor-pointer justify-center items-center rounded-lg transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none"
           >
             <CrossIcon />
           </button>

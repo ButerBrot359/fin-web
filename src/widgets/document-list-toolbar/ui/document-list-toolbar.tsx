@@ -112,7 +112,7 @@ export const DocumentListToolbar = () => {
 
           <Typography
             variant="body2"
-            className="cursor-pointer whitespace-nowrap p-2.5 text-ui-05 rounded-md bg-ui-01 hover:bg-ui-01/60"
+            className="cursor-pointer whitespace-nowrap p-2.5 text-ui-05 rounded-md bg-ui-01 transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none"
           >
             {t('documentListToolbar.editSelected')}
           </Typography>

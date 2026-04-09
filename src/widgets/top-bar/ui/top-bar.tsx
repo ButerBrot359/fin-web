@@ -31,7 +31,7 @@ export const TopBar = () => {
               <button
                 type="button"
                 aria-label={action.label}
-                className="flex h-10 w-10 items-center justify-center rounded-lg text-ui-03 transition-colors hover:text-ui-01"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-ui-06 transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none"
               >
                 <action.icon className="h-5 w-5" />
               </button>
@@ -45,7 +45,7 @@ export const TopBar = () => {
           type="button"
           aria-label="Switch language"
           onClick={toggleLanguage}
-          className="flex h-10 items-center justify-center rounded-lg px-2 text-black"
+          className="flex h-10 cursor-pointer items-center justify-center rounded-lg px-2 text-black transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none"
         >
           <Typography variant="body2" className="font-medium">
             {LANGUAGE_LABELS[i18n.language] ?? 'РУС'}
@@ -66,7 +66,7 @@ export const TopBar = () => {
         <button
           type="button"
           aria-label="Menu"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-ui-03 transition-colors hover:text-ui-01"
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-ui-06 transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none"
         >
           <MenuIcon className="h-5 w-5" />
         </button>

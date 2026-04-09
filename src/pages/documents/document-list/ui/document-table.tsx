@@ -5,23 +5,22 @@ import {
   flexRender,
 } from '@tanstack/react-table'
 
+import { Typography } from '@mui/material'
+import { useTranslation } from 'react-i18next'
+
 import { useDocumentEntries } from '@/entities/document-entry'
-import type { DocumentAttribute } from '@/entities/document-type'
 import { cn } from '@/shared/lib/utils/cn'
+import emptyImage from '@/shared/assets/info/empty.png'
 
 import { useDocumentColumns } from '../lib/hooks/use-document-columns'
-
-interface DocumentTableProps {
-  attributes: DocumentAttribute[]
-  selectedRowId: number | null
-  onSelectRow: (id: number) => void
-}
+import type { DocumentTableProps } from '../types/document-table'
 
 export const DocumentTable = ({
   attributes,
   selectedRowId,
   onSelectRow,
 }: DocumentTableProps) => {
+  const { t } = useTranslation()
   const { moduleCode = '', pageCode = '' } = useParams()
   const navigate = useNavigate()
   const entries = useDocumentEntries()
@@ -63,6 +62,18 @@ export const DocumentTable = ({
           ))}
         </thead>
         <tbody>
+          {table.getRowModel().rows.length === 0 && (
+            <tr>
+              <td colSpan={columns.length} className="py-16 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <img src={emptyImage} alt="" className="h-50 w-50" />
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {t('table.empty')}
+                  </Typography>
+                </div>
+              </td>
+            </tr>
+          )}
           {table.getRowModel().rows.map((row) => {
             const isSelected = selectedRowId === row.original.id
 
@@ -80,14 +91,10 @@ export const DocumentTable = ({
                   isSelected ? 'bg-ui-07' : 'even:bg-ui-01'
                 )}
               >
-                {row.getVisibleCells().map((cell, cellIndex) => (
+                {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className={cn('max-w-50 truncate px-3 py-2', {
-                      'rounded-l-md': cellIndex === 0,
-                      'rounded-r-md':
-                        cellIndex === row.getVisibleCells().length - 1,
-                    })}
+                    className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import { apiService } from '@/shared/api/api'
@@ -9,11 +8,7 @@ import AddDocumentIcon from '@/shared/assets/icons/add-document.svg'
 import DebetKreditIcon from '@/shared/assets/icons/debet-kredit.svg'
 import LayersIcon from '@/shared/assets/icons/layers.svg'
 import SearchIcon from '@/shared/assets/icons/search.svg'
-import {
-  GreenAccentButton,
-  DropdownButton,
-  IconButtonWrapper,
-} from '@/shared/ui/buttons'
+import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
 import { SelectOperationDialog } from './select-operation-dialog'
 
@@ -97,32 +92,31 @@ export const DocumentListToolbar = ({
     <>
       <div className="flex items-center justify-between pb-3">
         <div className="flex items-center gap-2">
-          <GreenAccentButton
-            onClick={handleCreate}
-            sx={{ textTransform: 'none' }}
-          >
-            <Typography variant="body2"> {t('actions.create')}</Typography>
-          </GreenAccentButton>
+          <Button variant="primary" onClick={handleCreate}>
+            {t('actions.create')}
+          </Button>
 
           <div className="flex items-center gap-2">
-            <IconButtonWrapper ariaLabel={t('actions.create')}>
-              <AddDocumentIcon className="h-5 w-5" />
-            </IconButtonWrapper>
-            <IconButtonWrapper ariaLabel={t('actions.debitCredit')}>
-              <DebetKreditIcon className="h-5 w-5" />
-            </IconButtonWrapper>
-            <IconButtonWrapper ariaLabel={t('actions.layers')}>
-              <LayersIcon className="h-5 w-5" />
-            </IconButtonWrapper>
+            <Button
+              variant="secondary"
+              aria-label={t('actions.create')}
+              startIcon={<AddDocumentIcon className="h-5 w-5" />}
+            />
+            <Button
+              variant="secondary"
+              aria-label={t('actions.debitCredit')}
+              startIcon={<DebetKreditIcon className="h-5 w-5" />}
+            />
+            <Button
+              variant="secondary"
+              aria-label={t('actions.layers')}
+              startIcon={<LayersIcon className="h-5 w-5" />}
+            />
           </div>
 
-          <button
-            type="button"
-            disabled={selectedRowId == null}
-            className="cursor-pointer whitespace-nowrap p-2.5 text-body2 text-ui-05 rounded-md bg-ui-01 transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ui-01 disabled:hover:text-ui-05 disabled:hover:shadow-none"
-          >
+          <Button variant="secondary" disabled={selectedRowId == null}>
             {t('documentListToolbar.editSelected')}
-          </button>
+          </Button>
 
           <DropdownButton label={t('documentListToolbar.print')} />
           <DropdownButton label={t('documentListToolbar.reports')} />

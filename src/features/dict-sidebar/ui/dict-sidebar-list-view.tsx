@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-table'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
+import { Button } from '@/shared/ui/buttons/button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import type { DocumentAttribute } from '@/entities/document-type'
 import type { SelectOption } from '@/shared/types/select-option'
@@ -184,16 +185,15 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       {/* Toolbar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={handleSelect}
             disabled={!selectedEntry}
-            className="cursor-pointer whitespace-nowrap rounded-md bg-accent-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-accent-01/80 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('dictSidebar.select')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => {
               push({
                 mode: 'create',
@@ -202,10 +202,9 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                 onSelect: panel.onSelect,
               })
             }}
-            className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('dictSidebar.create')}
-          </button>
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">

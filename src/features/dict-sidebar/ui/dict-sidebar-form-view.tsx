@@ -6,7 +6,7 @@ import type { AxiosResponse } from 'axios'
 
 import type { DocumentType, DocumentAttribute } from '@/entities/document-type'
 import { FormRenderer } from '@/features/form-renderer'
-import { GreenAccentButton } from '@/shared/ui/buttons/green-accent-button'
+import { Button } from '@/shared/ui/buttons/button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import type { SelectOption } from '@/shared/types/select-option'
@@ -212,21 +212,16 @@ export const DictSidebarFormView = ({
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-6">
       {/* Toolbar */}
       <div className="flex items-center gap-2">
-        <GreenAccentButton
-          type="button"
+        <Button
+          variant="primary"
           disabled={isSaving}
           onClick={handleSaveAndClose}
         >
           {t('dictSidebar.saveAndClose')}
-        </GreenAccentButton>
-        <button
-          type="button"
-          disabled={isSaving}
-          onClick={handleSave}
-          className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        </Button>
+        <Button variant="secondary" disabled={isSaving} onClick={handleSave}>
           {t('dictSidebar.save')}
-        </button>
+        </Button>
         <DropdownButton label={t('actions.more')} disabled />
       </div>
 

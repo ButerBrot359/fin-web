@@ -24,6 +24,7 @@ interface DocumentFormToolbarProps {
   isDirty?: boolean
   actions: DocumentFormActions
   print: DocumentFormPrint
+  onMovements?: () => void
 }
 
 export const DocumentFormToolbar = ({
@@ -31,6 +32,7 @@ export const DocumentFormToolbar = ({
   isDirty,
   actions,
   print,
+  onMovements,
 }: DocumentFormToolbarProps) => {
   const { t } = useTranslation()
 
@@ -56,6 +58,8 @@ export const DocumentFormToolbar = ({
         <Button
           variant="secondary"
           aria-label={t('actions.debitCredit')}
+          disabled={isNew}
+          onClick={onMovements}
           startIcon={<DebetKreditIcon className="h-5 w-5" />}
         />
         <Button

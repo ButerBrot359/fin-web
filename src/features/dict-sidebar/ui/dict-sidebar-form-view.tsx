@@ -6,10 +6,11 @@ import type { AxiosResponse } from 'axios'
 
 import type { DocumentType, DocumentAttribute } from '@/entities/document-type'
 import { FormRenderer } from '@/features/form-renderer'
-import { GreenAccentButton } from '@/shared/ui/buttons/green-accent-button'
+import { Button } from '@/shared/ui/buttons/button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import type { SelectOption } from '@/shared/types/select-option'
+import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
 import { buildFallbackConfig } from '@/pages/documents/documents-entry/lib/utils/build-fallback-config'
 
@@ -65,12 +66,11 @@ export const DictSidebarFormView = ({
     values.code = entryData.code
     form.reset(values)
 
-    const entryName =
-      i18n.language === 'kz' && entryData.nameKz
-        ? entryData.nameKz
-        : entryData.nameRu
     updateTopTitle(
-      t('dictSidebar.editTitle', { name: typeName, entry: entryName })
+      t('dictSidebar.editTitle', {
+        name: typeName,
+        entry: getLocalizedName(entryData, i18n.language),
+      })
     )
   }, [entryData, form, i18n.language, t, typeName, updateTopTitle])
 
@@ -125,9 +125,7 @@ export const DictSidebarFormView = ({
   const buildSelectOption = (entry: DictEntry): SelectOption => ({
     id: entry.id,
     code: entry.code,
-    label:
-      entry.displayName ??
-      (i18n.language === 'kz' && entry.nameKz ? entry.nameKz : entry.nameRu),
+    label: entry.displayName ?? getLocalizedName(entry, i18n.language),
     raw: entry as unknown as Record<string, unknown>,
   })
 
@@ -145,10 +143,11 @@ export const DictSidebarFormView = ({
       panel.onSelect?.(buildSelectOption(entry))
       showToast('success', t('dictSidebar.saved'))
 
-      const entryName =
-        i18n.language === 'kz' && entry.nameKz ? entry.nameKz : entry.nameRu
       updateTopTitle(
-        t('dictSidebar.editTitle', { name: typeName, entry: entryName })
+        t('dictSidebar.editTitle', {
+          name: typeName,
+          entry: getLocalizedName(entry, i18n.language),
+        })
       )
     },
     onError: () => {
@@ -213,21 +212,16 @@ export const DictSidebarFormView = ({
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-6">
       {/* Toolbar */}
       <div className="flex items-center gap-2">
-        <GreenAccentButton
-          type="button"
+        <Button
+          variant="primary"
           disabled={isSaving}
           onClick={handleSaveAndClose}
         >
           {t('dictSidebar.saveAndClose')}
-        </GreenAccentButton>
-        <button
-          type="button"
-          disabled={isSaving}
-          onClick={handleSave}
-          className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        </Button>
+        <Button variant="secondary" disabled={isSaving} onClick={handleSave}>
           {t('dictSidebar.save')}
-        </button>
+        </Button>
         <DropdownButton label={t('actions.more')} disabled />
       </div>
 

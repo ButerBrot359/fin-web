@@ -1,107 +1,71 @@
-import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useMutation } from '@tanstack/react-query'
-import type { AxiosResponse } from 'axios'
+import { useNavigate, useParams } from 'react-router-dom'
 
-import {
-  useDocumentType,
-  type DocumentAttribute,
-} from '@/entities/document-type'
-import { printDocumentEntry } from '@/entities/document-entry'
+import { useDocumentType } from '@/entities/document-type'
 import { useOptionalFormConfig } from '@/entities/form-config'
 
 import { FormRenderer } from '@/features/form-renderer'
 
 import { PageHeader } from '@/widgets/page-header'
 import { DocumentFormToolbar } from '@/widgets/document-form-toolbar'
+
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
 
+import { DocumentEntrySkeleton } from './document-entry-skeleton'
+import { getFormAttributes } from '../lib/utils/get-form-attributes'
+import { getDocumentListPath } from '../lib/utils/get-document-paths'
 import { buildFallbackConfig } from '../lib/utils/build-fallback-config'
 import { useDocumentEntryForm } from '../lib/hooks/use-document-entry-form'
+import { useDocumentEntryPrint } from '../lib/hooks/use-document-entry-print'
 import { useDocumentEntryActions } from '../lib/hooks/use-document-entry-actions'
-import { DocumentEntrySkeleton } from './document-entry-skeleton'
+import { useUnsavedChangesDialog } from '../lib/hooks/use-unsaved-changes-dialog'
 
 export const DocumentEntryPage = () => {
   const { moduleCode = '', pageCode = '' } = useParams()
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
+
   const { title, nameRu, nameKz, attributes } = useDocumentType(moduleCode)
   const { config, isLoading: isLoadingConfig } =
     useOptionalFormConfig(moduleCode)
-
-  const { form, isNew, existingEntry, isLoadingEntry } = useDocumentEntryForm()
+  const { form, isNew, existingEntry, isLoading } = useDocumentEntryForm()
   const { isDirty } = form.formState
 
-  const { handleSave, handlePost, handlePostAndClose, handleSaveAndClose } =
-    useDocumentEntryActions({
-      isNew,
-      existingEntry: existingEntry ?? null,
-      form,
-      attributes,
-    })
-
-  const listPath = `/modules/${pageCode}/document/${moduleCode}`
-
-  const handleClose = () => {
-    if (isDirty) {
-      setShowUnsavedDialog(true)
-    } else {
-      void navigate(listPath)
-    }
-  }
-
-  const handleDialogSave = () => {
-    setShowUnsavedDialog(false)
-    handleSaveAndClose()
-  }
-
-  const handleDialogDiscard = () => {
-    setShowUnsavedDialog(false)
-    void navigate(listPath)
-  }
-
-  const handleDialogCancel = () => {
-    setShowUnsavedDialog(false)
-  }
-
-  const { mutate: mutatePrint, isPending: isPrintLoading } = useMutation({
-    mutationFn: async (language?: string) => {
-      const response: AxiosResponse<Blob> = await printDocumentEntry(
-        moduleCode,
-        existingEntry!.id,
-        language
-      )
-      return response.data
-    },
-    onSuccess: (blob: Blob) => {
-      const blobUrl = URL.createObjectURL(blob)
-      window.open(blobUrl, '_blank')
-    },
-  })
-
-  const handlePrint = (language?: string) => {
-    if (!existingEntry?.id) return
-    mutatePrint(language)
-  }
+  const listPath = getDocumentListPath({ pageCode, moduleCode })
+  const formAttributes = getFormAttributes(attributes)
+  const formConfig = config ?? buildFallbackConfig(formAttributes)
 
   const baseTitle = isNew
     ? t('documentEntry.newTitle', { name: title })
     : existingEntry?.nameRu || title
-
   const pageTitle = isDirty ? `${baseTitle} *` : baseTitle
 
-  const formAttributes = attributes
-    .filter((attr: DocumentAttribute) => attr.showInForm)
-    .sort(
-      (a: DocumentAttribute, b: DocumentAttribute) => a.sortOrder - b.sortOrder
-    )
+  const actions = useDocumentEntryActions({
+    isNew,
+    existingEntry: existingEntry ?? null,
+    form,
+    attributes,
+  })
 
-  const formConfig = useMemo(
-    () => config ?? buildFallbackConfig(formAttributes),
-    [config, formAttributes]
-  )
+  const { handlePrint, isPrintLoading } = useDocumentEntryPrint({
+    moduleCode,
+    entryId: existingEntry?.id,
+  })
+
+  const unsavedDialog = useUnsavedChangesDialog({
+    onSave: actions.handleSaveAndClose,
+    onDiscard: () => {
+      void navigate(listPath)
+    },
+  })
+
+  const handleClose = () => {
+    if (isDirty) {
+      unsavedDialog.open()
+    } else {
+      void navigate(listPath)
+    }
+  }
 
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
@@ -109,17 +73,17 @@ export const DocumentEntryPage = () => {
       <DocumentFormToolbar
         isNew={isNew}
         isDirty={isDirty}
-        onSave={handleSave}
-        onPost={handlePost}
-        onPostAndClose={handlePostAndClose}
-        onPrint={handlePrint}
-        isPrintLoading={isPrintLoading}
-        printNameRu={nameRu}
-        printNameKz={nameKz}
+        actions={actions}
+        print={{
+          onPrint: handlePrint,
+          isLoading: isPrintLoading,
+          nameRu,
+          nameKz,
+        }}
       />
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">
-        {isLoadingConfig || isLoadingEntry ? (
+        {isLoadingConfig || isLoading ? (
           <DocumentEntrySkeleton />
         ) : (
           <FormRenderer
@@ -132,10 +96,10 @@ export const DocumentEntryPage = () => {
       </div>
 
       <UnsavedChangesDialog
-        open={showUnsavedDialog}
-        onSave={handleDialogSave}
-        onDiscard={handleDialogDiscard}
-        onCancel={handleDialogCancel}
+        open={unsavedDialog.isOpen}
+        onSave={unsavedDialog.handleSave}
+        onDiscard={unsavedDialog.handleDiscard}
+        onCancel={unsavedDialog.handleCancel}
       />
     </div>
   )

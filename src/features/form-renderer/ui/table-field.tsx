@@ -14,6 +14,7 @@ import { Skeleton, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import type { DocumentAttribute } from '@/entities/document-type'
+import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import emptyImage from '@/shared/assets/info/empty.png'
 
 import { useTableColumns } from '../lib/hooks/use-table-columns'
@@ -96,7 +97,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     const dataCols: ColumnDef<Record<string, unknown>>[] = columns.map(
       (col) => ({
         id: col.code,
-        header: language === 'kz' ? col.nameKz || col.nameRu : col.nameRu,
+        header: getLocalizedName(col, language),
         size: getColumnWidth(col.dataType),
         cell: ({ row }) => (
           <TableCellRenderer

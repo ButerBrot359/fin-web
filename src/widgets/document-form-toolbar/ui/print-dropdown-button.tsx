@@ -48,10 +48,10 @@ export const PrintDropdownButton = ({
         onClick={handleToggle}
         disabled={isDisabled}
         className={cn(
-          'flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-md px-3 py-2.5 disabled:cursor-not-allowed disabled:opacity-50',
+          'flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-md px-3 py-2.5 transition-all disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none',
           open
-            ? 'bg-accent-02 text-white hover:bg-accent-02/80 disabled:hover:bg-accent-02'
-            : 'bg-ui-01 text-ui-06 hover:bg-ui-01/60 disabled:hover:bg-ui-01'
+            ? 'bg-accent-02 text-white hover:shadow-md hover:brightness-110 active:brightness-90 active:shadow-none disabled:hover:bg-accent-02 disabled:hover:brightness-100'
+            : 'bg-ui-01 text-ui-06 hover:bg-ui-04 hover:text-accent-02 hover:shadow-md active:bg-ui-03 active:shadow-none disabled:hover:bg-ui-01 disabled:hover:text-ui-06'
         )}
       >
         <Typography variant="body2">
@@ -89,7 +89,7 @@ export const PrintDropdownButton = ({
             onClick={() => {
               handleSelect(undefined)
             }}
-            className="cursor-pointer border-b border-ui-03 px-4 py-2.5 text-left hover:bg-ui-01/60"
+            className="cursor-pointer border-b border-ui-03 px-4 py-2.5 text-left transition-colors hover:bg-ui-04 active:bg-ui-03"
           >
             <Typography variant="body1">{nameRu}</Typography>
           </button>
@@ -98,7 +98,7 @@ export const PrintDropdownButton = ({
             onClick={() => {
               handleSelect('Kz')
             }}
-            className="cursor-pointer px-4 py-2.5 text-left hover:bg-ui-01/60"
+            className="cursor-pointer px-4 py-2.5 text-left transition-colors hover:bg-ui-04 active:bg-ui-03"
           >
             <Typography variant="body1">
               {nameKz} ({t('documentFormToolbar.kazSuffix')})

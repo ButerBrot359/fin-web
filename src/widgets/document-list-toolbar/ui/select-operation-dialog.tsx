@@ -4,6 +4,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useTranslation } from 'react-i18next'
 
 import type { EnumsValue } from '@/entities/document-type'
+import { Button } from '@/shared/ui/buttons'
 
 interface SelectOperationDialogProps {
   open: boolean
@@ -110,21 +111,21 @@ export const SelectOperationDialog = ({
 
         {/* Buttons */}
         <div className="flex gap-3 w-full">
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={handleNext}
             disabled={!selected}
-            className="flex-1 cursor-pointer rounded-lg bg-accent-01 px-4 py-2.5 text-base font-medium text-ui-06 leading-normal disabled:opacity-50"
+            className="flex-1 rounded-lg"
           >
             {t('selectOperationDialog.next')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="secondary"
             onClick={onClose}
-            className="flex-1 cursor-pointer rounded-lg bg-white px-4 py-2.5 text-base font-medium text-ui-06 leading-normal"
+            className="flex-1 rounded-lg"
           >
             {t('actions.cancel')}
-          </button>
+          </Button>
         </div>
       </div>
     </Dialog>

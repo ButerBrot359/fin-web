@@ -23,7 +23,7 @@ export const DropdownButton = ({
     onClick={onClick}
     disabled={disabled || loading}
     className={cn(
-      'flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-md px-3 py-2.5 bg-ui-01 text-ui-06 hover:bg-ui-01/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ui-01',
+      'flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-md px-3 py-2.5 bg-ui-01 text-ui-06 transition-all hover:bg-ui-04 hover:text-accent-02 hover:shadow-secondary-hover active:bg-ui-08 active:text-accent-02 active:shadow-none disabled:cursor-not-allowed disabled:text-ui-05 disabled:hover:bg-ui-01 disabled:hover:text-ui-05 disabled:hover:shadow-none',
       className
     )}
   >

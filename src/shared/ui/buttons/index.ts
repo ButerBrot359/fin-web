@@ -1,5 +1,3 @@
 export { Button } from './button'
 export type { ButtonProps } from './button'
-export { GreenAccentButton } from './green-accent-button'
 export { DropdownButton } from './dropdown-button'
-export { IconButtonWrapper } from './icon-button-wrapper'

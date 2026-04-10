@@ -3,6 +3,8 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 
+import { Button } from '@/shared/ui/buttons'
+
 interface TableFieldToolbarProps {
   onAdd: () => void
   onMoveUp: () => void
@@ -26,37 +28,27 @@ export const TableFieldToolbar = ({
 
   return (
     <div className="flex items-center gap-2">
-      <button
-        type="button"
-        onClick={onAdd}
-        className="cursor-pointer whitespace-nowrap rounded-md bg-accent-01 px-4 py-2 text-body2 font-medium text-ui-06 hover:bg-accent-01/80"
-      >
+      <Button variant="primary" onClick={onAdd}>
         {t('table.add')}
-      </button>
-      <button
-        type="button"
-        onClick={onRemove}
+      </Button>
+      <Button
+        variant="secondary"
         disabled={!canRemove}
-        className="flex cursor-pointer items-center justify-center rounded-md bg-ui-01 p-2 text-ui-05 hover:bg-ui-02 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        <DeleteOutlineIcon sx={{ fontSize: 20 }} />
-      </button>
-      <button
-        type="button"
-        onClick={onMoveUp}
+        onClick={onRemove}
+        startIcon={<DeleteOutlineIcon sx={{ fontSize: 20 }} />}
+      />
+      <Button
+        variant="secondary"
         disabled={!canMoveUp}
-        className="flex cursor-pointer items-center justify-center rounded-md bg-ui-01 p-2 text-ui-05 hover:bg-ui-02 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        <KeyboardArrowUpIcon sx={{ fontSize: 20 }} />
-      </button>
-      <button
-        type="button"
-        onClick={onMoveDown}
+        onClick={onMoveUp}
+        startIcon={<KeyboardArrowUpIcon sx={{ fontSize: 20 }} />}
+      />
+      <Button
+        variant="secondary"
         disabled={!canMoveDown}
-        className="flex cursor-pointer items-center justify-center rounded-md bg-ui-01 p-2 text-ui-05 hover:bg-ui-02 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        <KeyboardArrowDownIcon sx={{ fontSize: 20 }} />
-      </button>
+        onClick={onMoveDown}
+        startIcon={<KeyboardArrowDownIcon sx={{ fontSize: 20 }} />}
+      />
     </div>
   )
 }

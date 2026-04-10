@@ -2,6 +2,7 @@ import { Dialog } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import CrossIcon from '@/shared/assets/icons/cross.svg'
+import { Button } from '@/shared/ui/buttons'
 
 interface UnsavedChangesDialogProps {
   open: boolean
@@ -49,34 +50,32 @@ export const UnsavedChangesDialog = ({
           </button>
         </div>
 
-        {/* Message */}
         <p className="text-base font-medium text-ui-06">
           {t('unsavedChangesDialog.message')}
         </p>
 
-        {/* Buttons */}
         <div className="flex w-full gap-3">
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={onSave}
-            className="flex-1 cursor-pointer rounded-lg bg-accent-01 px-4 py-2.5 text-base font-medium leading-normal text-ui-06"
+            className="flex-1 rounded-lg"
           >
             {t('unsavedChangesDialog.save')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="secondary"
             onClick={onDiscard}
-            className="flex-1 cursor-pointer rounded-lg bg-white px-4 py-2.5 text-base font-medium leading-normal text-ui-06"
+            className="flex-1 rounded-lg"
           >
             {t('unsavedChangesDialog.discard')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="secondary"
             onClick={onCancel}
-            className="flex-1 cursor-pointer rounded-lg bg-white px-4 py-2.5 text-base font-medium leading-normal text-ui-06"
+            className="flex-1 rounded-lg"
           >
             {t('actions.cancel')}
-          </button>
+          </Button>
         </div>
       </div>
     </Dialog>

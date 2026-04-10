@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { useDocumentType } from '@/entities/document-type'
@@ -7,9 +8,11 @@ import { DocumentListToolbar } from '@/widgets/document-list-toolbar'
 import { DocumentTable } from './document-table'
 
 export const DocumentPage = () => {
-  const { moduleCode = '', pageCode = '' } = useParams()
   const navigate = useNavigate()
+
+  const { moduleCode = '', pageCode = '' } = useParams()
   const { title, attributes } = useDocumentType(moduleCode)
+  const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
 
   const handleClose = () => {
     void navigate(`/modules/${pageCode}`)
@@ -18,8 +21,12 @@ export const DocumentPage = () => {
   return (
     <div className="flex flex-col gap-5 pt-5 h-full">
       <PageHeader title={title} onClose={handleClose} />
-      <DocumentListToolbar />
-      <DocumentTable attributes={attributes} />
+      <DocumentListToolbar selectedRowId={selectedRowId} />
+      <DocumentTable
+        attributes={attributes}
+        selectedRowId={selectedRowId}
+        onSelectRow={setSelectedRowId}
+      />
     </div>
   )
 }

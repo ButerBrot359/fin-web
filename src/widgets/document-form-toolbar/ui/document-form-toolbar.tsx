@@ -1,76 +1,73 @@
 import { useTranslation } from 'react-i18next'
 
-import {
-  GreenAccentButton,
-  DropdownButton,
-  IconButtonWrapper,
-} from '@/shared/ui/buttons'
+import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { PrintDropdownButton } from './print-dropdown-button'
 import DebetKreditIcon from '@/shared/assets/icons/debet-kredit.svg'
 import LayersIcon from '@/shared/assets/icons/layers.svg'
 import LinkIcon from '@/shared/assets/icons/link.svg'
 
+interface DocumentFormActions {
+  handleSave: () => void
+  handlePost: () => void
+  handlePostAndClose: () => void
+}
+
+interface DocumentFormPrint {
+  onPrint: (language?: string) => void
+  isLoading?: boolean
+  nameRu?: string
+  nameKz?: string
+}
+
 interface DocumentFormToolbarProps {
   isNew?: boolean
   isDirty?: boolean
-  isPrintLoading?: boolean
-  printNameRu?: string
-  printNameKz?: string
-  onPostAndClose?: () => void
-  onSave?: () => void
-  onPost?: () => void
-  onPrint?: (language?: string) => void
+  actions: DocumentFormActions
+  print: DocumentFormPrint
 }
 
 export const DocumentFormToolbar = ({
   isNew,
   isDirty,
-  isPrintLoading,
-  printNameRu,
-  printNameKz,
-  onPostAndClose,
-  onSave,
-  onPost,
-  onPrint,
+  actions,
+  print,
 }: DocumentFormToolbarProps) => {
   const { t } = useTranslation()
 
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <GreenAccentButton onClick={onPostAndClose}>
+        <Button variant="primary" onClick={actions.handlePostAndClose}>
           {t('documentFormToolbar.postAndClose')}
-        </GreenAccentButton>
-        <button
-          type="button"
-          onClick={onSave}
-          className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60"
-        >
+        </Button>
+        <Button variant="secondary" onClick={actions.handleSave}>
           {t('documentFormToolbar.save')}
-        </button>
-        <button
-          type="button"
-          onClick={onPost}
-          className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60"
-        >
+        </Button>
+        <Button variant="secondary" onClick={actions.handlePost}>
           {t('documentFormToolbar.post')}
-        </button>
+        </Button>
         <PrintDropdownButton
-          nameRu={printNameRu ?? ''}
-          nameKz={printNameKz ?? ''}
+          nameRu={print.nameRu ?? ''}
+          nameKz={print.nameKz ?? ''}
           disabled={isNew || isDirty}
-          loading={isPrintLoading}
-          onPrint={onPrint}
+          loading={print.isLoading}
+          onPrint={print.onPrint}
         />
-        <IconButtonWrapper ariaLabel={t('actions.debitCredit')}>
-          <DebetKreditIcon className="h-5 w-5" />
-        </IconButtonWrapper>
-        <IconButtonWrapper ariaLabel={t('actions.layers')}>
-          <LayersIcon className="h-5 w-5" />
-        </IconButtonWrapper>
-        <IconButtonWrapper ariaLabel={t('actions.link')}>
-          <LinkIcon className="h-5 w-5" />
-        </IconButtonWrapper>
+        <Button
+          variant="secondary"
+          aria-label={t('actions.debitCredit')}
+          startIcon={<DebetKreditIcon className="h-5 w-5" />}
+        />
+        <Button
+          variant="secondary"
+          aria-label={t('actions.layers')}
+          startIcon={<LayersIcon className="h-5 w-5" />}
+        />
+        <Button
+          variant="secondary"
+          aria-label={t('actions.link')}
+          startIcon={<LinkIcon className="h-5 w-5" />}
+        />
         <DropdownButton label={t('documentFormToolbar.reports')} />
       </div>
 

@@ -10,10 +10,12 @@ import {
 } from '@tanstack/react-table'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
+import { Button } from '@/shared/ui/buttons/button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import type { DocumentAttribute } from '@/entities/document-type'
 import type { SelectOption } from '@/shared/types/select-option'
 import { formatDate } from '@/shared/lib/utils/date'
+import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
 import type { DictSidebarPanel } from '../types/dict-sidebar'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
@@ -107,8 +109,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
         id: attr.code,
         accessorFn: (row: DictEntry) => row.attributes?.[attr.code],
         header: () => {
-          const name =
-            i18n.language === 'kz' ? attr.nameKz || attr.nameRu : attr.nameRu
+          const name = getLocalizedName(attr, i18n.language)
           return <span>{name}</span>
         },
         cell: (info: { getValue: () => unknown }) => {
@@ -145,8 +146,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
 
     const nameColumn: ColumnDef<DictEntry> = {
       id: 'nameRu',
-      accessorFn: (row) =>
-        i18n.language === 'kz' ? row.nameKz || row.nameRu : row.nameRu,
+      accessorFn: (row) => getLocalizedName(row, i18n.language),
       header: () => <span>{t('documentTable.link')}</span>,
       cell: (info) => (
         <Typography variant="body2" noWrap className="text-ui-06">
@@ -173,9 +173,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       code: selectedEntry.code,
       label:
         selectedEntry.displayName ??
-        (i18n.language === 'kz' && selectedEntry.nameKz
-          ? selectedEntry.nameKz
-          : selectedEntry.nameRu),
+        getLocalizedName(selectedEntry, i18n.language),
       raw: selectedEntry as unknown as Record<string, unknown>,
     }
     panel.onSelect?.(option)
@@ -187,16 +185,15 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       {/* Toolbar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={handleSelect}
             disabled={!selectedEntry}
-            className="cursor-pointer whitespace-nowrap rounded-md bg-accent-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-accent-01/80 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('dictSidebar.select')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => {
               push({
                 mode: 'create',
@@ -205,10 +202,9 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                 onSelect: panel.onSelect,
               })
             }}
-            className="cursor-pointer whitespace-nowrap rounded-md bg-ui-01 px-4 py-2.5 text-body2 text-ui-06 hover:bg-ui-01/60 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('dictSidebar.create')}
-          </button>
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">

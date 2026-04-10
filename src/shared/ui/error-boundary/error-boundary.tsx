@@ -2,6 +2,8 @@ import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Typography } from '@mui/material'
 import i18n from 'i18next'
 
+import { Button } from '@/shared/ui/buttons'
+
 interface ErrorBoundaryProps {
   children: ReactNode
   fallback?: ReactNode
@@ -52,13 +54,9 @@ export class ErrorBoundary extends Component<
               {this.state.error.message}
             </Typography>
           )}
-          <button
-            type="button"
-            onClick={this.handleReset}
-            className="cursor-pointer rounded-lg bg-accent-01 px-4 py-2.5 text-ui-06 hover:bg-accent-01/80"
-          >
-            <Typography variant="body2">{i18n.t('errors.tryAgain')}</Typography>
-          </button>
+          <Button variant="primary" onClick={this.handleReset}>
+            {i18n.t('errors.tryAgain')}
+          </Button>
         </div>
       )
     }

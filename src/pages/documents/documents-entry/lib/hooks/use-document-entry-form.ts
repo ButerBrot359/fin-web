@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
+import { useParams, useSearchParams } from 'react-router-dom'
 
 import {
   getDocumentEntry,
@@ -14,16 +14,14 @@ export const useDocumentEntryForm = () => {
 
   const isNew = !entryId || entryId === 'new'
   const vidOperatsii = searchParams.get('VidOperatsii')
+  const newEntryParams = vidOperatsii
+    ? { VidOperatsii: vidOperatsii }
+    : undefined
 
-  const newEntryParams = useMemo(() => {
-    if (!vidOperatsii) return undefined
-    return { VidOperatsii: vidOperatsii }
-  }, [vidOperatsii])
-
-  const { data: newEntryData } = useQuery({
-    queryKey: ['document-entry-new', moduleCode, newEntryParams],
+  const { data: newEntryData, isLoading: isLoadingNewEntry } = useQuery({
+    queryKey: ['document-entry-new', moduleCode, vidOperatsii],
     queryFn: () => getNewDocumentEntry(moduleCode, newEntryParams),
-    enabled: isNew && !!newEntryParams,
+    enabled: isNew && !!vidOperatsii,
     select: (response) => response.data.data,
   })
 
@@ -38,28 +36,24 @@ export const useDocumentEntryForm = () => {
     defaultValues: {},
   })
 
-  const todayISO = useMemo(() => new Date().toISOString(), [])
-
-  useEffect(() => {
-    if (isNew && newEntryData?.attributes) {
-      form.reset({
-        Data: todayISO,
-        ...newEntryData.attributes,
-      })
-    }
-  }, [newEntryData, form, isNew, todayISO])
-
-  useEffect(() => {
-    if (isNew && !newEntryParams && !form.getValues('Data')) {
-      form.setValue('Data', todayISO)
-    }
-  }, [isNew, newEntryParams, form, todayISO])
-
   useEffect(() => {
     if (!isNew && existingEntry?.attributes) {
       form.reset(existingEntry.attributes)
+      return
     }
-  }, [existingEntry, form, isNew])
+    if (isNew && newEntryData?.attributes) {
+      form.reset({ Data: new Date().toISOString(), ...newEntryData.attributes })
+      return
+    }
+    if (isNew && !vidOperatsii) {
+      form.reset({ Data: new Date().toISOString() })
+    }
+  }, [isNew, existingEntry, newEntryData, vidOperatsii, form])
 
-  return { form, isNew, existingEntry, isLoadingEntry }
+  return {
+    form,
+    isNew,
+    existingEntry,
+    isLoading: isLoadingEntry || isLoadingNewEntry,
+  }
 }

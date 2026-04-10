@@ -6,12 +6,14 @@ import SearchIcon from '@/shared/assets/icons/search.svg'
 import GearIcon from '@/shared/assets/icons/gear.svg'
 import CrossIcon from '@/shared/assets/icons/cross.svg'
 import { SearchInput } from '@/shared/ui/inputs'
+import { Button } from '@/shared/ui/buttons'
 
 interface ModuleToolbarProps {
   title: string
+  onClose?: () => void
 }
 
-export const ModuleToolbar = ({ title }: ModuleToolbarProps) => {
+export const ModuleToolbar = ({ title, onClose }: ModuleToolbarProps) => {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
 
@@ -32,20 +34,17 @@ export const ModuleToolbar = ({ title }: ModuleToolbarProps) => {
           startIcon={<SearchIcon className="h-5 w-5 text-ui-05" />}
         />
         <div className="flex items-center">
-          <button
-            type="button"
+          <Button
+            variant="tertiary"
             aria-label="Settings"
-            className="w-10 h-10 flex justify-center items-center"
-          >
-            <GearIcon />
-          </button>
-          <button
-            type="button"
+            startIcon={<GearIcon />}
+          />
+          <Button
+            variant="tertiary"
             aria-label="Close"
-            className="w-10 h-10 flex justify-center items-center"
-          >
-            <CrossIcon />
-          </button>
+            onClick={onClose}
+            startIcon={<CrossIcon />}
+          />
         </div>
       </div>
     </div>

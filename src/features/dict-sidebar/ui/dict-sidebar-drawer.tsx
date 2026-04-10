@@ -2,6 +2,7 @@ import { Drawer } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
+import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
 import { fetchDictTypeMetadata } from '../api/dict-sidebar-api'
 import { DictSidebarHeader } from './dict-sidebar-header'
@@ -24,9 +25,7 @@ export const DictSidebarDrawer = () => {
   })
 
   const typeName = typeData
-    ? i18n.language === 'kz'
-      ? typeData.nameKz || typeData.nameRu
-      : typeData.nameRu
+    ? getLocalizedName(typeData, i18n.language)
     : (topPanel?.typeCode ?? '')
 
   const title =

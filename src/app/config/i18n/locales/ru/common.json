@@ -111,6 +111,10 @@
     "saveError": "Ошибка сохранения",
     "postError": "Ошибка проведения"
   },
+  "documentMovements": {
+    "title": "Движения документа",
+    "empty": "Нет движений"
+  },
   "documentTable": {
     "createdAt": "Дата",
     "number": "Номер",

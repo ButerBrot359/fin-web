@@ -13,7 +13,10 @@ import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved
 
 import { DocumentEntrySkeleton } from './document-entry-skeleton'
 import { getFormAttributes } from '../lib/utils/get-form-attributes'
-import { getDocumentListPath } from '../lib/utils/get-document-paths'
+import {
+  getDocumentListPath,
+  getDocumentEntryPath,
+} from '../lib/utils/get-document-paths'
 import { buildFallbackConfig } from '../lib/utils/build-fallback-config'
 import { useDocumentEntryForm } from '../lib/hooks/use-document-entry-form'
 import { useDocumentEntryPrint } from '../lib/hooks/use-document-entry-print'
@@ -67,6 +70,15 @@ export const DocumentEntryPage = () => {
     }
   }
 
+  const handleMovements = () => {
+    if (!isNew && existingEntry?.id) {
+      const params = new URLSearchParams({ title: baseTitle })
+      void navigate(
+        `${getDocumentEntryPath({ pageCode, moduleCode }, existingEntry.id)}/movements?${params.toString()}`
+      )
+    }
+  }
+
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={pageTitle} onClose={handleClose} />
@@ -80,6 +92,7 @@ export const DocumentEntryPage = () => {
           nameRu,
           nameKz,
         }}
+        onMovements={handleMovements}
       />
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">

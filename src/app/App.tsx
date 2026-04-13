@@ -27,6 +27,11 @@ const DocumentEntryPage = lazy(() =>
     default: m.DocumentEntryPage,
   }))
 )
+const DocumentMovementsPage = lazy(() =>
+  import('@/pages/documents/document-movements').then((m) => ({
+    default: m.DocumentMovementsPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -48,6 +53,10 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/document/:moduleCode/:entryId"
             element={<DocumentEntryPage />}
+          />
+          <Route
+            path="/modules/:pageCode/document/:moduleCode/:entryId/movements"
+            element={<DocumentMovementsPage />}
           />
         </Routes>
       </Suspense>

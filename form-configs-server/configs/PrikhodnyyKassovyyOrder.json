@@ -47,6 +47,10 @@
               {
                 "type": "Field",
                 "code": "SummaDokumenta"
+              },
+              {
+                "type": "Field",
+                "code": "DokumentOsnovanie"
               }
             ]
           },
@@ -59,6 +63,14 @@
               {
                 "type": "Field",
                 "code": "IstochnikFinansirovaniya"
+              },
+              {
+                "type": "Field",
+                "code": "FKR"
+              },
+              {
+                "type": "Field",
+                "code": "KodPlatnykhUslug"
               },
               {
                 "type": "Field",
@@ -102,24 +114,24 @@
                     "gap": 3,
                     "children": [
                       {
-                        "type": "HStack",
-                        "gap": 3,
-                        "children": [
-                          {
-                            "type": "Field",
-                            "code": "SchetUchetaBU",
-                            "flex": 1
-                          },
-                          {
-                            "type": "Field",
-                            "code": "SchetAvansovBU",
-                            "flex": 1
-                          }
-                        ]
+                        "type": "Field",
+                        "code": "Kontragent"
                       },
                       {
                         "type": "Field",
                         "code": "DogovorKontragenta"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "Bank"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "PodotchetnoeLitso"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "VidZadolzhennostiPodotchetnomuLitsu"
                       }
                     ]
                   },
@@ -130,7 +142,27 @@
                     "children": [
                       {
                         "type": "Field",
-                        "code": "Kontragent"
+                        "code": "SchetUchetaBU"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "SchetRaschetovBU"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "SchetAvansovBU"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "Subkonto1"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "Subkonto2"
+                      },
+                      {
+                        "type": "Field",
+                        "code": "Subkonto3"
                       }
                     ]
                   }

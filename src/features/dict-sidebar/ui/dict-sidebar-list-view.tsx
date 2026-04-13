@@ -38,11 +38,11 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
 
   const { data: typeData, isLoading: isLoadingType } = useQuery({
-    queryKey: ['dict-sidebar-type', panel.dataType, panel.typeCode],
+    queryKey: ['dict-sidebar-type', panel.domain, panel.typeCode],
     queryFn: ({ signal }) =>
-      fetchDictTypeMetadata(panel.dataType, panel.typeCode, signal),
+      fetchDictTypeMetadata(panel.domain, panel.typeCode, signal),
     staleTime: 5 * 60 * 1000,
-    select: (res) => res.data,
+    select: (res) => res.data.data,
   })
 
   const isSearchMode = search.trim().length > 0
@@ -50,14 +50,14 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   const { data: pagedData, isLoading: isLoadingPaged } = useQuery({
     queryKey: [
       'dict-sidebar-entries',
-      panel.dataType,
+      panel.domain,
       panel.typeCode,
       'paged',
       panel.searchParams,
     ],
     queryFn: ({ signal }) =>
       fetchDictEntriesPaged(
-        panel.dataType,
+        panel.domain,
         panel.typeCode,
         { page: 0, size: 100, ...panel.searchParams },
         signal
@@ -70,7 +70,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   const { data: searchData, isLoading: isLoadingSearch } = useQuery({
     queryKey: [
       'dict-sidebar-entries',
-      panel.dataType,
+      panel.domain,
       panel.typeCode,
       'search',
       search,
@@ -78,7 +78,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     ],
     queryFn: ({ signal }) =>
       searchDictEntries(
-        panel.dataType,
+        panel.domain,
         panel.typeCode,
         search.trim(),
         panel.searchParams,
@@ -86,7 +86,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       ),
     enabled: isSearchMode,
     staleTime: 30 * 1000,
-    select: (res) => res.data.list,
+    select: (res) => res.data.content,
   })
 
   const entries = isSearchMode ? (searchData ?? []) : (pagedData?.list ?? [])
@@ -197,7 +197,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
             onClick={() => {
               push({
                 mode: 'create',
-                dataType: panel.dataType,
+                domain: panel.domain,
                 typeCode: panel.typeCode,
                 onSelect: panel.onSelect,
               })

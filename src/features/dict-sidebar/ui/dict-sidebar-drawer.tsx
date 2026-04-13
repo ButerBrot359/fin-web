@@ -16,12 +16,12 @@ export const DictSidebarDrawer = () => {
   const topPanel = stack[stack.length - 1] as (typeof stack)[number] | undefined
 
   const { data: typeData } = useQuery({
-    queryKey: ['dict-sidebar-type', topPanel?.dataType, topPanel?.typeCode],
+    queryKey: ['dict-sidebar-type', topPanel?.domain, topPanel?.typeCode],
     queryFn: ({ signal }) =>
-      fetchDictTypeMetadata(topPanel!.dataType, topPanel!.typeCode, signal),
+      fetchDictTypeMetadata(topPanel!.domain, topPanel!.typeCode, signal),
     enabled: !!topPanel,
     staleTime: 5 * 60 * 1000,
-    select: (res) => res.data,
+    select: (res) => res.data.data,
   })
 
   const typeName = typeData

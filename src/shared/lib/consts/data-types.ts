@@ -20,7 +20,7 @@ export type DataType =
 
 export const IGNORED_DATA_TYPES = new Set<DataType>(['OBJECT'])
 
-export const DICT_DATA_TYPES = new Set<DataType>([
+export const REFERENCE_DOMAIN_KINDS = new Set([
   'DICTIONARY',
   'ACCOUNT_PLAN',
   'CHARACTERISTICS_PLAN',
@@ -31,42 +31,29 @@ export const DICT_DATA_TYPES = new Set<DataType>([
   'INFORMATION_REGISTER',
 ])
 
-const SEARCH_PATHS: Partial<Record<DataType, string>> = {
-  DICTIONARY: '/api/dictionaries/entries',
-  DOCUMENT: '/api/document-entries',
-  CHARACTERISTICS_PLAN: '/api/characteristicsplan-entries',
-  EXCHANGE_PLAN: '/api/exchangeplan-entries',
-  CALCULATION_PLAN: '/api/calculationplan-entries',
-  ACCOUNT_PLAN: '/api/accountplan-entries',
-  ACCUMULATION_REGISTER: '/api/accumulation-register-entries',
-  INFORMATION_REGISTER: '/api/information-register-entries',
-}
+const BASE = '/api/universaldomain-entries'
+const TYPES_BASE = '/api/universaldomain-types'
 
-export const getSearchUrl = (dataType: DataType, typeCode: string) => {
-  const basePath = SEARCH_PATHS[dataType]
-  if (!basePath) return null
-  return `${basePath}/${typeCode}/search`
-}
+export const getUniversalSearchUrl = (domain: string, typeCode: string) =>
+  `${BASE}/${domain}/${typeCode}/search`
 
-const TYPE_PATHS: Partial<Record<DataType, string>> = {
-  DICTIONARY: '/api/dictionaries/types',
-  DOCUMENT: '/api/document-types',
-  CHARACTERISTICS_PLAN: '/api/characteristicsplan-types',
-  EXCHANGE_PLAN: '/api/exchangeplan-types',
-  CALCULATION_PLAN: '/api/calculationplan-types',
-  ACCOUNT_PLAN: '/api/accountplan-types',
-  ACCUMULATION_REGISTER: '/api/accumulation-register-types',
-  INFORMATION_REGISTER: '/api/information-register-types',
-}
+export const getUniversalPagedUrl = (domain: string, typeCode: string) =>
+  `${BASE}/${domain}/${typeCode}/paged`
 
-export const getTypeUrl = (dataType: DataType, typeCode: string) => {
-  const basePath = TYPE_PATHS[dataType]
-  if (!basePath) return null
-  return `${basePath}/${typeCode}`
-}
+export const getUniversalEntriesUrl = (domain: string, typeCode: string) =>
+  `${BASE}/${domain}/${typeCode}`
 
-export const getPagedUrl = (dataType: DataType, typeCode: string) => {
-  const basePath = SEARCH_PATHS[dataType]
-  if (!basePath) return null
-  return `${basePath}/${typeCode}/paged`
+export const getUniversalEntryByIdUrl = (domain: string, id: number | string) =>
+  `${BASE}/${domain}/id/${String(id)}`
+
+export const getUniversalTypeUrl = (domain: string, code: string) =>
+  `${TYPES_BASE}/${domain}/${code}`
+
+export const resolveAttributeDomain = (attr: {
+  domainKind?: string | null
+  allowedTypes?: { domainKind: string; typeCode: string }[]
+}): { domain: string; typeCode: string } | null => {
+  const first = attr.allowedTypes?.[0]
+  if (!first) return null
+  return { domain: first.domainKind, typeCode: first.typeCode }
 }

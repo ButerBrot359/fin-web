@@ -111,6 +111,10 @@
     "saveError": "Сақтау қатесі",
     "postError": "Өткізу қатесі"
   },
+  "documentMovements": {
+    "title": "Құжат қозғалыстары",
+    "empty": "Қозғалыстар жоқ"
+  },
   "documentTable": {
     "createdAt": "Күні",
     "number": "Нөмір",

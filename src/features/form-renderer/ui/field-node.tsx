@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next'
 import type { FieldNode as FieldNodeType } from '@/entities/form-config'
 import {
   IGNORED_DATA_TYPES,
-  DICT_DATA_TYPES,
-  getSearchUrl,
+  REFERENCE_DOMAIN_KINDS,
+  getUniversalSearchUrl,
+  resolveAttributeDomain,
 } from '@/shared/lib/consts/data-types'
 import type { SelectOption } from '@/shared/types/select-option'
 import {
@@ -110,61 +111,55 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
     onValueChange: handleValueChange,
   }
 
-  const getTypeCode = () =>
-    attribute.referenceTypeCode ??
+  const getEnumTypeCode = () =>
     (attribute.allowedTypes as { typeCode: string }[] | undefined)?.[0]
-      ?.typeCode ??
-    ''
+      ?.typeCode ?? ''
 
   const renderField = () => {
-    if (DICT_DATA_TYPES.has(dataType)) {
-      const typeCode = getTypeCode()
-      const searchUrl = typeCode
-        ? (getSearchUrl(dataType, typeCode) ?? undefined)
-        : undefined
+    const resolved = resolveAttributeDomain(attribute)
+
+    if (resolved && REFERENCE_DOMAIN_KINDS.has(resolved.domain)) {
+      const searchUrl = getUniversalSearchUrl(
+        resolved.domain,
+        resolved.typeCode
+      )
 
       const push = useDictSidebarStore.getState().push
 
-      const handleShowAll = typeCode
-        ? (onSelect: (value: SelectOption) => void) => {
-            push({
-              mode: 'list',
-              dataType,
-              typeCode,
-              searchParams,
-              onSelect,
-            })
-          }
-        : undefined
+      const handleShowAll = (onSelect: (value: SelectOption) => void) => {
+        push({
+          mode: 'list',
+          domain: resolved.domain,
+          typeCode: resolved.typeCode,
+          searchParams,
+          onSelect,
+        })
+      }
 
-      const handleAdd = typeCode
-        ? () => {
-            push({
-              mode: 'create',
-              dataType,
-              typeCode,
-              onSelect: (val: SelectOption) => {
-                form.setValue(node.code, val.raw ?? null)
-                handleValueChange?.()
-              },
-            })
-          }
-        : undefined
+      const handleAdd = () => {
+        push({
+          mode: 'create',
+          domain: resolved.domain,
+          typeCode: resolved.typeCode,
+          onSelect: (val: SelectOption) => {
+            form.setValue(node.code, val.raw ?? null)
+            handleValueChange?.()
+          },
+        })
+      }
 
-      const handleOpenEntry = typeCode
-        ? (entryId: number | string) => {
-            push({
-              mode: 'edit',
-              dataType,
-              typeCode,
-              entryId,
-              onSelect: (val: SelectOption) => {
-                form.setValue(node.code, val.raw ?? null)
-                handleValueChange?.()
-              },
-            })
-          }
-        : undefined
+      const handleOpenEntry = (entryId: number | string) => {
+        push({
+          mode: 'edit',
+          domain: resolved.domain,
+          typeCode: resolved.typeCode,
+          entryId,
+          onSelect: (val: SelectOption) => {
+            form.setValue(node.code, val.raw ?? null)
+            handleValueChange?.()
+          },
+        })
+      }
 
       return (
         <DictField
@@ -194,7 +189,7 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
       case 'DATETIME':
         return <DateTimeField {...commonProps} dateOnly={dataType === 'DATE'} />
       case 'ENUMS':
-        return <EnumField {...commonProps} enumTypeCode={getTypeCode()} />
+        return <EnumField {...commonProps} enumTypeCode={getEnumTypeCode()} />
       default:
         return <TextField {...commonProps} />
     }

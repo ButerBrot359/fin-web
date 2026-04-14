@@ -6,7 +6,11 @@ import type { SxProps, Theme } from '@mui/material'
 import type { AxiosResponse } from 'axios'
 
 import type { DocumentAttribute, EnumsValue } from '@/entities/document-type'
-import { DICT_DATA_TYPES, getSearchUrl } from '@/shared/lib/consts/data-types'
+import {
+  REFERENCE_DOMAIN_KINDS,
+  getUniversalSearchUrl,
+  resolveAttributeDomain,
+} from '@/shared/lib/consts/data-types'
 import { apiService } from '@/shared/api/api'
 import type { SelectOption } from '@/shared/types/select-option'
 import { resolveSelectValue } from '@/shared/lib/utils/resolve-select-value'
@@ -92,7 +96,7 @@ const tableCellWrapperSx: SxProps<Theme> = {
 }
 
 interface DictionarySearchResponse {
-  list: {
+  content: {
     id: number
     code: string
     displayName?: string
@@ -110,14 +114,11 @@ const DictCell = ({
   control,
   language,
 }: TableCellRendererProps) => {
-  const typeCode =
-    column.referenceTypeCode ??
-    (column.allowedTypes as { typeCode: string }[] | undefined)?.[0]
-      ?.typeCode ??
-    ''
-  const searchUrl = typeCode
-    ? (getSearchUrl(column.dataType, typeCode) ?? undefined)
-    : undefined
+  const resolved = resolveAttributeDomain(column)
+  const searchUrl =
+    resolved && REFERENCE_DOMAIN_KINDS.has(resolved.domain)
+      ? getUniversalSearchUrl(resolved.domain, resolved.typeCode)
+      : undefined
   const isServerSearch = !!searchUrl
 
   const [opened, setOpened] = useState(false)
@@ -160,7 +161,7 @@ const DictCell = ({
       }),
     enabled: isServerSearch && opened,
     select: (response) =>
-      response.data.list.map(
+      response.data.content.map(
         (entry): SelectOption => ({
           id: entry.id,
           code: entry.code,
@@ -282,8 +283,9 @@ const CellInput = ({
   onPickerClose,
 }: CellInputProps) => {
   const { dataType } = column
+  const cellResolved = resolveAttributeDomain(column)
 
-  if (DICT_DATA_TYPES.has(dataType)) {
+  if (cellResolved && REFERENCE_DOMAIN_KINDS.has(cellResolved.domain)) {
     return (
       <Box sx={tableCellWrapperSx}>
         <DictCell

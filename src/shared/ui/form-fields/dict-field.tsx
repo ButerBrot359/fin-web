@@ -22,7 +22,7 @@ interface DictionaryEntry {
 }
 
 interface DictionarySearchResponse {
-  list: DictionaryEntry[]
+  content: DictionaryEntry[]
 }
 
 interface DictFieldProps {
@@ -104,7 +104,7 @@ export const DictField = ({
       }),
     enabled: isServerSearch && opened,
     select: (response) =>
-      response.data.list.map(
+      response.data.content.map(
         (entry): SelectOption => ({
           id: entry.id,
           code: entry.code,

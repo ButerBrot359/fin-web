@@ -49,6 +49,7 @@ export interface DocumentAttribute {
   nameRu: string
   nameKz: string
   dataType: DataType
+  domainKind: string | null
   isRequired: boolean
   readonly: boolean
   maxLength: number | null

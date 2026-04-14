@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { AxiosResponse } from 'axios'
 
 import type { DocumentType, DocumentAttribute } from '@/entities/document-type'
+import type { ApiResponse } from '@/shared/types/api.types'
 import { FormRenderer } from '@/features/form-renderer'
 import { Button } from '@/shared/ui/buttons/button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
@@ -47,15 +48,15 @@ export const DictSidebarFormView = ({
   const form = useForm<Record<string, unknown>>()
 
   const { data: entryData, isLoading: isLoadingEntry } = useQuery<
-    AxiosResponse<DictEntry>,
+    AxiosResponse<ApiResponse<DictEntry>>,
     Error,
     DictEntry
   >({
-    queryKey: ['dict-sidebar-entry', panel.dataType, savedEntryId],
+    queryKey: ['dict-sidebar-entry', panel.domain, savedEntryId],
     queryFn: ({ signal }) =>
-      fetchDictEntryById(panel.dataType, savedEntryId!, signal),
+      fetchDictEntryById(panel.domain, savedEntryId!, signal),
     enabled: !!savedEntryId,
-    select: (res) => res.data,
+    select: (res) => res.data.data,
   })
 
   useEffect(() => {
@@ -106,10 +107,10 @@ export const DictSidebarFormView = ({
 
   const invalidateEntries = () => {
     void queryClient.invalidateQueries({
-      queryKey: ['dict-sidebar-entries', panel.dataType, panel.typeCode],
+      queryKey: ['dict-sidebar-entries', panel.domain, panel.typeCode],
     })
     void queryClient.invalidateQueries({
-      queryKey: ['dict-sidebar-entry', panel.dataType, savedEntryId],
+      queryKey: ['dict-sidebar-entry', panel.domain, savedEntryId],
     })
     void queryClient.invalidateQueries({
       queryKey: ['dictionary-search'],
@@ -130,14 +131,14 @@ export const DictSidebarFormView = ({
   })
 
   const createMutation = useMutation<
-    AxiosResponse<DictEntry>,
+    AxiosResponse<ApiResponse<DictEntry>>,
     Error,
     Record<string, unknown>
   >({
     mutationFn: (data) =>
-      createDictEntry(panel.dataType, panel.typeCode, buildPayload(data)),
+      createDictEntry(panel.domain, panel.typeCode, buildPayload(data)),
     onSuccess: (res) => {
-      const entry = res.data
+      const entry = res.data.data
       setSavedEntryId(entry.id)
       invalidateEntries()
       panel.onSelect?.(buildSelectOption(entry))
@@ -156,15 +157,15 @@ export const DictSidebarFormView = ({
   })
 
   const updateMutation = useMutation<
-    AxiosResponse<DictEntry>,
+    AxiosResponse<ApiResponse<DictEntry>>,
     Error,
     Record<string, unknown>
   >({
     mutationFn: (data) =>
-      updateDictEntry(panel.dataType, savedEntryId!, buildPayload(data)),
+      updateDictEntry(panel.domain, savedEntryId!, buildPayload(data)),
     onSuccess: (res) => {
       invalidateEntries()
-      panel.onSelect?.(buildSelectOption(res.data))
+      panel.onSelect?.(buildSelectOption(res.data.data))
       showToast('success', t('dictSidebar.saved'))
     },
     onError: () => {
@@ -190,17 +191,17 @@ export const DictSidebarFormView = ({
     }
 
     if (isEdit) {
-      void updateDictEntry(panel.dataType, savedEntryId, buildPayload(data))
+      void updateDictEntry(panel.domain, savedEntryId, buildPayload(data))
         .then((res) => {
-          onDone(res.data)
+          onDone(res.data.data)
         })
         .catch(() => {
           showToast('error', t('dictSidebar.saveError'))
         })
     } else {
-      void createDictEntry(panel.dataType, panel.typeCode, buildPayload(data))
+      void createDictEntry(panel.domain, panel.typeCode, buildPayload(data))
         .then((res) => {
-          onDone(res.data)
+          onDone(res.data.data)
         })
         .catch(() => {
           showToast('error', t('dictSidebar.saveError'))

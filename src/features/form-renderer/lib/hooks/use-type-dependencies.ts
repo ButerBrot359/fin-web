@@ -3,7 +3,12 @@ import { useQueries } from '@tanstack/react-query'
 
 import type { DocumentAttribute } from '@/entities/document-type'
 import { apiService } from '@/shared/api/api'
-import { DICT_DATA_TYPES, getTypeUrl } from '@/shared/lib/consts/data-types'
+import type { ApiResponse } from '@/shared/types/api.types'
+import {
+  REFERENCE_DOMAIN_KINDS,
+  getUniversalTypeUrl,
+  resolveAttributeDomain,
+} from '@/shared/lib/consts/data-types'
 import type { FieldDependency } from '../../types/renderer-context'
 
 interface DependsOnEntry {
@@ -11,7 +16,7 @@ interface DependsOnEntry {
   targetAttributeCode: string
 }
 
-interface TypeMetadataResponse {
+interface TypeMetadata {
   dependsOn?: DependsOnEntry[]
 }
 
@@ -25,12 +30,8 @@ export const useTypeDependencies = ({
   const dictAttributes = useMemo(
     () =>
       attributes.filter((attr) => {
-        if (!DICT_DATA_TYPES.has(attr.dataType)) return false
-        const typeCode =
-          attr.referenceTypeCode ??
-          (attr.allowedTypes as { typeCode: string }[] | undefined)?.[0]
-            ?.typeCode
-        return !!typeCode
+        const resolved = resolveAttributeDomain(attr)
+        return resolved && REFERENCE_DOMAIN_KINDS.has(resolved.domain)
       }),
     [attributes]
   )
@@ -38,10 +39,9 @@ export const useTypeDependencies = ({
   const uniqueTypes = useMemo(() => {
     const seen = new Map<string, DocumentAttribute>()
     for (const attr of dictAttributes) {
-      const typeCode =
-        attr.referenceTypeCode ??
-        (attr.allowedTypes as { typeCode: string }[] | undefined)?.[0]?.typeCode
-      const key = `${attr.dataType}:${typeCode ?? ''}`
+      const resolved = resolveAttributeDomain(attr)
+      if (!resolved) continue
+      const key = `${resolved.domain}:${resolved.typeCode}`
       if (!seen.has(key)) {
         seen.set(key, attr)
       }
@@ -51,16 +51,12 @@ export const useTypeDependencies = ({
 
   const typeQueries = useQueries({
     queries: uniqueTypes.map((attr) => {
-      const typeCode =
-        attr.referenceTypeCode ??
-        (attr.allowedTypes as { typeCode: string }[] | undefined)?.[0]
-          ?.typeCode ??
-        ''
-      const url = getTypeUrl(attr.dataType, typeCode)!
+      const resolved = resolveAttributeDomain(attr)!
+      const url = getUniversalTypeUrl(resolved.domain, resolved.typeCode)
 
       return {
-        queryKey: ['type-metadata', attr.dataType, typeCode],
-        queryFn: () => apiService.get<TypeMetadataResponse>({ url }),
+        queryKey: ['type-metadata', resolved.domain, resolved.typeCode],
+        queryFn: () => apiService.get<ApiResponse<TypeMetadata>>({ url }),
         staleTime: 10 * 60 * 1000,
       }
     }),
@@ -71,22 +67,19 @@ export const useTypeDependencies = ({
 
     uniqueTypes.forEach((attr, index) => {
       const query = typeQueries[index]
-      const dependsOn = query.data?.data.dependsOn
+      const dependsOn = query.data?.data.data.dependsOn
       if (!dependsOn?.length) return
 
-      const typeCode =
-        attr.referenceTypeCode ??
-        (attr.allowedTypes as { typeCode: string }[] | undefined)?.[0]
-          ?.typeCode ??
-        ''
+      const resolved = resolveAttributeDomain(attr)
+      if (!resolved) return
 
       for (const dep of dependsOn) {
         const dependentFields = dictAttributes.filter((a) => {
-          const tc =
-            a.referenceTypeCode ??
-            (a.allowedTypes as { typeCode: string }[] | undefined)?.[0]
-              ?.typeCode
-          return a.dataType === attr.dataType && tc === typeCode
+          const aResolved = resolveAttributeDomain(a)
+          return (
+            aResolved?.domain === resolved.domain &&
+            aResolved.typeCode === resolved.typeCode
+          )
         })
 
         for (const field of dependentFields) {

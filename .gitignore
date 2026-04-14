@@ -9,6 +9,7 @@ lerna-debug.log*
 
 /.env
 /.env.local
+form-configs-server/.env*
 node_modules
 dist
 dist-ssr

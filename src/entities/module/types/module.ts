@@ -9,6 +9,7 @@ export enum ModuleElementType {
 export interface ModuleElement {
   code: string
   type: ModuleElementType
+  domainKind: string | null
   nameRu: string
   nameKz: string
 }

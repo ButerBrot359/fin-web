@@ -12,6 +12,7 @@ import type { AxiosResponse } from 'axios'
 
 import type { DocumentAttribute } from '@/entities/document-type'
 import type { ApiResponse } from '@/shared/types/api.types'
+import { useOptionalFormConfig } from '@/entities/form-config'
 import { FormRenderer } from '@/features/form-renderer'
 import {
   fetchDictTypeMetadata,
@@ -86,10 +87,8 @@ export const DictionaryEntryPage = () => {
     [typeData.attributes]
   )
 
-  const formConfig = useMemo(
-    () => buildFallbackConfig(formAttributes),
-    [formAttributes]
-  )
+  const { config } = useOptionalFormConfig(moduleCode, 'dictionaries', domain)
+  const formConfig = config ?? buildFallbackConfig(formAttributes)
 
   const typeName = getLocalizedName(typeData, i18n.language)
 

@@ -62,3 +62,42 @@ export async function fetchDocumentAttributes(
 
   return { title: json.data.nameRu, attributes }
 }
+
+export async function fetchUniversalTypeAttributes(
+  domain: string,
+  typeCode: string
+): Promise<{ title: string; attributes: Attribute[] }> {
+  const baseUrl = process.env.DOCUMENT_TYPES_API_BASE_URL
+  if (!baseUrl) {
+    throw new Error('DOCUMENT_TYPES_API_BASE_URL is not configured')
+  }
+
+  const url = `${baseUrl}/api/universaldomain-types/${domain}/${typeCode}`
+  const response = await fetch(url)
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch type "${domain}/${typeCode}": ${String(response.status)} ${response.statusText}`
+    )
+  }
+
+  const json = (await response.json()) as DocumentTypeResponse
+
+  const attributes = json.data.attributes
+    .filter((attr) => attr.showInForm)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((attr) => ({
+      code: attr.code,
+      nameRu: attr.nameRu,
+      dataType: attr.dataType,
+      domainKind: attr.domainKind,
+      isRequired: attr.isRequired,
+      sortOrder: attr.sortOrder,
+    }))
+
+  if (attributes.length === 0) {
+    throw new Error(`Type "${domain}/${typeCode}" has no form attributes`)
+  }
+
+  return { title: json.data.nameRu, attributes }
+}

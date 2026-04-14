@@ -2,7 +2,10 @@ import Anthropic from '@anthropic-ai/sdk'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { fetchDocumentAttributes } from './document-types-api.js'
+import {
+  fetchDocumentAttributes,
+  fetchUniversalTypeAttributes,
+} from './document-types-api.js'
 import { buildPrompt, type ExampleConfig } from './prompt.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -14,15 +17,38 @@ interface FormConfig {
   layout: unknown
 }
 
-async function loadExamples(): Promise<ExampleConfig[]> {
-  const files = await fs.readdir(CONFIGS_DIR)
-  const jsonFiles = files.filter((f) => f.endsWith('.json'))
+async function loadExamples(type: string): Promise<ExampleConfig[]> {
+  const dir = path.join(CONFIGS_DIR, type)
 
-  if (jsonFiles.length === 0) return []
+  let files: string[]
+  try {
+    files = await fs.readdir(dir)
+  } catch {
+    // Fallback to documents examples if type dir is empty
+    try {
+      files = await fs.readdir(path.join(CONFIGS_DIR, 'documents'))
+    } catch {
+      return []
+    }
+  }
+
+  const jsonFiles = files.filter((f) => f.endsWith('.json'))
+  if (jsonFiles.length === 0) {
+    // No examples in target dir — try documents
+    if (type !== 'documents') {
+      return loadExamples('documents')
+    }
+    return []
+  }
+
+  const baseDir =
+    jsonFiles.length > 0 && type !== 'documents'
+      ? path.join(CONFIGS_DIR, type)
+      : path.join(CONFIGS_DIR, type)
 
   const fileSizes = await Promise.all(
     jsonFiles.map(async (f) => {
-      const stat = await fs.stat(path.join(CONFIGS_DIR, f))
+      const stat = await fs.stat(path.join(baseDir, f))
       return { name: f.replace('.json', ''), size: stat.size }
     })
   )
@@ -34,17 +60,15 @@ async function loadExamples(): Promise<ExampleConfig[]> {
   const selected =
     smallest.name === largest.name ? [smallest] : [smallest, largest]
 
-  const examples: ExampleConfig[] = await Promise.all(
+  return Promise.all(
     selected.map(async (s) => {
       const content = await fs.readFile(
-        path.join(CONFIGS_DIR, `${s.name}.json`),
+        path.join(baseDir, `${s.name}.json`),
         'utf-8'
       )
       return { name: s.name, json: content }
     })
   )
-
-  return examples
 }
 
 function extractJson(text: string): unknown {
@@ -53,7 +77,6 @@ function extractJson(text: string): unknown {
   try {
     return JSON.parse(trimmed)
   } catch {
-    // Try extracting from markdown code fence
     const fenceMatch = /```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/.exec(trimmed)
     if (fenceMatch?.[1]) {
       return JSON.parse(fenceMatch[1].trim())
@@ -62,15 +85,23 @@ function extractJson(text: string): unknown {
   }
 }
 
-export async function generateConfig(docCode: string): Promise<FormConfig> {
+export async function generateConfig(
+  code: string,
+  type: string,
+  domain?: string
+): Promise<FormConfig> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     throw new Error('ANTHROPIC_API_KEY is not configured')
   }
 
-  const { title, attributes } = await fetchDocumentAttributes(docCode)
-  const examples = await loadExamples()
-  const prompt = buildPrompt(docCode, title, attributes, examples)
+  const { title, attributes } =
+    type === 'dictionaries' && domain
+      ? await fetchUniversalTypeAttributes(domain, code)
+      : await fetchDocumentAttributes(code)
+
+  const examples = await loadExamples(type)
+  const prompt = buildPrompt(code, title, attributes, examples)
 
   const client = new Anthropic({ apiKey })
   const response = await client.messages.create({
@@ -94,10 +125,11 @@ export async function generateConfig(docCode: string): Promise<FormConfig> {
     )
   }
 
-  // Save to disk for caching
-  const filePath = path.join(CONFIGS_DIR, `${docCode}.json`)
+  const dir = path.join(CONFIGS_DIR, type)
+  await fs.mkdir(dir, { recursive: true })
+  const filePath = path.join(dir, `${code}.json`)
   await fs.writeFile(filePath, JSON.stringify(config, null, 2), 'utf-8')
-  console.log(`Generated and saved config: ${docCode}`)
+  console.log(`Generated and saved config: ${type}/${code}`)
 
   return config
 }

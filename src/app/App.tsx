@@ -32,6 +32,16 @@ const DocumentMovementsPage = lazy(() =>
     default: m.DocumentMovementsPage,
   }))
 )
+const DictionaryPage = lazy(() =>
+  import('@/pages/dictionaries/dictionary-list').then((m) => ({
+    default: m.DictionaryPage,
+  }))
+)
+const DictionaryEntryPage = lazy(() =>
+  import('@/pages/dictionaries/dictionary-entry').then((m) => ({
+    default: m.DictionaryEntryPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -57,6 +67,18 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/document/:moduleCode/:entryId/movements"
             element={<DocumentMovementsPage />}
+          />
+          <Route
+            path="/modules/:pageCode/dictionary/:moduleCode"
+            element={<DictionaryPage />}
+          />
+          <Route
+            path="/modules/:pageCode/dictionary/:moduleCode/new"
+            element={<DictionaryEntryPage />}
+          />
+          <Route
+            path="/modules/:pageCode/dictionary/:moduleCode/:entryId"
+            element={<DictionaryEntryPage />}
           />
         </Routes>
       </Suspense>

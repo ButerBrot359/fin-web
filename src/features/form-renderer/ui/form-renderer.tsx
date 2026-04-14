@@ -25,8 +25,8 @@ export const FormRenderer = ({
   typeCode,
 }: FormRendererProps) => {
   const { i18n } = useTranslation()
-  const { optionsMap } = useFieldOptions({ attributes })
   const { dependencyMap } = useTypeDependencies({ attributes })
+  const { optionsMap } = useFieldOptions({ attributes, dependencyMap })
 
   const { onFieldChange } = useFormEvents({ typeCode, attributes, form })
 

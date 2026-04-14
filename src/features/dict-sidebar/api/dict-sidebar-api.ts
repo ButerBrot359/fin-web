@@ -1,11 +1,13 @@
 import { apiService } from '@/shared/api/api'
-import type { DataType } from '@/shared/lib/consts/data-types'
 import {
-  getTypeUrl,
-  getPagedUrl,
-  getSearchUrl,
+  getUniversalTypeUrl,
+  getUniversalPagedUrl,
+  getUniversalSearchUrl,
+  getUniversalEntryByIdUrl,
+  getUniversalEntriesUrl,
 } from '@/shared/lib/consts/data-types'
 import type { DocumentType } from '@/entities/document-type'
+import type { ApiResponse } from '@/shared/types/api.types'
 
 interface PagedParams {
   page?: number
@@ -31,41 +33,39 @@ export interface DictEntry {
 }
 
 export const fetchDictTypeMetadata = (
-  dataType: DataType,
+  domain: string,
   typeCode: string,
   signal?: AbortSignal
-) => {
-  const url = getTypeUrl(dataType, typeCode)
-  if (!url) throw new Error(`No type URL for ${dataType}`)
-  return apiService.get<DocumentType>({ url, signal })
-}
+) =>
+  apiService.get<ApiResponse<DocumentType>>({
+    url: getUniversalTypeUrl(domain, typeCode),
+    signal,
+  })
 
 export const fetchDictEntriesPaged = (
-  dataType: DataType,
+  domain: string,
   typeCode: string,
   params: PagedParams,
   signal?: AbortSignal
-) => {
-  const url = getPagedUrl(dataType, typeCode)
-  if (!url) throw new Error(`No paged URL for ${dataType}`)
-  return apiService.get<PagedResponse<DictEntry>>({ url, params, signal })
-}
+) =>
+  apiService.get<PagedResponse<DictEntry>>({
+    url: getUniversalPagedUrl(domain, typeCode),
+    params,
+    signal,
+  })
 
 export const searchDictEntries = (
-  dataType: DataType,
+  domain: string,
   typeCode: string,
   query: string,
   extraParams?: Record<string, string>,
   signal?: AbortSignal
-) => {
-  const url = getSearchUrl(dataType, typeCode)
-  if (!url) throw new Error(`No search URL for ${dataType}`)
-  return apiService.get<{ list: DictEntry[] }>({
-    url,
+) =>
+  apiService.get<{ content: DictEntry[] }>({
+    url: getUniversalSearchUrl(domain, typeCode),
     params: { q: query, size: 50, ...extraParams },
     signal,
   })
-}
 
 export interface DictEntryCreatePayload {
   code?: string
@@ -76,49 +76,32 @@ export interface DictEntryCreatePayload {
   attributes: Record<string, unknown>
 }
 
-const ENTRY_BY_ID_PATHS: Partial<Record<DataType, string>> = {
-  DICTIONARY: '/api/dictionaries/entries',
-}
-
-const ENTRY_CREATE_PATHS: Partial<Record<DataType, string>> = {
-  DICTIONARY: '/api/dictionaries/entries',
-}
-
 export const fetchDictEntryById = (
-  dataType: DataType,
+  domain: string,
   id: number | string,
   signal?: AbortSignal
-) => {
-  const basePath = ENTRY_BY_ID_PATHS[dataType]
-  if (!basePath) throw new Error(`No entry URL for ${dataType}`)
-  return apiService.get<DictEntry>({
-    url: `${basePath}/id/${String(id)}`,
+) =>
+  apiService.get<ApiResponse<DictEntry>>({
+    url: getUniversalEntryByIdUrl(domain, id),
     signal,
   })
-}
 
 export const createDictEntry = (
-  dataType: DataType,
+  domain: string,
   typeCode: string,
   payload: DictEntryCreatePayload
-) => {
-  const basePath = ENTRY_CREATE_PATHS[dataType]
-  if (!basePath) throw new Error(`No create URL for ${dataType}`)
-  return apiService.post<DictEntry>({
-    url: `${basePath}/${typeCode}`,
+) =>
+  apiService.post<ApiResponse<DictEntry>>({
+    url: getUniversalEntriesUrl(domain, typeCode),
     data: payload,
   })
-}
 
 export const updateDictEntry = (
-  dataType: DataType,
+  domain: string,
   id: number | string,
   payload: DictEntryCreatePayload
-) => {
-  const basePath = ENTRY_BY_ID_PATHS[dataType]
-  if (!basePath) throw new Error(`No update URL for ${dataType}`)
-  return apiService.put<DictEntry>({
-    url: `${basePath}/${String(id)}`,
+) =>
+  apiService.put<ApiResponse<DictEntry>>({
+    url: getUniversalEntryByIdUrl(domain, id),
     data: payload,
   })
-}

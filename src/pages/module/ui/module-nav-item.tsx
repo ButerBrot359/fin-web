@@ -13,7 +13,10 @@ import type { NavItemProps } from '../types/module-nav'
 export const ModuleNavItem = ({ item, pageCode }: NavItemProps) => {
   const { i18n } = useTranslation()
 
-  const url = `/modules/${pageCode}/${item.type.toLowerCase()}/${item.code}`
+  const basePath = `/modules/${pageCode}/${item.type.toLowerCase()}/${item.code}`
+  const url = item.domainKind
+    ? `${basePath}?domain=${item.domainKind}`
+    : basePath
 
   return (
     <li>

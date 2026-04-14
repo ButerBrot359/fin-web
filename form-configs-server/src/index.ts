@@ -1,13 +1,15 @@
+import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { generateConfig } from './generate-config.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const app = express()
-const PORT = 3001
+const PORT = process.env.PORT ?? 3001
 const CONFIGS_DIR = path.resolve(__dirname, '../configs')
 
 app.use(express.json())
@@ -28,7 +30,15 @@ app.get('/api/configs/:name', async (req, res) => {
     const raw = await fs.readFile(filePath, 'utf-8')
     res.json(JSON.parse(raw) as Record<string, unknown>)
   } catch {
-    res.status(404).json({ error: `Config "${req.params.name}" not found` })
+    try {
+      const config = await generateConfig(req.params.name)
+      res.json(config)
+    } catch (genErr) {
+      console.error(`Generation failed for ${req.params.name}:`, genErr)
+      res.status(500).json({
+        error: `Config "${req.params.name}" not found and generation failed`,
+      })
+    }
   }
 })
 

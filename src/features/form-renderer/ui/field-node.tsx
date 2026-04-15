@@ -82,7 +82,7 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
 
   if (dataType === 'TABLE') {
     return (
-      <div style={{ flex: node.flex }}>
+      <div style={{ flex: node.flex, minWidth: 0 }}>
         <TableField attribute={attribute} form={form} language={language} />
       </div>
     )

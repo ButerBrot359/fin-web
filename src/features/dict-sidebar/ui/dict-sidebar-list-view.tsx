@@ -64,7 +64,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       ),
     enabled: !isSearchMode,
     staleTime: 60 * 1000,
-    select: (res) => res.data,
+    select: (res) => res.data.data,
   })
 
   const { data: searchData, isLoading: isLoadingSearch } = useQuery({
@@ -86,10 +86,10 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       ),
     enabled: isSearchMode,
     staleTime: 30 * 1000,
-    select: (res) => res.data.content,
+    select: (res) => res.data.data.content,
   })
 
-  const entries = isSearchMode ? (searchData ?? []) : (pagedData?.list ?? [])
+  const entries = isSearchMode ? (searchData ?? []) : (pagedData?.content ?? [])
   const isLoading = isLoadingType || isLoadingPaged || isLoadingSearch
 
   const visibleAttributes = useMemo(

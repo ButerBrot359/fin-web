@@ -96,14 +96,17 @@ const tableCellWrapperSx: SxProps<Theme> = {
 }
 
 interface DictionarySearchResponse {
-  content: {
-    id: number
-    code: string
-    displayName?: string
-    nameRu?: string
-    nameKz?: string
-    [key: string]: unknown
-  }[]
+  data: {
+    content: {
+      id: number
+      code: string
+      displayName?: string
+      nameRu?: string
+      nameKz?: string
+      [key: string]: unknown
+    }[]
+  }
+  success: boolean
 }
 
 const DEBOUNCE_MS = 300
@@ -161,7 +164,7 @@ const DictCell = ({
       }),
     enabled: isServerSearch && opened,
     select: (response) =>
-      response.data.content.map(
+      response.data.data.content.map(
         (entry): SelectOption => ({
           id: entry.id,
           code: entry.code,

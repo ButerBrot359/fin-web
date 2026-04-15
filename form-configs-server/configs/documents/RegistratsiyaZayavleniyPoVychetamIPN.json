@@ -1,0 +1,92 @@
+{
+  "name": "RegistratsiyaZayavleniyPoVychetamIPN",
+  "title": "Регистрация заявлений по вычетам ИПН",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "Nomer",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Data",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "NalichieZayavleniya"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "Organizatsiya"
+              },
+              {
+                "type": "Field",
+                "code": "FizicheskoeLitso"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "HStack",
+        "gap": 6,
+        "children": [
+          {
+            "type": "Field",
+            "code": "VychetyIPN",
+            "flex": 2
+          },
+          {
+            "type": "Field",
+            "code": "GrafikVycheta",
+            "flex": 1
+          }
+        ]
+      },
+      { "type": "Separator" },
+      {
+        "type": "HStack",
+        "gap": 3,
+        "children": [
+          {
+            "type": "Field",
+            "code": "Kommentariy",
+            "flex": 1
+          },
+          {
+            "type": "Field",
+            "code": "Otvetstvennyy",
+            "flex": 1
+          }
+        ]
+      }
+    ]
+  }
+}

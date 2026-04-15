@@ -1,0 +1,119 @@
+{
+  "name": "Tabel",
+  "title": "Табель",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "Nomer",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Data",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "Organizatsiya"
+              },
+              {
+                "type": "Field",
+                "code": "PodrazdelenieOrganizatsii"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "PeriodRegistratsii"
+              },
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "NachaloPerioda",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "OkonchaniePerioda",
+                    "flex": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Tabs",
+        "panes": [
+          {
+            "key": "uchet",
+            "label": "Учет рабочего времени",
+            "children": [
+              {
+                "type": "Field",
+                "code": "UchetRabochegoVremeni"
+              }
+            ]
+          },
+          {
+            "key": "vidy",
+            "label": "Данные по видам рабочего времени БГУ",
+            "children": [
+              {
+                "type": "Field",
+                "code": "DannyePoVidamRabochegoVremeniBGU"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Separator"
+      },
+      {
+        "type": "HStack",
+        "gap": 3,
+        "children": [
+          {
+            "type": "Field",
+            "code": "Kommentariy",
+            "flex": 1
+          },
+          {
+            "type": "Field",
+            "code": "Otvetstvennyy",
+            "flex": 1
+          }
+        ]
+      }
+    ]
+  }
+}

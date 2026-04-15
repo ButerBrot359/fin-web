@@ -1,0 +1,239 @@
+{
+  "name": "NachislenieZarplatySotrudnikam",
+  "title": "Начисление зарплаты сотрудникам",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "VidOperatsii"
+              },
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "Nomer",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Data",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "Organizatsiya"
+              },
+              {
+                "type": "Field",
+                "code": "PodrazdelenieOrganizatsii"
+              },
+              {
+                "type": "Field",
+                "code": "SummaDokumenta"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "PeriodRegistratsii"
+              },
+              {
+                "type": "Field",
+                "code": "PeriodPererascheta"
+              },
+              {
+                "type": "Field",
+                "code": "FormirovatProvodki"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Tabs",
+        "panes": [
+          {
+            "key": "nachisleniya",
+            "label": "Начисления",
+            "children": [
+              {
+                "type": "Field",
+                "code": "Nachisleniya"
+              }
+            ]
+          },
+          {
+            "key": "pereraschet",
+            "label": "Перерасчет",
+            "children": [
+              {
+                "type": "Field",
+                "code": "Pereraschet"
+              }
+            ]
+          },
+          {
+            "key": "ipn",
+            "label": "ИПН",
+            "children": [
+              {
+                "type": "Field",
+                "code": "IPN"
+              }
+            ]
+          },
+          {
+            "key": "vychetyIPN",
+            "label": "Вычеты ИПН",
+            "children": [
+              {
+                "type": "Field",
+                "code": "VychetyIPN"
+              }
+            ]
+          },
+          {
+            "key": "opv",
+            "label": "ОПВ",
+            "children": [
+              {
+                "type": "Field",
+                "code": "OPV"
+              }
+            ]
+          },
+          {
+            "key": "opvr",
+            "label": "ОПВР",
+            "children": [
+              {
+                "type": "Field",
+                "code": "OPVR"
+              }
+            ]
+          },
+          {
+            "key": "oppv",
+            "label": "ОППВ",
+            "children": [
+              {
+                "type": "Field",
+                "code": "OPPV"
+              }
+            ]
+          },
+          {
+            "key": "sn",
+            "label": "СН",
+            "children": [
+              {
+                "type": "Field",
+                "code": "SN"
+              }
+            ]
+          },
+          {
+            "key": "so",
+            "label": "СО",
+            "children": [
+              {
+                "type": "Field",
+                "code": "SO"
+              }
+            ]
+          },
+          {
+            "key": "osms",
+            "label": "ОСМС",
+            "children": [
+              {
+                "type": "Field",
+                "code": "OSMS"
+              }
+            ]
+          },
+          {
+            "key": "vosms",
+            "label": "ВОСМС",
+            "children": [
+              {
+                "type": "Field",
+                "code": "VOSMS"
+              }
+            ]
+          },
+          {
+            "key": "uderzhaniya",
+            "label": "Удержания",
+            "children": [
+              {
+                "type": "Field",
+                "code": "Uderzhaniya"
+              }
+            ]
+          },
+          {
+            "key": "nalogi",
+            "label": "Налоги отчисления взносы",
+            "children": [
+              {
+                "type": "Field",
+                "code": "NalogiOtchisleniyaVznosy"
+              }
+            ]
+          },
+          {
+            "key": "zarplataKVyplate",
+            "label": "Зарплата к выплате",
+            "children": [
+              {
+                "type": "Field",
+                "code": "ZarplataKVyplate"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Separator"
+      },
+      {
+        "type": "HStack",
+        "gap": 3,
+        "children": [
+          {
+            "type": "Field",
+            "code": "Kommentariy",
+            "flex": 1
+          },
+          {
+            "type": "Field",
+            "code": "Otvetstvennyy",
+            "flex": 1
+          }
+        ]
+      }
+    ]
+  }
+}

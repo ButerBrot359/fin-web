@@ -18,8 +18,11 @@ interface PagedParams {
 }
 
 interface PagedResponse<T> {
-  list: T[]
-  totalSize: number
+  data: {
+    content: T[]
+    totalElements: number
+  }
+  success: boolean
 }
 
 export interface DictEntry {
@@ -61,7 +64,7 @@ export const searchDictEntries = (
   extraParams?: Record<string, string>,
   signal?: AbortSignal
 ) =>
-  apiService.get<{ content: DictEntry[] }>({
+  apiService.get<ApiResponse<{ content: DictEntry[] }>>({
     url: getUniversalSearchUrl(domain, typeCode),
     params: { q: query, size: 50, ...extraParams },
     signal,

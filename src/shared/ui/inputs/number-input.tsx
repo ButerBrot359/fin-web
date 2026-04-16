@@ -67,7 +67,14 @@ export const NumberInput = ({
     const input = e.target as HTMLInputElement
     const pos = input.selectionStart ?? 0
     const typed = input.value
-    const raw = stripSpaces(typed)
+    let raw = stripSpaces(typed)
+
+    // Replace solitary "0" when user types another digit next to it: "05" | "50" -> "5"
+    let cursorToEnd = false
+    if (rawValue === '0' && /^\d{2}$/.test(raw)) {
+      raw = raw.replace('0', '') || '0'
+      cursorToEnd = true
+    }
 
     if (decimal) {
       if (raw !== '' && !/^-?(?:0|[1-9]\d*)?(?:[,.]\d*)?$/.test(raw)) return
@@ -75,20 +82,25 @@ export const NumberInput = ({
       if (raw !== '' && !/^-?(?:0|[1-9]\d*)?$/.test(raw)) return
     }
 
-    let charsBefore = 0
-    for (let i = 0; i < pos; i++) {
-      if (typed[i] !== ' ') charsBefore++
-    }
-
     const formatted = formatWithSpaces(raw)
     let newCursor = 0
-    let count = 0
-    for (let i = 0; i < formatted.length; i++) {
-      if (count >= charsBefore) break
-      newCursor = i + 1
-      if (formatted[i] !== ' ') count++
+
+    if (cursorToEnd) {
+      newCursor = formatted.length
+    } else {
+      let charsBefore = 0
+      for (let i = 0; i < pos; i++) {
+        if (typed[i] !== ' ') charsBefore++
+      }
+
+      let count = 0
+      for (let i = 0; i < formatted.length; i++) {
+        if (count >= charsBefore) break
+        newCursor = i + 1
+        if (formatted[i] !== ' ') count++
+      }
+      if (charsBefore === 0) newCursor = 0
     }
-    if (charsBefore === 0) newCursor = 0
 
     cursorRef.current = newCursor
 

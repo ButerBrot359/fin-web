@@ -1,0 +1,59 @@
+{
+  "name": "Sotrudniki",
+  "title": "Сотрудники",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "Kod"
+              },
+              {
+                "type": "Field",
+                "code": "Naimenovaniya"
+              },
+              {
+                "type": "Field",
+                "code": "FizicheskoeLitso"
+              },
+              {
+                "type": "Field",
+                "code": "StaryyTabelnyyNomer"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "Organizatsiya"
+              },
+              {
+                "type": "Field",
+                "code": "Uvolen"
+              },
+              {
+                "type": "Field",
+                "code": "Prikaz"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

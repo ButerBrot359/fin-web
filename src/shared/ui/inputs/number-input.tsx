@@ -1,11 +1,5 @@
 import { useLayoutEffect, useRef } from 'react'
-import {
-  TextField,
-  Tooltip,
-  type TextFieldProps,
-  IconButton,
-} from '@mui/material'
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import { TextField, Tooltip, type TextFieldProps } from '@mui/material'
 
 type NumberInputProps = Omit<TextFieldProps, 'variant'> & {
   readOnly?: boolean
@@ -15,13 +9,13 @@ type NumberInputProps = Omit<TextFieldProps, 'variant'> & {
 const formatWithSpaces = (raw: string): string => {
   if (!raw) return ''
 
-  const normalized = raw.replace('.', ',')
+  const normalized = raw.replace(',', '.')
   const negative = normalized.startsWith('-')
   const withoutMinus = negative ? normalized.slice(1) : normalized
 
-  const commaIdx = withoutMinus.indexOf(',')
-  const intPart = commaIdx >= 0 ? withoutMinus.slice(0, commaIdx) : withoutMinus
-  const decPart = commaIdx >= 0 ? withoutMinus.slice(commaIdx) : ''
+  const dotIdx = withoutMinus.indexOf('.')
+  const intPart = dotIdx >= 0 ? withoutMinus.slice(0, dotIdx) : withoutMinus
+  const decPart = dotIdx >= 0 ? withoutMinus.slice(dotIdx) : ''
 
   const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
   return (negative ? '-' : '') + formattedInt + decPart
@@ -67,7 +61,7 @@ export const NumberInput = ({
     const input = e.target as HTMLInputElement
     const pos = input.selectionStart ?? 0
     const typed = input.value
-    let raw = stripSpaces(typed)
+    let raw = stripSpaces(typed).replace(',', '.')
 
     // Replace solitary "0" when user types another digit next to it: "05" | "50" -> "5"
     let cursorToEnd = false
@@ -131,15 +125,6 @@ export const NumberInput = ({
           input: {
             ...(slotProps?.input as object),
             readOnly,
-            sx: { paddingRight: '4px' },
-            endAdornment: (
-              <IconButton sx={{ p: '4px', borderRadius: '6px' }} tabIndex={-1}>
-                <ArrowDropDownIcon
-                  className="text-ui-05"
-                  sx={{ fontSize: 20 }}
-                />
-              </IconButton>
-            ),
           },
           htmlInput: {
             ...(slotProps?.htmlInput as object),

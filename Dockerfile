@@ -17,6 +17,12 @@ FROM node:20-alpine AS configs-build
 
 WORKDIR /form-configs-server
 
+ARG ANTHROPIC_API_KEY
+ARG DOCUMENT_TYPES_API_BASE_URL
+ENV PORT=3001
+ENV ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
+ENV DOCUMENT_TYPES_API_BASE_URL=$DOCUMENT_TYPES_API_BASE_URL
+
 COPY form-configs-server/package.json form-configs-server/package-lock.json* ./
 RUN npm ci
 
@@ -26,6 +32,12 @@ RUN npm run build
 FROM node:20-alpine
 
 WORKDIR /app
+
+ARG ANTHROPIC_API_KEY
+ARG DOCUMENT_TYPES_API_BASE_URL
+ENV PORT=3001
+ENV ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
+ENV DOCUMENT_TYPES_API_BASE_URL=$DOCUMENT_TYPES_API_BASE_URL
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./

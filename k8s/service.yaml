@@ -9,8 +9,8 @@ spec:
   ports:
     - name: web
       protocol: TCP
-      port: 5173
-      targetPort: 5173
+      port: 4173
+      targetPort: 4173
       nodePort: 30173 # WEB_PORT
     - name: mock
       protocol: TCP

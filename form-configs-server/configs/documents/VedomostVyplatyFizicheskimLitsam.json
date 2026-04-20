@@ -1,0 +1,170 @@
+{
+  "name": "VedomostVyplatyFizicheskimLitsam",
+  "title": "Ведомость выплаты физическим лицам",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "Nomer",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Data",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "Organizatsiya"
+              },
+              {
+                "type": "Field",
+                "code": "PodrazdelenieOrganizatsii"
+              },
+              {
+                "type": "Field",
+                "code": "VidByudzhetnoyVyplaty"
+              },
+              {
+                "type": "Field",
+                "code": "SummaDokumenta"
+              },
+              {
+                "type": "Field",
+                "code": "SposobVyplaty"
+              },
+              {
+                "type": "Field",
+                "code": "TipScheta"
+              },
+              {
+                "type": "Field",
+                "code": "Bank"
+              },
+              {
+                "type": "Field",
+                "code": "DokumentOsnovanie"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Label",
+                "text": "Основание",
+                "variant": "link"
+              },
+              {
+                "type": "Field",
+                "code": "IstochnikFinansirovaniya"
+              },
+              {
+                "type": "Field",
+                "code": "FKR"
+              },
+              {
+                "type": "Field",
+                "code": "KodPlatnykhUslug"
+              },
+              {
+                "type": "Field",
+                "code": "Spetsifika"
+              },
+              {
+                "type": "Field",
+                "code": "StatyaDDS"
+              },
+              {
+                "type": "Field",
+                "code": "KodByudzhetnoyKlassifikatsii"
+              },
+              {
+                "type": "Field",
+                "code": "StatyaZatrat"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Tabs",
+        "panes": [
+          {
+            "key": "recipients",
+            "label": "Получатели",
+            "children": [
+              {
+                "type": "Field",
+                "code": "Poluchateli"
+              }
+            ]
+          },
+          {
+            "key": "accounts",
+            "label": "Счета учета",
+            "children": [
+              {
+                "type": "VStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "SchetRaskhodovBGU"
+                  },
+                  {
+                    "type": "Field",
+                    "code": "SchetTransfertovBGU"
+                  },
+                  {
+                    "type": "Field",
+                    "code": "SchetKontragentaBGU"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Separator"
+      },
+      {
+        "type": "HStack",
+        "gap": 3,
+        "children": [
+          {
+            "type": "Field",
+            "code": "Kommentariy",
+            "flex": 1
+          },
+          {
+            "type": "Field",
+            "code": "Otvetstvennyy",
+            "flex": 1
+          }
+        ]
+      }
+    ]
+  }
+}

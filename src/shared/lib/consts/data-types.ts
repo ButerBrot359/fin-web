@@ -44,7 +44,7 @@ export const getUniversalEntriesUrl = (domain: string, typeCode: string) =>
   `${BASE}/${domain}/${typeCode}`
 
 export const getUniversalEntryByIdUrl = (domain: string, id: number | string) =>
-  `${BASE}/${domain}/id/${String(id)}`
+  `${BASE}/${domain}/${String(id)}`
 
 export const getUniversalTypeUrl = (domain: string, code: string) =>
   `${TYPES_BASE}/${domain}/${code}`

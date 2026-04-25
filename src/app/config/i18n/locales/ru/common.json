@@ -161,5 +161,8 @@
     "unknown": "Неизвестная ошибка",
     "somethingWentWrong": "Что-то пошло не так",
     "tryAgain": "Попробовать снова"
+  },
+  "workspaceTabs": {
+    "newTab": "Новая вкладка"
   }
 }

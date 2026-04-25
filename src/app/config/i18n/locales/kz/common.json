@@ -161,5 +161,8 @@
     "unknown": "Белгісіз қате",
     "somethingWentWrong": "Бір нәрсе дұрыс болмады",
     "tryAgain": "Қайталап көру"
+  },
+  "workspaceTabs": {
+    "newTab": "Жаңа қойынды"
   }
 }

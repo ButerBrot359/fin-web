@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { useModule } from '@/entities/module'
+import { useTabMeta } from '@/features/workspace-tabs'
 
 import { ModuleToolbar } from '@/widgets/module-toolbar'
 
@@ -13,6 +14,7 @@ export const ModulePage = () => {
   const { pageCode = '' } = useParams<{ pageCode: string }>()
   const navigate = useNavigate()
   const title = usePageTitle(`/modules/${pageCode}`, pageCode)
+  useTabMeta(title)
 
   const handleClose = () => {
     void navigate('/')

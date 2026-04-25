@@ -7,6 +7,7 @@ import type { AxiosResponse } from 'axios'
 import type { DocumentType, DocumentAttribute } from '@/entities/document-type'
 import type { ApiResponse } from '@/shared/types/api.types'
 import { FormRenderer } from '@/features/form-renderer'
+import { useTabMeta, useTabFormPersistence } from '@/features/workspace-tabs'
 import { Button } from '@/shared/ui/buttons/button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -45,6 +46,7 @@ export const DictSidebarFormView = ({
   )
   const isEdit = !!savedEntryId
 
+  const sidebarTabId = `sidebar-${panel.id}`
   const form = useForm<Record<string, unknown>>()
 
   const { data: entryData, isLoading: isLoadingEntry } = useQuery<
@@ -57,6 +59,12 @@ export const DictSidebarFormView = ({
       fetchDictEntryById(panel.domain, savedEntryId!, signal),
     enabled: !!savedEntryId,
     select: (res) => res.data.data,
+  })
+
+  useTabMeta(panel.title || typeName, sidebarTabId)
+  useTabFormPersistence(form, {
+    isLoading: isLoadingEntry,
+    tabId: sidebarTabId,
   })
 
   useEffect(() => {

@@ -31,7 +31,6 @@ export interface WorkspaceTab {
   title: string
   pageType: TabPageType
   isDirty: boolean
-  formSnapshot: FormSnapshot | null
   sidebarPanel: SidebarPanelData | null
   createdAt: number
 }

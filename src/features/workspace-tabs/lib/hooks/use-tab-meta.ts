@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import { useWorkspaceTabsStore } from './use-workspace-tabs-store'
@@ -7,8 +7,8 @@ export function useTabMeta(title: string, tabId?: string) {
   const { pathname } = useLocation()
   const setTabTitle = useWorkspaceTabsStore((s) => s.setTabTitle)
 
-  // For router pages tab ID = pathname; for sidebar tabs explicit tabId is passed
-  const resolvedId = tabId ?? pathname
+  // Capture tab ID at mount time only — never changes on re-render
+  const [resolvedId] = useState(() => tabId ?? pathname)
 
   useEffect(() => {
     if (resolvedId && title) {

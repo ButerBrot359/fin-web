@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { useWorkspaceTabsStore } from './use-workspace-tabs-store'
+import { formSnapshotCache } from './form-snapshot-cache'
 
 interface UseTabFormPersistenceOptions {
   isLoading: boolean
@@ -14,32 +15,39 @@ export function useTabFormPersistence(
   { isLoading, tabId }: UseTabFormPersistenceOptions
 ) {
   const { pathname } = useLocation()
-
-  // For router pages tab ID = pathname; for sidebar tabs explicit tabId is passed
-  const resolvedId = tabId ?? pathname
-
+  const [resolvedId] = useState(() => tabId ?? pathname)
   const restoredRef = useRef(false)
-  const isDirtyRef = useRef(false)
+
+  // Save form snapshot on EVERY change via watch — no cleanup dependency
+  useEffect(() => {
+    if (!resolvedId) return
+
+    const subscription = form.watch(() => {
+      const values = form.getValues()
+      const defaultValues =
+        (form.formState.defaultValues as Record<string, unknown> | undefined) ??
+        {}
+
+      formSnapshotCache.set(resolvedId, { values, defaultValues })
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [resolvedId, form])
 
   // Restore form snapshot after data loads
   useEffect(() => {
-    if (isLoading || restoredRef.current) return
+    if (isLoading || restoredRef.current || !resolvedId) return
 
-    if (!resolvedId) {
+    const snapshot = formSnapshotCache.get(resolvedId)
+
+    if (!snapshot) {
       restoredRef.current = true
       return
     }
 
-    const tab = useWorkspaceTabsStore
-      .getState()
-      .tabs.find((t) => t.id === resolvedId)
-
-    if (!tab?.formSnapshot) {
-      restoredRef.current = true
-      return
-    }
-
-    const { values, defaultValues } = tab.formSnapshot
+    const { values, defaultValues } = snapshot
 
     form.reset(defaultValues)
 
@@ -49,7 +57,7 @@ export function useTabFormPersistence(
       }
     }
 
-    useWorkspaceTabsStore.getState().clearFormSnapshot(resolvedId)
+    formSnapshotCache.delete(resolvedId)
     restoredRef.current = true
   }, [isLoading, resolvedId, form])
 
@@ -57,29 +65,8 @@ export function useTabFormPersistence(
   const isDirty = form.formState.isDirty
 
   useEffect(() => {
-    isDirtyRef.current = isDirty
     if (resolvedId) {
       useWorkspaceTabsStore.getState().setTabDirty(resolvedId, isDirty)
     }
   }, [isDirty, resolvedId])
-
-  // Save form snapshot on unmount if dirty
-  useEffect(() => {
-    const id = resolvedId
-
-    return () => {
-      if (!id || !isDirtyRef.current) return
-
-      const currentValues = form.getValues()
-      const defaultValues =
-        (form.formState.defaultValues as Record<string, unknown> | undefined) ??
-        {}
-
-      if (Object.keys(currentValues).length === 0) return
-
-      useWorkspaceTabsStore
-        .getState()
-        .saveFormSnapshot(id, { values: currentValues, defaultValues })
-    }
-  }, [resolvedId, form])
 }

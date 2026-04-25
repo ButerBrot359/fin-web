@@ -24,7 +24,7 @@ export const WorkspaceTabItem = ({
       type="button"
       onClick={onActivate}
       className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-t-md border-none py-2 pr-1.5 pl-3 ${
-        isActive ? 'bg-ui-01' : 'bg-ui-04'
+        isActive ? 'bg-ui-04' : 'bg-ui-01'
       }`}
     >
       <Typography

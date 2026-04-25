@@ -4,7 +4,6 @@ import { MAX_TABS } from '../consts/workspace-tabs-config'
 import type {
   WorkspaceTab,
   TabPageType,
-  FormSnapshot,
   SidebarPanelData,
 } from '../../types/workspace-tab'
 
@@ -26,8 +25,6 @@ interface WorkspaceTabsStore {
   setActiveTab: (tabId: string) => void
   setTabTitle: (tabId: string, title: string) => void
   setTabDirty: (tabId: string, isDirty: boolean) => void
-  saveFormSnapshot: (tabId: string, snapshot: FormSnapshot) => void
-  clearFormSnapshot: (tabId: string) => void
   updateTabPath: (tabId: string, path: string, search: string) => void
 }
 
@@ -72,7 +69,6 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>((set, get) => ({
       title: '',
       pageType,
       isDirty: false,
-      formSnapshot: null,
       sidebarPanel: null,
       createdAt: Date.now(),
     }
@@ -100,7 +96,6 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>((set, get) => ({
       title,
       pageType: 'sidebar-entry',
       isDirty: false,
-      formSnapshot: null,
       sidebarPanel: panelData,
       createdAt: Date.now(),
     }
@@ -145,22 +140,6 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>((set, get) => ({
   setTabDirty: (tabId, isDirty) => {
     set((state) => ({
       tabs: updateTab(state.tabs, tabId, (t) => ({ ...t, isDirty })),
-    }))
-  },
-
-  saveFormSnapshot: (tabId, snapshot) => {
-    set((state) => ({
-      tabs: updateTab(state.tabs, tabId, (t) => ({
-        ...t,
-        formSnapshot: snapshot,
-        isDirty: true,
-      })),
-    }))
-  },
-
-  clearFormSnapshot: (tabId) => {
-    set((state) => ({
-      tabs: updateTab(state.tabs, tabId, (t) => ({ ...t, formSnapshot: null })),
     }))
   },
 

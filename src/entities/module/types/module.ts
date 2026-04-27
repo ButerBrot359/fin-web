@@ -11,6 +11,7 @@ export interface ModuleElement {
   code: string
   type: ModuleElementType
   domainKind: string | null
+  skipDependsOn?: boolean
   nameRu: string
   nameKz: string
 }

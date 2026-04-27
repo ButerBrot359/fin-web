@@ -11,10 +11,11 @@ import { DictionaryTable } from './dictionary-table'
 export const DictionaryPage = () => {
   const navigate = useNavigate()
   const { moduleCode = '', pageCode = '' } = useParams()
-  const [domain] = useState(
-    () =>
-      new URLSearchParams(window.location.search).get('domain') ?? 'DICTIONARY'
+  const [searchParams] = useState(
+    () => new URLSearchParams(window.location.search)
   )
+  const domain = searchParams.get('domain') ?? 'DICTIONARY'
+  const skipDependsOn = searchParams.get('skipDependsOn') === 'true'
 
   const { title, attributes, isLoading } = useDictionaryType(domain, moduleCode)
   useTabMeta(title)
@@ -35,6 +36,7 @@ export const DictionaryPage = () => {
         selectedRowId={selectedRowId}
         onSelectRow={setSelectedRowId}
         domain={domain}
+        skipDependsOn={skipDependsOn}
       />
     </div>
   )

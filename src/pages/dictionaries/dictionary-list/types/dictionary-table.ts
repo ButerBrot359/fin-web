@@ -5,4 +5,5 @@ export interface DictionaryTableProps {
   selectedRowId: number | null
   onSelectRow: (id: number) => void
   domain: string
+  skipDependsOn?: boolean
 }

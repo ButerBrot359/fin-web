@@ -6,11 +6,20 @@ import type { DictEntry } from '@/features/dict-sidebar/api/dict-sidebar-api'
 
 const EMPTY_LIST: DictEntry[] = []
 
-export const useDictionaryEntries = (domain: string, typeCode: string) => {
+export const useDictionaryEntries = (
+  domain: string,
+  typeCode: string,
+  skipDependsOn?: boolean
+) => {
   const { data, isLoading } = useQuery({
-    queryKey: ['dict-entries', domain, typeCode],
+    queryKey: ['dict-entries', domain, typeCode, skipDependsOn],
     queryFn: ({ signal }) =>
-      fetchDictEntriesPaged(domain, typeCode, { page: 0, size: 100 }, signal),
+      fetchDictEntriesPaged(
+        domain,
+        typeCode,
+        { page: 0, size: 100, ...(skipDependsOn && { skipDependsOn: true }) },
+        signal
+      ),
     staleTime: 60 * 1000,
   })
 

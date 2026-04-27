@@ -14,9 +14,11 @@ export const ModuleNavItem = ({ item, pageCode }: NavItemProps) => {
   const { i18n } = useTranslation()
 
   const basePath = `/modules/${pageCode}/${item.type.toLowerCase()}/${item.code}`
-  const url = item.domainKind
-    ? `${basePath}?domain=${item.domainKind}`
-    : basePath
+  const params = new URLSearchParams()
+  if (item.domainKind) params.set('domain', item.domainKind)
+  if (item.skipDependsOn) params.set('skipDependsOn', 'true')
+  const query = params.toString()
+  const url = query ? `${basePath}?${query}` : basePath
 
   return (
     <li>

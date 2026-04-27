@@ -29,7 +29,7 @@ export const DocumentEntryPage = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
-  const { title, nameRu, nameKz, attributes } = useDocumentType(moduleCode)
+  const { title, attributes } = useDocumentType(moduleCode)
   const { config, isLoading: isLoadingConfig } =
     useOptionalFormConfig(moduleCode)
   const { form, isNew, existingEntry, isLoading } = useDocumentEntryForm()
@@ -54,7 +54,7 @@ export const DocumentEntryPage = () => {
     attributes,
   })
 
-  const { handlePrint, isPrintLoading } = useDocumentEntryPrint({
+  const { printCommands, handlePrint, isPrintLoading } = useDocumentEntryPrint({
     moduleCode,
     entryId: existingEntry?.id,
   })
@@ -93,8 +93,7 @@ export const DocumentEntryPage = () => {
         print={{
           onPrint: handlePrint,
           isLoading: isPrintLoading,
-          nameRu,
-          nameKz,
+          commands: printCommands,
         }}
         onMovements={handleMovements}
       />

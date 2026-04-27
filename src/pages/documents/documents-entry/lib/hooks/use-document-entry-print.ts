@@ -1,6 +1,6 @@
-import { useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 
-import { printDocumentEntry } from '@/entities/document-entry'
+import { getPrintCommands, printDocumentEntry } from '@/entities/document-entry'
 
 import type { UseDocumentEntryPrintParams } from '../../types/document-entry-print'
 
@@ -8,10 +8,19 @@ export const useDocumentEntryPrint = ({
   moduleCode,
   entryId,
 }: UseDocumentEntryPrintParams) => {
+  const { data: printCommands = [], isLoading: isCommandsLoading } = useQuery({
+    queryKey: ['print-commands', moduleCode],
+    queryFn: async () => {
+      const response = await getPrintCommands(moduleCode)
+      return response.data
+    },
+    enabled: !!moduleCode,
+  })
+
   const { mutate, isPending } = useMutation({
-    mutationFn: async (language?: string) => {
+    mutationFn: async (form?: string) => {
       if (!entryId) throw new Error('Cannot print without entry ID')
-      const response = await printDocumentEntry(moduleCode, entryId, language)
+      const response = await printDocumentEntry(moduleCode, entryId, form)
       return response.data
     },
     onSuccess: (blob: Blob) => {
@@ -20,10 +29,15 @@ export const useDocumentEntryPrint = ({
     },
   })
 
-  const handlePrint = (language?: string) => {
+  const handlePrint = (form?: string) => {
     if (!entryId) return
-    mutate(language)
+    mutate(form)
   }
 
-  return { handlePrint, isPrintLoading: isPending }
+  return {
+    printCommands,
+    isCommandsLoading,
+    handlePrint,
+    isPrintLoading: isPending,
+  }
 }

@@ -38,3 +38,11 @@ export type DocumentEntriesResponseData = ApiResponse<
 export type DocumentEntryNewResponseData = ApiResponse<DocumentEntry>
 
 export type DocumentEntryResponseData = ApiResponse<DocumentEntry>
+
+export interface PrintCommand {
+  checkBeforePrint: boolean
+  handler: string
+  order: number
+  name: string
+  id: string
+}

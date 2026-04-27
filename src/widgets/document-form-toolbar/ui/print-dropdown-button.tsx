@@ -3,20 +3,20 @@ import { useTranslation } from 'react-i18next'
 import { CircularProgress, Popover, Typography } from '@mui/material'
 import Close from '@mui/icons-material/Close'
 
+import type { PrintCommand } from '@/entities/document-entry'
+
 import ArrowDownIcon from '@/shared/assets/icons/arrow-down.svg'
 import { cn } from '@/shared/lib/utils/cn'
 
 interface PrintDropdownButtonProps {
-  nameRu: string
-  nameKz: string
+  commands: PrintCommand[]
   disabled?: boolean
   loading?: boolean
-  onPrint?: (language?: string) => void
+  onPrint?: (form?: string) => void
 }
 
 export const PrintDropdownButton = ({
-  nameRu,
-  nameKz,
+  commands,
   disabled,
   loading,
   onPrint,
@@ -36,8 +36,8 @@ export const PrintDropdownButton = ({
     setAnchorEl(null)
   }
 
-  const handleSelect = (language?: string) => {
-    onPrint?.(language)
+  const handleSelect = (form?: string) => {
+    onPrint?.(form)
     setAnchorEl(null)
   }
 
@@ -84,26 +84,21 @@ export const PrintDropdownButton = ({
         }}
       >
         <div className="flex flex-col">
-          <button
-            type="button"
-            onClick={() => {
-              handleSelect(undefined)
-            }}
-            className="cursor-pointer border-b border-ui-03 px-4 py-2.5 text-left transition-colors hover:bg-ui-04 active:bg-ui-03"
-          >
-            <Typography variant="body1">{nameRu}</Typography>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              handleSelect('Kz')
-            }}
-            className="cursor-pointer px-4 py-2.5 text-left transition-colors hover:bg-ui-04 active:bg-ui-03"
-          >
-            <Typography variant="body1">
-              {nameKz} ({t('documentFormToolbar.kazSuffix')})
-            </Typography>
-          </button>
+          {commands.map((command, index) => (
+            <button
+              key={command.id}
+              type="button"
+              onClick={() => {
+                handleSelect(command.id)
+              }}
+              className={cn(
+                'cursor-pointer px-4 py-2.5 text-left transition-colors hover:bg-ui-04 active:bg-ui-03',
+                index < commands.length - 1 && 'border-b border-ui-03'
+              )}
+            >
+              <Typography variant="body1">{command.name}</Typography>
+            </button>
+          ))}
         </div>
       </Popover>
     </>

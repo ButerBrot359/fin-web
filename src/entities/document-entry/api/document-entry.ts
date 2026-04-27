@@ -4,6 +4,7 @@ import type {
   DocumentEntriesResponseData,
   DocumentEntryNewResponseData,
   DocumentEntryResponseData,
+  PrintCommand,
 } from '../types/document-entry'
 
 export const getDocumentEntries = (typeCode: string) =>
@@ -43,12 +44,17 @@ export const updateDocumentEntry = (
     data: payload,
   })
 
+export const getPrintCommands = (typeCode: string) =>
+  apiService.get<PrintCommand[]>({
+    url: `/api/document-entries/${typeCode}/print-commands`,
+  })
+
 export const printDocumentEntry = (
   typeCode: string,
   id: number,
-  language?: string
+  form?: string
 ) =>
   apiService.getFileBlob({
     url: `/api/document-entries/${typeCode}/${String(id)}/print`,
-    params: language ? { language } : undefined,
+    params: form ? { form } : undefined,
   })

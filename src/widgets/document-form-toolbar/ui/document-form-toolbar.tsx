@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
+import type { PrintCommand } from '@/entities/document-entry'
+
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { PrintDropdownButton } from './print-dropdown-button'
 import DebetKreditIcon from '@/shared/assets/icons/debet-kredit.svg'
@@ -13,10 +15,9 @@ interface DocumentFormActions {
 }
 
 interface DocumentFormPrint {
-  onPrint: (language?: string) => void
+  onPrint: (form?: string) => void
   isLoading?: boolean
-  nameRu?: string
-  nameKz?: string
+  commands: PrintCommand[]
 }
 
 interface DocumentFormToolbarProps {
@@ -49,8 +50,7 @@ export const DocumentFormToolbar = ({
           {t('documentFormToolbar.post')}
         </Button>
         <PrintDropdownButton
-          nameRu={print.nameRu ?? ''}
-          nameKz={print.nameKz ?? ''}
+          commands={print.commands}
           disabled={isNew || isDirty}
           loading={print.isLoading}
           onPrint={print.onPrint}

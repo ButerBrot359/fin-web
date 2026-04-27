@@ -18,9 +18,9 @@ export function useTabFormPersistence(
   const [resolvedId] = useState(() => tabId ?? pathname)
   const restoredRef = useRef(false)
 
-  // Save form snapshot on EVERY change via watch — no cleanup dependency
+  // Save form snapshot on EVERY change via watch — only after data has loaded
   useEffect(() => {
-    if (!resolvedId) return
+    if (!resolvedId || isLoading) return
 
     const subscription = form.watch(() => {
       const values = form.getValues()
@@ -34,7 +34,7 @@ export function useTabFormPersistence(
     return () => {
       subscription.unsubscribe()
     }
-  }, [resolvedId, form])
+  }, [resolvedId, form, isLoading])
 
   // Restore form snapshot after data loads
   useEffect(() => {

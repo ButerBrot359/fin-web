@@ -14,6 +14,7 @@ import type { DocumentAttribute } from '@/entities/document-type'
 import type { ApiResponse } from '@/shared/types/api.types'
 import { useOptionalFormConfig } from '@/entities/form-config'
 import { FormRenderer } from '@/features/form-renderer'
+import { useTabMeta, useTabFormPersistence } from '@/features/workspace-tabs'
 import {
   fetchDictTypeMetadata,
   fetchDictEntryById,
@@ -98,6 +99,9 @@ export const DictionaryEntryPage = () => {
       ? getLocalizedName(entryData, i18n.language)
       : typeName
   const pageTitle = isDirty ? `${baseTitle} *` : baseTitle
+
+  useTabMeta(baseTitle)
+  useTabFormPersistence(form, { isLoading: isLoadingEntry })
 
   const buildPayload = (
     data: Record<string, unknown>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { useDocumentType } from '@/entities/document-type'
+import { useTabMeta } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { DocumentListToolbar } from '@/widgets/document-list-toolbar'
 
@@ -12,6 +13,7 @@ export const DocumentPage = () => {
 
   const { moduleCode = '', pageCode = '' } = useParams()
   const { title, attributes } = useDocumentType(moduleCode)
+  useTabMeta(title)
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
 
   const handleClose = () => {

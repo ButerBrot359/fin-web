@@ -7,6 +7,7 @@ import { TopBar } from '@/widgets/top-bar'
 import { Sidebar } from '@/widgets/sidebar'
 
 import { DictSidebarDrawer } from '@/features/dict-sidebar'
+import { WorkspaceTabSync } from '@/widgets/workspace-tab-bar'
 
 import { Toaster } from '@/shared/ui/toast/toast'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
@@ -89,6 +90,7 @@ const AppRoutes = () => {
 function App() {
   return (
     <BrowserRouter>
+      <WorkspaceTabSync />
       <Layout sidebar={<Sidebar />} header={<TopBar />}>
         <AppRoutes />
       </Layout>

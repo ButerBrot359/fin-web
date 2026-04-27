@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
+import { useTabMeta } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { DictionaryListToolbar } from '@/widgets/dictionary-list-toolbar'
 
@@ -16,6 +17,7 @@ export const DictionaryPage = () => {
   )
 
   const { title, attributes, isLoading } = useDictionaryType(domain, moduleCode)
+  useTabMeta(title)
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
 
   const handleClose = () => {

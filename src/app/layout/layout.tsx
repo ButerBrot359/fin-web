@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 
+import { WorkspaceTabBar } from '@/widgets/workspace-tab-bar'
+
 interface LayoutProps {
   sidebar: ReactNode
   header?: ReactNode
@@ -10,9 +12,10 @@ export const Layout = ({ sidebar, header, children }: LayoutProps) => {
   return (
     <div className="flex h-screen w-full bg-ui-06">
       {sidebar}
-      <div className="flex min-w-0 flex-1 flex-col rounded-tl-4xl rounded-bl-4xl bg-ui-02 p-10 pl-8">
+      <div className="flex min-w-0 flex-1 flex-col rounded-tl-4xl rounded-bl-4xl bg-ui-02 p-8 pb-0">
         <header>{header}</header>
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="min-h-0 flex-1 overflow-auto">{children}</main>
+        <WorkspaceTabBar />
       </div>
     </div>
   )

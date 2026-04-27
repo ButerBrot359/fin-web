@@ -10,6 +10,7 @@ import {
   type ColumnDef,
 } from '@tanstack/react-table'
 
+import { useTabMeta } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { DropdownButton } from '@/shared/ui/buttons'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
@@ -181,6 +182,7 @@ export const DocumentMovementsPage = () => {
   const docTitle = searchParams.get('title')
   const movementsLabel = t('documentMovements.title')
   const pageTitle = docTitle ? `${movementsLabel}: ${docTitle}` : movementsLabel
+  useTabMeta(pageTitle)
 
   const handleClose = () => {
     void navigate(`/modules/${pageCode}/document/${moduleCode}/${entryId}`)

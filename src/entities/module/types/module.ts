@@ -4,6 +4,7 @@ export enum ModuleElementType {
   Document = 'Document',
   Dictionary = 'Dictionary',
   Report = 'Report',
+  InformationRegister = 'InformationRegister',
 }
 
 export interface ModuleElement {

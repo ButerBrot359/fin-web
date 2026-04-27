@@ -11,6 +11,10 @@ const patterns: [RegExp, TabPageType][] = [
   [/^\/modules\/[^/]+\/dictionary\/[^/]+\/new$/, 'dictionary-entry'],
   [/^\/modules\/[^/]+\/dictionary\/[^/]+\/[^/]+$/, 'dictionary-entry'],
   [/^\/modules\/[^/]+\/dictionary\/[^/]+$/, 'dictionary-list'],
+  [
+    /^\/modules\/[^/]+\/informationregister\/[^/]+$/,
+    'information-register-list',
+  ],
   [/^\/modules\/[^/]+$/, 'module'],
 ]
 

@@ -43,6 +43,13 @@ const DictionaryEntryPage = lazy(() =>
     default: m.DictionaryEntryPage,
   }))
 )
+const InformationRegisterPage = lazy(() =>
+  import('@/pages/information-register/information-register-list').then(
+    (m) => ({
+      default: m.InformationRegisterPage,
+    })
+  )
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -80,6 +87,10 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/dictionary/:moduleCode/:entryId"
             element={<DictionaryEntryPage />}
+          />
+          <Route
+            path="/modules/:pageCode/informationregister/:moduleCode"
+            element={<InformationRegisterPage />}
           />
         </Routes>
       </Suspense>

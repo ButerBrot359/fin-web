@@ -19,12 +19,13 @@ export const DictionaryTable = ({
   selectedRowId,
   onSelectRow,
   domain,
+  skipDependsOn,
 }: DictionaryTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { moduleCode = '', pageCode = '' } = useParams()
 
-  const { entries } = useDictionaryEntries(domain, moduleCode)
+  const { entries } = useDictionaryEntries(domain, moduleCode, skipDependsOn)
   const columns = useDictionaryColumns(attributes)
 
   const table = useReactTable({

@@ -1,0 +1,148 @@
+{
+  "name": "BankovskieScheta",
+  "title": "Банковские счета",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "Vladelets"
+              },
+              {
+                "type": "Field",
+                "code": "Organizatsiya"
+              },
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "Kod",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "EtoOsnovnoySchet",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "Naimenovaniya"
+              },
+              {
+                "type": "Field",
+                "code": "ProizvolnoeNaimenovanieScheta"
+              },
+              {
+                "type": "Field",
+                "code": "NomerScheta"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "Bank"
+              },
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "ValyutaScheta",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "VidScheta",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "DataOtkrytiya",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "DataZakrytiya",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "SchetBank"
+              },
+              {
+                "type": "Field",
+                "code": "MesyatsPropisyu"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Tabs",
+        "panes": [
+          {
+            "key": "correspondent",
+            "label": "Корреспондент",
+            "children": [
+              {
+                "type": "Field",
+                "code": "IspolzovatBankKorrespondent"
+              },
+              {
+                "type": "Field",
+                "code": "BankDlyaRaschetov"
+              },
+              {
+                "type": "Field",
+                "code": "Korrespondent"
+              },
+              {
+                "type": "Field",
+                "code": "Filial"
+              }
+            ]
+          },
+          {
+            "key": "additional",
+            "label": "Дополнительно",
+            "children": [
+              {
+                "type": "Field",
+                "code": "TekstNaznacheniya"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

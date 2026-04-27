@@ -8,6 +8,7 @@ export type TabPageType =
   | 'dictionary-list'
   | 'dictionary-entry'
   | 'sidebar-entry'
+  | 'information-register-list'
 
 export interface FormSnapshot {
   values: Record<string, unknown>

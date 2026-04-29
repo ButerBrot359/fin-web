@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   useQuery,
@@ -14,7 +14,7 @@ import type { DocumentAttribute } from '@/entities/document-type'
 import type { ApiResponse } from '@/shared/types/api.types'
 import { useOptionalFormConfig } from '@/entities/form-config'
 import { FormRenderer } from '@/features/form-renderer'
-import { useTabMeta, useTabFormPersistence } from '@/features/workspace-tabs'
+import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import {
   fetchDictTypeMetadata,
   fetchDictEntryById,
@@ -38,6 +38,7 @@ export const DictionaryEntryPage = () => {
   )
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
 
   const isNew = !entryId
@@ -101,7 +102,6 @@ export const DictionaryEntryPage = () => {
   const pageTitle = isDirty ? `${baseTitle} *` : baseTitle
 
   useTabMeta(baseTitle)
-  useTabFormPersistence(form, { isLoading: isLoadingEntry })
 
   const buildPayload = (
     data: Record<string, unknown>
@@ -139,7 +139,8 @@ export const DictionaryEntryPage = () => {
   >({
     mutationFn: (data) =>
       createDictEntry(domain, moduleCode, buildPayload(data)),
-    onSuccess: (res) => {
+    onSuccess: (res, data) => {
+      form.reset(data)
       const entry = res.data.data
       setSavedEntryId(entry.id)
       invalidateEntries()
@@ -161,7 +162,8 @@ export const DictionaryEntryPage = () => {
   >({
     mutationFn: (data) =>
       updateDictEntry(domain, savedEntryId!, buildPayload(data)),
-    onSuccess: () => {
+    onSuccess: (_res, data) => {
+      form.reset(data)
       invalidateEntries()
       showToast('success', t('dictSidebar.saved'))
     },
@@ -180,9 +182,14 @@ export const DictionaryEntryPage = () => {
     }
   })
 
+  const closeCurrentTab = () => {
+    useWorkspaceTabsStore.getState().closeTab(location.pathname)
+  }
+
   const handleSaveAndClose = form.handleSubmit((data) => {
     const onDone = () => {
       invalidateEntries()
+      closeCurrentTab()
       void navigate(listPath)
     }
 
@@ -207,6 +214,7 @@ export const DictionaryEntryPage = () => {
     if (isDirty) {
       setShowUnsavedDialog(true)
     } else {
+      closeCurrentTab()
       void navigate(listPath)
     }
   }
@@ -248,6 +256,7 @@ export const DictionaryEntryPage = () => {
         }}
         onDiscard={() => {
           setShowUnsavedDialog(false)
+          closeCurrentTab()
           void navigate(listPath)
         }}
         onCancel={() => {

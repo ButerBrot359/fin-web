@@ -7,7 +7,6 @@ import type { AxiosResponse } from 'axios'
 import type { DocumentType, DocumentAttribute } from '@/entities/document-type'
 import type { ApiResponse } from '@/shared/types/api.types'
 import { FormRenderer } from '@/features/form-renderer'
-import { useTabMeta, useTabFormPersistence } from '@/features/workspace-tabs'
 import { Button } from '@/shared/ui/buttons/button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -46,7 +45,6 @@ export const DictSidebarFormView = ({
   )
   const isEdit = !!savedEntryId
 
-  const sidebarTabId = `sidebar-${panel.id}`
   const form = useForm<Record<string, unknown>>()
 
   const { data: entryData, isLoading: isLoadingEntry } = useQuery<
@@ -59,12 +57,6 @@ export const DictSidebarFormView = ({
       fetchDictEntryById(panel.domain, savedEntryId!, signal),
     enabled: !!savedEntryId,
     select: (res) => res.data.data,
-  })
-
-  useTabMeta(panel.title || typeName, sidebarTabId)
-  useTabFormPersistence(form, {
-    isLoading: isLoadingEntry,
-    tabId: sidebarTabId,
   })
 
   useEffect(() => {
@@ -145,7 +137,8 @@ export const DictSidebarFormView = ({
   >({
     mutationFn: (data) =>
       createDictEntry(panel.domain, panel.typeCode, buildPayload(data)),
-    onSuccess: (res) => {
+    onSuccess: (res, data) => {
+      form.reset(data)
       const entry = res.data.data
       setSavedEntryId(entry.id)
       invalidateEntries()
@@ -171,7 +164,8 @@ export const DictSidebarFormView = ({
   >({
     mutationFn: (data) =>
       updateDictEntry(panel.domain, savedEntryId!, buildPayload(data)),
-    onSuccess: (res) => {
+    onSuccess: (res, data) => {
+      form.reset(data)
       invalidateEntries()
       panel.onSelect?.(buildSelectOption(res.data.data))
       showToast('success', t('dictSidebar.saved'))

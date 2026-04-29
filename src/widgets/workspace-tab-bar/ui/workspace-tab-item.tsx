@@ -17,7 +17,7 @@ export const WorkspaceTabItem = ({
   onActivate,
   onClose,
 }: WorkspaceTabItemProps) => {
-  const displayTitle = tab.isDirty ? `${tab.title} *` : tab.title
+  const displayTitle = tab.title
 
   return (
     <button

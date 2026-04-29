@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { useDocumentType } from '@/entities/document-type'
 import { useOptionalFormConfig } from '@/entities/form-config'
 
 import { FormRenderer } from '@/features/form-renderer'
-import { useTabMeta, useTabFormPersistence } from '@/features/workspace-tabs'
+import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 
 import { PageHeader } from '@/widgets/page-header'
 import { DocumentFormToolbar } from '@/widgets/document-form-toolbar'
@@ -28,6 +28,7 @@ export const DocumentEntryPage = () => {
   const { moduleCode = '', pageCode = '' } = useParams()
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const { title, attributes } = useDocumentType(moduleCode)
   const { config, isLoading: isLoadingConfig } =
@@ -45,7 +46,6 @@ export const DocumentEntryPage = () => {
   const pageTitle = isDirty ? `${baseTitle} *` : baseTitle
 
   useTabMeta(baseTitle)
-  useTabFormPersistence(form, { isLoading })
 
   const actions = useDocumentEntryActions({
     isNew,
@@ -59,9 +59,14 @@ export const DocumentEntryPage = () => {
     entryId: existingEntry?.id,
   })
 
+  const closeCurrentTab = () => {
+    useWorkspaceTabsStore.getState().closeTab(location.pathname)
+  }
+
   const unsavedDialog = useUnsavedChangesDialog({
     onSave: actions.handleSaveAndClose,
     onDiscard: () => {
+      closeCurrentTab()
       void navigate(listPath)
     },
   })
@@ -70,6 +75,7 @@ export const DocumentEntryPage = () => {
     if (isDirty) {
       unsavedDialog.open()
     } else {
+      closeCurrentTab()
       void navigate(listPath)
     }
   }

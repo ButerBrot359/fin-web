@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
@@ -7,6 +7,7 @@ import {
   updateDocumentEntry,
 } from '@/entities/document-entry'
 import type { CreateDocumentEntryPayload } from '@/entities/document-entry'
+import { useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type {
@@ -29,6 +30,7 @@ export const useDocumentEntryActions = ({
 }: UseDocumentEntryActionsParams) => {
   const { moduleCode = '', pageCode = '' } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
@@ -69,6 +71,7 @@ export const useDocumentEntryActions = ({
           const entry = response.data.data as { id: number }
 
           if (shouldClose) {
+            useWorkspaceTabsStore.getState().closeTab(location.pathname)
             void navigate(listPath)
           } else if (isNew) {
             void navigate(

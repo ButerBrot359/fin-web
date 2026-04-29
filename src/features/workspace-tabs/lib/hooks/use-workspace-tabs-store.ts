@@ -1,11 +1,7 @@
 import { create } from 'zustand'
 
 import { MAX_TABS } from '../consts/workspace-tabs-config'
-import type {
-  WorkspaceTab,
-  TabPageType,
-  SidebarPanelData,
-} from '../../types/workspace-tab'
+import type { WorkspaceTab, TabPageType } from '../../types/workspace-tab'
 
 interface WorkspaceTabsStore {
   tabs: WorkspaceTab[]
@@ -16,22 +12,10 @@ interface WorkspaceTabsStore {
     search: string,
     pageType: TabPageType
   ) => string | null
-  addSidebarTab: (
-    panelId: string,
-    panelData: SidebarPanelData,
-    title: string
-  ) => string
   closeTab: (tabId: string) => WorkspaceTab | undefined
   setActiveTab: (tabId: string) => void
   setTabTitle: (tabId: string, title: string) => void
-  setTabDirty: (tabId: string, isDirty: boolean) => void
   updateTabPath: (tabId: string, path: string, search: string) => void
-}
-
-function evictOldestNonDirty(tabs: WorkspaceTab[]): WorkspaceTab[] {
-  const idx = tabs.findIndex((t) => !t.isDirty)
-  if (idx === -1) return tabs
-  return [...tabs.slice(0, idx), ...tabs.slice(idx + 1)]
 }
 
 function updateTab(
@@ -51,7 +35,7 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>((set, get) => ({
 
     const { tabs } = get()
 
-    const existing = tabs.find((t) => t.path === path && !t.sidebarPanel)
+    const existing = tabs.find((t) => t.path === path)
     if (existing) {
       set({
         activeTabId: existing.id,
@@ -68,44 +52,15 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>((set, get) => ({
       search,
       title: '',
       pageType,
-      isDirty: false,
-      sidebarPanel: null,
       createdAt: Date.now(),
     }
 
     let newTabs = [...tabs, tab]
     if (newTabs.length > MAX_TABS) {
-      newTabs = evictOldestNonDirty(newTabs)
+      newTabs = [newTabs[0], ...newTabs.slice(2)]
     }
 
     set({ tabs: newTabs, activeTabId: id })
-    return id
-  },
-
-  addSidebarTab: (panelId, panelData, title) => {
-    const id = `sidebar-${panelId}`
-    const { tabs } = get()
-
-    const existing = tabs.find((t) => t.id === id)
-    if (existing) return existing.id
-
-    const tab: WorkspaceTab = {
-      id,
-      path: '',
-      search: '',
-      title,
-      pageType: 'sidebar-entry',
-      isDirty: false,
-      sidebarPanel: panelData,
-      createdAt: Date.now(),
-    }
-
-    let newTabs = [...tabs, tab]
-    if (newTabs.length > MAX_TABS) {
-      newTabs = evictOldestNonDirty(newTabs)
-    }
-
-    set({ tabs: newTabs })
     return id
   },
 
@@ -134,12 +89,6 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>((set, get) => ({
   setTabTitle: (tabId, title) => {
     set((state) => ({
       tabs: updateTab(state.tabs, tabId, (t) => ({ ...t, title })),
-    }))
-  },
-
-  setTabDirty: (tabId, isDirty) => {
-    set((state) => ({
-      tabs: updateTab(state.tabs, tabId, (t) => ({ ...t, isDirty })),
     }))
   },
 

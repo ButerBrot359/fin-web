@@ -5,7 +5,7 @@ import { useDocumentType } from '@/entities/document-type'
 import { useOptionalFormConfig } from '@/entities/form-config'
 
 import { FormRenderer } from '@/features/form-renderer'
-import { useTabMeta, useTabFormPersistence } from '@/features/workspace-tabs'
+import { useTabMeta } from '@/features/workspace-tabs'
 
 import { PageHeader } from '@/widgets/page-header'
 import { DocumentFormToolbar } from '@/widgets/document-form-toolbar'
@@ -45,7 +45,6 @@ export const DocumentEntryPage = () => {
   const pageTitle = isDirty ? `${baseTitle} *` : baseTitle
 
   useTabMeta(baseTitle)
-  useTabFormPersistence(form, { isLoading })
 
   const actions = useDocumentEntryActions({
     isNew,

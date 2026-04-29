@@ -145,7 +145,8 @@ export const DictSidebarFormView = ({
   >({
     mutationFn: (data) =>
       createDictEntry(panel.domain, panel.typeCode, buildPayload(data)),
-    onSuccess: (res) => {
+    onSuccess: (res, data) => {
+      form.reset(data)
       const entry = res.data.data
       setSavedEntryId(entry.id)
       invalidateEntries()
@@ -171,7 +172,8 @@ export const DictSidebarFormView = ({
   >({
     mutationFn: (data) =>
       updateDictEntry(panel.domain, savedEntryId!, buildPayload(data)),
-    onSuccess: (res) => {
+    onSuccess: (res, data) => {
+      form.reset(data)
       invalidateEntries()
       panel.onSelect?.(buildSelectOption(res.data.data))
       showToast('success', t('dictSidebar.saved'))

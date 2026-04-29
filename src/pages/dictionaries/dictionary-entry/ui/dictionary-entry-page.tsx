@@ -139,7 +139,8 @@ export const DictionaryEntryPage = () => {
   >({
     mutationFn: (data) =>
       createDictEntry(domain, moduleCode, buildPayload(data)),
-    onSuccess: (res) => {
+    onSuccess: (res, data) => {
+      form.reset(data)
       const entry = res.data.data
       setSavedEntryId(entry.id)
       invalidateEntries()
@@ -161,7 +162,8 @@ export const DictionaryEntryPage = () => {
   >({
     mutationFn: (data) =>
       updateDictEntry(domain, savedEntryId!, buildPayload(data)),
-    onSuccess: () => {
+    onSuccess: (_res, data) => {
+      form.reset(data)
       invalidateEntries()
       showToast('success', t('dictSidebar.saved'))
     },

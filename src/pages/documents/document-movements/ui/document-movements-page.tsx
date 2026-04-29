@@ -1,5 +1,10 @@
 import { useMemo, useState } from 'react'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import {
+  useParams,
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Typography } from '@mui/material'
@@ -10,7 +15,7 @@ import {
   type ColumnDef,
 } from '@tanstack/react-table'
 
-import { useTabMeta } from '@/features/workspace-tabs'
+import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { DropdownButton } from '@/shared/ui/buttons'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
@@ -163,6 +168,7 @@ export const DocumentMovementsPage = () => {
   const { entryId = '', pageCode = '', moduleCode = '' } = useParams()
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
 
   const { data, isLoading } = useQuery({
@@ -185,6 +191,7 @@ export const DocumentMovementsPage = () => {
   useTabMeta(pageTitle)
 
   const handleClose = () => {
+    useWorkspaceTabsStore.getState().closeTab(location.pathname)
     void navigate(`/modules/${pageCode}/document/${moduleCode}/${entryId}`)
   }
 

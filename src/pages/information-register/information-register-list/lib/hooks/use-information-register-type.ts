@@ -5,12 +5,15 @@ import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
 import { getInformationRegisterType } from '../../api/information-register-api'
 
-export const useInformationRegisterType = (typeCode: string) => {
+export const useInformationRegisterType = (
+  domain: string,
+  typeCode: string
+) => {
   const { i18n } = useTranslation()
 
   const { data, isLoading } = useQuery({
-    queryKey: ['information-register-type', typeCode],
-    queryFn: () => getInformationRegisterType(typeCode),
+    queryKey: ['information-register-type', domain, typeCode],
+    queryFn: () => getInformationRegisterType(domain, typeCode),
     staleTime: 5 * 60 * 1000,
     select: (res) => res.data.data,
   })

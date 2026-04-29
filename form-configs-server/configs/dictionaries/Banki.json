@@ -1,0 +1,128 @@
+{
+  "name": "Banki",
+  "title": "Банки",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "Kod"
+              },
+              {
+                "type": "Field",
+                "code": "Naimenovaniya"
+              },
+              {
+                "type": "Field",
+                "code": "PolnoeNaimenovanie"
+              },
+              {
+                "type": "Field",
+                "code": "NaimenovanieKaz"
+              },
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "BIK",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "KorrSchet",
+                    "flex": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "BIN",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "IdentifikatsionnyyNomer",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "RNN"
+              },
+              {
+                "type": "Field",
+                "code": "KodVPlatezhnoySisteme"
+              },
+              {
+                "type": "Field",
+                "code": "RuchnoeIzmenenie"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Tabs",
+        "panes": [
+          {
+            "key": "location",
+            "label": "Местонахождение",
+            "children": [
+              {
+                "type": "Field",
+                "code": "Strana"
+              },
+              {
+                "type": "Field",
+                "code": "Gorod"
+              },
+              {
+                "type": "Field",
+                "code": "Adres"
+              },
+              {
+                "type": "Field",
+                "code": "Telefony"
+              }
+            ]
+          },
+          {
+            "key": "commission",
+            "label": "Комиссия банка",
+            "children": [
+              {
+                "type": "Field",
+                "code": "KomissiyaBanka"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

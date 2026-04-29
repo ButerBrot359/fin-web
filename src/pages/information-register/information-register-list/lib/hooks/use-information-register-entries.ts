@@ -6,10 +6,13 @@ import type { InformationRegisterEntry } from '../../types/information-register'
 
 const EMPTY_LIST: InformationRegisterEntry[] = []
 
-export const useInformationRegisterEntries = (typeCode: string) => {
+export const useInformationRegisterEntries = (
+  domain: string,
+  typeCode: string
+) => {
   const { data, isLoading } = useQuery({
-    queryKey: ['information-register-entries', typeCode],
-    queryFn: () => getInformationRegisterEntries(typeCode),
+    queryKey: ['information-register-entries', domain, typeCode],
+    queryFn: () => getInformationRegisterEntries(domain, typeCode),
     staleTime: 60 * 1000,
   })
 

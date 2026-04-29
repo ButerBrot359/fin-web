@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { useTabMeta } from '@/features/workspace-tabs'
@@ -9,9 +10,15 @@ import { InformationRegisterTable } from './information-register-table'
 export const InformationRegisterPage = () => {
   const navigate = useNavigate()
   const { moduleCode = '', pageCode = '' } = useParams()
+  const [searchParams] = useState(
+    () => new URLSearchParams(window.location.search)
+  )
+  const domain = searchParams.get('domain') ?? 'INFORMATION_REGISTER'
 
-  const { title, attributes, isLoading } =
-    useInformationRegisterType(moduleCode)
+  const { title, attributes, isLoading } = useInformationRegisterType(
+    domain,
+    moduleCode
+  )
   useTabMeta(title)
 
   const handleClose = () => {
@@ -23,7 +30,7 @@ export const InformationRegisterPage = () => {
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={title} onClose={handleClose} />
-      <InformationRegisterTable attributes={attributes} />
+      <InformationRegisterTable attributes={attributes} domain={domain} />
     </div>
   )
 }

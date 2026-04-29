@@ -7,4 +7,5 @@ export interface InformationRegisterEntry {
 
 export interface InformationRegisterTableProps {
   attributes: DocumentAttribute[]
+  domain: string
 }

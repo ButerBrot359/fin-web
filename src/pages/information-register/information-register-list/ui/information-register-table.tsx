@@ -15,11 +15,12 @@ import type { InformationRegisterTableProps } from '../types/information-registe
 
 export const InformationRegisterTable = ({
   attributes,
+  domain,
 }: InformationRegisterTableProps) => {
   const { t } = useTranslation()
   const { moduleCode = '' } = useParams()
 
-  const { entries } = useInformationRegisterEntries(moduleCode)
+  const { entries } = useInformationRegisterEntries(domain, moduleCode)
   const columns = useInformationRegisterColumns(attributes)
 
   const table = useReactTable({

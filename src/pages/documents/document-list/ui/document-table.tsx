@@ -142,7 +142,7 @@ export const DocumentTable = ({
                 <tr
                   key={row.id}
                   onClick={() => {
-                    onSelectRow(row.original.id)
+                    onSelectRow(row.original.id, row.original.nameRu)
                   }}
                   onDoubleClick={() => {
                     handleDoubleClick(row.original.id)

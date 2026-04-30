@@ -8,6 +8,7 @@ export {
   printDocumentEntry,
 } from './api/document-entry'
 export { useDocumentEntries } from './lib/hooks/use-document-entries'
+export { useDocumentEntryPrint } from './lib/hooks/use-document-entry-print'
 export type {
   CreateDocumentEntryPayload,
   DocumentEntry,

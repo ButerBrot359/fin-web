@@ -10,6 +10,10 @@ import LayersIcon from '@/shared/assets/icons/layers.svg'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
+
+import { useDocumentEntryPrint } from '@/entities/document-entry'
+import { PrintDropdownButton } from '@/widgets/document-form-toolbar'
+
 import { SelectOperationDialog } from './select-operation-dialog'
 
 interface EnumsValue {
@@ -28,19 +32,26 @@ interface OnGetFormField {
 
 interface DocumentListToolbarProps {
   selectedRowId?: number | null
+  selectedRowName?: string | null
 }
 
 export const DocumentListToolbar = ({
   selectedRowId,
+  selectedRowName,
 }: DocumentListToolbarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { pageCode, moduleCode } = useParams()
+  const { pageCode = '', moduleCode = '' } = useParams()
   const [search, setSearch] = useState('')
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [operations, setOperations] = useState<EnumsValue[]>([])
   const [isLoadingOperations, setIsLoadingOperations] = useState(false)
+
+  const { printCommands, handlePrint, isPrintLoading } = useDocumentEntryPrint(
+    moduleCode,
+    selectedRowId ?? undefined
+  )
 
   const handleCreate = async () => {
     if (!pageCode || !moduleCode) return
@@ -88,6 +99,16 @@ export const DocumentListToolbar = ({
     setOperations([])
   }
 
+  const handleMovements = () => {
+    if (!selectedRowId) return
+    const params = new URLSearchParams({
+      title: selectedRowName ?? '',
+    })
+    void navigate(
+      `/modules/${pageCode}/document/${moduleCode}/${String(selectedRowId)}/movements?${params.toString()}`
+    )
+  }
+
   return (
     <>
       <div className="flex items-center justify-between pb-3">
@@ -106,6 +127,8 @@ export const DocumentListToolbar = ({
               variant="secondary"
               aria-label={t('actions.debitCredit')}
               startIcon={<DebetKreditIcon className="h-5 w-5" />}
+              disabled={selectedRowId == null}
+              onClick={handleMovements}
             />
             <Button
               variant="secondary"
@@ -118,7 +141,12 @@ export const DocumentListToolbar = ({
             {t('documentListToolbar.editSelected')}
           </Button>
 
-          <DropdownButton label={t('documentListToolbar.print')} />
+          <PrintDropdownButton
+            commands={printCommands}
+            disabled={selectedRowId == null}
+            loading={isPrintLoading}
+            onPrint={handlePrint}
+          />
           <DropdownButton label={t('documentListToolbar.reports')} />
         </div>
 

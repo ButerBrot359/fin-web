@@ -16,6 +16,12 @@ export const DocumentPage = () => {
   const { title, attributes } = useDocumentType(moduleCode)
   useTabMeta(title)
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
+  const [selectedRowName, setSelectedRowName] = useState<string | null>(null)
+
+  const handleSelectRow = (id: number, name: string) => {
+    setSelectedRowId(id)
+    setSelectedRowName(name)
+  }
 
   const handleClose = () => {
     useWorkspaceTabsStore.getState().closeTab(location.pathname)
@@ -25,11 +31,14 @@ export const DocumentPage = () => {
   return (
     <div className="flex flex-col gap-5 pt-5 h-full">
       <PageHeader title={title} onClose={handleClose} />
-      <DocumentListToolbar selectedRowId={selectedRowId} />
+      <DocumentListToolbar
+        selectedRowId={selectedRowId}
+        selectedRowName={selectedRowName}
+      />
       <DocumentTable
         attributes={attributes}
         selectedRowId={selectedRowId}
-        onSelectRow={setSelectedRowId}
+        onSelectRow={handleSelectRow}
       />
     </div>
   )

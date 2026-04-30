@@ -153,7 +153,8 @@
   },
   "table": {
     "empty": "Әзірге бос",
-    "add": "Қосу"
+    "add": "Қосу",
+    "loadedCount": "{{total}} ішінен {{loaded}} жүктелді"
   },
   "errors": {
     "required": "Міндетті өріс",

@@ -1,40 +1,63 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 
-import { fetchDictEntriesPaged } from '@/features/dict-sidebar/api/dict-sidebar-api'
-import type { DictEntry } from '@/features/dict-sidebar/api/dict-sidebar-api'
+import {
+  fetchDictEntriesPaged,
+  type DictEntry,
+} from '@/features/dict-sidebar/api/dict-sidebar-api'
 
-const EMPTY_LIST: DictEntry[] = []
+const PAGE_SIZE = 25
+
+interface UseDictionaryEntriesResult {
+  entries: DictEntry[]
+  totalElements: number
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  fetchNextPage: () => void
+  isLoading: boolean
+}
 
 export const useDictionaryEntries = (
   domain: string,
   typeCode: string,
   skipDependsOn?: boolean
-) => {
-  const { data, isLoading } = useQuery({
-    queryKey: ['dict-entries', domain, typeCode, skipDependsOn],
-    queryFn: ({ signal }) =>
-      fetchDictEntriesPaged(
-        domain,
-        typeCode,
-        { page: 0, size: 100, ...(skipDependsOn && { skipDependsOn: true }) },
-        signal
-      ),
-    staleTime: 60 * 1000,
-  })
+): UseDictionaryEntriesResult => {
+  const { data, hasNextPage, isFetchingNextPage, fetchNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ['dict-entries', domain, typeCode, skipDependsOn],
+      queryFn: ({ pageParam, signal }) =>
+        fetchDictEntriesPaged(
+          domain,
+          typeCode,
+          {
+            page: pageParam,
+            size: PAGE_SIZE,
+            ...(skipDependsOn && { skipDependsOn: true }),
+          },
+          signal
+        ),
+      initialPageParam: 0,
+      getNextPageParam: (lastPage) => {
+        const paged = lastPage.data.data
+        return paged.last ? undefined : paged.number + 1
+      },
+      staleTime: 60 * 1000,
+    })
 
-  const entries = useMemo(() => {
-    const body = data?.data as Record<string, unknown> | undefined
-    if (!body) return EMPTY_LIST
+  const entries = useMemo(
+    () => data?.pages.flatMap((page) => page.data.data.content) ?? [],
+    [data]
+  )
+  const totalElements = data?.pages[0]?.data.data.totalElements ?? 0
 
-    // API может вернуть { list: [...] } или { data: { content: [...] } }
-    if (Array.isArray(body.list)) return body.list as DictEntry[]
-    const inner = body.data as Record<string, unknown> | undefined
-    if (inner && Array.isArray(inner.content))
-      return inner.content as DictEntry[]
-
-    return EMPTY_LIST
-  }, [data])
-
-  return { entries, isLoading }
+  return {
+    entries,
+    totalElements,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage: () => {
+      void fetchNextPage()
+    },
+    isLoading,
+  }
 }

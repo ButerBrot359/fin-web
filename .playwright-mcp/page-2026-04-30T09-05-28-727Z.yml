@@ -1,0 +1,113 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e6]
+        - heading "Web-бухгалтерия" [level=6] [ref=e11]
+      - navigation [ref=e12]:
+        - list [ref=e13]:
+          - listitem [ref=e14]:
+            - button "Главная" [ref=e15] [cursor=pointer]:
+              - img [ref=e17]
+              - paragraph [ref=e23]: Главная
+          - listitem [ref=e24]:
+            - button "Банк и касса" [ref=e25] [cursor=pointer]:
+              - img [ref=e27]
+              - paragraph [ref=e29]: Банк и касса
+          - listitem [ref=e30]:
+            - button "Склад" [disabled] [ref=e31]:
+              - img [ref=e33]
+              - paragraph [ref=e36]: Склад
+          - listitem [ref=e37]:
+            - button "Основные средства и нематериальные активы" [disabled] [ref=e38]:
+              - img [ref=e40]
+              - paragraph [ref=e43]: Основные средства и нематериальные активы
+          - listitem [ref=e44]:
+            - button "Тарификация" [disabled] [ref=e45]:
+              - img [ref=e47]
+              - paragraph [ref=e50]: Тарификация
+          - listitem [ref=e51]:
+            - button "Зарплата и кадры" [ref=e52] [cursor=pointer]:
+              - img [ref=e54]
+              - paragraph [ref=e57]: Зарплата и кадры
+          - listitem [ref=e58]:
+            - button "Отчёты" [disabled] [ref=e59]:
+              - img [ref=e61]
+              - paragraph [ref=e63]: Отчёты
+          - listitem [ref=e64]:
+            - button "Наше учреждение" [disabled] [ref=e65]:
+              - img [ref=e67]
+              - paragraph [ref=e70]: Наше учреждение
+          - listitem [ref=e71]:
+            - button "ФЛК" [disabled] [ref=e72]:
+              - img [ref=e74]
+              - paragraph [ref=e80]: ФЛК
+          - listitem [ref=e81]:
+            - button "Регламентированная настраиваемая отчётность" [disabled] [ref=e82]:
+              - img [ref=e84]
+              - paragraph [ref=e87]: Регламентированная настраиваемая отчётность
+          - listitem [ref=e88]:
+            - button "Администрирование" [ref=e89]:
+              - img [ref=e91]
+              - paragraph [ref=e94]: Администрирование
+      - button [ref=e96] [cursor=pointer]:
+        - img [ref=e97]
+    - generic [ref=e99]:
+      - banner [ref=e100]:
+        - navigation [ref=e102]:
+          - generic [ref=e103]:
+            - button "Search" [ref=e105] [cursor=pointer]:
+              - img [ref=e106]
+            - button "Notifications" [ref=e112] [cursor=pointer]:
+              - img [ref=e113]
+            - button "History" [ref=e119] [cursor=pointer]:
+              - img [ref=e120]
+            - button "Favorites" [ref=e127] [cursor=pointer]:
+              - img [ref=e128]
+          - button "Switch language" [ref=e132] [cursor=pointer]:
+            - paragraph [ref=e133]: РУС
+          - generic [ref=e135]:
+            - img [ref=e136]
+            - paragraph [ref=e140]: Имя пользователя
+          - button "Menu" [ref=e142] [cursor=pointer]:
+            - img [ref=e143]
+      - main [ref=e144]:
+        - generic [ref=e152]:
+          - generic [ref=e153]:
+            - list [ref=e157]:
+              - listitem [ref=e158]
+              - listitem [ref=e161]
+              - listitem [ref=e164]
+              - listitem [ref=e167]
+            - list [ref=e173]:
+              - listitem [ref=e174]
+              - listitem [ref=e177]
+              - listitem [ref=e180]
+              - listitem [ref=e183]
+          - generic [ref=e186]:
+            - list [ref=e190]:
+              - listitem [ref=e191]
+              - listitem [ref=e194]
+              - listitem [ref=e197]
+              - listitem [ref=e200]
+            - list [ref=e206]:
+              - listitem [ref=e207]
+              - listitem [ref=e210]
+              - listitem [ref=e213]
+              - listitem [ref=e216]
+          - generic [ref=e219]:
+            - list [ref=e223]:
+              - listitem [ref=e224]
+              - listitem [ref=e227]
+              - listitem [ref=e230]
+              - listitem [ref=e233]
+            - list [ref=e239]:
+              - listitem [ref=e240]
+              - listitem [ref=e243]
+              - listitem [ref=e246]
+              - listitem [ref=e249]
+      - button [ref=e253] [cursor=pointer]:
+        - paragraph [ref=e254]
+        - button [ref=e255]:
+          - img [ref=e256]
+  - region "Notifications alt+T"

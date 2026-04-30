@@ -7,9 +7,13 @@ import type {
   PrintCommand,
 } from '../types/document-entry'
 
-export const getDocumentEntries = (typeCode: string) =>
+export const getDocumentEntries = (
+  typeCode: string,
+  params: { page: number; size: number }
+) =>
   apiService.get<DocumentEntriesResponseData>({
     url: `/api/document-entries/${typeCode}/paged`,
+    params,
   })
 
 export const getNewDocumentEntry = (

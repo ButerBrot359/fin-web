@@ -6,7 +6,8 @@ import {
   getCoreRowModel,
   flexRender,
 } from '@tanstack/react-table'
-import { Typography } from '@mui/material'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { CircularProgress, Typography } from '@mui/material'
 
 import emptyImage from '@/shared/assets/info/empty.png'
 
@@ -30,30 +31,33 @@ export const InformationRegisterTable = ({
   } = useInformationRegisterEntries(domain, moduleCode)
   const columns = useInformationRegisterColumns(attributes)
 
+  const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const loadMoreRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage })
+  loadMoreRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage }
 
   useEffect(() => {
     const sentinel = sentinelRef.current
-    if (!sentinel) return
+    const scrollContainer = scrollRef.current
+    if (!sentinel || !scrollContainer) return
 
     const observer = new IntersectionObserver(
       (observerEntries) => {
-        if (
-          observerEntries[0]?.isIntersecting &&
-          hasNextPage &&
-          !isFetchingNextPage
-        ) {
+        if (!observerEntries[0]?.isIntersecting) return
+        const { hasNextPage, isFetchingNextPage, fetchNextPage } =
+          loadMoreRef.current
+        if (hasNextPage && !isFetchingNextPage) {
           fetchNextPage()
         }
       },
-      { threshold: 0.1 }
+      { root: scrollContainer }
     )
 
     observer.observe(sentinel)
     return () => {
       observer.disconnect()
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [])
 
   const table = useReactTable({
     data: entries,
@@ -61,9 +65,25 @@ export const InformationRegisterTable = ({
     getCoreRowModel: getCoreRowModel(),
   })
 
+  const { rows } = table.getRowModel()
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 40,
+    overscan: 10,
+  })
+
+  const virtualRows = rowVirtualizer.getVirtualItems()
+  const paddingTop = virtualRows[0]?.start ?? 0
+  const paddingBottom =
+    virtualRows.length > 0
+      ? rowVirtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0)
+      : 0
+
   return (
     <div className="min-h-0 flex-1 flex flex-col">
-      <div className="min-h-0 flex-1 overflow-auto pb-2">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
         <table
           className="w-full border-separate"
           style={{ borderSpacing: '2px' }}
@@ -74,7 +94,7 @@ export const InformationRegisterTable = ({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="whitespace-nowrap border-b-2 border-ui-06 px-3 py-2 text-left text-body2 font-medium text-ui-06"
+                    className="sticky top-0 z-10 whitespace-nowrap border-b-2 border-ui-06 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06"
                   >
                     {header.isPlaceholder
                       ? null
@@ -88,7 +108,7 @@ export const InformationRegisterTable = ({
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.length === 0 && (
+            {rows.length === 0 && (
               <tr>
                 <td colSpan={columns.length} className="py-16 text-center">
                   <div className="flex flex-col items-center gap-4">
@@ -100,39 +120,51 @@ export const InformationRegisterTable = ({
                 </td>
               </tr>
             )}
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="even:bg-ui-01">
-                {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
+            {paddingTop > 0 && (
+              <tr>
+                <td style={{ height: paddingTop }} />
               </tr>
-            ))}
+            )}
+            {virtualRows.map((virtualRow) => {
+              const row = rows[virtualRow.index]
+
+              return (
+                <tr
+                  key={row.id}
+                  className={virtualRow.index % 2 === 1 ? 'bg-ui-01' : ''}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              )
+            })}
+            {paddingBottom > 0 && (
+              <tr>
+                <td style={{ height: paddingBottom }} />
+              </tr>
+            )}
           </tbody>
         </table>
-
         <div ref={sentinelRef} className="h-1" />
-
-        {isFetchingNextPage && (
-          <div className="py-4 text-center">
-            <Typography variant="body2" className="text-ui-05">
-              {t('inputs.loading')}
-            </Typography>
-          </div>
-        )}
       </div>
 
-      <div className="shrink-0 px-3 py-2">
+      <div className="shrink-0 px-3 py-2 flex items-center gap-2">
         <Typography variant="body2" className="text-ui-05">
           {t('table.loadedCount', {
             loaded: entries.length,
             total: totalElements,
           })}
         </Typography>
+        {isFetchingNextPage && <CircularProgress size={14} />}
       </div>
     </div>
   )

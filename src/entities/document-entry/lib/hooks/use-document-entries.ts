@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 
@@ -32,7 +33,10 @@ export const useDocumentEntries = (): UseDocumentEntriesResult => {
       },
     })
 
-  const entries = data.pages.flatMap((page) => page.data.data.content)
+  const entries = useMemo(
+    () => data.pages.flatMap((page) => page.data.data.content),
+    [data]
+  )
   const totalElements = data.pages[0]?.data.data.totalElements ?? 0
 
   return {

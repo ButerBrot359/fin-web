@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 
 import {
@@ -43,7 +44,10 @@ export const useDictionaryEntries = (
       staleTime: 60 * 1000,
     })
 
-  const entries = data?.pages.flatMap((page) => page.data.data.content) ?? []
+  const entries = useMemo(
+    () => data?.pages.flatMap((page) => page.data.data.content) ?? [],
+    [data]
+  )
   const totalElements = data?.pages[0]?.data.data.totalElements ?? 0
 
   return {

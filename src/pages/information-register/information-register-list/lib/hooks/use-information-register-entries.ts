@@ -1,33 +1,50 @@
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { getInformationRegisterEntries } from '../../api/information-register-api'
 import type { InformationRegisterEntry } from '../../types/information-register'
 
-const EMPTY_LIST: InformationRegisterEntry[] = []
+const PAGE_SIZE = 25
+
+interface UseInformationRegisterEntriesResult {
+  entries: InformationRegisterEntry[]
+  totalElements: number
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  fetchNextPage: () => void
+  isLoading: boolean
+}
 
 export const useInformationRegisterEntries = (
   domain: string,
   typeCode: string
-) => {
-  const { data, isLoading } = useQuery({
-    queryKey: ['information-register-entries', domain, typeCode],
-    queryFn: () => getInformationRegisterEntries(domain, typeCode),
-    staleTime: 60 * 1000,
-  })
+): UseInformationRegisterEntriesResult => {
+  const { data, hasNextPage, isFetchingNextPage, fetchNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ['information-register-entries', domain, typeCode],
+      queryFn: ({ pageParam }) =>
+        getInformationRegisterEntries(domain, typeCode, {
+          page: pageParam,
+          size: PAGE_SIZE,
+        }),
+      initialPageParam: 0,
+      getNextPageParam: (lastPage) => {
+        const paged = lastPage.data.data
+        return paged.last ? undefined : paged.number + 1
+      },
+      staleTime: 60 * 1000,
+    })
 
-  const entries = useMemo(() => {
-    const body = data?.data as Record<string, unknown> | undefined
-    if (!body) return EMPTY_LIST
+  const entries = data?.pages.flatMap((page) => page.data.data.content) ?? []
+  const totalElements = data?.pages[0]?.data.data.totalElements ?? 0
 
-    if (Array.isArray(body.list)) return body.list as InformationRegisterEntry[]
-
-    const inner = body.data as Record<string, unknown> | undefined
-    if (inner && Array.isArray(inner.content))
-      return inner.content as InformationRegisterEntry[]
-
-    return EMPTY_LIST
-  }, [data])
-
-  return { entries, isLoading }
+  return {
+    entries,
+    totalElements,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage: () => {
+      void fetchNextPage()
+    },
+    isLoading,
+  }
 }

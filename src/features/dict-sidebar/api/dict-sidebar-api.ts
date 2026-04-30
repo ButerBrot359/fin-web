@@ -21,6 +21,10 @@ interface PagedResponse<T> {
   data: {
     content: T[]
     totalElements: number
+    totalPages: number
+    number: number
+    size: number
+    last: boolean
   }
   success: boolean
 }

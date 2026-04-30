@@ -118,8 +118,7 @@
   "documentTable": {
     "createdAt": "Дата",
     "number": "Номер",
-    "link": "Ссылка",
-    "loadedCount": "Загружено {{loaded}} из {{total}}"
+    "link": "Ссылка"
   },
   "noContent": {
     "title": "Нет подходящих результатов",
@@ -154,7 +153,8 @@
   },
   "table": {
     "empty": "Пока тут пусто",
-    "add": "Добавить"
+    "add": "Добавить",
+    "loadedCount": "Загружено {{loaded}} из {{total}}"
   },
   "errors": {
     "required": "Обязательное поле",

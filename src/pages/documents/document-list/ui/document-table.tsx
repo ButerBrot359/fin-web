@@ -156,7 +156,7 @@ export const DocumentTable = ({
 
       <div className="shrink-0 px-3 py-2">
         <Typography variant="body2" className="text-ui-05">
-          {t('documentTable.loadedCount', {
+          {t('table.loadedCount', {
             loaded: entries.length,
             total: totalElements,
           })}

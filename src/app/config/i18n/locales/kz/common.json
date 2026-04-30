@@ -118,8 +118,7 @@
   "documentTable": {
     "createdAt": "Күні",
     "number": "Нөмір",
-    "link": "Сілтеме",
-    "loadedCount": "{{total}} ішінен {{loaded}} жүктелді"
+    "link": "Сілтеме"
   },
   "noContent": {
     "title": "Сәйкес нәтижелер жоқ",
@@ -154,7 +153,8 @@
   },
   "table": {
     "empty": "Әзірге бос",
-    "add": "Қосу"
+    "add": "Қосу",
+    "loadedCount": "{{total}} ішінен {{loaded}} жүктелді"
   },
   "errors": {
     "required": "Міндетті өріс",

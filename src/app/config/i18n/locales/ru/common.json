@@ -118,7 +118,8 @@
   "documentTable": {
     "createdAt": "Дата",
     "number": "Номер",
-    "link": "Ссылка"
+    "link": "Ссылка",
+    "loadedCount": "Загружено {{loaded}} из {{total}}"
   },
   "noContent": {
     "title": "Нет подходящих результатов",

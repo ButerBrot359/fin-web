@@ -118,7 +118,8 @@
   "documentTable": {
     "createdAt": "Күні",
     "number": "Нөмір",
-    "link": "Сілтеме"
+    "link": "Сілтеме",
+    "loadedCount": "{{total}} ішінен {{loaded}} жүктелді"
   },
   "noContent": {
     "title": "Сәйкес нәтижелер жоқ",

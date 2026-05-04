@@ -1,4 +1,4 @@
 #!/bin/sh
 
 node form-configs-server/dist/index.js &
-npx vite preview --host 0.0.0.0
+npx vite preview --config vite.preview.config.ts

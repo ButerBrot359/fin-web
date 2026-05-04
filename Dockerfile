@@ -41,6 +41,7 @@ ENV DOCUMENT_TYPES_API_BASE_URL=$DOCUMENT_TYPES_API_BASE_URL
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
+COPY --from=build /app/vite.preview.config.ts ./
 RUN npm install vite
 
 COPY --from=configs-build /form-configs-server/dist ./form-configs-server/dist

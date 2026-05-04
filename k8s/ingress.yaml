@@ -4,6 +4,10 @@ metadata:
   name: fin-web
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Временная защита до настоящей авторизации. Удалить эти 3 строки чтобы снять.
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Restricted — dev environment"
 spec:
   ingressClassName: nginx
   tls:

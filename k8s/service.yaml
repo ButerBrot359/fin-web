@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: fin-web-service
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: fin-web
   ports:
@@ -11,9 +11,7 @@ spec:
       protocol: TCP
       port: 4173
       targetPort: 4173
-      nodePort: 30173 # WEB_PORT
     - name: mock
       protocol: TCP
       port: 3001
       targetPort: 3001
-      nodePort: 30001 # MOCK_PORT

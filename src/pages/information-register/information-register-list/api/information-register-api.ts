@@ -15,7 +15,7 @@ export const getInformationRegisterType = (domain: string, code: string) =>
 export const getInformationRegisterEntries = (
   domain: string,
   typeCode: string,
-  params: { page: number; size: number }
+  params: { page: number; size: number; sortAttr?: string; sortDir?: string }
 ) =>
   apiService.get<ApiResponse<PagedResponse<InformationRegisterEntry>>>({
     url: getUniversalPagedUrl(domain, typeCode),

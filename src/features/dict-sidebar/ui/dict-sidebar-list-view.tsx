@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useQuery,
+  keepPreviousData,
+} from '@tanstack/react-query'
 import { CircularProgress, Typography } from '@mui/material'
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   type ColumnDef,
+  type SortingState,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import SearchIcon from '@/shared/assets/icons/search.svg'
@@ -38,6 +43,10 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
 
   const [search, setSearch] = useState('')
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
+  const [sorting, setSorting] = useState<SortingState>([])
+
+  const sortAttr = sorting[0]?.id
+  const sortDir = sorting[0] ? (sorting[0].desc ? 'DESC' : 'ASC') : undefined
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -57,6 +66,8 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   const {
     data: pagedData,
     isLoading: isLoadingPaged,
+    isFetching: isFetchingPaged,
+    isPlaceholderData,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
@@ -67,12 +78,20 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       panel.typeCode,
       'paged',
       panel.searchParams,
+      sortAttr,
+      sortDir,
     ],
     queryFn: ({ signal, pageParam }) =>
       fetchDictEntriesPaged(
         panel.domain,
         panel.typeCode,
-        { page: pageParam, size: PAGE_SIZE, ...panel.searchParams },
+        {
+          page: pageParam,
+          size: PAGE_SIZE,
+          ...panel.searchParams,
+          sortAttr,
+          sortDir,
+        },
         signal
       ),
     initialPageParam: 0,
@@ -82,6 +101,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     },
     enabled: !isSearchMode,
     staleTime: 60 * 1000,
+    placeholderData: keepPreviousData,
   })
 
   const { data: searchData, isLoading: isLoadingSearch } = useQuery({
@@ -115,11 +135,14 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   )
   const totalElements = pagedData?.pages[0]?.data.data.totalElements ?? 0
   const isLoading = isLoadingType || isLoadingPaged || isLoadingSearch
+  const isSortingOrFiltering = isFetchingPaged && isPlaceholderData
 
   const loadMoreRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage })
   loadMoreRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage }
 
   useEffect(() => {
+    if (isLoading) return
+
     const sentinel = sentinelRef.current
     const scrollContainer = scrollRef.current
     if (!sentinel || !scrollContainer) return
@@ -140,7 +163,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     return () => {
       observer.disconnect()
     }
-  }, [])
+  }, [isLoading])
 
   const visibleAttributes = useMemo(
     () =>
@@ -212,6 +235,9 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     data: entries,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    manualSorting: true,
+    state: { sorting },
+    onSortingChange: setSorting,
   })
 
   const { rows } = table.getRowModel()
@@ -288,7 +314,12 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       </div>
 
       {/* Table */}
-      <div className="min-h-0 flex-1 flex flex-col">
+      <div className="relative min-h-0 flex-1 flex flex-col">
+        {isSortingOrFiltering && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
+            <CircularProgress size={24} />
+          </div>
+        )}
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Typography className="text-ui-05">
@@ -311,19 +342,40 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                 <thead>
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06"
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </th>
-                      ))}
+                      {headerGroup.headers.map((header) => {
+                        const canSort = header.column.getCanSort()
+                        const sorted = header.column.getIsSorted()
+
+                        return (
+                          <th
+                            key={header.id}
+                            className={cn(
+                              'sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06',
+                              canSort && 'cursor-pointer select-none'
+                            )}
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {header.isPlaceholder ? null : (
+                              <span className="inline-flex items-center gap-1">
+                                {flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
+                                {sorted && (
+                                  <span
+                                    className={cn(
+                                      'text-[10px] leading-none',
+                                      sorted === 'asc' && 'rotate-180'
+                                    )}
+                                  >
+                                    ▼
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                          </th>
+                        )
+                      })}
                     </tr>
                   ))}
                 </thead>

@@ -49,6 +49,7 @@ export const useDocumentColumns = (
       id: 'status',
       header: () => null,
       size: 24,
+      enableSorting: false,
       cell: ({ row }) => <StatusIcon entry={row.original} />,
     }
 

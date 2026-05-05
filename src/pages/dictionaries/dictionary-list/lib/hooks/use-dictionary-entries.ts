@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query'
 
 import {
   fetchDictEntriesPaged,
@@ -11,38 +11,58 @@ const PAGE_SIZE = 25
 interface UseDictionaryEntriesResult {
   entries: DictEntry[]
   totalElements: number
+  isLoading: boolean
+  isSortingOrFiltering: boolean
   hasNextPage: boolean
   isFetchingNextPage: boolean
   fetchNextPage: () => void
-  isLoading: boolean
 }
 
 export const useDictionaryEntries = (
   domain: string,
   typeCode: string,
-  skipDependsOn?: boolean
+  skipDependsOn?: boolean,
+  sortAttr?: string,
+  sortDir?: string
 ): UseDictionaryEntriesResult => {
-  const { data, hasNextPage, isFetchingNextPage, fetchNextPage, isLoading } =
-    useInfiniteQuery({
-      queryKey: ['dict-entries', domain, typeCode, skipDependsOn],
-      queryFn: ({ pageParam, signal }) =>
-        fetchDictEntriesPaged(
-          domain,
-          typeCode,
-          {
-            page: pageParam,
-            size: PAGE_SIZE,
-            ...(skipDependsOn && { skipDependsOn: true }),
-          },
-          signal
-        ),
-      initialPageParam: 0,
-      getNextPageParam: (lastPage) => {
-        const paged = lastPage.data.data
-        return paged.last ? undefined : paged.number + 1
-      },
-      staleTime: 60 * 1000,
-    })
+  const {
+    data,
+    isLoading,
+    isFetching,
+    isPlaceholderData,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: [
+      'dict-entries',
+      domain,
+      typeCode,
+      skipDependsOn,
+      sortAttr,
+      sortDir,
+    ],
+    queryFn: ({ pageParam, signal }) =>
+      fetchDictEntriesPaged(
+        domain,
+        typeCode,
+        {
+          page: pageParam,
+          size: PAGE_SIZE,
+          ...(skipDependsOn && { skipDependsOn: true }),
+          sortAttr,
+          sortDir,
+        },
+        signal
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      const paged = lastPage.data.data
+      return paged.last ? undefined : paged.number + 1
+    },
+    staleTime: 60 * 1000,
+    placeholderData: keepPreviousData,
+  })
 
   const entries = useMemo(
     () => data?.pages.flatMap((page) => page.data.data.content) ?? [],
@@ -53,11 +73,12 @@ export const useDictionaryEntries = (
   return {
     entries,
     totalElements,
+    isLoading,
+    isSortingOrFiltering: isFetching && isPlaceholderData,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage: () => {
       void fetchNextPage()
     },
-    isLoading,
   }
 }

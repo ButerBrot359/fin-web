@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query'
 
 import { getInformationRegisterEntries } from '../../api/information-register-api'
 import type { InformationRegisterEntry } from '../../types/information-register'
@@ -9,31 +9,50 @@ const PAGE_SIZE = 25
 interface UseInformationRegisterEntriesResult {
   entries: InformationRegisterEntry[]
   totalElements: number
+  isLoading: boolean
+  isSortingOrFiltering: boolean
   hasNextPage: boolean
   isFetchingNextPage: boolean
   fetchNextPage: () => void
-  isLoading: boolean
 }
 
 export const useInformationRegisterEntries = (
   domain: string,
-  typeCode: string
+  typeCode: string,
+  sortAttr?: string,
+  sortDir?: string
 ): UseInformationRegisterEntriesResult => {
-  const { data, hasNextPage, isFetchingNextPage, fetchNextPage, isLoading } =
-    useInfiniteQuery({
-      queryKey: ['information-register-entries', domain, typeCode],
-      queryFn: ({ pageParam }) =>
-        getInformationRegisterEntries(domain, typeCode, {
-          page: pageParam,
-          size: PAGE_SIZE,
-        }),
-      initialPageParam: 0,
-      getNextPageParam: (lastPage) => {
-        const paged = lastPage.data.data
-        return paged.last ? undefined : paged.number + 1
-      },
-      staleTime: 60 * 1000,
-    })
+  const {
+    data,
+    isLoading,
+    isFetching,
+    isPlaceholderData,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: [
+      'information-register-entries',
+      domain,
+      typeCode,
+      sortAttr,
+      sortDir,
+    ],
+    queryFn: ({ pageParam }) =>
+      getInformationRegisterEntries(domain, typeCode, {
+        page: pageParam,
+        size: PAGE_SIZE,
+        sortAttr,
+        sortDir,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      const paged = lastPage.data.data
+      return paged.last ? undefined : paged.number + 1
+    },
+    staleTime: 60 * 1000,
+    placeholderData: keepPreviousData,
+  })
 
   const entries = useMemo(
     () => data?.pages.flatMap((page) => page.data.data.content) ?? [],
@@ -44,11 +63,12 @@ export const useInformationRegisterEntries = (
   return {
     entries,
     totalElements,
+    isLoading,
+    isSortingOrFiltering: isFetching && isPlaceholderData,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage: () => {
       void fetchNextPage()
     },
-    isLoading,
   }
 }

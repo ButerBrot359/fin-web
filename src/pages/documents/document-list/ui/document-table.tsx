@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -6,6 +6,7 @@ import {
   useReactTable,
   getCoreRowModel,
   flexRender,
+  type SortingState,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { CircularProgress, Typography } from '@mui/material'
@@ -27,13 +28,21 @@ export const DocumentTable = ({
   const navigate = useNavigate()
 
   const { moduleCode = '', pageCode = '' } = useParams()
+
+  const [sorting, setSorting] = useState<SortingState>([])
+
+  const sortAttr = sorting[0]?.id
+  const sortDir = sorting[0] ? (sorting[0].desc ? 'DESC' : 'ASC') : undefined
+
   const {
     entries,
     totalElements,
+    isLoading,
+    isSortingOrFiltering,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useDocumentEntries()
+  } = useDocumentEntries(sortAttr, sortDir)
   const columns = useDocumentColumns(attributes)
 
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -42,6 +51,8 @@ export const DocumentTable = ({
   loadMoreRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage }
 
   useEffect(() => {
+    if (isLoading) return
+
     const sentinel = sentinelRef.current
     const scrollContainer = scrollRef.current
     if (!sentinel || !scrollContainer) return
@@ -62,12 +73,15 @@ export const DocumentTable = ({
     return () => {
       observer.disconnect()
     }
-  }, [])
+  }, [isLoading])
 
   const table = useReactTable({
     data: entries,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    manualSorting: true,
+    state: { sorting },
+    onSortingChange: setSorting,
   })
 
   const { rows } = table.getRowModel()
@@ -91,7 +105,12 @@ export const DocumentTable = ({
       : 0
 
   return (
-    <div className="min-h-0 flex-1 flex flex-col">
+    <div className="relative min-h-0 flex-1 flex flex-col">
+      {isSortingOrFiltering && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
+          <CircularProgress size={24} />
+        </div>
+      )}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
         <table
           className="w-full border-separate"
@@ -100,24 +119,52 @@ export const DocumentTable = ({
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="sticky top-0 z-10 whitespace-nowrap border-b-2 border-ui-06 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </th>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const canSort = header.column.getCanSort()
+                  const sorted = header.column.getIsSorted()
+
+                  return (
+                    <th
+                      key={header.id}
+                      className={cn(
+                        'sticky top-0 z-10 whitespace-nowrap border-b-2 border-ui-06 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06',
+                        canSort && 'cursor-pointer select-none'
+                      )}
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      {header.isPlaceholder ? null : (
+                        <span className="inline-flex items-center gap-1">
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                          {sorted && (
+                            <span
+                              className={cn(
+                                'text-[10px] leading-none',
+                                sorted === 'asc' && 'rotate-180'
+                              )}
+                            >
+                              ▼
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </th>
+                  )
+                })}
               </tr>
             ))}
           </thead>
           <tbody>
-            {rows.length === 0 && (
+            {isLoading && (
+              <tr>
+                <td colSpan={columns.length} className="py-16 text-center">
+                  <CircularProgress size={24} />
+                </td>
+              </tr>
+            )}
+            {!isLoading && rows.length === 0 && (
               <tr>
                 <td colSpan={columns.length} className="py-16 text-center">
                   <div className="flex flex-col items-center gap-4">

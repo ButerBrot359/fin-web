@@ -9,7 +9,7 @@ import type {
 
 export const getDocumentEntries = (
   typeCode: string,
-  params: { page: number; size: number }
+  params: { page: number; size: number; sort?: string[] }
 ) =>
   apiService.get<DocumentEntriesResponseData>({
     url: `/api/document-entries/${typeCode}/paged`,

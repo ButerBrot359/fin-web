@@ -18,7 +18,8 @@ interface UseDocumentEntriesResult {
 }
 
 export const useDocumentEntries = (
-  sort?: string[]
+  sortAttr?: string,
+  sortDir?: string
 ): UseDocumentEntriesResult => {
   const { moduleCode = '' } = useParams<{
     pageCode: string
@@ -34,12 +35,13 @@ export const useDocumentEntries = (
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteQuery({
-    queryKey: ['document-entries', moduleCode, sort],
+    queryKey: ['document-entries', moduleCode, sortAttr, sortDir],
     queryFn: ({ pageParam }) =>
       getDocumentEntries(moduleCode, {
         page: pageParam,
         size: PAGE_SIZE,
-        sort,
+        sortAttr,
+        sortDir,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => {

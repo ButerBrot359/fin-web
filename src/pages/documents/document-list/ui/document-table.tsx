@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -31,13 +31,8 @@ export const DocumentTable = ({
 
   const [sorting, setSorting] = useState<SortingState>([])
 
-  const sortParams = useMemo(
-    () =>
-      sorting.length > 0
-        ? sorting.map((s) => `${s.id},${s.desc ? 'DESC' : 'ASC'}`)
-        : undefined,
-    [sorting]
-  )
+  const sortAttr = sorting[0]?.id
+  const sortDir = sorting[0] ? (sorting[0].desc ? 'DESC' : 'ASC') : undefined
 
   const {
     entries,
@@ -47,7 +42,7 @@ export const DocumentTable = ({
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useDocumentEntries(sortParams)
+  } = useDocumentEntries(sortAttr, sortDir)
   const columns = useDocumentColumns(attributes)
 
   const scrollRef = useRef<HTMLDivElement>(null)

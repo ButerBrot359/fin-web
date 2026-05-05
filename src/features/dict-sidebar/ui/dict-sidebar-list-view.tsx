@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
-import { Typography } from '@mui/material'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { CircularProgress, Typography } from '@mui/material'
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   type ColumnDef,
 } from '@tanstack/react-table'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
 import { Button } from '@/shared/ui/buttons/button'
@@ -16,6 +17,7 @@ import type { DocumentAttribute } from '@/entities/document-type'
 import type { SelectOption } from '@/shared/types/select-option'
 import { formatDate } from '@/shared/lib/utils/date'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
+import { cn } from '@/shared/lib/utils/cn'
 
 import type { DictSidebarPanel } from '../types/dict-sidebar'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
@@ -37,6 +39,9 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   const [search, setSearch] = useState('')
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
 
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
   const { data: typeData, isLoading: isLoadingType } = useQuery({
     queryKey: ['dict-sidebar-type', panel.domain, panel.typeCode],
     queryFn: ({ signal }) =>
@@ -47,7 +52,15 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
 
   const isSearchMode = search.trim().length > 0
 
-  const { data: pagedData, isLoading: isLoadingPaged } = useQuery({
+  const PAGE_SIZE = 25
+
+  const {
+    data: pagedData,
+    isLoading: isLoadingPaged,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
     queryKey: [
       'dict-sidebar-entries',
       panel.domain,
@@ -55,16 +68,20 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       'paged',
       panel.searchParams,
     ],
-    queryFn: ({ signal }) =>
+    queryFn: ({ signal, pageParam }) =>
       fetchDictEntriesPaged(
         panel.domain,
         panel.typeCode,
-        { page: 0, size: 100, ...panel.searchParams },
+        { page: pageParam, size: PAGE_SIZE, ...panel.searchParams },
         signal
       ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      const paged = lastPage.data.data
+      return paged.last ? undefined : paged.number + 1
+    },
     enabled: !isSearchMode,
     staleTime: 60 * 1000,
-    select: (res) => res.data.data,
   })
 
   const { data: searchData, isLoading: isLoadingSearch } = useQuery({
@@ -89,8 +106,41 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     select: (res) => res.data.data.content,
   })
 
-  const entries = isSearchMode ? (searchData ?? []) : (pagedData?.content ?? [])
+  const entries = useMemo(
+    () =>
+      isSearchMode
+        ? (searchData ?? [])
+        : (pagedData?.pages.flatMap((page) => page.data.data.content) ?? []),
+    [isSearchMode, searchData, pagedData]
+  )
+  const totalElements = pagedData?.pages[0]?.data.data.totalElements ?? 0
   const isLoading = isLoadingType || isLoadingPaged || isLoadingSearch
+
+  const loadMoreRef = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage })
+  loadMoreRef.current = { hasNextPage, isFetchingNextPage, fetchNextPage }
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    const scrollContainer = scrollRef.current
+    if (!sentinel || !scrollContainer) return
+
+    const observer = new IntersectionObserver(
+      (observerEntries) => {
+        if (!observerEntries[0]?.isIntersecting) return
+        const { hasNextPage, isFetchingNextPage, fetchNextPage } =
+          loadMoreRef.current
+        if (hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage()
+        }
+      },
+      { root: scrollContainer }
+    )
+
+    observer.observe(sentinel)
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
 
   const visibleAttributes = useMemo(
     () =>
@@ -164,6 +214,22 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     getCoreRowModel: getCoreRowModel(),
   })
 
+  const { rows } = table.getRowModel()
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 40,
+    overscan: 10,
+  })
+
+  const virtualRows = rowVirtualizer.getVirtualItems()
+  const paddingTop = virtualRows[0]?.start ?? 0
+  const paddingBottom =
+    virtualRows.length > 0
+      ? rowVirtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0)
+      : 0
+
   const selectedEntry = entries.find((e) => e.id === selectedRowId)
 
   const handleSelect = () => {
@@ -222,7 +288,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       </div>
 
       {/* Table */}
-      <div className="min-h-0 flex-1 overflow-auto pb-2">
+      <div className="min-h-0 flex-1 flex flex-col">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Typography className="text-ui-05">
@@ -236,70 +302,93 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
             </Typography>
           </div>
         ) : (
-          <table
-            className="w-full border-separate"
-            style={{ borderSpacing: '2px' }}
-          >
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </th>
+          <>
+            <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
+              <table
+                className="w-full border-separate"
+                style={{ borderSpacing: '2px' }}
+              >
+                <thead>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          className="sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06"
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </th>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row, rowIndex) => {
-                const isSelected = selectedRowId === row.original.id
+                </thead>
+                <tbody>
+                  {paddingTop > 0 && (
+                    <tr>
+                      <td style={{ height: paddingTop }} />
+                    </tr>
+                  )}
+                  {virtualRows.map((virtualRow) => {
+                    const row = rows[virtualRow.index]
+                    const isSelected = selectedRowId === row.original.id
 
-                return (
-                  <tr
-                    key={row.id}
-                    onClick={() => {
-                      setSelectedRowId(row.original.id)
-                    }}
-                    onDoubleClick={handleSelect}
-                    className={`cursor-pointer transition-colors ${
-                      isSelected
-                        ? 'bg-ui-07'
-                        : rowIndex % 2 === 0
-                          ? 'bg-transparent'
-                          : 'bg-ui-01'
-                    } hover:bg-ui-07`}
-                  >
-                    {row.getVisibleCells().map((cell, cellIndex) => (
-                      <td
-                        key={cell.id}
-                        className={`px-3 py-2 max-w-50 truncate ${
-                          cellIndex === 0
-                            ? 'rounded-l-md'
-                            : cellIndex === row.getVisibleCells().length - 1
-                              ? 'rounded-r-md'
+                    return (
+                      <tr
+                        key={row.id}
+                        onClick={() => {
+                          setSelectedRowId(row.original.id)
+                        }}
+                        onDoubleClick={handleSelect}
+                        className={cn(
+                          'cursor-pointer transition-colors hover:bg-ui-07',
+                          isSelected
+                            ? 'bg-ui-07'
+                            : virtualRow.index % 2 === 1
+                              ? 'bg-ui-01'
                               : ''
-                        }`}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
                         )}
-                      </td>
-                    ))}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <td
+                            key={cell.id}
+                            className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    )
+                  })}
+                  {paddingBottom > 0 && (
+                    <tr>
+                      <td style={{ height: paddingBottom }} />
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <div ref={sentinelRef} className="h-1" />
+            </div>
+
+            {!isSearchMode && (
+              <div className="shrink-0 px-3 py-2 flex items-center gap-2">
+                <Typography variant="body2" className="text-ui-05">
+                  {t('table.loadedCount', {
+                    loaded: entries.length,
+                    total: totalElements,
+                  })}
+                </Typography>
+                {isFetchingNextPage && <CircularProgress size={14} />}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fin-web
+  namespace: demo
+  labels:
+    app: fin-web
+    env: demo
+  annotations:
+    fin-web.io/deployed-commit: "${IMAGE_TAG}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fin-web
+  template:
+    metadata:
+      labels:
+        app: fin-web
+        env: demo
+      annotations:
+        fin-web.io/deployed-commit: "${IMAGE_TAG}"
+    spec:
+      containers:
+      - name: fin-web
+        image: ${IMAGE_NAME}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 4173
+          name: web
+        - containerPort: 3001
+          name: mock
+        env:
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: fin-web-secret
+              key: ANTHROPIC_API_KEY
+        - name: DOCUMENT_TYPES_API_BASE_URL
+          value: "https://demo-api.qazyna.ai"
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1.5Gi"
+          requests:
+            cpu: "300m"
+            memory: "512Mi"

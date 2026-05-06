@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
@@ -5,7 +6,12 @@ import { useDocumentType } from '@/entities/document-type'
 import { useOptionalFormConfig } from '@/entities/form-config'
 
 import { FormRenderer } from '@/features/form-renderer'
-import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
+import {
+  useTabMeta,
+  useWorkspaceTabsStore,
+  useFormCache,
+  useFormCacheStore,
+} from '@/features/workspace-tabs'
 
 import { PageHeader } from '@/widgets/page-header'
 import { DocumentFormToolbar } from '@/widgets/document-form-toolbar'
@@ -36,6 +42,11 @@ export const DocumentEntryPage = () => {
   const { form, isNew, existingEntry, isLoading } = useDocumentEntryForm()
   const { isDirty } = form.formState
 
+  const { pendingAction, markClosing } = useFormCache({
+    tabId: location.pathname,
+    form,
+  })
+
   const listPath = getDocumentListPath({ pageCode, moduleCode })
   const formAttributes = getFormAttributes(attributes)
   const formConfig = config ?? buildFallbackConfig(formAttributes)
@@ -60,6 +71,8 @@ export const DocumentEntryPage = () => {
   })
 
   const closeCurrentTab = () => {
+    markClosing()
+    useFormCacheStore.getState().removeTab(location.pathname)
     useWorkspaceTabsStore.getState().closeTab(location.pathname)
   }
 
@@ -79,6 +92,14 @@ export const DocumentEntryPage = () => {
       void navigate(listPath)
     }
   }
+
+  // Handle pending save-and-close triggered from tab bar
+  useEffect(() => {
+    if (pendingAction && !isLoading) {
+      useFormCacheStore.getState().consumePendingAction(location.pathname)
+      actions.handleSaveAndClose()
+    }
+  }, [pendingAction, isLoading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMovements = () => {
     if (!isNew && existingEntry?.id) {

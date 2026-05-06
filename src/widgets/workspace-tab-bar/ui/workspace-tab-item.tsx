@@ -1,6 +1,7 @@
 import { Typography } from '@mui/material'
 
 import type { WorkspaceTab } from '@/features/workspace-tabs'
+import { useFormCacheStore } from '@/features/workspace-tabs'
 
 import CrossIcon from '@/shared/assets/icons/cross.svg'
 
@@ -17,7 +18,11 @@ export const WorkspaceTabItem = ({
   onActivate,
   onClose,
 }: WorkspaceTabItemProps) => {
-  const displayTitle = tab.title
+  const isDirty = useFormCacheStore((s) => {
+    const entry = s.cache[tab.id]
+    return entry ? entry.isDirty : false
+  })
+  const displayTitle = isDirty ? `${tab.title} *` : tab.title
 
   return (
     <button

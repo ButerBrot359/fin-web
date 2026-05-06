@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { Controller, type Control, useWatch } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
-import { Box, Checkbox } from '@mui/material'
+import { Box, Checkbox, IconButton } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material'
 import type { AxiosResponse } from 'axios'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 
 import type { DocumentAttribute, EnumsValue } from '@/entities/document-type'
 import {
@@ -19,6 +20,7 @@ import { TextInput } from '@/shared/ui/inputs/text-input'
 import { NumberInput } from '@/shared/ui/inputs/number-input'
 import { DateTimeInput } from '@/shared/ui/inputs/datetime-input'
 import { AutocompleteInput } from '@/shared/ui/inputs/autocomplete-input'
+import { useDictSidebarStore } from '@/features/dict-sidebar'
 
 interface TableCellRendererProps {
   name: string
@@ -177,12 +179,81 @@ const DictCell = ({
       ),
   })
 
+  const push = useDictSidebarStore.getState().push
+
+  const handleShowAll = resolved
+    ? (onSelect: (value: SelectOption) => void) => {
+        push({
+          mode: 'list',
+          domain: resolved.domain,
+          typeCode: resolved.typeCode,
+          onSelect,
+        })
+      }
+    : undefined
+
+  const handleAdd = resolved
+    ? (fieldOnChange: (value: unknown) => void) => {
+        push({
+          mode: 'create',
+          domain: resolved.domain,
+          typeCode: resolved.typeCode,
+          onSelect: (val: SelectOption) => {
+            fieldOnChange(val.raw ?? null)
+          },
+        })
+      }
+    : undefined
+
+  const handleOpenEntry = resolved
+    ? (entryId: number | string, fieldOnChange: (value: unknown) => void) => {
+        push({
+          mode: 'edit',
+          domain: resolved.domain,
+          typeCode: resolved.typeCode,
+          entryId,
+          onSelect: (val: SelectOption) => {
+            fieldOnChange(val.raw ?? null)
+          },
+        })
+      }
+    : undefined
+
   return (
     <Controller
       name={name}
       control={control}
       render={({ field }) => {
         const currentValue = resolveSelectValue(field.value, options)
+        const currentEntryId = (field.value as { id?: number | string } | null)
+          ?.id
+
+        const showAllHandler = handleShowAll
+          ? () => {
+              handleShowAll((val: SelectOption) => {
+                field.onChange(val.raw ?? null)
+              })
+            }
+          : undefined
+
+        const addHandler = handleAdd
+          ? () => {
+              handleAdd(field.onChange)
+            }
+          : undefined
+
+        const endAction =
+          currentEntryId != null && handleOpenEntry ? (
+            <IconButton
+              sx={{ p: '2px', borderRadius: '4px' }}
+              tabIndex={-1}
+              onClick={() => {
+                handleOpenEntry(currentEntryId, field.onChange)
+              }}
+            >
+              <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 16 }} />
+            </IconButton>
+          ) : undefined
 
         return (
           <AutocompleteInput
@@ -206,6 +277,9 @@ const DictCell = ({
             }}
             loading={isFetching}
             size="small"
+            onShowAll={showAllHandler}
+            onAdd={addHandler}
+            endAction={endAction}
           />
         )
       }}

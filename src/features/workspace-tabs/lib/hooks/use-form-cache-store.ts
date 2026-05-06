@@ -89,8 +89,7 @@ export const useFormCacheStore = create<FormCacheStore>((set, get) => ({
   },
 
   consumePendingAction: (tabId) => {
-    const action =
-      tabId in get().pendingActions ? get().pendingActions[tabId] : null
+    const action = get().pendingActions[tabId] ?? null
     if (action) {
       set((state) => {
         const { [tabId]: _, ...rest } = state.pendingActions

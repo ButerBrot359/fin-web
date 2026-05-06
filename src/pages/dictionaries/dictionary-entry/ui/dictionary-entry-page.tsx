@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -14,7 +14,16 @@ import type { DocumentAttribute } from '@/entities/document-type'
 import type { ApiResponse } from '@/shared/types/api.types'
 import { useOptionalFormConfig } from '@/entities/form-config'
 import { FormRenderer } from '@/features/form-renderer'
-import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
+import {
+  useTabMeta,
+  useWorkspaceTabsStore,
+  useFormCache,
+  useFormCacheStore,
+} from '@/features/workspace-tabs'
+import {
+  markRestoring,
+  unmarkRestoring,
+} from '@/features/workspace-tabs/lib/hooks/use-form-cache-store'
 import {
   fetchDictTypeMetadata,
   fetchDictEntryById,
@@ -69,14 +78,53 @@ export const DictionaryEntryPage = () => {
   const form = useForm<Record<string, unknown>>()
   const { isDirty } = form.formState
 
+  const restoredRef = useRef(false)
+
   useEffect(() => {
-    if (!entryData) return
-    const values: Record<string, unknown> = { ...entryData.attributes }
-    values.nameRu = entryData.nameRu
-    values.nameKz = entryData.nameKz
-    values.code = entryData.code
-    form.reset(values)
+    const cached = useFormCacheStore
+      .getState()
+      .getCachedValues(location.pathname)
+
+    if (entryData) {
+      const values: Record<string, unknown> = { ...entryData.attributes }
+      values.nameRu = entryData.nameRu
+      values.nameKz = entryData.nameKz
+      values.code = entryData.code
+
+      if (cached) {
+        markRestoring(location.pathname)
+        form.reset(values)
+        for (const [key, value] of Object.entries(cached)) {
+          form.setValue(key, value, { shouldDirty: true })
+        }
+        const hasDirtyFields = Object.keys(cached).some(
+          (key) => JSON.stringify(cached[key]) !== JSON.stringify(values[key])
+        )
+        useFormCacheStore.getState().clearCache(location.pathname)
+        useFormCacheStore.getState().setDirty(location.pathname, hasDirtyFields)
+        restoredRef.current = hasDirtyFields
+        queueMicrotask(() => {
+          unmarkRestoring(location.pathname)
+        })
+      } else if (!form.formState.isDirty && !restoredRef.current) {
+        form.reset(values)
+      }
+    } else if (isNew && cached) {
+      markRestoring(location.pathname)
+      form.reset(cached)
+      useFormCacheStore.getState().clearCache(location.pathname)
+      useFormCacheStore.getState().setDirty(location.pathname, true)
+      restoredRef.current = true
+      queueMicrotask(() => {
+        unmarkRestoring(location.pathname)
+      })
+    }
   }, [entryData]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { pendingAction, markClosing } = useFormCache({
+    tabId: location.pathname,
+    form,
+  })
 
   const formAttributes = useMemo(
     () =>
@@ -183,6 +231,8 @@ export const DictionaryEntryPage = () => {
   })
 
   const closeCurrentTab = () => {
+    markClosing()
+    useFormCacheStore.getState().removeTab(location.pathname)
     useWorkspaceTabsStore.getState().closeTab(location.pathname)
   }
 
@@ -218,6 +268,14 @@ export const DictionaryEntryPage = () => {
       void navigate(listPath)
     }
   }
+
+  // Handle pending save-and-close triggered from tab bar
+  useEffect(() => {
+    if (pendingAction && !isLoadingEntry) {
+      useFormCacheStore.getState().consumePendingAction(location.pathname)
+      void handleSaveAndClose()
+    }
+  }, [pendingAction, isLoadingEntry]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex h-full flex-col gap-5 pt-5">

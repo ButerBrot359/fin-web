@@ -14,6 +14,7 @@ import type { SelectOption } from '@/shared/types/select-option'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
 import { buildFallbackConfig } from '@/pages/documents/documents-entry/lib/utils/build-fallback-config'
+import { moveTablesLast } from '../lib/utils/move-tables-last'
 
 import type { DictSidebarPanel } from '../types/dict-sidebar'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
@@ -87,7 +88,7 @@ export const DictSidebarFormView = ({
   )
 
   const formConfig = useMemo(
-    () => buildFallbackConfig(formAttributes),
+    () => moveTablesLast(buildFallbackConfig(formAttributes), formAttributes),
     [formAttributes]
   )
 

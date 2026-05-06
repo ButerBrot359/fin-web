@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
+import { useFormState } from 'react-hook-form'
 
 import { useWorkspaceTabsStore } from './use-workspace-tabs-store'
 import { useFormCacheStore } from './use-form-cache-store'
@@ -22,24 +23,14 @@ export function useFormCache({ tabId, form }: UseFormCacheOptions) {
     (s) => s.pendingActions[tabId] ?? null
   )
 
-  // Sync isDirty to cache store via form.watch subscription.
-  // Skips during restore (isRestoring) to avoid overwriting the manually set dirty flag.
+  // Reactive isDirty from RHF — triggers re-render when dirty state changes.
+  // Unlike form.watch() callback, this always has the correct isDirty value.
+  const { isDirty } = useFormState({ control: form.control })
+
   useEffect(() => {
-    const { setDirty } = useFormCacheStore.getState()
-
-    if (!isRestoring(tabId)) {
-      setDirty(tabId, form.formState.isDirty)
-    }
-
-    const subscription = form.watch(() => {
-      if (isRestoring(tabId)) return
-      setDirty(tabId, form.formState.isDirty)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [tabId, form])
+    if (isRestoring(tabId)) return
+    useFormCacheStore.getState().setDirty(tabId, isDirty)
+  }, [isDirty, tabId])
 
   // Always cache form values on unmount so StrictMode re-mount can restore.
   useEffect(() => {

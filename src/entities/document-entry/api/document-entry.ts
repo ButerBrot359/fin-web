@@ -62,3 +62,8 @@ export const printDocumentEntry = (
     url: `/api/document-entries/${typeCode}/${String(id)}/print`,
     params: form ? { form } : undefined,
   })
+
+export const copyDocumentEntry = (typeCode: string, id: number) =>
+  apiService.post<DocumentEntryResponseData>({
+    url: `/api/document-entries/${typeCode}/${String(id)}/copy`,
+  })

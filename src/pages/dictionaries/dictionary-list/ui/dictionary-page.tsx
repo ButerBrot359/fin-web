@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
+import { useModule } from '@/entities/module'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { DictionaryListToolbar } from '@/widgets/dictionary-list-toolbar'
@@ -16,7 +17,13 @@ export const DictionaryPage = () => {
     () => new URLSearchParams(window.location.search)
   )
   const domain = searchParams.get('domain') ?? 'DICTIONARY'
-  const skipDependsOn = searchParams.get('skipDependsOn') === 'true'
+
+  const { data: moduleItems } = useModule(pageCode)
+  const skipDependsOn = moduleItems.some((column) =>
+    column.some((section) =>
+      section.elements.some((el) => el.code === moduleCode && el.skipDependsOn)
+    )
+  )
 
   const { title, attributes, isLoading } = useDictionaryType(domain, moduleCode)
   useTabMeta(title)

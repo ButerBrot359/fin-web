@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   useInfiniteQuery,
+  useMutation,
   useQuery,
+  useQueryClient,
   keepPreviousData,
 } from '@tanstack/react-query'
 import { CircularProgress, Typography } from '@mui/material'
@@ -23,6 +25,7 @@ import type { SelectOption } from '@/shared/types/select-option'
 import { formatDate } from '@/shared/lib/utils/date'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { cn } from '@/shared/lib/utils/cn'
+import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { DictSidebarPanel } from '../types/dict-sidebar'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
@@ -30,6 +33,7 @@ import {
   fetchDictTypeMetadata,
   fetchDictEntriesPaged,
   searchDictEntries,
+  copyDictEntry,
   type DictEntry,
 } from '../api/dict-sidebar-api'
 
@@ -272,6 +276,30 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     pop()
   }
 
+  const queryClient = useQueryClient()
+
+  const copyMutation = useMutation({
+    mutationFn: (id: number) => copyDictEntry(panel.domain, id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ['dict-sidebar-entries', panel.domain, panel.typeCode],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ['dictionary-search'],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ['document-entries'],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ['document-entry'],
+      })
+      showToast('success', t('actions.copied'))
+    },
+    onError: () => {
+      showToast('error', t('actions.copyError'))
+    },
+  })
+
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-6">
       {/* Toolbar */}
@@ -296,6 +324,13 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
             }}
           >
             {t('dictSidebar.create')}
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={selectedRowId == null || copyMutation.isPending}
+            onClick={() => copyMutation.mutate(selectedRowId!)}
+          >
+            {t('actions.copy')}
           </Button>
         </div>
 

@@ -35,7 +35,10 @@
     "layers": "Қабаттар",
     "link": "Сілтеме",
     "more": "Тағы",
-    "close": "Жабу"
+    "close": "Жабу",
+    "copy": "Көшіру",
+    "copied": "Жазба көшірілді",
+    "copyError": "Көшіру қатесі"
   },
   "bankPage": {
     "financing": {

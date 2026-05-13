@@ -60,6 +60,18 @@ export const DictSidebarFormView = ({
     select: (res) => res.data.data,
   })
 
+  const { data: copyFromData, isLoading: isLoadingCopy } = useQuery<
+    AxiosResponse<ApiResponse<DictEntry>>,
+    Error,
+    DictEntry
+  >({
+    queryKey: ['dict-sidebar-entry', panel.domain, panel.copyFromId],
+    queryFn: ({ signal }) =>
+      fetchDictEntryById(panel.domain, panel.copyFromId!, signal),
+    enabled: !savedEntryId && !!panel.copyFromId,
+    select: (res) => res.data.data,
+  })
+
   useEffect(() => {
     if (!entryData) return
     const values: Record<string, unknown> = { ...entryData.attributes }
@@ -75,6 +87,14 @@ export const DictSidebarFormView = ({
       })
     )
   }, [entryData, form, i18n.language, t, typeName, updateTopTitle])
+
+  useEffect(() => {
+    if (!copyFromData || savedEntryId) return
+    const values: Record<string, unknown> = { ...copyFromData.attributes }
+    values.nameRu = copyFromData.nameRu
+    values.nameKz = copyFromData.nameKz
+    form.reset(values)
+  }, [copyFromData, savedEntryId, form])
 
   const formAttributes = useMemo(
     () =>
@@ -231,7 +251,7 @@ export const DictSidebarFormView = ({
 
       {/* Form */}
       <div className="min-h-0 flex-1 overflow-auto pb-2">
-        {isLoadingEntry ? null : (
+        {isLoadingEntry || isLoadingCopy ? null : (
           <FormRenderer
             config={formConfig}
             attributes={formAttributes}

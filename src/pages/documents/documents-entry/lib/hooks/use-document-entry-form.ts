@@ -30,6 +30,7 @@ export const useDocumentEntryForm = () => {
 
   const isNew = !entryId || entryId === 'new'
   const vidOperatsii = searchParams.get('VidOperatsii')
+  const copyFrom = searchParams.get('copyFrom')
   const newEntryParams = vidOperatsii
     ? { VidOperatsii: vidOperatsii }
     : undefined
@@ -37,7 +38,14 @@ export const useDocumentEntryForm = () => {
   const { data: newEntryData, isLoading: isLoadingNewEntry } = useQuery({
     queryKey: ['document-entry-new', moduleCode, vidOperatsii],
     queryFn: () => getNewDocumentEntry(moduleCode, newEntryParams),
-    enabled: isNew && !!vidOperatsii,
+    enabled: isNew && !!vidOperatsii && !copyFrom,
+    select: (response) => response.data.data,
+  })
+
+  const { data: copyFromData, isLoading: isLoadingCopy } = useQuery({
+    queryKey: ['document-entry', copyFrom],
+    queryFn: () => getDocumentEntry(copyFrom!),
+    enabled: isNew && !!copyFrom,
     select: (response) => response.data.data,
   })
 
@@ -57,9 +65,11 @@ export const useDocumentEntryForm = () => {
 
     if (!isNew && existingEntry?.attributes) {
       defaults = existingEntry.attributes
+    } else if (isNew && copyFromData?.attributes) {
+      defaults = { ...copyFromData.attributes, Data: new Date().toISOString() }
     } else if (isNew && newEntryData?.attributes) {
       defaults = { Data: new Date().toISOString(), ...newEntryData.attributes }
-    } else if (isNew && !vidOperatsii) {
+    } else if (isNew && !vidOperatsii && !copyFrom) {
       defaults = { Data: new Date().toISOString() }
     }
 
@@ -83,12 +93,12 @@ export const useDocumentEntryForm = () => {
     } else if (!form.formState.isDirty && !restoredRef.current) {
       form.reset(defaults)
     }
-  }, [isNew, existingEntry, newEntryData, vidOperatsii, form, pathname])
+  }, [isNew, existingEntry, newEntryData, copyFromData, vidOperatsii, copyFrom, form, pathname])
 
   return {
     form,
     isNew,
     existingEntry,
-    isLoading: isLoadingEntry || isLoadingNewEntry,
+    isLoading: isLoadingEntry || isLoadingNewEntry || isLoadingCopy,
   }
 }

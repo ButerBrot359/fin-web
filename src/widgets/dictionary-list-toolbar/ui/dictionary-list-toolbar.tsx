@@ -1,13 +1,10 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
-import { showToast } from '@/shared/ui/toast/show-toast'
-import { copyDictEntry } from '@/features/dict-sidebar/api/dict-sidebar-api'
 
 interface DictionaryListToolbarProps {
   selectedRowId?: number | null
@@ -20,29 +17,8 @@ export const DictionaryListToolbar = ({
 }: DictionaryListToolbarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { pageCode, moduleCode } = useParams()
+  const { pageCode = '', moduleCode = '' } = useParams()
   const [search, setSearch] = useState('')
-
-  const queryClient = useQueryClient()
-
-  const copyMutation = useMutation({
-    mutationFn: (id: number) => copyDictEntry(domain, id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['dict-entries', domain, moduleCode],
-      })
-      void queryClient.invalidateQueries({
-        queryKey: ['dict-sidebar-entries', domain, moduleCode],
-      })
-      void queryClient.invalidateQueries({
-        queryKey: ['dictionary-search'],
-      })
-      showToast('success', t('actions.copied'))
-    },
-    onError: () => {
-      showToast('error', t('actions.copyError'))
-    },
-  })
 
   const handleCreate = () => {
     if (!pageCode || !moduleCode) return
@@ -62,8 +38,12 @@ export const DictionaryListToolbar = ({
         </Button>
         <Button
           variant="secondary"
-          disabled={selectedRowId == null || copyMutation.isPending}
-          onClick={() => copyMutation.mutate(selectedRowId!)}
+          disabled={selectedRowId == null}
+          onClick={() =>
+            void navigate(
+              `/modules/${pageCode}/dictionary/${moduleCode}/new?domain=${domain}&copyFrom=${String(selectedRowId)}`
+            )
+          }
         >
           {t('actions.copy')}
         </Button>

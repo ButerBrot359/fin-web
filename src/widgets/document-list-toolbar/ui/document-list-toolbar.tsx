@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { apiService } from '@/shared/api/api'
@@ -12,9 +11,7 @@ import SearchIcon from '@/shared/assets/icons/search.svg'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
 
-import { showToast } from '@/shared/ui/toast/show-toast'
-
-import { copyDocumentEntry, useDocumentEntryPrint } from '@/entities/document-entry'
+import { useDocumentEntryPrint } from '@/entities/document-entry'
 import { PrintDropdownButton } from '@/widgets/document-form-toolbar'
 
 import { SelectOperationDialog } from './select-operation-dialog'
@@ -89,21 +86,6 @@ export const DocumentListToolbar = ({
     }
   }
 
-  const queryClient = useQueryClient()
-
-  const copyMutation = useMutation({
-    mutationFn: (id: number) => copyDocumentEntry(moduleCode, id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['document-entries', moduleCode],
-      })
-      showToast('success', t('actions.copied'))
-    },
-    onError: () => {
-      showToast('error', t('actions.copyError'))
-    },
-  })
-
   const handleSelectOperation = (operationCode: string) => {
     if (!pageCode || !moduleCode) return
     setDialogOpen(false)
@@ -161,8 +143,12 @@ export const DocumentListToolbar = ({
 
           <Button
             variant="secondary"
-            disabled={selectedRowId == null || copyMutation.isPending}
-            onClick={() => copyMutation.mutate(selectedRowId!)}
+            disabled={selectedRowId == null}
+            onClick={() =>
+              void navigate(
+                `/modules/${pageCode}/document/${moduleCode}/new?copyFrom=${String(selectedRowId)}`
+              )
+            }
           >
             {t('actions.copy')}
           </Button>

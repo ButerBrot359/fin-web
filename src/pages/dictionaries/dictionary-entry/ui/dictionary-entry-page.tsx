@@ -45,6 +45,9 @@ export const DictionaryEntryPage = () => {
     () =>
       new URLSearchParams(window.location.search).get('domain') ?? 'DICTIONARY'
   )
+  const [copyFrom] = useState(
+    () => new URLSearchParams(window.location.search).get('copyFrom')
+  )
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
@@ -72,6 +75,17 @@ export const DictionaryEntryPage = () => {
     queryKey: ['dict-entry', domain, savedEntryId],
     queryFn: ({ signal }) => fetchDictEntryById(domain, savedEntryId!, signal),
     enabled: !!savedEntryId,
+    select: (res) => res.data.data,
+  })
+
+  const { data: copyFromData, isLoading: isLoadingCopy } = useQuery<
+    AxiosResponse<ApiResponse<DictEntry>>,
+    Error,
+    DictEntry
+  >({
+    queryKey: ['dict-entry', domain, copyFrom],
+    queryFn: ({ signal }) => fetchDictEntryById(domain, copyFrom!, signal),
+    enabled: isNew && !!copyFrom,
     select: (res) => res.data.data,
   })
 
@@ -109,6 +123,31 @@ export const DictionaryEntryPage = () => {
       } else if (!form.formState.isDirty && !restoredRef.current) {
         form.reset(values)
       }
+    } else if (isNew && copyFromData) {
+      const { Nomer: _, ...restAttrs } = (copyFromData.attributes ?? {}) as Record<string, unknown>
+      const values: Record<string, unknown> = { ...restAttrs }
+      values.nameRu = copyFromData.nameRu
+      values.nameKz = copyFromData.nameKz
+
+      if (cached) {
+        markRestoring(location.pathname)
+        form.reset({})
+        for (const [key, value] of Object.entries(cached)) {
+          form.setValue(key, value, { shouldDirty: true })
+        }
+        useFormCacheStore.getState().clearCache(location.pathname)
+        useFormCacheStore.getState().setDirty(location.pathname, true)
+        restoredRef.current = true
+        queueMicrotask(() => {
+          unmarkRestoring(location.pathname)
+        })
+      } else if (!form.formState.isDirty && !restoredRef.current) {
+        form.reset({})
+        for (const [key, value] of Object.entries(values)) {
+          form.setValue(key, value, { shouldDirty: true })
+        }
+        restoredRef.current = true
+      }
     } else if (isNew && cached) {
       markRestoring(location.pathname)
       form.reset(cached)
@@ -119,7 +158,7 @@ export const DictionaryEntryPage = () => {
         unmarkRestoring(location.pathname)
       })
     }
-  }, [entryData]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [entryData, copyFromData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { pendingAction, markClosing } = useFormCache({
     tabId: location.pathname,
@@ -296,7 +335,7 @@ export const DictionaryEntryPage = () => {
       </div>
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">
-        {isLoadingEntry ? null : (
+        {isLoadingEntry || isLoadingCopy ? null : (
           <FormRenderer
             config={formConfig}
             attributes={formAttributes}

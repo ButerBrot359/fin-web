@@ -112,8 +112,3 @@ export const updateDictEntry = (
     url: getUniversalEntryByIdUrl(domain, id),
     data: payload,
   })
-
-export const copyDictEntry = (domain: string, id: number) =>
-  apiService.post<ApiResponse<DictEntry>>({
-    url: `${getUniversalEntryByIdUrl(domain, id)}/copy`,
-  })

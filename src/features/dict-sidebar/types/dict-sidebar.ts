@@ -8,6 +8,7 @@ export interface DictSidebarPanel {
   domain: string
   typeCode: string
   entryId?: number | string
+  copyFromId?: number
   title?: string
   searchParams?: Record<string, string>
   onSelect?: (value: SelectOption) => void

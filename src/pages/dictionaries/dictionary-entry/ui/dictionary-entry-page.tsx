@@ -124,13 +124,14 @@ export const DictionaryEntryPage = () => {
         form.reset(values)
       }
     } else if (isNew && copyFromData) {
-      const values: Record<string, unknown> = { ...copyFromData.attributes }
+      const { Nomer: _, ...restAttrs } = (copyFromData.attributes ?? {}) as Record<string, unknown>
+      const values: Record<string, unknown> = { ...restAttrs }
       values.nameRu = copyFromData.nameRu
       values.nameKz = copyFromData.nameKz
 
       if (cached) {
         markRestoring(location.pathname)
-        form.reset(values)
+        form.reset({})
         for (const [key, value] of Object.entries(cached)) {
           form.setValue(key, value, { shouldDirty: true })
         }
@@ -141,7 +142,11 @@ export const DictionaryEntryPage = () => {
           unmarkRestoring(location.pathname)
         })
       } else if (!form.formState.isDirty && !restoredRef.current) {
-        form.reset(values)
+        form.reset({})
+        for (const [key, value] of Object.entries(values)) {
+          form.setValue(key, value, { shouldDirty: true })
+        }
+        restoredRef.current = true
       }
     } else if (isNew && cached) {
       markRestoring(location.pathname)

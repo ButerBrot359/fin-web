@@ -90,10 +90,15 @@ export const DictSidebarFormView = ({
 
   useEffect(() => {
     if (!copyFromData || savedEntryId) return
-    const values: Record<string, unknown> = { ...copyFromData.attributes }
+    const { Nomer: _, ...restAttrs } = (copyFromData.attributes ?? {}) as Record<string, unknown>
+    const values: Record<string, unknown> = { ...restAttrs }
     values.nameRu = copyFromData.nameRu
     values.nameKz = copyFromData.nameKz
-    form.reset(values)
+
+    form.reset({})
+    for (const [key, value] of Object.entries(values)) {
+      form.setValue(key, value, { shouldDirty: true })
+    }
   }, [copyFromData, savedEntryId, form])
 
   const formAttributes = useMemo(

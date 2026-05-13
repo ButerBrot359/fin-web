@@ -66,7 +66,16 @@ export const useDocumentEntryForm = () => {
     if (!isNew && existingEntry?.attributes) {
       defaults = existingEntry.attributes
     } else if (isNew && copyFromData?.attributes) {
-      defaults = { ...copyFromData.attributes, Data: new Date().toISOString() }
+      const { Nomer: _, ...rest } = copyFromData.attributes as Record<string, unknown>
+      const copiedValues = { ...rest, Data: new Date().toISOString() }
+      const emptyDefaults = { Data: new Date().toISOString() }
+
+      form.reset(emptyDefaults)
+      for (const [key, value] of Object.entries(copiedValues)) {
+        form.setValue(key, value, { shouldDirty: true })
+      }
+      restoredRef.current = true
+      return
     } else if (isNew && newEntryData?.attributes) {
       defaults = { Data: new Date().toISOString(), ...newEntryData.attributes }
     } else if (isNew && !vidOperatsii && !copyFrom) {

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
+import CopyDocIcon from '@/shared/assets/icons/copy-doc.svg'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
@@ -38,15 +39,15 @@ export const DictionaryListToolbar = ({
         </Button>
         <Button
           variant="secondary"
+          aria-label={t('actions.copy')}
           disabled={selectedRowId == null}
+          startIcon={<CopyDocIcon className="h-5 w-5" />}
           onClick={() =>
             void navigate(
               `/modules/${pageCode}/dictionary/${moduleCode}/new?domain=${domain}&copyFrom=${String(selectedRowId)}`
             )
           }
-        >
-          {t('actions.copy')}
-        </Button>
+        />
       </div>
 
       <div className="flex items-center gap-2">

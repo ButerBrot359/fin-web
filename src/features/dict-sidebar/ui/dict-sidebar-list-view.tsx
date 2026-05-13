@@ -14,6 +14,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import CopyDocIcon from '@/shared/assets/icons/copy-doc.svg'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
 import { Button } from '@/shared/ui/buttons/button'
@@ -299,7 +300,9 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
           </Button>
           <Button
             variant="secondary"
+            aria-label={t('actions.copy')}
             disabled={selectedRowId == null}
+            startIcon={<CopyDocIcon className="h-5 w-5" />}
             onClick={() => {
               push({
                 mode: 'create',
@@ -309,9 +312,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                 copyFromId: selectedRowId!,
               })
             }}
-          >
-            {t('actions.copy')}
-          </Button>
+          />
         </div>
 
         <div className="flex items-center gap-2">

@@ -90,7 +90,7 @@ export const DictSidebarFormView = ({
 
   useEffect(() => {
     if (!copyFromData || savedEntryId) return
-    const { Nomer: _, ...restAttrs } = (copyFromData.attributes ?? {}) as Record<string, unknown>
+    const { Nomer: _, Kod: _k, ...restAttrs } = (copyFromData.attributes ?? {}) as Record<string, unknown>
     const values: Record<string, unknown> = { ...restAttrs }
     values.nameRu = copyFromData.nameRu
     values.nameKz = copyFromData.nameKz

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { apiService } from '@/shared/api/api'
 import type { ApiResponse } from '@/shared/types/api.types'
 import AddDocumentIcon from '@/shared/assets/icons/add-document.svg'
+import CopyDocIcon from '@/shared/assets/icons/copy-doc.svg'
 import DebetKreditIcon from '@/shared/assets/icons/debet-kredit.svg'
 import LayersIcon from '@/shared/assets/icons/layers.svg'
 import SearchIcon from '@/shared/assets/icons/search.svg'
@@ -143,15 +144,15 @@ export const DocumentListToolbar = ({
 
           <Button
             variant="secondary"
+            aria-label={t('actions.copy')}
             disabled={selectedRowId == null}
+            startIcon={<CopyDocIcon className="h-5 w-5" />}
             onClick={() =>
               void navigate(
                 `/modules/${pageCode}/document/${moduleCode}/new?copyFrom=${String(selectedRowId)}`
               )
             }
-          >
-            {t('actions.copy')}
-          </Button>
+          />
 
           <PrintDropdownButton
             commands={printCommands}

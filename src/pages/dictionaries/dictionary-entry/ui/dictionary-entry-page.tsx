@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   useQuery,
@@ -41,13 +46,9 @@ import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved
 
 export const DictionaryEntryPage = () => {
   const { moduleCode = '', pageCode = '', entryId } = useParams()
-  const [domain] = useState(
-    () =>
-      new URLSearchParams(window.location.search).get('domain') ?? 'DICTIONARY'
-  )
-  const [copyFrom] = useState(
-    () => new URLSearchParams(window.location.search).get('copyFrom')
-  )
+  const [searchParams] = useSearchParams()
+  const domain = searchParams.get('domain') ?? 'DICTIONARY'
+  const copyFrom = searchParams.get('copyFrom')
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
@@ -95,6 +96,11 @@ export const DictionaryEntryPage = () => {
   const restoredRef = useRef(false)
 
   useEffect(() => {
+    if (isNew && copyFrom && !copyFromData) {
+      useFormCacheStore.getState().clearCache(location.pathname)
+      return
+    }
+
     const cached = useFormCacheStore
       .getState()
       .getCachedValues(location.pathname)
@@ -124,7 +130,7 @@ export const DictionaryEntryPage = () => {
         form.reset(values)
       }
     } else if (isNew && copyFromData) {
-      const { Nomer: _, ...restAttrs } = (copyFromData.attributes ?? {}) as Record<string, unknown>
+      const { Nomer: _, Kod: _k, ...restAttrs } = (copyFromData.attributes ?? {}) as Record<string, unknown>
       const values: Record<string, unknown> = { ...restAttrs }
       values.nameRu = copyFromData.nameRu
       values.nameKz = copyFromData.nameKz

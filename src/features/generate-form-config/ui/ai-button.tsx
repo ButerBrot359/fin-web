@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CircularProgress } from '@mui/material'
 
@@ -13,6 +13,7 @@ interface AiButtonProps {
   domain?: string
   configExists: boolean
   onSuccess: () => void
+  onPendingChange?: (isPending: boolean) => void
 }
 
 export const AiButton = ({
@@ -21,6 +22,7 @@ export const AiButton = ({
   domain,
   configExists,
   onSuccess,
+  onPendingChange,
 }: AiButtonProps) => {
   const { t } = useTranslation()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -31,6 +33,10 @@ export const AiButton = ({
     domain,
     onSuccess,
   })
+
+  useEffect(() => {
+    onPendingChange?.(isPending)
+  }, [isPending]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClick = () => {
     if (configExists) {
@@ -59,11 +65,9 @@ export const AiButton = ({
         type="button"
         disabled={isPending}
         onClick={handleClick}
-        className="flex min-w-[56px] cursor-pointer items-center justify-center rounded-md px-5 py-2.5 text-body2 font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-70"
+        className="flex min-w-14 cursor-pointer items-center justify-center rounded-md px-3 py-2.5 text-body2 font-semibold text-white transition-all hover:opacity-85 hover:shadow-secondary-hover active:opacity-75 active:shadow-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:shadow-none"
         style={{
-          background: isPending
-            ? 'linear-gradient(135deg, #818cf8, #a78bfa)'
-            : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
         }}
       >
         {isPending ? (

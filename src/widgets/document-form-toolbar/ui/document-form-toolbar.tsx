@@ -26,6 +26,7 @@ interface AiButtonConfig {
   type: 'documents' | 'dictionaries'
   configExists: boolean
   onSuccess: () => void
+  onPendingChange?: (isPending: boolean) => void
 }
 
 interface DocumentFormToolbarProps {
@@ -91,6 +92,7 @@ export const DocumentFormToolbar = ({
           type={aiButton.type}
           configExists={aiButton.configExists}
           onSuccess={aiButton.onSuccess}
+          onPendingChange={aiButton.onPendingChange}
         />
         <DropdownButton label={t('documentFormToolbar.more')} />
       </div>

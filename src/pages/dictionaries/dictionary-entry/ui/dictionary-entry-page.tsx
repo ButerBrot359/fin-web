@@ -186,6 +186,8 @@ export const DictionaryEntryPage = () => {
   const { config } = useOptionalFormConfig(moduleCode, 'dictionaries', domain)
   const formConfig = config ?? buildFallbackConfig(formAttributes)
 
+  const [isAiGenerating, setIsAiGenerating] = useState(false)
+
   const handleAiSuccess = () => {
     void queryClient.invalidateQueries({
       queryKey: ['form-configs', 'dictionaries', moduleCode],
@@ -353,13 +355,14 @@ export const DictionaryEntryPage = () => {
             domain={domain}
             configExists={config !== null}
             onSuccess={handleAiSuccess}
+            onPendingChange={setIsAiGenerating}
           />
           <DropdownButton label={t('actions.more')} disabled />
         </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">
-        {isLoadingEntry || isLoadingCopy ? null : (
+        {isLoadingEntry || isLoadingCopy || isAiGenerating ? null : (
           <FormRenderer
             config={formConfig}
             attributes={formAttributes}

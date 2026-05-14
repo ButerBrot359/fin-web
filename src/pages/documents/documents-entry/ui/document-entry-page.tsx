@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -67,6 +67,7 @@ export const DocumentEntryPage = () => {
   })
 
   const queryClient = useQueryClient()
+  const [isAiGenerating, setIsAiGenerating] = useState(false)
 
   const handleAiSuccess = () => {
     void queryClient.invalidateQueries({
@@ -137,11 +138,12 @@ export const DocumentEntryPage = () => {
           type: 'documents',
           configExists: config !== null,
           onSuccess: handleAiSuccess,
+          onPendingChange: setIsAiGenerating,
         }}
       />
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">
-        {isLoadingConfig || isLoading ? (
+        {isLoadingConfig || isLoading || isAiGenerating ? (
           <DocumentEntrySkeleton />
         ) : (
           <FormRenderer

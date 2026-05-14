@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useRef, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UseFormReturn } from 'react-hook-form'
 
@@ -28,7 +28,27 @@ export const FormRenderer = ({
   const { dependencyMap } = useTypeDependencies({ attributes })
   const { optionsMap } = useFieldOptions({ attributes, dependencyMap })
 
-  const { onFieldChange } = useFormEvents({ typeCode, attributes, form })
+  const tableReplacersRef = useRef(
+    new Map<string, (rows: Record<string, unknown>[]) => void>()
+  )
+
+  const registerTableReplacer = useCallback(
+    (code: string, replacer: (rows: Record<string, unknown>[]) => void) => {
+      tableReplacersRef.current.set(code, replacer)
+    },
+    []
+  )
+
+  const unregisterTableReplacer = useCallback((code: string) => {
+    tableReplacersRef.current.delete(code)
+  }, [])
+
+  const { onFieldChange } = useFormEvents({
+    typeCode,
+    attributes,
+    form,
+    tableReplacersRef,
+  })
 
   const contextValue = useMemo(
     () => ({
@@ -38,8 +58,19 @@ export const FormRenderer = ({
       optionsMap,
       onFieldChange,
       dependencyMap,
+      registerTableReplacer,
+      unregisterTableReplacer,
     }),
-    [attributes, form, i18n.language, optionsMap, onFieldChange, dependencyMap]
+    [
+      attributes,
+      form,
+      i18n.language,
+      optionsMap,
+      onFieldChange,
+      dependencyMap,
+      registerTableReplacer,
+      unregisterTableReplacer,
+    ]
   )
 
   return (

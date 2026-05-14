@@ -5,6 +5,8 @@ import { useMutation } from '@tanstack/react-query'
 import { apiService } from '@/shared/api/api'
 import type { DocumentAttribute } from '@/entities/document-type'
 
+import type { TableReplacersRef } from '../../types/renderer-context'
+
 interface HandleEventPayload {
   eventName: string
   entry: Record<string, unknown>
@@ -21,12 +23,14 @@ interface UseFormEventsParams {
   typeCode: string
   attributes: DocumentAttribute[]
   form: UseFormReturn<Record<string, unknown>>
+  tableReplacersRef: TableReplacersRef
 }
 
 export const useFormEvents = ({
   typeCode,
   attributes,
   form,
+  tableReplacersRef,
 }: UseFormEventsParams) => {
   const eventFieldMap = useMemo(
     () =>
@@ -52,7 +56,12 @@ export const useFormEvents = ({
       if (!newAttributes) return
 
       for (const [key, value] of Object.entries(newAttributes)) {
-        form.setValue(key, value)
+        const replacer = tableReplacersRef.current.get(key)
+        if (replacer && Array.isArray(value)) {
+          replacer(value as Record<string, unknown>[])
+        } else {
+          form.setValue(key, value)
+        }
       }
     },
   })

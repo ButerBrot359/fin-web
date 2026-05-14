@@ -21,6 +21,7 @@ import { useTableColumns } from '../lib/hooks/use-table-columns'
 import { buildEmptyRow } from '../lib/utils/build-empty-row'
 import { TableCellRenderer } from './table-cell-renderer'
 import { TableFieldToolbar } from './table-field-toolbar'
+import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
 
 interface TableFieldProps {
   attribute: DocumentAttribute
@@ -54,6 +55,9 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
   const { columns, isLoading } = useTableColumns(attribute)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
+  const { registerTableReplacer, unregisterTableReplacer } =
+    useFormRendererContext()
+
   // Ensure the table field is initialised in form state before useFieldArray
   useEffect(() => {
     const current = form.getValues(attribute.code)
@@ -66,6 +70,14 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     control: form.control as unknown as Control,
     name: attribute.code,
   })
+
+  // Register replace so useFormEvents can update table data from event responses
+  useEffect(() => {
+    registerTableReplacer(attribute.code, replace)
+    return () => {
+      unregisterTableReplacer(attribute.code)
+    }
+  }, [attribute.code, replace, registerTableReplacer, unregisterTableReplacer])
 
   // Sync useFieldArray when form is reset with external data (existing entry)
   const hasSynced = useRef(false)
@@ -117,6 +129,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     data: fields as unknown as Record<string, unknown>[],
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
+    getRowId: (_, index) => fields[index]?.id ?? String(index),
   })
 
   const handleAdd = () => {

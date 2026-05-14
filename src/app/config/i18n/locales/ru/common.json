@@ -91,7 +91,10 @@
     "editSelected": "Изменить выделенные...",
     "print": "Печать",
     "reports": "Отчёты",
-    "more": "Ещё"
+    "more": "Ещё",
+    "unpost": "Отменить проведение",
+    "unpostSuccess": "Проведение отменено",
+    "unpostError": "Ошибка отмены проведения"
   },
   "documentFormToolbar": {
     "postAndClose": "Провести и закрыть",

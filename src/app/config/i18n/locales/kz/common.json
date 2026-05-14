@@ -91,7 +91,10 @@
     "editSelected": "Таңдалғандарды өзгерту...",
     "print": "Басып шығару",
     "reports": "Есептер",
-    "more": "Тағы"
+    "more": "Тағы",
+    "unpost": "Өткізуді болдырмау",
+    "unpostSuccess": "Өткізу болдырмалды",
+    "unpostError": "Өткізуді болдырмау қатесі"
   },
   "documentFormToolbar": {
     "postAndClose": "Өткізу және жабу",

@@ -154,7 +154,9 @@ export const DocumentListToolbar = ({
           <Button
             variant="secondary"
             disabled={selectedRowId == null || unpostMutation.isPending}
-            onClick={() => selectedRowId && unpostMutation.mutate(selectedRowId)}
+            onClick={() => {
+              if (selectedRowId) unpostMutation.mutate(selectedRowId)
+            }}
           >
             {t('documentListToolbar.unpost')}
           </Button>

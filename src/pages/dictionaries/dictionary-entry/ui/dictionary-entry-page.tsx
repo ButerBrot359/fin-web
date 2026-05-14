@@ -41,6 +41,7 @@ import {
 import { buildFallbackConfig } from '@/pages/documents/documents-entry/lib/utils/build-fallback-config'
 import { PageHeader } from '@/widgets/page-header'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
+import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
@@ -362,7 +363,15 @@ export const DictionaryEntryPage = () => {
       </div>
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">
-        {isLoadingEntry || isLoadingCopy || isAiGenerating ? null : (
+        {isLoadingEntry || isLoadingCopy || isAiGenerating ? (
+          <div className="flex flex-col gap-4">
+            <ShimmerBlock className="h-12 w-1/3" />
+            <ShimmerBlock className="h-12 w-1/2" />
+            <ShimmerBlock className="h-12 w-2/5" />
+            <ShimmerBlock className="h-12 w-1/4" />
+            <ShimmerBlock className="h-12 w-1/3" />
+          </div>
+        ) : (
           <FormRenderer
             config={formConfig}
             attributes={formAttributes}

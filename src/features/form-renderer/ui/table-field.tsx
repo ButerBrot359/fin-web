@@ -129,6 +129,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     data: fields as unknown as Record<string, unknown>[],
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
+    getRowId: (_, index) => fields[index]?.id ?? String(index),
   })
 
   const handleAdd = () => {

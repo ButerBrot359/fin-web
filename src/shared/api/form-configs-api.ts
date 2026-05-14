@@ -26,6 +26,10 @@ const makeRequest = <T>(
 const get = <T = unknown>({ url, params, signal }: RequestConfig) =>
   makeRequest<T>({ method: 'GET', url, params, signal })
 
+const post = <T = unknown>({ url, params }: RequestConfig) =>
+  makeRequest<T>({ method: 'POST', url, params })
+
 export const formConfigsApi = {
   get,
+  post,
 }

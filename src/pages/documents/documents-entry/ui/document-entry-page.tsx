@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { useDocumentType } from '@/entities/document-type'
 import { useOptionalFormConfig } from '@/entities/form-config'
@@ -65,6 +66,14 @@ export const DocumentEntryPage = () => {
     attributes,
   })
 
+  const queryClient = useQueryClient()
+
+  const handleAiSuccess = () => {
+    void queryClient.invalidateQueries({
+      queryKey: ['form-configs', undefined, moduleCode],
+    })
+  }
+
   const { printCommands, handlePrint, isPrintLoading } = useDocumentEntryPrint({
     moduleCode,
     entryId: existingEntry?.id,
@@ -123,6 +132,12 @@ export const DocumentEntryPage = () => {
           commands: printCommands,
         }}
         onMovements={handleMovements}
+        aiButton={{
+          moduleCode,
+          type: 'documents',
+          configExists: config !== null,
+          onSuccess: handleAiSuccess,
+        }}
       />
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">

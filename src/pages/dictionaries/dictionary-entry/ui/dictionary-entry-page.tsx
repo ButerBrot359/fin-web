@@ -18,6 +18,7 @@ import type { AxiosResponse } from 'axios'
 import type { DocumentAttribute } from '@/entities/document-type'
 import type { ApiResponse } from '@/shared/types/api.types'
 import { useOptionalFormConfig } from '@/entities/form-config'
+import { AiButton } from '@/features/generate-form-config'
 import { FormRenderer } from '@/features/form-renderer'
 import {
   useTabMeta,
@@ -185,6 +186,12 @@ export const DictionaryEntryPage = () => {
   const { config } = useOptionalFormConfig(moduleCode, 'dictionaries', domain)
   const formConfig = config ?? buildFallbackConfig(formAttributes)
 
+  const handleAiSuccess = () => {
+    void queryClient.invalidateQueries({
+      queryKey: ['form-configs', 'dictionaries', moduleCode],
+    })
+  }
+
   const typeName = getLocalizedName(typeData, i18n.language)
 
   const baseTitle = isNew
@@ -326,18 +333,29 @@ export const DictionaryEntryPage = () => {
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={pageTitle} onClose={handleClose} />
 
-      <div className="flex items-center gap-2 pb-3">
-        <Button
-          variant="primary"
-          disabled={isSaving}
-          onClick={handleSaveAndClose}
-        >
-          {t('dictSidebar.saveAndClose')}
-        </Button>
-        <Button variant="secondary" disabled={isSaving} onClick={handleSave}>
-          {t('dictSidebar.save')}
-        </Button>
-        <DropdownButton label={t('actions.more')} disabled />
+      <div className="flex items-center justify-between pb-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="primary"
+            disabled={isSaving}
+            onClick={handleSaveAndClose}
+          >
+            {t('dictSidebar.saveAndClose')}
+          </Button>
+          <Button variant="secondary" disabled={isSaving} onClick={handleSave}>
+            {t('dictSidebar.save')}
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <AiButton
+            moduleCode={moduleCode}
+            type="dictionaries"
+            domain={domain}
+            configExists={config !== null}
+            onSuccess={handleAiSuccess}
+          />
+          <DropdownButton label={t('actions.more')} disabled />
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">

@@ -136,6 +136,15 @@ export const DocumentListToolbar = ({
           <Button variant="primary" onClick={handleCreate}>
             {t('actions.create')}
           </Button>
+          <Button
+            variant="secondary"
+            disabled={selectedRowId == null || unpostMutation.isPending}
+            onClick={() => {
+              if (selectedRowId) unpostMutation.mutate(selectedRowId)
+            }}
+          >
+            {t('documentListToolbar.unpost')}
+          </Button>
 
           <div className="flex items-center gap-2">
             <Button
@@ -151,16 +160,6 @@ export const DocumentListToolbar = ({
               startIcon={<LayersIcon className="h-5 w-5" />}
             />
           </div>
-
-          <Button
-            variant="secondary"
-            disabled={selectedRowId == null || unpostMutation.isPending}
-            onClick={() => {
-              if (selectedRowId) unpostMutation.mutate(selectedRowId)
-            }}
-          >
-            {t('documentListToolbar.unpost')}
-          </Button>
 
           <Button
             variant="secondary"

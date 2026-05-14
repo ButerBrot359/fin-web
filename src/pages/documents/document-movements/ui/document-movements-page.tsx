@@ -192,7 +192,11 @@ export const DocumentMovementsPage = () => {
 
   const handleClose = () => {
     useWorkspaceTabsStore.getState().closeTab(location.pathname)
-    void navigate(`/modules/${pageCode}/document/${moduleCode}/${entryId}`)
+    const backPath =
+      searchParams.get('from') === 'list'
+        ? `/modules/${pageCode}/document/${moduleCode}`
+        : `/modules/${pageCode}/document/${moduleCode}/${entryId}`
+    void navigate(backPath)
   }
 
   return (

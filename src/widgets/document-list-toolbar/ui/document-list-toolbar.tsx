@@ -122,6 +122,7 @@ export const DocumentListToolbar = ({
     if (!selectedRowId) return
     const params = new URLSearchParams({
       title: selectedRowName ?? '',
+      from: 'list',
     })
     void navigate(
       `/modules/${pageCode}/document/${moduleCode}/${String(selectedRowId)}/movements?${params.toString()}`

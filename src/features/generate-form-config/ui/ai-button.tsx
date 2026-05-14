@@ -65,7 +65,7 @@ export const AiButton = ({
         type="button"
         disabled={isPending}
         onClick={handleClick}
-        className="flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-body2 font-semibold text-white transition-all hover:opacity-85 hover:shadow-secondary-hover active:opacity-75 active:shadow-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:shadow-none"
+        className="flex cursor-pointer items-center justify-center rounded-md px-4 py-2 text-body2 font-semibold text-white transition-all hover:opacity-85 hover:shadow-secondary-hover active:opacity-75 active:shadow-none disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:shadow-none"
         style={{
           background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
         }}

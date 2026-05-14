@@ -18,6 +18,7 @@ import type { AxiosResponse } from 'axios'
 import type { DocumentAttribute } from '@/entities/document-type'
 import type { ApiResponse } from '@/shared/types/api.types'
 import { useOptionalFormConfig } from '@/entities/form-config'
+import { AiButton } from '@/features/generate-form-config'
 import { FormRenderer } from '@/features/form-renderer'
 import {
   useTabMeta,
@@ -40,6 +41,7 @@ import {
 import { buildFallbackConfig } from '@/pages/documents/documents-entry/lib/utils/build-fallback-config'
 import { PageHeader } from '@/widgets/page-header'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
+import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
@@ -185,6 +187,14 @@ export const DictionaryEntryPage = () => {
   const { config } = useOptionalFormConfig(moduleCode, 'dictionaries', domain)
   const formConfig = config ?? buildFallbackConfig(formAttributes)
 
+  const [isAiGenerating, setIsAiGenerating] = useState(false)
+
+  const handleAiSuccess = () => {
+    void queryClient.invalidateQueries({
+      queryKey: ['form-configs', 'dictionaries', moduleCode],
+    })
+  }
+
   const typeName = getLocalizedName(typeData, i18n.language)
 
   const baseTitle = isNew
@@ -326,22 +336,42 @@ export const DictionaryEntryPage = () => {
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={pageTitle} onClose={handleClose} />
 
-      <div className="flex items-center gap-2 pb-3">
-        <Button
-          variant="primary"
-          disabled={isSaving}
-          onClick={handleSaveAndClose}
-        >
-          {t('dictSidebar.saveAndClose')}
-        </Button>
-        <Button variant="secondary" disabled={isSaving} onClick={handleSave}>
-          {t('dictSidebar.save')}
-        </Button>
-        <DropdownButton label={t('actions.more')} disabled />
+      <div className="flex items-center justify-between pb-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="primary"
+            disabled={isSaving}
+            onClick={handleSaveAndClose}
+          >
+            {t('dictSidebar.saveAndClose')}
+          </Button>
+          <Button variant="secondary" disabled={isSaving} onClick={handleSave}>
+            {t('dictSidebar.save')}
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <AiButton
+            moduleCode={moduleCode}
+            type="dictionaries"
+            domain={domain}
+            configExists={config !== null}
+            onSuccess={handleAiSuccess}
+            onPendingChange={setIsAiGenerating}
+          />
+          <DropdownButton label={t('actions.more')} disabled />
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">
-        {isLoadingEntry || isLoadingCopy ? null : (
+        {isLoadingEntry || isLoadingCopy || isAiGenerating ? (
+          <div className="flex flex-col gap-4">
+            <ShimmerBlock className="h-12 w-1/3" />
+            <ShimmerBlock className="h-12 w-1/2" />
+            <ShimmerBlock className="h-12 w-2/5" />
+            <ShimmerBlock className="h-12 w-1/4" />
+            <ShimmerBlock className="h-12 w-1/3" />
+          </div>
+        ) : (
           <FormRenderer
             config={formConfig}
             attributes={formAttributes}

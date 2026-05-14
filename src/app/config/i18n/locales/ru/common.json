@@ -91,7 +91,10 @@
     "editSelected": "Изменить выделенные...",
     "print": "Печать",
     "reports": "Отчёты",
-    "more": "Ещё"
+    "more": "Ещё",
+    "unpost": "Отменить проведение",
+    "unpostSuccess": "Проведение отменено",
+    "unpostError": "Ошибка отмены проведения"
   },
   "documentFormToolbar": {
     "postAndClose": "Провести и закрыть",
@@ -168,5 +171,11 @@
   },
   "workspaceTabs": {
     "newTab": "Новая вкладка"
+  },
+  "aiConfig": {
+    "title": "UI конфигурация",
+    "regenerateMessage": "Конфигурация для данного модуля уже существует. Хотите перегенерировать?",
+    "regenerate": "Перегенерировать",
+    "generateError": "Ошибка генерации конфигурации"
   }
 }

@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+
+import { unpostDocumentEntry } from '@/entities/document-entry'
+import { showToast } from '@/shared/ui/toast/show-toast'
 
 import { apiService } from '@/shared/api/api'
 import type { ApiResponse } from '@/shared/types/api.types'
-import AddDocumentIcon from '@/shared/assets/icons/add-document.svg'
 import CopyDocIcon from '@/shared/assets/icons/copy-doc.svg'
 import DebetKreditIcon from '@/shared/assets/icons/debet-kredit.svg'
 import LayersIcon from '@/shared/assets/icons/layers.svg'
@@ -53,6 +56,21 @@ export const DocumentListToolbar = ({
     moduleCode,
     selectedRowId ?? undefined
   )
+
+  const queryClient = useQueryClient()
+
+  const unpostMutation = useMutation({
+    mutationFn: (id: number) => unpostDocumentEntry(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ['document-entries', moduleCode],
+      })
+      showToast('success', t('documentListToolbar.unpostSuccess'))
+    },
+    onError: () => {
+      showToast('error', t('documentListToolbar.unpostError'))
+    },
+  })
 
   const handleCreate = async () => {
     if (!pageCode || !moduleCode) return
@@ -104,6 +122,7 @@ export const DocumentListToolbar = ({
     if (!selectedRowId) return
     const params = new URLSearchParams({
       title: selectedRowName ?? '',
+      from: 'list',
     })
     void navigate(
       `/modules/${pageCode}/document/${moduleCode}/${String(selectedRowId)}/movements?${params.toString()}`
@@ -121,11 +140,6 @@ export const DocumentListToolbar = ({
           <div className="flex items-center gap-2">
             <Button
               variant="secondary"
-              aria-label={t('actions.create')}
-              startIcon={<AddDocumentIcon className="h-5 w-5" />}
-            />
-            <Button
-              variant="secondary"
               aria-label={t('actions.debitCredit')}
               startIcon={<DebetKreditIcon className="h-5 w-5" />}
               disabled={selectedRowId == null}
@@ -138,8 +152,14 @@ export const DocumentListToolbar = ({
             />
           </div>
 
-          <Button variant="secondary" disabled={selectedRowId == null}>
-            {t('documentListToolbar.editSelected')}
+          <Button
+            variant="secondary"
+            disabled={selectedRowId == null || unpostMutation.isPending}
+            onClick={() => {
+              if (selectedRowId) unpostMutation.mutate(selectedRowId)
+            }}
+          >
+            {t('documentListToolbar.unpost')}
           </Button>
 
           <Button

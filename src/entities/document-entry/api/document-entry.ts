@@ -63,3 +63,7 @@ export const printDocumentEntry = (
     params: form ? { form } : undefined,
   })
 
+export const unpostDocumentEntry = (id: number) =>
+  apiService.post<DocumentEntryResponseData>({
+    url: `/api/document-entries/${String(id)}/unpost`,
+  })

@@ -28,3 +28,6 @@ form-configs-server/dist
 *.njsproj
 *.sln
 *.sw?
+
+form-configs-server/configs
+.superpowers

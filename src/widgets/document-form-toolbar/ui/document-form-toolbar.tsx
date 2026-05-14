@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { PrintCommand } from '@/entities/document-entry'
 
+import { AiButton } from '@/features/generate-form-config'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { PrintDropdownButton } from './print-dropdown-button'
 import DebetKreditIcon from '@/shared/assets/icons/debet-kredit.svg'
@@ -20,12 +21,21 @@ interface DocumentFormPrint {
   commands: PrintCommand[]
 }
 
+interface AiButtonConfig {
+  moduleCode: string
+  type: 'documents' | 'dictionaries'
+  configExists: boolean
+  onSuccess: () => void
+  onPendingChange?: (isPending: boolean) => void
+}
+
 interface DocumentFormToolbarProps {
   isNew?: boolean
   isDirty?: boolean
   actions: DocumentFormActions
   print: DocumentFormPrint
   onMovements?: () => void
+  aiButton: AiButtonConfig
 }
 
 export const DocumentFormToolbar = ({
@@ -34,6 +44,7 @@ export const DocumentFormToolbar = ({
   actions,
   print,
   onMovements,
+  aiButton,
 }: DocumentFormToolbarProps) => {
   const { t } = useTranslation()
 
@@ -75,7 +86,16 @@ export const DocumentFormToolbar = ({
         <DropdownButton label={t('documentFormToolbar.reports')} />
       </div>
 
-      <DropdownButton label={t('documentFormToolbar.more')} />
+      <div className="flex items-center gap-2">
+        <AiButton
+          moduleCode={aiButton.moduleCode}
+          type={aiButton.type}
+          configExists={aiButton.configExists}
+          onSuccess={aiButton.onSuccess}
+          onPendingChange={aiButton.onPendingChange}
+        />
+        <DropdownButton label={t('documentFormToolbar.more')} />
+      </div>
     </div>
   )
 }

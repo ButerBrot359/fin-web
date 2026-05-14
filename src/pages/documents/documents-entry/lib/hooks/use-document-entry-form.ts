@@ -88,11 +88,15 @@ export const useDocumentEntryForm = () => {
 
     if (cached) {
       markRestoring(pathname)
-      form.reset(defaults)
-      for (const [key, value] of Object.entries(cached)) {
-        form.setValue(key, value, { shouldDirty: true })
-      }
       const isDirty = hasChanges(cached, defaults)
+      if (isDirty) {
+        form.reset(defaults)
+        for (const [key, value] of Object.entries(cached)) {
+          form.setValue(key, value, { shouldDirty: true })
+        }
+      } else {
+        form.reset({ ...defaults, ...cached })
+      }
       useFormCacheStore.getState().clearCache(pathname)
       useFormCacheStore.getState().setDirty(pathname, isDirty)
       restoredRef.current = isDirty

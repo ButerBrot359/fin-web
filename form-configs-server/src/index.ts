@@ -48,17 +48,26 @@ app.get('/api/configs/:name', async (req, res) => {
     const raw = await fs.readFile(filePath, 'utf-8')
     res.json(JSON.parse(raw) as Record<string, unknown>)
   } catch {
-    try {
-      const domain =
-        typeof req.query.domain === 'string' ? req.query.domain : undefined
-      const config = await generateConfig(req.params.name, type, domain)
-      res.json(config)
-    } catch (genErr) {
-      console.error(`Generation failed for ${req.params.name}:`, genErr)
-      res.status(500).json({
-        error: `Config "${req.params.name}" not found and generation failed`,
-      })
-    }
+    res.status(404).json({ error: `Config "${req.params.name}" not found` })
+  }
+})
+
+app.post('/api/configs/:name', async (req, res) => {
+  const type =
+    typeof req.query.type === 'string' && VALID_TYPES.has(req.query.type)
+      ? req.query.type
+      : 'documents'
+  const domain =
+    typeof req.query.domain === 'string' ? req.query.domain : undefined
+
+  try {
+    const config = await generateConfig(req.params.name, type, domain)
+    res.json(config)
+  } catch (err) {
+    console.error(`Generation failed for ${req.params.name}:`, err)
+    res.status(500).json({
+      error: `Generation failed for "${req.params.name}"`,
+    })
   }
 })
 

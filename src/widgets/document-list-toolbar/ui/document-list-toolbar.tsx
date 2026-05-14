@@ -136,15 +136,18 @@ export const DocumentListToolbar = ({
           <Button variant="primary" onClick={handleCreate}>
             {t('actions.create')}
           </Button>
+
           <Button
             variant="secondary"
-            disabled={selectedRowId == null || unpostMutation.isPending}
-            onClick={() => {
-              if (selectedRowId) unpostMutation.mutate(selectedRowId)
-            }}
-          >
-            {t('documentListToolbar.unpost')}
-          </Button>
+            aria-label={t('actions.copy')}
+            disabled={selectedRowId == null}
+            startIcon={<CopyDocIcon className="h-5 w-5" />}
+            onClick={() =>
+              void navigate(
+                `/modules/${pageCode}/document/${moduleCode}/new?copyFrom=${String(selectedRowId)}`
+              )
+            }
+          />
 
           <div className="flex items-center gap-2">
             <Button
@@ -163,15 +166,13 @@ export const DocumentListToolbar = ({
 
           <Button
             variant="secondary"
-            aria-label={t('actions.copy')}
-            disabled={selectedRowId == null}
-            startIcon={<CopyDocIcon className="h-5 w-5" />}
-            onClick={() =>
-              void navigate(
-                `/modules/${pageCode}/document/${moduleCode}/new?copyFrom=${String(selectedRowId)}`
-              )
-            }
-          />
+            disabled={selectedRowId == null || unpostMutation.isPending}
+            onClick={() => {
+              if (selectedRowId) unpostMutation.mutate(selectedRowId)
+            }}
+          >
+            {t('documentListToolbar.unpost')}
+          </Button>
 
           <PrintDropdownButton
             commands={printCommands}

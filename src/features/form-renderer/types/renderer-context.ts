@@ -1,4 +1,4 @@
-import type { MutableRefObject } from 'react'
+import type { RefObject } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import type { DocumentAttribute } from '@/entities/document-type'
@@ -9,7 +9,7 @@ export interface FieldDependency {
   targetAttributeCode: string
 }
 
-export type TableReplacersRef = MutableRefObject<
+export type TableReplacersRef = RefObject<
   Map<string, (rows: Record<string, unknown>[]) => void>
 >
 

@@ -59,6 +59,7 @@ export const useFormEvents = ({
         const replacer = tableReplacersRef.current.get(key)
         if (replacer && Array.isArray(value)) {
           replacer(value as Record<string, unknown>[])
+          form.setValue(key, value)
         } else {
           form.setValue(key, value)
         }

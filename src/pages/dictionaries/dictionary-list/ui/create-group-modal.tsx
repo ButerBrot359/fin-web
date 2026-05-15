@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Dialog, TextField } from '@mui/material'
+import { Dialog, TextField, Typography } from '@mui/material'
 
 import { createDictEntry } from '@/features/dict-sidebar/api/dict-sidebar-api'
 import { Button } from '@/shared/ui/buttons'
@@ -42,7 +42,7 @@ export const CreateGroupModal = ({
         nameRu: data.nameRu,
         nameKz: data.nameKz || undefined,
         isGroup: true,
-        parentId: parentId ?? null,
+        ...(parentId != null && { parentId }),
         attributes: {},
       }),
     onSuccess: () => {
@@ -89,9 +89,9 @@ export const CreateGroupModal = ({
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-15 py-10">
         <div className="flex items-center gap-6">
-          <h2 className="flex-1 text-[26px] font-bold text-ui-06">
+          <Typography variant="h5" className="flex-1 font-bold text-ui-06">
             {t('actions.createGroup')}
-          </h2>
+          </Typography>
           <button type="button" onClick={handleClose}>
             <CrossIcon className="h-5 w-5" />
           </button>

@@ -64,11 +64,7 @@ export const DictionaryTable = ({
     return [...groups, ...items]
   }, [entries, isHierarchical])
 
-  const columns = useDictionaryColumns(
-    attributes,
-    isHierarchical,
-    openFolders.length
-  )
+  const columns = useDictionaryColumns(attributes, isHierarchical)
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -283,19 +279,21 @@ export const DictionaryTable = ({
                         : ''
                   )}
                 >
-                  {row.getVisibleCells().map((cell, cellIndex) => (
+                  {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
                       className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
                     >
-                      {isGroup && cellIndex === 0 ? (
+                      {isHierarchical && cell.column.id === 'nameRu' ? (
                         <div
                           className="flex items-center gap-2"
                           style={{
                             paddingLeft: openFolders.length * 24,
                           }}
                         >
-                          <ArrowDownIcon className="h-3 w-3 shrink-0 -rotate-90" />
+                          {isGroup && (
+                            <ArrowDownIcon className="h-3 w-3 shrink-0 -rotate-90" />
+                          )}
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext()

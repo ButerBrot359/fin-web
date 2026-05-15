@@ -34,14 +34,11 @@ const buildAttributeColumns = (
 
 export const useDictionaryColumns = (
   attributes: DocumentAttribute[],
-  isHierarchical?: boolean,
-  depth?: number
+  isHierarchical?: boolean
 ): ColumnDef<DictEntry>[] => {
   const { t, i18n } = useTranslation()
 
   return useMemo(() => {
-    const indent = (depth ?? 0) * 24
-
     const nameColumn: ColumnDef<DictEntry> = {
       id: 'nameRu',
       accessorFn: (row) => getLocalizedName(row, i18n.language),
@@ -51,10 +48,7 @@ export const useDictionaryColumns = (
             const entry = tableRow.original
             const name = getLocalizedName(entry, i18n.language)
             return (
-              <div
-                className="flex items-center gap-2"
-                style={{ paddingLeft: indent }}
-              >
+              <div className="flex items-center gap-2">
                 {entry.isGroup ? (
                   <FolderIcon className="h-4 w-4 shrink-0" />
                 ) : (
@@ -68,5 +62,5 @@ export const useDictionaryColumns = (
     }
 
     return [...buildAttributeColumns(attributes, i18n.language), nameColumn]
-  }, [attributes, i18n.language, t, isHierarchical, depth])
+  }, [attributes, i18n.language, t, isHierarchical])
 }

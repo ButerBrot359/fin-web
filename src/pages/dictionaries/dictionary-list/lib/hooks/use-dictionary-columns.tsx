@@ -59,10 +59,12 @@ export const useDictionaryColumns = (
               style={{ paddingLeft: indent }}
             >
               {entry.isGroup ? (
-                <>
-                  <ArrowDownIcon className="h-3 w-3 shrink-0 -rotate-90" />
-                  <FolderIcon className="h-4 w-4 shrink-0" />
-                </>
+                <ArrowDownIcon className="h-3 w-3 shrink-0 -rotate-90" />
+              ) : (
+                <span className="h-3 w-3 shrink-0" />
+              )}
+              {entry.isGroup ? (
+                <FolderIcon className="h-4 w-4 shrink-0" />
               ) : (
                 <ListElementIcon className="h-4 w-4 shrink-0" />
               )}

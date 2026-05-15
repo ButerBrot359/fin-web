@@ -213,26 +213,24 @@ export const DictionaryTable = ({
                     onCloseFolder(folder.id)
                   }}
                 >
-                  <td className="whitespace-nowrap px-3 py-2 first:rounded-l-md">
+                  <td
+                    colSpan={columns.length}
+                    className="px-3 py-2 rounded-md"
+                  >
                     <div
                       className="flex items-center gap-1"
                       style={{ paddingLeft: index * 24 }}
                     >
                       <ArrowDownIcon className="h-3 w-3 shrink-0" />
                       <FolderIcon className="h-4 w-4 shrink-0" />
+                      <Typography
+                        variant="body2"
+                        noWrap
+                        className="ml-1 text-ui-06 font-medium"
+                      >
+                        {folder.name}
+                      </Typography>
                     </div>
-                  </td>
-                  <td
-                    colSpan={columns.length - 1}
-                    className="px-3 py-2 last:rounded-r-md"
-                  >
-                    <Typography
-                      variant="body2"
-                      noWrap
-                      className="text-ui-06 font-medium"
-                    >
-                      {folder.name}
-                    </Typography>
                   </td>
                 </tr>
               ))}

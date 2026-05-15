@@ -64,7 +64,11 @@ export const DictionaryTable = ({
     return [...groups, ...items]
   }, [entries, isHierarchical])
 
-  const columns = useDictionaryColumns(attributes, isHierarchical)
+  const columns = useDictionaryColumns(
+    attributes,
+    isHierarchical,
+    openFolders.length
+  )
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -259,7 +263,6 @@ export const DictionaryTable = ({
               const row = rows[virtualRow.index]
               const entry = row.original
               const isSelected = selectedRowId === entry.id
-              const isGroup = isHierarchical && entry.isGroup
 
               return (
                 <tr
@@ -282,28 +285,16 @@ export const DictionaryTable = ({
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
+                      className={cn(
+                        'px-3 py-2 first:rounded-l-md last:rounded-r-md',
+                        cell.column.id === '__hierarchy'
+                          ? 'w-0 whitespace-nowrap pr-0'
+                          : 'max-w-50 truncate'
+                      )}
                     >
-                      {isHierarchical && cell.column.id === 'nameRu' ? (
-                        <div
-                          className="flex items-center gap-2"
-                          style={{
-                            paddingLeft: openFolders.length * 24,
-                          }}
-                        >
-                          {isGroup && (
-                            <ArrowDownIcon className="h-3 w-3 shrink-0 -rotate-90" />
-                          )}
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </div>
-                      ) : (
-                        flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
                       )}
                     </td>
                   ))}

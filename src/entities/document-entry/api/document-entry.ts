@@ -6,6 +6,11 @@ import type {
   DocumentEntryResponseData,
   PrintCommand,
 } from '../types/document-entry'
+import type {
+  DocumentColumnsResponseData,
+  DocumentSearchResponseData,
+  FilterRequest,
+} from '../types/filter'
 
 export const getDocumentEntries = (
   typeCode: string,
@@ -14,6 +19,25 @@ export const getDocumentEntries = (
   apiService.get<DocumentEntriesResponseData>({
     url: `/api/document-entries/${typeCode}/paged`,
     params,
+  })
+
+export const searchDocumentEntries = (
+  typeCode: string,
+  filter: FilterRequest,
+  params: { page: number; size: number; sortAttr?: string; sortDir?: string },
+  signal?: AbortSignal
+) =>
+  apiService.post<DocumentSearchResponseData>({
+    url: `/api/document-entries/${typeCode}/search`,
+    data: filter,
+    params,
+    signal,
+  })
+
+export const getDocumentColumns = (typeCode: string, signal?: AbortSignal) =>
+  apiService.get<DocumentColumnsResponseData>({
+    url: `/api/document-entries/${typeCode}/columns`,
+    signal,
   })
 
 export const getNewDocumentEntry = (

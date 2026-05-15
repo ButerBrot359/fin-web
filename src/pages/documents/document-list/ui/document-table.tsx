@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -12,8 +12,13 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { CircularProgress, Typography } from '@mui/material'
 
 import { useDocumentEntries } from '@/entities/document-entry'
+import {
+  ColumnFilterTrigger,
+  useTableFilterRequest,
+} from '@/features/table-filter'
 
 import { cn } from '@/shared/lib/utils/cn'
+import { showToast } from '@/shared/ui/toast/show-toast'
 import emptyImage from '@/shared/assets/info/empty.png'
 
 import { useDocumentColumns } from '../lib/hooks/use-document-columns'
@@ -23,6 +28,8 @@ export const DocumentTable = ({
   attributes,
   selectedRowId,
   onSelectRow,
+  filterTableId,
+  columnsMeta,
 }: DocumentTableProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -34,16 +41,40 @@ export const DocumentTable = ({
   const sortAttr = sorting[0]?.id
   const sortDir = sorting[0] ? (sorting[0].desc ? 'DESC' : 'ASC') : undefined
 
+  const filterRequest = useTableFilterRequest(filterTableId ?? '__none__')
+  const activeFilter = filterTableId ? filterRequest : undefined
+
   const {
     entries,
     totalElements,
     isLoading,
     isSortingOrFiltering,
+    isError,
+    error,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useDocumentEntries(sortAttr, sortDir)
+  } = useDocumentEntries(sortAttr, sortDir, activeFilter)
+
   const columns = useDocumentColumns(attributes)
+
+  const metaByCode = useMemo(() => {
+    const map = new Map<string, NonNullable<typeof columnsMeta>[number]>()
+    columnsMeta?.forEach((c) => {
+      map.set(c.code, c)
+    })
+    return map
+  }, [columnsMeta])
+
+  useEffect(() => {
+    if (!isError) return
+    const apiError = error as { message?: string; data?: { message?: string } } | null
+    const description =
+      apiError?.data?.message ??
+      apiError?.message ??
+      (typeof error === 'string' ? error : undefined)
+    showToast('error', t('tableFilter.errorRequest'), description)
+  }, [isError, error, t])
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -122,6 +153,9 @@ export const DocumentTable = ({
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort()
                   const sorted = header.column.getIsSorted()
+                  const columnMeta = filterTableId
+                    ? metaByCode.get(header.column.id)
+                    : undefined
 
                   return (
                     <th
@@ -147,6 +181,12 @@ export const DocumentTable = ({
                             >
                               ▼
                             </span>
+                          )}
+                          {filterTableId && columnMeta && (
+                            <ColumnFilterTrigger
+                              tableId={filterTableId}
+                              column={columnMeta}
+                            />
                           )}
                         </span>
                       )}

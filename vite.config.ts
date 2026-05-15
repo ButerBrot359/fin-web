@@ -15,4 +15,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://dev-api.qazyna.ai',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 })

@@ -36,6 +36,7 @@ export interface DictEntry {
   nameKz: string
   displayName?: string
   isActive: boolean
+  isGroup?: boolean
   attributes: Record<string, unknown> | null
 }
 

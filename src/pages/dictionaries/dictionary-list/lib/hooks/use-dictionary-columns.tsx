@@ -8,6 +8,9 @@ import type { DictEntry } from '@/features/dict-sidebar/api/dict-sidebar-api'
 import { formatCellValue } from '@/shared/lib/utils/format-cell-value'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
+import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
+import ListElementIcon from '@/shared/assets/icons/list-element-icon.svg'
+
 const cellText = (value: React.ReactNode) => (
   <Typography variant="body2" noWrap className="text-ui-06">
     {value}
@@ -30,18 +33,40 @@ const buildAttributeColumns = (
     }))
 
 export const useDictionaryColumns = (
-  attributes: DocumentAttribute[]
+  attributes: DocumentAttribute[],
+  isHierarchical?: boolean,
+  depth?: number
 ): ColumnDef<DictEntry>[] => {
   const { t, i18n } = useTranslation()
 
   return useMemo(() => {
+    const indent = (depth ?? 0) * 24
+
     const nameColumn: ColumnDef<DictEntry> = {
       id: 'nameRu',
       accessorFn: (row) => getLocalizedName(row, i18n.language),
       header: () => <span>{t('documentTable.link')}</span>,
-      cell: (info) => cellText(info.getValue() as string),
+      cell: isHierarchical
+        ? ({ row: tableRow }) => {
+            const entry = tableRow.original
+            const name = getLocalizedName(entry, i18n.language)
+            return (
+              <div
+                className="flex items-center gap-2"
+                style={{ paddingLeft: indent }}
+              >
+                {entry.isGroup ? (
+                  <FolderIcon className="h-4 w-4 shrink-0" />
+                ) : (
+                  <ListElementIcon className="h-4 w-4 shrink-0" />
+                )}
+                {cellText(name)}
+              </div>
+            )
+          }
+        : (info) => cellText(info.getValue() as string),
     }
 
     return [...buildAttributeColumns(attributes, i18n.language), nameColumn]
-  }, [attributes, i18n.language, t])
+  }, [attributes, i18n.language, t, isHierarchical, depth])
 }

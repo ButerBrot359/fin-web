@@ -61,6 +61,9 @@ export const useDictionaryColumns = (
         : (info) => cellText(info.getValue() as string),
     }
 
-    return [...buildAttributeColumns(attributes, i18n.language), nameColumn]
+    const attrColumns = buildAttributeColumns(attributes, i18n.language)
+    return isHierarchical
+      ? [nameColumn, ...attrColumns]
+      : [...attrColumns, nameColumn]
   }, [attributes, i18n.language, t, isHierarchical])
 }

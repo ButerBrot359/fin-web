@@ -98,7 +98,7 @@ export const CreateGroupModal = ({
         </div>
 
         <TextField
-          label={t('documentTable.link')}
+          label={t('dictSidebar.nameRu')}
           {...form.register('nameRu', { required: true })}
           error={!!form.formState.errors.nameRu}
           fullWidth
@@ -106,7 +106,7 @@ export const CreateGroupModal = ({
         />
 
         <TextField
-          label={t('documentTable.linkKz')}
+          label={t('dictSidebar.nameKz')}
           {...form.register('nameKz')}
           fullWidth
         />

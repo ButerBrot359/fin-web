@@ -159,7 +159,9 @@
     "saved": "Жазба сақталды",
     "saveError": "Сақтау қатесі",
     "groupCreated": "Топ жасалды",
-    "groupCreateError": "Топ жасау қатесі"
+    "groupCreateError": "Топ жасау қатесі",
+    "nameRu": "Атауы (орыс.)",
+    "nameKz": "Атауы (қаз.)"
   },
   "table": {
     "empty": "Әзірге бос",

@@ -71,7 +71,14 @@ export const useDictionaryColumns = (
         },
       }
 
-      return [hierarchyColumn, ...attrColumns]
+      const nameColumn: ColumnDef<DictEntry> = {
+        id: 'nameRu',
+        accessorFn: (row) => getLocalizedName(row, i18n.language),
+        header: () => <span>{t('documentTable.link')}</span>,
+        cell: (info) => cellText(info.getValue() as string),
+      }
+
+      return [hierarchyColumn, ...attrColumns, nameColumn]
     }
 
     const nameColumn: ColumnDef<DictEntry> = {

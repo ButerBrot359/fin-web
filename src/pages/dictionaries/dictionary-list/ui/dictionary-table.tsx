@@ -288,7 +288,7 @@ export const DictionaryTable = ({
                       className={cn(
                         'px-3 py-2 first:rounded-l-md last:rounded-r-md',
                         cell.column.id === '__hierarchy'
-                          ? 'whitespace-nowrap pr-0'
+                          ? 'whitespace-nowrap'
                           : 'max-w-50 truncate'
                       )}
                     >

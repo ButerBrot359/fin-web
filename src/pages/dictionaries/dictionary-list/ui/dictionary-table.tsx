@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
@@ -11,7 +11,10 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { CircularProgress, Typography } from '@mui/material'
 
 import { cn } from '@/shared/lib/utils/cn'
+import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import emptyImage from '@/shared/assets/info/empty.png'
+import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
+import ArrowDownIcon from '@/shared/assets/icons/arrow-down.svg'
 
 import { useDictionaryEntries } from '../lib/hooks/use-dictionary-entries'
 import { useDictionaryColumns } from '../lib/hooks/use-dictionary-columns'
@@ -23,8 +26,13 @@ export const DictionaryTable = ({
   onSelectRow,
   domain,
   skipDependsOn,
+  isHierarchical,
+  openFolders,
+  currentParentId,
+  onOpenFolder,
+  onCloseFolder,
 }: DictionaryTableProps) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const { moduleCode = '', pageCode = '' } = useParams()
 
@@ -40,8 +48,27 @@ export const DictionaryTable = ({
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useDictionaryEntries(domain, moduleCode, skipDependsOn, sortAttr, sortDir)
-  const columns = useDictionaryColumns(attributes)
+  } = useDictionaryEntries(
+    domain,
+    moduleCode,
+    skipDependsOn,
+    sortAttr,
+    sortDir,
+    currentParentId
+  )
+
+  const sortedEntries = useMemo(() => {
+    if (!isHierarchical) return entries
+    const groups = entries.filter((e) => e.isGroup)
+    const items = entries.filter((e) => !e.isGroup)
+    return [...groups, ...items]
+  }, [entries, isHierarchical])
+
+  const columns = useDictionaryColumns(
+    attributes,
+    isHierarchical,
+    openFolders.length
+  )
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -74,7 +101,7 @@ export const DictionaryTable = ({
   }, [isLoading])
 
   const table = useReactTable({
-    data: entries,
+    data: sortedEntries,
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
@@ -91,10 +118,29 @@ export const DictionaryTable = ({
     overscan: 10,
   })
 
-  const handleDoubleClick = (id: number) => {
+  const handleDoubleClick = (entry: { id: number; isGroup?: boolean }) => {
+    if (isHierarchical && entry.isGroup) {
+      return // drill-down handled by single click
+    }
     void navigate(
-      `/modules/${pageCode}/dictionary/${moduleCode}/${String(id)}?domain=${domain}`
+      `/modules/${pageCode}/dictionary/${moduleCode}/${String(entry.id)}?domain=${domain}`
     )
+  }
+
+  const handleRowClick = (entry: {
+    id: number
+    isGroup?: boolean
+    nameRu: string
+    nameKz: string
+  }) => {
+    if (isHierarchical && entry.isGroup) {
+      onOpenFolder({
+        id: entry.id,
+        name: getLocalizedName(entry, i18n.language),
+      })
+    } else {
+      onSelectRow(entry.id)
+    }
   }
 
   const virtualRows = rowVirtualizer.getVirtualItems()
@@ -157,6 +203,38 @@ export const DictionaryTable = ({
             ))}
           </thead>
           <tbody>
+            {/* Ancestor folder rows */}
+            {isHierarchical &&
+              openFolders.map((folder, index) => (
+                <tr
+                  key={`ancestor-${String(folder.id)}`}
+                  className="cursor-pointer transition-colors hover:bg-ui-07"
+                  onClick={() => {
+                    onCloseFolder(folder.id)
+                  }}
+                >
+                  <td
+                    colSpan={columns.length}
+                    className="px-3 py-2 first:rounded-l-md last:rounded-r-md"
+                  >
+                    <div
+                      className="flex items-center gap-2"
+                      style={{ paddingLeft: index * 24 }}
+                    >
+                      <ArrowDownIcon className="h-3 w-3 shrink-0" />
+                      <FolderIcon className="h-4 w-4 shrink-0" />
+                      <Typography
+                        variant="body2"
+                        noWrap
+                        className="text-ui-06 font-medium"
+                      >
+                        {folder.name}
+                      </Typography>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+
             {isLoading && (
               <tr>
                 <td colSpan={columns.length} className="py-16 text-center">
@@ -164,7 +242,7 @@ export const DictionaryTable = ({
                 </td>
               </tr>
             )}
-            {!isLoading && rows.length === 0 && (
+            {!isLoading && rows.length === 0 && openFolders.length === 0 && (
               <tr>
                 <td colSpan={columns.length} className="py-16 text-center">
                   <div className="flex flex-col items-center gap-4">
@@ -183,16 +261,18 @@ export const DictionaryTable = ({
             )}
             {virtualRows.map((virtualRow) => {
               const row = rows[virtualRow.index]
-              const isSelected = selectedRowId === row.original.id
+              const entry = row.original
+              const isSelected = selectedRowId === entry.id
+              const isGroup = isHierarchical && entry.isGroup
 
               return (
                 <tr
                   key={row.id}
                   onClick={() => {
-                    onSelectRow(row.original.id)
+                    handleRowClick(entry)
                   }}
                   onDoubleClick={() => {
-                    handleDoubleClick(row.original.id)
+                    handleDoubleClick(entry)
                   }}
                   className={cn(
                     'cursor-pointer transition-colors hover:bg-ui-07',
@@ -203,14 +283,29 @@ export const DictionaryTable = ({
                         : ''
                   )}
                 >
-                  {row.getVisibleCells().map((cell) => (
+                  {row.getVisibleCells().map((cell, cellIndex) => (
                     <td
                       key={cell.id}
                       className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
+                      {isGroup && cellIndex === 0 ? (
+                        <div
+                          className="flex items-center gap-2"
+                          style={{
+                            paddingLeft: openFolders.length * 24,
+                          }}
+                        >
+                          <ArrowDownIcon className="h-3 w-3 shrink-0 -rotate-90" />
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </div>
+                      ) : (
+                        flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )
                       )}
                     </td>
                   ))}
@@ -230,7 +325,7 @@ export const DictionaryTable = ({
       <div className="shrink-0 px-3 py-2 flex items-center gap-2">
         <Typography variant="body2" className="text-ui-05">
           {t('table.loadedCount', {
-            loaded: entries.length,
+            loaded: sortedEntries.length,
             total: totalElements,
           })}
         </Typography>

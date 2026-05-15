@@ -28,6 +28,7 @@
     "delete": "Жою",
     "edit": "Өзгерту",
     "create": "Жасау",
+    "createGroup": "Топ жасау",
     "search": "Іздеу",
     "back": "Артқа",
     "confirm": "Растау",
@@ -155,7 +156,9 @@
     "saveAndClose": "Жазу және жабу",
     "save": "Жазу",
     "saved": "Жазба сақталды",
-    "saveError": "Сақтау қатесі"
+    "saveError": "Сақтау қатесі",
+    "groupCreated": "Топ жасалды",
+    "groupCreateError": "Топ жасау қатесі"
   },
   "table": {
     "empty": "Әзірге бос",

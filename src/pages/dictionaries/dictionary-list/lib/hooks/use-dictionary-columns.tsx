@@ -53,6 +53,7 @@ export const useDictionaryColumns = (
         enableSorting: false,
         cell: ({ row: tableRow }) => {
           const entry = tableRow.original
+          const name = getLocalizedName(entry, i18n.language)
           return (
             <div
               className="flex items-center gap-1"
@@ -67,6 +68,15 @@ export const useDictionaryColumns = (
                 <FolderIcon className="h-4 w-4 shrink-0" />
               ) : (
                 <ListElementIcon className="h-4 w-4 shrink-0" />
+              )}
+              {entry.isGroup && (
+                <Typography
+                  variant="body2"
+                  noWrap
+                  className="ml-1 text-ui-06"
+                >
+                  {name}
+                </Typography>
               )}
             </div>
           )

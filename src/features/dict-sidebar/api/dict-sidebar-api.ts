@@ -81,6 +81,7 @@ export interface DictEntryCreatePayload {
   nameKz?: string
   parentId?: number | null
   sortOrder?: number
+  isGroup?: boolean
   attributes: Record<string, unknown>
 }
 

@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 
 import {
   createDocumentEntry,
@@ -9,6 +9,7 @@ import {
 import type { CreateDocumentEntryPayload } from '@/entities/document-entry'
 import { useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { showToast } from '@/shared/ui/toast/show-toast'
+import { useTrackedMutation } from '@/shared/lib/loader/use-tracked-mutation'
 
 import type {
   SubmitAction,
@@ -36,7 +37,7 @@ export const useDocumentEntryActions = ({
 
   const listPath = getDocumentListPath({ pageCode, moduleCode })
 
-  const { mutate } = useMutation({
+  const { mutate } = useTrackedMutation({
     mutationFn: (payload: CreateDocumentEntryPayload) =>
       isNew
         ? createDocumentEntry(moduleCode, payload)

@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useTrackedMutation } from '@/shared/lib/loader/use-tracked-mutation'
 
 import { generateFormConfig } from '../../api/generate-form-config'
 
@@ -15,7 +15,7 @@ export const useGenerateFormConfig = ({
   domain,
   onSuccess,
 }: UseGenerateFormConfigParams) =>
-  useMutation({
+  useTrackedMutation({
     mutationFn: () => generateFormConfig({ moduleCode, type, domain }),
     onSuccess,
   })

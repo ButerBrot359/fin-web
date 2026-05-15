@@ -12,6 +12,7 @@ import { WorkspaceTabSync } from '@/widgets/workspace-tab-bar'
 import { Toaster } from '@/shared/ui/toast/toast'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
+import { LoaderOverlay } from '@/shared/ui/loader-overlay/loader-overlay'
 
 import { Layout } from './layout/layout'
 
@@ -107,6 +108,7 @@ function App() {
       </Layout>
       <DictSidebarDrawer />
       <Toaster />
+      <LoaderOverlay />
     </BrowserRouter>
   )
 }

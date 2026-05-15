@@ -1,4 +1,6 @@
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
+
+import { useTrackedMutation } from '@/shared/lib/loader/use-tracked-mutation'
 
 import { getPrintCommands, printDocumentEntry } from '../../api/document-entry'
 
@@ -15,7 +17,7 @@ export const useDocumentEntryPrint = (
     enabled: !!moduleCode,
   })
 
-  const { mutate, isPending } = useMutation({
+  const { mutate, isPending } = useTrackedMutation({
     mutationFn: async (form?: string) => {
       if (!entryId) throw new Error('Cannot print without entry ID')
       const response = await printDocumentEntry(moduleCode, entryId, form)

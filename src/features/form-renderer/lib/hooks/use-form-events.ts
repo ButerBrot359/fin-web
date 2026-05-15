@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
-import { useMutation } from '@tanstack/react-query'
 
 import { apiService } from '@/shared/api/api'
+import { useTrackedMutation } from '@/shared/lib/loader/use-tracked-mutation'
 import type { DocumentAttribute } from '@/entities/document-type'
 
 import type { TableReplacersRef } from '../../types/renderer-context'
@@ -42,7 +42,7 @@ export const useFormEvents = ({
     [attributes]
   )
 
-  const { mutate } = useMutation({
+  const { mutate } = useTrackedMutation({
     mutationFn: (payload: HandleEventPayload) =>
       apiService.post<HandleEventResponse>({
         url: `/api/document-entries/${typeCode}/handle-event`,

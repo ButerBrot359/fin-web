@@ -25,15 +25,6 @@ import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
 import type { FieldDependency } from '../types/renderer-context'
 import { TableField } from './table-field'
 
-interface DictionaryEntry {
-  id: number
-  code: string | null
-  displayName?: string
-  nameRu?: string
-  nameKz?: string
-  [key: string]: unknown
-}
-
 interface FieldNodeProps {
   node: FieldNodeType
 }
@@ -141,7 +132,7 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
             disabled={disabled}
             searchParams={{ isHierarchical: 'false', ...searchParams }}
             selectOptions={(response) => {
-              const entries = response.data as DictionaryEntry[]
+              const entries = response.data as { id: number; code: string | null; displayName?: string; nameRu?: string; nameKz?: string }[]
               return entries.map(
                 (entry): SelectOption => ({
                   id: entry.id,
@@ -159,6 +150,7 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
           />
         )
       }
+      return null
     }
 
     const resolved = resolveAttributeDomain(attribute)

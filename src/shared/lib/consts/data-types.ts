@@ -17,6 +17,7 @@ export type DataType =
   | 'ACCUMULATION_REGISTER'
   | 'INFORMATION_REGISTER'
   | 'OBJECT'
+  | 'DIRECTORY'
 
 export const IGNORED_DATA_TYPES = new Set<DataType>(['OBJECT'])
 
@@ -48,6 +49,11 @@ export const getUniversalEntryByIdUrl = (domain: string, id: number | string) =>
 
 export const getUniversalTypeUrl = (domain: string, code: string) =>
   `${TYPES_BASE}/${domain}/${code}`
+
+const DIRECTORIES_BASE = '/api/universaldomain-directories'
+
+export const getUniversalDirectoriesUrl = (domain: string, typeCode: string) =>
+  `${DIRECTORIES_BASE}/${domain}/${typeCode}`
 
 export const resolveAttributeDomain = (attr: {
   domainKind?: string | null

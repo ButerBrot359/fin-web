@@ -6,6 +6,7 @@ import {
   IGNORED_DATA_TYPES,
   REFERENCE_DOMAIN_KINDS,
   getUniversalSearchUrl,
+  getUniversalDirectoriesUrl,
   resolveAttributeDomain,
 } from '@/shared/lib/consts/data-types'
 import type { SelectOption } from '@/shared/types/select-option'
@@ -23,6 +24,15 @@ import { useDictSidebarStore } from '@/features/dict-sidebar'
 import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
 import type { FieldDependency } from '../types/renderer-context'
 import { TableField } from './table-field'
+
+interface DictionaryEntry {
+  id: number
+  code: string | null
+  displayName?: string
+  nameRu?: string
+  nameKz?: string
+  [key: string]: unknown
+}
 
 interface FieldNodeProps {
   node: FieldNodeType
@@ -116,6 +126,41 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
       ?.typeCode ?? ''
 
   const renderField = () => {
+    if (dataType === 'DIRECTORY') {
+      const resolved = resolveAttributeDomain(attribute)
+      if (resolved) {
+        const searchUrl = getUniversalDirectoriesUrl(
+          resolved.domain,
+          resolved.typeCode
+        )
+
+        return (
+          <DictField
+            {...commonProps}
+            searchUrl={searchUrl}
+            disabled={disabled}
+            searchParams={{ isHierarchical: 'false', ...searchParams }}
+            selectOptions={(response) => {
+              const entries = response.data as DictionaryEntry[]
+              return entries.map(
+                (entry): SelectOption => ({
+                  id: entry.id,
+                  code: entry.code ?? '',
+                  label:
+                    entry.displayName ||
+                    (language === 'kz'
+                      ? entry.nameKz || entry.nameRu
+                      : entry.nameRu) ||
+                    '',
+                  raw: entry as unknown as Record<string, unknown>,
+                })
+              )
+            }}
+          />
+        )
+      }
+    }
+
     const resolved = resolveAttributeDomain(attribute)
 
     if (resolved && REFERENCE_DOMAIN_KINDS.has(resolved.domain)) {

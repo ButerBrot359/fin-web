@@ -7,7 +7,9 @@ import { PageHeader } from '@/widgets/page-header'
 import { DictionaryListToolbar } from '@/widgets/dictionary-list-toolbar'
 
 import { useDictionaryType } from '../lib/hooks/use-dictionary-type'
+import { useFolderNavigation } from '../lib/hooks/use-folder-navigation'
 import { DictionaryTable } from './dictionary-table'
+import { CreateGroupModal } from './create-group-modal'
 
 export const DictionaryPage = () => {
   const navigate = useNavigate()
@@ -25,9 +27,18 @@ export const DictionaryPage = () => {
     )
   )
 
-  const { title, attributes, isLoading } = useDictionaryType(domain, moduleCode)
+  const { title, attributes, typeData, isLoading } = useDictionaryType(
+    domain,
+    moduleCode
+  )
+  const isHierarchical = typeData?.isHierarchical ?? false
+
   useTabMeta(title)
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
+
+  const { openFolders, currentParentId, openFolder, closeFolder } =
+    useFolderNavigation()
 
   const handleClose = () => {
     useWorkspaceTabsStore.getState().closeTab(location.pathname)
@@ -39,14 +50,37 @@ export const DictionaryPage = () => {
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={title} onClose={handleClose} />
-      <DictionaryListToolbar selectedRowId={selectedRowId} domain={domain} />
+      <DictionaryListToolbar
+        selectedRowId={selectedRowId}
+        domain={domain}
+        isHierarchical={isHierarchical}
+        onCreateGroup={() => {
+          setIsCreateGroupOpen(true)
+        }}
+      />
       <DictionaryTable
         attributes={attributes}
         selectedRowId={selectedRowId}
         onSelectRow={setSelectedRowId}
         domain={domain}
         skipDependsOn={skipDependsOn}
+        isHierarchical={isHierarchical}
+        openFolders={openFolders}
+        currentParentId={currentParentId}
+        onOpenFolder={openFolder}
+        onCloseFolder={closeFolder}
       />
+      {isHierarchical && (
+        <CreateGroupModal
+          open={isCreateGroupOpen}
+          onClose={() => {
+            setIsCreateGroupOpen(false)
+          }}
+          domain={domain}
+          typeCode={moduleCode}
+          parentId={currentParentId}
+        />
+      )}
     </div>
   )
 }

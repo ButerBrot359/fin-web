@@ -10,11 +10,15 @@ import { SearchInput } from '@/shared/ui/inputs'
 interface DictionaryListToolbarProps {
   selectedRowId?: number | null
   domain: string
+  isHierarchical?: boolean
+  onCreateGroup?: () => void
 }
 
 export const DictionaryListToolbar = ({
   selectedRowId,
   domain,
+  isHierarchical,
+  onCreateGroup,
 }: DictionaryListToolbarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -34,6 +38,11 @@ export const DictionaryListToolbar = ({
         <Button variant="primary" onClick={handleCreate}>
           {t('actions.create')}
         </Button>
+        {isHierarchical && (
+          <Button variant="secondary" onClick={onCreateGroup}>
+            {t('actions.createGroup')}
+          </Button>
+        )}
         <Button variant="secondary" disabled={selectedRowId == null}>
           {t('documentListToolbar.editSelected')}
         </Button>

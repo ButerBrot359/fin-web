@@ -1,0 +1,258 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - complementary [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e6]
+          - heading "Web-бухгалтерия" [level=6] [ref=e11]
+        - navigation [ref=e12]:
+          - list [ref=e13]:
+            - listitem [ref=e14]:
+              - button "Главная" [ref=e15] [cursor=pointer]:
+                - img [ref=e17]
+                - paragraph [ref=e23]: Главная
+            - listitem [ref=e24]:
+              - button "Банк и касса" [ref=e25] [cursor=pointer]:
+                - img [ref=e27]
+                - paragraph [ref=e29]: Банк и касса
+            - listitem [ref=e30]:
+              - button "Склад" [disabled] [ref=e31]:
+                - img [ref=e33]
+                - paragraph [ref=e36]: Склад
+            - listitem [ref=e37]:
+              - button "Основные средства и нематериальные активы" [disabled] [ref=e38]:
+                - img [ref=e40]
+                - paragraph [ref=e43]: Основные средства и нематериальные активы
+            - listitem [ref=e44]:
+              - button "Тарификация" [disabled] [ref=e45]:
+                - img [ref=e47]
+                - paragraph [ref=e50]: Тарификация
+            - listitem [ref=e51]:
+              - button "Зарплата и кадры" [ref=e52]:
+                - img [ref=e54]
+                - paragraph [ref=e57]: Зарплата и кадры
+            - listitem [ref=e58]:
+              - button "Отчёты" [disabled] [ref=e59]:
+                - img [ref=e61]
+                - paragraph [ref=e63]: Отчёты
+            - listitem [ref=e64]:
+              - button "Наше учреждение" [disabled] [ref=e65]:
+                - img [ref=e67]
+                - paragraph [ref=e70]: Наше учреждение
+            - listitem [ref=e71]:
+              - button "ФЛК" [disabled] [ref=e72]:
+                - img [ref=e74]
+                - paragraph [ref=e80]: ФЛК
+            - listitem [ref=e81]:
+              - button "Регламентированная настраиваемая отчётность" [disabled] [ref=e82]:
+                - img [ref=e84]
+                - paragraph [ref=e87]: Регламентированная настраиваемая отчётность
+            - listitem [ref=e88]:
+              - button "Администрирование" [ref=e89] [cursor=pointer]:
+                - img [ref=e91]
+                - paragraph [ref=e94]: Администрирование
+        - button [ref=e96] [cursor=pointer]:
+          - img [ref=e97]
+      - generic [ref=e99]:
+        - banner [ref=e100]:
+          - navigation [ref=e102]:
+            - generic [ref=e103]:
+              - button "Search" [ref=e105] [cursor=pointer]:
+                - img [ref=e106]
+              - button "Notifications" [ref=e112] [cursor=pointer]:
+                - img [ref=e113]
+              - button "History" [ref=e119] [cursor=pointer]:
+                - img [ref=e120]
+              - button "Favorites" [ref=e127] [cursor=pointer]:
+                - img [ref=e128]
+            - button "Switch language" [ref=e132] [cursor=pointer]:
+              - paragraph [ref=e133]: РУС
+            - generic [ref=e135]:
+              - img [ref=e136]
+              - paragraph [ref=e140]: Имя пользователя
+            - button "Menu" [ref=e142] [cursor=pointer]:
+              - img [ref=e143]
+        - main [ref=e144]:
+          - generic [ref=e259]:
+            - generic [ref=e260]:
+              - generic [ref=e261]:
+                - generic [ref=e262]:
+                  - button "Назад" [ref=e263] [cursor=pointer]:
+                    - img [ref=e264]
+                  - button "actions.forward" [disabled]:
+                    - img
+                - button [ref=e266] [cursor=pointer]:
+                  - img [ref=e267]
+                - heading "Регистрация заявлений по вычетам ИПН ABZ00-00047 от 06.03.2023 04:51:50" [level=5] [ref=e270]
+              - generic [ref=e271]:
+                - button "Ссылка" [ref=e272] [cursor=pointer]:
+                  - img [ref=e273]
+                - button "Ещё" [ref=e276] [cursor=pointer]:
+                  - img [ref=e277]
+                - button "Закрыть" [ref=e281] [cursor=pointer]:
+                  - img [ref=e282]
+            - generic [ref=e285]:
+              - generic [ref=e286]:
+                - button "Провести и закрыть" [ref=e287] [cursor=pointer]
+                - button "Записать" [ref=e288] [cursor=pointer]
+                - button "Провести" [ref=e289] [cursor=pointer]
+                - button "Печать" [ref=e290] [cursor=pointer]:
+                  - paragraph [ref=e291]: Печать
+                  - img [ref=e292]
+                - button "Дт/Кт" [ref=e294] [cursor=pointer]:
+                  - img [ref=e295]
+                - button "Слои" [ref=e304] [cursor=pointer]:
+                  - img [ref=e305]
+                - button "Ссылка" [ref=e311] [cursor=pointer]:
+                  - img [ref=e312]
+                - button "Отчёты" [ref=e315] [cursor=pointer]:
+                  - paragraph [ref=e316]: Отчёты
+                  - img [ref=e317]
+              - generic [ref=e319]:
+                - button "AI" [ref=e320] [cursor=pointer]
+                - button "Ещё" [ref=e321] [cursor=pointer]:
+                  - paragraph [ref=e322]: Ещё
+                  - img [ref=e323]
+            - generic [ref=e326]:
+              - generic [ref=e327]:
+                - generic [ref=e328]:
+                  - generic [ref=e329]:
+                    - generic "ABZ00-00047" [ref=e331]:
+                      - generic [ref=e332]: Номер
+                      - textbox "Номер" [ref=e334]: ABZ00-00047
+                    - generic [ref=e336]:
+                      - generic [ref=e337]:
+                        - text: Дата
+                        - generic [ref=e338]: "*"
+                      - group "Дата" [ref=e339]:
+                        - generic [ref=e340]:
+                          - generic [ref=e341]:
+                            - spinbutton "Day" [ref=e342]: "06"
+                            - text: .
+                          - generic [ref=e343]:
+                            - spinbutton "Month" [ref=e344]: "03"
+                            - text: .
+                          - spinbutton "Year" [ref=e346]: "2023"
+                          - generic [ref=e347]:
+                            - spinbutton "Hours" [ref=e348]: "04"
+                            - text: ":"
+                          - spinbutton "Minutes" [ref=e350]: "51"
+                        - button "Choose date, selected date is 6 мар. 2023 г." [ref=e352] [cursor=pointer]:
+                          - img [ref=e353]
+                        - textbox [ref=e355]: 06.03.2023 04:51
+                  - generic [ref=e358] [cursor=pointer]:
+                    - generic [ref=e359]:
+                      - checkbox "Наличие заявления" [checked] [ref=e360]
+                      - img [ref=e361]
+                    - generic [ref=e363]: Наличие заявления
+                - generic [ref=e364]:
+                  - generic "\"Жамбыл облысы Қордай ауданы әкімінің аппараты\" КММ" [ref=e366]:
+                    - generic [ref=e367]:
+                      - generic [ref=e368]:
+                        - text: Организация
+                        - generic [ref=e369]: "*"
+                      - generic [ref=e370]:
+                        - combobox "Организация" [ref=e371]: "\"Жамбыл облысы Қордай ауданы әкімінің аппараты\" КММ"
+                        - button "Open" [ref=e373] [cursor=pointer]:
+                          - img [ref=e374]
+                        - button [ref=e376] [cursor=pointer]:
+                          - img [ref=e377]
+                  - generic "Иванова Галина" [ref=e380]:
+                    - generic [ref=e381]:
+                      - generic [ref=e382]:
+                        - text: Физическое лицо
+                        - generic [ref=e383]: "*"
+                      - generic [ref=e384]:
+                        - combobox "Физическое лицо" [expanded] [active] [ref=e385]: Татьяна
+                        - generic [ref=e386]:
+                          - button "Clear" [ref=e476] [cursor=pointer]:
+                            - img [ref=e477]
+                          - button "Close" [ref=e479] [cursor=pointer]:
+                            - img [ref=e388]
+                        - button [ref=e390] [cursor=pointer]:
+                          - img [ref=e391]
+              - generic [ref=e393]:
+                - generic [ref=e395]:
+                  - generic [ref=e396]:
+                    - button "Добавить" [ref=e397] [cursor=pointer]
+                    - button [disabled] [ref=e398]:
+                      - img [ref=e399]
+                    - button [disabled] [ref=e401]:
+                      - img [ref=e402]
+                    - button [disabled] [ref=e404]:
+                      - img [ref=e405]
+                  - table [ref=e408]:
+                    - rowgroup [ref=e409]:
+                      - row "# Вычет ИПН Предоставлять вычет Дата окончания Основание" [ref=e410]:
+                        - columnheader "#" [ref=e411]
+                        - columnheader "Вычет ИПН" [ref=e412]
+                        - columnheader "Предоставлять вычет" [ref=e413]
+                        - columnheader "Дата окончания" [ref=e414]
+                        - columnheader "Основание" [ref=e415]
+                    - rowgroup [ref=e416]:
+                      - row "1 Базовый налоговый вычет" [ref=e417] [cursor=pointer]:
+                        - cell "1" [ref=e418]
+                        - cell "Базовый налоговый вычет" [ref=e419]:
+                          - generic [ref=e420]: Базовый налоговый вычет
+                        - cell [ref=e421]:
+                          - generic [ref=e422]:
+                            - checkbox [checked] [ref=e423]
+                            - img [ref=e424]
+                        - cell [ref=e426]
+                        - cell [ref=e428]
+                      - row "2 Вычет ОПВ" [ref=e430] [cursor=pointer]:
+                        - cell "2" [ref=e431]
+                        - cell "Вычет ОПВ" [ref=e432]:
+                          - generic [ref=e433]: Вычет ОПВ
+                        - cell [ref=e434]:
+                          - generic [ref=e435]:
+                            - checkbox [checked] [ref=e436]
+                            - img [ref=e437]
+                        - cell [ref=e439]
+                        - cell [ref=e441]
+                - generic [ref=e444]:
+                  - generic [ref=e445]:
+                    - button "Добавить" [ref=e446] [cursor=pointer]
+                    - button [disabled] [ref=e447]:
+                      - img [ref=e448]
+                    - button [disabled] [ref=e450]:
+                      - img [ref=e451]
+                    - button [disabled] [ref=e453]:
+                      - img [ref=e454]
+                  - heading "Пока тут пусто" [level=6] [ref=e457]
+              - separator [ref=e458]
+              - generic [ref=e459]:
+                - generic [ref=e461]:
+                  - generic: Комментарий
+                  - textbox "Комментарий" [ref=e463]
+                - generic [ref=e466]:
+                  - generic: Ответственный
+                  - generic [ref=e467]:
+                    - combobox "Ответственный" [ref=e468]
+                    - button "Open" [ref=e470] [cursor=pointer]:
+                      - img [ref=e471]
+                    - button [ref=e473] [cursor=pointer]:
+                      - img [ref=e474]
+        - button "Регистрация заявлений по вычетам ИПН ABZ00-00047 от 06.03.2023 04:51:50" [ref=e253] [cursor=pointer]:
+          - paragraph [ref=e254]: Регистрация заявлений по вычетам ИПН ABZ00-00047 от 06.03.2023 04:51:50
+          - button [ref=e255]:
+            - img [ref=e256]
+    - region "Notifications alt+T"
+  - generic [ref=e496]:
+    - listbox "Физическое лицо" [ref=e497]:
+      - option "Татьяна" [ref=e498] [cursor=pointer]
+      - option "гггг" [ref=e499] [cursor=pointer]
+      - option "0000000004" [ref=e500] [cursor=pointer]
+      - option "123432432" [ref=e501] [cursor=pointer]
+      - option "Иванова Галина" [selected] [ref=e502] [cursor=pointer]
+      - option "тестовый алишер" [ref=e503] [cursor=pointer]
+      - option "534536" [ref=e504] [cursor=pointer]
+      - option "гнгеана" [ref=e505] [cursor=pointer]
+      - option "Илья" [ref=e506] [cursor=pointer]
+      - option "Бакыт Айдос" [ref=e507] [cursor=pointer]
+      - option "Тестов Тест Тестович" [ref=e508] [cursor=pointer]
+    - generic [ref=e509]:
+      - button "Показать все" [ref=e510] [cursor=pointer]
+      - button "Добавить" [ref=e511] [cursor=pointer]
+  - tooltip "Иванова Галина":
+    - generic: Иванова Галина

@@ -2,6 +2,12 @@ import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { useDocumentType } from '@/entities/document-type'
+import { useDocumentColumnsMeta } from '@/entities/document-entry'
+import {
+  ActiveFiltersBar,
+  isFilterableDocumentType,
+  useFilterUrlSync,
+} from '@/features/table-filter'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { DocumentListToolbar } from '@/widgets/document-list-toolbar'
@@ -15,6 +21,15 @@ export const DocumentPage = () => {
   const { moduleCode = '', pageCode = '' } = useParams()
   const { title, attributes } = useDocumentType(moduleCode)
   useTabMeta(title)
+
+  const filterEnabled = isFilterableDocumentType(moduleCode)
+  const filterTableId = filterEnabled ? moduleCode : undefined
+  const { columns: columnsMeta } = useDocumentColumnsMeta(
+    filterEnabled ? moduleCode : ''
+  )
+
+  useFilterUrlSync(filterTableId)
+
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
   const [selectedRowName, setSelectedRowName] = useState<string | null>(null)
 
@@ -35,10 +50,15 @@ export const DocumentPage = () => {
         selectedRowId={selectedRowId}
         selectedRowName={selectedRowName}
       />
+      {filterTableId && (
+        <ActiveFiltersBar tableId={filterTableId} columns={columnsMeta} />
+      )}
       <DocumentTable
         attributes={attributes}
         selectedRowId={selectedRowId}
         onSelectRow={handleSelectRow}
+        filterTableId={filterTableId}
+        columnsMeta={filterEnabled ? columnsMeta : undefined}
       />
     </div>
   )

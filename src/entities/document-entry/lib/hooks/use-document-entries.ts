@@ -2,16 +2,20 @@ import { useMemo } from 'react'
 import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 
-import { getDocumentEntries } from '../../api/document-entry'
+import { searchDocumentEntries } from '../../api/document-entry'
 import type { DocumentEntry } from '../../types/document-entry'
+import type { FilterRequest } from '../../types/filter'
 
 const PAGE_SIZE = 25
+const EMPTY_FILTER: FilterRequest = { filters: [], logic: 'AND' }
 
 interface UseDocumentEntriesResult {
   entries: DocumentEntry[]
   totalElements: number
   isLoading: boolean
   isSortingOrFiltering: boolean
+  isError: boolean
+  error: unknown
   hasNextPage: boolean
   isFetchingNextPage: boolean
   fetchNextPage: () => void
@@ -19,7 +23,8 @@ interface UseDocumentEntriesResult {
 
 export const useDocumentEntries = (
   sortAttr?: string,
-  sortDir?: string
+  sortDir?: string,
+  filter: FilterRequest = EMPTY_FILTER
 ): UseDocumentEntriesResult => {
   const { moduleCode = '' } = useParams<{
     pageCode: string
@@ -31,18 +36,25 @@ export const useDocumentEntries = (
     isLoading,
     isFetching,
     isPlaceholderData,
+    isError,
+    error,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteQuery({
-    queryKey: ['document-entries', moduleCode, sortAttr, sortDir],
-    queryFn: ({ pageParam }) =>
-      getDocumentEntries(moduleCode, {
-        page: pageParam,
-        size: PAGE_SIZE,
-        sortAttr,
-        sortDir,
-      }),
+    queryKey: ['document-entries', moduleCode, sortAttr, sortDir, filter],
+    queryFn: ({ pageParam, signal }) =>
+      searchDocumentEntries(
+        moduleCode,
+        filter,
+        {
+          page: pageParam,
+          size: PAGE_SIZE,
+          sortAttr,
+          sortDir,
+        },
+        signal
+      ),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => {
       const paged = lastPage.data.data
@@ -62,6 +74,8 @@ export const useDocumentEntries = (
     totalElements,
     isLoading,
     isSortingOrFiltering: isFetching && isPlaceholderData,
+    isError,
+    error,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage: () => {

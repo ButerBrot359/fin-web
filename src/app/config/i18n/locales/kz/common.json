@@ -28,6 +28,7 @@
     "delete": "Жою",
     "edit": "Өзгерту",
     "create": "Жасау",
+    "createGroup": "Топ жасау",
     "search": "Іздеу",
     "back": "Артқа",
     "confirm": "Растау",
@@ -124,7 +125,8 @@
   "documentTable": {
     "createdAt": "Күні",
     "number": "Нөмір",
-    "link": "Сілтеме"
+    "link": "Сілтеме",
+    "linkKz": "Атауы (қаз.)"
   },
   "noContent": {
     "title": "Сәйкес нәтижелер жоқ",
@@ -155,7 +157,11 @@
     "saveAndClose": "Жазу және жабу",
     "save": "Жазу",
     "saved": "Жазба сақталды",
-    "saveError": "Сақтау қатесі"
+    "saveError": "Сақтау қатесі",
+    "groupCreated": "Топ жасалды",
+    "groupCreateError": "Топ жасау қатесі",
+    "nameRu": "Атауы (орыс.)",
+    "nameKz": "Атауы (қаз.)"
   },
   "table": {
     "empty": "Әзірге бос",

@@ -23,7 +23,8 @@ export const useDictionaryEntries = (
   typeCode: string,
   skipDependsOn?: boolean,
   sortAttr?: string,
-  sortDir?: string
+  sortDir?: string,
+  parentId?: number
 ): UseDictionaryEntriesResult => {
   const {
     data,
@@ -41,6 +42,7 @@ export const useDictionaryEntries = (
       skipDependsOn,
       sortAttr,
       sortDir,
+      parentId,
     ],
     queryFn: ({ pageParam, signal }) =>
       fetchDictEntriesPaged(
@@ -52,6 +54,7 @@ export const useDictionaryEntries = (
           ...(skipDependsOn && { skipDependsOn: true }),
           sortAttr,
           sortDir,
+          ...(parentId != null && { parent: parentId }),
         },
         signal
       ),

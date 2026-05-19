@@ -31,3 +31,4 @@ form-configs-server/dist
 
 form-configs-server/configs
 .superpowers
+.playwright-mcp

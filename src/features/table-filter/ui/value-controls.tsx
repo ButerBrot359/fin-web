@@ -25,6 +25,7 @@ import type { EnumsValue } from '@/entities/document-type'
 
 import { useDebouncedValue } from '../lib/hooks/use-debounced-value'
 import { normalizeDateForBackend } from '../lib/utils/normalize-date-value'
+import { getEdgeForOp } from '../lib/utils/edge-for-op'
 
 import { isListOp, isRangeOp } from './value-controls.utils'
 
@@ -119,12 +120,9 @@ const NumberRangeControl = ({ value, onChange, column }: ValueControlProps) => {
   )
 }
 
-const edgeForSingleOp = (op: FilterOp): 'start' | 'end' =>
-  op === 'lt' || op === 'lte' ? 'end' : 'start'
-
 const DateControl = ({ value, op, onChange, column }: ValueControlProps) => {
   const { t } = useTranslation()
-  const edge = edgeForSingleOp(op)
+  const edge = getEdgeForOp(op)
   return (
     <DateTimeInput
       size="small"

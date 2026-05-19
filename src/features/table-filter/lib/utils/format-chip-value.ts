@@ -10,13 +10,18 @@ const safeToString = (value: unknown): string => {
 }
 
 /**
- * Returns true if the value has a non-zero time portion (e.g. `T14:30:00`).
- * Used to decide whether to render DATETIME as date-only.
+ * Returns true if the value carries a user-meaningful time portion.
+ *
+ * `T00:00:00` и `T23:59:59` — синтетические edge-метки, которые фронт
+ * проставляет сам по оператору (gte/lte/between/…) поверх date-only
+ * пикера. В чипе их прятать, чтобы не путать «10.04.2026 23:59»
+ * с реальным вводом времени.
  */
 const hasNonZeroTime = (value: string): boolean => {
-  const match = /T(\d{2}:\d{2}(?::\d{2})?)/.exec(value)
+  const match = /T(\d{2}:\d{2}(?::\d{2})?)(?:\.\d+)?/.exec(value)
   if (!match) return false
-  return !/^00:00(:00)?$/.test(match[1])
+  const time = match[1]
+  return time !== '00:00' && time !== '00:00:00' && time !== '23:59' && time !== '23:59:59'
 }
 
 const fmtScalar = (value: unknown, column: ColumnMetaDto): string => {

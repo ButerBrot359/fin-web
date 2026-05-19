@@ -2,6 +2,7 @@ import type { FilterOp } from '@/entities/document-entry'
 import type { DataType } from '@/shared/lib/consts/data-types'
 
 import type { DateEdge } from './normalize-date-value'
+import { getEdgeForOp } from './edge-for-op'
 
 const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}/
 
@@ -10,9 +11,6 @@ const reapplyEdge = (value: string, edge: DateEdge): string => {
   if (!match) return value
   return match[0] + (edge === 'end' ? 'T23:59:59' : 'T00:00:00')
 }
-
-const edgeForSingleOp = (op: FilterOp): DateEdge =>
-  op === 'lt' || op === 'lte' ? 'end' : 'start'
 
 /**
  * Re-derive the synthetic time portion of a DATETIME filter value when the
@@ -40,7 +38,7 @@ export const adjustDateValueForOp = (
     ]
   }
   if (typeof value === 'string') {
-    return reapplyEdge(value, edgeForSingleOp(op))
+    return reapplyEdge(value, getEdgeForOp(op))
   }
   return value
 }

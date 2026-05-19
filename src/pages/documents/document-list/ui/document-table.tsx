@@ -59,12 +59,22 @@ export const DocumentTable = ({
   const columns = useDocumentColumns(attributes)
 
   const metaByCode = useMemo(() => {
-    const map = new Map<string, NonNullable<typeof columnsMeta>[number]>()
+    type Meta = NonNullable<typeof columnsMeta>[number]
+    const map = new Map<string, Meta>()
     columnsMeta?.forEach((c) => {
       map.set(c.code, c)
     })
+
+    // ReactTable id для системной колонки статуса — `status`,
+    // а ColumnMetaDto приходит под кодом `isPosted`. Пробрасываем
+    // мэппинг, чтобы иконка фильтра отрисовалась.
+    const isPostedMeta = map.get('isPosted')
+    if (filterTableId && isPostedMeta && !map.has('status')) {
+      map.set('status', isPostedMeta)
+    }
+
     return map
-  }, [columnsMeta])
+  }, [columnsMeta, filterTableId])
 
   useEffect(() => {
     if (!isError) return

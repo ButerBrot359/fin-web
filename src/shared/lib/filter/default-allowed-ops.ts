@@ -64,13 +64,23 @@ export const DEFAULT_ALLOWED_OPS = {
  *   - `[]`   → бэк явно запретил фильтрацию (прятать иконку)
  * Тогда условие тут поменяется на `allowedOpsFromBackend !== null`.
  * См. gap бэка #8.
+ *
+ * Дополнительно: для DATETIME выкидываем `eq`/`ne` даже если бэк их
+ * прислал — фильтр-UI рендерит только дату (без time-picker'а), а
+ * exact-instant-match по началу суток бесполезен.
  */
+const DATETIME_HIDDEN_OPS = new Set<FilterOp>(['eq', 'ne'])
+
 export const resolveAllowedOps = (
   dataType: DataType,
   allowedOpsFromBackend: FilterOp[] | null
 ): readonly FilterOp[] => {
-  if (allowedOpsFromBackend && allowedOpsFromBackend.length > 0) {
-    return allowedOpsFromBackend
+  const base =
+    allowedOpsFromBackend && allowedOpsFromBackend.length > 0
+      ? allowedOpsFromBackend
+      : DEFAULT_ALLOWED_OPS[dataType]
+  if (dataType === 'DATETIME') {
+    return base.filter((op) => !DATETIME_HIDDEN_OPS.has(op))
   }
-  return DEFAULT_ALLOWED_OPS[dataType]
+  return base
 }

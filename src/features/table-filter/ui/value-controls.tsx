@@ -119,17 +119,20 @@ const NumberRangeControl = ({ value, onChange, column }: ValueControlProps) => {
   )
 }
 
-const DateControl = ({ value, onChange, column }: ValueControlProps) => {
+const edgeForSingleOp = (op: FilterOp): 'start' | 'end' =>
+  op === 'lt' || op === 'lte' ? 'end' : 'start'
+
+const DateControl = ({ value, op, onChange, column }: ValueControlProps) => {
   const { t } = useTranslation()
-  const dateOnly = column.dataType === 'DATE'
+  const edge = edgeForSingleOp(op)
   return (
     <DateTimeInput
       size="small"
-      dateOnly={dateOnly}
+      dateOnly
       label={t('tableFilter.value')}
       value={typeof value === 'string' ? value : ''}
       onChange={(v) => {
-        onChange(normalizeDateForBackend(v, dateOnly))
+        onChange(normalizeDateForBackend(v, column.dataType, edge))
       }}
     />
   )
@@ -137,26 +140,31 @@ const DateControl = ({ value, onChange, column }: ValueControlProps) => {
 
 const DateRangeControl = ({ value, onChange, column }: ValueControlProps) => {
   const { t } = useTranslation()
-  const dateOnly = column.dataType === 'DATE'
   const [from, to] = Array.isArray(value) ? value : ['', '']
   return (
     <Box className="flex gap-3">
       <DateTimeInput
         size="small"
-        dateOnly={dateOnly}
+        dateOnly
         label={t('tableFilter.valueFrom')}
         value={typeof from === 'string' ? from : ''}
         onChange={(v) => {
-          onChange([normalizeDateForBackend(v, dateOnly), to ?? ''])
+          onChange([
+            normalizeDateForBackend(v, column.dataType, 'start'),
+            to ?? '',
+          ])
         }}
       />
       <DateTimeInput
         size="small"
-        dateOnly={dateOnly}
+        dateOnly
         label={t('tableFilter.valueTo')}
         value={typeof to === 'string' ? to : ''}
         onChange={(v) => {
-          onChange([from ?? '', normalizeDateForBackend(v, dateOnly)])
+          onChange([
+            from ?? '',
+            normalizeDateForBackend(v, column.dataType, 'end'),
+          ])
         }}
       />
     </Box>

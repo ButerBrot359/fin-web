@@ -1,4 +1,5 @@
 import { apiService } from '@/shared/api/api'
+import { serializeFilterForApi } from '@/shared/lib/filter/serialize-for-api'
 import type {
   CreateDocumentEntryPayload,
   DocumentEntriesResponseData,
@@ -29,7 +30,7 @@ export const searchDocumentEntries = (
 ) =>
   apiService.post<DocumentSearchResponseData>({
     url: `/api/document-entries/${typeCode}/search`,
-    data: filter,
+    data: serializeFilterForApi(filter),
     params,
     signal,
   })

@@ -11,6 +11,8 @@ import { resolveAllowedOps } from '@/shared/lib/filter/default-allowed-ops'
 import { isConditionValid } from '@/shared/lib/filter/validate-condition'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
+import { adjustDateValueForOp } from '../lib/utils/adjust-date-value-for-op'
+
 import { OperatorSelect } from './operator-select'
 import { ValueControl } from './value-controls'
 import { resetValueForOp } from './value-controls.utils'
@@ -56,7 +58,9 @@ export const ColumnFilterPopover = ({
 
   const handleOpChange = (next: FilterOp) => {
     setOp(next)
-    setValue((prev: unknown) => resetValueForOp(next, prev))
+    setValue((prev: unknown) =>
+      adjustDateValueForOp(resetValueForOp(next, prev), next, column.dataType)
+    )
   }
 
   const candidate: FilterCondition = { field: column.code, op, value }

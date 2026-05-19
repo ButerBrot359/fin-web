@@ -36,10 +36,7 @@ export const ColumnFilterPopover = ({
 }: ColumnFilterPopoverProps) => {
   const { t, i18n } = useTranslation()
 
-  const allowedOps = useMemo(
-    () => resolveAllowedOps(column.dataType, column.allowedOps),
-    [column.dataType, column.allowedOps]
-  )
+  const allowedOps = useMemo(() => resolveAllowedOps(column), [column])
 
   const [op, setOp] = useState<FilterOp>(
     initial?.op ?? allowedOps.at(0) ?? 'eq'

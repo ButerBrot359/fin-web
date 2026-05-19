@@ -1,35 +1,15 @@
 import type { DocumentAttribute } from '@/entities/document-type'
 
-// Per-type synthetic attributes prepended to backend metadata for the
-// dictionary list view. Used when the backend type schema omits an
-// attribute (or marks it showInList=false) while the value is reliably
-// present in every entry payload.
+// Per-type attribute codes that should be forced into the dictionary
+// list view regardless of what backend metadata sets for `showInList`.
+// Useful when the attribute exists in the type schema but is flagged
+// `showInList: false`, while the value is reliably present in every
+// entry payload.
 //
-// TODO: remove an entry here once the corresponding backend metadata is
-// fixed (showInList=true on the real attribute).
-const SYNTHETIC_ATTRIBUTES: Record<string, DocumentAttribute[]> = {
-  'DICTIONARY:Kassy': [
-    {
-      id: -1,
-      code: 'Vladelets',
-      code1C: '',
-      nameRu: 'Владелец',
-      nameKz: 'Иесі',
-      dataType: 'DICTIONARY',
-      domainKind: 'DICTIONARY',
-      isRequired: false,
-      readonly: false,
-      maxLength: null,
-      referenceTypeCode: 'Organizatsii',
-      referenceSelectionMode: '',
-      sortOrder: 0,
-      tableSortOrder: 0,
-      showInList: true,
-      showInForm: false,
-      defaultValue: null,
-      formEvent: null,
-    },
-  ],
+// TODO: drop an entry here once the corresponding backend metadata is
+// fixed (the real attribute has `showInList: true`).
+const FORCE_SHOW_IN_LIST: Record<string, ReadonlySet<string>> = {
+  'DICTIONARY:Kassy': new Set(['Vladelets']),
 }
 
 export const mergeAttributeOverrides = (
@@ -37,10 +17,12 @@ export const mergeAttributeOverrides = (
   typeCode: string,
   attributes: DocumentAttribute[]
 ): DocumentAttribute[] => {
-  const synthetic = SYNTHETIC_ATTRIBUTES[`${domain}:${typeCode}`]
-  if (!synthetic) return attributes
+  const forced = FORCE_SHOW_IN_LIST[`${domain}:${typeCode}`]
+  if (!forced || forced.size === 0) return attributes
 
-  const existing = new Set(attributes.map((a) => a.code))
-  const additions = synthetic.filter((a) => !existing.has(a.code))
-  return additions.length > 0 ? [...attributes, ...additions] : attributes
+  return attributes.map((attr) =>
+    forced.has(attr.code) && !attr.showInList
+      ? { ...attr, showInList: true }
+      : attr
+  )
 }

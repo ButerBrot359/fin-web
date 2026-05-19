@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { fetchDictTypeMetadata } from '@/features/dict-sidebar/api/dict-sidebar-api'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
+import { mergeAttributeOverrides } from '../consts/attribute-overrides'
+
 export const useDictionaryType = (domain: string, typeCode: string) => {
   const { i18n } = useTranslation()
 
@@ -15,10 +17,15 @@ export const useDictionaryType = (domain: string, typeCode: string) => {
   })
 
   const title = data ? getLocalizedName(data, i18n.language) : ''
+  const attributes = mergeAttributeOverrides(
+    domain,
+    typeCode,
+    data?.attributes ?? []
+  )
 
   return {
     title,
-    attributes: data?.attributes ?? [],
+    attributes,
     typeData: data,
     isLoading,
   }

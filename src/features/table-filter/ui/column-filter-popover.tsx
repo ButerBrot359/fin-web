@@ -80,15 +80,15 @@ export const ColumnFilterPopover = ({
       onClose={onClose}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-      slotProps={{ paper: { sx: { p: 2, minWidth: 320, maxWidth: 480 } } }}
+      slotProps={{ paper: { sx: { p: 2.5, minWidth: 340, maxWidth: 480 } } }}
     >
-      <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
+      <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.primary' }}>
         {t('tableFilter.filterBy', {
           name: getLocalizedName(column, i18n.language),
         })}
       </Typography>
 
-      <Box className="flex flex-col gap-3">
+      <Box className="flex flex-col gap-4">
         <OperatorSelect value={op} onChange={handleOpChange} options={allowedOps} />
         <ValueControl
           column={column}
@@ -98,7 +98,7 @@ export const ColumnFilterPopover = ({
         />
       </Box>
 
-      <Box className="flex justify-end gap-2" sx={{ mt: 2 }}>
+      <Box className="flex justify-end gap-2" sx={{ mt: 2.5 }}>
         {initial && (
           <Button onClick={handleClear} color="warning">
             {t('tableFilter.clear')}

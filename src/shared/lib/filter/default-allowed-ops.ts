@@ -7,12 +7,16 @@
  * будет удалить и трактовать null как «фильтрация запрещена».
  *
  * Контракт сейчас:
- * - `null` от бэка       → fallback на DEFAULT_ALLOWED_OPS[dataType]
- * - явный массив от бэка → авторитет (даже если пустой)
- * - неизвестный dataType → пустой массив → иконка фильтра не рендерится
+ * - `null` или пустой массив от бэка → fallback на DEFAULT_ALLOWED_OPS[dataType]
+ * - непустой массив от бэка          → авторитет
+ * - неизвестный dataType / тип без поддержки → пустой массив → иконка не рендерится
+ *
+ * Fallback также для пустого массива нужен потому, что бэк сейчас
+ * возвращает `allowedOps: []` для системных колонок (например,
+ * `isPosted: BOOLEAN`), хотя сами операторы поддержаны DSL.
  *
  * TODO(phase-2-backend): убрать fallback, как только бэк начнёт
- * возвращать allowedOps для EAV-атрибутов.
+ * возвращать корректный allowedOps для всех колонок (EAV + системных).
  */
 import type { DataType } from '@/shared/lib/consts/data-types'
 import type { FilterOp } from '@/entities/document-entry'
@@ -50,10 +54,23 @@ export const DEFAULT_ALLOWED_OPS = {
   TABLE: [],
 } as const satisfies Record<DataType, readonly FilterOp[]>
 
+/**
+ * SEMANTIC NOTE (Phase 1): пустой массив `[]` и `null` сейчас эквивалентны —
+ * оба триггерят fallback на DEFAULT_ALLOWED_OPS. Это вынужденно, потому что
+ * бэк отдаёт `[]` для системных колонок (например, `isPosted: BOOLEAN`).
+ *
+ * В Phase 2 бэка контракт должен расщепить эти случаи:
+ *   - `null` → бэк не заполнил (использовать default)
+ *   - `[]`   → бэк явно запретил фильтрацию (прятать иконку)
+ * Тогда условие тут поменяется на `allowedOpsFromBackend !== null`.
+ * См. gap бэка #8.
+ */
 export const resolveAllowedOps = (
   dataType: DataType,
   allowedOpsFromBackend: FilterOp[] | null
 ): readonly FilterOp[] => {
-  if (allowedOpsFromBackend !== null) return allowedOpsFromBackend
+  if (allowedOpsFromBackend && allowedOpsFromBackend.length > 0) {
+    return allowedOpsFromBackend
+  }
   return DEFAULT_ALLOWED_OPS[dataType]
 }

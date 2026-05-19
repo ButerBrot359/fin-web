@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { useDocumentType } from '@/entities/document-type'
-import { useDocumentColumnsMeta } from '@/entities/document-entry'
+import {
+  useDocumentColumnsMeta,
+  type ColumnMetaDto,
+} from '@/entities/document-entry'
 import {
   ActiveFiltersBar,
   isFilterableDocumentType,
@@ -24,9 +27,30 @@ export const DocumentPage = () => {
 
   const filterEnabled = isFilterableDocumentType(moduleCode)
   const filterTableId = filterEnabled ? moduleCode : undefined
-  const { columns: columnsMeta } = useDocumentColumnsMeta(
+  const { columns: columnsMetaRaw } = useDocumentColumnsMeta(
     filterEnabled ? moduleCode : ''
   )
+
+  // Подмешиваем синтетическую мету для системной колонки `isPosted`,
+  // если бэк её не возвращает в /columns (gap бэка #9). Чип над таблицей
+  // и иконка фильтра в шапке используют тот же массив.
+  const columnsMeta = useMemo<ColumnMetaDto[]>(() => {
+    if (!filterEnabled) return columnsMetaRaw
+    if (columnsMetaRaw.some((c) => c.code === 'isPosted')) {
+      return columnsMetaRaw
+    }
+    const synthetic: ColumnMetaDto = {
+      code: 'isPosted',
+      nameRu: 'Проведен',
+      nameKz: 'Жүргізілді',
+      dataType: 'BOOLEAN',
+      isSystem: true,
+      referencedTypeCode: null,
+      referencedDomainKind: null,
+      allowedOps: null,
+    }
+    return [synthetic, ...columnsMetaRaw]
+  }, [columnsMetaRaw, filterEnabled])
 
   useFilterUrlSync(filterTableId)
 

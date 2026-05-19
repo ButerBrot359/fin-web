@@ -16,10 +16,15 @@ import { DateTimeInput } from '@/shared/ui/inputs/datetime-input'
 import { NumberInput } from '@/shared/ui/inputs/number-input'
 import { AutocompleteInput } from '@/shared/ui/inputs/autocomplete-input'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
+import {
+  REFERENCE_DOMAIN_KINDS,
+  getUniversalSearchUrl,
+} from '@/shared/lib/consts/data-types'
 import type { SelectOption } from '@/shared/types/select-option'
 import type { EnumsValue } from '@/entities/document-type'
 
 import { useDebouncedValue } from '../lib/hooks/use-debounced-value'
+import { normalizeDateForBackend } from '../lib/utils/normalize-date-value'
 
 import { isListOp, isRangeOp } from './value-controls.utils'
 
@@ -87,7 +92,7 @@ const NumberRangeControl = ({ value, onChange, column }: ValueControlProps) => {
   const { t } = useTranslation()
   const [from, to] = Array.isArray(value) ? value : [null, null]
   return (
-    <Box className="flex gap-2">
+    <Box className="flex gap-3">
       <NumberInput
         size="small"
         fullWidth
@@ -116,38 +121,42 @@ const NumberRangeControl = ({ value, onChange, column }: ValueControlProps) => {
 
 const DateControl = ({ value, onChange, column }: ValueControlProps) => {
   const { t } = useTranslation()
+  const dateOnly = column.dataType === 'DATE'
   return (
     <DateTimeInput
       size="small"
-      dateOnly={column.dataType === 'DATE'}
+      dateOnly={dateOnly}
       label={t('tableFilter.value')}
       value={typeof value === 'string' ? value : ''}
-      onChange={onChange}
+      onChange={(v) => {
+        onChange(normalizeDateForBackend(v, dateOnly))
+      }}
     />
   )
 }
 
 const DateRangeControl = ({ value, onChange, column }: ValueControlProps) => {
   const { t } = useTranslation()
+  const dateOnly = column.dataType === 'DATE'
   const [from, to] = Array.isArray(value) ? value : ['', '']
   return (
-    <Box className="flex gap-2">
+    <Box className="flex gap-3">
       <DateTimeInput
         size="small"
-        dateOnly={column.dataType === 'DATE'}
+        dateOnly={dateOnly}
         label={t('tableFilter.valueFrom')}
         value={typeof from === 'string' ? from : ''}
         onChange={(v) => {
-          onChange([v, to ?? ''])
+          onChange([normalizeDateForBackend(v, dateOnly), to ?? ''])
         }}
       />
       <DateTimeInput
         size="small"
-        dateOnly={column.dataType === 'DATE'}
+        dateOnly={dateOnly}
         label={t('tableFilter.valueTo')}
         value={typeof to === 'string' ? to : ''}
         onChange={(v) => {
-          onChange([from ?? '', v])
+          onChange([from ?? '', normalizeDateForBackend(v, dateOnly)])
         }}
       />
     </Box>
@@ -190,10 +199,12 @@ const DictionaryControl = ({ value, onChange, column }: ValueControlProps) => {
   const [inputValue, setInputValue] = useState('')
   const debounced = useDebouncedValue(inputValue, 300)
 
-  const referenced = column.referencedTypeCode
-  const url = referenced
-    ? `/api/dictionaries/entries/${referenced}/search`
-    : null
+  const typeCode = column.referencedTypeCode
+  const domain = column.referencedDomainKind ?? column.dataType
+  const url =
+    typeCode && REFERENCE_DOMAIN_KINDS.has(domain)
+      ? getUniversalSearchUrl(domain, typeCode)
+      : null
 
   const { data: options = [], isFetching } = useQuery<
     AxiosResponse<DictionarySearchResponse>,

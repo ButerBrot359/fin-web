@@ -1,3 +1,4 @@
+import i18n from '@/app/config/i18n'
 import type { ColumnMetaDto, FilterCondition } from '@/entities/document-entry'
 import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 
@@ -8,15 +9,28 @@ const safeToString = (value: unknown): string => {
   return ''
 }
 
+/**
+ * Returns true if the value has a non-zero time portion (e.g. `T14:30:00`).
+ * Used to decide whether to render DATETIME as date-only.
+ */
+const hasNonZeroTime = (value: string): boolean => {
+  const match = /T(\d{2}:\d{2}(?::\d{2})?)/.exec(value)
+  if (!match) return false
+  return !/^00:00(:00)?$/.test(match[1])
+}
+
 const fmtScalar = (value: unknown, column: ColumnMetaDto): string => {
   if (value === null || value === undefined || value === '') return '∅'
   switch (column.dataType) {
     case 'DATE':
       return typeof value === 'string' ? formatDate(value) : safeToString(value)
     case 'DATETIME':
-      return typeof value === 'string' ? formatDateTime(value) : safeToString(value)
+      if (typeof value !== 'string') return safeToString(value)
+      return hasNonZeroTime(value) ? formatDateTime(value) : formatDate(value)
     case 'BOOLEAN':
-      return value === true ? '✓' : '✗'
+      return value === true
+        ? i18n.t('tableFilter.yes')
+        : i18n.t('tableFilter.no')
     case 'DICTIONARY':
     case 'DOCUMENT':
     case 'ENUMS': {

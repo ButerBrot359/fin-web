@@ -1,15 +1,21 @@
 import type { DocumentAttribute } from '@/entities/document-type'
 
-// Per-type attribute codes that should be forced into the dictionary
-// list view regardless of what backend metadata sets for `showInList`.
-// Useful when the attribute exists in the type schema but is flagged
-// `showInList: false`, while the value is reliably present in every
-// entry payload.
+// Per-(domain, typeCode) partial overrides applied on top of backend
+// attribute metadata for the dictionary list view. Useful when the
+// attribute exists in the type schema but is misconfigured (e.g.
+// `showInList: false`, wrong `tableSortOrder`) while the value is
+// reliably present in every entry payload.
 //
 // TODO: drop an entry here once the corresponding backend metadata is
-// fixed (the real attribute has `showInList: true`).
-const FORCE_SHOW_IN_LIST: Record<string, ReadonlySet<string>> = {
-  'DICTIONARY:Kassy': new Set(['Vladelets']),
+// fixed.
+const ATTRIBUTE_OVERRIDES: Record<
+  string,
+  Record<string, Partial<DocumentAttribute>>
+> = {
+  'DICTIONARY:Kassy': {
+    // Show after `Kod` (tableSortOrder 1) but before `Naimenovaniya` (2).
+    Vladelets: { showInList: true, tableSortOrder: 1.5 },
+  },
 }
 
 export const mergeAttributeOverrides = (
@@ -17,12 +23,11 @@ export const mergeAttributeOverrides = (
   typeCode: string,
   attributes: DocumentAttribute[]
 ): DocumentAttribute[] => {
-  const forced = FORCE_SHOW_IN_LIST[`${domain}:${typeCode}`]
-  if (!forced || forced.size === 0) return attributes
+  const overrides = ATTRIBUTE_OVERRIDES[`${domain}:${typeCode}`]
+  if (!overrides) return attributes
 
-  return attributes.map((attr) =>
-    forced.has(attr.code) && !attr.showInList
-      ? { ...attr, showInList: true }
-      : attr
-  )
+  return attributes.map((attr) => {
+    const override = overrides[attr.code]
+    return override ? { ...attr, ...override } : attr
+  })
 }

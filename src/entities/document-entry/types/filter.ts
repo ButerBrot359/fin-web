@@ -39,6 +39,12 @@ export interface ColumnMetaDto {
   referencedTypeCode: string | null
   referencedDomainKind: string | null
   allowedOps: FilterOp[] | null
+  /**
+   * `true` — колонка опциональная (NULL допустим), `false` — обязательная.
+   * После Phase 2.1 бэк всегда возвращает это поле. Опционально на типе
+   * для защиты от старого кэша/прокси: `undefined` трактуется как `true`.
+   */
+  nullable?: boolean
 }
 
 export type DocumentColumnsResponseData = ApiResponse<ColumnMetaDto[]>

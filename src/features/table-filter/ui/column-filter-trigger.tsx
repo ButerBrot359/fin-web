@@ -28,10 +28,7 @@ export const ColumnFilterTrigger = ({
   const filters = useTableFilters(tableId)
   const current = filters.find((c) => c.field === column.code) ?? null
 
-  const allowedOps = useMemo(
-    () => resolveAllowedOps(column.dataType, column.allowedOps),
-    [column.dataType, column.allowedOps]
-  )
+  const allowedOps = useMemo(() => resolveAllowedOps(column), [column])
 
   if (allowedOps.length === 0) return null
 

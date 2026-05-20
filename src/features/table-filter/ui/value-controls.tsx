@@ -40,7 +40,6 @@ const StringControl = ({ value, onChange }: ValueControlProps) => {
   const { t } = useTranslation()
   return (
     <TextField
-      size="small"
       fullWidth
       label={t('tableFilter.value')}
       value={typeof value === 'string' ? value : ''}
@@ -56,7 +55,6 @@ const StringListControl = ({ value, onChange }: ValueControlProps) => {
   const raw = Array.isArray(value) ? value.join(', ') : ''
   return (
     <TextField
-      size="small"
       fullWidth
       label={t('tableFilter.value')}
       placeholder="a, b, c"
@@ -76,7 +74,6 @@ const NumberControl = ({ value, onChange, column }: ValueControlProps) => {
   const { t } = useTranslation()
   return (
     <NumberInput
-      size="small"
       fullWidth
       label={t('tableFilter.value')}
       decimal={column.dataType === 'DECIMAL'}
@@ -95,7 +92,6 @@ const NumberRangeControl = ({ value, onChange, column }: ValueControlProps) => {
   return (
     <Box className="flex gap-3">
       <NumberInput
-        size="small"
         fullWidth
         label={t('tableFilter.valueFrom')}
         decimal={column.dataType === 'DECIMAL'}
@@ -106,7 +102,6 @@ const NumberRangeControl = ({ value, onChange, column }: ValueControlProps) => {
         }}
       />
       <NumberInput
-        size="small"
         fullWidth
         label={t('tableFilter.valueTo')}
         decimal={column.dataType === 'DECIMAL'}
@@ -125,7 +120,6 @@ const DateControl = ({ value, op, onChange, column }: ValueControlProps) => {
   const edge = getEdgeForOp(op)
   return (
     <DateTimeInput
-      size="small"
       dateOnly
       label={t('tableFilter.value')}
       value={typeof value === 'string' ? value : ''}
@@ -142,7 +136,6 @@ const DateRangeControl = ({ value, onChange, column }: ValueControlProps) => {
   return (
     <Box className="flex gap-3">
       <DateTimeInput
-        size="small"
         dateOnly
         label={t('tableFilter.valueFrom')}
         value={typeof from === 'string' ? from : ''}
@@ -154,7 +147,6 @@ const DateRangeControl = ({ value, onChange, column }: ValueControlProps) => {
         }}
       />
       <DateTimeInput
-        size="small"
         dateOnly
         label={t('tableFilter.valueTo')}
         value={typeof to === 'string' ? to : ''}
@@ -244,7 +236,6 @@ const DictionaryControl = ({ value, onChange, column }: ValueControlProps) => {
 
   return (
     <AutocompleteInput
-      size="small"
       value={currentValue}
       inputValue={inputValue}
       options={options}
@@ -292,7 +283,6 @@ const EnumsControl = ({ value, onChange, column }: ValueControlProps) => {
   return (
     <TextField
       select
-      size="small"
       fullWidth
       label={t('tableFilter.value')}
       value={currentId ?? ''}

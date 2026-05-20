@@ -18,7 +18,6 @@ export const OperatorSelect = ({
   return (
     <TextField
       select
-      size="small"
       fullWidth
       label={t('tableFilter.operator')}
       value={value}

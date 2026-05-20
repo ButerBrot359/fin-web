@@ -43,6 +43,7 @@ interface DictFieldProps {
   onShowAll?: (onSelect: (value: SelectOption) => void) => void
   onAdd?: () => void
   onOpenEntry?: (entryId: number | string) => void
+  selectOptions?: (response: AxiosResponse) => SelectOption[]
 }
 
 const DEBOUNCE_MS = 300
@@ -62,6 +63,7 @@ export const DictField = ({
   onShowAll,
   onAdd,
   onOpenEntry,
+  selectOptions,
 }: DictFieldProps) => {
   const { i18n } = useTranslation()
   const [opened, setOpened] = useState(false)
@@ -95,28 +97,30 @@ export const DictField = ({
   }, [inputValue, isServerSearch])
 
   const { data: serverOptions = [], isFetching } = useQuery<
-    AxiosResponse<DictionarySearchResponse>,
+    AxiosResponse,
     unknown,
     SelectOption[]
   >({
     queryKey: ['dictionary-search', searchUrl, debouncedSearch, searchParams],
     queryFn: () =>
-      apiService.get<DictionarySearchResponse>({
+      apiService.get({
         url: searchUrl!,
         params: { q: debouncedSearch, size: 30, ...searchParams },
       }),
     enabled: isServerSearch && opened,
-    select: (response) =>
-      response.data.data.content.map(
-        (entry): SelectOption => ({
-          id: entry.id,
-          code: entry.code,
-          label:
-            (entry.displayName ?? getLocalizedName(entry, i18n.language)) ||
-            entry.code,
-          raw: entry as unknown as Record<string, unknown>,
-        })
-      ),
+    select: selectOptions
+      ? (response) => selectOptions(response)
+      : (response) =>
+          (response as AxiosResponse<DictionarySearchResponse>).data.data.content.map(
+            (entry): SelectOption => ({
+              id: entry.id,
+              code: entry.code,
+              label:
+                (entry.displayName ?? getLocalizedName(entry, i18n.language)) ||
+                entry.code,
+              raw: entry as unknown as Record<string, unknown>,
+            })
+          ),
   })
 
   const options = isServerSearch ? serverOptions : (staticOptions ?? [])

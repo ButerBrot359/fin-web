@@ -225,7 +225,9 @@ export const DictionaryTable = ({
                   <td
                     colSpan={columns.length - 1}
                     className="py-2 last:rounded-r-md"
-                  />
+                  >
+                    {folder.name}
+                  </td>
                 </tr>
               ))}
 

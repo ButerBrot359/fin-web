@@ -20,7 +20,8 @@ export const useInformationRegisterEntries = (
   domain: string,
   typeCode: string,
   sortAttr?: string,
-  sortDir?: string
+  sortDir?: string,
+  enabled = true
 ): UseInformationRegisterEntriesResult => {
   const {
     data,
@@ -52,6 +53,7 @@ export const useInformationRegisterEntries = (
     },
     staleTime: 60 * 1000,
     placeholderData: keepPreviousData,
+    enabled: enabled && !!typeCode,
   })
 
   const entries = useMemo(

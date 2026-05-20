@@ -1,43 +1,66 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useParams } from 'react-router-dom'
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
-  type SortingState,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { CircularProgress, Typography } from '@mui/material'
 
+import { ColumnFilterTrigger } from '@/features/table-filter'
+import type { ColumnMetaDto } from '@/shared/lib/eav'
+
 import { cn } from '@/shared/lib/utils/cn'
+import { showToast } from '@/shared/ui/toast/show-toast'
 import emptyImage from '@/shared/assets/info/empty.png'
 
-import { useInformationRegisterEntries } from '../lib/hooks/use-information-register-entries'
-import { useInformationRegisterColumns } from '../lib/hooks/use-information-register-columns'
-import type { InformationRegisterTableProps } from '../types/information-register'
+import type {
+  EavColumnMetaExtra,
+  EavEntityTableProps,
+} from '../types/eav-entity-table'
 
-export const InformationRegisterTable = ({
-  attributes,
-  domain,
-}: InformationRegisterTableProps) => {
+export const EavEntityTable = <T extends { id: number }>({
+  filterTableId,
+  columns,
+  columnsMeta,
+  entries,
+  totalElements,
+  isLoading,
+  isSortingOrFiltering,
+  isError,
+  error,
+  hasNextPage,
+  isFetchingNextPage,
+  fetchNextPage,
+  sorting,
+  onSortingChange,
+  selectedRowId,
+  onRowClick,
+  onRowDoubleClick,
+  extraRowsAbove,
+}: EavEntityTableProps<T>) => {
   const { t } = useTranslation()
-  const { moduleCode = '' } = useParams()
 
-  const [sorting, setSorting] = useState<SortingState>([])
-  const sortAttr = sorting[0]?.id
-  const sortDir = sorting[0] ? (sorting[0].desc ? 'DESC' : 'ASC') : undefined
+  const metaByCode = useMemo(() => {
+    const map = new Map<string, ColumnMetaDto>()
+    columnsMeta?.forEach((c) => {
+      map.set(c.code, c)
+    })
+    return map
+  }, [columnsMeta])
 
-  const {
-    entries,
-    totalElements,
-    isLoading,
-    isSortingOrFiltering,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-  } = useInformationRegisterEntries(domain, moduleCode, sortAttr, sortDir)
-  const columns = useInformationRegisterColumns(attributes)
+  useEffect(() => {
+    if (!isError) return
+    const apiError = error as
+      | { message?: string; data?: { message?: string } }
+      | null
+    const description =
+      apiError?.data?.message ??
+      apiError?.message ??
+      (typeof error === 'string' ? error : undefined)
+    showToast('error', t('tableFilter.errorRequest'), description)
+  }, [isError, error, t])
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -54,10 +77,13 @@ export const InformationRegisterTable = ({
     const observer = new IntersectionObserver(
       (observerEntries) => {
         if (!observerEntries[0]?.isIntersecting) return
-        const { hasNextPage, isFetchingNextPage, fetchNextPage } =
-          loadMoreRef.current
-        if (hasNextPage && !isFetchingNextPage) {
-          fetchNextPage()
+        const {
+          hasNextPage: hp,
+          isFetchingNextPage: fp,
+          fetchNextPage: fn,
+        } = loadMoreRef.current
+        if (hp && !fp) {
+          fn()
         }
       },
       { root: scrollContainer }
@@ -75,7 +101,7 @@ export const InformationRegisterTable = ({
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
     state: { sorting },
-    onSortingChange: setSorting,
+    onSortingChange,
   })
 
   const { rows } = table.getRowModel()
@@ -112,6 +138,13 @@ export const InformationRegisterTable = ({
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort()
                   const sorted = header.column.getIsSorted()
+                  const extra = header.column.columnDef.meta as
+                    | EavColumnMetaExtra
+                    | undefined
+                  const metaCode = extra?.metaCode ?? header.column.id
+                  const columnMeta = filterTableId
+                    ? metaByCode.get(metaCode)
+                    : undefined
 
                   return (
                     <th
@@ -138,6 +171,12 @@ export const InformationRegisterTable = ({
                               ▼
                             </span>
                           )}
+                          {filterTableId && columnMeta && (
+                            <ColumnFilterTrigger
+                              tableId={filterTableId}
+                              column={columnMeta}
+                            />
+                          )}
                         </span>
                       )}
                     </th>
@@ -147,6 +186,8 @@ export const InformationRegisterTable = ({
             ))}
           </thead>
           <tbody>
+            {extraRowsAbove}
+
             {isLoading && (
               <tr>
                 <td colSpan={columns.length} className="py-16 text-center">
@@ -173,23 +214,58 @@ export const InformationRegisterTable = ({
             )}
             {virtualRows.map((virtualRow) => {
               const row = rows[virtualRow.index]
+              const entry = row.original
+              const isSelected = selectedRowId === entry.id
 
               return (
                 <tr
                   key={row.id}
-                  className={virtualRow.index % 2 === 1 ? 'bg-ui-01' : ''}
+                  onClick={
+                    onRowClick
+                      ? () => {
+                          onRowClick(entry)
+                        }
+                      : undefined
+                  }
+                  onDoubleClick={
+                    onRowDoubleClick
+                      ? () => {
+                          onRowDoubleClick(entry)
+                        }
+                      : undefined
+                  }
+                  className={cn(
+                    'transition-colors hover:bg-ui-07',
+                    (onRowClick ?? onRowDoubleClick) && 'cursor-pointer',
+                    isSelected
+                      ? 'bg-ui-07'
+                      : virtualRow.index % 2 === 1
+                        ? 'bg-ui-01'
+                        : ''
+                  )}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const cellExtra = cell.column.columnDef.meta as
+                      | EavColumnMetaExtra
+                      | undefined
+                    return (
+                      <td
+                        key={cell.id}
+                        className={cn(
+                          'px-3 py-2 first:rounded-l-md last:rounded-r-md',
+                          cellExtra?.metaCode === '__hierarchy' ||
+                            cell.column.id === '__hierarchy'
+                            ? 'whitespace-nowrap'
+                            : 'max-w-50 truncate'
+                        )}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    )
+                  })}
                 </tr>
               )
             })}

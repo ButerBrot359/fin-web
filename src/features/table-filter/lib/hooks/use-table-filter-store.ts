@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
 
-import type { FilterCondition, FilterRequest } from '@/entities/document-entry'
+import type { FilterCondition, FilterRequest } from '@/shared/lib/eav'
 
 interface TableFilterState {
   filters: FilterCondition[]

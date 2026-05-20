@@ -1,4 +1,4 @@
-import type { FilterCondition, FilterOp } from '@/entities/document-entry'
+import type { FilterCondition, FilterOp } from '@/shared/lib/eav'
 
 const OPS_WITHOUT_VALUE = new Set<FilterOp>(['isNull', 'isNotNull'])
 

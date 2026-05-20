@@ -1,4 +1,4 @@
-import type { FilterOp } from '@/entities/document-entry'
+import type { FilterOp } from '@/shared/lib/eav'
 
 export const isRangeOp = (op: FilterOp) => op === 'between'
 export const isListOp = (op: FilterOp) => op === 'in' || op === 'notIn'

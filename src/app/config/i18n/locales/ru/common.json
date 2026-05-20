@@ -168,6 +168,10 @@
     "add": "Добавить",
     "loadedCount": "Загружено {{loaded}} из {{total}}"
   },
+  "informationRegister": {
+    "period": "Период",
+    "recorder": "Регистратор"
+  },
   "tableFilter": {
     "filterBy": "Фильтр: {{name}}",
     "apply": "Применить",

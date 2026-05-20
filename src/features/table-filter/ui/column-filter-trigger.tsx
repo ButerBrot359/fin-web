@@ -4,7 +4,7 @@ import { IconButton, Tooltip } from '@mui/material'
 import FilterAltIcon from '@mui/icons-material/FilterAlt'
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOutlined'
 
-import type { ColumnMetaDto, FilterCondition } from '@/entities/document-entry'
+import type { ColumnMetaDto, FilterCondition } from '@/shared/lib/eav'
 import { resolveAllowedOps } from '@/shared/lib/filter/default-allowed-ops'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 

@@ -1,4 +1,4 @@
-import type { ColumnMetaDto, FilterOp } from '@/entities/document-entry'
+import type { ColumnMetaDto, FilterOp } from '@/shared/lib/eav'
 
 /**
  * Возвращает список операторов фильтра, разрешённых для колонки.

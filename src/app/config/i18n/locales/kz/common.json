@@ -168,6 +168,10 @@
     "add": "Қосу",
     "loadedCount": "{{total}} ішінен {{loaded}} жүктелді"
   },
+  "informationRegister": {
+    "period": "Кезең",
+    "recorder": "Тіркеуші"
+  },
   "tableFilter": {
     "filterBy": "Сүзгі: {{name}}",
     "apply": "Қолдану",

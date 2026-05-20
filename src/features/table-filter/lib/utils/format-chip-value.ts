@@ -1,5 +1,5 @@
 import i18n from '@/app/config/i18n'
-import type { ColumnMetaDto, FilterCondition } from '@/entities/document-entry'
+import type { ColumnMetaDto, FilterCondition } from '@/shared/lib/eav'
 import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 
 const safeToString = (value: unknown): string => {

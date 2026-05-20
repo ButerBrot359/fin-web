@@ -10,7 +10,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import type { AxiosResponse } from 'axios'
 
-import type { ColumnMetaDto, FilterOp } from '@/entities/document-entry'
+import type { ColumnMetaDto, FilterOp } from '@/shared/lib/eav'
 import { apiService } from '@/shared/api/api'
 import { DateTimeInput } from '@/shared/ui/inputs/datetime-input'
 import { NumberInput } from '@/shared/ui/inputs/number-input'
@@ -352,6 +352,18 @@ export const ValueControl = (props: ValueControlProps) => {
     case 'CHARACTERISTICS_PLAN':
     case 'EXCHANGE_PLAN':
     case 'CALCULATION_PLAN':
+      // Reference без resolved typeCode (gap бэка):
+      //   - DICTIONARY self-FK обычно патчится page-level (см. dictionary-page),
+      //     сюда попадает только если страница не залатала.
+      //   - DOCUMENT регистров (`recorderDocumentEntryId`) — universal picker
+      //     ещё не реализован.
+      // TODO(phase-3-frontend): универсальный document-picker для reference
+      // полей с domainKind=DOCUMENT без typeCode. Сейчас используется NumberInput.
+      if (!column.referencedTypeCode) {
+        if (isRange) return <NumberRangeControl {...props} />
+        if (isList) return <StringListControl {...props} />
+        return <NumberControl {...props} />
+      }
       return <DictionaryControl {...props} />
 
     case 'ENUMS':

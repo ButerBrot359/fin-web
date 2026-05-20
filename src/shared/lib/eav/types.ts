@@ -1,8 +1,6 @@
 import type { ApiResponse, PagedResponse } from '@/shared/types/api.types'
 import type { DataType } from '@/shared/lib/consts/data-types'
 
-import type { DocumentEntry } from './document-entry'
-
 export type FilterOp =
   | 'eq'
   | 'ne'
@@ -41,12 +39,11 @@ export interface ColumnMetaDto {
   allowedOps: FilterOp[] | null
   /**
    * `true` — колонка опциональная (NULL допустим), `false` — обязательная.
-   * После Phase 2.1 бэк всегда возвращает это поле. Опционально на типе
-   * для защиты от старого кэша/прокси: `undefined` трактуется как `true`.
+   * `undefined` трактуется как `true` — защита от старого кэша/прокси.
    */
   nullable?: boolean
 }
 
-export type DocumentColumnsResponseData = ApiResponse<ColumnMetaDto[]>
+export type EavColumnsResponseData = ApiResponse<ColumnMetaDto[]>
 
-export type DocumentSearchResponseData = ApiResponse<PagedResponse<DocumentEntry>>
+export type EavSearchResponseData<T> = ApiResponse<PagedResponse<T>>

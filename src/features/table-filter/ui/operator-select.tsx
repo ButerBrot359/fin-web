@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { MenuItem, TextField } from '@mui/material'
 
-import type { FilterOp } from '@/entities/document-entry'
+import type { FilterOp } from '@/shared/lib/eav'
 
 interface OperatorSelectProps {
   value: FilterOp

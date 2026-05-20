@@ -1,4 +1,4 @@
-import type { FilterCondition, FilterRequest } from '@/entities/document-entry'
+import type { FilterCondition, FilterRequest } from '@/shared/lib/eav'
 
 export const EMPTY_FILTER: FilterRequest = { filters: [], logic: 'AND' }
 

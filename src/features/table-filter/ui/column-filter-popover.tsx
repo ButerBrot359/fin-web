@@ -6,7 +6,7 @@ import type {
   ColumnMetaDto,
   FilterCondition,
   FilterOp,
-} from '@/entities/document-entry'
+} from '@/shared/lib/eav'
 import { resolveAllowedOps } from '@/shared/lib/filter/default-allowed-ops'
 import { isConditionValid } from '@/shared/lib/filter/validate-condition'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'

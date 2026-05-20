@@ -1,4 +1,4 @@
-import type { FilterCondition, FilterRequest } from '@/entities/document-entry'
+import type { FilterCondition, FilterRequest } from '@/shared/lib/eav'
 
 /**
  * Преобразует FilterRequest перед отправкой в `POST /search`.

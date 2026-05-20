@@ -24,7 +24,8 @@ export const useDictionaryEntries = (
   skipDependsOn?: boolean,
   sortAttr?: string,
   sortDir?: string,
-  parentId?: number
+  parentId?: number,
+  enabled = true
 ): UseDictionaryEntriesResult => {
   const {
     data,
@@ -65,6 +66,7 @@ export const useDictionaryEntries = (
     },
     staleTime: 60 * 1000,
     placeholderData: keepPreviousData,
+    enabled: enabled && !!typeCode,
   })
 
   const entries = useMemo(

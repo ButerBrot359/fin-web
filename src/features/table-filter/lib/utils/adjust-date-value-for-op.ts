@@ -1,4 +1,4 @@
-import type { FilterOp } from '@/entities/document-entry'
+import type { FilterOp } from '@/shared/lib/eav'
 import type { DataType } from '@/shared/lib/consts/data-types'
 
 import type { DateEdge } from './normalize-date-value'

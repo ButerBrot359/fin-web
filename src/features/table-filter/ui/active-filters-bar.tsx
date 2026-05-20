@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Box, Button, Chip, Typography } from '@mui/material'
 
-import type { ColumnMetaDto } from '@/entities/document-entry'
+import type { ColumnMetaDto } from '@/shared/lib/eav'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
 import { useTableFilterStore, useTableFilters } from '../lib/hooks/use-table-filter-store'

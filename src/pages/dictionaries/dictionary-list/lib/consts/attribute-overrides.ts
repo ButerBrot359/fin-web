@@ -14,7 +14,12 @@ const ATTRIBUTE_OVERRIDES: Record<
 > = {
   'DICTIONARY:Kassy': {
     // Show after `Kod` (tableSortOrder 1) but before `Naimenovaniya` (2).
-    Vladelets: { showInList: true, tableSortOrder: 1.5 },
+    Vladelets: {
+      showInList: true,
+      tableSortOrder: 1.5,
+      nameRu: 'Организация',
+      nameKz: 'Организация',
+    },
   },
 }
 

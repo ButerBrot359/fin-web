@@ -7,7 +7,6 @@ import { useModule } from '@/entities/module'
 import type { DictEntry } from '@/features/dict-sidebar/api/dict-sidebar-api'
 import {
   ActiveFiltersBar,
-  isFilterableDictionaryType,
   useFilterUrlSync,
   useTableFilterRequest,
 } from '@/features/table-filter'
@@ -27,7 +26,6 @@ import ArrowDownIcon from '@/shared/assets/icons/arrow-down.svg'
 
 import { useDictionaryType } from '../lib/hooks/use-dictionary-type'
 import { useFolderNavigation } from '../lib/hooks/use-folder-navigation'
-import { useDictionaryEntries } from '../lib/hooks/use-dictionary-entries'
 import { useDictionaryColumns } from '../lib/hooks/use-dictionary-columns'
 import { CreateGroupModal } from './create-group-modal'
 
@@ -74,19 +72,16 @@ export const DictionaryPage = () => {
 
   useTabMeta(title)
 
-  const filterEnabled = isFilterableDictionaryType(moduleCode)
-  const filterTableId = filterEnabled ? moduleCode : undefined
   const { columns: rawColumnsMeta } = useEavColumnsMeta(
     DICTIONARY_DOMAIN_CONFIG,
-    filterEnabled ? moduleCode : ''
+    moduleCode
   )
   const columnsMeta = useMemo(
-    () =>
-      filterEnabled ? patchSelfFkParentId(rawColumnsMeta, moduleCode) : [],
-    [filterEnabled, rawColumnsMeta, moduleCode]
+    () => patchSelfFkParentId(rawColumnsMeta, moduleCode),
+    [rawColumnsMeta, moduleCode]
   )
 
-  useFilterUrlSync(filterTableId)
+  useFilterUrlSync(moduleCode)
 
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
@@ -98,13 +93,8 @@ export const DictionaryPage = () => {
   const { openFolders, currentParentId, openFolder, closeFolder } =
     useFolderNavigation()
 
-  const filterRequest = useTableFilterRequest(filterTableId ?? '__none__')
+  const filterRequest = useTableFilterRequest(moduleCode)
 
-  // Pilot (filtered) запрос через generic POST /search.
-  // TODO(phase-2-3+): когда FILTERABLE_DICTIONARY_TYPES покроет все типы
-  // справочников — удалить legacyQuery + useDictionaryEntries GET /paged-путь
-  // и оставить только eavQuery. Сейчас разрыв сохраняет поведение для
-  // нефильтруемых справочников без регрессий.
   const eavExtra = useMemo(
     () => ({
       ...(skipDependsOn && { skipDependsOn: true }),
@@ -112,48 +102,22 @@ export const DictionaryPage = () => {
     }),
     [skipDependsOn, currentParentId]
   )
-  const eavQuery = useEavEntries<DictEntry>(
-    DICTIONARY_DOMAIN_CONFIG,
-    moduleCode,
-    {
-      sortAttr,
-      sortDir,
-      filter: filterEnabled ? filterRequest : undefined,
-      extraParams: eavExtra,
-      enabled: filterEnabled,
-    }
-  )
-
-  // Старый GET /paged для нефильтруемых справочников — поведение без регрессий.
-  const legacyQuery = useDictionaryEntries(
-    domain,
-    moduleCode,
-    skipDependsOn,
+  const {
+    entries,
+    totalElements,
+    isLoading: isLoadingEntries,
+    isSortingOrFiltering,
+    isError,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useEavEntries<DictEntry>(DICTIONARY_DOMAIN_CONFIG, moduleCode, {
     sortAttr,
     sortDir,
-    currentParentId,
-    !filterEnabled
-  )
-
-  const entries = filterEnabled ? eavQuery.entries : legacyQuery.entries
-  const totalElements = filterEnabled
-    ? eavQuery.totalElements
-    : legacyQuery.totalElements
-  const isLoadingEntries = filterEnabled
-    ? eavQuery.isLoading
-    : legacyQuery.isLoading
-  const isSortingOrFiltering = filterEnabled
-    ? eavQuery.isSortingOrFiltering
-    : legacyQuery.isSortingOrFiltering
-  const hasNextPage = filterEnabled
-    ? eavQuery.hasNextPage
-    : legacyQuery.hasNextPage
-  const isFetchingNextPage = filterEnabled
-    ? eavQuery.isFetchingNextPage
-    : legacyQuery.isFetchingNextPage
-  const fetchNextPage = filterEnabled
-    ? eavQuery.fetchNextPage
-    : legacyQuery.fetchNextPage
+    filter: filterRequest,
+    extraParams: eavExtra,
+  })
 
   // Группы — выше элементов; иерархические столбцы рендерим только в иерархичных
   // справочниках.
@@ -235,19 +199,17 @@ export const DictionaryPage = () => {
           setIsCreateGroupOpen(true)
         }}
       />
-      {filterTableId && (
-        <ActiveFiltersBar tableId={filterTableId} columns={columnsMeta} />
-      )}
+      <ActiveFiltersBar tableId={moduleCode} columns={columnsMeta} />
       <EavEntityTable<DictEntry>
-        filterTableId={filterTableId}
+        filterTableId={moduleCode}
         columns={columns}
-        columnsMeta={filterEnabled ? columnsMeta : undefined}
+        columnsMeta={columnsMeta}
         entries={sortedEntries}
         totalElements={totalElements}
         isLoading={isLoadingEntries}
         isSortingOrFiltering={isSortingOrFiltering}
-        isError={filterEnabled ? eavQuery.isError : undefined}
-        error={filterEnabled ? eavQuery.error : undefined}
+        isError={isError}
+        error={error}
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
         fetchNextPage={fetchNextPage}

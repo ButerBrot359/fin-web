@@ -6,7 +6,6 @@ import { useDocumentType } from '@/entities/document-type'
 import type { DocumentEntry } from '@/entities/document-entry'
 import {
   ActiveFiltersBar,
-  isFilterableDocumentType,
   useFilterUrlSync,
   useTableFilterRequest,
 } from '@/features/table-filter'
@@ -30,14 +29,12 @@ export const DocumentPage = () => {
   const { title, attributes } = useDocumentType(moduleCode)
   useTabMeta(title)
 
-  const filterEnabled = isFilterableDocumentType(moduleCode)
-  const filterTableId = filterEnabled ? moduleCode : undefined
   const { columns: columnsMeta } = useEavColumnsMeta(
     DOCUMENT_DOMAIN_CONFIG,
-    filterEnabled ? moduleCode : ''
+    moduleCode
   )
 
-  useFilterUrlSync(filterTableId)
+  useFilterUrlSync(moduleCode)
 
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
   const [selectedRowName, setSelectedRowName] = useState<string | null>(null)
@@ -46,8 +43,7 @@ export const DocumentPage = () => {
   const sortAttr = sorting[0]?.id
   const sortDir = sorting[0] ? (sorting[0].desc ? 'DESC' : 'ASC') : undefined
 
-  const filterRequest = useTableFilterRequest(filterTableId ?? '__none__')
-  const activeFilter = filterTableId ? filterRequest : undefined
+  const filterRequest = useTableFilterRequest(moduleCode)
 
   const {
     entries,
@@ -62,7 +58,7 @@ export const DocumentPage = () => {
   } = useEavEntries<DocumentEntry>(DOCUMENT_DOMAIN_CONFIG, moduleCode, {
     sortAttr,
     sortDir,
-    filter: activeFilter,
+    filter: filterRequest,
   })
 
   const columns = useDocumentColumns(attributes)
@@ -90,13 +86,11 @@ export const DocumentPage = () => {
         selectedRowId={selectedRowId}
         selectedRowName={selectedRowName}
       />
-      {filterTableId && (
-        <ActiveFiltersBar tableId={filterTableId} columns={columnsMeta} />
-      )}
+      <ActiveFiltersBar tableId={moduleCode} columns={columnsMeta} />
       <EavEntityTable<DocumentEntry>
-        filterTableId={filterTableId}
+        filterTableId={moduleCode}
         columns={columns}
-        columnsMeta={filterEnabled ? columnsMeta : undefined}
+        columnsMeta={columnsMeta}
         entries={entries}
         totalElements={totalElements}
         isLoading={isLoading}

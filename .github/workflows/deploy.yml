@@ -8,6 +8,12 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  # Hardcoded build-args для dev-окружения (симметрично с deploy-demo.yml).
+  # Раньше эти URL читались из `vars.*` репозитория, что приводило к молчаливо
+  # пустой подстановке если variable не задан — фронт тогда уходит на свой
+  # origin (dev.qazyna.ai/api/...) и получает 404.
+  DEV_API_URL: https://dev-api.qazyna.ai
+  DEV_FORM_CONFIGS_URL: https://dev.qazyna.ai/api
 
 jobs:
   build-and-push:
@@ -44,10 +50,10 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
-            VITE_FORM_CONFIGS_URL=${{ vars.VITE_FORM_CONFIGS_URL }}
+            VITE_API_BASE_URL=${{ env.DEV_API_URL }}
+            VITE_FORM_CONFIGS_URL=${{ env.DEV_FORM_CONFIGS_URL }}
             ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
-            DOCUMENT_TYPES_API_BASE_URL=${{ vars.DOCUMENT_TYPES_API_BASE_URL }}
+            DOCUMENT_TYPES_API_BASE_URL=${{ env.DEV_API_URL }}
 
   deploy:
     runs-on: ubuntu-latest

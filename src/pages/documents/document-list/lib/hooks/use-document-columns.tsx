@@ -47,6 +47,9 @@ export const useDocumentColumns = (
   return useMemo(() => {
     const statusColumn: ColumnDef<DocumentEntry> = {
       id: 'status',
+      // Иконка фильтра должна смотреть на бэкендовое поле `isPosted`,
+      // хотя визуально это колонка статуса со значками posted/draft/deleted.
+      meta: { metaCode: 'isPosted' },
       header: () => null,
       size: 24,
       enableSorting: false,

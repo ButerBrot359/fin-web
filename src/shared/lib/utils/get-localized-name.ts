@@ -1,6 +1,6 @@
 interface LocalizedNameable {
-  nameRu?: string
-  nameKz?: string
+  nameRu?: string | null
+  nameKz?: string | null
 }
 
 export const getLocalizedName = (

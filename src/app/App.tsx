@@ -50,6 +50,13 @@ const InformationRegisterPage = lazy(() =>
     })
   )
 )
+const AccumulationRegisterPage = lazy(() =>
+  import('@/pages/accumulation-register/accumulation-register-list').then(
+    (m) => ({
+      default: m.AccumulationRegisterPage,
+    })
+  )
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -91,6 +98,10 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/informationregister/:moduleCode"
             element={<InformationRegisterPage />}
+          />
+          <Route
+            path="/modules/:pageCode/accumulationregister/:moduleCode"
+            element={<AccumulationRegisterPage />}
           />
         </Routes>
       </Suspense>

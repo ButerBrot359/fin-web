@@ -172,6 +172,16 @@
     "period": "Период",
     "recorder": "Регистратор"
   },
+  "accumulationRegister": {
+    "period": "Период",
+    "movementKind": "Вид движения",
+    "movementKindValue": {
+      "RECEIPT": "Приход",
+      "EXPENSE": "Расход"
+    },
+    "recorder": "Регистратор",
+    "lineNo": "Номер строки"
+  },
   "tableFilter": {
     "filterBy": "Фильтр: {{name}}",
     "apply": "Применить",

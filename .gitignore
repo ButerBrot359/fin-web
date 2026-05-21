@@ -7,8 +7,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-docs/superpowers
-
 /.env
 /.env.local
 form-configs-server/.env*
@@ -30,5 +28,4 @@ form-configs-server/dist
 *.sw?
 
 form-configs-server/configs
-.superpowers
 .playwright-mcp

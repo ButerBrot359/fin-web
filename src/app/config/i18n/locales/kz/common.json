@@ -172,6 +172,16 @@
     "period": "Кезең",
     "recorder": "Тіркеуші"
   },
+  "accumulationRegister": {
+    "period": "Кезең",
+    "movementKind": "Қозғалыс түрі",
+    "movementKindValue": {
+      "RECEIPT": "Кіріс",
+      "EXPENSE": "Шығыс"
+    },
+    "recorder": "Тіркеуші",
+    "lineNo": "Жол нөмірі"
+  },
   "tableFilter": {
     "filterBy": "Сүзгі: {{name}}",
     "apply": "Қолдану",

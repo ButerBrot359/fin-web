@@ -1,0 +1,68 @@
+<h2>Как должна выглядеть кнопка AI?</h2>
+<p class="subtitle">Она будет стоять перед кнопкой "Ещё" в тулбаре формы</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Иконка + текст</h3>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 16px;background:#f0f0f0;border-radius:8px;width:fit-content;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2">
+          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+        </svg>
+        <span style="font-size:14px;color:#333;">AI</span>
+      </div>
+      <p style="margin-top:8px;color:#888;">Кнопка в стиле secondary с иконкой и текстом "AI"</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Только иконка (как Debet/Credit, Layers)</h3>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px;background:#f0f0f0;border-radius:8px;width:fit-content;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2">
+          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+        </svg>
+      </div>
+      <p style="margin-top:8px;color:#888;">Icon-only кнопка, как остальные иконочные кнопки в тулбаре документов</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Акцентная кнопка (выделяется цветом)</h3>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 16px;background:linear-gradient(135deg, #6366f1, #8b5cf6);border-radius:8px;width:fit-content;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+        </svg>
+        <span style="font-size:14px;color:white;font-weight:500;">AI</span>
+      </div>
+      <p style="margin-top:8px;color:#888;">Градиентная кнопка, сразу привлекает внимание</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:32px;">
+  <h3>Контекст: текущий тулбар документов</h3>
+  <div class="mockup">
+    <div class="mockup-header">Document Form Toolbar</div>
+    <div class="mockup-body" style="padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button style="padding:10px 16px;background:#3b82f6;color:white;border:none;border-radius:8px;font-size:13px;">Провести и закрыть</button>
+          <button style="padding:10px 16px;background:#f0f0f0;border:none;border-radius:8px;font-size:13px;">Сохранить</button>
+          <button style="padding:10px 16px;background:#f0f0f0;border:none;border-radius:8px;font-size:13px;">Провести</button>
+          <button style="padding:10px;background:#f0f0f0;border:none;border-radius:8px;">🖨</button>
+          <button style="padding:10px;background:#f0f0f0;border:none;border-radius:8px;">⇄</button>
+          <button style="padding:10px;background:#f0f0f0;border:none;border-radius:8px;">▤</button>
+          <button style="padding:10px;background:#f0f0f0;border:none;border-radius:8px;">🔗</button>
+          <button style="padding:10px 16px;background:#f0f0f0;border:none;border-radius:8px;font-size:13px;">Отчёты</button>
+          <div style="padding:4px 12px;background:#e0e7ff;border:2px dashed #6366f1;border-radius:8px;font-size:13px;color:#6366f1;font-weight:600;">← AI кнопка сюда</div>
+        </div>
+        <button style="padding:10px 16px;background:#f0f0f0;border:none;border-radius:8px;font-size:13px;">Ещё</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,3 +1,5 @@
+import type { FC, SVGProps } from 'react'
+
 import MainIcon from '@/shared/assets/navigation/main.svg'
 import BankIcon from '@/shared/assets/navigation/bank.svg'
 import WarehouseIcon from '@/shared/assets/navigation/warehouse.svg'
@@ -11,61 +13,24 @@ import RegulatedFinReportIcon from '@/shared/assets/navigation/regulated-fin-rep
 
 import type { NavigationItem } from '../../types/types'
 
-export const NAVIGATION_ITEMS: NavigationItem[] = [
-  { id: 'main', labelKey: 'sidebar.nav.main', icon: MainIcon, path: '/' },
-  {
-    id: 'bank',
-    labelKey: 'sidebar.nav.bank',
-    icon: BankIcon,
-    path: '/modules/BankiIKassy',
-  },
-  {
-    id: 'warehouse',
-    labelKey: 'sidebar.nav.warehouse',
-    icon: WarehouseIcon,
-    disabled: true,
-  },
-  {
-    id: 'actives',
-    labelKey: 'sidebar.nav.actives',
-    icon: ActivesIcon,
-    disabled: true,
-  },
-  {
-    id: 'tariffs',
-    labelKey: 'sidebar.nav.tariffs',
-    icon: TarifsIcon,
-    disabled: true,
-  },
-  {
-    id: 'salary',
-    labelKey: 'sidebar.nav.salary',
-    icon: SalaryIcon,
-    path: '/modules/ZarplatiIKadri',
-  },
-  {
-    id: 'reports',
-    labelKey: 'sidebar.nav.reports',
-    icon: ReportIcon,
-    disabled: true,
-  },
-  {
-    id: 'our-company',
-    labelKey: 'sidebar.nav.ourCompany',
-    icon: OurCompanyIcon,
-    disabled: true,
-  },
-  { id: 'flk', labelKey: 'sidebar.nav.flk', icon: FlkIcon, disabled: true },
-  {
-    id: 'regulated-fin-report',
-    labelKey: 'sidebar.nav.regulatedFinReport',
-    icon: RegulatedFinReportIcon,
-    disabled: true,
-  },
-  {
-    id: 'administrirovanie',
-    labelKey: 'sidebar.nav.administrirovanie',
-    path: '/modules/Administrirovanie',
-    icon: RegulatedFinReportIcon,
-  },
-]
+export const ICON_MAP: Record<string, FC<SVGProps<SVGSVGElement>>> = {
+  bank: BankIcon,
+  warehouse: WarehouseIcon,
+  actives: ActivesIcon,
+  tariffs: TarifsIcon,
+  salary: SalaryIcon,
+  reports: ReportIcon,
+  'our-company': OurCompanyIcon,
+  flk: FlkIcon,
+  'regulated-fin-report': RegulatedFinReportIcon,
+  admin: RegulatedFinReportIcon,
+}
+
+export const FALLBACK_ICON = MainIcon
+
+export const MAIN_NAV_ITEM: NavigationItem = {
+  id: 'main',
+  label: 'sidebar.nav.main',
+  icon: MainIcon,
+  path: '/',
+}

@@ -7,17 +7,12 @@ import { cn } from '@/shared/lib/utils/cn'
 
 import { useSidebar } from '../lib/hooks/use-sidebar'
 
-const getButtonStyles = (
-  isActive: boolean,
-  isDisabled: boolean,
-  isCollapsed: boolean
-) =>
+const getButtonStyles = (isActive: boolean, isCollapsed: boolean) =>
   cn(
     'flex w-full max-h-14 items-center gap-3 rounded-lg py-2 text-left text-base text-ui-01 transition-colors',
     isCollapsed ? 'justify-center px-2' : 'justify-start pl-4',
     isActive && 'bg-ui-01 text-ui-06',
-    isDisabled && 'cursor-not-allowed opacity-50',
-    !isActive && !isDisabled && 'cursor-pointer hover:bg-ui-01/10'
+    !isActive && 'cursor-pointer hover:bg-ui-01/10'
   )
 
 const getIconWrapStyles = (isActive: boolean) =>
@@ -64,24 +59,22 @@ export const Sidebar = () => {
           {navigationItems.map((item) => {
             const Icon = item.icon
             const isActive = activeItem?.id === item.id
-            const isDisabled = Boolean(item.disabled)
 
             return (
               <li key={item.id}>
                 <button
                   type="button"
-                  disabled={isDisabled}
                   onClick={() => {
                     void handleSelectItem(item)
                   }}
-                  className={getButtonStyles(isActive, isDisabled, isCollapsed)}
+                  className={getButtonStyles(isActive, isCollapsed)}
                 >
                   <div className={getIconWrapStyles(isActive)}>
                     <Icon className={getIconStyles(isActive)} />
                   </div>
                   {!isCollapsed && (
                     <Typography variant="body2">
-                      {t(item.labelKey as never)}
+                      {item.id === 'main' ? t('sidebar.nav.main') : item.label}
                     </Typography>
                   )}
                 </button>

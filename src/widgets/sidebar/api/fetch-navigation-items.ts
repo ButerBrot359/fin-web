@@ -14,14 +14,18 @@ interface ModuleNavItem {
 }
 
 export async function fetchNavigationItems(): Promise<NavigationItem[]> {
-  const response = await apiService.get<ApiResponse<ModuleNavItem[]>>({
-    url: '/api/settings/modules',
-  })
-  const modules = response.data.data.map((m): NavigationItem => ({
-    id: m.code,
-    label: i18n.language === 'kz' ? m.nameKz : m.nameRu,
-    icon: ICON_MAP[m.iconCode] ?? FALLBACK_ICON,
-    path: `/modules/${m.code}`,
-  }))
-  return [MAIN_NAV_ITEM, ...modules]
+  try {
+    const response = await apiService.get<ApiResponse<ModuleNavItem[]>>({
+      url: '/api/settings/modules',
+    })
+    const modules = response.data.data.map((m): NavigationItem => ({
+      id: m.code,
+      label: i18n.language === 'kz' ? m.nameKz : m.nameRu,
+      icon: ICON_MAP[m.iconCode] ?? FALLBACK_ICON,
+      path: `/modules/${m.code}`,
+    }))
+    return [MAIN_NAV_ITEM, ...modules]
+  } catch {
+    return [MAIN_NAV_ITEM]
+  }
 }

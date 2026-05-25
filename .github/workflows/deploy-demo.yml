@@ -13,7 +13,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   NAMESPACE: demo
   DEMO_API_URL: https://demo-api.qazyna.ai
-  DEMO_FORM_CONFIGS_URL: https://demo.qazyna.ai/api
+  DEMO_FORM_CONFIGS_URL: https://demo.qazyna.ai
 
 jobs:
   build:

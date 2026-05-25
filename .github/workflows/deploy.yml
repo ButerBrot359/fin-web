@@ -13,7 +13,7 @@ env:
   # пустой подстановке если variable не задан — фронт тогда уходит на свой
   # origin (dev.qazyna.ai/api/...) и получает 404.
   DEV_API_URL: https://dev-api.qazyna.ai
-  DEV_FORM_CONFIGS_URL: https://dev.qazyna.ai/api
+  DEV_FORM_CONFIGS_URL: https://dev.qazyna.ai
 
 jobs:
   build-and-push:

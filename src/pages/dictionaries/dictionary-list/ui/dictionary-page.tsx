@@ -21,6 +21,7 @@ import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { PageHeader } from '@/widgets/page-header'
 import { DictionaryListToolbar } from '@/widgets/dictionary-list-toolbar'
 import { EavEntityTable } from '@/widgets/eav-entity-table'
+import { Typography } from '@mui/material'
 import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
 import ArrowDownIcon from '@/shared/assets/icons/arrow-down.svg'
 
@@ -135,6 +136,10 @@ export const DictionaryPage = () => {
   )
 
   const handleRowClick = (entry: DictEntry) => {
+    setSelectedRowId(entry.id)
+  }
+
+  const handleDoubleClick = (entry: DictEntry) => {
     if (isHierarchical && entry.isGroup) {
       openFolder({
         id: entry.id,
@@ -142,11 +147,6 @@ export const DictionaryPage = () => {
       })
       return
     }
-    setSelectedRowId(entry.id)
-  }
-
-  const handleDoubleClick = (entry: DictEntry) => {
-    if (isHierarchical && entry.isGroup) return
     void navigate(
       `/modules/${pageCode}/dictionary/${moduleCode}/${String(entry.id)}?domain=${domain}`
     )
@@ -164,7 +164,7 @@ export const DictionaryPage = () => {
         <tr
           key={`ancestor-${String(folder.id)}`}
           className="cursor-pointer transition-colors hover:bg-ui-07"
-          onClick={() => {
+          onDoubleClick={() => {
             closeFolder(folder.id)
           }}
         >
@@ -177,10 +177,11 @@ export const DictionaryPage = () => {
               <FolderIcon className="h-4 w-4 shrink-0" />
             </div>
           </td>
-          <td
-            colSpan={columns.length - 1}
-            className="py-2 last:rounded-r-md"
-          />
+          <td className="px-3 py-2" colSpan={columns.length - 1}>
+            <Typography variant="body2" noWrap className="text-ui-06">
+              {folder.name}
+            </Typography>
+          </td>
         </tr>
       ))}
     </>

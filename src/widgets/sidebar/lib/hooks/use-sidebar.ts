@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import {
   getStorageItem,
@@ -20,8 +21,10 @@ const DEFAULT_SETTINGS: SidebarSettings = {
 }
 
 export function useSidebar() {
+  const { i18n } = useTranslation()
+
   const { data: navigationItems = [] } = useQuery({
-    queryKey: ['navigation-items'],
+    queryKey: ['navigation-items', i18n.language],
     queryFn: fetchNavigationItems,
   })
 
@@ -47,7 +50,6 @@ export function useSidebar() {
   const activeItem = useMemo(
     () =>
       navigationItems.find((item) => {
-        if (!item.path) return false
         if (item.path === '/') return location.pathname === '/'
         return location.pathname.startsWith(item.path)
       }) ?? null,
@@ -56,9 +58,7 @@ export function useSidebar() {
 
   const handleSelectItem = useCallback(
     async (item: NavigationItem) => {
-      if (item.path) {
-        await navigate(item.path)
-      }
+      await navigate(item.path)
     },
     [navigate]
   )

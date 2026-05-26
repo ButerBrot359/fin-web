@@ -173,7 +173,8 @@
   },
   "accountPlan": {
     "code": "Коды",
-    "name": "Атауы"
+    "name": "Атауы",
+    "parent": "Аталық"
   },
   "tableFilter": {
     "filterBy": "Сүзгі: {{name}}",

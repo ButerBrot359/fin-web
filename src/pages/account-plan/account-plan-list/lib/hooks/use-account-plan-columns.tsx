@@ -25,6 +25,7 @@ export const useAccountPlanColumns = (
       id: 'code',
       accessorFn: (row) => row.code ?? null,
       header: () => <span>{t('accountPlan.code')}</span>,
+      size: 96,
       cell: ({ getValue }) => cellText((getValue() as string | null) ?? ''),
     }
 
@@ -33,6 +34,14 @@ export const useAccountPlanColumns = (
       accessorFn: (row) => getLocalizedName(row, i18n.language),
       header: () => <span>{t('accountPlan.name')}</span>,
       cell: (info) => cellText(info.getValue() as string),
+    }
+
+    const parentColumn: ColumnDef<AccountPlanEntry> = {
+      id: 'parentName',
+      accessorFn: (row) => row.parentName ?? null,
+      header: () => <span>{t('accountPlan.parent')}</span>,
+      enableSorting: false,
+      cell: ({ getValue }) => cellText((getValue() as string | null) ?? ''),
     }
 
     const attributeColumns: ColumnDef<AccountPlanEntry>[] = [...attributes]
@@ -46,6 +55,6 @@ export const useAccountPlanColumns = (
           cellText(formatCellValue(getValue(), attr)),
       }))
 
-    return [codeColumn, nameColumn, ...attributeColumns]
+    return [codeColumn, nameColumn, parentColumn, ...attributeColumns]
   }, [attributes, i18n.language, t])
 }

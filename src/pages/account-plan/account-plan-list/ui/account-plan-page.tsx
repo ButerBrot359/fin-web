@@ -43,7 +43,9 @@ export const AccountPlanPage = () => {
 
   useFilterUrlSync(moduleCode)
 
-  const [sorting, setSorting] = useState<SortingState>([])
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: 'code', desc: false },
+  ])
   const sortAttr = sorting[0]?.id
   const sortDir = sorting[0] ? (sorting[0].desc ? 'DESC' : 'ASC') : undefined
 

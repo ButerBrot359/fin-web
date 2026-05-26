@@ -173,7 +173,8 @@
   },
   "accountPlan": {
     "code": "Код",
-    "name": "Наименование"
+    "name": "Наименование",
+    "parent": "Родитель"
   },
   "tableFilter": {
     "filterBy": "Фильтр: {{name}}",

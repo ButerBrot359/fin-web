@@ -217,5 +217,54 @@
     "regenerateMessage": "Бұл модуль үшін конфигурация бұрыннан бар. Қайта генерациялағыңыз келе ме?",
     "regenerate": "Қайта генерациялау",
     "generateError": "Конфигурация генерациясының қатесі"
+  },
+  "accountPlan": {
+    "title": "Шоттар жоспары",
+    "newTitle": "Жаңа шот",
+    "empty": "Шоттар табылмады",
+    "expand": "Ашу",
+    "collapse": "Жабу",
+    "saved": "Сақталды",
+    "saveError": "Сақтау қатесі",
+    "actions": {
+      "edit": "Өзгерту",
+      "save": "Сақтау",
+      "cancel": "Болдырмау"
+    },
+    "tabs": {
+      "general": "Негізгі",
+      "subconto": "Субконто"
+    },
+    "column": {
+      "code": "Код",
+      "name": "Атауы",
+      "accountType": "Түрі",
+      "currency": "Вал.",
+      "quantitative": "Сан.",
+      "offBalance": "Бал.",
+      "subconto": "Субконто {{n}}"
+    },
+    "field": {
+      "code": "Код",
+      "accountType": "Шот түрі",
+      "nameRu": "Атауы (RU)",
+      "nameKz": "Атауы (KZ)",
+      "isCurrency": "Валюталық",
+      "isQuantitative": "Сандық",
+      "isOffBalance": "Баланстан тыс",
+      "parent": "Аталық"
+    },
+    "accountType": {
+      "active": "Активті",
+      "passive": "Пассивті",
+      "activePassive": "Активті-пассивті"
+    },
+    "subconto": {
+      "type": "Субконто түрі",
+      "onlyTurnovers": "Тек айналымдар",
+      "summable": "Сомалық",
+      "quantitative": "Сандық",
+      "currency": "Валюталық"
+    }
   }
 }

@@ -217,5 +217,54 @@
     "regenerateMessage": "Конфигурация для данного модуля уже существует. Хотите перегенерировать?",
     "regenerate": "Перегенерировать",
     "generateError": "Ошибка генерации конфигурации"
+  },
+  "accountPlan": {
+    "title": "План счетов",
+    "newTitle": "Новый счёт",
+    "empty": "Счета не найдены",
+    "expand": "Раскрыть",
+    "collapse": "Свернуть",
+    "saved": "Сохранено",
+    "saveError": "Ошибка сохранения",
+    "actions": {
+      "edit": "Изменить",
+      "save": "Сохранить",
+      "cancel": "Отмена"
+    },
+    "tabs": {
+      "general": "Основное",
+      "subconto": "Субконто"
+    },
+    "column": {
+      "code": "Код",
+      "name": "Наименование",
+      "accountType": "Вид",
+      "currency": "Вал.",
+      "quantitative": "Кол.",
+      "offBalance": "Заб.",
+      "subconto": "Субконто {{n}}"
+    },
+    "field": {
+      "code": "Код",
+      "accountType": "Вид счёта",
+      "nameRu": "Наименование (RU)",
+      "nameKz": "Наименование (KZ)",
+      "isCurrency": "Валютный",
+      "isQuantitative": "Количественный",
+      "isOffBalance": "Забалансовый",
+      "parent": "Родитель"
+    },
+    "accountType": {
+      "active": "Активный",
+      "passive": "Пассивный",
+      "activePassive": "Активно-пассивный"
+    },
+    "subconto": {
+      "type": "Вид субконто",
+      "onlyTurnovers": "Только обороты",
+      "summable": "Суммовой",
+      "quantitative": "Количественный",
+      "currency": "Валютный"
+    }
   }
 }

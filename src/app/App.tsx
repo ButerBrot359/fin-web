@@ -57,6 +57,16 @@ const AccumulationRegisterPage = lazy(() =>
     })
   )
 )
+const AccountPlanPage = lazy(() =>
+  import('@/pages/account-plan/account-plan-list').then((m) => ({
+    default: m.AccountPlanPage,
+  }))
+)
+const AccountPlanEntryPage = lazy(() =>
+  import('@/pages/account-plan/account-plan-entry').then((m) => ({
+    default: m.AccountPlanEntryPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -102,6 +112,18 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/accumulationregister/:moduleCode"
             element={<AccumulationRegisterPage />}
+          />
+          <Route
+            path="/modules/:pageCode/accountplan/:moduleCode"
+            element={<AccountPlanPage />}
+          />
+          <Route
+            path="/modules/:pageCode/accountplan/:moduleCode/new"
+            element={<AccountPlanEntryPage />}
+          />
+          <Route
+            path="/modules/:pageCode/accountplan/:moduleCode/:entryId"
+            element={<AccountPlanEntryPage />}
           />
         </Routes>
       </Suspense>

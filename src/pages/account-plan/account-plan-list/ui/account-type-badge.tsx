@@ -14,11 +14,13 @@ const COLOR_BY_TYPE: Record<AccountType, string> = {
   ACTIVE_PASSIVE: 'bg-purple-100 text-purple-700',
 }
 
-const LABEL_KEY_BY_TYPE: Record<AccountType, string> = {
+// `as const` — чтобы значения сохранили литеральный тип и совпали с
+// strict-типизацией ключей `t()` из i18next.d.ts (иначе TS2345).
+const LABEL_KEY_BY_TYPE = {
   ACTIVE: 'accountPlan.accountType.active',
   PASSIVE: 'accountPlan.accountType.passive',
   ACTIVE_PASSIVE: 'accountPlan.accountType.activePassive',
-}
+} as const satisfies Record<AccountType, string>
 
 interface AccountTypeBadgeProps {
   type: AccountType

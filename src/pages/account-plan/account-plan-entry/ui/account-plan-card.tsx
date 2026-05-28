@@ -95,9 +95,7 @@ const TabButton = ({ isActive, label, onClick }: TabButtonProps) => (
     onClick={onClick}
     className={cn(
       'rounded-t-md px-4 py-2 text-[14px] font-medium transition-colors',
-      isActive
-        ? 'bg-ui-06 text-ui-01'
-        : 'bg-ui-01 text-ui-05 hover:bg-ui-07'
+      isActive ? 'bg-ui-06 text-ui-01' : 'bg-ui-01 text-ui-05 hover:bg-ui-07'
     )}
   >
     {label}

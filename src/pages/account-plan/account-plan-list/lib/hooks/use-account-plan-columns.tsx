@@ -91,7 +91,9 @@ export const useAccountPlanColumns = ({
         id: 'isCurrency',
         header: () => <span>{t('accountPlan.column.currency')}</span>,
         size: 90,
-        cell: ({ row }) => <BooleanMark value={row.original.entry.isCurrency} />,
+        cell: ({ row }) => (
+          <BooleanMark value={row.original.entry.isCurrency} />
+        ),
       },
       {
         id: 'isQuantity',

@@ -171,6 +171,11 @@
     "recorder": "Регистратор",
     "lineNo": "Номер строки"
   },
+  "accountPlan": {
+    "code": "Код",
+    "name": "Наименование",
+    "parent": "Родитель"
+  },
   "tableFilter": {
     "filterBy": "Фильтр: {{name}}",
     "apply": "Применить",

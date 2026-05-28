@@ -222,5 +222,72 @@
     "regenerateMessage": "Бұл модуль үшін конфигурация бұрыннан бар. Қайта генерациялағыңыз келе ме?",
     "regenerate": "Қайта генерациялау",
     "generateError": "Конфигурация генерациясының қатесі"
+  },
+  "accountPlan": {
+    "title": "Шоттар жоспары",
+    "newTitle": "Жаңа шот",
+    "empty": "Шоттар табылмады",
+    "expand": "Ашу",
+    "collapse": "Жабу",
+    "saved": "Сақталды",
+    "saveError": "Сақтау қатесі",
+    "notSet": "берілмеген",
+    "actions": {
+      "edit": "Өзгерту",
+      "save": "Сақтау",
+      "cancel": "Болдырмау"
+    },
+    "tabs": {
+      "general": "Негізгі",
+      "subconto": "Субконто түрлері"
+    },
+    "column": {
+      "code": "Код",
+      "name": "Атауы",
+      "accountType": "Түрі",
+      "currency": "Вал.",
+      "quantitative": "Сан.",
+      "offBalance": "Бал.",
+      "subconto": "Субконто {{n}}"
+    },
+    "field": {
+      "code": "Код",
+      "accountType": "Шот түрі",
+      "nameRu": "Атауы (RU)",
+      "nameKz": "Атауы (KZ)",
+      "isCurrency": "Валюталық",
+      "isQuantity": "Сандық",
+      "isOffBalance": "Баланстан тыс",
+      "isGroup": "Жазбаларда тыйым салу",
+      "parent": "Аталық шот"
+    },
+    "accountType": {
+      "active": "Активті",
+      "passive": "Пассивті",
+      "activePassive": "Активті-пассивті"
+    },
+    "subconto": {
+      "type": "Субконто түрі",
+      "valueKind": "Мән түрі",
+      "position": "№",
+      "onlyTurnovers": "Тек айн.",
+      "summable": "Сом.",
+      "quantitative": "Сан.",
+      "currency": "Вал.",
+      "empty": "Субконто жоқ",
+      "notAvailableForNew": "Субконто түрлері шотты сақтағаннан кейін қолжетімді"
+    },
+    "valueKind": {
+      "dictionary": "Анықтамалық",
+      "document": "Құжат",
+      "enums": "Тізбе",
+      "primitive": "Примитив",
+      "composite": "Құрама"
+    },
+    "validation": {
+      "codeRequired": "Код міндетті",
+      "maxSubkonto": "Субконто 3-тен артық емес",
+      "subkontoPositionsInvalid": "Субконто позициялары 1, 2, 3 үзіліссіз болуы тиіс"
+    }
   }
 }

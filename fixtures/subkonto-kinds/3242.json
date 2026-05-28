@@ -1,0 +1,51 @@
+{
+  "list": [
+    {
+      "id": 5,
+      "accountPlanEntryId": 4,
+      "position": 1,
+      "kindId": 50,
+      "kindCode": "Kontragenty",
+      "kindCode1c": "Контрагенты",
+      "kindNameRu": "Контрагенты",
+      "kindNameKz": null,
+      "valueKind": "DICTIONARY",
+      "valueDictionaryTypeId": 5,
+      "valueDictionaryTypeCode": "Kontragenty",
+      "valueEnumsTypeId": null,
+      "valueEnumsTypeCode": null,
+      "valueDocumentTypeId": null,
+      "valueDocumentTypeCode": null,
+      "valuePrimitiveType": null,
+      "compositeTargets": null,
+      "isOnlyTurnover": false,
+      "isSummary": true,
+      "isCurrency": false,
+      "isQuantity": false
+    },
+    {
+      "id": 6,
+      "accountPlanEntryId": 4,
+      "position": 2,
+      "kindId": 60,
+      "kindCode": "IspolnitelnyeListy",
+      "kindCode1c": "ИсполнительныеЛисты",
+      "kindNameRu": "Исполнительные листы",
+      "kindNameKz": null,
+      "valueKind": "DOCUMENT",
+      "valueDictionaryTypeId": null,
+      "valueDictionaryTypeCode": null,
+      "valueEnumsTypeId": null,
+      "valueEnumsTypeCode": null,
+      "valueDocumentTypeId": 2,
+      "valueDocumentTypeCode": "IspolnitelnyyList",
+      "valuePrimitiveType": null,
+      "compositeTargets": null,
+      "isOnlyTurnover": false,
+      "isSummary": true,
+      "isCurrency": false,
+      "isQuantity": false
+    }
+  ],
+  "totalSize": 2
+}

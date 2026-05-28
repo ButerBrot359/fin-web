@@ -222,5 +222,72 @@
     "regenerateMessage": "Конфигурация для данного модуля уже существует. Хотите перегенерировать?",
     "regenerate": "Перегенерировать",
     "generateError": "Ошибка генерации конфигурации"
+  },
+  "accountPlan": {
+    "title": "План счетов",
+    "newTitle": "Новый счёт",
+    "empty": "Счета не найдены",
+    "expand": "Раскрыть",
+    "collapse": "Свернуть",
+    "saved": "Сохранено",
+    "saveError": "Ошибка сохранения",
+    "notSet": "не задано",
+    "actions": {
+      "edit": "Изменить",
+      "save": "Сохранить",
+      "cancel": "Отмена"
+    },
+    "tabs": {
+      "general": "Основное",
+      "subconto": "Виды субконто"
+    },
+    "column": {
+      "code": "Код",
+      "name": "Наименование",
+      "accountType": "Вид",
+      "currency": "Вал.",
+      "quantitative": "Кол.",
+      "offBalance": "Заб.",
+      "subconto": "Субконто {{n}}"
+    },
+    "field": {
+      "code": "Код",
+      "accountType": "Вид счёта",
+      "nameRu": "Наименование (RU)",
+      "nameKz": "Наименование (KZ)",
+      "isCurrency": "Валютный",
+      "isQuantity": "Количественный",
+      "isOffBalance": "Забалансовый",
+      "isGroup": "Запретить в проводках",
+      "parent": "Подчинён счёту"
+    },
+    "accountType": {
+      "active": "Активный",
+      "passive": "Пассивный",
+      "activePassive": "Активно-пассивный"
+    },
+    "subconto": {
+      "type": "Вид субконто",
+      "valueKind": "Тип значения",
+      "position": "№",
+      "onlyTurnovers": "Только об.",
+      "summable": "Сум.",
+      "quantitative": "Кол.",
+      "currency": "Вал.",
+      "empty": "Нет субконто",
+      "notAvailableForNew": "Виды субконто доступны после сохранения счёта"
+    },
+    "valueKind": {
+      "dictionary": "Справочник",
+      "document": "Документ",
+      "enums": "Перечисление",
+      "primitive": "Примитив",
+      "composite": "Составной"
+    },
+    "validation": {
+      "codeRequired": "Код обязателен",
+      "maxSubkonto": "Не более 3 видов субконто",
+      "subkontoPositionsInvalid": "Позиции субконто должны быть 1, 2, 3 без пропусков"
+    }
   }
 }

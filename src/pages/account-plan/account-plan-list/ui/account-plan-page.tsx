@@ -1,100 +1,86 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import type { SortingState } from '@tanstack/react-table'
 
-import {
-  ActiveFiltersBar,
-  useFilterUrlSync,
-  useTableFilterRequest,
-} from '@/features/table-filter'
+import { useAccountPlanList } from '@/entities/account-plan'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
-import {
-  ACCOUNT_PLAN_DOMAIN_CONFIG,
-  useEavColumnsMeta,
-  useEavEntries,
-} from '@/shared/lib/eav'
 import { PageHeader } from '@/widgets/page-header'
-import { EavEntityTable } from '@/widgets/eav-entity-table'
+import { AccountPlanListToolbar } from '@/widgets/account-plan-list-toolbar'
 
-import { useAccountPlanType } from '../lib/hooks/use-account-plan-type'
 import { useAccountPlanColumns } from '../lib/hooks/use-account-plan-columns'
-import type { AccountPlanEntry } from '../types/account-plan'
+import { useExpandedNodesStore } from '../lib/hooks/use-expanded-nodes-store'
+import { buildTreeRows, filterTreeByQuery } from '../lib/utils/build-tree-rows'
+import { AccountPlanTreeTable } from './account-plan-tree-table'
 
 export const AccountPlanPage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const { moduleCode = '', pageCode = '' } = useParams()
-  const [searchParams] = useState(
-    () => new URLSearchParams(window.location.search)
-  )
-  const domain = searchParams.get('domain') ?? 'ACCOUNT_PLAN'
+  const { pageCode = '', moduleCode = '' } = useParams()
 
-  const {
-    title,
-    attributes,
-    isLoading: isLoadingType,
-  } = useAccountPlanType(domain, moduleCode)
-  useTabMeta(title)
+  const [search, setSearch] = useState('')
 
-  const { columns: columnsMeta } = useEavColumnsMeta(
-    ACCOUNT_PLAN_DOMAIN_CONFIG,
-    moduleCode
-  )
+  const treeStore = useExpandedNodesStore()
+  const expandedIds = treeStore.getExpanded(location.pathname)
+  const selectedId = treeStore.getSelected(location.pathname)
 
-  useFilterUrlSync(moduleCode)
+  const toggleExpand = (id: number) => {
+    treeStore.toggle(location.pathname, id)
+  }
 
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: 'code', desc: false },
-  ])
-  const sortAttr = sorting[0]?.id
-  const sortDir = sorting[0] ? (sorting[0].desc ? 'DESC' : 'ASC') : undefined
-
-  const filterRequest = useTableFilterRequest(moduleCode)
-
-  const {
-    entries,
-    totalElements,
-    isLoading: isLoadingEntries,
-    isSortingOrFiltering,
-    isError,
-    error,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-  } = useEavEntries<AccountPlanEntry>(ACCOUNT_PLAN_DOMAIN_CONFIG, moduleCode, {
-    sortAttr,
-    sortDir,
-    filter: filterRequest,
+  // План счетов всегда грузится целиком — это сотни записей, не миллионы;
+  // дерево строится клиентом, как в 1С Конфигуратор. moduleCode из URL
+  // — это typeCode плана счетов (EdiniyPlanSchetovGosUchrezhdeniya).
+  const { entries, isLoading } = useAccountPlanList({
+    typeCode: moduleCode || undefined,
+    parent: null,
+    enabled: !!moduleCode,
   })
 
-  const columns = useAccountPlanColumns(attributes)
+  useTabMeta(t('accountPlan.title'))
+
+  const filtered = useMemo(
+    () => filterTreeByQuery(entries, search),
+    [entries, search]
+  )
+
+  const rows = useMemo(
+    () => buildTreeRows(filtered, expandedIds),
+    [filtered, expandedIds]
+  )
+
+  const columns = useAccountPlanColumns({ onToggleExpand: toggleExpand })
+
+  const handleRowClick = (row: { entry: { id: number } }) => {
+    treeStore.setSelected(location.pathname, row.entry.id)
+  }
+
+  const handleRowDoubleClick = (row: { entry: { id: number } }) => {
+    void navigate(
+      `/modules/${pageCode}/accountplan/${moduleCode}/${String(row.entry.id)}`
+    )
+  }
 
   const handleClose = () => {
     useWorkspaceTabsStore.getState().closeTab(location.pathname)
     void navigate(`/modules/${pageCode}`)
   }
 
-  if (isLoadingType) return null
-
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
-      <PageHeader title={title} onClose={handleClose} />
-      <ActiveFiltersBar tableId={moduleCode} columns={columnsMeta} />
-      <EavEntityTable<AccountPlanEntry>
-        filterTableId={moduleCode}
+      <PageHeader title={t('accountPlan.title')} onClose={handleClose} />
+      <AccountPlanListToolbar
+        selectedId={selectedId}
+        searchValue={search}
+        onSearchChange={setSearch}
+      />
+      <AccountPlanTreeTable
         columns={columns}
-        columnsMeta={columnsMeta}
-        entries={entries}
-        totalElements={totalElements}
-        isLoading={isLoadingEntries}
-        isSortingOrFiltering={isSortingOrFiltering}
-        isError={isError}
-        error={error}
-        hasNextPage={hasNextPage}
-        isFetchingNextPage={isFetchingNextPage}
-        fetchNextPage={fetchNextPage}
-        sorting={sorting}
-        onSortingChange={setSorting}
+        rows={rows}
+        isLoading={isLoading}
+        selectedId={selectedId}
+        onRowClick={handleRowClick}
+        onRowDoubleClick={handleRowDoubleClick}
       />
     </div>
   )

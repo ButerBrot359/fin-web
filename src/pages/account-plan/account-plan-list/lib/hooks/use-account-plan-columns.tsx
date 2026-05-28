@@ -3,11 +3,18 @@ import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 import type { ColumnDef } from '@tanstack/react-table'
 
-import type { DocumentAttribute } from '@/entities/document-type'
-import { formatCellValue } from '@/shared/lib/utils/format-cell-value'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
+import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
+import ListElementIcon from '@/shared/assets/icons/list-element-icon.svg'
+import ArrowDownIcon from '@/shared/assets/icons/arrow-down.svg'
 
-import type { AccountPlanEntry } from '../../types/account-plan'
+import type { AccountPlanRow } from '../utils/build-tree-rows'
+import { AccountTypeBadge } from '../../ui/account-type-badge'
+import { BooleanMark } from '../../ui/boolean-mark'
+
+interface UseAccountPlanColumnsParams {
+  onToggleExpand: (id: number) => void
+}
 
 const cellText = (value: React.ReactNode) => (
   <Typography variant="body2" noWrap className="text-ui-06">
@@ -15,46 +22,96 @@ const cellText = (value: React.ReactNode) => (
   </Typography>
 )
 
-export const useAccountPlanColumns = (
-  attributes: DocumentAttribute[]
-): ColumnDef<AccountPlanEntry>[] => {
+export const useAccountPlanColumns = ({
+  onToggleExpand,
+}: UseAccountPlanColumnsParams): ColumnDef<AccountPlanRow>[] => {
   const { t, i18n } = useTranslation()
 
-  return useMemo(() => {
-    const codeColumn: ColumnDef<AccountPlanEntry> = {
-      id: 'code',
-      accessorFn: (row) => row.code ?? null,
-      header: () => <span>{t('accountPlan.code')}</span>,
-      size: 96,
-      cell: ({ getValue }) => cellText((getValue() as string | null) ?? ''),
-    }
-
-    const nameColumn: ColumnDef<AccountPlanEntry> = {
-      id: 'nameRu',
-      accessorFn: (row) => getLocalizedName(row, i18n.language),
-      header: () => <span>{t('accountPlan.name')}</span>,
-      cell: (info) => cellText(info.getValue() as string),
-    }
-
-    const parentColumn: ColumnDef<AccountPlanEntry> = {
-      id: 'parentName',
-      accessorFn: (row) => row.parentName ?? null,
-      header: () => <span>{t('accountPlan.parent')}</span>,
-      enableSorting: false,
-      cell: ({ getValue }) => cellText((getValue() as string | null) ?? ''),
-    }
-
-    const attributeColumns: ColumnDef<AccountPlanEntry>[] = [...attributes]
-      .filter((attr) => attr.showInList)
-      .sort((a, b) => a.tableSortOrder - b.tableSortOrder)
-      .map((attr) => ({
-        id: attr.code,
-        accessorFn: (row: AccountPlanEntry) => row.attributes?.[attr.code],
-        header: () => <span>{getLocalizedName(attr, i18n.language)}</span>,
-        cell: ({ getValue }: { getValue: () => unknown }) =>
-          cellText(formatCellValue(getValue(), attr)),
-      }))
-
-    return [codeColumn, nameColumn, parentColumn, ...attributeColumns]
-  }, [attributes, i18n.language, t])
+  return useMemo<ColumnDef<AccountPlanRow>[]>(
+    () => [
+      {
+        id: 'code',
+        header: () => <span>{t('accountPlan.column.code')}</span>,
+        size: 160,
+        cell: ({ row }) => {
+          const { entry, depth, hasChildren, isExpanded } = row.original
+          return (
+            <div
+              className="flex items-center gap-1"
+              style={{ paddingLeft: depth * 20 }}
+            >
+              {hasChildren ? (
+                <button
+                  type="button"
+                  aria-label={
+                    isExpanded
+                      ? t('accountPlan.collapse')
+                      : t('accountPlan.expand')
+                  }
+                  className="flex h-4 w-4 items-center justify-center"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onToggleExpand(entry.id)
+                  }}
+                >
+                  <ArrowDownIcon
+                    className={`h-3 w-3 shrink-0 transition-transform ${
+                      isExpanded ? '' : '-rotate-90'
+                    }`}
+                  />
+                </button>
+              ) : (
+                <span className="h-4 w-4 shrink-0" />
+              )}
+              {entry.isGroup ? (
+                <FolderIcon className="h-4 w-4 shrink-0" />
+              ) : (
+                <ListElementIcon className="h-4 w-4 shrink-0" />
+              )}
+              <span className="ml-1 text-ui-06">{entry.code}</span>
+            </div>
+          )
+        },
+      },
+      {
+        id: 'name',
+        header: () => <span>{t('accountPlan.column.name')}</span>,
+        accessorFn: (row) => getLocalizedName(row.entry, i18n.language),
+        cell: ({ getValue }) => cellText(getValue() as string),
+      },
+      {
+        id: 'accountType',
+        header: () => <span>{t('accountPlan.column.accountType')}</span>,
+        size: 130,
+        cell: ({ row }) => (
+          <AccountTypeBadge type={row.original.entry.accountType} />
+        ),
+      },
+      {
+        id: 'isCurrency',
+        header: () => <span>{t('accountPlan.column.currency')}</span>,
+        size: 90,
+        cell: ({ row }) => (
+          <BooleanMark value={row.original.entry.isCurrency} />
+        ),
+      },
+      {
+        id: 'isQuantity',
+        header: () => <span>{t('accountPlan.column.quantitative')}</span>,
+        size: 110,
+        cell: ({ row }) => (
+          <BooleanMark value={row.original.entry.isQuantity} />
+        ),
+      },
+      {
+        id: 'isOffBalance',
+        header: () => <span>{t('accountPlan.column.offBalance')}</span>,
+        size: 110,
+        cell: ({ row }) => (
+          <BooleanMark value={row.original.entry.isOffBalance} />
+        ),
+      },
+    ],
+    [t, i18n.language, onToggleExpand]
+  )
 }

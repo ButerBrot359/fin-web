@@ -1,0 +1,31 @@
+{
+  "data": {
+    "id": 6,
+    "accountplanTypeCode": "EdiniyPlanSchetovGosUchrezhdeniya",
+    "accountplanTypeCode1C": null,
+    "code": "6110",
+    "code1C": "6110",
+    "predefinedName": "DokhodyOtRealizatsiiTovarov",
+    "predefinedName1C": "DokhodyOtRealizatsiiTovarov",
+    "nameRu": "Доходы от реализации товаров работ и услуг",
+    "nameKz": null,
+    "displayName": "Доходы от реализации товаров работ и услуг",
+    "parentId": null,
+    "parentName": null,
+    "sortOrder": 5,
+    "isActive": true,
+    "accountType": "P",
+    "isCurrency": false,
+    "isQuantity": false,
+    "isOffBalance": false,
+    "isGroup": false,
+    "createdAt": null,
+    "updatedAt": null,
+    "deletedAt": null,
+    "createdBy": null,
+    "updatedBy": null,
+    "attributes": {},
+    "children": null
+  },
+  "success": true
+}

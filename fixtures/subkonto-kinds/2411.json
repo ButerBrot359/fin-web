@@ -1,0 +1,51 @@
+{
+  "list": [
+    {
+      "id": 3,
+      "accountPlanEntryId": 3,
+      "position": 1,
+      "kindId": 16,
+      "kindCode": "ObektyStroitelstvaIKapitalnykhVlozheniy",
+      "kindCode1c": "ОбъектыСтроительстваИКапитальныхВложений",
+      "kindNameRu": "Объекты строительства и капитальных вложений",
+      "kindNameKz": null,
+      "valueKind": "DICTIONARY",
+      "valueDictionaryTypeId": 3,
+      "valueDictionaryTypeCode": "ObektyStroitelstvaIKapitalnykhVlozheniy",
+      "valueEnumsTypeId": null,
+      "valueEnumsTypeCode": null,
+      "valueDocumentTypeId": null,
+      "valueDocumentTypeCode": null,
+      "valuePrimitiveType": null,
+      "compositeTargets": null,
+      "isOnlyTurnover": false,
+      "isSummary": true,
+      "isCurrency": false,
+      "isQuantity": false
+    },
+    {
+      "id": 4,
+      "accountPlanEntryId": 3,
+      "position": 2,
+      "kindId": 21,
+      "kindCode": "StatiZatrat",
+      "kindCode1c": "СтатьиЗатрат",
+      "kindNameRu": "Статьи затрат",
+      "kindNameKz": null,
+      "valueKind": "DICTIONARY",
+      "valueDictionaryTypeId": 4,
+      "valueDictionaryTypeCode": "StatiZatrat",
+      "valueEnumsTypeId": null,
+      "valueEnumsTypeCode": null,
+      "valueDocumentTypeId": null,
+      "valueDocumentTypeCode": null,
+      "valuePrimitiveType": null,
+      "compositeTargets": null,
+      "isOnlyTurnover": false,
+      "isSummary": true,
+      "isCurrency": false,
+      "isQuantity": false
+    }
+  ],
+  "totalSize": 2
+}

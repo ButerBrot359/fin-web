@@ -83,7 +83,9 @@ export const useAccountPlanColumns = ({
         id: 'accountType',
         header: () => <span>{t('accountPlan.column.accountType')}</span>,
         size: 130,
-        cell: ({ row }) => <AccountTypeBadge type={row.original.entry.accountType} />,
+        cell: ({ row }) => (
+          <AccountTypeBadge type={row.original.entry.accountType} />
+        ),
       },
       {
         id: 'isCurrency',
@@ -92,11 +94,11 @@ export const useAccountPlanColumns = ({
         cell: ({ row }) => <BooleanMark value={row.original.entry.isCurrency} />,
       },
       {
-        id: 'isQuantitative',
+        id: 'isQuantity',
         header: () => <span>{t('accountPlan.column.quantitative')}</span>,
         size: 110,
         cell: ({ row }) => (
-          <BooleanMark value={row.original.entry.isQuantitative} />
+          <BooleanMark value={row.original.entry.isQuantity} />
         ),
       },
       {
@@ -107,41 +109,7 @@ export const useAccountPlanColumns = ({
           <BooleanMark value={row.original.entry.isOffBalance} />
         ),
       },
-      {
-        id: 'subconto1',
-        header: () => <span>{t('accountPlan.column.subconto', { n: 1 })}</span>,
-        cell: ({ row }) =>
-          cellText(
-            getSubcontoName(row.original.entry.subcontoList[0], i18n.language)
-          ),
-      },
-      {
-        id: 'subconto2',
-        header: () => <span>{t('accountPlan.column.subconto', { n: 2 })}</span>,
-        cell: ({ row }) =>
-          cellText(
-            getSubcontoName(row.original.entry.subcontoList[1], i18n.language)
-          ),
-      },
-      {
-        id: 'subconto3',
-        header: () => <span>{t('accountPlan.column.subconto', { n: 3 })}</span>,
-        cell: ({ row }) =>
-          cellText(
-            getSubcontoName(row.original.entry.subcontoList[2], i18n.language)
-          ),
-      },
     ],
     [t, i18n.language, onToggleExpand]
   )
-}
-
-const getSubcontoName = (
-  link: { subcontoTypeNameRu?: string; subcontoTypeNameKz?: string } | undefined,
-  language: string
-): string => {
-  if (!link) return ''
-  return language === 'kz' && link.subcontoTypeNameKz
-    ? link.subcontoTypeNameKz
-    : link.subcontoTypeNameRu ?? ''
 }

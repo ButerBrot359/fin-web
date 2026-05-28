@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
-import { useAccountPlan } from '@/entities/account-plan'
+import { useAccountPlanList } from '@/entities/account-plan'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { AccountPlanListToolbar } from '@/widgets/account-plan-list-toolbar'
@@ -32,8 +32,13 @@ export const AccountPlanPage = () => {
   }
 
   // План счетов всегда грузится целиком — это сотни записей, не миллионы;
-  // дерево строится клиентом, как в 1С Конфигуратор.
-  const { entries, isLoading } = useAccountPlan({ parent: null })
+  // дерево строится клиентом, как в 1С Конфигуратор. moduleCode из URL
+  // — это typeCode плана счетов (EdiniyPlanSchetovGosUchrezhdeniya).
+  const { entries, isLoading } = useAccountPlanList({
+    typeCode: moduleCode || undefined,
+    parent: null,
+    enabled: !!moduleCode,
+  })
 
   useTabMeta(t('accountPlan.title'))
 

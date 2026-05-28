@@ -4,25 +4,20 @@ import { useTranslation } from 'react-i18next'
 import {
   createAccountPlanEntry,
   updateAccountPlanEntry,
-  type AccountPlanCreatePayload,
+  type AccountPlanEntryPayload,
 } from '@/entities/account-plan'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 interface UseAccountPlanEntryActionsParams {
   entryId: string | undefined
-  /** Колбэк после успешного create — обычно навигация на карточку с новым id. */
+  typeCode: string
   onCreated?: (id: number) => void
-  /** Колбэк после успешного update — обычно переход в view-режим. */
   onUpdated?: () => void
 }
 
-/**
- * Мутации сохранения карточки + общий toast/invalidate.
- * Аналог `use-document-entry-actions.ts` — выносим из страницы, чтобы
- * keep handler logic из UI-компонента.
- */
 export const useAccountPlanEntryActions = ({
   entryId,
+  typeCode,
   onCreated,
   onUpdated,
 }: UseAccountPlanEntryActionsParams) => {
@@ -34,8 +29,8 @@ export const useAccountPlanEntryActions = ({
   }
 
   const createMutation = useMutation({
-    mutationFn: (payload: AccountPlanCreatePayload) =>
-      createAccountPlanEntry(payload),
+    mutationFn: (payload: AccountPlanEntryPayload) =>
+      createAccountPlanEntry(typeCode, payload),
     onSuccess: (res) => {
       invalidateList()
       showToast('success', t('accountPlan.saved'))
@@ -47,7 +42,7 @@ export const useAccountPlanEntryActions = ({
   })
 
   const updateMutation = useMutation({
-    mutationFn: (payload: AccountPlanCreatePayload) =>
+    mutationFn: (payload: AccountPlanEntryPayload) =>
       updateAccountPlanEntry(entryId!, payload),
     onSuccess: () => {
       invalidateList()

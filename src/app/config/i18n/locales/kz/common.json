@@ -226,6 +226,7 @@
     "collapse": "Жабу",
     "saved": "Сақталды",
     "saveError": "Сақтау қатесі",
+    "notSet": "берілмеген",
     "actions": {
       "edit": "Өзгерту",
       "save": "Сақтау",
@@ -233,7 +234,7 @@
     },
     "tabs": {
       "general": "Негізгі",
-      "subconto": "Субконто"
+      "subconto": "Субконто түрлері"
     },
     "column": {
       "code": "Код",
@@ -250,9 +251,10 @@
       "nameRu": "Атауы (RU)",
       "nameKz": "Атауы (KZ)",
       "isCurrency": "Валюталық",
-      "isQuantitative": "Сандық",
+      "isQuantity": "Сандық",
       "isOffBalance": "Баланстан тыс",
-      "parent": "Аталық"
+      "isGroup": "Жазбаларда тыйым салу",
+      "parent": "Аталық шот"
     },
     "accountType": {
       "active": "Активті",
@@ -261,10 +263,26 @@
     },
     "subconto": {
       "type": "Субконто түрі",
-      "onlyTurnovers": "Тек айналымдар",
-      "summable": "Сомалық",
-      "quantitative": "Сандық",
-      "currency": "Валюталық"
+      "valueKind": "Мән түрі",
+      "position": "№",
+      "onlyTurnovers": "Тек айн.",
+      "summable": "Сом.",
+      "quantitative": "Сан.",
+      "currency": "Вал.",
+      "empty": "Субконто жоқ",
+      "notAvailableForNew": "Субконто түрлері шотты сақтағаннан кейін қолжетімді"
+    },
+    "valueKind": {
+      "dictionary": "Анықтамалық",
+      "document": "Құжат",
+      "enums": "Тізбе",
+      "primitive": "Примитив",
+      "composite": "Құрама"
+    },
+    "validation": {
+      "codeRequired": "Код міндетті",
+      "maxSubkonto": "Субконто 3-тен артық емес",
+      "subkontoPositionsInvalid": "Субконто позициялары 1, 2, 3 үзіліссіз болуы тиіс"
     }
   }
 }

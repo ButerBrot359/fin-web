@@ -1,0 +1,66 @@
+{
+  "list": [
+    {
+      "id": 7,
+      "accountPlanEntryId": 5,
+      "position": 1,
+      "kindId": 70,
+      "kindCode": "SotrudnikiIKontragenty",
+      "kindCode1c": "СотрудникиИКонтрагенты",
+      "kindNameRu": "Сотрудники и контрагенты",
+      "kindNameKz": null,
+      "valueKind": "COMPOSITE",
+      "valueDictionaryTypeId": null,
+      "valueDictionaryTypeCode": null,
+      "valueEnumsTypeId": null,
+      "valueEnumsTypeCode": null,
+      "valueDocumentTypeId": null,
+      "valueDocumentTypeCode": null,
+      "valuePrimitiveType": null,
+      "compositeTargets": [
+        {
+          "position": 1,
+          "targetKind": "DICTIONARY",
+          "targetId": 5,
+          "targetCode": "Kontragenty",
+          "targetNameRu": "Контрагенты"
+        },
+        {
+          "position": 2,
+          "targetKind": "DICTIONARY",
+          "targetId": 6,
+          "targetCode": "FizicheskieLitsa",
+          "targetNameRu": "Физические лица"
+        }
+      ],
+      "isOnlyTurnover": false,
+      "isSummary": true,
+      "isCurrency": true,
+      "isQuantity": false
+    },
+    {
+      "id": 8,
+      "accountPlanEntryId": 5,
+      "position": 2,
+      "kindId": 80,
+      "kindCode": "VidyUderzhaniy",
+      "kindCode1c": "ВидыУдержаний",
+      "kindNameRu": "Виды удержаний",
+      "kindNameKz": null,
+      "valueKind": "ENUMS",
+      "valueDictionaryTypeId": null,
+      "valueDictionaryTypeCode": null,
+      "valueEnumsTypeId": 1,
+      "valueEnumsTypeCode": "VidyUderzhaniy",
+      "valueDocumentTypeId": null,
+      "valueDocumentTypeCode": null,
+      "valuePrimitiveType": null,
+      "compositeTargets": null,
+      "isOnlyTurnover": false,
+      "isSummary": true,
+      "isCurrency": true,
+      "isQuantity": false
+    }
+  ],
+  "totalSize": 2
+}

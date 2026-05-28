@@ -7,14 +7,10 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 
-import {
-  useAccountPlanItem,
-  useSubcontoTypes,
-} from '@/entities/account-plan'
+import { useAccountPlanItem } from '@/entities/account-plan'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
-import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
 import {
   AccountPlanCard,
@@ -24,28 +20,30 @@ import {
 import { useAccountPlanFormModeStore } from '../lib/hooks/use-account-plan-form-mode-store'
 import { useAccountPlanEntryActions } from '../lib/hooks/use-account-plan-entry-actions'
 import { buildAccountPlanPayload } from '../lib/utils/build-payload'
+import { accountDisplayName } from '../lib/utils/subkonto-value-kind'
 
 const EMPTY_VALUE: AccountPlanCardValue = {
   code: '',
   nameRu: '',
-  nameKz: '',
-  accountType: 'ACTIVE',
+  nameKz: null,
+  accountType: 'A',
   isCurrency: false,
-  isQuantitative: false,
+  isQuantity: false,
   isOffBalance: false,
+  isGroup: false,
   parentId: null,
-  subcontoList: [],
+  parentName: null,
 }
 
 /**
- * При копировании счёта оставляем все «учётные» поля, но обнуляем
- * `code` и `parentId` — копия не должна занимать тот же код, что и
- * исходник, и обычно создаётся на верхнем уровне.
+ * При копировании оставляем учётные поля, но обнуляем `code` и `parentId`
+ * — копия не должна занимать тот же код и обычно создаётся «выше».
  */
 const copyValue = (src: AccountPlanCardValue): AccountPlanCardValue => ({
   ...src,
   code: '',
   parentId: null,
+  parentName: null,
 })
 
 export const AccountPlanEntryPage = () => {
@@ -66,11 +64,9 @@ export const AccountPlanEntryPage = () => {
   const { account, isLoading } = useAccountPlanItem(entryId)
   const { account: copyFromAccount, isLoading: isLoadingCopy } =
     useAccountPlanItem(isNew && copyFromId ? copyFromId : null)
-  const { subcontoTypes } = useSubcontoTypes()
 
   const [value, setValue] = useState<AccountPlanCardValue>(EMPTY_VALUE)
 
-  // Заполняем форму из редактируемой записи или копируемой.
   useEffect(() => {
     const src = account ?? copyFromAccount
     if (!src) return
@@ -80,10 +76,11 @@ export const AccountPlanEntryPage = () => {
       nameKz: src.nameKz,
       accountType: src.accountType,
       isCurrency: src.isCurrency,
-      isQuantitative: src.isQuantitative,
+      isQuantity: src.isQuantity,
       isOffBalance: src.isOffBalance,
+      isGroup: src.isGroup,
       parentId: src.parentId,
-      subcontoList: src.subcontoList ?? [],
+      parentName: src.parentName,
     }
     setValue(isNew && copyFromAccount ? copyValue(next) : next)
   }, [account, copyFromAccount, isNew])
@@ -91,7 +88,7 @@ export const AccountPlanEntryPage = () => {
   const title = isNew
     ? t('accountPlan.newTitle')
     : account
-      ? getLocalizedName(account, i18n.language) || account.code
+      ? accountDisplayName(account, i18n.language)
       : t('accountPlan.title')
 
   useTabMeta(title)
@@ -99,6 +96,7 @@ export const AccountPlanEntryPage = () => {
   const { createMutation, updateMutation, isSaving } =
     useAccountPlanEntryActions({
       entryId,
+      typeCode: moduleCode,
       onCreated: (id) => {
         modeStore.setMode(location.pathname, 'view')
         void navigate(`${listPath}/${String(id)}`, { replace: true })
@@ -129,10 +127,11 @@ export const AccountPlanEntryPage = () => {
         nameKz: account.nameKz,
         accountType: account.accountType,
         isCurrency: account.isCurrency,
-        isQuantitative: account.isQuantitative,
+        isQuantity: account.isQuantity,
         isOffBalance: account.isOffBalance,
+        isGroup: account.isGroup,
         parentId: account.parentId,
-        subcontoList: account.subcontoList ?? [],
+        parentName: account.parentName,
       })
     }
     modeStore.setMode(location.pathname, 'view')
@@ -144,6 +143,7 @@ export const AccountPlanEntryPage = () => {
   }
 
   const isBusy = isLoading || isLoadingCopy
+  const accountId = account?.id ?? null
 
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
@@ -169,7 +169,7 @@ export const AccountPlanEntryPage = () => {
         ) : (
           <AccountPlanCard
             value={value}
-            subcontoTypes={subcontoTypes}
+            accountId={accountId}
             isReadOnly={isReadOnly}
             onChange={setValue}
           />

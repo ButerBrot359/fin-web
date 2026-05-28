@@ -226,6 +226,7 @@
     "collapse": "Свернуть",
     "saved": "Сохранено",
     "saveError": "Ошибка сохранения",
+    "notSet": "не задано",
     "actions": {
       "edit": "Изменить",
       "save": "Сохранить",
@@ -233,7 +234,7 @@
     },
     "tabs": {
       "general": "Основное",
-      "subconto": "Субконто"
+      "subconto": "Виды субконто"
     },
     "column": {
       "code": "Код",
@@ -250,9 +251,10 @@
       "nameRu": "Наименование (RU)",
       "nameKz": "Наименование (KZ)",
       "isCurrency": "Валютный",
-      "isQuantitative": "Количественный",
+      "isQuantity": "Количественный",
       "isOffBalance": "Забалансовый",
-      "parent": "Родитель"
+      "isGroup": "Запретить в проводках",
+      "parent": "Подчинён счёту"
     },
     "accountType": {
       "active": "Активный",
@@ -261,10 +263,26 @@
     },
     "subconto": {
       "type": "Вид субконто",
-      "onlyTurnovers": "Только обороты",
-      "summable": "Суммовой",
-      "quantitative": "Количественный",
-      "currency": "Валютный"
+      "valueKind": "Тип значения",
+      "position": "№",
+      "onlyTurnovers": "Только об.",
+      "summable": "Сум.",
+      "quantitative": "Кол.",
+      "currency": "Вал.",
+      "empty": "Нет субконто",
+      "notAvailableForNew": "Виды субконто доступны после сохранения счёта"
+    },
+    "valueKind": {
+      "dictionary": "Справочник",
+      "document": "Документ",
+      "enums": "Перечисление",
+      "primitive": "Примитив",
+      "composite": "Составной"
+    },
+    "validation": {
+      "codeRequired": "Код обязателен",
+      "maxSubkonto": "Не более 3 видов субконто",
+      "subkontoPositionsInvalid": "Позиции субконто должны быть 1, 2, 3 без пропусков"
     }
   }
 }

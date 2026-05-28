@@ -1,0 +1,28 @@
+{
+  "list": [
+    {
+      "id": 9,
+      "accountPlanEntryId": 6,
+      "position": 1,
+      "kindId": 90,
+      "kindCode": "Dokhody",
+      "kindCode1c": "Доходы",
+      "kindNameRu": "Доходы",
+      "kindNameKz": null,
+      "valueKind": "PRIMITIVE",
+      "valueDictionaryTypeId": null,
+      "valueDictionaryTypeCode": null,
+      "valueEnumsTypeId": null,
+      "valueEnumsTypeCode": null,
+      "valueDocumentTypeId": null,
+      "valueDocumentTypeCode": null,
+      "valuePrimitiveType": "STRING",
+      "compositeTargets": null,
+      "isOnlyTurnover": true,
+      "isSummary": true,
+      "isCurrency": false,
+      "isQuantity": false
+    }
+  ],
+  "totalSize": 1
+}

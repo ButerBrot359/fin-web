@@ -1,0 +1,31 @@
+{
+  "data": {
+    "id": 4,
+    "accountplanTypeCode": "EdiniyPlanSchetovGosUchrezhdeniya",
+    "accountplanTypeCode1C": null,
+    "code": "3242",
+    "code1C": "3242",
+    "predefinedName": "KreditorskayaZadolzhennostPoIspolnitelnymDokumentam",
+    "predefinedName1C": "KreditorskayaZadolzhennostPoIspolnitelnymDokumentam",
+    "nameRu": "Краткосрочная кредиторская задолженность по исполнительным документам",
+    "nameKz": null,
+    "displayName": "Краткосрочная кредиторская задолженность по исполнительным документам",
+    "parentId": null,
+    "parentName": null,
+    "sortOrder": 3,
+    "isActive": true,
+    "accountType": "P",
+    "isCurrency": false,
+    "isQuantity": false,
+    "isOffBalance": false,
+    "isGroup": false,
+    "createdAt": null,
+    "updatedAt": null,
+    "deletedAt": null,
+    "createdBy": null,
+    "updatedBy": null,
+    "attributes": {},
+    "children": null
+  },
+  "success": true
+}

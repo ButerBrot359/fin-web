@@ -1,0 +1,31 @@
+{
+  "data": {
+    "id": 5,
+    "accountplanTypeCode": "EdiniyPlanSchetovGosUchrezhdeniya",
+    "accountplanTypeCode1C": null,
+    "code": "3248",
+    "code1C": "3248",
+    "predefinedName": "ProchayaKreditorskayaZadolzhennostPeredRabotnikami",
+    "predefinedName1C": "ProchayaKreditorskayaZadolzhennostPeredRabotnikami",
+    "nameRu": "Прочая краткосрочная кредиторская задолженность перед работниками",
+    "nameKz": null,
+    "displayName": "Прочая краткосрочная кредиторская задолженность перед работниками",
+    "parentId": null,
+    "parentName": null,
+    "sortOrder": 4,
+    "isActive": true,
+    "accountType": "P",
+    "isCurrency": true,
+    "isQuantity": false,
+    "isOffBalance": false,
+    "isGroup": false,
+    "createdAt": null,
+    "updatedAt": null,
+    "deletedAt": null,
+    "createdBy": null,
+    "updatedBy": null,
+    "attributes": {},
+    "children": null
+  },
+  "success": true
+}

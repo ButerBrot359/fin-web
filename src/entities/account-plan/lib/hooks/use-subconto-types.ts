@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { fetchSubcontoTypes } from '../../api/account-plan'
+import { fetchSubcontoBuTypes, SUBCONTO_BU_TYPE_CODE } from '../../api/account-plan'
 
-/** Виды субконто из ПланВидовХарактеристик (SUBCONTO). Для селекта в карточке. */
-export const useSubcontoTypes = (enabled = true) => {
+/** Список ВидыСубкoнтоБУ — для селекта в карточке счёта. */
+export const useSubcontoBuTypes = (enabled = true) => {
   const { data, isLoading } = useQuery({
-    queryKey: ['characteristics-plan', 'SUBCONTO'],
-    queryFn: ({ signal }) => fetchSubcontoTypes(signal),
-    select: (res) => res.data.data.content,
+    queryKey: ['characteristics-plan', SUBCONTO_BU_TYPE_CODE],
+    queryFn: ({ signal }) => fetchSubcontoBuTypes(signal),
+    select: (res) => res.data.list,
     staleTime: 5 * 60 * 1000,
     enabled,
   })

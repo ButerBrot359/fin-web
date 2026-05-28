@@ -1,7 +1,7 @@
-import type { AccountPlanEntry } from '@/entities/account-plan'
+import type { AccountPlanEntryDto } from '@/entities/account-plan'
 
 export interface AccountPlanRow {
-  entry: AccountPlanEntry
+  entry: AccountPlanEntryDto
   depth: number
   hasChildren: boolean
   isExpanded: boolean
@@ -9,16 +9,15 @@ export interface AccountPlanRow {
 
 /**
  * Сплющиваем дерево счетов в плоский список строк с учётом раскрытых узлов.
- * Сортировка — по `code` лексикографически (план счетов 1С обычно
- * упорядочен именно по коду, "10.01" < "10.02" < "20").
+ * Сортировка — по `code` лексикографически («10.01» < «10.02» < «20»).
  */
 export const buildTreeRows = (
-  entries: AccountPlanEntry[],
+  entries: AccountPlanEntryDto[],
   expandedIds: number[]
 ): AccountPlanRow[] => {
   const expanded = new Set(expandedIds)
 
-  const childrenByParent = new Map<number | null, AccountPlanEntry[]>()
+  const childrenByParent = new Map<number | null, AccountPlanEntryDto[]>()
   for (const e of entries) {
     const key = e.parentId ?? null
     const arr = childrenByParent.get(key) ?? []
@@ -47,14 +46,13 @@ export const buildTreeRows = (
 }
 
 /**
- * Фильтрация дерева по поиску — оставляем матчи + всех их предков
- * (чтобы матч не «висел в воздухе» без иерархии). Если query пустой —
- * возвращаем исходный список без изменений.
+ * Фильтрация дерева — оставляем матчи + всех их предков. nameKz сейчас
+ * может быть null, поэтому проверяем безопасно.
  */
 export const filterTreeByQuery = (
-  entries: AccountPlanEntry[],
+  entries: AccountPlanEntryDto[],
   query: string
-): AccountPlanEntry[] => {
+): AccountPlanEntryDto[] => {
   const q = query.trim().toLowerCase()
   if (!q) return entries
 
@@ -62,10 +60,11 @@ export const filterTreeByQuery = (
   const matched = new Set<number>()
 
   for (const e of entries) {
+    const nameKz = e.nameKz ?? ''
     if (
       e.code.toLowerCase().includes(q) ||
       e.nameRu.toLowerCase().includes(q) ||
-      e.nameKz.toLowerCase().includes(q)
+      nameKz.toLowerCase().includes(q)
     ) {
       matched.add(e.id)
       let parent: number | null = e.parentId

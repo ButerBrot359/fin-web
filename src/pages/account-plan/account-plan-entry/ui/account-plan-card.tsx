@@ -1,54 +1,53 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type {
-  AccountPlanEntry,
-  AccountType,
-  SubcontoLink,
-  SubcontoType,
-} from '@/entities/account-plan'
+import type { AccountType } from '@/entities/account-plan'
 import { Button } from '@/shared/ui/buttons'
 import { cn } from '@/shared/lib/utils/cn'
 
-import { SubcontoTable } from './subconto-table'
+import { AccountTypeBadge } from '../../account-plan-list/ui/account-type-badge'
+import { SubkontoTab } from './subkonto-tab'
 
-export type AccountPlanCardValue = Pick<
-  AccountPlanEntry,
-  | 'code'
-  | 'nameRu'
-  | 'nameKz'
-  | 'accountType'
-  | 'isCurrency'
-  | 'isQuantitative'
-  | 'isOffBalance'
-  | 'parentId'
-  | 'subcontoList'
->
+/**
+ * Карточное value — флаги и идентифицирующие поля, которыми управляет
+ * пользователь. Имена совпадают с DTO бэка, чтобы payload-маппинг был 1-в-1.
+ */
+export interface AccountPlanCardValue {
+  code: string
+  nameRu: string
+  /** Может быть null — UI показывает плейсхолдер «не задано» в просмотре. */
+  nameKz: string | null
+  accountType: AccountType
+  isCurrency: boolean
+  isQuantity: boolean
+  isOffBalance: boolean
+  isGroup: boolean
+  parentId: number | null
+  parentName: string | null
+}
 
 interface AccountPlanCardProps {
   value: AccountPlanCardValue
-  subcontoTypes: SubcontoType[]
+  /** id счёта, для которого грузим виды субконто. null — для новой/копии. */
+  accountId: number | null
   isReadOnly: boolean
   onChange: (next: AccountPlanCardValue) => void
 }
 
 /**
- * Карточка плана счетов — две вкладки («Основное», «Субконто»).
- * Контролируемый компонент: получает `value` + `onChange`. В режиме
- * isReadOnly поля недоступны для редактирования.
- *
- * Когда нужна динамическая раскладка из JSON-схемы — оборачивающий
- * AccountPlanEntryPage подмешивает FormRenderer для вкладки «Основное».
- * Здесь — фолбэчная статика, повторяющая ту же раскладку.
+ * Карточка счёта — две вкладки («Основное», «Виды субконто»).
+ * Контролируемый компонент. В view-режиме accountType отрисован бейджем,
+ * в edit — селектом. Бэк не позволяет менять subkonto через эту форму:
+ * правка субконто — это отдельный flow.
  */
 export const AccountPlanCard = ({
   value,
-  subcontoTypes,
+  accountId,
   isReadOnly,
   onChange,
 }: AccountPlanCardProps) => {
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState<'general' | 'subconto'>('general')
+  const [activeTab, setActiveTab] = useState<'general' | 'subkonto'>('general')
 
   const patch = (p: Partial<AccountPlanCardValue>) => {
     onChange({ ...value, ...p })
@@ -65,10 +64,10 @@ export const AccountPlanCard = ({
           }}
         />
         <TabButton
-          isActive={activeTab === 'subconto'}
+          isActive={activeTab === 'subkonto'}
           label={t('accountPlan.tabs.subconto')}
           onClick={() => {
-            setActiveTab('subconto')
+            setActiveTab('subkonto')
           }}
         />
       </div>
@@ -77,14 +76,7 @@ export const AccountPlanCard = ({
         {activeTab === 'general' ? (
           <GeneralTab value={value} isReadOnly={isReadOnly} patch={patch} />
         ) : (
-          <SubcontoTable
-            value={value.subcontoList}
-            subcontoTypes={subcontoTypes}
-            isReadOnly={isReadOnly}
-            onChange={(subcontoList: SubcontoLink[]) => {
-              patch({ subcontoList })
-            }}
-          />
+          <SubkontoTab accountId={accountId} />
         )}
       </div>
     </div>
@@ -131,21 +123,9 @@ const GeneralTab = ({ value, isReadOnly, patch }: GeneralTabProps) => {
             patch({ code: v })
           }}
         />
-        <LabeledSelect
-          label={t('accountPlan.field.accountType')}
-          value={value.accountType}
-          isReadOnly={isReadOnly}
-          options={[
-            { value: 'ACTIVE', label: t('accountPlan.accountType.active') },
-            { value: 'PASSIVE', label: t('accountPlan.accountType.passive') },
-            {
-              value: 'ACTIVE_PASSIVE',
-              label: t('accountPlan.accountType.activePassive'),
-            },
-          ]}
-          onChange={(v) => {
-            patch({ accountType: v as AccountType })
-          }}
+        <LabeledReadonly
+          label={t('accountPlan.field.parent')}
+          value={value.parentName ?? t('accountPlan.notSet')}
         />
       </div>
       <LabeledInput
@@ -158,13 +138,52 @@ const GeneralTab = ({ value, isReadOnly, patch }: GeneralTabProps) => {
       />
       <LabeledInput
         label={t('accountPlan.field.nameKz')}
-        value={value.nameKz}
+        value={value.nameKz ?? ''}
+        placeholder={t('accountPlan.notSet')}
         isReadOnly={isReadOnly}
         onChange={(v) => {
-          patch({ nameKz: v })
+          patch({ nameKz: v || null })
         }}
       />
-      <div className="flex gap-6">
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-ui-05">
+          {t('accountPlan.field.accountType')}:
+        </span>
+        {isReadOnly ? (
+          <AccountTypeBadge type={value.accountType} />
+        ) : (
+          <select
+            className="rounded-md border border-ui-03 bg-ui-01 px-3 py-1.5 text-sm"
+            value={value.accountType}
+            onChange={(e) => {
+              patch({ accountType: e.target.value as AccountType })
+            }}
+          >
+            <option value="A">{t('accountPlan.accountType.active')}</option>
+            <option value="P">{t('accountPlan.accountType.passive')}</option>
+            <option value="AP">
+              {t('accountPlan.accountType.activePassive')}
+            </option>
+          </select>
+        )}
+      </div>
+      <div className="flex flex-col gap-2">
+        <LabeledCheckbox
+          label={t('accountPlan.field.isOffBalance')}
+          value={value.isOffBalance}
+          isReadOnly={isReadOnly}
+          onChange={(v) => {
+            patch({ isOffBalance: v })
+          }}
+        />
+        <LabeledCheckbox
+          label={t('accountPlan.field.isGroup')}
+          value={value.isGroup}
+          isReadOnly={isReadOnly}
+          onChange={(v) => {
+            patch({ isGroup: v })
+          }}
+        />
         <LabeledCheckbox
           label={t('accountPlan.field.isCurrency')}
           value={value.isCurrency}
@@ -174,30 +193,14 @@ const GeneralTab = ({ value, isReadOnly, patch }: GeneralTabProps) => {
           }}
         />
         <LabeledCheckbox
-          label={t('accountPlan.field.isQuantitative')}
-          value={value.isQuantitative}
+          label={t('accountPlan.field.isQuantity')}
+          value={value.isQuantity}
           isReadOnly={isReadOnly}
           onChange={(v) => {
-            patch({ isQuantitative: v })
-          }}
-        />
-        <LabeledCheckbox
-          label={t('accountPlan.field.isOffBalance')}
-          value={value.isOffBalance}
-          isReadOnly={isReadOnly}
-          onChange={(v) => {
-            patch({ isOffBalance: v })
+            patch({ isQuantity: v })
           }}
         />
       </div>
-      <LabeledInput
-        label={t('accountPlan.field.parent')}
-        value={value.parentId != null ? String(value.parentId) : ''}
-        isReadOnly={isReadOnly}
-        onChange={(v) => {
-          patch({ parentId: v ? Number(v) : null })
-        }}
-      />
     </div>
   )
 }
@@ -206,6 +209,7 @@ interface LabeledInputProps {
   label: string
   value: string
   isReadOnly: boolean
+  placeholder?: string
   onChange: (v: string) => void
 }
 
@@ -213,6 +217,7 @@ const LabeledInput = ({
   label,
   value,
   isReadOnly,
+  placeholder,
   onChange,
 }: LabeledInputProps) => (
   <label className="flex flex-1 flex-col gap-1 text-sm">
@@ -220,6 +225,7 @@ const LabeledInput = ({
     <input
       className="rounded-md border border-ui-03 bg-ui-01 px-3 py-1.5 disabled:bg-ui-02"
       value={value}
+      placeholder={placeholder}
       disabled={isReadOnly}
       onChange={(e) => {
         onChange(e.target.value)
@@ -228,38 +234,18 @@ const LabeledInput = ({
   </label>
 )
 
-interface LabeledSelectProps {
+interface LabeledReadonlyProps {
   label: string
   value: string
-  isReadOnly: boolean
-  options: { value: string; label: string }[]
-  onChange: (v: string) => void
 }
 
-const LabeledSelect = ({
-  label,
-  value,
-  isReadOnly,
-  options,
-  onChange,
-}: LabeledSelectProps) => (
-  <label className="flex flex-1 flex-col gap-1 text-sm">
+const LabeledReadonly = ({ label, value }: LabeledReadonlyProps) => (
+  <div className="flex flex-1 flex-col gap-1 text-sm">
     <span className="text-ui-05">{label}</span>
-    <select
-      className="rounded-md border border-ui-03 bg-ui-01 px-3 py-1.5 disabled:bg-ui-02"
-      value={value}
-      disabled={isReadOnly}
-      onChange={(e) => {
-        onChange(e.target.value)
-      }}
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  </label>
+    <span className="rounded-md border border-ui-03 bg-ui-02 px-3 py-1.5 text-ui-06">
+      {value}
+    </span>
+  </div>
 )
 
 interface LabeledCheckboxProps {

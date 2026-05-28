@@ -1,0 +1,51 @@
+{
+  "list": [
+    {
+      "id": 1,
+      "accountPlanEntryId": 2,
+      "position": 1,
+      "kindId": 10,
+      "kindCode": "Kassy",
+      "kindCode1c": "Кассы",
+      "kindNameRu": "Кассы",
+      "kindNameKz": null,
+      "valueKind": "DICTIONARY",
+      "valueDictionaryTypeId": 1,
+      "valueDictionaryTypeCode": "Kassy",
+      "valueEnumsTypeId": null,
+      "valueEnumsTypeCode": null,
+      "valueDocumentTypeId": null,
+      "valueDocumentTypeCode": null,
+      "valuePrimitiveType": null,
+      "compositeTargets": null,
+      "isOnlyTurnover": true,
+      "isSummary": true,
+      "isCurrency": true,
+      "isQuantity": false
+    },
+    {
+      "id": 2,
+      "accountPlanEntryId": 2,
+      "position": 2,
+      "kindId": 20,
+      "kindCode": "StatiDvizheniyaDenezhnykhSredstv",
+      "kindCode1c": "СтатьиДвиженияДенежныхСредств",
+      "kindNameRu": "Статьи движения денежных ",
+      "kindNameKz": null,
+      "valueKind": "DICTIONARY",
+      "valueDictionaryTypeId": 2,
+      "valueDictionaryTypeCode": "StatiDvizheniyaDenezhnykhSredstv",
+      "valueEnumsTypeId": null,
+      "valueEnumsTypeCode": null,
+      "valueDocumentTypeId": null,
+      "valueDocumentTypeCode": null,
+      "valuePrimitiveType": null,
+      "compositeTargets": null,
+      "isOnlyTurnover": true,
+      "isSummary": true,
+      "isCurrency": true,
+      "isQuantity": false
+    }
+  ],
+  "totalSize": 2
+}

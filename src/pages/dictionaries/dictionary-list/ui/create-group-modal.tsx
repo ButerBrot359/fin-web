@@ -47,7 +47,7 @@ export const CreateGroupModal = ({
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ['dict-entries', domain, typeCode],
+        queryKey: ['dictionary', 'entries', typeCode],
       })
       void queryClient.invalidateQueries({
         queryKey: ['dictionary-search'],

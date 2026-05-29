@@ -28,4 +28,6 @@ form-configs-server/dist
 *.sw?
 
 form-configs-server/configs
+form-configs-server/configs/*
+
 .playwright-mcp

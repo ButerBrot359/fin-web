@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   useLocation,
@@ -66,10 +66,11 @@ export const AccountPlanEntryPage = () => {
     useAccountPlanItem(isNew && copyFromId ? copyFromId : null)
 
   const [value, setValue] = useState<AccountPlanCardValue>(EMPTY_VALUE)
+  const [loadedSrcId, setLoadedSrcId] = useState<number | null>(null)
 
-  useEffect(() => {
-    const src = account ?? copyFromAccount
-    if (!src) return
+  const src = account ?? copyFromAccount
+  const srcId = src?.id ?? null
+  if (src && srcId !== loadedSrcId) {
     const next: AccountPlanCardValue = {
       code: src.code,
       nameRu: src.nameRu,
@@ -83,7 +84,8 @@ export const AccountPlanEntryPage = () => {
       parentName: src.parentName,
     }
     setValue(isNew && copyFromAccount ? copyValue(next) : next)
-  }, [account, copyFromAccount, isNew])
+    setLoadedSrcId(srcId)
+  }
 
   const title = isNew
     ? t('accountPlan.newTitle')

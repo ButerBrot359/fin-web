@@ -9,7 +9,10 @@ import {
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 
 import { BooleanMark } from '../../account-plan-list/ui/boolean-mark'
-import { describeValueKind, pickLocalizedName } from '../lib/utils/subkonto-value-kind'
+import {
+  describeValueKind,
+  pickLocalizedName,
+} from '../lib/utils/subkonto-value-kind'
 
 interface SubkontoTabProps {
   /** id счёта; null означает «новая/копируемая запись» — таблица пуста. */

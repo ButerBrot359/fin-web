@@ -24,7 +24,10 @@ const PALETTE: Record<CharacteristicValueKind, string> = {
   COMPOSITE: 'bg-purple-100 text-purple-700',
 }
 
-const LABEL_KEY: Record<CharacteristicValueKind, ValueKindDescriptor['labelKey']> = {
+const LABEL_KEY: Record<
+  CharacteristicValueKind,
+  ValueKindDescriptor['labelKey']
+> = {
   DICTIONARY: 'accountPlan.valueKind.dictionary',
   DOCUMENT: 'accountPlan.valueKind.document',
   ENUMS: 'accountPlan.valueKind.enums',
@@ -82,7 +85,9 @@ export const describeValueKind = (
 
 /** Локализованное имя счёта/субконто с фолбэком nameKz -> nameRu. */
 export const pickLocalizedName = (
-  obj: { nameRu: string; nameKz: string | null } | { kindNameRu: string; kindNameKz: string | null },
+  obj:
+    | { nameRu: string; nameKz: string | null }
+    | { kindNameRu: string; kindNameKz: string | null },
   language: string
 ): string => {
   if ('kindNameRu' in obj) {

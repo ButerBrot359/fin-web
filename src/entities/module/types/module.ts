@@ -6,6 +6,7 @@ export enum ModuleElementType {
   Report = 'Report',
   InformationRegister = 'InformationRegister',
   AccumulationRegister = 'AccumulationRegister',
+  AccountPlan = 'AccountPlan',
 }
 
 export interface ModuleElement {

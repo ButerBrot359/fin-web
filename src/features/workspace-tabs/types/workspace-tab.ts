@@ -6,6 +6,7 @@ export type TabPageType =
   | 'dictionary-list'
   | 'dictionary-entry'
   | 'information-register-list'
+  | 'account-plan-list'
 
 export interface WorkspaceTab {
   id: string

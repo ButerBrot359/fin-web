@@ -22,7 +22,11 @@ export const useAccountPlanList = ({
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['account-plan', 'list', typeCode, parent ?? null],
     queryFn: ({ signal }) =>
-      fetchAccountPlanEntries(typeCode, { parent: parent ?? undefined }, signal),
+      fetchAccountPlanEntries(
+        typeCode,
+        { parent: parent ?? undefined },
+        signal
+      ),
     select: (res) => res.data.list,
     staleTime: 5 * 60 * 1000,
     enabled,

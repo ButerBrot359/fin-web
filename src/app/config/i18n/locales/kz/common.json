@@ -171,6 +171,11 @@
     "recorder": "Тіркеуші",
     "lineNo": "Жол нөмірі"
   },
+  "accountPlan": {
+    "code": "Коды",
+    "name": "Атауы",
+    "parent": "Аталық"
+  },
   "tableFilter": {
     "filterBy": "Сүзгі: {{name}}",
     "apply": "Қолдану",

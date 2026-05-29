@@ -23,7 +23,8 @@ export const validateSubkontoKinds = (
   if (kinds.length > 3) return 'accountPlan.validation.maxSubkonto'
   const positions = kinds.map((k) => k.position).sort((a, b) => a - b)
   for (let i = 0; i < positions.length; i += 1) {
-    if (positions[i] !== i + 1) return 'accountPlan.validation.subkontoPositionsInvalid'
+    if (positions[i] !== i + 1)
+      return 'accountPlan.validation.subkontoPositionsInvalid'
   }
   return null
 }

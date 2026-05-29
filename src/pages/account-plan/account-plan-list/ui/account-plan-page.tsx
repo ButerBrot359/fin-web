@@ -9,10 +9,7 @@ import { AccountPlanListToolbar } from '@/widgets/account-plan-list-toolbar'
 
 import { useAccountPlanColumns } from '../lib/hooks/use-account-plan-columns'
 import { useExpandedNodesStore } from '../lib/hooks/use-expanded-nodes-store'
-import {
-  buildTreeRows,
-  filterTreeByQuery,
-} from '../lib/utils/build-tree-rows'
+import { buildTreeRows, filterTreeByQuery } from '../lib/utils/build-tree-rows'
 import { AccountPlanTreeTable } from './account-plan-tree-table'
 
 export const AccountPlanPage = () => {

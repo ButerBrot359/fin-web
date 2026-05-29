@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { fetchSubcontoBuTypes, SUBCONTO_BU_TYPE_CODE } from '../../api/account-plan'
+import {
+  fetchSubcontoBuTypes,
+  SUBCONTO_BU_TYPE_CODE,
+} from '../../api/account-plan'
 
 /** Список ВидыСубкoнтоБУ — для селекта в карточке счёта. */
 export const useSubcontoBuTypes = (enabled = true) => {

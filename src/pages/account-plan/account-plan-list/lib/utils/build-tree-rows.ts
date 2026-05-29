@@ -25,7 +25,9 @@ export const buildTreeRows = (
     childrenByParent.set(key, arr)
   }
   for (const arr of childrenByParent.values()) {
-    arr.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
+    arr.sort((a, b) =>
+      a.code.localeCompare(b.code, undefined, { numeric: true })
+    )
   }
 
   const rows: AccountPlanRow[] = []

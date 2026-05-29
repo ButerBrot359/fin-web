@@ -67,6 +67,9 @@ const AccountPlanEntryPage = lazy(() =>
     default: m.AccountPlanEntryPage,
   }))
 )
+const SduiScreen = lazy(() =>
+  import('@/features/sdui').then((m) => ({ default: m.SduiScreen }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -125,6 +128,7 @@ const AppRoutes = () => {
             path="/modules/:pageCode/accountplan/:moduleCode/:entryId"
             element={<AccountPlanEntryPage />}
           />
+          <Route path="/sdui/*" element={<SduiScreen />} />
         </Routes>
       </Suspense>
     </ErrorBoundary>

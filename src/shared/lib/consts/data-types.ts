@@ -16,6 +16,7 @@ export type DataType =
   | 'CALCULATION_PLAN'
   | 'ACCUMULATION_REGISTER'
   | 'INFORMATION_REGISTER'
+  | 'ACCOUNTING_REGISTER'
   | 'OBJECT'
   | 'DIRECTORY'
 
@@ -30,6 +31,7 @@ export const REFERENCE_DOMAIN_KINDS = new Set([
   'CALCULATION_PLAN',
   'ACCUMULATION_REGISTER',
   'INFORMATION_REGISTER',
+  'ACCOUNTING_REGISTER',
 ])
 
 const BASE = '/api/universaldomain-entries'

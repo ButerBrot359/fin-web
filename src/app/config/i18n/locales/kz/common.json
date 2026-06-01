@@ -171,6 +171,15 @@
     "recorder": "Тіркеуші",
     "lineNo": "Жол нөмірі"
   },
+  "accountingRegister": {
+    "period": "Кезең",
+    "debitAccount": "Дт шоты",
+    "creditAccount": "Кт шоты",
+    "sum": "Сома",
+    "content": "Мазмұны",
+    "recorder": "Тіркеуші",
+    "lineNo": "Жол нөмірі"
+  },
   "accountPlan": {
     "code": "Коды",
     "name": "Атауы",

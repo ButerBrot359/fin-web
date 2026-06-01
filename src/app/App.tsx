@@ -57,6 +57,11 @@ const AccumulationRegisterPage = lazy(() =>
     })
   )
 )
+const AccountingRegisterPage = lazy(() =>
+  import('@/pages/accounting-register/accounting-register-list').then((m) => ({
+    default: m.AccountingRegisterPage,
+  }))
+)
 const AccountPlanPage = lazy(() =>
   import('@/pages/account-plan/account-plan-list').then((m) => ({
     default: m.AccountPlanPage,
@@ -112,6 +117,10 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/accumulationregister/:moduleCode"
             element={<AccumulationRegisterPage />}
+          />
+          <Route
+            path="/modules/:pageCode/accountingregister/:moduleCode"
+            element={<AccountingRegisterPage />}
           />
           <Route
             path="/modules/:pageCode/accountplan/:moduleCode"

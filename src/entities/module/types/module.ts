@@ -6,6 +6,7 @@ export enum ModuleElementType {
   Report = 'Report',
   InformationRegister = 'InformationRegister',
   AccumulationRegister = 'AccumulationRegister',
+  AccountingRegister = 'AccountingRegister',
   AccountPlan = 'AccountPlan',
 }
 

@@ -1,0 +1,43 @@
+{
+  "name": "VoinskieZvaniya",
+  "title": "Воинские звания",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "Kod"
+              },
+              {
+                "type": "Field",
+                "code": "Naimenovaniya"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "NaimenovanieKaz"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

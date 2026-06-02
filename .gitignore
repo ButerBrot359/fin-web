@@ -29,5 +29,4 @@ form-configs-server/dist
 
 form-configs-server/configs
 form-configs-server/configs/*
-
 .playwright-mcp

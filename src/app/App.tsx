@@ -125,6 +125,7 @@ const AppRoutes = () => {
             path="/modules/:pageCode/accountplan/:moduleCode/:entryId"
             element={<AccountPlanEntryPage />}
           />
+
         </Routes>
       </Suspense>
     </ErrorBoundary>

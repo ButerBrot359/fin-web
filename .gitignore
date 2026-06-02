@@ -27,6 +27,4 @@ form-configs-server/dist
 *.sln
 *.sw?
 
-form-configs-server/configs
-form-configs-server/configs/*
 .playwright-mcp

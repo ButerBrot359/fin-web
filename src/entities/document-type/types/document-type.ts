@@ -11,6 +11,7 @@ export interface DocumentType {
   isHierarchical: boolean
   isActive: boolean
   isTablePart: boolean
+  newView: boolean
   attributes: DocumentAttribute[]
 }
 

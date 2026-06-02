@@ -7,6 +7,7 @@ import { useDocumentType } from '@/entities/document-type'
 import { useOptionalFormConfig } from '@/entities/form-config'
 
 import { FormRenderer } from '@/features/form-renderer'
+import { SduiScreen } from '@/features/sdui'
 import {
   useTabMeta,
   useWorkspaceTabsStore,
@@ -37,7 +38,11 @@ export const DocumentEntryPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const { title, attributes } = useDocumentType(moduleCode)
+  const { title, attributes, newView } = useDocumentType(moduleCode)
+
+  if (newView) {
+    return <SduiScreen layoutCode={`${moduleCode}.ФормаОбъекта`} />
+  }
   const { config, isLoading: isLoadingConfig } =
     useOptionalFormConfig(moduleCode)
   const { form, isNew, existingEntry, isLoading } = useDocumentEntryForm()

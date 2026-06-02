@@ -77,7 +77,9 @@ export function useSduiDispatch() {
         const res = await viewTransport.post({
           formSessionId: action.type === 'OPEN' ? null : formSessionId,
           revision: action.type === 'OPEN' ? null : revision,
-          layoutCode: action.type === 'OPEN' ? null : undefined,
+          layoutCode: action.type === 'OPEN'
+            ? (action.layoutCode ?? null)
+            : undefined,
           route: location.pathname,
           action,
         })

@@ -21,6 +21,7 @@ export interface ViewAction {
   trigger?: string
   command?: string
   value?: unknown
+  layoutCode?: string
 }
 
 export interface ViewRequest {

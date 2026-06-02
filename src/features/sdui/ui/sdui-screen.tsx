@@ -8,14 +8,18 @@ import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
 import { NodeRenderer } from './node-renderer'
 
-export const SduiScreen: FC = () => {
+interface SduiScreenProps {
+  layoutCode?: string
+}
+
+export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
   const location = useLocation()
   const tree = useTreeStore((s) => s.root)
   const reset = useTreeStore((s) => s.reset)
   const dispatch = useSduiDispatch()
 
   useEffect(() => {
-    void dispatch({ type: 'OPEN' })
+    void dispatch({ type: 'OPEN', layoutCode })
 
     return () => {
       void dispatch({ type: 'CLOSE' })

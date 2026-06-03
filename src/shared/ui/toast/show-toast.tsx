@@ -104,6 +104,7 @@ const ToastContent = ({ id, type, title, description }: ToastContentProps) => (
           fontWeight: 500,
           fontSize: '14px',
           color: '#222124',
+          whiteSpace: 'pre-line',
         }}
       >
         {description}

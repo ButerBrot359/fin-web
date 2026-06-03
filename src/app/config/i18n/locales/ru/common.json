@@ -171,6 +171,15 @@
     "recorder": "Регистратор",
     "lineNo": "Номер строки"
   },
+  "accountingRegister": {
+    "period": "Период",
+    "debitAccount": "Счёт Дт",
+    "creditAccount": "Счёт Кт",
+    "sum": "Сумма",
+    "content": "Содержание",
+    "recorder": "Регистратор",
+    "lineNo": "Номер строки"
+  },
   "accountPlan": {
     "code": "Код",
     "name": "Наименование",

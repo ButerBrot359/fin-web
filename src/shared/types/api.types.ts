@@ -29,6 +29,7 @@ export interface ApiErrorResponse {
   message?: string
   path?: string
   errors?: ApiErrorDetail[]
+  data?: { message?: string }
 }
 
 export interface PagedResponse<T> {

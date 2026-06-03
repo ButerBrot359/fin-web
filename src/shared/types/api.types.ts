@@ -17,6 +17,21 @@ export interface ApiResponse<T> {
   success: boolean
 }
 
+export interface ApiErrorDetail {
+  attributeCode?: string
+  errorCode?: string
+  message?: string
+}
+
+export interface ApiErrorResponse {
+  status?: number
+  error?: string
+  message?: string
+  path?: string
+  errors?: ApiErrorDetail[]
+  data?: { message?: string }
+}
+
 export interface PagedResponse<T> {
   content: T[]
   totalElements: number

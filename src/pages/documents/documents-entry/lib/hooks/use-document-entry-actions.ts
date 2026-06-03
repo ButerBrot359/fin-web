@@ -9,6 +9,7 @@ import {
 import type { CreateDocumentEntryPayload } from '@/entities/document-entry'
 import { useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { showToast } from '@/shared/ui/toast/show-toast'
+import { getApiErrorMessage } from '@/shared/lib/utils/get-api-error-message'
 
 import type {
   SubmitAction,
@@ -80,8 +81,8 @@ export const useDocumentEntryActions = ({
             )
           }
         },
-        onError: () => {
-          showToast('error', t(errorKey))
+        onError: (error) => {
+          showToast('error', t(errorKey), getApiErrorMessage(error))
         },
       })
     })()

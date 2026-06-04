@@ -90,6 +90,26 @@ export function applyPatches(root: ViewNode, patches: ViewPatch[]): ViewNode {
   return patches.reduce((tree, patch) => applyOne(tree, patch), root)
 }
 
+export function clearErrors(root: ViewNode): ViewNode {
+  const hasError = root.props?.error != null
+  const children = root.children
+  let newChildren = children
+  if (children) {
+    let changed = false
+    newChildren = children.map((c) => {
+      const u = clearErrors(c)
+      if (u !== c) changed = true
+      return u
+    })
+    if (!changed) newChildren = children
+  }
+  if (!hasError && newChildren === children) return root
+  const newProps = hasError ? { ...root.props, error: null } : root.props
+  return newChildren !== children
+    ? { ...root, props: newProps, children: newChildren }
+    : { ...root, props: newProps }
+}
+
 export function applyValuePatches(
   patches: ViewPatch[],
   setter: (binding: string, value: unknown) => void,

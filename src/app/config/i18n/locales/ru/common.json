@@ -253,6 +253,7 @@
     "column": {
       "code": "Код",
       "name": "Наименование",
+      "fullNameKz": "Полное наименование (каз)",
       "accountType": "Вид",
       "currency": "Вал.",
       "quantitative": "Кол.",

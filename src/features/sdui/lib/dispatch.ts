@@ -7,7 +7,7 @@ import type { ViewAction, ViewEffect } from '../types/view'
 import { viewTransport, ViewConflictError } from '../api/view-transport'
 import { useTreeStore } from './stores/tree-store'
 import { useViewStateStore } from './stores/view-state-store'
-import { applyValuePatches } from './patch-applier'
+import { applyValuePatches, clearErrors } from './patch-applier'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
 
@@ -38,7 +38,7 @@ export function useSduiDispatch() {
     async (action: ViewAction): Promise<void> => {
       const { formSessionId, revision } = useTreeStore.getState()
       const { replaceAll, merge } = useViewStateStore.getState()
-      const { setSession, setRoot, bumpRevision, applyPatches: applyTreePatches } =
+      const { setSession, setRoot, bumpRevision, applyPatches: applyTreePatches, clearAllErrors } =
         useTreeStore.getState()
 
       const closeSession = async () => {
@@ -88,11 +88,16 @@ export function useSduiDispatch() {
           setSession(res.formSessionId, res.revision)
           if (res.tree) setRoot(res.tree)
           replaceAll(res.state ?? {})
+          // Apply handler.handleOpen patches (e.g. required/enabled/label defaults)
+          applyTreePatches(res.patches ?? [])
+          applyValuePatches(res.patches ?? [], useViewStateStore.getState().set)
+          effectHandler.playAll(res.effects ?? [])
         } else if (action.type === 'CLOSE') {
           // reset is done by SduiScreen on unmount
         } else {
-          // EVENT or COMMAND — order is critical: revision → tree patches → value patches → effects
+          // EVENT or COMMAND — order is critical: revision → clear old errors → tree patches → value patches → effects
           bumpRevision(res.revision)
+          if (action.type === 'COMMAND') clearAllErrors()
           applyTreePatches(res.patches ?? [])
           applyValuePatches(res.patches ?? [], useViewStateStore.getState().set)
           merge(res.statePatch ?? {})

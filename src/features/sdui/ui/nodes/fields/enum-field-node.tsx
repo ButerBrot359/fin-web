@@ -14,6 +14,8 @@ import { useSduiDispatch } from '../../../lib/dispatch'
 interface EnumOption {
   value: string
   label: string
+  id?: number
+  code?: string
 }
 
 export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
@@ -54,9 +56,13 @@ export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
         value={value}
         readOnly={readonly}
         onChange={(e) => {
-          const newVal = e.target.value
-          if (node.binding) setValue(node.binding, newVal)
-          fireServerEvent('change', newVal)
+          const selectedValue = e.target.value
+          if (node.binding) setValue(node.binding, selectedValue)
+          const opt = options.find((o) => o.value === selectedValue)
+          const enumValue = opt
+            ? { id: opt.id ?? selectedValue, code: opt.code ?? opt.value, presentation: opt.label }
+            : { id: selectedValue, code: selectedValue, presentation: selectedValue }
+          fireServerEvent('change', enumValue)
         }}
       >
         {options.map((opt) => (

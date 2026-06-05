@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-import { applyPatches } from '../patch-applier'
+import { applyPatches, clearErrors } from '../patch-applier'
 import type { ViewNode, ViewPatch } from '../../types/view'
 
 interface TreeStoreState {
@@ -12,6 +12,7 @@ interface TreeStoreState {
   setSession: (id: string, rev: number) => void
   bumpRevision: (rev: number) => void
   applyPatches: (patches: ViewPatch[]) => void
+  clearAllErrors: () => void
   reset: () => void
 }
 
@@ -30,6 +31,12 @@ export const useTreeStore = create<TreeStoreState>((set, get) => ({
     const { root } = get()
     if (!root) return
     set({ root: applyPatches(root, patches) })
+  },
+
+  clearAllErrors: () => {
+    const { root } = get()
+    if (!root) return
+    set({ root: clearErrors(root) })
   },
 
   reset: () => set({ root: null, formSessionId: null, revision: null }),

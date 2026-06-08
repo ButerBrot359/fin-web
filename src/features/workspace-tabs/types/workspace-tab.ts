@@ -7,6 +7,7 @@ export type TabPageType =
   | 'dictionary-entry'
   | 'information-register-list'
   | 'accounting-register-list'
+  | 'osv-report-list'
   | 'account-plan-list'
 
 export interface WorkspaceTab {

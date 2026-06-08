@@ -54,7 +54,9 @@ export const useAccountingRegisterColumns = (
       header: () => <span>{t('accountingRegister.period')}</span>,
       cell: ({ getValue }) => {
         const v = getValue() as string | null | undefined
-        return cellText(v ? formatDate(v) : '')
+        // Период (1C: Period — DateTime) — дата со временем до секунд
+        // (dd.MM.yyyy HH:mm:ss), как в 1С: различает проводки внутри дня.
+        return cellText(v ? formatDate(v, 'dd.MM.yyyy HH:mm:ss') : '')
       },
     }
 

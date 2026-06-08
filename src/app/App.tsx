@@ -72,6 +72,11 @@ const AccountPlanEntryPage = lazy(() =>
     default: m.AccountPlanEntryPage,
   }))
 )
+const OsvReportPage = lazy(() =>
+  import('@/pages/osv-report/osv-report-list').then((m) => ({
+    default: m.OsvReportPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -133,6 +138,11 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/accountplan/:moduleCode/:entryId"
             element={<AccountPlanEntryPage />}
+          />
+          {/* ОСВ: пункт меню type="AccountingReport" → сегмент "accountingreport" */}
+          <Route
+            path="/modules/:pageCode/accountingreport/:moduleCode"
+            element={<OsvReportPage />}
           />
 
         </Routes>

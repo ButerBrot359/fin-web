@@ -7,7 +7,7 @@ import type { ViewAction, ViewEffect } from '../types/view'
 import { viewTransport, ViewConflictError } from '../api/view-transport'
 import { useTreeStore } from './stores/tree-store'
 import { useViewStateStore } from './stores/view-state-store'
-import { applyValuePatches, clearErrors } from './patch-applier'
+import { applyValuePatches } from './patch-applier'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
 

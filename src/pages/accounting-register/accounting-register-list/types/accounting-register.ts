@@ -24,4 +24,10 @@ export interface AccountingRegisterEntry {
   /** Содержание проводки (текстовое описание операции). */
   soderzhanie?: string | null
   attributes: Record<string, unknown> | null
+  /**
+   * Значения системных колонок-измерений (Организация/ФКР/Специфика/…)
+   * лежат прямо в строке под ключом = `code` колонки из `/columns`,
+   * а НЕ в `values[]`. Тип — ID элемента справочника.
+   */
+  [systemColumnCode: string]: unknown
 }

@@ -4,11 +4,14 @@ import { Typography } from '@mui/material'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import type { DocumentAttribute } from '@/entities/document-type'
+import type { ColumnMetaDto } from '@/shared/lib/eav'
+import { REFERENCE_DOMAIN_KINDS } from '@/shared/lib/consts/data-types'
 import { formatCellValue } from '@/shared/lib/utils/format-cell-value'
 import { formatDate } from '@/shared/lib/utils/date'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
 import type { AccountingRegisterEntry } from '../../types/accounting-register'
+import { DimensionCell } from '../../ui/dimension-cell'
 
 const cellText = (value: React.ReactNode) => (
   <Typography variant="body2" noWrap className="text-ui-06">
@@ -16,8 +19,27 @@ const cellText = (value: React.ReactNode) => (
   </Typography>
 )
 
+/**
+ * Системные коды, для которых уже есть отдельные жёсткие колонки выше —
+ * чтобы не дублировать их generic-колонками измерений из `/columns`.
+ */
+const HARDCODED_SYSTEM_CODES = new Set([
+  'period',
+  'accountDtId',
+  'accountKtId',
+  'summa',
+  'soderzhanie',
+  'recorderDocumentEntryId',
+  'lineNo',
+  'isActive',
+  // Валюта доступна системными полями valyutaDtId/valyutaKtId — в гриде не рисуем.
+  'valyutaDtId',
+  'valyutaKtId',
+])
+
 export const useAccountingRegisterColumns = (
-  attributes: DocumentAttribute[]
+  attributes: DocumentAttribute[],
+  columnsMeta: ColumnMetaDto[] = []
 ): ColumnDef<AccountingRegisterEntry>[] => {
   const { t, i18n } = useTranslation()
 
@@ -98,6 +120,33 @@ export const useAccountingRegisterColumns = (
           cellText(formatCellValue(getValue(), attr)),
       }))
 
+    // Системные колонки-измерения (Организация/ФКР/Специфика/…) приходят
+    // из `/columns`. Значение лежит прямо в строке: `row[col.code]` (ID).
+    // Ссылочные (referencedDomainKind) резолвим ID → имя через справочник.
+    const dimensionColumns: ColumnDef<AccountingRegisterEntry>[] = columnsMeta
+      .filter(
+        (col) => col.isSystem && !HARDCODED_SYSTEM_CODES.has(col.code)
+      )
+      .map((col) => {
+        const isReference =
+          !!col.referencedDomainKind &&
+          REFERENCE_DOMAIN_KINDS.has(col.referencedDomainKind)
+        return {
+          id: col.code,
+          accessorFn: (row: AccountingRegisterEntry) =>
+            (row[col.code] as number | null | undefined) ?? null,
+          header: () => (
+            <span>{i18n.language === 'kz' ? col.nameKz ?? col.nameRu : col.nameRu}</span>
+          ),
+          cell: ({ getValue }: { getValue: () => unknown }) => (
+            <DimensionCell
+              id={getValue() as number | null | undefined}
+              resolve={isReference}
+            />
+          ),
+        }
+      })
+
     return [
       periodColumn,
       debitAccountColumn,
@@ -106,7 +155,8 @@ export const useAccountingRegisterColumns = (
       contentColumn,
       recorderColumn,
       lineNoColumn,
+      ...dimensionColumns,
       ...attributeColumns,
     ]
-  }, [attributes, i18n.language, t])
+  }, [attributes, columnsMeta, i18n.language, t])
 }

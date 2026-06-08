@@ -69,7 +69,7 @@ export const AccountingRegisterPage = () => {
     }
   )
 
-  const columns = useAccountingRegisterColumns(attributes)
+  const columns = useAccountingRegisterColumns(attributes, columnsMeta)
 
   const handleClose = () => {
     useWorkspaceTabsStore.getState().closeTab(location.pathname)

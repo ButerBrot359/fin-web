@@ -11,7 +11,8 @@ import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 import type { AccountingRegisterEntry } from '../../types/accounting-register'
 import { DimensionCell } from '../../ui/dimension-cell'
 import { RecorderCell } from '../../ui/recorder-cell'
-import { getSubkontoValue } from '../../utils/subkonto'
+import { SubkontoCell } from '../../ui/subkonto-cell'
+import { getSubkontoRef } from '../../utils/subkonto'
 
 const cellText = (value: React.ReactNode) => (
   <Typography variant="body2" noWrap className="text-ui-06">
@@ -137,17 +138,20 @@ export const useAccountingRegisterColumns = (
           }
       }
 
-      // Субконто1..3 Дт/Кт — значение из массивов subkontosDt/subkontosKt
-      // записи (по position и side), сам справочный объект уже разрезолвлен.
+      // Субконто1..3 Дт/Кт — ссылка из массивов subkontosDt/subkontosKt
+      // записи (по position и side); значение хранится как ID, резолвим в имя.
       const subkonto = SUBKONTO_RE.exec(col.code)
       if (subkonto) {
         const position = Number(subkonto[1])
         const side = subkonto[2] as 'Dt' | 'Kt'
         return {
           id: col.code,
-          accessorFn: (row) => getSubkontoValue(row, position, side),
+          accessorFn: (row) => getSubkontoRef(row, position, side),
           header,
-          cell: ({ getValue }) => cellText((getValue() as string | null) ?? ''),
+          enableSorting: false,
+          cell: ({ getValue }) => (
+            <SubkontoCell subkonto={getValue() as ReturnType<typeof getSubkontoRef>} />
+          ),
         }
       }
 

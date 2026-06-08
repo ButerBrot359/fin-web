@@ -1,40 +1,62 @@
 import type { AccountingRegisterEntry } from '../types/accounting-register'
 
+/** Разрешённая ссылка субконто: тип значения + ID объекта-ссылки. */
+export interface SubkontoRef {
+  valueType: string
+  /** ID объекта по соответствующему `*ReferenceId` (или enum value id). */
+  refId: number | null
+}
+
+interface SubkontoItem {
+  side?: string
+  position?: number
+  valueType?: string
+  dictionaryEntryReferenceId?: number | null
+  documentEntryReferenceId?: number | null
+  accountPlanEntryReferenceId?: number | null
+  characteristicsPlanEntryReferenceId?: number | null
+  calculationPlanEntryReferenceId?: number | null
+  exchangePlanEntryReferenceId?: number | null
+  accumulationRegisterEntryReferenceId?: number | null
+  informationRegisterEntryReferenceId?: number | null
+  accountingRegisterEntryReferenceId?: number | null
+  enumsValueId?: number | null
+}
+
+const REF_ID_FIELDS: (keyof SubkontoItem)[] = [
+  'dictionaryEntryReferenceId',
+  'documentEntryReferenceId',
+  'accountPlanEntryReferenceId',
+  'characteristicsPlanEntryReferenceId',
+  'calculationPlanEntryReferenceId',
+  'exchangePlanEntryReferenceId',
+  'accumulationRegisterEntryReferenceId',
+  'informationRegisterEntryReferenceId',
+  'accountingRegisterEntryReferenceId',
+  'enumsValueId',
+]
+
 /**
- * Достаёт отображаемое значение субконто из массивов записи
- * `subkontosDt` / `subkontosKt` (по позиции 1..3 и стороне Дт/Кт).
- *
- * Элемент массива — уже разрезолвленный справочный объект; берём его
- * `displayName` → `nameRu` → `code`. Форма элемента бэка точно не
- * зафиксирована, поэтому читаем поля терпимо.
+ * Достаёт ссылку субконто из массива записи `subkontosDt` / `subkontosKt`
+ * (по позиции 1..3 и стороне Дт/Кт). Значение субконто — ID объекта-ссылки
+ * (а не готовый объект); резолв ID → имя делает вызывающая ячейка.
  */
-export const getSubkontoValue = (
+export const getSubkontoRef = (
   row: AccountingRegisterEntry,
   position: number,
   side: 'Dt' | 'Kt'
-): string | null => {
+): SubkontoRef | null => {
   const arr = row[side === 'Dt' ? 'subkontosDt' : 'subkontosKt']
   if (!Array.isArray(arr)) return null
 
-  const item = arr.find((s) => {
-    if (!s || typeof s !== 'object') return false
-    const pos = (s as Record<string, unknown>).position
-    return pos === position
-  }) as Record<string, unknown> | undefined
+  const item = (arr as SubkontoItem[]).find((s) => s.position === position)
   if (!item) return null
 
-  // Значение субконто может лежать как вложенный объект (item.value) либо
-  // прямо в элементе.
-  const value =
-    item.value && typeof item.value === 'object'
-      ? (item.value as Record<string, unknown>)
-      : item
-
-  const label =
-    (value.displayName as string | undefined) ??
-    (value.nameRu as string | undefined) ??
-    (value.name as string | undefined) ??
-    (value.code as string | undefined)
-
-  return label ?? null
+  for (const field of REF_ID_FIELDS) {
+    const v = item[field]
+    if (typeof v === 'number') {
+      return { valueType: item.valueType ?? '', refId: v }
+    }
+  }
+  return { valueType: item.valueType ?? '', refId: null }
 }

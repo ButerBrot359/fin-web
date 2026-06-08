@@ -268,7 +268,8 @@
       "isQuantity": "Сандық",
       "isOffBalance": "Баланстан тыс",
       "isGroup": "Жазбаларда тыйым салу",
-      "parent": "Аталық шот"
+      "parent": "Аталық шот",
+      "nomerMemorialnogoOrdera": "Мемориалдық ордер нөмірі"
     },
     "accountType": {
       "active": "Активті",

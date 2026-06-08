@@ -24,6 +24,7 @@ export interface AccountPlanCardValue {
   isGroup: boolean
   parentId: number | null
   parentName: string | null
+  nomerMemorialnogoOrdera: number
 }
 
 interface AccountPlanCardProps {
@@ -199,6 +200,10 @@ const GeneralTab = ({ value, isReadOnly, patch }: GeneralTabProps) => {
           }}
         />
       </div>
+      <LabeledReadonly
+        label={t('accountPlan.field.nomerMemorialnogoOrdera')}
+        value={String(value.nomerMemorialnogoOrdera)}
+      />
     </div>
   )
 }

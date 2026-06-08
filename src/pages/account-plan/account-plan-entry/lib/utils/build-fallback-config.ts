@@ -40,6 +40,7 @@ export const buildAccountPlanFallbackConfig = (): FormConfig => ({
                   { type: 'Field', code: 'isQuantity', flex: 1 },
                 ],
               },
+              { type: 'Field', code: 'nomerMemorialnogoOrdera' },
             ],
           },
         ],

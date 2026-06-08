@@ -6,12 +6,16 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { DocumentAttribute } from '@/entities/document-type'
 import type { ColumnMetaDto } from '@/shared/lib/eav'
 import { REFERENCE_DOMAIN_KINDS } from '@/shared/lib/consts/data-types'
-import { formatCellValue } from '@/shared/lib/utils/format-cell-value'
+import {
+  formatCellValue,
+  formatWithSpaces,
+} from '@/shared/lib/utils/format-cell-value'
 import { formatDate } from '@/shared/lib/utils/date'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
 import type { AccountingRegisterEntry } from '../../types/accounting-register'
 import { DimensionCell } from '../../ui/dimension-cell'
+import { RecorderCell } from '../../ui/recorder-cell'
 
 const cellText = (value: React.ReactNode) => (
   <Typography variant="body2" noWrap className="text-ui-06">
@@ -70,13 +74,17 @@ export const useAccountingRegisterColumns = (
       cell: ({ getValue }) => cellText((getValue() as string | null) ?? ''),
     }
 
+    // Сумма (1C: Edm.Double) — денежный формат: разделители разрядов
+    // пробелом и десятичная запятая (5550000 → «5 550 000»).
     const sumColumn: ColumnDef<AccountingRegisterEntry> = {
       id: 'summa',
       accessorFn: (row) => row.summa ?? null,
       header: () => <span>{t('accountingRegister.sum')}</span>,
       cell: ({ getValue }) => {
         const v = getValue() as number | string | null | undefined
-        return cellText(v == null ? '' : String(v))
+        return cellText(
+          v == null || v === '' ? '' : formatWithSpaces(String(v))
+        )
       },
     }
 
@@ -87,14 +95,15 @@ export const useAccountingRegisterColumns = (
       cell: ({ getValue }) => cellText((getValue() as string | null) ?? ''),
     }
 
+    // Регистратор (1C: Recorder — ссылка на документ-регистратор).
+    // Бэк отдаёт только ID; резолвим ID → представление документа.
     const recorderColumn: ColumnDef<AccountingRegisterEntry> = {
       id: 'recorderDocumentEntryId',
       accessorFn: (row) => row.recorderDocumentEntryId ?? null,
       header: () => <span>{t('accountingRegister.recorder')}</span>,
-      cell: ({ getValue }) => {
-        const v = getValue() as number | null | undefined
-        return cellText(v == null ? '' : `#${String(v)}`)
-      },
+      cell: ({ getValue }) => (
+        <RecorderCell id={getValue() as number | null | undefined} />
+      ),
     }
 
     const lineNoColumn: ColumnDef<AccountingRegisterEntry> = {

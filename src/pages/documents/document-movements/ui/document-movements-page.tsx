@@ -71,9 +71,13 @@ const MovementTable = ({ group }: { group: MovementGroup }) => {
       header: () => <span>{i18n.language === 'kz' ? 'Кезең' : 'Период'}</span>,
       cell: (info) => {
         const val = info.getValue()
+        // Период (1C: Period — DateTime) — дата со временем до секунд,
+        // как в журнале регистра: различает движения внутри одного дня.
         return (
           <Typography variant="body2" noWrap className="text-ui-06">
-            {typeof val === 'string' ? formatDate(val) : ''}
+            {typeof val === 'string'
+              ? formatDate(val, 'dd.MM.yyyy HH:mm:ss')
+              : ''}
           </Typography>
         )
       },

@@ -268,7 +268,8 @@
       "isQuantity": "Количественный",
       "isOffBalance": "Забалансовый",
       "isGroup": "Запретить в проводках",
-      "parent": "Подчинён счёту"
+      "parent": "Подчинён счёту",
+      "nomerMemorialnogoOrdera": "Номер мемориального ордера"
     },
     "accountType": {
       "active": "Активный",

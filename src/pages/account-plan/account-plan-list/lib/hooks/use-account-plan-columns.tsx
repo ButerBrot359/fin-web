@@ -117,6 +117,16 @@ export const useAccountPlanColumns = ({
           <BooleanMark value={row.original.entry.isOffBalance} />
         ),
       },
+      {
+        id: 'nomerMo',
+        header: () => <span>{t('accountPlan.column.nomerMo')}</span>,
+        size: 110,
+        accessorFn: (row) => row.entry.attributes.NomerMemorialnogoOrdera,
+        cell: ({ getValue }) => {
+          const value = getValue() as number | null | undefined
+          return cellText(value ? String(value) : '—')
+        },
+      },
     ],
     [t, i18n.language, onToggleExpand]
   )

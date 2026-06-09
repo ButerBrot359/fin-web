@@ -168,7 +168,10 @@ export const OsvReportTable = ({
                     <Typography
                       variant="body2"
                       noWrap
-                      className="text-right font-medium tabular-nums text-ui-06"
+                      // Отрицательный итог — красным, как суммы в строках (ОСВ 1С).
+                      className={`text-right font-medium tabular-nums ${
+                        (totals[key] ?? 0) < 0 ? 'text-support-01' : 'text-ui-06'
+                      }`}
                     >
                       {totals[key]
                         ? formatWithSpaces(String(totals[key]))

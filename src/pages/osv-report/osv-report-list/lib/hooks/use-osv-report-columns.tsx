@@ -9,22 +9,29 @@ import ArrowDownIcon from '@/shared/assets/icons/arrow-down.svg'
 import type { OsvReportEntry } from '../../types/osv-report'
 import { DimensionNameCell } from '../../ui/dimension-name-cell'
 
-const cellText = (value: React.ReactNode, align: 'left' | 'right' = 'left') => (
+const cellText = (
+  value: React.ReactNode,
+  align: 'left' | 'right' = 'left',
+  negative = false
+) => (
   <Typography
     variant="body2"
     noWrap
-    className={`text-ui-06 ${align === 'right' ? 'text-right tabular-nums' : ''}`}
+    // Отрицательные суммы — красным, как в ОСВ 1С (сальдо «не своей» стороны).
+    className={`${negative ? 'text-support-01' : 'text-ui-06'} ${
+      align === 'right' ? 'text-right tabular-nums' : ''
+    }`}
   >
     {value}
   </Typography>
 )
 
-/** Денежная ячейка: разделители разрядов, пусто для null/0. */
+/** Денежная ячейка: разделители разрядов, пусто для null/0, отрицательные — красным. */
 const moneyCell = (v: number | string | null | undefined) => {
   if (v == null || v === '') return cellText('', 'right')
   const num = typeof v === 'string' ? Number(v) : v
   if (!Number.isNaN(num) && num === 0) return cellText('', 'right')
-  return cellText(formatWithSpaces(String(v)), 'right')
+  return cellText(formatWithSpaces(String(v)), 'right', num < 0)
 }
 
 /** Фабрика денежной колонки. */

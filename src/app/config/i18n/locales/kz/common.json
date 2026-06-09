@@ -275,6 +275,7 @@
       "currency": "Вал.",
       "quantitative": "Сан.",
       "offBalance": "Бал.",
+      "nomerMo": "МО нөмірі",
       "subconto": "Субконто {{n}}"
     },
     "field": {

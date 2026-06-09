@@ -4,6 +4,7 @@ import { Typography } from '@mui/material'
 import {
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   useReactTable,
   type ColumnDef,
 } from '@tanstack/react-table'
@@ -50,7 +51,11 @@ export const OsvReportTable = ({
   const totals = useMemo(() => {
     const acc: Partial<Record<keyof OsvReportEntry, number>> = {}
     for (const key of SUM_KEYS) {
-      acc[key] = rows.reduce((s, r) => s + toNum(r[key]), 0)
+      // SUM_KEYS содержит только суммовые поля — значения всегда числовые.
+      acc[key] = rows.reduce(
+        (s, r) => s + toNum(r[key] as number | string | null | undefined),
+        0
+      )
     }
     return acc
   }, [rows])
@@ -59,6 +64,12 @@ export const OsvReportTable = ({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    // Дочерние строки по субконто-1 (1 уровень). У детей children = null,
+    // поэтому дальше дерево не разворачивается.
+    getSubRows: (row) => row.children ?? undefined,
+    // По умолчанию счета развёрнуты — разворот по аналитике как ОСВ в 1С.
+    initialState: { expanded: true },
     getRowId: (row, index) => String(row.accountId ?? index),
   })
 
@@ -107,7 +118,9 @@ export const OsvReportTable = ({
           {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
-              className="border-b border-ui-04/40 transition-colors hover:bg-ui-07"
+              className={`border-b border-ui-04/40 transition-colors hover:bg-ui-07 ${
+                row.depth > 0 ? 'bg-ui-02/40' : ''
+              }`}
             >
               {row.getVisibleCells().map((cell) => (
                 <td

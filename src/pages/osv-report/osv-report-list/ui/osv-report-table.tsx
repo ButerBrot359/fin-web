@@ -65,12 +65,18 @@ export const OsvReportTable = ({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
-    // Дочерние строки по субконто-1 (1 уровень). У детей children = null,
-    // поэтому дальше дерево не разворачивается.
+    // Рекурсивный разворот дерева ОСВ по измерениям (любая глубина):
+    // ORGANIZATION → … → SUBKONTO. У листьев children = null — дерево
+    // дальше не разворачивается. TanStack сам обрабатывает любую глубину.
     getSubRows: (row) => row.children ?? undefined,
-    // По умолчанию счета развёрнуты — разворот по аналитике как ОСВ в 1С.
+    // По умолчанию всё развёрнуто — полная иерархия как ОСВ в 1С.
     initialState: { expanded: true },
-    getRowId: (row, index) => String(row.accountId ?? index),
+    // Узлы измерений/субконто не имеют accountId — добавляем id родителя,
+    // чтобы id строк были уникальны на всех уровнях дерева.
+    getRowId: (row, index, parent) =>
+      parent
+        ? `${parent.id}.${row.accountId ?? index}`
+        : String(row.accountId ?? index),
   })
 
   if (isLoading) {

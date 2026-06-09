@@ -7,7 +7,7 @@ import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 import ArrowDownIcon from '@/shared/assets/icons/arrow-down.svg'
 
 import type { OsvReportEntry } from '../../types/osv-report'
-import { SubkontoNameCell } from '../../ui/subkonto-name-cell'
+import { DimensionNameCell } from '../../ui/dimension-name-cell'
 
 const cellText = (value: React.ReactNode, align: 'left' | 'right' = 'left') => (
   <Typography
@@ -48,8 +48,8 @@ export const useOsvReportColumns = (): ColumnDef<OsvReportEntry>[] => {
         id: 'accountCode',
         accessorFn: (row) => row.accountCode ?? null,
         header: () => <span>{t('osv.account')}</span>,
-        // Колонка «Счёт» несёт стрелку разворота и отступ для дочерних строк
-        // по субконто (разворот ровно на 1 уровень, как ОСВ в 1С).
+        // Колонка «Счёт» несёт стрелку разворота и отступ для дочерних узлов
+        // многоуровневого дерева по измерениям (любая глубина, как ОСВ в 1С).
         cell: ({ row, getValue }) => {
           const isChild = row.depth > 0
           const canExpand = row.getCanExpand()
@@ -78,7 +78,8 @@ export const useOsvReportColumns = (): ColumnDef<OsvReportEntry>[] => {
               ) : (
                 <span className="h-4 w-4 shrink-0" />
               )}
-              {/* Дочерние строки субконто наследуют код счёта — не дублируем. */}
+              {/* Дочерние узлы измерений наследуют код счёта — не дублируем;
+                  код показываем только у строки-счёта (depth === 0). */}
               <span className="text-ui-06">
                 {isChild ? '' : ((getValue() as string | null) ?? '')}
               </span>
@@ -91,10 +92,11 @@ export const useOsvReportColumns = (): ColumnDef<OsvReportEntry>[] => {
         // Наименование счёта; фолбэк на код, если имя пустое.
         accessorFn: (row) => row.accountNameRu ?? row.accountCode ?? null,
         header: () => <span>{t('osv.accountName')}</span>,
-        // Дочерняя строка — имя субконто (резолв ID → имя как в журнале).
+        // Строка-счёт — имя счёта; дочерний узел — имя измерения (готовое
+        // groupRefName) либо имя субконто-листа (резолв через справочник).
         cell: ({ row, getValue }) =>
           row.depth > 0 ? (
-            <SubkontoNameCell subkonto={row.original.subkonto} />
+            <DimensionNameCell node={row.original} />
           ) : (
             cellText((getValue() as string | null) ?? '')
           ),

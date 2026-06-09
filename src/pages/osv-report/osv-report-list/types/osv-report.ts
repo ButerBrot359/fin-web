@@ -49,15 +49,30 @@ export interface OsvReportEntry {
   /** Сальдо на конец периода, Кт. */
   closingKt?: number | string | null
   /**
-   * Дочерние строки по субконто-1 (только при `expandBySubkonto=true`).
-   * У самих дочерних строк `children = null` — разворот ровно на 1 уровень.
+   * Дочерние узлы дерева ОСВ (при `groupByDimensions=true`). Рекурсивно
+   * вложены по фиксированному порядку уровней:
+   * Счёт → ORGANIZATION → PODRAZDELENIE → FKR → SPETSIFIKA →
+   * ISTOCHNIK_FINANSIROVANIYA → SUBKONTO(лист). `null` у листьев.
    */
   children?: OsvReportEntry[] | null
   /**
-   * Аналитика субконто дочерней строки. `null` у строки-счёта и у группы
-   * «Без субконто».
+   * Аналитика субконто листа-узла (`groupLevel === 'SUBKONTO'`). `null`
+   * у строки-счёта и у узлов измерений (не-субконто уровней).
    */
   subkonto?: OsvSubkonto | null
+  /**
+   * Уровень группировки узла:
+   * "ORGANIZATION"|"PODRAZDELENIE"|"FKR"|"SPETSIFIKA"|
+   * "ISTOCHNIK_FINANSIROVANIYA"|"SUBKONTO". `null` у строки-счёта.
+   */
+  groupLevel?: string | null
+  /** ID элемента группировки. `null` = группа «Без значения». */
+  groupRefId?: number | null
+  /**
+   * Готовое имя элемента группировки (бэк уже резолвит). `null` для
+   * группы «Без значения».
+   */
+  groupRefName?: string | null
 }
 
 /** Параметры запроса ОСВ. */

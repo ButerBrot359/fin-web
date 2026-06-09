@@ -28,9 +28,12 @@ export const DimensionNameCell = ({ node }: DimensionNameCellProps) => {
     return <SubkontoNameCell subkonto={node.subkonto} />
   }
 
+  // groupRefName может быть null (нет значения) или пустой строкой —
+  // в обоих случаях показываем «Без значения».
+  const name = node.groupRefName?.trim()
   return (
     <Typography variant="body2" noWrap className="text-ui-06">
-      {node.groupRefName ?? t('osv.noValue')}
+      {name ? name : t('osv.noValue')}
     </Typography>
   )
 }

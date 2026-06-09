@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 import {
@@ -7,6 +7,7 @@ import {
   getExpandedRowModel,
   useReactTable,
   type ColumnDef,
+  type ExpandedState,
 } from '@tanstack/react-table'
 
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
@@ -48,6 +49,14 @@ export const OsvReportTable = ({
   const { t } = useTranslation()
   const data = useMemo(() => rows, [rows])
 
+  // Развёрнутость — управляемая. По умолчанию всё раскрыто (как ОСВ в 1С);
+  // при новой выборке («Сформировать») сбрасываем обратно в «всё раскрыто»,
+  // иначе часть уровней остаётся свёрнутой. Тоггл стрелкой при этом работает.
+  const [expanded, setExpanded] = useState<ExpandedState>(true)
+  useEffect(() => {
+    setExpanded(true)
+  }, [rows])
+
   const totals = useMemo(() => {
     const acc: Partial<Record<keyof OsvReportEntry, number>> = {}
     for (const key of SUM_KEYS) {
@@ -69,8 +78,10 @@ export const OsvReportTable = ({
     // ORGANIZATION → … → SUBKONTO. У листьев children = null — дерево
     // дальше не разворачивается. TanStack сам обрабатывает любую глубину.
     getSubRows: (row) => row.children ?? undefined,
-    // По умолчанию всё развёрнуто — полная иерархия как ОСВ в 1С.
-    initialState: { expanded: true },
+    // Управляемая развёрнутость: по умолчанию всё раскрыто, тоггл работает.
+    state: { expanded },
+    onExpandedChange: setExpanded,
+    autoResetExpanded: false,
     // Узлы измерений/субконто не имеют accountId — добавляем id родителя,
     // чтобы id строк были уникальны на всех уровнях дерева.
     getRowId: (row, index, parent) =>

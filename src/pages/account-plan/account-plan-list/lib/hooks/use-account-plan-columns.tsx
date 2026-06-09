@@ -80,6 +80,12 @@ export const useAccountPlanColumns = ({
         cell: ({ getValue }) => cellText(getValue() as string),
       },
       {
+        id: 'fullNameKz',
+        header: () => <span>{t('accountPlan.column.fullNameKz')}</span>,
+        accessorFn: (row) => row.entry.nameKz ?? '',
+        cell: ({ getValue }) => cellText((getValue() as string) || '—'),
+      },
+      {
         id: 'accountType',
         header: () => <span>{t('accountPlan.column.accountType')}</span>,
         size: 130,

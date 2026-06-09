@@ -270,6 +270,7 @@
     "column": {
       "code": "Код",
       "name": "Атауы",
+      "fullNameKz": "Толық атауы (қаз)",
       "accountType": "Түрі",
       "currency": "Вал.",
       "quantitative": "Сан.",

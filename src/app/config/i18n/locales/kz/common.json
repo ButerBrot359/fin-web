@@ -270,7 +270,8 @@
       "isQuantity": "Сандық",
       "isOffBalance": "Баланстан тыс",
       "isGroup": "Жазбаларда тыйым салу",
-      "parent": "Аталық шот"
+      "parent": "Аталық шот",
+      "nomerMo": "МО нөмірі"
     },
     "accountType": {
       "active": "Активті",

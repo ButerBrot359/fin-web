@@ -33,6 +33,13 @@ const EMPTY_VALUE: AccountPlanCardValue = {
   isGroup: false,
   parentId: null,
   parentName: null,
+  nomerMo: null,
+}
+
+/** Достаёт «Номер МО» (NomerMemorialnogoOrdera) из EAV-атрибутов записи. */
+const readNomerMo = (attributes: Record<string, unknown>): number | null => {
+  const raw = attributes.NomerMemorialnogoOrdera
+  return typeof raw === 'number' ? raw : null
 }
 
 /**
@@ -82,6 +89,7 @@ export const AccountPlanEntryPage = () => {
       isGroup: src.isGroup,
       parentId: src.parentId,
       parentName: src.parentName,
+      nomerMo: readNomerMo(src.attributes),
     }
     setValue(isNew && copyFromAccount ? copyValue(next) : next)
     setLoadedSrcId(srcId)
@@ -134,6 +142,7 @@ export const AccountPlanEntryPage = () => {
         isGroup: account.isGroup,
         parentId: account.parentId,
         parentName: account.parentName,
+        nomerMo: readNomerMo(account.attributes),
       })
     }
     modeStore.setMode(location.pathname, 'view')

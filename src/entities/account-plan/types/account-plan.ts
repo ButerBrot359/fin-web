@@ -123,4 +123,6 @@ export interface AccountPlanEntryPayload {
   isOffBalance: boolean
   isGroup: boolean
   parentId: number | null
+  /** EAV-атрибуты: код атрибута -> значение (бэк сохраняет в AccountPlanValue). */
+  attributes?: Record<string, unknown>
 }

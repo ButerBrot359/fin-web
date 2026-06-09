@@ -2,7 +2,10 @@ import type { AccountPlanEntryPayload } from '@/entities/account-plan'
 
 import type { AccountPlanCardValue } from '../../ui/account-plan-card'
 
-/** Маппинг карточного value -> payload для бэка (опускаем пустую nameKz). */
+/**
+ * Маппинг карточного value -> payload для бэка (опускаем пустую nameKz).
+ * «Номер МО» уходит в attributes как EAV-атрибут NomerMemorialnogoOrdera.
+ */
 export const buildAccountPlanPayload = (
   v: AccountPlanCardValue
 ): AccountPlanEntryPayload => ({
@@ -15,4 +18,5 @@ export const buildAccountPlanPayload = (
   isOffBalance: v.isOffBalance,
   isGroup: v.isGroup,
   parentId: v.parentId,
+  attributes: { NomerMemorialnogoOrdera: v.nomerMo },
 })

@@ -24,6 +24,8 @@ export interface AccountPlanCardValue {
   isGroup: boolean
   parentId: number | null
   parentName: string | null
+  /** Номер мемориального ордера (EAV-атрибут NomerMemorialnogoOrdera). */
+  nomerMo: number | null
 }
 
 interface AccountPlanCardProps {
@@ -199,6 +201,15 @@ const GeneralTab = ({ value, isReadOnly, patch }: GeneralTabProps) => {
           }}
         />
       </div>
+      <LabeledNumberInput
+        label={t('accountPlan.field.nomerMo')}
+        value={value.nomerMo}
+        placeholder={t('accountPlan.notSet')}
+        isReadOnly={isReadOnly}
+        onChange={(v) => {
+          patch({ nomerMo: v })
+        }}
+      />
     </div>
   )
 }
@@ -227,6 +238,37 @@ const LabeledInput = ({
       disabled={isReadOnly}
       onChange={(e) => {
         onChange(e.target.value)
+      }}
+    />
+  </label>
+)
+
+interface LabeledNumberInputProps {
+  label: string
+  value: number | null
+  isReadOnly: boolean
+  placeholder?: string
+  onChange: (v: number | null) => void
+}
+
+const LabeledNumberInput = ({
+  label,
+  value,
+  isReadOnly,
+  placeholder,
+  onChange,
+}: LabeledNumberInputProps) => (
+  <label className="flex flex-1 flex-col gap-1 text-sm">
+    <span className="text-ui-05">{label}</span>
+    <input
+      type="number"
+      className="rounded-md border border-ui-03 bg-ui-01 px-3 py-1.5 disabled:bg-ui-02"
+      value={value ?? ''}
+      placeholder={placeholder}
+      disabled={isReadOnly}
+      onChange={(e) => {
+        const raw = e.target.value.trim()
+        onChange(raw === '' ? null : Number(raw))
       }}
     />
   </label>

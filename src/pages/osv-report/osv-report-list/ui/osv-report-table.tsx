@@ -82,12 +82,12 @@ export const OsvReportTable = ({
     state: { expanded },
     onExpandedChange: setExpanded,
     autoResetExpanded: false,
-    // Узлы измерений/субконто не имеют accountId — добавляем id родителя,
-    // чтобы id строк были уникальны на всех уровнях дерева.
-    getRowId: (row, index, parent) =>
-      parent
-        ? `${parent.id}.${row.accountId ?? index}`
-        : String(row.accountId ?? index),
+    // id строки = путь по индексам от корня (0 / 0.1 / 0.1.2 …). НЕ опираемся
+    // на accountId: у всех узлов измерений он наследуется от счёта (одинаков),
+    // и при пересечении индексов id'шники дублировались — раскрытие/сворачивание
+    // размножало строки. Путь по позициям уникален на любой глубине.
+    getRowId: (_row, index, parent) =>
+      parent ? `${parent.id}.${index}` : String(index),
   })
 
   if (isLoading) {

@@ -181,7 +181,15 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     const attributeColumns: ColumnDef<DictEntry>[] = visibleAttributes.map(
       (attr) => ({
         id: attr.code,
-        accessorFn: (row: DictEntry) => row.attributes?.[attr.code],
+        accessorFn: (row: DictEntry) => {
+          if (
+            attr.code === 'Kod' &&
+            panel.typeCode === 'EdiniyPlanSchetovGosUchrezhdeniya'
+          ) {
+            return row.code || row.attributes?.[attr.code]
+          }
+          return row.attributes?.[attr.code]
+        },
         header: () => {
           const name = getLocalizedName(attr, i18n.language)
           return <span>{name}</span>
@@ -230,7 +238,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     }
 
     return [...attributeColumns, nameColumn]
-  }, [visibleAttributes, i18n.language, t])
+  }, [visibleAttributes, i18n.language, t, panel.typeCode])
 
   const table = useReactTable({
     data: entries,

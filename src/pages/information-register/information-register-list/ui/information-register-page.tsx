@@ -29,8 +29,11 @@ export const InformationRegisterPage = () => {
   )
   const domain = searchParams.get('domain') ?? 'INFORMATION_REGISTER'
 
-  const { title, attributes, isLoading: isLoadingType } =
-    useInformationRegisterType(domain, moduleCode)
+  const {
+    title,
+    attributes,
+    isLoading: isLoadingType,
+  } = useInformationRegisterType(domain, moduleCode)
   useTabMeta(title)
 
   const { columns: columnsMeta } = useEavColumnsMeta(
@@ -69,7 +72,7 @@ export const InformationRegisterPage = () => {
     }
   )
 
-  const columns = useInformationRegisterColumns(attributes)
+  const columns = useInformationRegisterColumns(attributes, columnsMeta)
 
   const handleClose = () => {
     useWorkspaceTabsStore.getState().closeTab(location.pathname)

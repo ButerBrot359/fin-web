@@ -103,7 +103,12 @@ export const useEavEntries = <T>(
     () => data?.pages.flatMap((page) => page.data.data.content) ?? [],
     [data]
   )
-  const totalElements = data?.pages[0]?.data.data.totalElements ?? 0
+  // Бэк не всегда отдаёт `totalElements` (Spring Slice вместо Page). Если
+  // его нет — на последней странице это число загруженных, иначе хотя бы
+  // не меньше загруженного.
+  const reportedTotal = data?.pages[0]?.data.data.totalElements
+  const totalElements =
+    typeof reportedTotal === 'number' ? reportedTotal : entries.length
 
   return {
     entries,

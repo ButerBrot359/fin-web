@@ -180,6 +180,27 @@
     "recorder": "Тіркеуші",
     "lineNo": "Жол нөмірі"
   },
+  "osv": {
+    "title": "Айналым-сальдо тізімдемесі",
+    "periodFrom": "Кезең басы",
+    "periodTo": "Кезең соңы",
+    "account": "Шот",
+    "generate": "Қалыптастыру",
+    "accountName": "Атауы",
+    "openingDt": "Бастапқы сальдо Дт",
+    "openingKt": "Бастапқы сальдо Кт",
+    "turnoverDt": "Айналым Дт",
+    "turnoverKt": "Айналым Кт",
+    "closingDt": "Соңғы сальдо Дт",
+    "closingKt": "Соңғы сальдо Кт",
+    "total": "Барлығы",
+    "noData": "Таңдалған кезеңде дерек жоқ",
+    "loadError": "Есепті қалыптастыру мүмкін болмады",
+    "noSubkonto": "Субконтосыз",
+    "noValue": "Мәні жоқ",
+    "expand": "Жаю",
+    "collapse": "Жию"
+  },
   "accountPlan": {
     "code": "Коды",
     "name": "Атауы",
@@ -253,10 +274,12 @@
     "column": {
       "code": "Код",
       "name": "Атауы",
+      "fullNameKz": "Толық атауы (қаз)",
       "accountType": "Түрі",
       "currency": "Вал.",
       "quantitative": "Сан.",
       "offBalance": "Бал.",
+      "nomerMo": "МО нөмірі",
       "subconto": "Субконто {{n}}"
     },
     "field": {
@@ -268,7 +291,8 @@
       "isQuantity": "Сандық",
       "isOffBalance": "Баланстан тыс",
       "isGroup": "Жазбаларда тыйым салу",
-      "parent": "Аталық шот"
+      "parent": "Аталық шот",
+      "nomerMemorialnogoOrdera": "Мемориалдық ордер нөмірі"
     },
     "accountType": {
       "active": "Активті",

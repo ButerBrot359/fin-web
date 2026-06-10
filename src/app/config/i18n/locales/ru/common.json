@@ -180,6 +180,27 @@
     "recorder": "Регистратор",
     "lineNo": "Номер строки"
   },
+  "osv": {
+    "title": "Оборотно-сальдовая ведомость",
+    "periodFrom": "Период с",
+    "periodTo": "Период по",
+    "account": "Счёт",
+    "generate": "Сформировать",
+    "accountName": "Наименование",
+    "openingDt": "Сальдо нач. Дт",
+    "openingKt": "Сальдо нач. Кт",
+    "turnoverDt": "Оборот Дт",
+    "turnoverKt": "Оборот Кт",
+    "closingDt": "Сальдо кон. Дт",
+    "closingKt": "Сальдо кон. Кт",
+    "total": "Итого",
+    "noData": "Нет данных за выбранный период",
+    "loadError": "Не удалось сформировать отчёт",
+    "noSubkonto": "Без субконто",
+    "noValue": "Без значения",
+    "expand": "Развернуть",
+    "collapse": "Свернуть"
+  },
   "accountPlan": {
     "code": "Код",
     "name": "Наименование",
@@ -253,10 +274,12 @@
     "column": {
       "code": "Код",
       "name": "Наименование",
+      "fullNameKz": "Полное наименование (каз)",
       "accountType": "Вид",
       "currency": "Вал.",
       "quantitative": "Кол.",
       "offBalance": "Заб.",
+      "nomerMo": "Номер МО",
       "subconto": "Субконто {{n}}"
     },
     "field": {
@@ -268,7 +291,8 @@
       "isQuantity": "Количественный",
       "isOffBalance": "Забалансовый",
       "isGroup": "Запретить в проводках",
-      "parent": "Подчинён счёту"
+      "parent": "Подчинён счёту",
+      "nomerMemorialnogoOrdera": "Номер мемориального ордера"
     },
     "accountType": {
       "active": "Активный",

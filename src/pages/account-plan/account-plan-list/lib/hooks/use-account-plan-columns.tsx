@@ -80,6 +80,12 @@ export const useAccountPlanColumns = ({
         cell: ({ getValue }) => cellText(getValue() as string),
       },
       {
+        id: 'fullNameKz',
+        header: () => <span>{t('accountPlan.column.fullNameKz')}</span>,
+        accessorFn: (row) => row.entry.nameKz ?? '',
+        cell: ({ getValue }) => cellText((getValue() as string) || '—'),
+      },
+      {
         id: 'accountType',
         header: () => <span>{t('accountPlan.column.accountType')}</span>,
         size: 130,
@@ -110,6 +116,16 @@ export const useAccountPlanColumns = ({
         cell: ({ row }) => (
           <BooleanMark value={row.original.entry.isOffBalance} />
         ),
+      },
+      {
+        id: 'nomerMo',
+        header: () => <span>{t('accountPlan.column.nomerMo')}</span>,
+        size: 110,
+        accessorFn: (row) => row.entry.attributes.NomerMemorialnogoOrdera,
+        cell: ({ getValue }) => {
+          const value = getValue() as number | null | undefined
+          return cellText(value ? String(value) : '—')
+        },
       },
     ],
     [t, i18n.language, onToggleExpand]

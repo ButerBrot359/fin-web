@@ -29,11 +29,10 @@ export const AccountingRegisterPage = () => {
   )
   const domain = searchParams.get('domain') ?? 'ACCOUNTING_REGISTER'
 
-  const {
-    title,
-    attributes,
-    isLoading: isLoadingType,
-  } = useAccountingRegisterType(domain, moduleCode)
+  const { title, isLoading: isLoadingType } = useAccountingRegisterType(
+    domain,
+    moduleCode
+  )
   useTabMeta(title)
 
   const { columns: columnsMeta } = useEavColumnsMeta(
@@ -69,7 +68,7 @@ export const AccountingRegisterPage = () => {
     }
   )
 
-  const columns = useAccountingRegisterColumns(attributes)
+  const columns = useAccountingRegisterColumns(columnsMeta)
 
   const handleClose = () => {
     useWorkspaceTabsStore.getState().closeTab(location.pathname)

@@ -22,6 +22,11 @@ import { useAccountPlanEntryActions } from '../lib/hooks/use-account-plan-entry-
 import { buildAccountPlanPayload } from '../lib/utils/build-payload'
 import { accountDisplayName } from '../lib/utils/subkonto-value-kind'
 
+const readMemorialOrder = (attributes: Record<string, unknown>): number => {
+  const raw = attributes['NomerMemorialnogoOrdera']
+  return typeof raw === 'number' ? raw : Number(raw ?? 0) || 0
+}
+
 const EMPTY_VALUE: AccountPlanCardValue = {
   code: '',
   nameRu: '',
@@ -33,6 +38,7 @@ const EMPTY_VALUE: AccountPlanCardValue = {
   isGroup: false,
   parentId: null,
   parentName: null,
+  nomerMemorialnogoOrdera: 0,
 }
 
 /**
@@ -82,6 +88,7 @@ export const AccountPlanEntryPage = () => {
       isGroup: src.isGroup,
       parentId: src.parentId,
       parentName: src.parentName,
+      nomerMemorialnogoOrdera: readMemorialOrder(src.attributes),
     }
     setValue(isNew && copyFromAccount ? copyValue(next) : next)
     setLoadedSrcId(srcId)
@@ -134,6 +141,7 @@ export const AccountPlanEntryPage = () => {
         isGroup: account.isGroup,
         parentId: account.parentId,
         parentName: account.parentName,
+        nomerMemorialnogoOrdera: readMemorialOrder(account.attributes),
       })
     }
     modeStore.setMode(location.pathname, 'view')

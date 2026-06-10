@@ -4,6 +4,7 @@ import { Typography } from '@mui/material'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import type { DocumentAttribute } from '@/entities/document-type'
+import type { ColumnMetaDto } from '@/shared/lib/eav'
 import { formatCellValue } from '@/shared/lib/utils/format-cell-value'
 import { formatDate } from '@/shared/lib/utils/date'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
@@ -17,7 +18,8 @@ const cellText = (value: React.ReactNode) => (
 )
 
 export const useInformationRegisterColumns = (
-  attributes: DocumentAttribute[]
+  attributes: DocumentAttribute[],
+  columnsMeta: ColumnMetaDto[] = []
 ): ColumnDef<InformationRegisterEntry>[] => {
   const { t, i18n } = useTranslation()
 
@@ -56,6 +58,16 @@ export const useInformationRegisterColumns = (
           cellText(formatCellValue(getValue(), attr)),
       }))
 
-    return [periodColumn, recorderColumn, ...attributeColumns]
-  }, [attributes, i18n.language, t])
+    // Системные колонки рендерим только если бэкенд вернул их в /columns.
+    // Так разные типы регистров (например NastroykaMemorialnykhOrderov vs
+    // NastroykaZapolneniyaStateyDDS) получают свой набор системных колонок.
+    const metaCodes = new Set(columnsMeta.map((c) => c.code))
+    const systemColumns: ColumnDef<InformationRegisterEntry>[] = []
+    if (metaCodes.has('period')) systemColumns.push(periodColumn)
+    if (metaCodes.has('recorderDocumentEntryId')) {
+      systemColumns.push(recorderColumn)
+    }
+
+    return [...systemColumns, ...attributeColumns]
+  }, [attributes, columnsMeta, i18n.language, t])
 }

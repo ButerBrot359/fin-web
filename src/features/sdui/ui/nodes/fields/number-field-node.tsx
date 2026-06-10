@@ -48,7 +48,7 @@ export const NumberFieldNode: FC<NodeProps> = ({ node }) => {
         }
       }}
       onBlur={() => {
-        fireServerEvent('blur', rawValue)
+        fireServerEvent('change', rawValue)
       }}
       sx={{ flex: flex !== undefined ? flex : undefined }}
     />

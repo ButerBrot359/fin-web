@@ -41,7 +41,7 @@ export const TextFieldNode: FC<NodeProps> = ({ node }) => {
         if (node.binding) setValue(node.binding, e.target.value)
       }}
       onBlur={() => {
-        fireServerEvent('blur', value)
+        fireServerEvent('change', value)
       }}
       sx={{ flex: flex !== undefined ? flex : undefined }}
       slotProps={{

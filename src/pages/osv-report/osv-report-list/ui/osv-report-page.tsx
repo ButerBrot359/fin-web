@@ -12,6 +12,7 @@ import { useAccountPlanList } from '@/entities/account-plan'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { DateTimeInput, AutocompleteInput } from '@/shared/ui/inputs'
+import { formatDate } from '@/shared/lib/utils/date'
 import type { SelectOption } from '@/shared/types/select-option'
 
 import { useOsvReport } from '../lib/hooks/use-osv-report'
@@ -102,6 +103,17 @@ export const OsvReportPage = () => {
     if (sameAsApplied) void refetch()
   }
 
+  // Заголовок отчёта (как в 1С): «Оборотно-сальдовая ведомость по счёту N за
+  // <период>». Строится по применённым параметрам (params из URL).
+  const reportTitle = useMemo(() => {
+    if (!params) return ''
+    const period = `${formatDate(params.from)} — ${formatDate(params.to)}`
+    const acc =
+      account && params.accountId === Number(account.id) ? account : null
+    const accPart = acc ? ` ${t('osv.byAccount')} ${acc.code ?? acc.label}` : ''
+    return `${t('osv.title')}${accPart} ${t('osv.forPeriod')} ${period}`
+  }, [params, account, t])
+
   const handleClose = () => {
     useWorkspaceTabsStore.getState().closeTab(location.pathname)
     void navigate(`/modules/${pageCode}`)
@@ -152,7 +164,12 @@ export const OsvReportPage = () => {
         <div className="py-4 text-error-01">{t('osv.loadError')}</div>
       ) : (
         params != null && (
-          <OsvReportTable rows={rows} total={total} isLoading={isLoading} />
+          <OsvReportTable
+            rows={rows}
+            total={total}
+            title={reportTitle}
+            isLoading={isLoading}
+          />
         )
       )}
     </div>

@@ -1,5 +1,10 @@
-import { useMemo, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@mui/material'
 
@@ -22,10 +27,21 @@ export const OsvReportPage = () => {
 
   useTabMeta(t('osv.title'))
 
-  const [from, setFrom] = useState('')
-  const [to, setTo] = useState('')
+  // Применённые параметры отчёта живут в URL (?from&to&accountId), а не в
+  // локальном useState — иначе они теряются при переключении вкладок (страница
+  // размонтируется, см. ErrorBoundary key=pathname в App.tsx) и при обновлении
+  // страницы. Вкладки сохраняют path+search в sessionStorage, поэтому URL
+  // переживает оба случая и отчёт восстанавливается сам.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlFrom = searchParams.get('from') ?? ''
+  const urlTo = searchParams.get('to') ?? ''
+  const urlAccountId = searchParams.get('accountId')
+
+  // Черновики полей формы (что пользователь правит до «Сформировать»).
+  // Инициализируются из URL — при перемонтировании подхватывают applied-значения.
+  const [from, setFrom] = useState(urlFrom)
+  const [to, setTo] = useState(urlTo)
   const [account, setAccount] = useState<SelectOption | null>(null)
-  const [params, setParams] = useState<OsvReportParams | null>(null)
 
   const { entries: accounts } = useAccountPlanList()
   const accountOptions = useMemo<SelectOption[]>(
@@ -38,18 +54,55 @@ export const OsvReportPage = () => {
     [accounts]
   )
 
+  // Восстанавливаем выбранный счёт из URL, когда справочник счетов загрузился.
+  useEffect(() => {
+    if (!urlAccountId) {
+      setAccount(null)
+      return
+    }
+    if (account && String(account.id) === urlAccountId) return
+    const found = accountOptions.find((o) => String(o.id) === urlAccountId)
+    if (found) setAccount(found)
+  }, [urlAccountId, accountOptions, account])
+
+  // Applied-параметры — производные от URL. Запрос включается, когда заданы
+  // обе границы периода.
+  const params = useMemo<OsvReportParams | null>(() => {
+    if (!urlFrom || !urlTo) return null
+    return {
+      from: urlFrom,
+      to: urlTo,
+      accountId: urlAccountId ? Number(urlAccountId) : undefined,
+    }
+  }, [urlFrom, urlTo, urlAccountId])
+
   const columns = useOsvReportColumns()
-  const { rows, total, isLoading, isError } = useOsvReport(params, params != null)
+  const { rows, total, isLoading, isError, refetch } = useOsvReport(
+    params,
+    params != null
+  )
 
   const canSubmit = !!from && !!to
 
   const handleSubmit = () => {
     if (!canSubmit) return
-    setParams({
-      from,
-      to,
-      accountId: account ? Number(account.id) : undefined,
-    })
+    const accountId = account ? String(account.id) : undefined
+    // Те же параметры, что уже применены → URL/queryKey не изменится и
+    // автозапроса не будет: форсим refetch вручную.
+    const sameAsApplied =
+      urlFrom === from && urlTo === to && (urlAccountId ?? undefined) === accountId
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('from', from)
+        next.set('to', to)
+        if (accountId) next.set('accountId', accountId)
+        else next.delete('accountId')
+        return next
+      },
+      { replace: true }
+    )
+    if (sameAsApplied) void refetch()
   }
 
   const handleClose = () => {

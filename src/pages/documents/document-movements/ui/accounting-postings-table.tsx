@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
@@ -107,17 +107,28 @@ export const AccountingPostingsTable = ({ group }: { group: MovementGroup }) => 
             </th>
           </tr>
         </thead>
-        <tbody>
-          {group.entries.map((entry, idx) => {
-            const period = entry._period
-            return (
-              <Fragment key={(entry._id as number | string | undefined) ?? idx}>
-                {ROW_FIELDS.map((rf, r) => {
-                  const first = r === 0
-                  // Граница сверху отделяет проводки друг от друга.
-                  const topBorder = first ? 'border-t-2 border-ui-04' : ''
-                  return (
-                    <tr key={r} className={cn(idx % 2 === 1 && 'bg-ui-02/40', topBorder)}>
+        {group.entries.map((entry, idx) => {
+          const period = entry._period
+          // Каждая проводка — отдельный <tbody class="group">, чтобы при
+          // наведении подсвечивались все три строки блока разом, как в 1С.
+          return (
+            <tbody
+              key={(entry._id as number | string | undefined) ?? idx}
+              className="group"
+            >
+              {ROW_FIELDS.map((rf, r) => {
+                const first = r === 0
+                // Граница сверху отделяет проводки друг от друга.
+                const topBorder = first ? 'border-t-2 border-ui-04' : ''
+                return (
+                  <tr
+                    key={r}
+                    className={cn(
+                      idx % 2 === 1 && 'bg-ui-02/40',
+                      'group-hover:bg-ui-07',
+                      topBorder
+                    )}
+                  >
                       {first && (
                         <>
                           <td rowSpan={3} className={cn(cellPad, 'text-center text-ui-06')}>
@@ -183,10 +194,9 @@ export const AccountingPostingsTable = ({ group }: { group: MovementGroup }) => 
                     </tr>
                   )
                 })}
-              </Fragment>
-            )
-          })}
-        </tbody>
+            </tbody>
+          )
+        })}
       </table>
     </div>
   )

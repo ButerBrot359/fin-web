@@ -79,8 +79,7 @@ export const AccountingRegisterPage = () => {
   // но whitelist'ит фильтр по accountDtCode/accountKtCode (STRING). Добавляем
   // синтетическую code-мету (только для фильтра — отдельных колонок в гриде не даёт),
   // на которую ссылаются колонки счёта через meta.metaCode (см. use-accounting-register-columns).
-  const filterColumnsMeta = useMemo<ColumnMetaDto[] | undefined>(() => {
-    if (!columnsMeta) return columnsMeta
+  const filterColumnsMeta = useMemo<ColumnMetaDto[]>(() => {
     const codeMeta = (idCode: string, codeField: string): ColumnMetaDto | null => {
       const src = columnsMeta.find((c) => c.code === idCode)
       if (!src) return null

@@ -52,8 +52,18 @@ const toNum = (v: number | string | null | undefined): number => {
   return Number.isNaN(n) ? 0 : n
 }
 
+// Вертикальный разделитель перед каждой группой колонок (Сальдо нач / Обороты /
+// Сальдо кон) — у «дебетовых» ячеек (чётные индексы 0,2,4), как линии в 1С.
+const groupBorder = (i: number) => (i % 2 === 0 ? 'border-l border-ui-04' : '')
+
 /** Денежная/количественная ячейка: разряды, пусто для null/0, минус — красным. */
-const ValueCell = ({ v }: { v: number | string | null | undefined }) => {
+const ValueCell = ({
+  v,
+  bold,
+}: {
+  v: number | string | null | undefined
+  bold?: boolean
+}) => {
   const num = toNum(v)
   const text = v == null || v === '' || num === 0 ? '' : formatWithSpaces(String(v))
   return (
@@ -61,7 +71,9 @@ const ValueCell = ({ v }: { v: number | string | null | undefined }) => {
       variant="body2"
       noWrap
       // Отрицательное значение — красным (сальдо «не своей» стороны, ОСВ 1С).
-      className={`text-right tabular-nums ${num < 0 ? 'text-support-01' : 'text-ui-06'}`}
+      className={`text-right tabular-nums ${num < 0 ? 'text-support-01' : 'text-ui-06'} ${
+        bold ? 'font-bold' : ''
+      }`}
     >
       {text}
     </Typography>
@@ -69,12 +81,15 @@ const ValueCell = ({ v }: { v: number | string | null | undefined }) => {
 }
 
 const tdValue = 'whitespace-nowrap px-3 py-1.5'
+const thBase =
+  'whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase text-ui-06'
 
 /**
- * Таблица ОСВ со строками-показателями «Сумма» и «Кол.» на каждый узел
- * дерева, как в 1С БГУ. Дерево по измерениям (TanStack), но рендер тела
- * кастомный: каждая строка узла разворачивается в две `<tr>` (Сумма/Кол.),
- * колонки «Счёт»/«Наименование» объединены по вертикали (rowSpan=2).
+ * Таблица ОСВ со строками-показателями «Сумма» и «Кол.» на каждый узел дерева,
+ * как в 1С БГУ. Дизайн подогнан под референс 1С токенами проекта: двухуровневая
+ * шапка с группами сальдо/оборотов, жирные строка-счёт и «Итого», вертикальные
+ * разделители групп, выделение фоном. Дерево по измерениям (TanStack), рендер
+ * тела кастомный — каждая строка узла даёт две `<tr>` (Сумма/Кол.).
  */
 export const OsvReportTable = ({ rows, total, isLoading }: OsvReportTableProps) => {
   const { t } = useTranslation()
@@ -131,15 +146,6 @@ export const OsvReportTable = ({ rows, total, isLoading }: OsvReportTableProps) 
 
   const isImbalanced = total?.balanced === false
 
-  const headLabels = [
-    t('osv.openingDt'),
-    t('osv.openingKt'),
-    t('osv.turnoverDt'),
-    t('osv.turnoverKt'),
-    t('osv.closingDt'),
-    t('osv.closingKt'),
-  ]
-
   // Код счёта со стрелкой разворота и отступом по глубине дерева.
   const renderAccountCell = (row: Row<OsvReportEntry>) => {
     const isChild = row.depth > 0
@@ -164,15 +170,17 @@ export const OsvReportTable = ({ rows, total, isLoading }: OsvReportTableProps) 
           <span className="h-4 w-4 shrink-0" />
         )}
         {/* Код показываем только у строки-счёта; узлы измерений его наследуют. */}
-        <span className="text-ui-06">{isChild ? '' : (row.original.accountCode ?? '')}</span>
+        <span className={`text-ui-06 ${isChild ? '' : 'font-bold'}`}>
+          {isChild ? '' : (row.original.accountCode ?? '')}
+        </span>
       </div>
     )
   }
 
   return (
-    <div className="overflow-auto">
+    <div className="overflow-auto rounded-md border border-ui-04">
       {isImbalanced && (
-        <div className="mb-2 rounded-md bg-support-01/10 px-3 py-2 text-support-01">
+        <div className="m-2 rounded-md bg-support-01/10 px-3 py-2 text-support-01">
           <Typography variant="body2" className="text-support-01">
             {t('osv.imbalanceWarning')}
           </Typography>
@@ -180,33 +188,50 @@ export const OsvReportTable = ({ rows, total, isLoading }: OsvReportTableProps) 
       )}
       <table className="w-full border-collapse">
         <thead className="bg-ui-02">
-          <tr>
-            <th className="whitespace-nowrap px-3 py-2 text-left text-xs font-medium uppercase text-ui-05">
+          {/* Уровень 1 — группы колонок (как в 1С). */}
+          <tr className="border-b border-ui-04">
+            <th rowSpan={2} className={`${thBase} text-left`}>
               {t('osv.account')}
             </th>
-            <th className="whitespace-nowrap px-3 py-2 text-left text-xs font-medium uppercase text-ui-05">
+            <th rowSpan={2} className={`${thBase} text-left`}>
               {t('osv.accountName')}
             </th>
-            <th className="whitespace-nowrap px-3 py-2 text-left text-xs font-medium uppercase text-ui-05">
+            <th rowSpan={2} className={`${thBase} text-left`}>
               {t('osv.indicators')}
             </th>
-            {headLabels.map((label, i) => (
+            <th colSpan={2} className={`${thBase} border-l border-ui-04 text-center`}>
+              {t('osv.openingBalance')}
+            </th>
+            <th colSpan={2} className={`${thBase} border-l border-ui-04 text-center`}>
+              {t('osv.turnovers')}
+            </th>
+            <th colSpan={2} className={`${thBase} border-l border-ui-04 text-center`}>
+              {t('osv.closingBalance')}
+            </th>
+          </tr>
+          {/* Уровень 2 — Дебет/Кредит внутри каждой группы. */}
+          <tr>
+            {[0, 1, 2, 3, 4, 5].map((i) => (
               <th
                 key={i}
-                className="whitespace-nowrap px-3 py-2 text-right text-xs font-medium uppercase text-ui-05"
+                className={`${thBase} text-right normal-case ${groupBorder(i)}`}
               >
-                {label}
+                {i % 2 === 0 ? t('osv.debit') : t('osv.credit')}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {table.getRowModel().rows.map((row) => {
-            const bg = row.depth > 0 ? 'bg-ui-02/40' : ''
+            const isAccount = row.depth === 0
+            // Строка-счёт — выделена фоном и жирным, как в 1С; дочерние узлы —
+            // лёгкий фон по глубине для читаемой иерархии.
+            const rowBg = isAccount ? 'bg-ui-02' : 'bg-ui-01'
+            const bold = isAccount
             return (
               <Fragment key={row.id}>
                 {/* Строка показателя «Сумма» */}
-                <tr className={`border-t border-ui-04/40 ${bg}`}>
+                <tr className={`border-t border-ui-04/60 ${rowBg}`}>
                   <td rowSpan={2} className="whitespace-nowrap px-3 py-1.5 align-top">
                     {renderAccountCell(row)}
                   </td>
@@ -214,32 +239,32 @@ export const OsvReportTable = ({ rows, total, isLoading }: OsvReportTableProps) 
                     {row.depth > 0 ? (
                       <DimensionNameCell node={row.original} />
                     ) : (
-                      <Typography variant="body2" noWrap className="text-ui-06">
+                      <Typography variant="body2" noWrap className="font-bold text-ui-06">
                         {row.original.accountNameRu ?? row.original.accountCode ?? ''}
                       </Typography>
                     )}
                   </td>
-                  <td className={`${tdValue} text-ui-05`}>
+                  <td className={`${tdValue}`}>
                     <Typography variant="body2" noWrap className="text-ui-05">
                       {t('osv.sum')}
                     </Typography>
                   </td>
-                  {SUM_FIELDS.map((f) => (
-                    <td key={f} className={tdValue}>
-                      <ValueCell v={row.original[f]} />
+                  {SUM_FIELDS.map((f, i) => (
+                    <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
+                      <ValueCell v={row.original[f]} bold={bold} />
                     </td>
                   ))}
                 </tr>
                 {/* Строка показателя «Кол.» */}
-                <tr className={bg}>
-                  <td className={`${tdValue} text-ui-05`}>
+                <tr className={rowBg}>
+                  <td className={`${tdValue}`}>
                     <Typography variant="body2" noWrap className="text-ui-05">
                       {t('osv.quantity')}
                     </Typography>
                   </td>
-                  {QTY_FIELDS.map((f) => (
-                    <td key={f} className={tdValue}>
-                      <ValueCell v={row.original[f]} />
+                  {QTY_FIELDS.map((f, i) => (
+                    <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
+                      <ValueCell v={row.original[f]} bold={bold} />
                     </td>
                   ))}
                 </tr>
@@ -248,33 +273,33 @@ export const OsvReportTable = ({ rows, total, isLoading }: OsvReportTableProps) 
           })}
         </tbody>
         {total && (
-          <tfoot className="bg-ui-02 font-medium">
-            <tr className="border-t-2 border-ui-04">
+          <tfoot className="bg-ui-02 font-bold">
+            <tr className="border-t-2 border-ui-03">
               <td rowSpan={2} colSpan={2} className="whitespace-nowrap px-3 py-1.5 align-top">
-                <Typography variant="body2" className="font-medium text-ui-06">
+                <Typography variant="body2" className="font-bold text-ui-06">
                   {t('osv.total')}
                 </Typography>
               </td>
-              <td className={`${tdValue} text-ui-05`}>
+              <td className={`${tdValue}`}>
                 <Typography variant="body2" noWrap className="text-ui-05">
                   {t('osv.sum')}
                 </Typography>
               </td>
-              {SUM_FIELDS.map((f) => (
-                <td key={f} className={tdValue}>
-                  <ValueCell v={total[f]} />
+              {SUM_FIELDS.map((f, i) => (
+                <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
+                  <ValueCell v={total[f]} bold />
                 </td>
               ))}
             </tr>
             <tr>
-              <td className={`${tdValue} text-ui-05`}>
+              <td className={`${tdValue}`}>
                 <Typography variant="body2" noWrap className="text-ui-05">
                   {t('osv.quantity')}
                 </Typography>
               </td>
-              {QTY_FIELDS.map((f) => (
-                <td key={f} className={tdValue}>
-                  <ValueCell v={total[f]} />
+              {QTY_FIELDS.map((f, i) => (
+                <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
+                  <ValueCell v={total[f]} bold />
                 </td>
               ))}
             </tr>

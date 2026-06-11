@@ -12,7 +12,7 @@ export const useOsvReport = (
   params: OsvReportParams | null,
   enabled: boolean
 ) => {
-  const { data, isLoading, isFetching, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['osv-report', params?.from, params?.to, params?.accountId ?? null],
     queryFn: ({ signal }) => fetchOsvReport(params!, signal),
     // Берём и строки (`list`), и серверную строку «Итого» (`total`).
@@ -27,5 +27,8 @@ export const useOsvReport = (
     isLoading: isLoading || isFetching,
     isError,
     error,
+    // Принудительный перезапрос — для повторного «Сформировать» с теми же
+    // параметрами (иначе TanStack Query вернёт кэш в окне staleTime).
+    refetch,
   }
 }

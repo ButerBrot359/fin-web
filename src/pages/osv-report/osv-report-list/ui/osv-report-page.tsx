@@ -15,7 +15,6 @@ import { DateTimeInput, AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
 
 import { useOsvReport } from '../lib/hooks/use-osv-report'
-import { useOsvReportColumns } from '../lib/hooks/use-osv-report-columns'
 import { OsvReportTable } from './osv-report-table'
 import type { OsvReportParams } from '../types/osv-report'
 
@@ -75,7 +74,6 @@ export const OsvReportPage = () => {
     }
   }, [urlFrom, urlTo, urlAccountId])
 
-  const columns = useOsvReportColumns()
   const { rows, total, isLoading, isError, refetch } = useOsvReport(
     params,
     params != null
@@ -154,12 +152,7 @@ export const OsvReportPage = () => {
         <div className="py-4 text-error-01">{t('osv.loadError')}</div>
       ) : (
         params != null && (
-          <OsvReportTable
-            columns={columns}
-            rows={rows}
-            total={total}
-            isLoading={isLoading}
-          />
+          <OsvReportTable rows={rows} total={total} isLoading={isLoading} />
         )
       )}
     </div>

@@ -155,7 +155,10 @@
   "table": {
     "empty": "Әзірге бос",
     "add": "Қосу",
-    "loadedCount": "{{total}} ішінен {{loaded}} жүктелді"
+    "loadedCount": "{{total}} ішінен {{loaded}} жүктелді",
+    "exportExcel": "Excel-ге жүктеп алу",
+    "exportEmpty": "Жүктеп алуға деректер жоқ",
+    "exportError": "Excel-ге жүктеп алу мүмкін болмады"
   },
   "informationRegister": {
     "period": "Кезең",

@@ -62,6 +62,7 @@ export const InformationRegisterPage = () => {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
+    fetchAllEntries,
   } = useEavEntries<InformationRegisterEntry>(
     INFORMATION_REGISTER_DOMAIN_CONFIG,
     moduleCode,
@@ -100,6 +101,8 @@ export const InformationRegisterPage = () => {
         fetchNextPage={fetchNextPage}
         sorting={sorting}
         onSortingChange={setSorting}
+        exportFileName={title}
+        fetchAllEntries={fetchAllEntries}
       />
     </div>
   )

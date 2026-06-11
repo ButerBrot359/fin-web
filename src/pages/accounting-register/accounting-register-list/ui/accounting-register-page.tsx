@@ -18,6 +18,7 @@ import { EavEntityTable } from '@/widgets/eav-entity-table'
 
 import { useAccountingRegisterType } from '../lib/hooks/use-accounting-register-type'
 import { useAccountingRegisterColumns } from '../lib/hooks/use-accounting-register-columns'
+import { useAccountingRegisterExport } from '../lib/hooks/use-accounting-register-export'
 import type { AccountingRegisterEntry } from '../types/accounting-register'
 
 export const AccountingRegisterPage = () => {
@@ -58,6 +59,7 @@ export const AccountingRegisterPage = () => {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
+    fetchAllEntries,
   } = useEavEntries<AccountingRegisterEntry>(
     ACCOUNTING_REGISTER_DOMAIN_CONFIG,
     moduleCode,
@@ -69,6 +71,7 @@ export const AccountingRegisterPage = () => {
   )
 
   const columns = useAccountingRegisterColumns(columnsMeta)
+  const buildExportData = useAccountingRegisterExport(columnsMeta)
 
   const handleClose = () => {
     useWorkspaceTabsStore.getState().closeTab(location.pathname)
@@ -96,6 +99,9 @@ export const AccountingRegisterPage = () => {
         fetchNextPage={fetchNextPage}
         sorting={sorting}
         onSortingChange={setSorting}
+        exportFileName={title}
+        fetchAllEntries={fetchAllEntries}
+        buildExportData={buildExportData}
       />
     </div>
   )

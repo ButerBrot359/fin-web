@@ -55,6 +55,7 @@ export const DocumentPage = () => {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
+    fetchAllEntries,
   } = useEavEntries<DocumentEntry>(DOCUMENT_DOMAIN_CONFIG, moduleCode, {
     sortAttr,
     sortDir,
@@ -102,6 +103,8 @@ export const DocumentPage = () => {
         fetchNextPage={fetchNextPage}
         sorting={sorting}
         onSortingChange={setSorting}
+        exportFileName={title}
+        fetchAllEntries={fetchAllEntries}
         selectedRowId={selectedRowId}
         onRowClick={handleSelectRow}
         onRowDoubleClick={handleDoubleClick}

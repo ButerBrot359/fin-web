@@ -149,7 +149,10 @@ const MovementTable = ({ group }: { group: MovementGroup }) => {
           {table.getRowModel().rows.map((row, rowIndex) => (
             <tr
               key={row.id}
-              className={rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-ui-01'}
+              className={cn(
+                'transition-colors hover:bg-ui-07',
+                rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-ui-01'
+              )}
             >
               {row.getVisibleCells().map((cell, cellIndex) => (
                 <td

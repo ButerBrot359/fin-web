@@ -54,16 +54,15 @@ export const OsvReportPage = () => {
     [accounts]
   )
 
-  // Восстанавливаем выбранный счёт из URL, когда справочник счетов загрузился.
+  // Восстанавливаем выбранный счёт из URL (при монтировании / смене URL, когда
+  // справочник счетов загрузился). НЕ зависим от `account` и НЕ сбрасываем его в
+  // null — иначе ручной выбор в выпадающем списке тут же затирался бы (поле
+  // очищалось), ведь URL обновляется только при «Сформировать».
   useEffect(() => {
-    if (!urlAccountId) {
-      setAccount(null)
-      return
-    }
-    if (account && String(account.id) === urlAccountId) return
+    if (!urlAccountId) return
     const found = accountOptions.find((o) => String(o.id) === urlAccountId)
     if (found) setAccount(found)
-  }, [urlAccountId, accountOptions, account])
+  }, [urlAccountId, accountOptions])
 
   // Applied-параметры — производные от URL. Запрос включается, когда заданы
   // обе границы периода.

@@ -28,6 +28,10 @@ import {
   type MovementGroup,
   type MovementColumnMeta,
 } from '../api/document-movements-api'
+import { AccountingPostingsTable } from './accounting-postings-table'
+
+/** Код регистра бухгалтерии — рендерится раскладкой 1С (Дебет/Кредит). */
+const ACCOUNTING_REGISTER_CODE = 'ZhurnalProvodokGosUchrezhdeniya'
 
 const formatMovementCell = (
   value: unknown,
@@ -247,7 +251,12 @@ export const DocumentMovementsPage = () => {
             ))}
           </div>
 
-          {activeGroup && <MovementTable group={activeGroup} />}
+          {activeGroup &&
+            (activeGroup.registerTypeCode === ACCOUNTING_REGISTER_CODE ? (
+              <AccountingPostingsTable group={activeGroup} />
+            ) : (
+              <MovementTable group={activeGroup} />
+            ))}
         </div>
       )}
     </div>

@@ -264,7 +264,13 @@ export const OsvReportTable = ({
                   <td rowSpan={2} className="whitespace-nowrap px-3 py-1.5 align-top">
                     {renderAccountCell(row)}
                   </td>
-                  <td rowSpan={2} className="whitespace-nowrap px-3 py-1.5 align-top">
+                  {/* Иерархия передаётся отступом наименования по глубине дерева
+                      (как в 1С), при выровненных стрелках в колонке «Счёт». */}
+                  <td
+                    rowSpan={2}
+                    className="whitespace-nowrap py-1.5 pr-3 align-top"
+                    style={{ paddingLeft: 12 + row.depth * 18 }}
+                  >
                     {row.depth > 0 ? (
                       <DimensionNameCell node={row.original} />
                     ) : (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   useReactTable,
@@ -6,10 +6,12 @@ import {
   flexRender,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { CircularProgress, Typography } from '@mui/material'
+import { Button, CircularProgress, Typography } from '@mui/material'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 
 import { ColumnFilterTrigger } from '@/features/table-filter'
 import type { ColumnMetaDto } from '@/shared/lib/eav'
+import { extractTableExport, exportTableToXlsx } from '@/shared/lib/table-export'
 
 import { cn } from '@/shared/lib/utils/cn'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -39,8 +41,12 @@ export const EavEntityTable = <T extends { id: number }>({
   onRowClick,
   onRowDoubleClick,
   extraRowsAbove,
+  exportFileName,
+  fetchAllEntries,
+  buildExportData,
 }: EavEntityTableProps<T>) => {
   const { t } = useTranslation()
+  const [isExporting, setIsExporting] = useState(false)
 
   const metaByCode = useMemo(() => {
     const map = new Map<string, ColumnMetaDto>()
@@ -105,6 +111,29 @@ export const EavEntityTable = <T extends { id: number }>({
   })
 
   const { rows } = table.getRowModel()
+
+  const canExport = !!exportFileName && entries.length > 0
+
+  const handleExport = async () => {
+    if (!exportFileName || isExporting) return
+    setIsExporting(true)
+    try {
+      const rows = fetchAllEntries ? await fetchAllEntries() : entries
+      const data = buildExportData
+        ? await buildExportData(rows)
+        : await extractTableExport(table, fetchAllEntries ? rows : undefined)
+      if (data.rows.length === 0) {
+        showToast('info', t('table.exportEmpty'))
+        return
+      }
+      exportTableToXlsx(exportFileName, data)
+    } catch (e) {
+      const description = e instanceof Error ? e.message : undefined
+      showToast('error', t('table.exportError'), description)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
@@ -287,6 +316,26 @@ export const EavEntityTable = <T extends { id: number }>({
           })}
         </Typography>
         {isFetchingNextPage && <CircularProgress size={14} />}
+        {canExport && (
+          <Button
+            size="small"
+            variant="outlined"
+            className="ml-auto"
+            disabled={isExporting}
+            startIcon={
+              isExporting ? (
+                <CircularProgress size={14} />
+              ) : (
+                <FileDownloadOutlinedIcon fontSize="small" />
+              )
+            }
+            onClick={() => {
+              void handleExport()
+            }}
+          >
+            {t('table.exportExcel')}
+          </Button>
+        )}
       </div>
     </div>
   )

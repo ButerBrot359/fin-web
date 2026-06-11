@@ -113,6 +113,7 @@ export const DictionaryPage = () => {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
+    fetchAllEntries,
   } = useEavEntries<DictEntry>(DICTIONARY_DOMAIN_CONFIG, moduleCode, {
     sortAttr,
     sortDir,
@@ -216,6 +217,8 @@ export const DictionaryPage = () => {
         fetchNextPage={fetchNextPage}
         sorting={sorting}
         onSortingChange={setSorting}
+        exportFileName={title}
+        fetchAllEntries={fetchAllEntries}
         selectedRowId={selectedRowId}
         onRowClick={handleRowClick}
         onRowDoubleClick={handleDoubleClick}

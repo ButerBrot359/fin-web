@@ -56,6 +56,7 @@ export const AccumulationRegisterPage = () => {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
+    fetchAllEntries,
   } = useEavEntries<AccumulationRegisterEntry>(
     ACCUMULATION_REGISTER_DOMAIN_CONFIG,
     moduleCode,
@@ -94,6 +95,8 @@ export const AccumulationRegisterPage = () => {
         fetchNextPage={fetchNextPage}
         sorting={sorting}
         onSortingChange={setSorting}
+        exportFileName={title}
+        fetchAllEntries={fetchAllEntries}
       />
     </div>
   )

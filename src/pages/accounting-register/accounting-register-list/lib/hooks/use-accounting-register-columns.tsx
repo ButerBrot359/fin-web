@@ -76,11 +76,14 @@ export const useAccountingRegisterColumns = (
               return cellText(v ? formatDate(v, 'dd.MM.yyyy HH:mm:ss') : '')
             },
           }
-        // id = системный код фильтра/сортировки (accountDtId), но отображаем
-        // читаемый код счёта (accountDtCode) — бэк whitelist'ит фильтр по *Id.
+        // Колонка отображает читаемый код счёта (accountDtCode). Сортировка — по
+        // системному полю accountDtId (column.id). ФИЛЬТР — по КОДУ счёта: meta.metaCode
+        // переводит иконку фильтра на accountDtCode (STRING), которое бэк whitelist'ит;
+        // фильтрация по DB-id (accountDtId) кодом не работала (1010 — код, id=13).
         case 'accountDtId':
           return {
             id: 'accountDtId',
+            meta: { metaCode: 'accountDtCode' },
             accessorFn: (row) => row.accountDtCode ?? null,
             header: () => <span>{t('accountingRegister.debitAccount')}</span>,
             cell: ({ getValue }) =>
@@ -89,6 +92,7 @@ export const useAccountingRegisterColumns = (
         case 'accountKtId':
           return {
             id: 'accountKtId',
+            meta: { metaCode: 'accountKtCode' },
             accessorFn: (row) => row.accountKtCode ?? null,
             header: () => <span>{t('accountingRegister.creditAccount')}</span>,
             cell: ({ getValue }) =>

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 import {
@@ -215,7 +215,8 @@ export const OsvReportTable = ({
                 <div>{t('osv.levelFkr')}</div>
                 <div>{t('osv.levelSpetsifika')}</div>
                 <div>{t('osv.levelFundingSource')}</div>
-                <div>{t('osv.levelSubkonto')}</div>
+                <div>{t('osv.levelNomenclature')}</div>
+                <div>{t('osv.levelIndividuals')}</div>
               </div>
             </th>
             <th rowSpan={2} className={`${thBase} text-left`}>
@@ -246,17 +247,18 @@ export const OsvReportTable = ({
             ))}
           </tr>
         </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => {
-            const isAccount = row.depth === 0
-            // Строка-счёт — выделена фоном и жирным, как в 1С; дочерние узлы —
-            // лёгкий фон по глубине для читаемой иерархии.
-            const rowBg = isAccount ? 'bg-ui-02' : 'bg-ui-01'
-            const bold = isAccount
-            return (
-              <Fragment key={row.id}>
-                {/* Строка показателя «Сумма» */}
-                <tr className={`border-t border-ui-04/60 ${rowBg}`}>
+        {table.getRowModel().rows.map((row) => {
+          const isAccount = row.depth === 0
+          // Строка-счёт — выделена фоном и жирным, как в 1С; дочерние узлы —
+          // лёгкий фон по глубине для читаемой иерархии.
+          const rowBg = isAccount ? 'bg-ui-02' : 'bg-ui-01'
+          const bold = isAccount
+          // Каждая запись — отдельный <tbody class="group">, чтобы при наведении
+          // подсвечивались ОБЕ строки показателя (Сумма + Кол.) разом, как в 1С.
+          return (
+            <tbody key={row.id} className="group">
+              {/* Строка показателя «Сумма» */}
+                <tr className={`border-t border-ui-04/60 ${rowBg} group-hover:bg-ui-07`}>
                   <td rowSpan={2} className="whitespace-nowrap px-3 py-1.5 align-top">
                     {renderAccountCell(row)}
                   </td>
@@ -281,7 +283,7 @@ export const OsvReportTable = ({
                   ))}
                 </tr>
                 {/* Строка показателя «Кол.» */}
-                <tr className={rowBg}>
+                <tr className={`${rowBg} group-hover:bg-ui-07`}>
                   <td className={`${tdValue}`}>
                     <Typography variant="body2" noWrap className="text-ui-05">
                       {t('osv.quantity')}
@@ -293,10 +295,9 @@ export const OsvReportTable = ({
                     </td>
                   ))}
                 </tr>
-              </Fragment>
-            )
-          })}
-        </tbody>
+            </tbody>
+          )
+        })}
         {total && (
           <tfoot className="bg-ui-02 font-bold">
             <tr className="border-t-2 border-ui-03">

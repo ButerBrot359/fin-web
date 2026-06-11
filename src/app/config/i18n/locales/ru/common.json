@@ -212,6 +212,8 @@
     "levelSpetsifika": "Специфика",
     "levelFundingSource": "Источник финансирования",
     "levelSubkonto": "Субконто",
+    "levelNomenclature": "Номенклатура",
+    "levelIndividuals": "Физические лица",
     "openingBalance": "Сальдо на начало периода",
     "turnovers": "Обороты за период",
     "closingBalance": "Сальдо на конец периода",

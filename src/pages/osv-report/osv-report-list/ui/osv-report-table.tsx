@@ -23,6 +23,8 @@ interface OsvReportTableProps {
   rows: OsvReportEntry[]
   /** Серверная строка «Итого» (с бэка). `null` — бэк её не прислал. */
   total?: OsvReportTotal | null
+  /** Заголовок отчёта (название + счёт + период), как в 1С. */
+  title?: string
   isLoading?: boolean
 }
 
@@ -91,7 +93,12 @@ const thBase =
  * разделители групп, выделение фоном. Дерево по измерениям (TanStack), рендер
  * тела кастомный — каждая строка узла даёт две `<tr>` (Сумма/Кол.).
  */
-export const OsvReportTable = ({ rows, total, isLoading }: OsvReportTableProps) => {
+export const OsvReportTable = ({
+  rows,
+  total,
+  title,
+  isLoading,
+}: OsvReportTableProps) => {
   const { t } = useTranslation()
   const data = useMemo(() => rows, [rows])
 
@@ -179,6 +186,14 @@ export const OsvReportTable = ({ rows, total, isLoading }: OsvReportTableProps) 
 
   return (
     <div className="overflow-auto rounded-md border border-ui-04">
+      {/* Шапка отчёта: название + счёт + период, как в 1С. */}
+      {title && (
+        <div className="border-b border-ui-04 bg-ui-02 px-3 py-2">
+          <Typography variant="body1" className="font-bold text-ui-06">
+            {title}
+          </Typography>
+        </div>
+      )}
       {isImbalanced && (
         <div className="m-2 rounded-md bg-support-01/10 px-3 py-2 text-support-01">
           <Typography variant="body2" className="text-support-01">
@@ -190,8 +205,18 @@ export const OsvReportTable = ({ rows, total, isLoading }: OsvReportTableProps) 
         <thead className="bg-ui-02">
           {/* Уровень 1 — группы колонок (как в 1С). */}
           <tr className="border-b border-ui-04">
-            <th rowSpan={2} className={`${thBase} text-left`}>
-              {t('osv.account')}
+            {/* Колонка «Счёт» с легендой уровней группировки (как в 1С):
+                перечень измерений, по которым строится разворот дерева. */}
+            <th rowSpan={2} className={`${thBase} align-top text-left`}>
+              <div>{t('osv.account')}</div>
+              <div className="mt-1 space-y-0.5 font-normal normal-case text-ui-05">
+                <div>{t('osv.levelOrganization')}</div>
+                <div>{t('osv.levelSubdivision')}</div>
+                <div>{t('osv.levelFkr')}</div>
+                <div>{t('osv.levelSpetsifika')}</div>
+                <div>{t('osv.levelFundingSource')}</div>
+                <div>{t('osv.levelSubkonto')}</div>
+              </div>
             </th>
             <th rowSpan={2} className={`${thBase} text-left`}>
               {t('osv.accountName')}

@@ -159,7 +159,9 @@ export const OsvReportTable = ({
     const canExpand = row.getCanExpand()
     const isExpanded = row.getIsExpanded()
     return (
-      <div className="flex items-center gap-1" style={{ paddingLeft: row.depth * 20 }}>
+      // Все строки на одном уровне (без каскадного отступа по глубине) —
+      // иерархия передаётся стрелкой разворота, а не лесенкой отступов.
+      <div className="flex items-center gap-1">
         {canExpand ? (
           <button
             type="button"

@@ -48,6 +48,18 @@ export interface OsvReportEntry {
   closingDt?: number | string | null
   /** Сальдо на конец периода, Кт. */
   closingKt?: number | string | null
+  /** Кол-во: сальдо на начало, Дт. */
+  openingQtyDt?: number | string | null
+  /** Кол-во: сальдо на начало, Кт. */
+  openingQtyKt?: number | string | null
+  /** Кол-во: оборот за период, Дт. */
+  turnoverQtyDt?: number | string | null
+  /** Кол-во: оборот за период, Кт. */
+  turnoverQtyKt?: number | string | null
+  /** Кол-во: сальдо на конец, Дт. */
+  closingQtyDt?: number | string | null
+  /** Кол-во: сальдо на конец, Кт. */
+  closingQtyKt?: number | string | null
   /**
    * Дочерние узлы дерева ОСВ (при `groupByDimensions=true`). Рекурсивно
    * вложены по фиксированному порядку уровней:
@@ -87,6 +99,12 @@ export interface OsvReportTotal {
   turnoverKt?: number | string | null
   closingDt?: number | string | null
   closingKt?: number | string | null
+  openingQtyDt?: number | string | null
+  openingQtyKt?: number | string | null
+  turnoverQtyDt?: number | string | null
+  turnoverQtyKt?: number | string | null
+  closingQtyDt?: number | string | null
+  closingQtyKt?: number | string | null
   /**
    * Сошлась ли двойная запись (Σ Дт == Σ Кт по всем трём парам колонок).
    * `null` — проверка не выполнялась (отчёт по одному счёту: вторая нога

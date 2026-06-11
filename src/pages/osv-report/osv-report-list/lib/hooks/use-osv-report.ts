@@ -15,13 +15,15 @@ export const useOsvReport = (
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ['osv-report', params?.from, params?.to, params?.accountId ?? null],
     queryFn: ({ signal }) => fetchOsvReport(params!, signal),
-    select: (res) => res.data.list,
+    // Берём и строки (`list`), и серверную строку «Итого» (`total`).
+    select: (res) => ({ list: res.data.list, total: res.data.total ?? null }),
     enabled: enabled && params != null && !!params.from && !!params.to,
     staleTime: 60 * 1000,
   })
 
   return {
-    rows: data ?? [],
+    rows: data?.list ?? [],
+    total: data?.total ?? null,
     isLoading: isLoading || isFetching,
     isError,
     error,

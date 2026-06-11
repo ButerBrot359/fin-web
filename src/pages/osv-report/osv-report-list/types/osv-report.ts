@@ -75,6 +75,32 @@ export interface OsvReportEntry {
   groupRefName?: string | null
 }
 
+/**
+ * Серверная строка «Итого» ОСВ — суммы 6 колонок по счетам верхнего уровня
+ * (БЕЗ забалансовых) + признак сходимости двойной записи. Считается на бэке
+ * (бэкендовый AccountingRegisterTotalDto), фронт больше НЕ суммирует сам.
+ */
+export interface OsvReportTotal {
+  openingDt?: number | string | null
+  openingKt?: number | string | null
+  turnoverDt?: number | string | null
+  turnoverKt?: number | string | null
+  closingDt?: number | string | null
+  closingKt?: number | string | null
+  /**
+   * Сошлась ли двойная запись (Σ Дт == Σ Кт по всем трём парам колонок).
+   * `null` — проверка не выполнялась (отчёт по одному счёту: вторая нога
+   * проводки вне выборки, баланс заведомо не сойдётся).
+   */
+  balanced?: boolean | null
+  /** Расхождение Дт−Кт по начальному сальдо. `null` если не проверялось. */
+  openingDiff?: number | string | null
+  /** Расхождение Дт−Кт по оборотам. `null` если не проверялось. */
+  turnoverDiff?: number | string | null
+  /** Расхождение Дт−Кт по конечному сальдо. `null` если не проверялось. */
+  closingDiff?: number | string | null
+}
+
 /** Параметры запроса ОСВ. */
 export interface OsvReportParams {
   /** Начало периода — ISO date-time. */

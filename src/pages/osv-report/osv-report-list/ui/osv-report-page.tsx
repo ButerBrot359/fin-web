@@ -39,7 +39,7 @@ export const OsvReportPage = () => {
   )
 
   const columns = useOsvReportColumns()
-  const { rows, isLoading, isError } = useOsvReport(params, params != null)
+  const { rows, total, isLoading, isError } = useOsvReport(params, params != null)
 
   const canSubmit = !!from && !!to
 
@@ -105,6 +105,7 @@ export const OsvReportPage = () => {
           <OsvReportTable
             columns={columns}
             rows={rows}
+            total={total}
             isLoading={isLoading}
           />
         )

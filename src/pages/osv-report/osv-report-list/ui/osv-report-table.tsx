@@ -13,11 +13,13 @@ import {
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 
-import type { OsvReportEntry } from '../types/osv-report'
+import type { OsvReportEntry, OsvReportTotal } from '../types/osv-report'
 
 interface OsvReportTableProps {
   columns: ColumnDef<OsvReportEntry>[]
   rows: OsvReportEntry[]
+  /** Серверная строка «Итого» (с бэка). `null` — бэк её не прислал. */
+  total?: OsvReportTotal | null
   isLoading?: boolean
 }
 
@@ -44,6 +46,7 @@ const toNum = (v: number | string | null | undefined): number => {
 export const OsvReportTable = ({
   columns,
   rows,
+  total,
   isLoading,
 }: OsvReportTableProps) => {
   const { t } = useTranslation()
@@ -57,17 +60,26 @@ export const OsvReportTable = ({
     setExpanded(true)
   }, [rows])
 
+  // «Итого» считает БЭК (по счетам 1-го порядка, без забалансовых, с
+  // валидацией двойной записи) и присылает в `total`. Фронт сам больше НЕ
+  // суммирует. Fallback на клиентский расчёт оставлен лишь на случай старой
+  // сборки бэка без поля `total`.
   const totals = useMemo(() => {
     const acc: Partial<Record<keyof OsvReportEntry, number>> = {}
     for (const key of SUM_KEYS) {
-      // SUM_KEYS содержит только суммовые поля — значения всегда числовые.
-      acc[key] = rows.reduce(
-        (s, r) => s + toNum(r[key] as number | string | null | undefined),
-        0
-      )
+      acc[key] = total
+        ? toNum(total[key as keyof OsvReportTotal] as number | string | null)
+        : rows.reduce(
+            (s, r) => s + toNum(r[key] as number | string | null | undefined),
+            0
+          )
     }
     return acc
-  }, [rows])
+  }, [rows, total])
+
+  // Двойная запись не сошлась (Σ Дт ≠ Σ Кт) — бэк прислал balanced=false.
+  // null = проверка не делалась (отчёт по одному счёту) → не предупреждаем.
+  const isImbalanced = total?.balanced === false
 
   const table = useReactTable({
     data,
@@ -112,6 +124,13 @@ export const OsvReportTable = ({
 
   return (
     <div className="overflow-auto">
+      {isImbalanced && (
+        <div className="mb-2 rounded-md bg-support-01/10 px-3 py-2 text-support-01">
+          <Typography variant="body2" className="text-support-01">
+            {t('osv.imbalanceWarning')}
+          </Typography>
+        </div>
+      )}
       <table className="w-full border-collapse">
         <thead className="bg-ui-02">
           {table.getHeaderGroups().map((hg) => (

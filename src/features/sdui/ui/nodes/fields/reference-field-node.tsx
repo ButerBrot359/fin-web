@@ -6,6 +6,7 @@ import { useSduiDispatch } from '../../../lib/dispatch'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
 import { apiService } from '@/shared/api/api'
+import { useDictSidebarStore } from '@/features/dict-sidebar'
 
 const DOMAIN_PATH_MAP: Record<string, string> = {
   DICTIONARY: 'dictionary-entries',
@@ -88,6 +89,32 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
 
   const selectedOption = rawValue ? toSelectOption(rawValue) : null
 
+  const applySelected = (opt: SelectOption | null) => {
+    const newVal = opt ? fromSelectOption(opt) : null
+    if (node.binding) setValue(node.binding, newVal)
+    fireServerEvent('change', newVal)
+  }
+
+  const canBrowse = !!targetTypeCode && !readonly && enabled
+
+  const openDictList = () => {
+    useDictSidebarStore.getState().push({
+      mode: 'list',
+      domain,
+      typeCode: targetTypeCode!,
+      onSelect: applySelected,
+    })
+  }
+
+  const openDictCreate = () => {
+    useDictSidebarStore.getState().push({
+      mode: 'create',
+      domain,
+      typeCode: targetTypeCode!,
+      onSelect: applySelected,
+    })
+  }
+
   return (
     <div style={{ flex: flex !== undefined ? flex : undefined }}>
       <AutocompleteInput
@@ -112,11 +139,9 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
             void fetchOptions()
           }
         }}
-        onChange={(opt) => {
-          const newVal = opt ? fromSelectOption(opt) : null
-          if (node.binding) setValue(node.binding, newVal)
-          fireServerEvent('change', newVal)
-        }}
+        onChange={applySelected}
+        onShowAll={canBrowse ? openDictList : undefined}
+        onAdd={canBrowse ? openDictCreate : undefined}
       />
     </div>
   )

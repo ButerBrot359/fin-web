@@ -34,8 +34,6 @@ const ROW_FIELDS = [
   },
 ] as const
 
-type Entry = Record<string, unknown>
-
 /** Резолв значения ячейки: ссылочный объект → имя; число → разряды; строка как есть. */
 const resolveValue = (v: unknown): string => {
   if (v == null || v === '') return ''

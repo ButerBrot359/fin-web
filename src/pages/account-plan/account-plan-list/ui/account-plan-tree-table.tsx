@@ -77,32 +77,35 @@ export const AccountPlanTreeTable = ({
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="relative px-3 py-2 text-left text-xs font-medium uppercase text-ui-05"
+                  className="p-0 text-left text-xs font-medium uppercase text-ui-05"
                   style={{ width: header.column.getSize() }}
                 >
-                  <span className="block truncate">
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
+                  {/* flex + items-stretch: ручка ресайза тянется на всю высоту
+                      заголовка без абсолютного позиционирования (надёжно в
+                      любой раскладке таблицы). */}
+                  <div className="flex items-stretch">
+                    <span className="min-w-0 flex-1 truncate px-3 py-2">
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                    </span>
+                    {header.column.getCanResize() && (
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        onDoubleClick={() => {
+                          header.column.resetSize()
+                        }}
+                        title="Потяните, чтобы изменить ширину"
+                        className={`w-2 shrink-0 cursor-col-resize touch-none select-none ${
+                          header.column.getIsResizing()
+                            ? 'bg-accent-02'
+                            : 'bg-ui-04 hover:bg-ui-05'
+                        }`}
+                      />
                     )}
-                  </span>
-                  {header.column.getCanResize() && (
-                    <div
-                      onMouseDown={header.getResizeHandler()}
-                      onTouchStart={header.getResizeHandler()}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                      }}
-                      onDoubleClick={() => {
-                        header.column.resetSize()
-                      }}
-                      className={`absolute right-0 top-0 h-full w-1.5 cursor-col-resize touch-none select-none ${
-                        header.column.getIsResizing()
-                          ? 'bg-accent-02'
-                          : 'hover:bg-ui-05'
-                      }`}
-                    />
-                  )}
+                  </div>
                 </th>
               ))}
             </tr>

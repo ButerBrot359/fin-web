@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
@@ -9,23 +10,96 @@ import type { AccountCardEntry } from '../types/account-card'
 
 interface AccountCardTableProps {
   rows: AccountCardEntry[]
+  /** Начальное сальдо счёта (signed = Дт − Кт) на начало периода. */
+  opening: number
+  /** Код счёта карточки — определяет сторону (Дт/Кт) и корр-счёт. */
+  cardCode: string
   isLoading?: boolean
 }
 
-const num = (v: number | string | null | undefined): string => {
-  if (v == null || v === '') return ''
+const toNum = (v: number | string | null | undefined): number => {
+  if (v == null || v === '') return 0
   const n = typeof v === 'string' ? Number(v) : v
-  if (!Number.isNaN(n) && n === 0) return ''
-  return formatWithSpaces(String(v))
+  return Number.isNaN(n) ? 0 : n
 }
 
 const td = 'whitespace-nowrap border border-ui-04/60 px-3 py-1.5 align-top'
 const th =
   'whitespace-nowrap border border-ui-04/60 px-3 py-2 text-left text-xs font-semibold uppercase text-ui-06'
 
-/** Карточка счёта — плоская таблица движений по счёту за период. */
-export const AccountCardTable = ({ rows, isLoading }: AccountCardTableProps) => {
+/** Денежная ячейка: разряды, пусто для 0, отрицательное — красным. */
+const Money = ({
+  v,
+  bold,
+  showZero,
+}: {
+  v: number
+  bold?: boolean
+  showZero?: boolean
+}) => {
+  const text = v === 0 && !showZero ? '' : formatWithSpaces(String(v))
+  return (
+    <Typography
+      variant="body2"
+      noWrap
+      className={`text-right tabular-nums ${v < 0 ? 'text-support-01' : 'text-ui-06'} ${
+        bold ? 'font-bold' : ''
+      }`}
+    >
+      {text}
+    </Typography>
+  )
+}
+
+/**
+ * Карточка счёта — хронология движений по счёту с накопительным сальдо
+ * (как в 1С). Строки: «Сальдо на начало» → проводки (Период, Документ,
+ * Корр-счёт, Дебет, Кредит, Текущее сальдо) → «Обороты за период» →
+ * «Конечное сальдо». Математика: текущее = предыдущее + Дт − Кт.
+ */
+export const AccountCardTable = ({
+  rows,
+  opening,
+  cardCode,
+  isLoading,
+}: AccountCardTableProps) => {
   const { t } = useTranslation()
+
+  const { lines, totalDt, totalKt, closing } = useMemo(() => {
+    const sorted = [...rows].sort((a, b) =>
+      (a.period ?? '').localeCompare(b.period ?? '')
+    )
+    let running = opening
+    let totalDt = 0
+    let totalKt = 0
+    const lines = sorted.map((entry) => {
+      const summa = toNum(entry.summa)
+      let debit = 0
+      let credit = 0
+      let corr = ''
+      // Сторона счёта карточки в проводке: Дт → приход (+), Кт → расход (−).
+      if (entry.accountDtCode === cardCode) {
+        debit = summa
+        corr = entry.accountKtCode ?? ''
+        running += summa
+        totalDt += summa
+      } else if (entry.accountKtCode === cardCode) {
+        credit = summa
+        corr = entry.accountDtCode ?? ''
+        running -= summa
+        totalKt += summa
+      } else {
+        // Счёт карточки не найден в проводке (нет фильтра по коду) — показываем
+        // как есть: дебет по сумме, корр-счёт = кредит.
+        debit = summa
+        corr = entry.accountKtCode ?? ''
+        running += summa
+        totalDt += summa
+      }
+      return { entry, debit, credit, corr, balance: running }
+    })
+    return { lines, totalDt, totalKt, closing: opening + totalDt - totalKt }
+  }, [rows, opening, cardCode])
 
   if (isLoading) {
     return (
@@ -37,72 +111,93 @@ export const AccountCardTable = ({ rows, isLoading }: AccountCardTableProps) => 
     )
   }
 
-  if (rows.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-10 text-ui-05">
-        <Typography variant="body2" className="text-ui-05">
-          {t('accountCard.noData')}
-        </Typography>
-      </div>
-    )
-  }
-
   return (
     <div className="overflow-auto rounded-md border border-ui-04/60">
       <table className="w-full border-collapse">
         <thead className="bg-ui-02">
           <tr>
             <th className={th}>{t('accountCard.period')}</th>
-            <th className={th}>{t('accountCard.debitAccount')}</th>
-            <th className={th}>{t('accountCard.creditAccount')}</th>
-            <th className={`${th} text-right`}>{t('accountCard.sum')}</th>
-            <th className={`${th} text-right`}>{t('accountCard.quantityDt')}</th>
-            <th className={`${th} text-right`}>{t('accountCard.quantityKt')}</th>
-            <th className={th}>{t('accountCard.content')}</th>
+            <th className={th}>{t('accountCard.document')}</th>
+            <th className={th}>{t('accountCard.corrAccount')}</th>
+            <th className={`${th} text-right`}>{t('accountCard.debit')}</th>
+            <th className={`${th} text-right`}>{t('accountCard.credit')}</th>
+            <th className={`${th} text-right`}>
+              {t('accountCard.currentBalance')}
+            </th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
-            <tr key={r.id} className="transition-colors hover:bg-ui-07">
+          {/* Сальдо на начало */}
+          <tr className="bg-ui-02 font-medium">
+            <td className={td} colSpan={5}>
+              <Typography variant="body2" className="font-medium text-ui-06">
+                {t('accountCard.openingBalance')}
+              </Typography>
+            </td>
+            <td className={`${td} text-right`}>
+              <Money v={opening} bold showZero />
+            </td>
+          </tr>
+
+          {/* Проводки */}
+          {lines.map(({ entry, debit, credit, corr, balance }) => (
+            <tr key={entry.id} className="transition-colors hover:bg-ui-07">
               <td className={td}>
                 <Typography variant="body2" noWrap className="text-ui-06">
-                  {typeof r.period === 'string'
-                    ? formatDate(r.period, 'dd.MM.yyyy HH:mm:ss')
+                  {typeof entry.period === 'string'
+                    ? formatDate(entry.period, 'dd.MM.yyyy HH:mm:ss')
                     : ''}
                 </Typography>
               </td>
               <td className={td}>
-                <Typography variant="body2" noWrap className="font-medium text-ui-06">
-                  {r.accountDtCode ?? ''}
-                </Typography>
-              </td>
-              <td className={td}>
-                <Typography variant="body2" noWrap className="font-medium text-ui-06">
-                  {r.accountKtCode ?? ''}
-                </Typography>
-              </td>
-              <td className={`${td} text-right`}>
-                <Typography variant="body2" noWrap className="tabular-nums text-ui-06">
-                  {num(r.summa)}
-                </Typography>
-              </td>
-              <td className={`${td} text-right`}>
-                <Typography variant="body2" noWrap className="tabular-nums text-ui-06">
-                  {num(r.kolichestvoDt)}
-                </Typography>
-              </td>
-              <td className={`${td} text-right`}>
-                <Typography variant="body2" noWrap className="tabular-nums text-ui-06">
-                  {num(r.kolichestvoKt)}
-                </Typography>
-              </td>
-              <td className={td}>
                 <Typography variant="body2" className="text-ui-06">
-                  {r.soderzhanie ?? ''}
+                  {entry.soderzhanie ?? ''}
                 </Typography>
+              </td>
+              <td className={td}>
+                <Typography variant="body2" noWrap className="text-ui-06">
+                  {corr}
+                </Typography>
+              </td>
+              <td className={`${td} text-right`}>
+                <Money v={debit} />
+              </td>
+              <td className={`${td} text-right`}>
+                <Money v={credit} />
+              </td>
+              <td className={`${td} text-right`}>
+                <Money v={balance} showZero />
               </td>
             </tr>
           ))}
+
+          {/* Обороты за период */}
+          <tr className="bg-ui-02 font-medium">
+            <td className={td} colSpan={3}>
+              <Typography variant="body2" className="font-medium text-ui-06">
+                {t('accountCard.turnovers')}
+              </Typography>
+            </td>
+            <td className={`${td} text-right`}>
+              <Money v={totalDt} bold showZero />
+            </td>
+            <td className={`${td} text-right`}>
+              <Money v={totalKt} bold showZero />
+            </td>
+            <td className={td} />
+          </tr>
+
+          {/* Конечное сальдо */}
+          <tr className="bg-ui-02 font-bold">
+            <td className={td} colSpan={5}>
+              <Typography variant="body2" className="font-bold text-ui-06">
+                {t('accountCard.closingBalance')}
+              </Typography>
+            </td>
+            <td className={`${td} text-right`}>
+              <Money v={closing} bold showZero />
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>

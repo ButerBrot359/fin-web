@@ -275,10 +275,17 @@ export const OsvReportTable = ({
             }}
             title="Потяните, чтобы изменить ширину"
             style={{ left: x - 4 }}
-            className={`absolute inset-y-0 z-20 w-2 cursor-col-resize touch-none select-none ${
-              resizingCol === i ? 'bg-accent-02/70' : 'bg-ui-04/40 hover:bg-ui-05/70'
-            }`}
-          />
+            className="group absolute inset-y-0 z-20 flex w-2 cursor-col-resize touch-none select-none justify-center"
+          >
+            {/* тонкая линия 1px по границе; зона захвата — 8px (невидима) */}
+            <div
+              className={`h-full w-px ${
+                resizingCol === i
+                  ? 'bg-accent-02'
+                  : 'bg-transparent group-hover:bg-accent-02'
+              }`}
+            />
+          </div>
         ))}
         <table className="w-full table-fixed border-collapse">
         <colgroup>

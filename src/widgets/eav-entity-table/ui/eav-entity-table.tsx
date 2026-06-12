@@ -12,10 +12,7 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import { ColumnFilterTrigger } from '@/features/table-filter'
 import type { ColumnMetaDto } from '@/shared/lib/eav'
 import { extractTableExport, exportTableToXlsx } from '@/shared/lib/table-export'
-import {
-  useAutoFitColumns,
-  weightForDataType,
-} from '@/shared/lib/table-autofit/use-auto-fit-columns'
+import { useAutoFitColumnsByContent } from '@/shared/lib/table-autofit/use-auto-fit-columns'
 
 import { cn } from '@/shared/lib/utils/cn'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -105,34 +102,11 @@ export const EavEntityTable = <T extends { id: number }>({
     }
   }, [isLoading])
 
-  // Логическая ширина колонок «на всю страницу» при первом открытии: тип берём
-  // из меты (код/число/дата — узкие, наименования — широкие), затем ширины
-  // фиксируются для ресайза. `reserve` ≈ разрядка ячеек (border-spacing 2px).
-  const columnWeights = useMemo(() => {
-    const metaByCode = new Map<string, ColumnMetaDto>()
-    columnsMeta?.forEach((m) => {
-      metaByCode.set(m.code, m)
-    })
-    const w: Record<string, number> = {}
-    for (const col of columns) {
-      const id = col.id
-      if (!id) continue
-      const extra = col.meta as EavColumnMetaExtra | undefined
-      const code = extra?.metaCode ?? id
-      const meta = metaByCode.get(code)
-      if (id === 'status') w[id] = 0.5
-      else if (id === '__hierarchy' || code === '__hierarchy') w[id] = 2.6
-      else w[id] = weightForDataType(meta?.dataType, !!meta?.referencedDomainKind)
-    }
-    return w
-  }, [columns, columnsMeta])
-
-  const { columnSizing, onColumnSizingChange } = useAutoFitColumns(
-    scrollRef,
-    !isLoading && entries.length > 0,
-    columnWeights,
-    2 * (columns.length + 1)
-  )
+  // Ширина колонок ПО СОДЕРЖИМОМУ (как в исходном отображении регистров):
+  // таблица раскладывается auto-layout'ом под контент/заголовки, затем ширины
+  // фиксируются — после этого колонки можно тянуть мышью.
+  const { columnSizing, onColumnSizingChange, fitted } =
+    useAutoFitColumnsByContent(scrollRef, !isLoading && entries.length > 0)
 
   const table = useReactTable({
     data: entries,
@@ -196,8 +170,12 @@ export const EavEntityTable = <T extends { id: number }>({
       )}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
         <table
-          className="table-fixed border-separate"
-          style={{ borderSpacing: '2px', width: table.getTotalSize() }}
+          className={cn('border-separate', fitted ? 'table-fixed' : 'w-full')}
+          style={
+            fitted
+              ? { borderSpacing: '2px', width: table.getTotalSize() }
+              : { borderSpacing: '2px' }
+          }
         >
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -216,9 +194,10 @@ export const EavEntityTable = <T extends { id: number }>({
                   return (
                     <th
                       key={header.id}
-                      style={{ width: header.getSize() }}
+                      data-autofit-col={header.column.id}
+                      style={fitted ? { width: header.getSize() } : undefined}
                       className={cn(
-                        'sticky top-0 z-10 border-b-2 border-ui-06 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06',
+                        'sticky top-0 z-10 whitespace-nowrap border-b-2 border-ui-06 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06',
                         canSort && 'cursor-pointer select-none'
                       )}
                       onClick={header.column.getToggleSortingHandler()}
@@ -351,13 +330,15 @@ export const EavEntityTable = <T extends { id: number }>({
                     return (
                       <td
                         key={cell.id}
-                        style={{ width: cell.column.getSize() }}
+                        style={
+                          fitted ? { width: cell.column.getSize() } : undefined
+                        }
                         className={cn(
-                          'px-3 py-2 align-top first:rounded-l-md last:rounded-r-md',
+                          'px-3 py-2 first:rounded-l-md last:rounded-r-md',
                           cellExtra?.metaCode === '__hierarchy' ||
                             cell.column.id === '__hierarchy'
-                            ? 'overflow-hidden whitespace-nowrap'
-                            : 'cell-wrap'
+                            ? 'whitespace-nowrap'
+                            : 'max-w-50 truncate'
                         )}
                       >
                         {flexRender(

@@ -189,6 +189,18 @@
     "credit": "Кредит",
     "account": "Счёт"
   },
+  "accountCard": {
+    "title": "Карточка счёта",
+    "forPeriod": "за",
+    "period": "Период",
+    "debitAccount": "Счёт Дт",
+    "creditAccount": "Счёт Кт",
+    "sum": "Сумма",
+    "quantityDt": "Кол-во Дт",
+    "quantityKt": "Кол-во Кт",
+    "content": "Содержание",
+    "noData": "Нет движений за период"
+  },
   "osv": {
     "title": "Оборотно-сальдовая ведомость",
     "periodFrom": "Период с",

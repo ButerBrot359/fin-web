@@ -17,7 +17,7 @@ import type { SelectOption } from '@/shared/types/select-option'
 
 import { useOsvReport } from '../lib/hooks/use-osv-report'
 import { OsvReportTable } from './osv-report-table'
-import type { OsvReportParams } from '../types/osv-report'
+import type { OsvReportEntry, OsvReportParams } from '../types/osv-report'
 
 export const OsvReportPage = () => {
   const { t } = useTranslation()
@@ -119,6 +119,20 @@ export const OsvReportPage = () => {
     void navigate(`/modules/${pageCode}`)
   }
 
+  // Двойной клик по строке ОСВ → карточка счёта (drill-down, как в 1С): движения
+  // по счёту за тот же период.
+  const handleOpenAccountCard = (row: OsvReportEntry) => {
+    const accId = row.accountId ?? params?.accountId
+    if (!params || accId == null) return
+    const sp = new URLSearchParams({
+      from: params.from,
+      to: params.to,
+      accountId: String(accId),
+      accountCode: row.accountCode ?? '',
+    })
+    void navigate(`/modules/${pageCode}/account-card?${sp.toString()}`)
+  }
+
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={t('osv.title')} onClose={handleClose} />
@@ -172,6 +186,7 @@ export const OsvReportPage = () => {
             rows={rows}
             total={total}
             title={reportTitle}
+            onRowDoubleClick={handleOpenAccountCard}
             isLoading={isLoading}
           />
         )

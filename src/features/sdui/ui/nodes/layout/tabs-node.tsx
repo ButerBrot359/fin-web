@@ -34,7 +34,14 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
     <div>
       <Tabs value={activeIndex} onChange={handleChange}>
         {tabs.map((tab, idx) => (
-          <Tab key={tab.id} label={(tab.props?.label as string | undefined) ?? `Tab ${idx + 1}`} />
+          <Tab
+            key={tab.id}
+            label={
+              (tab.props?.title as string | undefined) ??
+              (tab.props?.label as string | undefined) ??
+              `Tab ${idx + 1}`
+            }
+          />
         ))}
       </Tabs>
       <div style={{ paddingTop: 16 }}>

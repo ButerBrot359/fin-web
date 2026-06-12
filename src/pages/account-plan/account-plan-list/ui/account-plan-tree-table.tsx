@@ -41,6 +41,10 @@ export const AccountPlanTreeTable = ({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => String(row.entry.id),
+    // Ресайз колонок мышью (как в Excel): тянем границу заголовка.
+    enableColumnResizing: true,
+    columnResizeMode: 'onChange',
+    defaultColumn: { minSize: 48, size: 180 },
   })
 
   if (isLoading) {
@@ -63,20 +67,45 @@ export const AccountPlanTreeTable = ({
 
   return (
     <div className="overflow-auto rounded-md border border-ui-03">
-      <table className="w-full border-collapse">
+      <table
+        className="table-fixed border-collapse"
+        style={{ width: table.getTotalSize() }}
+      >
         <thead className="bg-ui-02">
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id}>
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="whitespace-nowrap border border-ui-03 px-3 py-2 text-left text-xs font-medium uppercase text-ui-05"
+                  className="border border-ui-03 p-0 text-left text-xs font-medium uppercase text-ui-05"
                   style={{ width: header.column.getSize() }}
                 >
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
+                  {/* flex + items-stretch: ручка ресайза тянется на всю высоту
+                      заголовка без абсолютного позиционирования (надёжно в
+                      любой раскладке таблицы). */}
+                  <div className="flex items-stretch">
+                    <span className="min-w-0 flex-1 truncate px-3 py-2">
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                    </span>
+                    {header.column.getCanResize() && (
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        onDoubleClick={() => {
+                          header.column.resetSize()
+                        }}
+                        title="Потяните, чтобы изменить ширину"
+                        className={`w-2 shrink-0 cursor-col-resize touch-none select-none ${
+                          header.column.getIsResizing()
+                            ? 'bg-accent-02'
+                            : 'bg-ui-04 hover:bg-ui-05'
+                        }`}
+                      />
+                    )}
+                  </div>
                 </th>
               ))}
             </tr>
@@ -99,7 +128,8 @@ export const AccountPlanTreeTable = ({
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className="whitespace-nowrap border border-ui-04 px-3 py-2"
+                    className="truncate border border-ui-04 px-3 py-2"
+                    style={{ width: cell.column.getSize() }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>

@@ -7,6 +7,7 @@ export interface DateTimeInputProps {
   onChange: (value: string) => void
   label?: string
   readOnly?: boolean
+  disabled?: boolean
   dateOnly?: boolean
   required?: boolean
   error?: boolean
@@ -23,6 +24,7 @@ export const DateTimeInput = ({
   onChange,
   label,
   readOnly,
+  disabled,
   dateOnly,
   required,
   error,
@@ -56,6 +58,7 @@ export const DateTimeInput = ({
         onClose={onClose}
         label={label}
         readOnly={readOnly}
+        disabled={disabled}
         slotProps={slotProps}
       />
     )
@@ -69,6 +72,7 @@ export const DateTimeInput = ({
       onClose={onClose}
       label={label}
       readOnly={readOnly}
+      disabled={disabled}
       slotProps={slotProps}
     />
   )

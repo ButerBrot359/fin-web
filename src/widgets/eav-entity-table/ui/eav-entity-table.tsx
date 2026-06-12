@@ -106,6 +106,10 @@ export const EavEntityTable = <T extends { id: number }>({
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
+    // Ресайз колонок мышью (как в Excel): тянем границу заголовка.
+    enableColumnResizing: true,
+    columnResizeMode: 'onChange',
+    defaultColumn: { minSize: 48, size: 180 },
     state: { sorting },
     onSortingChange,
   })
@@ -158,8 +162,8 @@ export const EavEntityTable = <T extends { id: number }>({
       )}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
         <table
-          className="w-full border-separate"
-          style={{ borderSpacing: '2px' }}
+          className="table-fixed border-separate"
+          style={{ borderSpacing: '2px', width: table.getTotalSize() }}
         >
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -178,22 +182,25 @@ export const EavEntityTable = <T extends { id: number }>({
                   return (
                     <th
                       key={header.id}
+                      style={{ width: header.getSize() }}
                       className={cn(
-                        'sticky top-0 z-10 whitespace-nowrap border-b-2 border-ui-06 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06',
+                        'sticky top-0 z-10 border-b-2 border-ui-06 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06',
                         canSort && 'cursor-pointer select-none'
                       )}
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {header.isPlaceholder ? null : (
-                        <span className="inline-flex items-center gap-1">
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        <span className="flex w-full items-center gap-1 overflow-hidden">
+                          <span className="truncate">
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                          </span>
                           {sorted && (
                             <span
                               className={cn(
-                                'text-[10px] leading-none',
+                                'shrink-0 text-[10px] leading-none',
                                 sorted === 'asc' && 'rotate-180'
                               )}
                             >
@@ -201,12 +208,33 @@ export const EavEntityTable = <T extends { id: number }>({
                             </span>
                           )}
                           {filterTableId && columnMeta && (
-                            <ColumnFilterTrigger
-                              tableId={filterTableId}
-                              column={columnMeta}
-                            />
+                            <span className="shrink-0">
+                              <ColumnFilterTrigger
+                                tableId={filterTableId}
+                                column={columnMeta}
+                              />
+                            </span>
                           )}
                         </span>
+                      )}
+                      {header.column.getCanResize() && (
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                          }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation()
+                            header.column.resetSize()
+                          }}
+                          className={cn(
+                            'absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none select-none',
+                            header.column.getIsResizing()
+                              ? 'bg-accent-02'
+                              : 'hover:bg-ui-05'
+                          )}
+                        />
                       )}
                     </th>
                   )
@@ -280,12 +308,13 @@ export const EavEntityTable = <T extends { id: number }>({
                     return (
                       <td
                         key={cell.id}
+                        style={{ width: cell.column.getSize() }}
                         className={cn(
-                          'px-3 py-2 first:rounded-l-md last:rounded-r-md',
+                          'overflow-hidden px-3 py-2 first:rounded-l-md last:rounded-r-md',
                           cellExtra?.metaCode === '__hierarchy' ||
                             cell.column.id === '__hierarchy'
                             ? 'whitespace-nowrap'
-                            : 'max-w-50 truncate'
+                            : 'truncate'
                         )}
                       >
                         {flexRender(

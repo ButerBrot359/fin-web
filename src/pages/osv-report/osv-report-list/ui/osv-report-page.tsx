@@ -124,7 +124,7 @@ export const OsvReportPage = () => {
       <PageHeader title={t('osv.title')} onClose={handleClose} />
 
       <div className="flex flex-wrap items-end gap-4">
-        <div className="w-64">
+        <div className="w-64 [&_.MuiInputBase-root]:!h-10 [&_.MuiInputBase-root]:box-border">
           <DateTimeInput
             value={from}
             onChange={setFrom}
@@ -134,7 +134,7 @@ export const OsvReportPage = () => {
             fullWidth
           />
         </div>
-        <div className="w-64">
+        <div className="w-64 [&_.MuiInputBase-root]:!h-10 [&_.MuiInputBase-root]:box-border">
           <DateTimeInput
             value={to}
             onChange={setTo}
@@ -144,7 +144,7 @@ export const OsvReportPage = () => {
             fullWidth
           />
         </div>
-        <div className="w-64">
+        <div className="w-64 [&_.MuiInputBase-root]:!h-10 [&_.MuiInputBase-root]:box-border">
           <AutocompleteInput
             value={account}
             options={accountOptions}
@@ -158,6 +158,7 @@ export const OsvReportPage = () => {
           variant="contained"
           disabled={!canSubmit}
           onClick={handleSubmit}
+          sx={{ height: 40 }}
         >
           {t('osv.generate')}
         </Button>

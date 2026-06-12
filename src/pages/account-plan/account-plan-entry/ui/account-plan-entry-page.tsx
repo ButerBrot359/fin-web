@@ -144,6 +144,7 @@ export const AccountPlanEntryPage = () => {
         parentId: account.parentId,
         parentName: account.parentName,
         nomerMemorialnogoOrdera: readMemorialOrder(account.attributes),
+        attributes: account.attributes ?? {},
       })
     }
     modeStore.setMode(location.pathname, 'view')

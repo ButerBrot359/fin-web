@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 import {
@@ -82,9 +87,17 @@ const ValueCell = ({
   )
 }
 
-const tdValue = 'whitespace-nowrap px-3 py-1.5'
+const tdValue = 'overflow-hidden whitespace-nowrap px-3 py-1.5'
 const thBase =
-  'whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase text-ui-06'
+  'relative whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase text-ui-06'
+
+/**
+ * Логические колонки ОСВ для ресайза (рендер таблицы кастомный, поэтому ширины
+ * задаём вручную через `<colgroup>`):
+ * 0 Счёт · 1 Наименование · 2 Показатели · 3-8 Дт/Кт по 3 группам сальдо/оборотов.
+ */
+const DEFAULT_COL_WIDTHS = [150, 320, 100, 120, 120, 120, 120, 120, 120]
+const MIN_COL_WIDTH = 60
 
 /**
  * Таблица ОСВ со строками-показателями «Сумма» и «Кол.» на каждый узел дерева,
@@ -109,6 +122,58 @@ export const OsvReportTable = ({
     setExpanded(true)
   }, [rows])
 
+  // Ресайз колонок мышью (как в Excel). Рендер таблицы кастомный, поэтому
+  // ширины храним сами и применяем через <colgroup>.
+  const [colWidths, setColWidths] = useState<number[]>(DEFAULT_COL_WIDTHS)
+  const [resizingCol, setResizingCol] = useState<number | null>(null)
+
+  const startResize = (index: number, e: ReactMouseEvent) => {
+    e.preventDefault()
+    const startX = e.clientX
+    const startW = colWidths[index]
+    setResizingCol(index)
+    document.body.style.userSelect = 'none'
+    const onMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - startX
+      setColWidths((prev) => {
+        const next = [...prev]
+        next[index] = Math.max(MIN_COL_WIDTH, startW + dx)
+        return next
+      })
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      document.body.style.userSelect = ''
+      setResizingCol(null)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
+  const resetColWidth = (index: number) => {
+    setColWidths((prev) => {
+      const next = [...prev]
+      next[index] = DEFAULT_COL_WIDTHS[index]
+      return next
+    })
+  }
+
+  // Ручка перетаскивания у правой границы заголовка колонки `index`.
+  const ResizeHandle = ({ index }: { index: number }) => (
+    <div
+      onMouseDown={(e) => {
+        startResize(index, e)
+      }}
+      onDoubleClick={() => {
+        resetColWidth(index)
+      }}
+      className={`absolute right-0 top-0 z-10 h-full w-1.5 cursor-col-resize touch-none select-none ${
+        resizingCol === index ? 'bg-accent-02' : 'hover:bg-ui-05'
+      }`}
+    />
+  )
+
   // Минимальная колонка-заглушка: TanStack нужна для модели дерева; сам рендер
   // значений делаем вручную, поэтому cell-рендереры здесь не используются.
   const columns = useMemo<ColumnDef<OsvReportEntry>[]>(
@@ -128,7 +193,7 @@ export const OsvReportTable = ({
     // id строки = путь по индексам от корня — уникален на любой глубине,
     // в отличие от accountId (наследуется узлами измерений → дублировал строки).
     getRowId: (_row, index, parent) =>
-      parent ? `${parent.id}.${index}` : String(index),
+      parent ? `${parent.id}.${String(index)}` : String(index),
   })
 
   if (isLoading) {
@@ -167,7 +232,9 @@ export const OsvReportTable = ({
             type="button"
             aria-label={isExpanded ? t('osv.collapse') : t('osv.expand')}
             className="flex h-4 w-4 items-center justify-center"
-            onClick={() => row.toggleExpanded()}
+            onClick={() => {
+              row.toggleExpanded()
+            }}
           >
             <ArrowDownIcon
               className={`h-3 w-3 shrink-0 transition-transform ${
@@ -203,7 +270,15 @@ export const OsvReportTable = ({
           </Typography>
         </div>
       )}
-      <table className="w-full border-collapse">
+      <table
+        className="table-fixed border-collapse"
+        style={{ width: colWidths.reduce((a, b) => a + b, 0) }}
+      >
+        <colgroup>
+          {colWidths.map((w, i) => (
+            <col key={i} style={{ width: w }} />
+          ))}
+        </colgroup>
         <thead className="bg-ui-02">
           {/* Уровень 1 — группы колонок (как в 1С). */}
           <tr className="border-b border-ui-04">
@@ -220,12 +295,15 @@ export const OsvReportTable = ({
                 <div>{t('osv.levelNomenclature')}</div>
                 <div>{t('osv.levelIndividuals')}</div>
               </div>
+              <ResizeHandle index={0} />
             </th>
             <th rowSpan={2} className={`${thBase} text-left`}>
               {t('osv.accountName')}
+              <ResizeHandle index={1} />
             </th>
             <th rowSpan={2} className={`${thBase} text-left`}>
               {t('osv.indicators')}
+              <ResizeHandle index={2} />
             </th>
             <th colSpan={2} className={`${thBase} border-l border-ui-04 text-center`}>
               {t('osv.openingBalance')}
@@ -245,6 +323,7 @@ export const OsvReportTable = ({
                 className={`${thBase} text-right normal-case ${groupBorder(i)}`}
               >
                 {i % 2 === 0 ? t('osv.debit') : t('osv.credit')}
+                <ResizeHandle index={i + 3} />
               </th>
             ))}
           </tr>
@@ -261,14 +340,17 @@ export const OsvReportTable = ({
             <tbody key={row.id} className="group">
               {/* Строка показателя «Сумма» */}
                 <tr className={`border-t border-ui-04/60 ${rowBg} group-hover:bg-ui-07`}>
-                  <td rowSpan={2} className="whitespace-nowrap px-3 py-1.5 align-top">
+                  <td
+                    rowSpan={2}
+                    className="overflow-hidden whitespace-nowrap px-3 py-1.5 align-top"
+                  >
                     {renderAccountCell(row)}
                   </td>
                   {/* Иерархия передаётся отступом наименования по глубине дерева
                       (как в 1С), при выровненных стрелках в колонке «Счёт». */}
                   <td
                     rowSpan={2}
-                    className="whitespace-nowrap py-1.5 pr-3 align-top"
+                    className="overflow-hidden whitespace-nowrap py-1.5 pr-3 align-top"
                     style={{ paddingLeft: 12 + row.depth * 18 }}
                   >
                     {row.depth > 0 ? (
@@ -279,7 +361,7 @@ export const OsvReportTable = ({
                       </Typography>
                     )}
                   </td>
-                  <td className={`${tdValue}`}>
+                  <td className={tdValue}>
                     <Typography variant="body2" noWrap className="text-ui-05">
                       {t('osv.sum')}
                     </Typography>
@@ -292,7 +374,7 @@ export const OsvReportTable = ({
                 </tr>
                 {/* Строка показателя «Кол.» */}
                 <tr className={`${rowBg} group-hover:bg-ui-07`}>
-                  <td className={`${tdValue}`}>
+                  <td className={tdValue}>
                     <Typography variant="body2" noWrap className="text-ui-05">
                       {t('osv.quantity')}
                     </Typography>
@@ -309,12 +391,16 @@ export const OsvReportTable = ({
         {total && (
           <tfoot className="bg-ui-02 font-bold">
             <tr className="border-t-2 border-ui-03">
-              <td rowSpan={2} colSpan={2} className="whitespace-nowrap px-3 py-1.5 align-top">
+              <td
+                rowSpan={2}
+                colSpan={2}
+                className="overflow-hidden whitespace-nowrap px-3 py-1.5 align-top"
+              >
                 <Typography variant="body2" className="font-bold text-ui-06">
                   {t('osv.total')}
                 </Typography>
               </td>
-              <td className={`${tdValue}`}>
+              <td className={tdValue}>
                 <Typography variant="body2" noWrap className="text-ui-05">
                   {t('osv.sum')}
                 </Typography>
@@ -326,7 +412,7 @@ export const OsvReportTable = ({
               ))}
             </tr>
             <tr>
-              <td className={`${tdValue}`}>
+              <td className={tdValue}>
                 <Typography variant="body2" noWrap className="text-ui-05">
                   {t('osv.quantity')}
                 </Typography>

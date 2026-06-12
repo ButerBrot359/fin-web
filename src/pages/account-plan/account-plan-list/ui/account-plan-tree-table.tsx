@@ -66,7 +66,7 @@ export const AccountPlanTreeTable = ({
   }
 
   return (
-    <div className="overflow-auto rounded-md border border-ui-03">
+    <div className="overflow-auto rounded-md border border-ui-04/60">
       <table
         className="table-fixed border-collapse"
         style={{ width: table.getTotalSize() }}
@@ -77,7 +77,7 @@ export const AccountPlanTreeTable = ({
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="border border-ui-03 p-0 text-left text-xs font-medium uppercase text-ui-05"
+                  className="border border-ui-04/60 p-0 text-left text-xs font-medium uppercase text-ui-05"
                   style={{ width: header.column.getSize() }}
                 >
                   {/* flex + items-stretch: ручка ресайза тянется на всю высоту
@@ -133,7 +133,7 @@ export const AccountPlanTreeTable = ({
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className="cell-wrap border border-ui-04 px-3 py-2 align-top"
+                    className="cell-wrap border border-ui-04/60 px-3 py-2 align-top"
                     style={{ width: cell.column.getSize() }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

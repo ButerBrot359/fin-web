@@ -62,7 +62,7 @@ export const AccountPlanTreeTable = ({
   }
 
   return (
-    <div className="overflow-auto">
+    <div className="overflow-auto rounded-md border border-ui-03">
       <table className="w-full border-collapse">
         <thead className="bg-ui-02">
           {table.getHeaderGroups().map((hg) => (
@@ -70,7 +70,7 @@ export const AccountPlanTreeTable = ({
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="whitespace-nowrap px-3 py-2 text-left text-xs font-medium uppercase text-ui-05"
+                  className="whitespace-nowrap border border-ui-03 px-3 py-2 text-left text-xs font-medium uppercase text-ui-05"
                   style={{ width: header.column.getSize() }}
                 >
                   {flexRender(
@@ -90,7 +90,7 @@ export const AccountPlanTreeTable = ({
                 key={row.id}
                 // select-none: двойной клик не выделяет текст в ячейке (иначе
                 // браузер «съедает» dblclick и запись не открывается).
-                className={`cursor-pointer select-none border-b border-ui-04/40 transition-colors hover:bg-ui-07 ${
+                className={`cursor-pointer select-none transition-colors hover:bg-ui-07 ${
                   isSelected ? 'bg-ui-08' : ''
                 }`}
                 onClick={() => onRowClick?.(row.original)}
@@ -99,7 +99,7 @@ export const AccountPlanTreeTable = ({
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className="whitespace-nowrap px-3 py-2 first:rounded-l-md last:rounded-r-md"
+                    className="whitespace-nowrap border border-ui-04 px-3 py-2"
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>

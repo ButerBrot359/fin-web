@@ -1,6 +1,18 @@
 @import 'tailwindcss';
 @config '../../tailwind.config.ts';
 
+/* Поля панели параметров ОСВ — единая ширина (100% контейнера w-64) и высота
+   40px для разнородных MUI-инпутов (DateTimePicker outlined + Autocomplete filled).
+   Обычный CSS вместо Tailwind-arbitrary — не зависит от версии/синтаксиса. */
+.osv-param-field .MuiFormControl-root,
+.osv-param-field .MuiAutocomplete-root,
+.osv-param-field .MuiInputBase-root {
+  width: 100% !important;
+}
+.osv-param-field .MuiInputBase-root {
+  height: 40px !important;
+}
+
 * {
   box-sizing: border-box;
 }

@@ -118,7 +118,14 @@ export const DictSidebarFormView = ({
         .filter((attr: DocumentAttribute) => attr.showInForm)
         .filter(
           (attr: DocumentAttribute) =>
-            !(isAccountPlan && attr.dataType === 'TABLE')
+            // Для плана счетов прячем generic TABLE-атрибуты (субконто рисуем
+            // своей таблицей) и служебный EAV-атрибут «Kod» (внутренний код
+            // вида 000000013) — настоящий код счёта показываем из встроенного
+            // поля `code` отдельным блоком ниже.
+            !(
+              isAccountPlan &&
+              (attr.dataType === 'TABLE' || attr.code === 'Kod')
+            )
         )
         .sort(
           (a: DocumentAttribute, b: DocumentAttribute) =>
@@ -282,6 +289,17 @@ export const DictSidebarFormView = ({
                   {entryData?.parentName ?? t('accountPlan.notSet')}
                 </span>
               </div>
+            )}
+            {/* Настоящий код счёта (встроенное поле `code`), а не служебный
+                EAV-атрибут «Kod» (внутренний код 000000013). */}
+            {isAccountPlan && (
+              <label className="mb-4 flex flex-col gap-1 text-sm">
+                <span className="text-ui-05">{t('accountPlan.field.code')}</span>
+                <input
+                  className="rounded-md border border-ui-03 bg-ui-01 px-3 py-1.5 text-ui-06"
+                  {...form.register('code')}
+                />
+              </label>
             )}
             <FormRenderer
               config={formConfig}

@@ -47,7 +47,7 @@ const resolveValue = (v: unknown): string => {
     )
   }
   if (typeof v === 'number') return formatWithSpaces(String(v))
-  return String(v)
+  return typeof v === 'string' ? v : String(v as string | number)
 }
 
 const thBase =

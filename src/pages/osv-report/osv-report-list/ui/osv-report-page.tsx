@@ -149,6 +149,7 @@ export const OsvReportPage = () => {
             onChange={setAccount}
             label={t('osv.account')}
             size="small"
+            fullWidth
           />
         </div>
         <Button

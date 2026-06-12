@@ -39,6 +39,7 @@ const EMPTY_VALUE: AccountPlanCardValue = {
   parentId: null,
   parentName: null,
   nomerMemorialnogoOrdera: 0,
+  attributes: {},
 }
 
 /**
@@ -89,6 +90,7 @@ export const AccountPlanEntryPage = () => {
       parentId: src.parentId,
       parentName: src.parentName,
       nomerMemorialnogoOrdera: readMemorialOrder(src.attributes),
+      attributes: src.attributes ?? {},
     }
     setValue(isNew && copyFromAccount ? copyValue(next) : next)
     setLoadedSrcId(srcId)

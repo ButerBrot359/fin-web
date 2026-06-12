@@ -25,6 +25,9 @@ export interface AccountPlanCardValue {
   parentId: number | null
   parentName: string | null
   nomerMemorialnogoOrdera: number
+  /** Исходные EAV-атрибуты счёта — нужны, чтобы при сохранении переслать
+   *  ПОЛНЫЙ набор (бэк на update пересоздаёт значения). */
+  attributes: Record<string, unknown>
 }
 
 interface AccountPlanCardProps {
@@ -200,13 +203,48 @@ const GeneralTab = ({ value, isReadOnly, patch }: GeneralTabProps) => {
           }}
         />
       </div>
-      <LabeledReadonly
+      <LabeledNumberInput
         label={t('accountPlan.field.nomerMemorialnogoOrdera')}
-        value={String(value.nomerMemorialnogoOrdera)}
+        value={value.nomerMemorialnogoOrdera}
+        isReadOnly={isReadOnly}
+        onChange={(v) => {
+          patch({ nomerMemorialnogoOrdera: v })
+        }}
       />
     </div>
   )
 }
+
+interface LabeledNumberInputProps {
+  label: string
+  value: number
+  isReadOnly: boolean
+  onChange: (v: number) => void
+}
+
+/** Числовое поле (целое, ≥0). В view-режиме — disabled, как остальные поля. */
+const LabeledNumberInput = ({
+  label,
+  value,
+  isReadOnly,
+  onChange,
+}: LabeledNumberInputProps) => (
+  <label className="flex flex-1 flex-col gap-1 text-sm">
+    <span className="text-ui-05">{label}</span>
+    <input
+      type="number"
+      min={0}
+      step={1}
+      className="rounded-md border border-ui-03 bg-ui-01 px-3 py-1.5 disabled:bg-ui-02"
+      value={Number.isFinite(value) ? value : 0}
+      disabled={isReadOnly}
+      onChange={(e) => {
+        const n = e.target.value === '' ? 0 : Math.trunc(Number(e.target.value))
+        onChange(Number.isNaN(n) ? 0 : Math.max(0, n))
+      }}
+    />
+  </label>
+)
 
 interface LabeledInputProps {
   label: string

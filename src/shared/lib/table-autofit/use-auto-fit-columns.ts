@@ -66,6 +66,61 @@ export const useAutoFitColumns = (
 }
 
 /**
+ * Подбор ширины колонок ПО СОДЕРЖИМОМУ (как в исходном auto-layout): таблица
+ * сначала рендерится в `auto`-режиме (колонки под контент + заголовок), затем
+ * замеренные ширины фиксируются — после этого колонки можно тянуть мышью.
+ *
+ * Ширины НЕ масштабируются под страницу: каждое поле получает столько, сколько
+ * нужно его содержимому (узкие — коды/числа, широкие — наименования), как в
+ * привычном отображении регистров. Заголовки должны иметь `data-autofit-col`.
+ *
+ * Пока ширины не зафиксированы, возвращается `fitted = false` — вызывающий
+ * рендерит таблицу в `auto`-режиме (без фиксированных ширин).
+ */
+export const useAutoFitColumnsByContent = (
+  containerRef: RefObject<HTMLElement | null>,
+  ready: boolean
+) => {
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
+  const [fitted, setFitted] = useState(false)
+  const doneRef = useRef(false)
+
+  useLayoutEffect(() => {
+    if (doneRef.current || !ready) return
+    const el = containerRef.current
+    if (!el) return
+    const ths = Array.from(
+      el.querySelectorAll<HTMLElement>('th[data-autofit-col]')
+    )
+    if (ths.length === 0) return
+
+    const sizing: ColumnSizingState = {}
+    for (const th of ths) {
+      const id = th.dataset.autofitCol
+      if (id) sizing[id] = Math.max(48, Math.ceil(th.getBoundingClientRect().width))
+    }
+    if (Object.keys(sizing).length === 0) return
+
+    doneRef.current = true
+    // Замер DOM → фиксация ширин (один раз до отрисовки).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setColumnSizing(sizing)
+    setFitted(true)
+  }, [containerRef, ready])
+
+  const onColumnSizingChange: OnChangeFn<ColumnSizingState> = useCallback(
+    (updater) => {
+      setColumnSizing((prev) =>
+        typeof updater === 'function' ? updater(prev) : updater
+      )
+    },
+    []
+  )
+
+  return { columnSizing, onColumnSizingChange, fitted }
+}
+
+/**
  * Вес колонки по типу данных: коды/числа/даты — узкие, наименования — широкие.
  */
 export const weightForDataType = (

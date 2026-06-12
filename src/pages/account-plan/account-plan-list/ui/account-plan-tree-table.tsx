@@ -15,7 +15,8 @@ import type { AccountPlanRow } from '../lib/utils/build-tree-rows'
 // Логическая ширина колонок плана счетов: код/флаги/№ — узкие, наименования —
 // широкие, субконто — средние.
 const COLUMN_WEIGHTS: Record<string, number> = {
-  code: 1,
+  // Код шире: помещаются длинные коды (до «000000001») + значок и отступ дерева.
+  code: 2.6,
   name: 3,
   fullNameKz: 3,
   subkonto1: 1.8,

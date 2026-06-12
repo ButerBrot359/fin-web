@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
@@ -55,21 +55,39 @@ export const AccountPlanPage = () => {
 
   const columns = useAccountPlanColumns({ onToggleExpand: toggleExpand })
 
+  // Открыть карточку записи (не папки) — навигация на страницу счёта.
+  const openEntry = (row: AccountPlanRow) => {
+    if (row.entry.isGroup) return
+    void navigate(
+      `/modules/${pageCode}/accountplan/${moduleCode}/${String(row.entry.id)}`
+    )
+  }
+
+  // Ручное определение двойного клика: нативный onDoubleClick ненадёжен —
+  // ресайз колонок (columnResizeMode:'onChange') вызывает ре-рендеры, и первый
+  // onClick «съедает» dblclick. Поэтому ловим два клика по одной строке вручную.
+  const lastClickRef = useRef<{ id: number; time: number } | null>(null)
+
   const handleRowClick = (row: AccountPlanRow) => {
+    const now = Date.now()
+    const prev = lastClickRef.current
+    if (prev && prev.id === row.entry.id && now - prev.time < 350) {
+      lastClickRef.current = null
+      openEntry(row)
+      return
+    }
+    lastClickRef.current = { id: row.entry.id, time: now }
     treeStore.setSelected(location.pathname, row.entry.id)
-    // Папку (группу) раскрываем/сворачиваем одним кликом по строке;
-    // запись одним кликом только выделяется — открывается двойным.
+    // Папку раскрываем/сворачиваем одним кликом; запись одним кликом только
+    // выделяется, открывается двойным (см. выше).
     if (row.entry.isGroup || row.hasChildren) {
       toggleExpand(row.entry.id)
     }
   }
 
+  // Нативный двойной клик оставляем как резерв (если сработает раньше ручного).
   const handleRowDoubleClick = (row: AccountPlanRow) => {
-    // Двойным кликом открываем карточку только для записей (не папок).
-    if (row.entry.isGroup) return
-    void navigate(
-      `/modules/${pageCode}/accountplan/${moduleCode}/${String(row.entry.id)}`
-    )
+    openEntry(row)
   }
 
   const handleClose = () => {

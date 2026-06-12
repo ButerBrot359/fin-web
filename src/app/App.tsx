@@ -77,6 +77,11 @@ const OsvReportPage = lazy(() =>
     default: m.OsvReportPage,
   }))
 )
+const AccountCardPage = lazy(() =>
+  import('@/pages/account-card').then((m) => ({
+    default: m.AccountCardPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -143,6 +148,11 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/accountingreport/:moduleCode"
             element={<OsvReportPage />}
+          />
+          {/* Карточка счёта — drill-down из ОСВ (двойной клик по строке). */}
+          <Route
+            path="/modules/:pageCode/account-card"
+            element={<AccountCardPage />}
           />
 
         </Routes>

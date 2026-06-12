@@ -189,6 +189,18 @@
     "credit": "Кредит",
     "account": "Шот"
   },
+  "accountCard": {
+    "title": "Шот карточкасы",
+    "forPeriod": "кезеңі",
+    "period": "Кезең",
+    "debitAccount": "Дт шоты",
+    "creditAccount": "Кт шоты",
+    "sum": "Сома",
+    "quantityDt": "Саны Дт",
+    "quantityKt": "Саны Кт",
+    "content": "Мазмұны",
+    "noData": "Кезеңде қозғалыс жоқ"
+  },
   "osv": {
     "title": "Айналым-сальдо тізімдемесі",
     "periodFrom": "Кезең басы",

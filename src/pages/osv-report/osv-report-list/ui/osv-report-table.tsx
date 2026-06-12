@@ -30,6 +30,8 @@ interface OsvReportTableProps {
   total?: OsvReportTotal | null
   /** Заголовок отчёта (название + счёт + период), как в 1С. */
   title?: string
+  /** Двойной клик по строке — открыть карточку счёта (drill-down). */
+  onRowDoubleClick?: (row: OsvReportEntry) => void
   isLoading?: boolean
 }
 
@@ -110,6 +112,7 @@ export const OsvReportTable = ({
   rows,
   total,
   title,
+  onRowDoubleClick,
   isLoading,
 }: OsvReportTableProps) => {
   const { t } = useTranslation()
@@ -347,7 +350,11 @@ export const OsvReportTable = ({
           // Каждая запись — отдельный <tbody class="group">, чтобы при наведении
           // подсвечивались ОБЕ строки показателя (Сумма + Кол.) разом, как в 1С.
           return (
-            <tbody key={row.id} className="group">
+            <tbody
+              key={row.id}
+              className={`group ${onRowDoubleClick ? 'cursor-pointer' : ''}`}
+              onDoubleClick={() => onRowDoubleClick?.(row.original)}
+            >
               {/* Строка показателя «Сумма» */}
                 <tr className={`border-t border-ui-04/60 ${rowBg} group-hover:bg-ui-07`}>
                   <td

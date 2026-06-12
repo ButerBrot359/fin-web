@@ -15,4 +15,10 @@ export const buildAccountPlanPayload = (
   isOffBalance: v.isOffBalance,
   isGroup: v.isGroup,
   parentId: v.parentId,
+  // Шлём ПОЛНЫЙ набор EAV-атрибутов (бэк на update пересоздаёт значения),
+  // перезаписав редактируемый номер мемориального ордера.
+  attributes: {
+    ...v.attributes,
+    NomerMemorialnogoOrdera: v.nomerMemorialnogoOrdera,
+  },
 })

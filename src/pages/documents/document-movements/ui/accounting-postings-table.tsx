@@ -34,8 +34,6 @@ const ROW_FIELDS = [
   },
 ] as const
 
-type Entry = Record<string, unknown>
-
 /** Резолв значения ячейки: ссылочный объект → имя; число → разряды; строка как есть. */
 const resolveValue = (v: unknown): string => {
   if (v == null || v === '') return ''
@@ -49,7 +47,7 @@ const resolveValue = (v: unknown): string => {
     )
   }
   if (typeof v === 'number') return formatWithSpaces(String(v))
-  return String(v)
+  return typeof v === 'string' ? v : String(v as string | number)
 }
 
 const thBase =

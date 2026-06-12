@@ -10,7 +10,11 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
   const [activeIndex, setActiveIndex] = useState(0)
   const dispatch = useSduiDispatch()
 
-  const tabs = node.children ?? []
+  // Вкладка скрывается, если бэк прислал props.visible === false (по умолчанию видима).
+  // Нужно для условных вкладок (напр. «График платежей» по галке «Использовать график»).
+  const tabs = (node.children ?? []).filter(
+    (t) => ((t.props?.visible as boolean | undefined) ?? true),
+  )
 
   const handleChange = (_: React.SyntheticEvent, newIndex: number) => {
     setActiveIndex(newIndex)
@@ -28,11 +32,13 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
     }
   }
 
-  const activeTab = tabs[activeIndex]
+  // Клампим индекс: условная вкладка могла исчезнуть и сдвинуть длину списка.
+  const safeIndex = tabs.length === 0 ? 0 : Math.min(activeIndex, tabs.length - 1)
+  const activeTab = tabs[safeIndex]
 
   return (
     <div>
-      <Tabs value={activeIndex} onChange={handleChange}>
+      <Tabs value={safeIndex} onChange={handleChange}>
         {tabs.map((tab, idx) => (
           <Tab
             key={tab.id}

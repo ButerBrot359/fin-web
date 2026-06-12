@@ -66,7 +66,7 @@ export const AccountPlanTreeTable = ({
   }
 
   return (
-    <div className="overflow-auto">
+    <div className="overflow-auto rounded-md border border-ui-03">
       <table
         className="table-fixed border-collapse"
         style={{ width: table.getTotalSize() }}
@@ -77,7 +77,7 @@ export const AccountPlanTreeTable = ({
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="p-0 text-left text-xs font-medium uppercase text-ui-05"
+                  className="border border-ui-03 p-0 text-left text-xs font-medium uppercase text-ui-05"
                   style={{ width: header.column.getSize() }}
                 >
                   {/* flex + items-stretch: ручка ресайза тянется на всю высоту
@@ -124,7 +124,7 @@ export const AccountPlanTreeTable = ({
                 key={row.id}
                 // select-none: двойной клик не выделяет текст в ячейке (иначе
                 // браузер «съедает» dblclick и запись не открывается).
-                className={`cursor-pointer select-none border-b border-ui-04/40 transition-colors hover:bg-ui-07 ${
+                className={`cursor-pointer select-none transition-colors hover:bg-ui-07 ${
                   isSelected ? 'bg-ui-08' : ''
                 }`}
                 onClick={() => onRowClick?.(row.original)}
@@ -133,7 +133,7 @@ export const AccountPlanTreeTable = ({
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className="cell-wrap px-3 py-2 align-top first:rounded-l-md last:rounded-r-md"
+                    className="cell-wrap border border-ui-04 px-3 py-2 align-top"
                     style={{ width: cell.column.getSize() }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

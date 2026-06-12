@@ -85,6 +85,21 @@ export const useAccountPlanColumns = ({
         accessorFn: (row) => row.entry.nameKz ?? '',
         cell: ({ getValue }) => cellText((getValue() as string) || '—'),
       },
+      // Виды субконто счёта (позиции 1/2/3), как в 1С.
+      ...([1, 2, 3] as const).map((pos) => ({
+        id: `subkonto${pos}`,
+        header: () => <span>{t('accountPlan.column.subconto', { n: pos })}</span>,
+        size: 160,
+        accessorFn: (row: AccountPlanRow) => {
+          const k = row.entry.subkontoKinds?.find((s) => s.position === pos)
+          if (!k) return ''
+          return i18n.language === 'kz'
+            ? (k.kindNameKz ?? k.kindNameRu)
+            : k.kindNameRu
+        },
+        cell: ({ getValue }: { getValue: () => unknown }) =>
+          cellText((getValue() as string) || '—'),
+      })),
       {
         id: 'accountType',
         header: () => <span>{t('accountPlan.column.accountType')}</span>,

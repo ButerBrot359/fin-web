@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Typography } from '@mui/material'
 import type { AxiosResponse } from 'axios'
 
 import type { DocumentType, DocumentAttribute } from '@/entities/document-type'
 import type { ApiResponse } from '@/shared/types/api.types'
 import { FormRenderer } from '@/features/form-renderer'
+import { SubkontoTab } from '@/pages/account-plan/account-plan-entry/ui/subkonto-tab'
 import { Button } from '@/shared/ui/buttons/button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -104,15 +106,25 @@ export const DictSidebarFormView = ({
     }
   }, [copyFromData, savedEntryId, form])
 
+  // План счетов: «Подчинён счёту» — встроенное поле сущности (parentName),
+  // а виды субконто — отдельная коллекция (subkontoKinds), показываемая своей
+  // таблицей. Поэтому для ACCOUNT_PLAN не рендерим generic TABLE-атрибуты
+  // (они отображались криво — только номера строк).
+  const isAccountPlan = panel.domain === ACCOUNT_PLAN_DOMAIN
+
   const formAttributes = useMemo(
     () =>
       [...typeData.attributes]
         .filter((attr: DocumentAttribute) => attr.showInForm)
+        .filter(
+          (attr: DocumentAttribute) =>
+            !(isAccountPlan && attr.dataType === 'TABLE')
+        )
         .sort(
           (a: DocumentAttribute, b: DocumentAttribute) =>
             a.sortOrder - b.sortOrder
         ),
-    [typeData.attributes]
+    [typeData.attributes, isAccountPlan]
   )
 
   const formConfig = useMemo(
@@ -206,10 +218,6 @@ export const DictSidebarFormView = ({
 
   const isSaving = createMutation.isPending || updateMutation.isPending
 
-  // План счетов: «Подчинён счёту» — встроенное поле сущности (parentName),
-  // не EAV-атрибут, поэтому показываем его отдельным read-only блоком.
-  const isAccountPlan = panel.domain === ACCOUNT_PLAN_DOMAIN
-
   const handleSave = form.handleSubmit((data) => {
     if (isEdit) {
       updateMutation.mutate(data)
@@ -281,6 +289,19 @@ export const DictSidebarFormView = ({
               form={form}
               typeCode={panel.typeCode}
             />
+            {/* Виды субконто счёта — отдельная read-only таблица (как в 1С):
+                Вид субконто · Только обороты · Суммовой · Валютный · Количественный. */}
+            {isAccountPlan && savedEntryId != null && (
+              <div className="mt-4">
+                <Typography
+                  variant="body2"
+                  className="mb-2 font-medium text-ui-06"
+                >
+                  {t('accountPlan.tabs.subconto')}
+                </Typography>
+                <SubkontoTab accountId={Number(savedEntryId)} />
+              </div>
+            )}
           </>
         )}
       </div>

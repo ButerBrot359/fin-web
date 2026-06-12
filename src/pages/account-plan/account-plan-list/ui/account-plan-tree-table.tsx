@@ -114,7 +114,9 @@ export const AccountPlanTreeTable = ({
             return (
               <tr
                 key={row.id}
-                className={`cursor-pointer border-b border-ui-04/40 transition-colors hover:bg-ui-07 ${
+                // select-none: двойной клик не выделяет текст в ячейке (иначе
+                // браузер «съедает» dblclick и запись не открывается).
+                className={`cursor-pointer select-none border-b border-ui-04/40 transition-colors hover:bg-ui-07 ${
                   isSelected ? 'bg-ui-08' : ''
                 }`}
                 onClick={() => onRowClick?.(row.original)}

@@ -12,6 +12,10 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import { ColumnFilterTrigger } from '@/features/table-filter'
 import type { ColumnMetaDto } from '@/shared/lib/eav'
 import { extractTableExport, exportTableToXlsx } from '@/shared/lib/table-export'
+import {
+  useAutoFitColumns,
+  weightForDataType,
+} from '@/shared/lib/table-autofit/use-auto-fit-columns'
 
 import { cn } from '@/shared/lib/utils/cn'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -101,6 +105,35 @@ export const EavEntityTable = <T extends { id: number }>({
     }
   }, [isLoading])
 
+  // Логическая ширина колонок «на всю страницу» при первом открытии: тип берём
+  // из меты (код/число/дата — узкие, наименования — широкие), затем ширины
+  // фиксируются для ресайза. `reserve` ≈ разрядка ячеек (border-spacing 2px).
+  const columnWeights = useMemo(() => {
+    const metaByCode = new Map<string, ColumnMetaDto>()
+    columnsMeta?.forEach((m) => {
+      metaByCode.set(m.code, m)
+    })
+    const w: Record<string, number> = {}
+    for (const col of columns) {
+      const id = col.id
+      if (!id) continue
+      const extra = col.meta as EavColumnMetaExtra | undefined
+      const code = extra?.metaCode ?? id
+      const meta = metaByCode.get(code)
+      if (id === 'status') w[id] = 0.5
+      else if (id === '__hierarchy' || code === '__hierarchy') w[id] = 2.6
+      else w[id] = weightForDataType(meta?.dataType, !!meta?.referencedDomainKind)
+    }
+    return w
+  }, [columns, columnsMeta])
+
+  const { columnSizing, onColumnSizingChange } = useAutoFitColumns(
+    scrollRef,
+    !isLoading && entries.length > 0,
+    columnWeights,
+    2 * (columns.length + 1)
+  )
+
   const table = useReactTable({
     data: entries,
     columns,
@@ -110,8 +143,9 @@ export const EavEntityTable = <T extends { id: number }>({
     enableColumnResizing: true,
     columnResizeMode: 'onChange',
     defaultColumn: { minSize: 48, size: 180 },
-    state: { sorting },
+    state: { sorting, columnSizing },
     onSortingChange,
+    onColumnSizingChange,
   })
 
   const { rows } = table.getRowModel()

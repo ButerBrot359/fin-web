@@ -85,6 +85,8 @@ export interface AutocompleteInputProps {
   onShowAll?: () => void
   onAdd?: () => void
   size?: 'small' | 'medium'
+  /** Растянуть на всю ширину контейнера (по умолчанию ширина по контенту). */
+  fullWidth?: boolean
 }
 
 export const AutocompleteInput = ({
@@ -106,6 +108,7 @@ export const AutocompleteInput = ({
   onShowAll,
   onAdd,
   size,
+  fullWidth,
 }: AutocompleteInputProps) => {
   const { t } = useTranslation()
 
@@ -136,6 +139,7 @@ export const AutocompleteInput = ({
     >
       <Autocomplete
         size={size}
+        fullWidth={fullWidth}
         value={value}
         inputValue={inputValue}
         options={options}

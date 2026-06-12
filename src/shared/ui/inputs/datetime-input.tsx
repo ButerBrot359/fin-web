@@ -14,6 +14,8 @@ export interface DateTimeInputProps {
   size?: 'small' | 'medium'
   onOpen?: () => void
   onClose?: () => void
+  /** Растянуть на всю ширину контейнера. */
+  fullWidth?: boolean
 }
 
 export const DateTimeInput = ({
@@ -28,6 +30,7 @@ export const DateTimeInput = ({
   size,
   onOpen,
   onClose,
+  fullWidth,
 }: DateTimeInputProps) => {
   const dateValue = value ? parseISO(value) : null
   const validDate = dateValue && isValid(dateValue) ? dateValue : null
@@ -41,7 +44,7 @@ export const DateTimeInput = ({
   }
 
   const slotProps = {
-    textField: { error, helperText, required, size },
+    textField: { error, helperText, required, size, fullWidth },
   }
 
   if (dateOnly) {

@@ -131,6 +131,7 @@ export const OsvReportPage = () => {
             label={t('osv.periodFrom')}
             required
             size="small"
+            fullWidth
           />
         </div>
         <div className="w-64">
@@ -140,6 +141,7 @@ export const OsvReportPage = () => {
             label={t('osv.periodTo')}
             required
             size="small"
+            fullWidth
           />
         </div>
         <div className="w-64">

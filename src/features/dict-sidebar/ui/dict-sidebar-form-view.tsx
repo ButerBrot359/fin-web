@@ -26,6 +26,9 @@ import {
   type DictEntryCreatePayload,
 } from '../api/dict-sidebar-api'
 
+/** Домен плана счетов — карточка счёта (а не обычный справочник). */
+const ACCOUNT_PLAN_DOMAIN = 'ACCOUNT_PLAN'
+
 interface DictSidebarFormViewProps {
   panel: DictSidebarPanel
   typeData: DocumentType
@@ -203,6 +206,10 @@ export const DictSidebarFormView = ({
 
   const isSaving = createMutation.isPending || updateMutation.isPending
 
+  // План счетов: «Подчинён счёту» — встроенное поле сущности (parentName),
+  // не EAV-атрибут, поэтому показываем его отдельным read-only блоком.
+  const isAccountPlan = panel.domain === ACCOUNT_PLAN_DOMAIN
+
   const handleSave = form.handleSubmit((data) => {
     if (isEdit) {
       updateMutation.mutate(data)
@@ -257,12 +264,24 @@ export const DictSidebarFormView = ({
       {/* Form */}
       <div className="min-h-0 flex-1 overflow-auto pb-2">
         {isLoadingEntry || isLoadingCopy ? null : (
-          <FormRenderer
-            config={formConfig}
-            attributes={formAttributes}
-            form={form}
-            typeCode={panel.typeCode}
-          />
+          <>
+            {isAccountPlan && (
+              <div className="mb-4 flex flex-col gap-1 text-sm">
+                <span className="text-ui-05">
+                  {t('accountPlan.field.parent')}
+                </span>
+                <span className="rounded-md border border-ui-03 bg-ui-02 px-3 py-1.5 text-ui-06">
+                  {entryData?.parentName ?? t('accountPlan.notSet')}
+                </span>
+              </div>
+            )}
+            <FormRenderer
+              config={formConfig}
+              attributes={formAttributes}
+              form={form}
+              typeCode={panel.typeCode}
+            />
+          </>
         )}
       </div>
     </div>

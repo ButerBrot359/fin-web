@@ -37,6 +37,8 @@ export interface DictEntry {
   displayName?: string
   isActive: boolean
   isGroup?: boolean
+  /** Родительский счёт (план счетов): готовое имя с бэка, read-only. */
+  parentName?: string | null
   attributes: Record<string, unknown> | null
 }
 

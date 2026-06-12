@@ -168,8 +168,9 @@ export const OsvReportTable = ({
       onDoubleClick={() => {
         resetColWidth(index)
       }}
-      className={`absolute right-0 top-0 z-10 h-full w-1.5 cursor-col-resize touch-none select-none ${
-        resizingCol === index ? 'bg-accent-02' : 'hover:bg-ui-05'
+      title="Потяните, чтобы изменить ширину"
+      className={`absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none select-none ${
+        resizingCol === index ? 'bg-accent-02' : 'bg-ui-04 hover:bg-ui-05'
       }`}
     />
   )

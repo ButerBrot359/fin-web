@@ -9,7 +9,11 @@ import { AccountPlanListToolbar } from '@/widgets/account-plan-list-toolbar'
 
 import { useAccountPlanColumns } from '../lib/hooks/use-account-plan-columns'
 import { useExpandedNodesStore } from '../lib/hooks/use-expanded-nodes-store'
-import { buildTreeRows, filterTreeByQuery } from '../lib/utils/build-tree-rows'
+import {
+  buildTreeRows,
+  filterTreeByQuery,
+  type AccountPlanRow,
+} from '../lib/utils/build-tree-rows'
 import { AccountPlanTreeTable } from './account-plan-tree-table'
 
 export const AccountPlanPage = () => {
@@ -51,11 +55,18 @@ export const AccountPlanPage = () => {
 
   const columns = useAccountPlanColumns({ onToggleExpand: toggleExpand })
 
-  const handleRowClick = (row: { entry: { id: number } }) => {
+  const handleRowClick = (row: AccountPlanRow) => {
     treeStore.setSelected(location.pathname, row.entry.id)
+    // Папку (группу) раскрываем/сворачиваем одним кликом по строке;
+    // запись одним кликом только выделяется — открывается двойным.
+    if (row.entry.isGroup || row.hasChildren) {
+      toggleExpand(row.entry.id)
+    }
   }
 
-  const handleRowDoubleClick = (row: { entry: { id: number } }) => {
+  const handleRowDoubleClick = (row: AccountPlanRow) => {
+    // Двойным кликом открываем карточку только для записей (не папок).
+    if (row.entry.isGroup) return
     void navigate(
       `/modules/${pageCode}/accountplan/${moduleCode}/${String(row.entry.id)}`
     )

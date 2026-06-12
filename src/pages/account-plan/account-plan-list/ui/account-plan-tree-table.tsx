@@ -128,7 +128,7 @@ export const AccountPlanTreeTable = ({
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className="truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
+                    className="cell-wrap px-3 py-2 align-top first:rounded-l-md last:rounded-r-md"
                     style={{ width: cell.column.getSize() }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

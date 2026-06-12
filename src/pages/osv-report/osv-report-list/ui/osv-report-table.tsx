@@ -89,7 +89,7 @@ const ValueCell = ({
 
 const tdValue = 'overflow-hidden whitespace-nowrap px-3 py-1.5'
 const thBase =
-  'relative whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase text-ui-06'
+  'whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase text-ui-06'
 
 /**
  * Логические колонки ОСВ для ресайза (рендер таблицы кастомный, поэтому ширины
@@ -158,22 +158,6 @@ export const OsvReportTable = ({
       return next
     })
   }
-
-  // Ручка перетаскивания у правой границы заголовка колонки `index`.
-  const ResizeHandle = ({ index }: { index: number }) => (
-    <div
-      onMouseDown={(e) => {
-        startResize(index, e)
-      }}
-      onDoubleClick={() => {
-        resetColWidth(index)
-      }}
-      title="Потяните, чтобы изменить ширину"
-      className={`absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none select-none ${
-        resizingCol === index ? 'bg-accent-02' : 'bg-ui-04 hover:bg-ui-05'
-      }`}
-    />
-  )
 
   // Минимальная колонка-заглушка: TanStack нужна для модели дерева; сам рендер
   // значений делаем вручную, поэтому cell-рендереры здесь не используются.
@@ -254,6 +238,12 @@ export const OsvReportTable = ({
     )
   }
 
+  const totalWidth = colWidths.reduce((a, b) => a + b, 0)
+  // Правые границы колонок (x в px) — для разделителей-ручек на всю высоту.
+  const boundaries = colWidths.map((_, i) =>
+    colWidths.slice(0, i + 1).reduce((a, b) => a + b, 0)
+  )
+
   return (
     <div className="overflow-auto rounded-md border border-ui-04">
       {/* Шапка отчёта: название + счёт + период, как в 1С. */}
@@ -271,10 +261,26 @@ export const OsvReportTable = ({
           </Typography>
         </div>
       )}
-      <table
-        className="table-fixed border-collapse"
-        style={{ width: colWidths.reduce((a, b) => a + b, 0) }}
-      >
+      {/* relative-обёртка: поверх таблицы — разделители-ручки на всю высоту
+          (как линии колонок в 1С), а не только во второй строке шапки. */}
+      <div className="relative" style={{ width: totalWidth }}>
+        {boundaries.map((x, i) => (
+          <div
+            key={i}
+            onMouseDown={(e) => {
+              startResize(i, e)
+            }}
+            onDoubleClick={() => {
+              resetColWidth(i)
+            }}
+            title="Потяните, чтобы изменить ширину"
+            style={{ left: x - 4 }}
+            className={`absolute inset-y-0 z-20 w-2 cursor-col-resize touch-none select-none ${
+              resizingCol === i ? 'bg-accent-02/70' : 'bg-ui-04/40 hover:bg-ui-05/70'
+            }`}
+          />
+        ))}
+        <table className="w-full table-fixed border-collapse">
         <colgroup>
           {colWidths.map((w, i) => (
             <col key={i} style={{ width: w }} />
@@ -296,15 +302,12 @@ export const OsvReportTable = ({
                 <div>{t('osv.levelNomenclature')}</div>
                 <div>{t('osv.levelIndividuals')}</div>
               </div>
-              <ResizeHandle index={0} />
             </th>
             <th rowSpan={2} className={`${thBase} text-left`}>
               {t('osv.accountName')}
-              <ResizeHandle index={1} />
             </th>
             <th rowSpan={2} className={`${thBase} text-left`}>
               {t('osv.indicators')}
-              <ResizeHandle index={2} />
             </th>
             <th colSpan={2} className={`${thBase} border-l border-ui-04 text-center`}>
               {t('osv.openingBalance')}
@@ -324,7 +327,6 @@ export const OsvReportTable = ({
                 className={`${thBase} text-right normal-case ${groupBorder(i)}`}
               >
                 {i % 2 === 0 ? t('osv.debit') : t('osv.credit')}
-                <ResizeHandle index={i + 3} />
               </th>
             ))}
           </tr>
@@ -351,7 +353,7 @@ export const OsvReportTable = ({
                       (как в 1С), при выровненных стрелках в колонке «Счёт». */}
                   <td
                     rowSpan={2}
-                    className="overflow-hidden whitespace-nowrap py-1.5 pr-3 align-top"
+                    className="cell-wrap py-1.5 pr-3 align-top"
                     style={{ paddingLeft: 12 + row.depth * 18 }}
                   >
                     {row.depth > 0 ? (
@@ -426,7 +428,8 @@ export const OsvReportTable = ({
             </tr>
           </tfoot>
         )}
-      </table>
+        </table>
+      </div>
     </div>
   )
 }

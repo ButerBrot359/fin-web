@@ -228,13 +228,18 @@ export const EavEntityTable = <T extends { id: number }>({
                             e.stopPropagation()
                             header.column.resetSize()
                           }}
-                          className={cn(
-                            'absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none select-none',
-                            header.column.getIsResizing()
-                              ? 'bg-accent-02'
-                              : 'hover:bg-ui-05'
-                          )}
-                        />
+                          className="group absolute inset-y-0 right-0 z-10 flex w-2 cursor-col-resize touch-none select-none justify-end"
+                        >
+                          {/* видимая часть — тонкая линия 1px, зона захвата 8px */}
+                          <div
+                            className={cn(
+                              'h-full w-px',
+                              header.column.getIsResizing()
+                                ? 'bg-accent-02'
+                                : 'bg-transparent group-hover:bg-accent-02'
+                            )}
+                          />
+                        </div>
                       )}
                     </th>
                   )
@@ -277,6 +282,10 @@ export const EavEntityTable = <T extends { id: number }>({
               return (
                 <tr
                   key={row.id}
+                  // Виртуализатор замеряет реальную высоту строки — нужно для
+                  // переноса текста (строка растёт под несколько строк).
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
                   onClick={
                     onRowClick
                       ? () => {
@@ -310,11 +319,11 @@ export const EavEntityTable = <T extends { id: number }>({
                         key={cell.id}
                         style={{ width: cell.column.getSize() }}
                         className={cn(
-                          'overflow-hidden px-3 py-2 first:rounded-l-md last:rounded-r-md',
+                          'px-3 py-2 align-top first:rounded-l-md last:rounded-r-md',
                           cellExtra?.metaCode === '__hierarchy' ||
                             cell.column.id === '__hierarchy'
-                            ? 'whitespace-nowrap'
-                            : 'truncate'
+                            ? 'overflow-hidden whitespace-nowrap'
+                            : 'cell-wrap'
                         )}
                       >
                         {flexRender(

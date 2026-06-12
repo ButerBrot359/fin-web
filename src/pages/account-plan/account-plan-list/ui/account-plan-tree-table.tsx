@@ -98,12 +98,17 @@ export const AccountPlanTreeTable = ({
                           header.column.resetSize()
                         }}
                         title="Потяните, чтобы изменить ширину"
-                        className={`w-2 shrink-0 cursor-col-resize touch-none select-none ${
-                          header.column.getIsResizing()
-                            ? 'bg-accent-02'
-                            : 'bg-ui-04 hover:bg-ui-05'
-                        }`}
-                      />
+                        className="group flex w-2 shrink-0 cursor-col-resize touch-none select-none justify-center"
+                      >
+                        {/* тонкая линия 1px; зона захвата — 8px (невидима) */}
+                        <div
+                          className={`h-full w-px ${
+                            header.column.getIsResizing()
+                              ? 'bg-accent-02'
+                              : 'bg-transparent group-hover:bg-accent-02'
+                          }`}
+                        />
+                      </div>
                     )}
                   </div>
                 </th>
@@ -128,7 +133,7 @@ export const AccountPlanTreeTable = ({
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className="truncate border border-ui-04 px-3 py-2"
+                    className="cell-wrap border border-ui-04 px-3 py-2 align-top"
                     style={{ width: cell.column.getSize() }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

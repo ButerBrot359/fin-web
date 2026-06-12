@@ -13,6 +13,18 @@
   height: 40px !important;
 }
 
+/* Перенос текста в ячейке при ручном сужении колонки: текст переносится на
+   несколько строк вместо обрезки «…». Перебиваем `noWrap` у вложенных
+   MUI <Typography> (он ставит white-space: nowrap классом). */
+.cell-wrap,
+.cell-wrap * {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 * {
   box-sizing: border-box;
 }

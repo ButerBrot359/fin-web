@@ -12,6 +12,7 @@ import { PageHeader } from '@/widgets/page-header'
 import { formatDate } from '@/shared/lib/utils/date'
 
 import { useAccountCard } from '../lib/hooks/use-account-card'
+import { useAccountCardOpening } from '../lib/hooks/use-account-card-opening'
 import { AccountCardTable } from './account-card-table'
 import type { AccountCardParams } from '../types/account-card'
 
@@ -44,6 +45,22 @@ export const AccountCardPage = () => {
 
   const { rows, isLoading } = useAccountCard(params, params != null)
 
+  // Начальное сальдо — остаток счёта на момент ДО начала периода (from − 1 сек),
+  // чтобы проводки самого from не задвоились в начальном сальдо и оборотах.
+  const openingDate = useMemo(() => {
+    if (!from) return null
+    const d = new Date(from)
+    if (Number.isNaN(d.getTime())) return null
+    d.setSeconds(d.getSeconds() - 1)
+    return d.toISOString()
+  }, [from])
+
+  const { opening } = useAccountCardOpening(
+    openingDate,
+    accountId ? Number(accountId) : undefined,
+    params != null
+  )
+
   const title = useMemo(() => {
     if (!from || !to) return t('accountCard.title')
     const period = `${formatDate(from)} — ${formatDate(to)}`
@@ -59,7 +76,14 @@ export const AccountCardPage = () => {
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={title} onClose={handleClose} />
-      {params != null && <AccountCardTable rows={rows} isLoading={isLoading} />}
+      {params != null && (
+        <AccountCardTable
+          rows={rows}
+          opening={opening}
+          cardCode={accountCode}
+          isLoading={isLoading}
+        />
+      )}
     </div>
   )
 }

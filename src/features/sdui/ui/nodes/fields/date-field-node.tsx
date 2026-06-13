@@ -10,6 +10,7 @@ export const DateFieldNode: FC<NodeProps> = ({ node }) => {
   const required = node.props?.required as boolean | undefined
   const readonly = node.props?.readonly as boolean | undefined
   const visible = (node.props?.visible as boolean | undefined) ?? true
+  const enabled = (node.props?.enabled as boolean | undefined) ?? true
   const error = node.props?.error as string | undefined
   const flex = node.props?.flex as number | string | undefined
 
@@ -33,6 +34,7 @@ export const DateFieldNode: FC<NodeProps> = ({ node }) => {
         dateOnly={true}
         required={required}
         readOnly={readonly}
+        disabled={!enabled}
         error={!!error}
         helperText={error}
         onChange={(newValue) => {

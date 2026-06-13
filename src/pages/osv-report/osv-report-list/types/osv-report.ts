@@ -48,6 +48,18 @@ export interface OsvReportEntry {
   closingDt?: number | string | null
   /** Сальдо на конец периода, Кт. */
   closingKt?: number | string | null
+  /** Кол-во: сальдо на начало, Дт. */
+  openingQtyDt?: number | string | null
+  /** Кол-во: сальдо на начало, Кт. */
+  openingQtyKt?: number | string | null
+  /** Кол-во: оборот за период, Дт. */
+  turnoverQtyDt?: number | string | null
+  /** Кол-во: оборот за период, Кт. */
+  turnoverQtyKt?: number | string | null
+  /** Кол-во: сальдо на конец, Дт. */
+  closingQtyDt?: number | string | null
+  /** Кол-во: сальдо на конец, Кт. */
+  closingQtyKt?: number | string | null
   /**
    * Дочерние узлы дерева ОСВ (при `groupByDimensions=true`). Рекурсивно
    * вложены по фиксированному порядку уровней:
@@ -75,6 +87,38 @@ export interface OsvReportEntry {
   groupRefName?: string | null
 }
 
+/**
+ * Серверная строка «Итого» ОСВ — суммы 6 колонок по счетам верхнего уровня
+ * (БЕЗ забалансовых) + признак сходимости двойной записи. Считается на бэке
+ * (бэкендовый AccountingRegisterTotalDto), фронт больше НЕ суммирует сам.
+ */
+export interface OsvReportTotal {
+  openingDt?: number | string | null
+  openingKt?: number | string | null
+  turnoverDt?: number | string | null
+  turnoverKt?: number | string | null
+  closingDt?: number | string | null
+  closingKt?: number | string | null
+  openingQtyDt?: number | string | null
+  openingQtyKt?: number | string | null
+  turnoverQtyDt?: number | string | null
+  turnoverQtyKt?: number | string | null
+  closingQtyDt?: number | string | null
+  closingQtyKt?: number | string | null
+  /**
+   * Сошлась ли двойная запись (Σ Дт == Σ Кт по всем трём парам колонок).
+   * `null` — проверка не выполнялась (отчёт по одному счёту: вторая нога
+   * проводки вне выборки, баланс заведомо не сойдётся).
+   */
+  balanced?: boolean | null
+  /** Расхождение Дт−Кт по начальному сальдо. `null` если не проверялось. */
+  openingDiff?: number | string | null
+  /** Расхождение Дт−Кт по оборотам. `null` если не проверялось. */
+  turnoverDiff?: number | string | null
+  /** Расхождение Дт−Кт по конечному сальдо. `null` если не проверялось. */
+  closingDiff?: number | string | null
+}
+
 /** Параметры запроса ОСВ. */
 export interface OsvReportParams {
   /** Начало периода — ISO date-time. */
@@ -83,4 +127,36 @@ export interface OsvReportParams {
   to: string
   /** Фильтр по счёту (опционально; пусто = все счета). */
   accountId?: number
+  /**
+   * Упорядоченный список измерений-уровней группировки (коды бэка). Пусто =
+   * без разворота по измерениям. Управляется панелью «Настройки → Группировка».
+   */
+  groupBy?: string[]
+  /** Разворачивать листы по субконто-1 («По субконто»). */
+  expandBySubkonto?: boolean
 }
+
+/**
+ * Измерения-уровни группировки ОСВ (порядок фиксирован, как в 1С) — код уровня
+ * для бэка + i18n-метка. Состав/включённость задаёт пользователь в настройках.
+ */
+export const OSV_GROUP_DIMENSIONS = [
+  { key: 'ORGANIZATION', labelKey: 'osv.levelOrganization' },
+  { key: 'PODRAZDELENIE', labelKey: 'osv.levelSubdivision' },
+  { key: 'FKR', labelKey: 'osv.levelFkr' },
+  { key: 'SPETSIFIKA', labelKey: 'osv.levelSpetsifika' },
+  { key: 'ISTOCHNIK_FINANSIROVANIYA', labelKey: 'osv.levelFundingSource' },
+  { key: 'KOD_PLATNYKH_USLUG', labelKey: 'osv.levelKodPlatnykhUslug' },
+] as const
+
+/**
+ * Измерения, включённые по умолчанию (как в 1С): основные пять. КодПлатныхУслуг
+ * по умолчанию выключен (доступен чекбоксом).
+ */
+export const OSV_DEFAULT_DIMENSIONS: string[] = [
+  'ORGANIZATION',
+  'PODRAZDELENIE',
+  'FKR',
+  'SPETSIFIKA',
+  'ISTOCHNIK_FINANSIROVANIYA',
+]

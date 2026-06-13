@@ -155,7 +155,11 @@
   "table": {
     "empty": "Әзірге бос",
     "add": "Қосу",
-    "loadedCount": "{{total}} ішінен {{loaded}} жүктелді"
+    "loadedCount": "{{total}} ішінен {{loaded}} жүктелді",
+    "loadedCountSimple": "{{loaded}} жүктелді",
+    "exportExcel": "Excel-ге жүктеп алу",
+    "exportEmpty": "Жүктеп алуға деректер жоқ",
+    "exportError": "Excel-ге жүктеп алу мүмкін болмады"
   },
   "informationRegister": {
     "period": "Кезең",
@@ -178,7 +182,47 @@
     "sum": "Сома",
     "content": "Мазмұны",
     "recorder": "Тіркеуші",
-    "lineNo": "Жол нөмірі"
+    "lineNo": "Жол нөмірі",
+    "num": "N",
+    "date": "Күні",
+    "debit": "Дебет",
+    "credit": "Кредит",
+    "account": "Шот"
+  },
+  "accountCard": {
+    "title": "Шот карточкасы",
+    "forPeriod": "кезеңі",
+    "period": "Кезең",
+    "document": "Құжат",
+    "operation": "Операция",
+    "analyticsDt": "Дт аналитикасы",
+    "analyticsKt": "Кт аналитикасы",
+    "corrAccount": "Корр. шот",
+    "organization": "Ұйым",
+    "groupOrganizatsiya": "Ұйым",
+    "groupPodrazdelenie": "Бөлімше",
+    "groupFkr": "ФКР",
+    "groupSpetsifika": "Ерекшелік",
+    "groupIstochnik": "Қаржыландыру көзі",
+    "groupKodPlatnykhUslug": "Ақылы қызмет коды",
+    "groupSubkonto": "Субконто",
+    "debit": "Дебет",
+    "credit": "Кредит",
+    "currentBalance": "Ағымдағы сальдо",
+    "openingBalance": "Басындағы сальдо",
+    "turnovers": "Кезеңдегі айналымдар",
+    "closingBalance": "Соңғы сальдо",
+    "exportExcel": "Excel-ге жүктеу",
+    "print": "Басып шығару",
+    "loadedOf": "{{total}} ішінен {{loaded}} жүктелді",
+    "loadMore": "Тағы жүктеу",
+    "loading": "Жүктелуде…",
+    "noData": "Кезеңде қозғалыс жоқ"
+  },
+  "reportSettings": {
+    "title": "Баптаулар",
+    "grouping": "Топтау",
+    "indicators": "Көрсеткіштер"
   },
   "osv": {
     "title": "Айналым-сальдо тізімдемесі",
@@ -193,13 +237,34 @@
     "turnoverKt": "Айналым Кт",
     "closingDt": "Соңғы сальдо Дт",
     "closingKt": "Соңғы сальдо Кт",
+    "indicators": "Көрсеткіштер",
+    "sum": "Сома",
+    "quantity": "Саны",
+    "byAccount": "шот бойынша",
+    "forPeriod": "кезеңі",
+    "levelOrganization": "Ұйым",
+    "levelSubdivision": "Бөлімше",
+    "levelFkr": "ФКР",
+    "levelSpetsifika": "Ерекшелік",
+    "levelFundingSource": "Қаржыландыру көзі",
+    "levelSubkonto": "Субконто",
+    "levelNomenclature": "Номенклатура",
+    "levelIndividuals": "Жеке тұлғалар",
+    "levelKodPlatnykhUslug": "Ақылы қызмет коды",
+    "bySubkonto": "Субконто бойынша",
+    "openingBalance": "Кезең басындағы сальдо",
+    "turnovers": "Кезеңдегі айналымдар",
+    "closingBalance": "Кезең соңындағы сальдо",
+    "debit": "Дебет",
+    "credit": "Кредит",
     "total": "Барлығы",
     "noData": "Таңдалған кезеңде дерек жоқ",
     "loadError": "Есепті қалыптастыру мүмкін болмады",
     "noSubkonto": "Субконтосыз",
     "noValue": "Мәні жоқ",
     "expand": "Жаю",
-    "collapse": "Жию"
+    "collapse": "Жию",
+    "imbalanceWarning": "Қос жазба сәйкес келмеді: дебет пен кредит сомалары тең емес. Жазбаларды тексеріңіз — кірісі жоқ есептен шығару құжаттары болуы мүмкін."
   },
   "accountPlan": {
     "code": "Коды",
@@ -322,8 +387,8 @@
       "maxSubkonto": "Субконто 3-тен артық емес",
       "subkontoPositionsInvalid": "Субконто позициялары 1, 2, 3 үзіліссіз болуы тиіс"
     }
-  }
-  ,"sdui": {
+  },
+  "sdui": {
     "conflict": {
       "staleRevision": "Синхрондау...",
       "sessionNotFound": "Сессия мерзімі аяқталды, қайта ашу..."

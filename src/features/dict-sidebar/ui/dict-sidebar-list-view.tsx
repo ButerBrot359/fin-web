@@ -30,6 +30,7 @@ import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
 import {
   fetchDictTypeMetadata,
   fetchDictEntriesPaged,
+  fetchDictEntriesSearchPaged,
   searchDictEntries,
   type DictEntry,
 } from '../api/dict-sidebar-api'
@@ -64,6 +65,11 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
 
   const PAGE_SIZE = 25
 
+  // Иерархический справочник: бэкенд-/paged возвращает только корневой уровень
+  // (parent IS NULL), поэтому листинг идёт через плоский /search по всем уровням,
+  // а группы скрываются на клиенте — в сайдбаре выбираются только элементы.
+  const isHierarchical = typeData?.isHierarchical ?? false
+
   const {
     data: pagedData,
     isLoading: isLoadingPaged,
@@ -78,29 +84,34 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       panel.domain,
       panel.typeCode,
       'paged',
+      isHierarchical,
       panel.searchParams,
       sortAttr,
       sortDir,
     ],
-    queryFn: ({ signal, pageParam }) =>
-      fetchDictEntriesPaged(
-        panel.domain,
-        panel.typeCode,
-        {
-          page: pageParam,
-          size: PAGE_SIZE,
-          ...panel.searchParams,
-          sortAttr,
-          sortDir,
-        },
-        signal
-      ),
+    queryFn: ({ signal, pageParam }) => {
+      const params = {
+        page: pageParam,
+        size: PAGE_SIZE,
+        ...panel.searchParams,
+        sortAttr,
+        sortDir,
+      }
+      return isHierarchical
+        ? fetchDictEntriesSearchPaged(
+            panel.domain,
+            panel.typeCode,
+            { q: '', ...params },
+            signal
+          )
+        : fetchDictEntriesPaged(panel.domain, panel.typeCode, params, signal)
+    },
     initialPageParam: 0,
     getNextPageParam: (lastPage) => {
       const paged = lastPage.data.data
       return paged.last ? undefined : paged.number + 1
     },
-    enabled: !isSearchMode,
+    enabled: !isSearchMode && typeData != null,
     staleTime: 60 * 1000,
     placeholderData: keepPreviousData,
   })
@@ -127,13 +138,12 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     select: (res) => res.data.data.content,
   })
 
-  const entries = useMemo(
-    () =>
-      isSearchMode
-        ? (searchData ?? [])
-        : (pagedData?.pages.flatMap((page) => page.data.data.content) ?? []),
-    [isSearchMode, searchData, pagedData]
-  )
+  const entries = useMemo(() => {
+    const list = isSearchMode
+      ? (searchData ?? [])
+      : (pagedData?.pages.flatMap((page) => page.data.data.content) ?? [])
+    return isHierarchical ? list.filter((e) => !e.isGroup) : list
+  }, [isSearchMode, searchData, pagedData, isHierarchical])
   const totalElements = pagedData?.pages[0]?.data.data.totalElements ?? 0
   const isLoading = isLoadingType || isLoadingPaged || isLoadingSearch
   const isSortingOrFiltering = isFetchingPaged && isPlaceholderData
@@ -456,10 +466,14 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
             {!isSearchMode && (
               <div className="shrink-0 px-3 py-2 flex items-center gap-2">
                 <Typography variant="body2" className="text-ui-05">
-                  {t('table.loadedCount', {
-                    loaded: entries.length,
-                    total: totalElements,
-                  })}
+                  {isHierarchical
+                    ? // totalElements от /search включает скрытые группы — без
+                      // бэкенд-доработки точный total элементов не узнать.
+                      t('table.loadedCountSimple', { loaded: entries.length })
+                    : t('table.loadedCount', {
+                        loaded: entries.length,
+                        total: totalElements,
+                      })}
                 </Typography>
                 {isFetchingNextPage && <CircularProgress size={14} />}
               </div>

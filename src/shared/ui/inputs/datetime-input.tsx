@@ -7,6 +7,7 @@ export interface DateTimeInputProps {
   onChange: (value: string) => void
   label?: string
   readOnly?: boolean
+  disabled?: boolean
   dateOnly?: boolean
   required?: boolean
   error?: boolean
@@ -14,6 +15,8 @@ export interface DateTimeInputProps {
   size?: 'small' | 'medium'
   onOpen?: () => void
   onClose?: () => void
+  /** Растянуть на всю ширину контейнера. */
+  fullWidth?: boolean
 }
 
 export const DateTimeInput = ({
@@ -21,6 +24,7 @@ export const DateTimeInput = ({
   onChange,
   label,
   readOnly,
+  disabled,
   dateOnly,
   required,
   error,
@@ -28,6 +32,7 @@ export const DateTimeInput = ({
   size,
   onOpen,
   onClose,
+  fullWidth,
 }: DateTimeInputProps) => {
   const dateValue = value ? parseISO(value) : null
   const validDate = dateValue && isValid(dateValue) ? dateValue : null
@@ -41,7 +46,7 @@ export const DateTimeInput = ({
   }
 
   const slotProps = {
-    textField: { error, helperText, required, size },
+    textField: { error, helperText, required, size, fullWidth },
   }
 
   if (dateOnly) {
@@ -53,6 +58,7 @@ export const DateTimeInput = ({
         onClose={onClose}
         label={label}
         readOnly={readOnly}
+        disabled={disabled}
         slotProps={slotProps}
       />
     )
@@ -66,6 +72,7 @@ export const DateTimeInput = ({
       onClose={onClose}
       label={label}
       readOnly={readOnly}
+      disabled={disabled}
       slotProps={slotProps}
     />
   )

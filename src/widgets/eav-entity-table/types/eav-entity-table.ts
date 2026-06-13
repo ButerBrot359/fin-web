@@ -6,6 +6,7 @@ import type {
 } from '@tanstack/react-table'
 
 import type { ColumnMetaDto } from '@/shared/lib/eav'
+import type { TableExportData } from '@/shared/lib/table-export'
 
 /**
  * Кастомное поле в `ColumnDef.meta` — позволяет колонке tanstack/react-table
@@ -50,6 +51,28 @@ export interface EavEntityTableProps<T extends { id: number }> {
   selectedRowId?: number | null
   onRowClick?: (row: T) => void
   onRowDoubleClick?: (row: T) => void
+
+  /**
+   * Имя для выгрузки в Excel (имя листа и файла). Если задано — в подвале
+   * таблицы появляется кнопка «Выгрузить в Excel». `undefined` ⇒ кнопки нет.
+   */
+  exportFileName?: string
+
+  /**
+   * Загрузчик ВСЕХ строк (все страницы) для выгрузки. Если задан — в Excel
+   * попадают все строки, а не только подгруженные в грид. Если не задан —
+   * выгружаются текущие загруженные строки.
+   */
+  fetchAllEntries?: () => Promise<T[]>
+
+  /**
+   * Оверрайд подготовки данных для Excel. Получает строки для выгрузки (все,
+   * если задан `fetchAllEntries`, иначе загруженные). Нужен страницам, где
+   * отображаемые значения требуют доменного резолва (ID → имя), которого нет
+   * в аксессорах (например, регистр бухгалтерии). Может быть асинхронным
+   * (префетч ссылок). Если не задан — данные собираются из таблицы автоматически.
+   */
+  buildExportData?: (rows: T[]) => TableExportData | Promise<TableExportData>
 
   /**
    * Дополнительные строки перед виртуализированным телом (например,

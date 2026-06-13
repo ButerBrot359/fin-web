@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Typography } from '@mui/material'
 import type { AxiosResponse } from 'axios'
 
 import type { DocumentType, DocumentAttribute } from '@/entities/document-type'
 import type { ApiResponse } from '@/shared/types/api.types'
 import { FormRenderer } from '@/features/form-renderer'
+import { SubkontoTab } from '@/pages/account-plan/account-plan-entry/ui/subkonto-tab'
 import { Button } from '@/shared/ui/buttons/button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -25,6 +27,9 @@ import {
   type DictEntry,
   type DictEntryCreatePayload,
 } from '../api/dict-sidebar-api'
+
+/** Домен плана счетов — карточка счёта (а не обычный справочник). */
+const ACCOUNT_PLAN_DOMAIN = 'ACCOUNT_PLAN'
 
 interface DictSidebarFormViewProps {
   panel: DictSidebarPanel
@@ -101,15 +106,32 @@ export const DictSidebarFormView = ({
     }
   }, [copyFromData, savedEntryId, form])
 
+  // План счетов: «Подчинён счёту» — встроенное поле сущности (parentName),
+  // а виды субконто — отдельная коллекция (subkontoKinds), показываемая своей
+  // таблицей. Поэтому для ACCOUNT_PLAN не рендерим generic TABLE-атрибуты
+  // (они отображались криво — только номера строк).
+  const isAccountPlan = panel.domain === ACCOUNT_PLAN_DOMAIN
+
   const formAttributes = useMemo(
     () =>
       [...typeData.attributes]
         .filter((attr: DocumentAttribute) => attr.showInForm)
+        .filter(
+          (attr: DocumentAttribute) =>
+            // Для плана счетов прячем generic TABLE-атрибуты (субконто рисуем
+            // своей таблицей) и служебный EAV-атрибут «Kod» (внутренний код
+            // вида 000000013) — настоящий код счёта показываем из встроенного
+            // поля `code` отдельным блоком ниже.
+            !(
+              isAccountPlan &&
+              (attr.dataType === 'TABLE' || attr.code === 'Kod')
+            )
+        )
         .sort(
           (a: DocumentAttribute, b: DocumentAttribute) =>
             a.sortOrder - b.sortOrder
         ),
-    [typeData.attributes]
+    [typeData.attributes, isAccountPlan]
   )
 
   const formConfig = useMemo(
@@ -257,12 +279,48 @@ export const DictSidebarFormView = ({
       {/* Form */}
       <div className="min-h-0 flex-1 overflow-auto pb-2">
         {isLoadingEntry || isLoadingCopy ? null : (
-          <FormRenderer
-            config={formConfig}
-            attributes={formAttributes}
-            form={form}
-            typeCode={panel.typeCode}
-          />
+          <>
+            {isAccountPlan && (
+              <div className="mb-4 flex flex-col gap-1 text-sm">
+                <span className="text-ui-05">
+                  {t('accountPlan.field.parent')}
+                </span>
+                <span className="rounded-md border border-ui-03 bg-ui-02 px-3 py-1.5 text-ui-06">
+                  {entryData?.parentName ?? t('accountPlan.notSet')}
+                </span>
+              </div>
+            )}
+            {/* Настоящий код счёта (встроенное поле `code`), а не служебный
+                EAV-атрибут «Kod» (внутренний код 000000013). */}
+            {isAccountPlan && (
+              <label className="mb-4 flex flex-col gap-1 text-sm">
+                <span className="text-ui-05">{t('accountPlan.field.code')}</span>
+                <input
+                  className="rounded-md border border-ui-03 bg-ui-01 px-3 py-1.5 text-ui-06"
+                  {...form.register('code')}
+                />
+              </label>
+            )}
+            <FormRenderer
+              config={formConfig}
+              attributes={formAttributes}
+              form={form}
+              typeCode={panel.typeCode}
+            />
+            {/* Виды субконто счёта — отдельная read-only таблица (как в 1С):
+                Вид субконто · Только обороты · Суммовой · Валютный · Количественный. */}
+            {isAccountPlan && savedEntryId != null && (
+              <div className="mt-4">
+                <Typography
+                  variant="body2"
+                  className="mb-2 font-medium text-ui-06"
+                >
+                  {t('accountPlan.tabs.subconto')}
+                </Typography>
+                <SubkontoTab accountId={Number(savedEntryId)} />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

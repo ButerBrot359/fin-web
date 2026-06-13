@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   useReactTable,
@@ -6,10 +6,13 @@ import {
   flexRender,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { CircularProgress, Typography } from '@mui/material'
+import { Button, CircularProgress, Typography } from '@mui/material'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 
 import { ColumnFilterTrigger } from '@/features/table-filter'
 import type { ColumnMetaDto } from '@/shared/lib/eav'
+import { extractTableExport, exportTableToXlsx } from '@/shared/lib/table-export'
+import { useAutoFitColumnsByContent } from '@/shared/lib/table-autofit/use-auto-fit-columns'
 
 import { cn } from '@/shared/lib/utils/cn'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -39,8 +42,12 @@ export const EavEntityTable = <T extends { id: number }>({
   onRowClick,
   onRowDoubleClick,
   extraRowsAbove,
+  exportFileName,
+  fetchAllEntries,
+  buildExportData,
 }: EavEntityTableProps<T>) => {
   const { t } = useTranslation()
+  const [isExporting, setIsExporting] = useState(false)
 
   const metaByCode = useMemo(() => {
     const map = new Map<string, ColumnMetaDto>()
@@ -95,16 +102,50 @@ export const EavEntityTable = <T extends { id: number }>({
     }
   }, [isLoading])
 
+  // Ширина колонок ПО СОДЕРЖИМОМУ (как в исходном отображении регистров):
+  // таблица раскладывается auto-layout'ом под контент/заголовки, затем ширины
+  // фиксируются — после этого колонки можно тянуть мышью.
+  const { columnSizing, onColumnSizingChange, fitted } =
+    useAutoFitColumnsByContent(scrollRef, !isLoading && entries.length > 0)
+
   const table = useReactTable({
     data: entries,
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
-    state: { sorting },
+    // Ресайз колонок мышью (как в Excel): тянем границу заголовка.
+    enableColumnResizing: true,
+    columnResizeMode: 'onChange',
+    defaultColumn: { minSize: 48, size: 180 },
+    state: { sorting, columnSizing },
     onSortingChange,
+    onColumnSizingChange,
   })
 
   const { rows } = table.getRowModel()
+
+  const canExport = !!exportFileName && entries.length > 0
+
+  const handleExport = async () => {
+    if (!exportFileName || isExporting) return
+    setIsExporting(true)
+    try {
+      const rows = fetchAllEntries ? await fetchAllEntries() : entries
+      const data = buildExportData
+        ? await buildExportData(rows)
+        : await extractTableExport(table, fetchAllEntries ? rows : undefined)
+      if (data.rows.length === 0) {
+        showToast('info', t('table.exportEmpty'))
+        return
+      }
+      exportTableToXlsx(exportFileName, data)
+    } catch (e) {
+      const description = e instanceof Error ? e.message : undefined
+      showToast('error', t('table.exportError'), description)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
@@ -129,8 +170,12 @@ export const EavEntityTable = <T extends { id: number }>({
       )}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
         <table
-          className="w-full border-separate"
-          style={{ borderSpacing: '2px' }}
+          className={cn('border-separate', fitted ? 'table-fixed' : 'w-full')}
+          style={
+            fitted
+              ? { borderSpacing: '2px', width: table.getTotalSize() }
+              : { borderSpacing: '2px' }
+          }
         >
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -149,6 +194,8 @@ export const EavEntityTable = <T extends { id: number }>({
                   return (
                     <th
                       key={header.id}
+                      data-autofit-col={header.column.id}
+                      style={fitted ? { width: header.getSize() } : undefined}
                       className={cn(
                         'sticky top-0 z-10 whitespace-nowrap border-b-2 border-ui-06 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06',
                         canSort && 'cursor-pointer select-none'
@@ -156,15 +203,17 @@ export const EavEntityTable = <T extends { id: number }>({
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {header.isPlaceholder ? null : (
-                        <span className="inline-flex items-center gap-1">
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        <span className="flex w-full items-center gap-1 overflow-hidden">
+                          <span className="truncate">
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                          </span>
                           {sorted && (
                             <span
                               className={cn(
-                                'text-[10px] leading-none',
+                                'shrink-0 text-[10px] leading-none',
                                 sorted === 'asc' && 'rotate-180'
                               )}
                             >
@@ -172,12 +221,38 @@ export const EavEntityTable = <T extends { id: number }>({
                             </span>
                           )}
                           {filterTableId && columnMeta && (
-                            <ColumnFilterTrigger
-                              tableId={filterTableId}
-                              column={columnMeta}
-                            />
+                            <span className="shrink-0">
+                              <ColumnFilterTrigger
+                                tableId={filterTableId}
+                                column={columnMeta}
+                              />
+                            </span>
                           )}
                         </span>
+                      )}
+                      {header.column.getCanResize() && (
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                          }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation()
+                            header.column.resetSize()
+                          }}
+                          className="group absolute inset-y-0 right-0 z-10 flex w-2 cursor-col-resize touch-none select-none justify-end"
+                        >
+                          {/* видимая часть — тонкая линия 1px, зона захвата 8px */}
+                          <div
+                            className={cn(
+                              'h-full w-px',
+                              header.column.getIsResizing()
+                                ? 'bg-accent-02'
+                                : 'bg-transparent group-hover:bg-accent-02'
+                            )}
+                          />
+                        </div>
                       )}
                     </th>
                   )
@@ -220,6 +295,10 @@ export const EavEntityTable = <T extends { id: number }>({
               return (
                 <tr
                   key={row.id}
+                  // Виртуализатор замеряет реальную высоту строки — нужно для
+                  // переноса текста (строка растёт под несколько строк).
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
                   onClick={
                     onRowClick
                       ? () => {
@@ -251,6 +330,9 @@ export const EavEntityTable = <T extends { id: number }>({
                     return (
                       <td
                         key={cell.id}
+                        style={
+                          fitted ? { width: cell.column.getSize() } : undefined
+                        }
                         className={cn(
                           'px-3 py-2 first:rounded-l-md last:rounded-r-md',
                           cellExtra?.metaCode === '__hierarchy' ||
@@ -287,6 +369,26 @@ export const EavEntityTable = <T extends { id: number }>({
           })}
         </Typography>
         {isFetchingNextPage && <CircularProgress size={14} />}
+        {canExport && (
+          <Button
+            size="small"
+            variant="outlined"
+            className="ml-auto"
+            disabled={isExporting}
+            startIcon={
+              isExporting ? (
+                <CircularProgress size={14} />
+              ) : (
+                <FileDownloadOutlinedIcon fontSize="small" />
+              )
+            }
+            onClick={() => {
+              void handleExport()
+            }}
+          >
+            {t('table.exportExcel')}
+          </Button>
+        )}
       </div>
     </div>
   )

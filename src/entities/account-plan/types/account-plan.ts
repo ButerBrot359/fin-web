@@ -59,6 +59,8 @@ export interface AccountPlanEntryDto {
   updatedBy: string | null
   attributes: Record<string, unknown>
   children: AccountPlanEntryDto[] | null
+  /** Виды субконто счёта (позиции 1..3) — для колонок Субконто1/2/3. */
+  subkontoKinds?: AccountPlanSubkontoKindDto[] | null
 }
 
 /** Элемент compositeTargets[]: targetNameKz в данных отсутствует. */
@@ -123,4 +125,6 @@ export interface AccountPlanEntryPayload {
   isOffBalance: boolean
   isGroup: boolean
   parentId: number | null
+  /** EAV-атрибуты счёта (ключ = код атрибута), напр. NomerMemorialnogoOrdera. */
+  attributes?: Record<string, unknown>
 }

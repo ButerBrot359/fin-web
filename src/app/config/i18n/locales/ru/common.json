@@ -155,7 +155,11 @@
   "table": {
     "empty": "Пока тут пусто",
     "add": "Добавить",
-    "loadedCount": "Загружено {{loaded}} из {{total}}"
+    "loadedCount": "Загружено {{loaded}} из {{total}}",
+    "loadedCountSimple": "Загружено {{loaded}}",
+    "exportExcel": "Выгрузить в Excel",
+    "exportEmpty": "Нет данных для выгрузки",
+    "exportError": "Не удалось выгрузить в Excel"
   },
   "informationRegister": {
     "period": "Период",
@@ -178,7 +182,47 @@
     "sum": "Сумма",
     "content": "Содержание",
     "recorder": "Регистратор",
-    "lineNo": "Номер строки"
+    "lineNo": "Номер строки",
+    "num": "N",
+    "date": "Дата",
+    "debit": "Дебет",
+    "credit": "Кредит",
+    "account": "Счёт"
+  },
+  "accountCard": {
+    "title": "Карточка счёта",
+    "forPeriod": "за",
+    "period": "Период",
+    "document": "Документ",
+    "operation": "Операция",
+    "analyticsDt": "Аналитика Дт",
+    "analyticsKt": "Аналитика Кт",
+    "corrAccount": "Корр. счёт",
+    "organization": "Организация",
+    "groupOrganizatsiya": "Организация",
+    "groupPodrazdelenie": "Подразделение",
+    "groupFkr": "ФКР",
+    "groupSpetsifika": "Специфика",
+    "groupIstochnik": "Источник финансирования",
+    "groupKodPlatnykhUslug": "Код платных услуг",
+    "groupSubkonto": "Субконто",
+    "debit": "Дебет",
+    "credit": "Кредит",
+    "currentBalance": "Текущее сальдо",
+    "openingBalance": "Сальдо на начало",
+    "turnovers": "Обороты за период",
+    "closingBalance": "Конечное сальдо",
+    "exportExcel": "Выгрузить в Excel",
+    "print": "Печать",
+    "loadedOf": "Загружено {{loaded}} из {{total}}",
+    "loadMore": "Загрузить ещё",
+    "loading": "Загрузка…",
+    "noData": "Нет движений за период"
+  },
+  "reportSettings": {
+    "title": "Настройки",
+    "grouping": "Группировка",
+    "indicators": "Показатели"
   },
   "osv": {
     "title": "Оборотно-сальдовая ведомость",
@@ -193,13 +237,34 @@
     "turnoverKt": "Оборот Кт",
     "closingDt": "Сальдо кон. Дт",
     "closingKt": "Сальдо кон. Кт",
+    "indicators": "Показатели",
+    "sum": "Сумма",
+    "quantity": "Кол.",
+    "byAccount": "по счёту",
+    "forPeriod": "за",
+    "levelOrganization": "Организация",
+    "levelSubdivision": "Подразделение",
+    "levelFkr": "ФКР",
+    "levelSpetsifika": "Специфика",
+    "levelFundingSource": "Источник финансирования",
+    "levelSubkonto": "Субконто",
+    "levelNomenclature": "Номенклатура",
+    "levelIndividuals": "Физические лица",
+    "levelKodPlatnykhUslug": "Код платных услуг",
+    "bySubkonto": "По субконто",
+    "openingBalance": "Сальдо на начало периода",
+    "turnovers": "Обороты за период",
+    "closingBalance": "Сальдо на конец периода",
+    "debit": "Дебет",
+    "credit": "Кредит",
     "total": "Итого",
     "noData": "Нет данных за выбранный период",
     "loadError": "Не удалось сформировать отчёт",
     "noSubkonto": "Без субконто",
     "noValue": "Без значения",
     "expand": "Развернуть",
-    "collapse": "Свернуть"
+    "collapse": "Свернуть",
+    "imbalanceWarning": "Двойная запись не сошлась: суммы по дебету и кредиту не равны. Проверьте проводки — возможно, есть документы со списанием без поступления."
   },
   "accountPlan": {
     "code": "Код",
@@ -322,8 +387,8 @@
       "maxSubkonto": "Не более 3 видов субконто",
       "subkontoPositionsInvalid": "Позиции субконто должны быть 1, 2, 3 без пропусков"
     }
-  }
-  ,"sdui": {
+  },
+  "sdui": {
     "conflict": {
       "staleRevision": "Синхронизирую...",
       "sessionNotFound": "Сессия истекла, переоткрываю..."

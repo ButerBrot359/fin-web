@@ -28,6 +28,10 @@ import {
   type MovementGroup,
   type MovementColumnMeta,
 } from '../api/document-movements-api'
+import { AccountingPostingsTable } from './accounting-postings-table'
+
+/** Код регистра бухгалтерии — рендерится раскладкой 1С (Дебет/Кредит). */
+const ACCOUNTING_REGISTER_CODE = 'ZhurnalProvodokGosUchrezhdeniya'
 
 const formatMovementCell = (
   value: unknown,
@@ -145,7 +149,10 @@ const MovementTable = ({ group }: { group: MovementGroup }) => {
           {table.getRowModel().rows.map((row, rowIndex) => (
             <tr
               key={row.id}
-              className={rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-ui-01'}
+              className={cn(
+                'transition-colors hover:bg-ui-07',
+                rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-ui-01'
+              )}
             >
               {row.getVisibleCells().map((cell, cellIndex) => (
                 <td
@@ -247,7 +254,12 @@ export const DocumentMovementsPage = () => {
             ))}
           </div>
 
-          {activeGroup && <MovementTable group={activeGroup} />}
+          {activeGroup &&
+            (activeGroup.registerTypeCode === ACCOUNTING_REGISTER_CODE ? (
+              <AccountingPostingsTable group={activeGroup} />
+            ) : (
+              <MovementTable group={activeGroup} />
+            ))}
         </div>
       )}
     </div>

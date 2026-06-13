@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query'
 
 import { searchEavEntries } from './api'
@@ -6,7 +6,25 @@ import type { EavDomainConfig } from './domain-config'
 import type { FilterRequest } from './types'
 
 const PAGE_SIZE = 25
+/** Размер страницы при выгрузке всех строк (минимизируем число запросов). */
+const EXPORT_PAGE_SIZE = 200
+/** Предохранитель от бесконечного цикла, если бэк не выставит `last`. */
+const EXPORT_MAX_PAGES = 1000
 const EMPTY_FILTER: FilterRequest = { filters: [], logic: 'AND' }
+
+/**
+ * Регистры не поддерживают `q`-поиск — выбрасываем `q` из extraParams,
+ * иначе бэк вернёт 400. (Та же защита, что в queryFn инфинит-запроса.)
+ */
+const buildSafeExtra = (
+  config: EavDomainConfig,
+  extraParams?: Record<string, unknown>
+): Record<string, unknown> | undefined =>
+  config.supportsQSearch || !extraParams
+    ? extraParams
+    : Object.fromEntries(
+        Object.entries(extraParams).filter(([k]) => k !== 'q')
+      )
 
 interface UseEavEntriesOptions {
   sortAttr?: string
@@ -32,6 +50,11 @@ interface UseEavEntriesResult<T> {
   hasNextPage: boolean
   isFetchingNextPage: boolean
   fetchNextPage: () => void
+  /**
+   * Загружает ВСЕ строки (все страницы) с текущими сортировкой/фильтром —
+   * для выгрузки в Excel. Не затрагивает состояние грида.
+   */
+  fetchAllEntries: () => Promise<T[]>
 }
 
 export const useEavEntries = <T>(
@@ -67,16 +90,8 @@ export const useEavEntries = <T>(
       filter,
       extraParams,
     ],
-    queryFn: ({ pageParam, signal }) => {
-      // Защита: если домен НЕ поддерживает `q`-поиск (например регистры),
-      // выбрасываем `q` из extraParams, чтобы бэк не вернул 400.
-      const safeExtra =
-        config.supportsQSearch || !extraParams
-          ? extraParams
-          : Object.fromEntries(
-              Object.entries(extraParams).filter(([k]) => k !== 'q')
-            )
-      return searchEavEntries<T>(
+    queryFn: ({ pageParam, signal }) =>
+      searchEavEntries<T>(
         config,
         typeCode,
         filter,
@@ -85,11 +100,10 @@ export const useEavEntries = <T>(
           size: PAGE_SIZE,
           sortAttr,
           sortDir,
-          ...safeExtra,
+          ...buildSafeExtra(config, extraParams),
         },
         signal
-      )
-    },
+      ),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => {
       const paged = lastPage.data.data
@@ -110,6 +124,25 @@ export const useEavEntries = <T>(
   const totalElements =
     typeof reportedTotal === 'number' ? reportedTotal : entries.length
 
+  const fetchAllEntries = useCallback(async (): Promise<T[]> => {
+    const all: T[] = []
+    let page = 0
+    for (;;) {
+      const res = await searchEavEntries<T>(config, typeCode, filter, {
+        page,
+        size: EXPORT_PAGE_SIZE,
+        sortAttr,
+        sortDir,
+        ...buildSafeExtra(config, extraParams),
+      })
+      const paged = res.data.data
+      all.push(...paged.content)
+      if (paged.last || page >= EXPORT_MAX_PAGES) break
+      page = paged.number + 1
+    }
+    return all
+  }, [config, typeCode, filter, sortAttr, sortDir, extraParams])
+
   return {
     entries,
     totalElements,
@@ -122,5 +155,6 @@ export const useEavEntries = <T>(
     fetchNextPage: () => {
       void fetchNextPage()
     },
+    fetchAllEntries,
   }
 }

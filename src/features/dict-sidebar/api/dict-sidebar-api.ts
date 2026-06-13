@@ -37,6 +37,8 @@ export interface DictEntry {
   displayName?: string
   isActive: boolean
   isGroup?: boolean
+  /** Родительский счёт (план счетов): готовое имя с бэка, read-only. */
+  parentName?: string | null
   attributes: Record<string, unknown> | null
 }
 
@@ -58,6 +60,22 @@ export const fetchDictEntriesPaged = (
 ) =>
   apiService.get<PagedResponse<DictEntry>>({
     url: getUniversalPagedUrl(domain, typeCode),
+    params,
+    signal,
+  })
+
+/**
+ * Плоский пагинируемый листинг через /search (бэкенд-/paged для иерархических
+ * справочников возвращает только корневой уровень, а /search ищет по всем уровням).
+ */
+export const fetchDictEntriesSearchPaged = (
+  domain: string,
+  typeCode: string,
+  params: PagedParams,
+  signal?: AbortSignal
+) =>
+  apiService.get<PagedResponse<DictEntry>>({
+    url: getUniversalSearchUrl(domain, typeCode),
     params,
     signal,
   })

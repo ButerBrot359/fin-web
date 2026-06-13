@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { SortingState } from '@tanstack/react-table'
 
@@ -12,12 +12,14 @@ import {
   ACCOUNTING_REGISTER_DOMAIN_CONFIG,
   useEavColumnsMeta,
   useEavEntries,
+  type ColumnMetaDto,
 } from '@/shared/lib/eav'
 import { PageHeader } from '@/widgets/page-header'
 import { EavEntityTable } from '@/widgets/eav-entity-table'
 
 import { useAccountingRegisterType } from '../lib/hooks/use-accounting-register-type'
 import { useAccountingRegisterColumns } from '../lib/hooks/use-accounting-register-columns'
+import { useAccountingRegisterExport } from '../lib/hooks/use-accounting-register-export'
 import type { AccountingRegisterEntry } from '../types/accounting-register'
 
 export const AccountingRegisterPage = () => {
@@ -58,6 +60,7 @@ export const AccountingRegisterPage = () => {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
+    fetchAllEntries,
   } = useEavEntries<AccountingRegisterEntry>(
     ACCOUNTING_REGISTER_DOMAIN_CONFIG,
     moduleCode,
@@ -69,6 +72,35 @@ export const AccountingRegisterPage = () => {
   )
 
   const columns = useAccountingRegisterColumns(columnsMeta)
+  const buildExportData = useAccountingRegisterExport(columnsMeta)
+
+  // Фильтр по счёту в журнале проводок идёт ПО КОДУ счёта, а не по DB-id.
+  // Бэк отдаёт колонки счёта как accountDtId/accountKtId (ACCOUNT_PLAN, INTEGER),
+  // но whitelist'ит фильтр по accountDtCode/accountKtCode (STRING). Добавляем
+  // синтетическую code-мету (только для фильтра — отдельных колонок в гриде не даёт),
+  // на которую ссылаются колонки счёта через meta.metaCode (см. use-accounting-register-columns).
+  const filterColumnsMeta = useMemo<ColumnMetaDto[]>(() => {
+    const codeMeta = (idCode: string, codeField: string): ColumnMetaDto | null => {
+      const src = columnsMeta.find((c) => c.code === idCode)
+      if (!src) return null
+      return {
+        code: codeField,
+        nameRu: src.nameRu,
+        nameKz: src.nameKz,
+        dataType: 'STRING',
+        isSystem: true,
+        referencedTypeCode: null,
+        referencedDomainKind: null,
+        allowedOps: ['eq', 'ne', 'contains', 'in', 'notIn', 'isNull', 'isNotNull'],
+        nullable: true,
+      }
+    }
+    const extra = [
+      codeMeta('accountDtId', 'accountDtCode'),
+      codeMeta('accountKtId', 'accountKtCode'),
+    ].filter((c): c is ColumnMetaDto => c !== null)
+    return extra.length ? [...columnsMeta, ...extra] : columnsMeta
+  }, [columnsMeta])
 
   const handleClose = () => {
     useWorkspaceTabsStore.getState().closeTab(location.pathname)
@@ -80,11 +112,11 @@ export const AccountingRegisterPage = () => {
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={title} onClose={handleClose} />
-      <ActiveFiltersBar tableId={moduleCode} columns={columnsMeta} />
+      <ActiveFiltersBar tableId={moduleCode} columns={filterColumnsMeta} />
       <EavEntityTable<AccountingRegisterEntry>
         filterTableId={moduleCode}
         columns={columns}
-        columnsMeta={columnsMeta}
+        columnsMeta={filterColumnsMeta}
         entries={entries}
         totalElements={totalElements}
         isLoading={isLoadingEntries}
@@ -96,6 +128,9 @@ export const AccountingRegisterPage = () => {
         fetchNextPage={fetchNextPage}
         sorting={sorting}
         onSortingChange={setSorting}
+        exportFileName={title}
+        fetchAllEntries={fetchAllEntries}
+        buildExportData={buildExportData}
       />
     </div>
   )

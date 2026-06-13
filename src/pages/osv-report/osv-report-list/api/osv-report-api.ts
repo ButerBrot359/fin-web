@@ -1,7 +1,20 @@
 import { apiService } from '@/shared/api/api'
 import type { ApiListResponse } from '@/entities/account-plan'
 
-import type { OsvReportEntry, OsvReportParams } from '../types/osv-report'
+import type {
+  OsvReportEntry,
+  OsvReportParams,
+  OsvReportTotal,
+} from '../types/osv-report'
+
+/**
+ * Ответ ОСВ — `ApiListResponse` (поле `list` со строками-счетами) плюс
+ * серверная строка `total` (бэкендовый OsvReportResponse). `total` может
+ * отсутствовать на старых сборках бэка — поэтому опционально.
+ */
+export interface OsvReportResponse extends ApiListResponse<OsvReportEntry> {
+  total?: OsvReportTotal | null
+}
 
 /**
  * Код типа регистра бухгалтерии, по которому строится ОСВ.
@@ -22,12 +35,19 @@ export const OSV_REGISTER_TYPE_CODE = 'ZhurnalProvodokGosUchrezhdeniya'
  * `expandBySubkonto` на бэке.
  */
 export const fetchOsvReport = (params: OsvReportParams, signal?: AbortSignal) =>
-  apiService.get<ApiListResponse<OsvReportEntry>>({
+  apiService.get<OsvReportResponse>({
     url: `/api/accounting-registers/${OSV_REGISTER_TYPE_CODE}/balances-and-turnovers`,
     params: {
       from: params.from,
       to: params.to,
+      // groupByDimensions — обратная совместимость со старым бэком (полный
+      // разворот). Новый бэк приоритезирует `groupBy` (состав/порядок уровней).
       groupByDimensions: true,
+      // CSV (`?groupBy=ORGANIZATION,FKR`) — Spring биндит в List<String>.
+      ...(params.groupBy && params.groupBy.length > 0
+        ? { groupBy: params.groupBy.join(',') }
+        : {}),
+      ...(params.expandBySubkonto ? { expandBySubkonto: true } : {}),
       ...(params.accountId != null ? { accountId: params.accountId } : {}),
     },
     signal,

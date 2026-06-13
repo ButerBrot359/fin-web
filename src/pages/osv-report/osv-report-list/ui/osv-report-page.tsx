@@ -23,7 +23,7 @@ import type { SelectOption } from '@/shared/types/select-option'
 import { useOsvReport } from '../lib/hooks/use-osv-report'
 import { OsvReportTable } from './osv-report-table'
 import {
-  OSV_ALL_DIMENSIONS,
+  OSV_DEFAULT_DIMENSIONS,
   OSV_GROUP_DIMENSIONS,
   type OsvReportEntry,
   type OsvReportParams,
@@ -74,7 +74,7 @@ export const OsvReportPage = () => {
   // запрос → дерево перестраивается на бэке.
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [enabledDims, setEnabledDims] = useState<Set<string>>(
-    () => new Set(OSV_ALL_DIMENSIONS)
+    () => new Set(OSV_DEFAULT_DIMENSIONS)
   )
   const [expandBySubkonto, setExpandBySubkonto] = useState(false)
 

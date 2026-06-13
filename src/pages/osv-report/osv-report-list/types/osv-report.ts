@@ -146,9 +146,17 @@ export const OSV_GROUP_DIMENSIONS = [
   { key: 'FKR', labelKey: 'osv.levelFkr' },
   { key: 'SPETSIFIKA', labelKey: 'osv.levelSpetsifika' },
   { key: 'ISTOCHNIK_FINANSIROVANIYA', labelKey: 'osv.levelFundingSource' },
+  { key: 'KOD_PLATNYKH_USLUG', labelKey: 'osv.levelKodPlatnykhUslug' },
 ] as const
 
-/** Все коды измерений (для дефолтного «всё включено»). */
-export const OSV_ALL_DIMENSIONS: string[] = OSV_GROUP_DIMENSIONS.map(
-  (d) => d.key
-)
+/**
+ * Измерения, включённые по умолчанию (как в 1С): основные пять. КодПлатныхУслуг
+ * по умолчанию выключен (доступен чекбоксом).
+ */
+export const OSV_DEFAULT_DIMENSIONS: string[] = [
+  'ORGANIZATION',
+  'PODRAZDELENIE',
+  'FKR',
+  'SPETSIFIKA',
+  'ISTOCHNIK_FINANSIROVANIYA',
+]

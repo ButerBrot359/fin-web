@@ -61,14 +61,13 @@ export const OsvReportPage = () => {
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={t('osv.title')} onClose={handleClose} />
 
-      <div className="flex flex-wrap items-end gap-4">
+      <div className="flex flex-wrap gap-4">
         <div className="w-56">
           <DateTimeInput
             value={from}
             onChange={setFrom}
             label={t('osv.periodFrom')}
             required
-            size="small"
           />
         </div>
         <div className="w-56">
@@ -77,7 +76,6 @@ export const OsvReportPage = () => {
             onChange={setTo}
             label={t('osv.periodTo')}
             required
-            size="small"
           />
         </div>
         <div className="w-80">
@@ -86,13 +84,13 @@ export const OsvReportPage = () => {
             options={accountOptions}
             onChange={setAccount}
             label={t('osv.account')}
-            size="small"
           />
         </div>
         <Button
           variant="contained"
           disabled={!canSubmit}
           onClick={handleSubmit}
+          sx={{ height: 48 }}
         >
           {t('osv.generate')}
         </Button>
@@ -102,11 +100,7 @@ export const OsvReportPage = () => {
         <div className="py-4 text-error-01">{t('osv.loadError')}</div>
       ) : (
         params != null && (
-          <OsvReportTable
-            columns={columns}
-            rows={rows}
-            isLoading={isLoading}
-          />
+          <OsvReportTable columns={columns} rows={rows} isLoading={isLoading} />
         )
       )}
     </div>

@@ -14,6 +14,8 @@ interface AccountCardTableProps {
   opening: number
   /** Код счёта карточки — определяет сторону (Дт/Кт) и корр-счёт. */
   cardCode: string
+  /** Открыть документ-регистратор проводки (клик по колонке «Документ»). */
+  onOpenDocument?: (row: AccountCardEntry) => void
   isLoading?: boolean
 }
 
@@ -94,6 +96,7 @@ export const AccountCardTable = ({
   rows,
   opening,
   cardCode,
+  onOpenDocument,
   isLoading,
 }: AccountCardTableProps) => {
   const { t } = useTranslation()
@@ -109,17 +112,21 @@ export const AccountCardTable = ({
       const summa = toNum(entry.summa)
       let debit = 0
       let credit = 0
+      let debitQty = 0
+      let creditQty = 0
       if (entry.accountKtCode === cardCode && entry.accountDtCode !== cardCode) {
         credit = summa
+        creditQty = toNum(entry.kolichestvoKt)
         running -= summa
         totalKt += summa
       } else {
         // Дт-сторона счёта карточки (или счёт карточки не определён) — приход.
         debit = summa
+        debitQty = toNum(entry.kolichestvoDt)
         running += summa
         totalDt += summa
       }
-      return { entry, debit, credit, balance: running }
+      return { entry, debit, credit, debitQty, creditQty, balance: running }
     })
     return { lines, totalDt, totalKt, closing: opening + totalDt - totalKt }
   }, [rows, opening, cardCode])
@@ -165,7 +172,7 @@ export const AccountCardTable = ({
           </tr>
 
           {/* Проводки */}
-          {lines.map(({ entry, debit, credit, balance }) => (
+          {lines.map(({ entry, debit, credit, debitQty, creditQty, balance }) => (
             <tr key={entry.id} className="transition-colors hover:bg-ui-07">
               <td className={`${td} whitespace-nowrap`}>
                 <Typography variant="body2" noWrap className="text-ui-06">
@@ -175,9 +182,17 @@ export const AccountCardTable = ({
                 </Typography>
               </td>
               <td className={`${td} max-w-52`}>
-                <Typography variant="body2" className="text-ui-06">
-                  {entry.recorderDocumentName ?? ''}
-                </Typography>
+                {entry.recorderDocumentName ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenDocument?.(entry)}
+                    className="text-left text-accent-02 hover:underline"
+                  >
+                    {entry.recorderDocumentName}
+                  </button>
+                ) : (
+                  ''
+                )}
               </td>
               <td className={`${td} max-w-44`}>
                 <Typography variant="body2" className="text-ui-06">
@@ -192,9 +207,25 @@ export const AccountCardTable = ({
               </td>
               <td className={`${td} text-right`}>
                 <Money v={debit} />
+                {debitQty !== 0 && (
+                  <Typography
+                    variant="caption"
+                    className="block text-right tabular-nums text-ui-05"
+                  >
+                    {formatWithSpaces(String(debitQty))}
+                  </Typography>
+                )}
               </td>
               <td className={`${td} text-right`}>
                 <Money v={credit} />
+                {creditQty !== 0 && (
+                  <Typography
+                    variant="caption"
+                    className="block text-right tabular-nums text-ui-05"
+                  >
+                    {formatWithSpaces(String(creditQty))}
+                  </Typography>
+                )}
               </td>
               <td className={`${td} text-right`}>
                 <Money v={balance} showZero />

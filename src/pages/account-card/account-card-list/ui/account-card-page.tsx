@@ -72,6 +72,18 @@ export const AccountCardPage = () => {
       return next
     })
 
+  // Показатели (вкладка «Показатели»): сейчас — «Количество» (показ кол-ва).
+  const [showQuantity, setShowQuantity] = useState(true)
+  const indicatorItems = useMemo<ReportGroupItem[]>(
+    () => [
+      { key: 'quantity', label: t('osv.quantity'), checked: showQuantity },
+    ],
+    [showQuantity, t]
+  )
+  const toggleIndicator = (key: string) => {
+    if (key === 'quantity') setShowQuantity((v) => !v)
+  }
+
   const { entries: accounts } = useAccountPlanList()
   const accountOptions = useMemo<SelectOption[]>(
     () =>
@@ -321,6 +333,7 @@ export const AccountCardPage = () => {
           opening={opening}
           totals={totals}
           hidden={hidden}
+          showQuantity={showQuantity}
           totalCount={totalCount}
           hasMore={hasMore}
           onLoadMore={loadMore}
@@ -337,6 +350,8 @@ export const AccountCardPage = () => {
         }}
         groupItems={groupItems}
         onToggleGroup={toggleGroup}
+        indicatorItems={indicatorItems}
+        onToggleIndicator={toggleIndicator}
       />
     </div>
   )

@@ -77,6 +77,8 @@ export const OsvReportPage = () => {
     () => new Set(OSV_DEFAULT_DIMENSIONS)
   )
   const [expandBySubkonto, setExpandBySubkonto] = useState(false)
+  // Показатели (вкладка «Показатели»): «Количество» — показ строк «Кол.».
+  const [showQuantity, setShowQuantity] = useState(true)
 
   const { entries: accounts } = useAccountPlanList()
   const accountOptions = useMemo<SelectOption[]>(
@@ -141,6 +143,16 @@ export const OsvReportPage = () => {
     })
     return items
   }, [enabledDims, expandBySubkonto, t])
+
+  const indicatorItems = useMemo<ReportGroupItem[]>(
+    () => [
+      { key: 'quantity', label: t('osv.quantity'), checked: showQuantity },
+    ],
+    [showQuantity, t]
+  )
+  const toggleIndicator = (key: string) => {
+    if (key === 'quantity') setShowQuantity((v) => !v)
+  }
 
   const { rows, total, isLoading, isError, refetch } = useOsvReport(
     params,
@@ -277,6 +289,7 @@ export const OsvReportPage = () => {
             total={total}
             title={reportTitle}
             onRowDoubleClick={handleOpenAccountCard}
+            showQuantity={showQuantity}
             isLoading={isLoading}
           />
         )
@@ -289,6 +302,8 @@ export const OsvReportPage = () => {
         }}
         groupItems={groupItems}
         onToggleGroup={toggleGroup}
+        indicatorItems={indicatorItems}
+        onToggleIndicator={toggleIndicator}
       />
     </div>
   )

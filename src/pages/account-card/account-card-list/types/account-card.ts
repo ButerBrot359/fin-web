@@ -103,6 +103,37 @@ export interface AccountCardTotals {
   closingBalance: number
 }
 
+/**
+ * Переключатели отображения аналитики в колонках «Аналитика Дт/Кт» (чекбоксы
+ * группировки, как в 1С). Организация и КодПлатныхУслуг показываются всегда
+ * (организация — отдельный фильтр). Номенклатура/Физлица идут общим «Субконто»:
+ * вид субконто бэк пока не резолвит, поэтому раздельно их не различить.
+ */
+export interface AnalyticsGroups {
+  podrazdelenie: boolean
+  fkr: boolean
+  spetsifika: boolean
+  istochnik: boolean
+  subkonto: boolean
+}
+
+export const DEFAULT_ANALYTICS_GROUPS: AnalyticsGroups = {
+  podrazdelenie: true,
+  fkr: true,
+  spetsifika: true,
+  istochnik: true,
+  subkonto: true,
+}
+
+/** Порядок и i18n-ключи чекбоксов группировки (для рендера панели). */
+export const ANALYTICS_GROUP_ITEMS = [
+  { key: 'podrazdelenie', labelKey: 'accountCard.groupPodrazdelenie' },
+  { key: 'fkr', labelKey: 'accountCard.groupFkr' },
+  { key: 'spetsifika', labelKey: 'accountCard.groupSpetsifika' },
+  { key: 'istochnik', labelKey: 'accountCard.groupIstochnik' },
+  { key: 'subkonto', labelKey: 'accountCard.groupSubkonto' },
+] as const satisfies readonly { key: keyof AnalyticsGroups; labelKey: string }[]
+
 /** Список query-параметров фильтров аналитики (URL ⇄ запрос). */
 export const ANALYTICS_FILTER_KEYS = [
   'organizatsiyaId',

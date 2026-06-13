@@ -1,6 +1,8 @@
-import type {
-  AccountCardEntry,
-  AccountCardTotals,
+import {
+  DEFAULT_ANALYTICS_GROUPS,
+  type AccountCardEntry,
+  type AccountCardTotals,
+  type AnalyticsGroups,
 } from '../../types/account-card'
 
 export interface CardLine {
@@ -20,25 +22,34 @@ export interface CardComputed {
   closing: number
 }
 
-/** Список значений аналитики стороны (измерения + субконто) — построчно. */
+/**
+ * Список значений аналитики стороны (измерения + субконто) — построчно.
+ * `groups` управляет видимостью переключаемых измерений/субконто (чекбоксы
+ * группировки). Организация и КодПлатныхУслуг показываются всегда.
+ */
 export const analyticsList = (
   entry: AccountCardEntry,
-  side: 'Dt' | 'Kt'
+  side: 'Dt' | 'Kt',
+  groups: AnalyticsGroups = DEFAULT_ANALYTICS_GROUPS
 ): string[] => {
   const out: string[] = []
-  const dims = [
-    entry.organizatsiya,
-    entry.podrazdelenie,
-    entry.fkr,
-    entry.spetsifika,
-    entry.istochnikFinansirovaniya,
-    entry.kodPlatnykhUslug,
-  ]
-  for (const d of dims) if (d?.presentation) out.push(d.presentation)
-  const subs = side === 'Dt' ? entry.subkontosDt : entry.subkontosKt
-  for (const s of subs ?? []) {
-    const nm = s.displayName ?? s.nameRu ?? s.code
-    if (nm) out.push(nm)
+  if (entry.organizatsiya?.presentation)
+    out.push(entry.organizatsiya.presentation)
+  if (groups.podrazdelenie && entry.podrazdelenie?.presentation)
+    out.push(entry.podrazdelenie.presentation)
+  if (groups.fkr && entry.fkr?.presentation) out.push(entry.fkr.presentation)
+  if (groups.spetsifika && entry.spetsifika?.presentation)
+    out.push(entry.spetsifika.presentation)
+  if (groups.istochnik && entry.istochnikFinansirovaniya?.presentation)
+    out.push(entry.istochnikFinansirovaniya.presentation)
+  if (entry.kodPlatnykhUslug?.presentation)
+    out.push(entry.kodPlatnykhUslug.presentation)
+  if (groups.subkonto) {
+    const subs = side === 'Dt' ? entry.subkontosDt : entry.subkontosKt
+    for (const s of subs ?? []) {
+      const nm = s.displayName ?? s.nameRu ?? s.code
+      if (nm) out.push(nm)
+    }
   }
   return out
 }

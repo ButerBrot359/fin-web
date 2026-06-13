@@ -249,6 +249,8 @@
     "levelSubkonto": "Субконто",
     "levelNomenclature": "Номенклатура",
     "levelIndividuals": "Физические лица",
+    "levelKodPlatnykhUslug": "Код платных услуг",
+    "bySubkonto": "По субконто",
     "openingBalance": "Сальдо на начало периода",
     "turnovers": "Обороты за период",
     "closingBalance": "Сальдо на конец периода",

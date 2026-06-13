@@ -127,4 +127,36 @@ export interface OsvReportParams {
   to: string
   /** Фильтр по счёту (опционально; пусто = все счета). */
   accountId?: number
+  /**
+   * Упорядоченный список измерений-уровней группировки (коды бэка). Пусто =
+   * без разворота по измерениям. Управляется панелью «Настройки → Группировка».
+   */
+  groupBy?: string[]
+  /** Разворачивать листы по субконто-1 («По субконто»). */
+  expandBySubkonto?: boolean
 }
+
+/**
+ * Измерения-уровни группировки ОСВ (порядок фиксирован, как в 1С) — код уровня
+ * для бэка + i18n-метка. Состав/включённость задаёт пользователь в настройках.
+ */
+export const OSV_GROUP_DIMENSIONS = [
+  { key: 'ORGANIZATION', labelKey: 'osv.levelOrganization' },
+  { key: 'PODRAZDELENIE', labelKey: 'osv.levelSubdivision' },
+  { key: 'FKR', labelKey: 'osv.levelFkr' },
+  { key: 'SPETSIFIKA', labelKey: 'osv.levelSpetsifika' },
+  { key: 'ISTOCHNIK_FINANSIROVANIYA', labelKey: 'osv.levelFundingSource' },
+  { key: 'KOD_PLATNYKH_USLUG', labelKey: 'osv.levelKodPlatnykhUslug' },
+] as const
+
+/**
+ * Измерения, включённые по умолчанию (как в 1С): основные пять. КодПлатныхУслуг
+ * по умолчанию выключен (доступен чекбоксом).
+ */
+export const OSV_DEFAULT_DIMENSIONS: string[] = [
+  'ORGANIZATION',
+  'PODRAZDELENIE',
+  'FKR',
+  'SPETSIFIKA',
+  'ISTOCHNIK_FINANSIROVANIYA',
+]

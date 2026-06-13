@@ -16,6 +16,8 @@ export interface AccountCardSubkonto {
   displayName?: string | null
   nameRu?: string | null
   code?: string | null
+  /** Имя вида субконто (Номенклатура, Физические лица…) — для группировки. */
+  kindRu?: string | null
 }
 
 export interface AccountCardEntry {
@@ -104,35 +106,27 @@ export interface AccountCardTotals {
 }
 
 /**
- * Переключатели отображения аналитики в колонках «Аналитика Дт/Кт» (чекбоксы
- * группировки, как в 1С). Организация и КодПлатныхУслуг показываются всегда
- * (организация — отдельный фильтр). Номенклатура/Физлица идут общим «Субконто»:
- * вид субконто бэк пока не резолвит, поэтому раздельно их не различить.
+ * Группировка аналитики (вкладка «Группировка» в настройках, как в 1С): какие
+ * измерения и виды субконто показывать в колонках «Аналитика Дт/Кт». Храним как
+ * множество ключей СКРЫТЫХ групп — пусто = показываем всё (поведение 1С по
+ * умолчанию). Ключи измерений — из `DIMENSION_GROUP_ITEMS`; ключи субконто —
+ * `subkonto:<видСубконто>` по `kindRu` (или общий `subkonto`, если вид не задан).
  */
-export interface AnalyticsGroups {
-  podrazdelenie: boolean
-  fkr: boolean
-  spetsifika: boolean
-  istochnik: boolean
-  subkonto: boolean
-}
+export type HiddenAnalyticsGroups = ReadonlySet<string>
 
-export const DEFAULT_ANALYTICS_GROUPS: AnalyticsGroups = {
-  podrazdelenie: true,
-  fkr: true,
-  spetsifika: true,
-  istochnik: true,
-  subkonto: true,
-}
-
-/** Порядок и i18n-ключи чекбоксов группировки (для рендера панели). */
-export const ANALYTICS_GROUP_ITEMS = [
+/** Фиксированные измерения-чекбоксы группировки: ключ entry-поля + i18n-метка. */
+export const DIMENSION_GROUP_ITEMS = [
+  { key: 'organizatsiya', labelKey: 'accountCard.groupOrganizatsiya' },
   { key: 'podrazdelenie', labelKey: 'accountCard.groupPodrazdelenie' },
   { key: 'fkr', labelKey: 'accountCard.groupFkr' },
   { key: 'spetsifika', labelKey: 'accountCard.groupSpetsifika' },
   { key: 'istochnik', labelKey: 'accountCard.groupIstochnik' },
-  { key: 'subkonto', labelKey: 'accountCard.groupSubkonto' },
-] as const satisfies readonly { key: keyof AnalyticsGroups; labelKey: string }[]
+  { key: 'kodPlatnykhUslug', labelKey: 'accountCard.groupKodPlatnykhUslug' },
+] as const
+
+/** Ключ группы субконто по виду (`kindRu`) — для динамических чекбоксов. */
+export const subkontoGroupKey = (kindRu?: string | null): string =>
+  kindRu ? `subkonto:${kindRu}` : 'subkonto'
 
 /** Список query-параметров фильтров аналитики (URL ⇄ запрос). */
 export const ANALYTICS_FILTER_KEYS = [

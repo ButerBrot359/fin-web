@@ -199,10 +199,12 @@
     "analyticsKt": "Аналитика Кт",
     "corrAccount": "Корр. счёт",
     "organization": "Организация",
+    "groupOrganizatsiya": "Организация",
     "groupPodrazdelenie": "Подразделение",
     "groupFkr": "ФКР",
     "groupSpetsifika": "Специфика",
     "groupIstochnik": "Источник финансирования",
+    "groupKodPlatnykhUslug": "Код платных услуг",
     "groupSubkonto": "Субконто",
     "debit": "Дебет",
     "credit": "Кредит",
@@ -216,6 +218,10 @@
     "loadMore": "Загрузить ещё",
     "loading": "Загрузка…",
     "noData": "Нет движений за период"
+  },
+  "reportSettings": {
+    "title": "Настройки",
+    "grouping": "Группировка"
   },
   "osv": {
     "title": "Оборотно-сальдовая ведомость",

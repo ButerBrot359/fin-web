@@ -6,10 +6,14 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Button, Checkbox, FormControlLabel } from '@mui/material'
+import { Button } from '@mui/material'
 
 import { useAccountPlanList } from '@/entities/account-plan'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
+import {
+  ReportSettingsDrawer,
+  type ReportGroupItem,
+} from '@/features/report-settings'
 import { PageHeader } from '@/widgets/page-header'
 import { DateTimeInput, AutocompleteInput } from '@/shared/ui/inputs'
 import { formatDate } from '@/shared/lib/utils/date'
@@ -22,11 +26,10 @@ import { buildCardExport } from '../lib/utils/build-card-export'
 import { AccountCardTable } from './account-card-table'
 import {
   ANALYTICS_FILTER_KEYS,
-  ANALYTICS_GROUP_ITEMS,
-  DEFAULT_ANALYTICS_GROUPS,
+  DIMENSION_GROUP_ITEMS,
+  subkontoGroupKey,
   type AccountCardEntry,
   type AccountCardParams,
-  type AnalyticsGroups,
 } from '../types/account-card'
 
 /**
@@ -56,11 +59,18 @@ export const AccountCardPage = () => {
   const [account, setAccount] = useState<SelectOption | null>(null)
   const [organization, setOrganization] = useState<SelectOption | null>(null)
 
-  // Переключатели отображения аналитики (чекбоксы группировки). Локальное
-  // состояние — это настройка показа, на запрос не влияет.
-  const [groups, setGroups] = useState<AnalyticsGroups>(DEFAULT_ANALYTICS_GROUPS)
-  const toggleGroup = (key: keyof AnalyticsGroups) =>
-    setGroups((prev) => ({ ...prev, [key]: !prev[key] }))
+  // Группировка аналитики (панель «Настройки» → «Группировка»). Храним ключи
+  // СКРЫТЫХ групп; пусто = показываем всё. Это настройка показа, на запрос не
+  // влияет.
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [hidden, setHidden] = useState<Set<string>>(new Set())
+  const toggleGroup = (key: string) =>
+    setHidden((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
 
   const { entries: accounts } = useAccountPlanList()
   const accountOptions = useMemo<SelectOption[]>(
@@ -131,6 +141,29 @@ export const AccountCardPage = () => {
   // (вся учётная математика на сервере) — отдельный запрос остатков не нужен.
   const opening = totals?.openingBalance ?? 0
 
+  // Пункты вкладки «Группировка»: фиксированные измерения + виды субконто,
+  // реально встретившиеся в загруженных движениях (Номенклатура, Физлица, …;
+  // вид берётся из kindRu, иначе общий «Субконто»).
+  const groupItems = useMemo<ReportGroupItem[]>(() => {
+    const items: ReportGroupItem[] = DIMENSION_GROUP_ITEMS.map((d) => ({
+      key: d.key,
+      label: t(d.labelKey),
+      checked: !hidden.has(d.key),
+    }))
+    const seenSubkonto = new Map<string, string>()
+    for (const r of rows) {
+      for (const s of [...(r.subkontosDt ?? []), ...(r.subkontosKt ?? [])]) {
+        const key = subkontoGroupKey(s.kindRu)
+        if (!seenSubkonto.has(key))
+          seenSubkonto.set(key, s.kindRu ?? t('accountCard.groupSubkonto'))
+      }
+    }
+    for (const [key, label] of seenSubkonto) {
+      items.push({ key, label, checked: !hidden.has(key) })
+    }
+    return items
+  }, [rows, hidden, t])
+
   const title = useMemo(() => {
     if (!urlFrom || !urlTo) return t('accountCard.title')
     const period = `${formatDate(urlFrom)} — ${formatDate(urlTo)}`
@@ -185,7 +218,7 @@ export const AccountCardPage = () => {
       openingBalance: t('accountCard.openingBalance'),
       turnovers: t('accountCard.turnovers'),
       closingBalance: t('accountCard.closingBalance'),
-    }, groups)
+    }, hidden)
     exportTableToXlsx(title, data)
   }
 
@@ -269,36 +302,25 @@ export const AccountCardPage = () => {
             <Button variant="outlined" onClick={handlePrint} sx={{ height: 40 }}>
               {t('accountCard.print')}
             </Button>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setSettingsOpen(true)
+              }}
+              sx={{ height: 40 }}
+            >
+              {t('reportSettings.title')}
+            </Button>
           </>
         )}
       </div>
-
-      {params != null && (
-        <div className="flex flex-wrap items-center gap-x-1 gap-y-0">
-          {ANALYTICS_GROUP_ITEMS.map((item) => (
-            <FormControlLabel
-              key={item.key}
-              control={
-                <Checkbox
-                  size="small"
-                  checked={groups[item.key]}
-                  onChange={() => {
-                    toggleGroup(item.key)
-                  }}
-                />
-              }
-              label={t(item.labelKey)}
-            />
-          ))}
-        </div>
-      )}
 
       {params != null && (
         <AccountCardTable
           rows={rows}
           opening={opening}
           totals={totals}
-          groups={groups}
+          hidden={hidden}
           totalCount={totalCount}
           hasMore={hasMore}
           onLoadMore={loadMore}
@@ -307,6 +329,15 @@ export const AccountCardPage = () => {
           onOpenDocument={handleOpenDocument}
         />
       )}
+
+      <ReportSettingsDrawer
+        open={settingsOpen}
+        onClose={() => {
+          setSettingsOpen(false)
+        }}
+        groupItems={groupItems}
+        onToggleGroup={toggleGroup}
+      />
     </div>
   )
 }

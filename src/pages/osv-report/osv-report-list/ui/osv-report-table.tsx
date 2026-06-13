@@ -38,6 +38,8 @@ interface OsvReportTableProps {
    * фильтры аналитики всех уровней (Организация → … → ФКР → …).
    */
   onRowDoubleClick?: (row: Row<OsvReportEntry>) => void
+  /** Показывать строки «Кол.» (показатель «Количество»). */
+  showQuantity?: boolean
   isLoading?: boolean
 }
 
@@ -119,6 +121,7 @@ export const OsvReportTable = ({
   total,
   title,
   onRowDoubleClick,
+  showQuantity = true,
   isLoading,
 }: OsvReportTableProps) => {
   const { t } = useTranslation()
@@ -387,7 +390,7 @@ export const OsvReportTable = ({
               {/* Строка показателя «Сумма» */}
                 <tr className={`border-t border-ui-04/60 ${rowBg} group-hover:bg-ui-07`}>
                   <td
-                    rowSpan={2}
+                    rowSpan={showQuantity ? 2 : 1}
                     className="overflow-hidden whitespace-nowrap px-3 py-1.5 align-top"
                   >
                     {renderAccountCell(row)}
@@ -395,7 +398,7 @@ export const OsvReportTable = ({
                   {/* Иерархия передаётся отступом наименования по глубине дерева
                       (как в 1С), при выровненных стрелках в колонке «Счёт». */}
                   <td
-                    rowSpan={2}
+                    rowSpan={showQuantity ? 2 : 1}
                     className="cell-wrap py-1.5 pr-3 align-top"
                     style={{ paddingLeft: 12 + row.depth * 18 }}
                   >
@@ -419,18 +422,20 @@ export const OsvReportTable = ({
                   ))}
                 </tr>
                 {/* Строка показателя «Кол.» */}
-                <tr className={`${rowBg} group-hover:bg-ui-07`}>
-                  <td className={tdValue}>
-                    <Typography variant="body2" noWrap className="text-ui-05">
-                      {t('osv.quantity')}
-                    </Typography>
-                  </td>
-                  {QTY_FIELDS.map((f, i) => (
-                    <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
-                      <ValueCell v={row.original[f]} bold={bold} />
+                {showQuantity && (
+                  <tr className={`${rowBg} group-hover:bg-ui-07`}>
+                    <td className={tdValue}>
+                      <Typography variant="body2" noWrap className="text-ui-05">
+                        {t('osv.quantity')}
+                      </Typography>
                     </td>
-                  ))}
-                </tr>
+                    {QTY_FIELDS.map((f, i) => (
+                      <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
+                        <ValueCell v={row.original[f]} bold={bold} />
+                      </td>
+                    ))}
+                  </tr>
+                )}
             </tbody>
           )
         })}
@@ -438,7 +443,7 @@ export const OsvReportTable = ({
           <tfoot className="bg-ui-02 font-bold">
             <tr className="border-t-2 border-ui-03">
               <td
-                rowSpan={2}
+                rowSpan={showQuantity ? 2 : 1}
                 colSpan={2}
                 className="overflow-hidden whitespace-nowrap px-3 py-1.5 align-top"
               >
@@ -457,18 +462,20 @@ export const OsvReportTable = ({
                 </td>
               ))}
             </tr>
-            <tr>
-              <td className={tdValue}>
-                <Typography variant="body2" noWrap className="text-ui-05">
-                  {t('osv.quantity')}
-                </Typography>
-              </td>
-              {QTY_FIELDS.map((f, i) => (
-                <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
-                  <ValueCell v={total[f]} bold />
+            {showQuantity && (
+              <tr>
+                <td className={tdValue}>
+                  <Typography variant="body2" noWrap className="text-ui-05">
+                    {t('osv.quantity')}
+                  </Typography>
                 </td>
-              ))}
-            </tr>
+                {QTY_FIELDS.map((f, i) => (
+                  <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
+                    <ValueCell v={total[f]} bold />
+                  </td>
+                ))}
+              </tr>
+            )}
           </tfoot>
         )}
         </table>

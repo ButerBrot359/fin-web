@@ -37,6 +37,8 @@ interface AccountCardTableProps {
   totals?: AccountCardTotals | null
   /** Скрытые группы аналитики (чекбоксы «Группировка») для колонок Дт/Кт. */
   hidden?: HiddenAnalyticsGroups
+  /** Показывать количество под суммами (показатель «Количество»). */
+  showQuantity?: boolean
   /** Всего движений за период (для подписи «загружено X из Y»). */
   totalCount?: number
   /** Есть ли ещё непогруженные страницы движений. */
@@ -99,6 +101,7 @@ export const AccountCardTable = ({
   opening,
   totals,
   hidden,
+  showQuantity = true,
   totalCount,
   hasMore,
   onLoadMore,
@@ -295,7 +298,7 @@ export const AccountCardTable = ({
                   </td>
                   <td className={`${td} text-right`}>
                     <Money v={debit} />
-                    {debitQty !== 0 && (
+                    {showQuantity && debitQty !== 0 && (
                       <Typography
                         variant="caption"
                         className="block text-right tabular-nums text-ui-05"
@@ -306,7 +309,7 @@ export const AccountCardTable = ({
                   </td>
                   <td className={`${td} text-right`}>
                     <Money v={credit} />
-                    {creditQty !== 0 && (
+                    {showQuantity && creditQty !== 0 && (
                       <Typography
                         variant="caption"
                         className="block text-right tabular-nums text-ui-05"

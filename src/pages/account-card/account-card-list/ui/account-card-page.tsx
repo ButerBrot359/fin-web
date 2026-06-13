@@ -170,7 +170,7 @@ export const AccountCardPage = () => {
       <PageHeader title={title} onClose={handleClose} />
 
       <div className="flex flex-wrap items-start gap-4">
-        <div className="w-64 [&_.MuiInputBase-root]:!h-10">
+        <div className="report-param-field w-64">
           <DateTimeInput
             value={from}
             onChange={setFrom}
@@ -180,7 +180,7 @@ export const AccountCardPage = () => {
             fullWidth
           />
         </div>
-        <div className="w-64 [&_.MuiInputBase-root]:!h-10">
+        <div className="report-param-field w-64">
           <DateTimeInput
             value={to}
             onChange={setTo}
@@ -190,7 +190,7 @@ export const AccountCardPage = () => {
             fullWidth
           />
         </div>
-        <div className="w-64 [&_.MuiInputBase-root]:!h-10">
+        <div className="report-param-field w-64">
           <AutocompleteInput
             value={account}
             options={accountOptions}

@@ -235,7 +235,6 @@ export const OsvReportPage = () => {
             onChange={setFrom}
             label={t('osv.periodFrom')}
             required
-            size="small"
             fullWidth
           />
         </div>
@@ -245,7 +244,6 @@ export const OsvReportPage = () => {
             onChange={setTo}
             label={t('osv.periodTo')}
             required
-            size="small"
             fullWidth
           />
         </div>
@@ -255,7 +253,6 @@ export const OsvReportPage = () => {
             options={accountOptions}
             onChange={setAccount}
             label={t('osv.account')}
-            size="small"
             fullWidth
           />
         </div>
@@ -263,7 +260,7 @@ export const OsvReportPage = () => {
           variant="contained"
           disabled={!canSubmit}
           onClick={handleSubmit}
-          sx={{ height: 40 }}
+          sx={{ height: 48 }}
         >
           {t('osv.generate')}
         </Button>
@@ -273,7 +270,7 @@ export const OsvReportPage = () => {
             onClick={() => {
               setSettingsOpen(true)
             }}
-            sx={{ height: 40 }}
+            sx={{ height: 48 }}
           >
             {t('reportSettings.title')}
           </Button>

@@ -14,6 +14,9 @@ node_modules
 dist
 dist-ssr
 form-configs-server/dist
+form-configs-server/configs/**
+!form-configs-server/configs/**/
+!form-configs-server/configs/**/.gitkeep
 *.local
 
 # Editor directories and files

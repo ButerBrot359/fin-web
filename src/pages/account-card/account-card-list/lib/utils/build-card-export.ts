@@ -13,6 +13,7 @@ export interface CardExportLabels {
   operation: string
   analyticsDt: string
   analyticsKt: string
+  corrAccount: string
   debit: string
   credit: string
   currentBalance: string
@@ -39,12 +40,13 @@ export const buildCardExport = (
     l.operation,
     l.analyticsDt,
     l.analyticsKt,
+    l.corrAccount,
     l.debit,
     l.credit,
     l.currentBalance,
   ]
   const out: (string | number | null)[][] = []
-  out.push([l.openingBalance, '', '', '', '', '', '', opening])
+  out.push([l.openingBalance, '', '', '', '', '', '', '', opening])
   for (const line of lines) {
     out.push([
       typeof line.entry.period === 'string'
@@ -54,12 +56,13 @@ export const buildCardExport = (
       line.entry.soderzhanie ?? '',
       analyticsList(line.entry, 'Dt').join('; '),
       analyticsList(line.entry, 'Kt').join('; '),
+      line.entry.korrAccountCode ?? '',
       line.debit || '',
       line.credit || '',
       line.balance,
     ])
   }
-  out.push([l.turnovers, '', '', '', '', totalDt, totalKt, ''])
-  out.push([l.closingBalance, '', '', '', '', '', '', closing])
+  out.push([l.turnovers, '', '', '', '', '', totalDt, totalKt, ''])
+  out.push([l.closingBalance, '', '', '', '', '', '', '', closing])
   return { headers, rows: out }
 }

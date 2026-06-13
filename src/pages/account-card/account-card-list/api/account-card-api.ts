@@ -65,3 +65,26 @@ export const fetchAccountCard = (
     },
     signal,
   })
+
+/** Код справочника организаций (для фильтра «Организация»). */
+export const ORGANIZATIONS_DICTIONARY_TYPE_CODE = 'Organizatsii'
+
+/** Запись справочника организаций (активные). */
+export interface OrganizationDto {
+  id: number
+  code?: string | null
+  nameRu?: string | null
+  nameKz?: string | null
+  displayName?: string | null
+}
+
+/**
+ * Активные организации — для выпадающего фильтра карточки счёта.
+ * GET /api/dictionaries/entries/Organizatsii/active — отдаёт массив НАПРЯМУЮ
+ * (без обёртки `{ data: { list } }`).
+ */
+export const fetchOrganizations = (signal?: AbortSignal) =>
+  apiService.get<OrganizationDto[]>({
+    url: `/api/dictionaries/entries/${ORGANIZATIONS_DICTIONARY_TYPE_CODE}/active`,
+    signal,
+  })

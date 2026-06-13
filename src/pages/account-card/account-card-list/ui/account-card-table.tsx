@@ -12,9 +12,11 @@ import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 import { formatDate } from '@/shared/lib/utils/date'
 
-import type {
-  AccountCardEntry,
-  AccountCardTotals,
+import {
+  DEFAULT_ANALYTICS_GROUPS,
+  type AccountCardEntry,
+  type AccountCardTotals,
+  type AnalyticsGroups,
 } from '../types/account-card'
 import {
   analyticsList,
@@ -34,6 +36,8 @@ interface AccountCardTableProps {
   opening: number
   /** Серверные агрегаты (обороты, конечное сальдо) — итоги при пагинации. */
   totals?: AccountCardTotals | null
+  /** Какие аналитики показывать в колонках «Аналитика Дт/Кт» (чекбоксы). */
+  groups?: AnalyticsGroups
   /** Всего движений за период (для подписи «загружено X из Y»). */
   totalCount?: number
   /** Есть ли ещё непогруженные страницы движений. */
@@ -95,6 +99,7 @@ export const AccountCardTable = ({
   rows,
   opening,
   totals,
+  groups = DEFAULT_ANALYTICS_GROUPS,
   totalCount,
   hasMore,
   onLoadMore,
@@ -279,10 +284,10 @@ export const AccountCardTable = ({
                     </Typography>
                   </td>
                   <td className={td}>
-                    <AnalyticsCell items={analyticsList(entry, 'Dt')} />
+                    <AnalyticsCell items={analyticsList(entry, 'Dt', groups)} />
                   </td>
                   <td className={td}>
-                    <AnalyticsCell items={analyticsList(entry, 'Kt')} />
+                    <AnalyticsCell items={analyticsList(entry, 'Kt', groups)} />
                   </td>
                   <td className={td}>
                     <Typography variant="body2" noWrap className="text-ui-06">

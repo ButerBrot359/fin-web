@@ -6,7 +6,7 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@mui/material'
+import { Button, Checkbox, FormControlLabel } from '@mui/material'
 
 import { useAccountPlanList } from '@/entities/account-plan'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
@@ -22,8 +22,11 @@ import { buildCardExport } from '../lib/utils/build-card-export'
 import { AccountCardTable } from './account-card-table'
 import {
   ANALYTICS_FILTER_KEYS,
+  ANALYTICS_GROUP_ITEMS,
+  DEFAULT_ANALYTICS_GROUPS,
   type AccountCardEntry,
   type AccountCardParams,
+  type AnalyticsGroups,
 } from '../types/account-card'
 
 /**
@@ -52,6 +55,12 @@ export const AccountCardPage = () => {
   const [to, setTo] = useState(urlTo)
   const [account, setAccount] = useState<SelectOption | null>(null)
   const [organization, setOrganization] = useState<SelectOption | null>(null)
+
+  // Переключатели отображения аналитики (чекбоксы группировки). Локальное
+  // состояние — это настройка показа, на запрос не влияет.
+  const [groups, setGroups] = useState<AnalyticsGroups>(DEFAULT_ANALYTICS_GROUPS)
+  const toggleGroup = (key: keyof AnalyticsGroups) =>
+    setGroups((prev) => ({ ...prev, [key]: !prev[key] }))
 
   const { entries: accounts } = useAccountPlanList()
   const accountOptions = useMemo<SelectOption[]>(
@@ -176,7 +185,7 @@ export const AccountCardPage = () => {
       openingBalance: t('accountCard.openingBalance'),
       turnovers: t('accountCard.turnovers'),
       closingBalance: t('accountCard.closingBalance'),
-    })
+    }, groups)
     exportTableToXlsx(title, data)
   }
 
@@ -265,10 +274,31 @@ export const AccountCardPage = () => {
       </div>
 
       {params != null && (
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-0">
+          {ANALYTICS_GROUP_ITEMS.map((item) => (
+            <FormControlLabel
+              key={item.key}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={groups[item.key]}
+                  onChange={() => {
+                    toggleGroup(item.key)
+                  }}
+                />
+              }
+              label={t(item.labelKey)}
+            />
+          ))}
+        </div>
+      )}
+
+      {params != null && (
         <AccountCardTable
           rows={rows}
           opening={opening}
           totals={totals}
+          groups={groups}
           totalCount={totalCount}
           hasMore={hasMore}
           onLoadMore={loadMore}

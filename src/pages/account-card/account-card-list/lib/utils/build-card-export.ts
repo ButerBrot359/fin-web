@@ -1,9 +1,11 @@
 import type { TableExportData } from '@/shared/lib/table-export'
 import { formatDate } from '@/shared/lib/utils/date'
 
-import type {
-  AccountCardEntry,
-  AccountCardTotals,
+import {
+  DEFAULT_ANALYTICS_GROUPS,
+  type AccountCardEntry,
+  type AccountCardTotals,
+  type AnalyticsGroups,
 } from '../../types/account-card'
 import { analyticsList, computeCardLines } from './compute-card-lines'
 
@@ -30,7 +32,8 @@ export interface CardExportLabels {
 export const buildCardExport = (
   rows: AccountCardEntry[],
   totals: AccountCardTotals | null,
-  l: CardExportLabels
+  l: CardExportLabels,
+  groups: AnalyticsGroups = DEFAULT_ANALYTICS_GROUPS
 ): TableExportData => {
   const { lines, totalDt, totalKt, closing } = computeCardLines(rows, totals)
   const opening = totals?.openingBalance ?? 0
@@ -54,8 +57,8 @@ export const buildCardExport = (
         : '',
       line.entry.recorderDocumentName ?? '',
       line.entry.soderzhanie ?? '',
-      analyticsList(line.entry, 'Dt').join('; '),
-      analyticsList(line.entry, 'Kt').join('; '),
+      analyticsList(line.entry, 'Dt', groups).join('; '),
+      analyticsList(line.entry, 'Kt', groups).join('; '),
       line.entry.korrAccountCode ?? '',
       line.debit || '',
       line.credit || '',

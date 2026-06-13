@@ -1,7 +1,10 @@
 import type { TableExportData } from '@/shared/lib/table-export'
 import { formatDate } from '@/shared/lib/utils/date'
 
-import type { AccountCardEntry } from '../../types/account-card'
+import type {
+  AccountCardEntry,
+  AccountCardTotals,
+} from '../../types/account-card'
 import { analyticsList, computeCardLines } from './compute-card-lines'
 
 export interface CardExportLabels {
@@ -20,19 +23,16 @@ export interface CardExportLabels {
 
 /**
  * Готовит данные карточки счёта для выгрузки в Excel: заголовки + строки
- * (сальдо на начало → проводки → обороты → конечное сальдо).
+ * (сальдо на начало → проводки → обороты → конечное сальдо). Все суммы и сальдо
+ * приходят с бэка (через `totals` и поля строк) — фронт ничего не пересчитывает.
  */
 export const buildCardExport = (
   rows: AccountCardEntry[],
-  opening: number,
-  cardCode: string,
+  totals: AccountCardTotals | null,
   l: CardExportLabels
 ): TableExportData => {
-  const { lines, totalDt, totalKt, closing } = computeCardLines(
-    rows,
-    opening,
-    cardCode
-  )
+  const { lines, totalDt, totalKt, closing } = computeCardLines(rows, totals)
+  const opening = totals?.openingBalance ?? 0
   const headers = [
     l.period,
     l.document,

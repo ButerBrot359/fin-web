@@ -1,4 +1,7 @@
-import type { AccountCardEntry } from '../../types/account-card'
+import type {
+  AccountCardEntry,
+  AccountCardTotals,
+} from '../../types/account-card'
 
 export interface CardLine {
   entry: AccountCardEntry
@@ -47,39 +50,28 @@ export const toNum = (v: number | string | null | undefined): number => {
 }
 
 /**
- * Расчёт строк карточки счёта: для каждой проводки определяем сторону счёта
- * карточки (Дт → приход, Кт → расход), накапливаем текущее сальдо
- * (предыдущее + Дт − Кт) и считаем обороты + конечное сальдо.
+ * Строки карточки счёта. Вся учётная математика (сторона Дт/Кт, накопительное
+ * текущее сальдо, корр-счёт, обороты, конечное сальдо) считается на БЭКЕ — фронт
+ * только переносит готовые серверные поля в строки таблицы (принцип «логика на
+ * сервере, фронт рендерит»). Порядок движений задаёт сервер (по периоду/lineNo),
+ * поэтому здесь НЕ сортируем. Итоги берутся из серверных агрегатов `totals`.
  */
 export const computeCardLines = (
   rows: AccountCardEntry[],
-  opening: number,
-  cardCode: string
+  totals?: AccountCardTotals | null
 ): CardComputed => {
-  const sorted = [...rows].sort((a, b) =>
-    (a.period ?? '').localeCompare(b.period ?? '')
-  )
-  let running = opening
-  let totalDt = 0
-  let totalKt = 0
-  const lines: CardLine[] = sorted.map((entry) => {
-    const summa = toNum(entry.summa)
-    let debit = 0
-    let credit = 0
-    let debitQty = 0
-    let creditQty = 0
-    if (entry.accountKtCode === cardCode && entry.accountDtCode !== cardCode) {
-      credit = summa
-      creditQty = toNum(entry.kolichestvoKt)
-      running -= summa
-      totalKt += summa
-    } else {
-      debit = summa
-      debitQty = toNum(entry.kolichestvoDt)
-      running += summa
-      totalDt += summa
-    }
-    return { entry, debit, credit, debitQty, creditQty, balance: running }
-  })
-  return { lines, totalDt, totalKt, closing: opening + totalDt - totalKt }
+  const lines: CardLine[] = rows.map((entry) => ({
+    entry,
+    debit: toNum(entry.debit),
+    credit: toNum(entry.credit),
+    debitQty: toNum(entry.debitKolichestvo),
+    creditQty: toNum(entry.creditKolichestvo),
+    balance: toNum(entry.runningBalance),
+  }))
+  return {
+    lines,
+    totalDt: totals ? totals.turnoverDt : 0,
+    totalKt: totals ? totals.turnoverKt : 0,
+    closing: totals ? totals.closingBalance : 0,
+  }
 }

@@ -40,6 +40,19 @@ export interface AccountCardEntry {
   valyutnayaSummaDt?: number | string | null
   valyutnayaSummaKt?: number | string | null
   soderzhanie?: string | null
+  /**
+   * Вычисленные бэком поля карточки (когда задан accountId). Фронт их только
+   * рендерит — вся учётная математика (сторона Дт/Кт, накопительное сальдо,
+   * корр-счёт) считается на сервере.
+   */
+  debit?: number | string | null
+  credit?: number | string | null
+  debitKolichestvo?: number | string | null
+  creditKolichestvo?: number | string | null
+  /** Код корр-счёта (противоположная сторона проводки). */
+  korrAccountCode?: string | null
+  /** Накопительное текущее сальдо ПОСЛЕ проводки (signed: + Дт / − Кт). */
+  runningBalance?: number | string | null
   /** Субконто проводки по дебету/кредиту (резолвлены в имена). */
   subkontosDt?: AccountCardSubkonto[] | null
   subkontosKt?: AccountCardSubkonto[] | null
@@ -58,4 +71,46 @@ export interface AccountCardParams {
   to: string
   /** ID счёта (фильтр); если не задан — все счета. */
   accountId?: number
+  /**
+   * Фильтры по аналитике, наследуемые при drill-down из ОСВ (когда кликнули
+   * по узлу измерения дерева — карточка строится только по этой аналитике).
+   */
+  organizatsiyaId?: number
+  podrazdelenieId?: number
+  fkrId?: number
+  spetsifikaId?: number
+  istochnikFinansirovaniyaId?: number
+  kodPlatnykhUslugId?: number
 }
+
+/**
+ * Серверные агрегаты карточки за весь период с учётом фильтров (бэк считает
+ * по ВСЕМ движениям, не завися от страницы). Нужны для корректных строк
+ * «Обороты за период» / «Конечное сальдо» при постраничной (lazy) загрузке.
+ */
+export interface AccountCardTotals {
+  /** Всего движений (для пагинации). */
+  totalCount: number
+  /** Оборот за период Дт / Кт по счёту карточки. */
+  turnoverDt: number
+  turnoverKt: number
+  /** Кол-во Дт / Кт за период. */
+  kolichestvoDt: number
+  kolichestvoKt: number
+  /** Сальдо на начало периода (signed) — вычислено бэком. */
+  openingBalance: number
+  /** Конечное сальдо (signed) = openingBalance + turnoverDt − turnoverKt. */
+  closingBalance: number
+}
+
+/** Список query-параметров фильтров аналитики (URL ⇄ запрос). */
+export const ANALYTICS_FILTER_KEYS = [
+  'organizatsiyaId',
+  'podrazdelenieId',
+  'fkrId',
+  'spetsifikaId',
+  'istochnikFinansirovaniyaId',
+  'kodPlatnykhUslugId',
+] as const
+
+export type AnalyticsFilterKey = (typeof ANALYTICS_FILTER_KEYS)[number]

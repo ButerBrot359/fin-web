@@ -206,6 +206,9 @@
     "closingBalance": "Соңғы сальдо",
     "exportExcel": "Excel-ге жүктеу",
     "print": "Басып шығару",
+    "loadedOf": "{{total}} ішінен {{loaded}} жүктелді",
+    "loadMore": "Тағы жүктеу",
+    "loading": "Жүктелуде…",
     "noData": "Кезеңде қозғалыс жоқ"
   },
   "osv": {

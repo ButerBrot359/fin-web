@@ -17,12 +17,12 @@ import { exportTableToXlsx } from '@/shared/lib/table-export'
 import type { SelectOption } from '@/shared/types/select-option'
 
 import { useAccountCard } from '../lib/hooks/use-account-card'
-import { useAccountCardOpening } from '../lib/hooks/use-account-card-opening'
 import { buildCardExport } from '../lib/utils/build-card-export'
 import { AccountCardTable } from './account-card-table'
-import type {
-  AccountCardEntry,
-  AccountCardParams,
+import {
+  ANALYTICS_FILTER_KEYS,
+  type AccountCardEntry,
+  type AccountCardParams,
 } from '../types/account-card'
 
 /**
@@ -71,29 +71,32 @@ export const AccountCardPage = () => {
 
   const params = useMemo<AccountCardParams | null>(() => {
     if (!urlFrom || !urlTo) return null
-    return {
+    const p: AccountCardParams = {
       from: urlFrom,
       to: urlTo,
       accountId: urlAccountId ? Number(urlAccountId) : undefined,
     }
-  }, [urlFrom, urlTo, urlAccountId])
+    // Фильтры аналитики, унаследованные при drill-down из ОСВ (URL → запрос).
+    for (const key of ANALYTICS_FILTER_KEYS) {
+      const raw = searchParams.get(key)
+      if (raw) p[key] = Number(raw)
+    }
+    return p
+  }, [urlFrom, urlTo, urlAccountId, searchParams])
 
-  const { rows, isLoading } = useAccountCard(params, params != null)
+  const {
+    rows,
+    totals,
+    totalCount,
+    hasMore,
+    loadMore,
+    isLoadingMore,
+    isLoading,
+  } = useAccountCard(params, params != null)
 
-  // Начальное сальдо — остаток счёта ДО начала периода (from − 1 сек).
-  const openingDate = useMemo(() => {
-    if (!urlFrom) return null
-    const d = new Date(urlFrom)
-    if (Number.isNaN(d.getTime())) return null
-    d.setSeconds(d.getSeconds() - 1)
-    return d.toISOString()
-  }, [urlFrom])
-
-  const { opening } = useAccountCardOpening(
-    openingDate,
-    urlAccountId ? Number(urlAccountId) : undefined,
-    params != null
-  )
+  // Сальдо на начало периода вычисляет бэк и отдаёт в заголовке ответа карточки
+  // (вся учётная математика на сервере) — отдельный запрос остатков не нужен.
+  const opening = totals?.openingBalance ?? 0
 
   const title = useMemo(() => {
     if (!urlFrom || !urlTo) return t('accountCard.title')
@@ -131,7 +134,7 @@ export const AccountCardPage = () => {
   // Выгрузка сформированной карточки в Excel.
   const handleExportExcel = () => {
     if (!params) return
-    const data = buildCardExport(rows, opening, urlAccountCode, {
+    const data = buildCardExport(rows, totals, {
       period: t('accountCard.period'),
       document: t('accountCard.document'),
       operation: t('accountCard.operation'),
@@ -225,7 +228,11 @@ export const AccountCardPage = () => {
         <AccountCardTable
           rows={rows}
           opening={opening}
-          cardCode={urlAccountCode}
+          totals={totals}
+          totalCount={totalCount}
+          hasMore={hasMore}
+          onLoadMore={loadMore}
+          isLoadingMore={isLoadingMore}
           isLoading={isLoading}
           onOpenDocument={handleOpenDocument}
         />

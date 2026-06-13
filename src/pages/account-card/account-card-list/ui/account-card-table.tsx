@@ -1,12 +1,15 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Typography } from '@mui/material'
+import { Button, Typography } from '@mui/material'
 
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 import { formatDate } from '@/shared/lib/utils/date'
 
-import type { AccountCardEntry } from '../types/account-card'
+import type {
+  AccountCardEntry,
+  AccountCardTotals,
+} from '../types/account-card'
 import {
   analyticsList,
   computeCardLines,
@@ -14,10 +17,17 @@ import {
 
 interface AccountCardTableProps {
   rows: AccountCardEntry[]
-  /** Начальное сальдо счёта (signed = Дт − Кт) на начало периода. */
+  /** Начальное сальдо счёта (signed) на начало периода — вычислено бэком. */
   opening: number
-  /** Код счёта карточки — определяет сторону (Дт/Кт) и корр-счёт. */
-  cardCode: string
+  /** Серверные агрегаты (обороты, конечное сальдо) — итоги при пагинации. */
+  totals?: AccountCardTotals | null
+  /** Всего движений за период (для подписи «загружено X из Y»). */
+  totalCount?: number
+  /** Есть ли ещё непогруженные страницы движений. */
+  hasMore?: boolean
+  /** Догрузить следующую страницу движений (lazy-load). */
+  onLoadMore?: () => void
+  isLoadingMore?: boolean
   /** Открыть документ-регистратор проводки (клик по колонке «Документ»). */
   onOpenDocument?: (row: AccountCardEntry) => void
   isLoading?: boolean
@@ -70,15 +80,19 @@ const AnalyticsCell = ({ items }: { items: string[] }) => (
 export const AccountCardTable = ({
   rows,
   opening,
-  cardCode,
+  totals,
+  totalCount,
+  hasMore,
+  onLoadMore,
+  isLoadingMore,
   onOpenDocument,
   isLoading,
 }: AccountCardTableProps) => {
   const { t } = useTranslation()
 
   const { lines, totalDt, totalKt, closing } = useMemo(
-    () => computeCardLines(rows, opening, cardCode),
-    [rows, opening, cardCode]
+    () => computeCardLines(rows, totals),
+    [rows, totals]
   )
 
   if (isLoading) {
@@ -212,6 +226,31 @@ export const AccountCardTable = ({
           </tr>
         </tbody>
       </table>
+
+      {/* Постраничная (lazy) подгрузка: показываем сколько загружено и кнопку
+          «Загрузить ещё», когда движений больше одной страницы (>1000). */}
+      {(hasMore || (totalCount != null && totalCount > lines.length)) && (
+        <div className="flex items-center justify-center gap-3 border-t border-ui-04/60 bg-ui-01 px-3 py-2">
+          <Typography variant="caption" className="text-ui-05">
+            {t('accountCard.loadedOf', {
+              loaded: lines.length,
+              total: totalCount ?? lines.length,
+            })}
+          </Typography>
+          {hasMore && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => onLoadMore?.()}
+              disabled={isLoadingMore}
+            >
+              {isLoadingMore
+                ? t('accountCard.loading')
+                : t('accountCard.loadMore')}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -206,6 +206,9 @@
     "closingBalance": "Конечное сальдо",
     "exportExcel": "Выгрузить в Excel",
     "print": "Печать",
+    "loadedOf": "Загружено {{loaded}} из {{total}}",
+    "loadMore": "Загрузить ещё",
+    "loading": "Загрузка…",
     "noData": "Нет движений за период"
   },
   "osv": {

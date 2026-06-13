@@ -163,8 +163,8 @@ export const OsvReportPage = () => {
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={t('osv.title')} onClose={handleClose} />
 
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="osv-param-field w-64">
+      <div className="flex flex-wrap items-start gap-4">
+        <div className="report-param-field w-64">
           <DateTimeInput
             value={from}
             onChange={setFrom}
@@ -174,7 +174,7 @@ export const OsvReportPage = () => {
             fullWidth
           />
         </div>
-        <div className="osv-param-field w-64">
+        <div className="report-param-field w-64">
           <DateTimeInput
             value={to}
             onChange={setTo}
@@ -184,7 +184,7 @@ export const OsvReportPage = () => {
             fullWidth
           />
         </div>
-        <div className="osv-param-field w-64">
+        <div className="report-param-field w-64">
           <AutocompleteInput
             value={account}
             options={accountOptions}

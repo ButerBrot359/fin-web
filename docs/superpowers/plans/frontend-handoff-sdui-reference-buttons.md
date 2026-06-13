@@ -41,14 +41,18 @@ src/shared/ui/form-fields/dict-field.tsx            (как onShowAll/onAdd пр
 ## 3. Технические детали
 
 ### 3.1. Откуда берём `domain` и `targetTypeCode`
+
 Они уже приходят в `node.props` (бэк их проставляет в SDUI-дереве):
+
 ```ts
-const domain = (node.props?.domain as string | undefined) ?? 'DICTIONARY'   // напр. 'DICTIONARY'
-const targetTypeCode = node.props?.targetTypeCode as string | undefined      // напр. 'Kontragenty'
+const domain = (node.props?.domain as string | undefined) ?? 'DICTIONARY' // напр. 'DICTIONARY'
+const targetTypeCode = node.props?.targetTypeCode as string | undefined // напр. 'Kontragenty'
 ```
+
 Эти же значения используются для `push(...)` в dict-sidebar.
 
 ### 3.2. Открытие боковой панели
+
 Стор: `useDictSidebarStore` из `@/features/dict-sidebar` (тот же, что зовёт легаси `field-node.tsx`). Панель глобально смонтирована в `App.tsx`, поэтому достаточно вызвать `push`:
 
 ```ts
@@ -58,8 +62,8 @@ import { useDictSidebarStore } from '@/features/dict-sidebar'
 useDictSidebarStore.getState().push({
   mode: 'list',
   domain,
-  typeCode: targetTypeCode,   // string
-  onSelect: applySelected,    // см. 3.3
+  typeCode: targetTypeCode, // string
+  onSelect: applySelected, // см. 3.3
 })
 
 // «Добавить»
@@ -74,20 +78,23 @@ useDictSidebarStore.getState().push({
 Тип панели — `DictSidebarPanel` (`src/types/dict-sidebar.ts`): `{ mode, domain, typeCode, searchParams?, onSelect?, ... }`. Список/создание ходят в существующие `universaldomain`-эндпоинты бэка (через `dict-sidebar-api`) — ничего дополнительно настраивать не нужно.
 
 ### 3.3. Применение выбранной записи + синхронизация с сервером
+
 ВАЖНО: в SDUI значение поля синхронизируется с бэком **только через server EVENT** (в COMMAND save фронт не шлёт state формы). Поэтому `onSelect` должен сделать ровно то же, что текущий `onChange` автокомплита — обновить view-state **и** отправить EVENT:
 
 ```ts
 const applySelected = (opt: SelectOption | null) => {
-  const newVal = opt ? fromSelectOption(opt) : null   // fromSelectOption уже есть в файле: { id, presentation }
+  const newVal = opt ? fromSelectOption(opt) : null // fromSelectOption уже есть в файле: { id, presentation }
   if (node.binding) setValue(node.binding, newVal)
-  fireServerEvent('change', newVal)                   // fireServerEvent уже есть в файле
+  fireServerEvent('change', newVal) // fireServerEvent уже есть в файле
 }
 ```
+
 (Текущий `onChange={(opt) => { ... }}` дублирует эту логику — можно заодно переиспользовать `applySelected`.)
 
 `SelectOption`, который вернёт панель в `onSelect`, имеет поля `{ id, code, label, raw? }`; `fromSelectOption` берёт `id` и `label` (→ `presentation`).
 
 ### 3.4. Подключение к AutocompleteInput
+
 ```tsx
 const canBrowse = !!targetTypeCode && !readonly && enabled
 
@@ -97,9 +104,11 @@ const canBrowse = !!targetTypeCode && !readonly && enabled
   onAdd={canBrowse ? openDictCreate : undefined}
 />
 ```
+
 `onShowAll`/`onAdd` у `AutocompleteInput` имеют сигнатуру `() => void`; футер рисуется автоматически, если передан хотя бы один колбэк.
 
 ### 3.5. Про фильтр зависимых справочников (`node.props.filter`) — опционально
+
 У поля может быть `filter` (напр. «Счёт контрагента» отфильтрован по владельцу). Семантически «Показать все» = показать ВСЕ записи типа, поэтому в `push` фильтр можно **не** передавать (показываем весь справочник). Если потребуется ограничить список по фильтру — `DictSidebarPanel.searchParams` ожидает формат `Record<string,string>` в конвенции `af` (как в легаси `field-node.tsx`: `{ af: 'AttrCode:id' }`), а не плоский `{ AttrCode: id }`, который шлётся в inline-выпадашку. На текущий момент фильтр для футера НЕ требуется — оставляем «показать все».
 
 ---
@@ -113,6 +122,7 @@ const canBrowse = !!targetTypeCode && !readonly && enabled
 - [ ] `npm run build` (tsc) и `npm run lint` зелёные.
 
 ## 5. Затрагиваемые файлы
+
 - Меняем: `src/features/sdui/ui/nodes/fields/reference-field-node.tsx` (единственный файл).
 - Эталон (только смотреть): `src/features/form-renderer/ui/field-node.tsx`, `src/shared/ui/form-fields/dict-field.tsx`, `src/shared/ui/inputs/autocomplete-input.tsx`.
 - Бэкенд: без изменений.

@@ -24,8 +24,8 @@ import {
 // Логические ширины колонок карточки счёта (ручной рендер → задаём через
 // <colgroup>): даты/числа узкие, документ/операция средние, аналитика широкая.
 // 0 Период · 1 Документ · 2 Операция · 3 Аналитика Дт · 4 Аналитика Кт ·
-// 5 Дебет · 6 Кредит · 7 Текущее сальдо.
-const DEFAULT_COL_WIDTHS = [150, 190, 150, 240, 240, 110, 110, 130]
+// 5 Корр.счёт · 6 Дебет · 7 Кредит · 8 Текущее сальдо.
+const DEFAULT_COL_WIDTHS = [150, 190, 150, 230, 230, 110, 110, 110, 130]
 const MIN_COL_WIDTH = 60
 
 interface AccountCardTableProps {
@@ -87,9 +87,9 @@ const AnalyticsCell = ({ items }: { items: string[] }) => (
 /**
  * Карточка счёта — хронология движений по счёту с накопительным сальдо и
  * аналитикой Дт/Кт (как в 1С). Строки: «Сальдо на начало» → проводки (Период,
- * Документ, Операция, Аналитика Дт/Кт, Дебет, Кредит, Текущее сальдо) →
- * «Обороты за период» → «Конечное сальдо». Вся учётная математика считается на
- * бэке; фронт рендерит готовые значения и переключает страницы (lazy-load).
+ * Документ, Операция, Аналитика Дт/Кт, Корр.счёт, Дебет, Кредит, Текущее
+ * сальдо) → «Обороты за период» → «Конечное сальдо». Вся учётная математика
+ * считается на бэке; фронт рендерит готовые значения и листает (lazy-load).
  */
 export const AccountCardTable = ({
   rows,
@@ -228,6 +228,7 @@ export const AccountCardTable = ({
               <th className={th}>{t('accountCard.operation')}</th>
               <th className={th}>{t('accountCard.analyticsDt')}</th>
               <th className={th}>{t('accountCard.analyticsKt')}</th>
+              <th className={th}>{t('accountCard.corrAccount')}</th>
               <th className={`${th} text-right`}>{t('accountCard.debit')}</th>
               <th className={`${th} text-right`}>{t('accountCard.credit')}</th>
               <th className={`${th} text-right`}>
@@ -238,7 +239,7 @@ export const AccountCardTable = ({
           <tbody>
             {/* Сальдо на начало */}
             <tr className="bg-ui-02 font-medium">
-              <td className={td} colSpan={7}>
+              <td className={td} colSpan={8}>
                 <Typography variant="body2" className="font-medium text-ui-06">
                   {t('accountCard.openingBalance')}
                 </Typography>
@@ -283,6 +284,11 @@ export const AccountCardTable = ({
                   <td className={td}>
                     <AnalyticsCell items={analyticsList(entry, 'Kt')} />
                   </td>
+                  <td className={td}>
+                    <Typography variant="body2" noWrap className="text-ui-06">
+                      {entry.korrAccountCode ?? ''}
+                    </Typography>
+                  </td>
                   <td className={`${td} text-right`}>
                     <Money v={debit} />
                     {debitQty !== 0 && (
@@ -314,7 +320,7 @@ export const AccountCardTable = ({
 
             {/* Обороты за период */}
             <tr className="bg-ui-02 font-medium">
-              <td className={td} colSpan={5}>
+              <td className={td} colSpan={6}>
                 <Typography variant="body2" className="font-medium text-ui-06">
                   {t('accountCard.turnovers')}
                 </Typography>
@@ -330,7 +336,7 @@ export const AccountCardTable = ({
 
             {/* Конечное сальдо */}
             <tr className="bg-ui-02 font-bold">
-              <td className={td} colSpan={7}>
+              <td className={td} colSpan={8}>
                 <Typography variant="body2" className="font-bold text-ui-06">
                   {t('accountCard.closingBalance')}
                 </Typography>

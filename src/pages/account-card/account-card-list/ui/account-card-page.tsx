@@ -140,6 +140,7 @@ export const AccountCardPage = () => {
       operation: t('accountCard.operation'),
       analyticsDt: t('accountCard.analyticsDt'),
       analyticsKt: t('accountCard.analyticsKt'),
+      corrAccount: t('accountCard.corrAccount'),
       debit: t('accountCard.debit'),
       credit: t('accountCard.credit'),
       currentBalance: t('accountCard.currentBalance'),

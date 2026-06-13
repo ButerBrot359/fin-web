@@ -1,6 +1,8 @@
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
 } from 'react'
@@ -133,6 +135,26 @@ export const OsvReportTable = ({
   // ширины храним сами и применяем через <colgroup>.
   const [colWidths, setColWidths] = useState<number[]>(DEFAULT_COL_WIDTHS)
   const [resizingCol, setResizingCol] = useState<number | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const fitDoneRef = useRef(false)
+
+  // При первом открытии вписываем колонки на всю ширину страницы, сохраняя
+  // «логические» пропорции (наименование широкое, числа узкие).
+  useLayoutEffect(() => {
+    if (fitDoneRef.current || isLoading || rows.length === 0) return
+    const el = containerRef.current
+    if (!el) return
+    const avail = el.clientWidth - 2
+    if (avail <= 0) return
+    const sum = DEFAULT_COL_WIDTHS.reduce((a, b) => a + b, 0)
+    const scale = avail / sum
+    fitDoneRef.current = true
+    setColWidths(
+      DEFAULT_COL_WIDTHS.map((w) =>
+        Math.max(MIN_COL_WIDTH, Math.round(w * scale))
+      )
+    )
+  }, [isLoading, rows.length])
 
   const startResize = (index: number, e: ReactMouseEvent) => {
     e.preventDefault()
@@ -252,7 +274,10 @@ export const OsvReportTable = ({
   )
 
   return (
-    <div className="overflow-auto rounded-md border border-ui-04">
+    <div
+      ref={containerRef}
+      className="overflow-auto rounded-md border border-ui-04"
+    >
       {/* Шапка отчёта: название + счёт + период, как в 1С. */}
       {title && (
         <div className="border-b border-ui-04 bg-ui-02 px-3 py-2">

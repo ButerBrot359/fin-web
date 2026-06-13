@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   flexRender,
@@ -8,8 +8,26 @@ import {
 } from '@tanstack/react-table'
 
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
+import { useAutoFitColumns } from '@/shared/lib/table-autofit/use-auto-fit-columns'
 
 import type { AccountPlanRow } from '../lib/utils/build-tree-rows'
+
+// Логическая ширина колонок плана счетов: код/флаги/№ — узкие, наименования —
+// широкие, субконто — средние.
+const COLUMN_WEIGHTS: Record<string, number> = {
+  // Код шире: помещаются длинные коды (до «000000001») + значок и отступ дерева.
+  code: 2.6,
+  name: 3,
+  fullNameKz: 3,
+  subkonto1: 1.8,
+  subkonto2: 1.8,
+  subkonto3: 1.8,
+  accountType: 1.2,
+  isCurrency: 0.7,
+  isQuantity: 0.7,
+  isOffBalance: 0.7,
+  nomerMo: 1,
+}
 
 interface AccountPlanTreeTableProps {
   columns: ColumnDef<AccountPlanRow>[]
@@ -35,6 +53,15 @@ export const AccountPlanTreeTable = ({
 }: AccountPlanTreeTableProps) => {
   const { t } = useTranslation()
   const data = useMemo(() => rows, [rows])
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Ширина колонок «на всю страницу» при первом открытии (по весам), затем ресайз.
+  const { columnSizing, onColumnSizingChange } = useAutoFitColumns(
+    containerRef,
+    !isLoading && rows.length > 0,
+    COLUMN_WEIGHTS,
+    4
+  )
 
   const table = useReactTable({
     data,
@@ -45,6 +72,8 @@ export const AccountPlanTreeTable = ({
     enableColumnResizing: true,
     columnResizeMode: 'onChange',
     defaultColumn: { minSize: 48, size: 180 },
+    state: { columnSizing },
+    onColumnSizingChange,
   })
 
   if (isLoading) {
@@ -66,7 +95,10 @@ export const AccountPlanTreeTable = ({
   }
 
   return (
-    <div className="overflow-auto rounded-md border border-ui-04/60">
+    <div
+      ref={containerRef}
+      className="overflow-auto rounded-md border border-ui-04/60"
+    >
       <table
         className="table-fixed border-collapse"
         style={{ width: table.getTotalSize() }}

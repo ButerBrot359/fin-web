@@ -23,7 +23,7 @@ const toNum = (v: number | string | null | undefined): number => {
   return Number.isNaN(n) ? 0 : n
 }
 
-const td = 'whitespace-nowrap border border-ui-04/60 px-3 py-1.5 align-top'
+const td = 'border border-ui-04/60 px-3 py-1.5 align-top'
 const th =
   'whitespace-nowrap border border-ui-04/60 px-3 py-2 text-left text-xs font-semibold uppercase text-ui-06'
 
@@ -51,11 +51,44 @@ const Money = ({
   )
 }
 
+/** Список значений аналитики (измерения + субконто стороны) — построчно. */
+const analyticsList = (
+  entry: AccountCardEntry,
+  side: 'Dt' | 'Kt'
+): string[] => {
+  const out: string[] = []
+  const dims = [
+    entry.organizatsiya,
+    entry.podrazdelenie,
+    entry.fkr,
+    entry.spetsifika,
+    entry.istochnikFinansirovaniya,
+    entry.kodPlatnykhUslug,
+  ]
+  for (const d of dims) if (d?.presentation) out.push(d.presentation)
+  const subs = side === 'Dt' ? entry.subkontosDt : entry.subkontosKt
+  for (const s of subs ?? []) {
+    const nm = s.displayName ?? s.nameRu ?? s.code
+    if (nm) out.push(nm)
+  }
+  return out
+}
+
+const AnalyticsCell = ({ items }: { items: string[] }) => (
+  <div className="flex max-w-72 flex-col gap-0.5">
+    {items.map((it, i) => (
+      <Typography key={i} variant="body2" className="text-ui-06">
+        {it}
+      </Typography>
+    ))}
+  </div>
+)
+
 /**
- * Карточка счёта — хронология движений по счёту с накопительным сальдо
- * (как в 1С). Строки: «Сальдо на начало» → проводки (Период, Документ,
- * Корр-счёт, Дебет, Кредит, Текущее сальдо) → «Обороты за период» →
- * «Конечное сальдо». Математика: текущее = предыдущее + Дт − Кт.
+ * Карточка счёта — хронология движений по счёту с накопительным сальдо и
+ * аналитикой Дт/Кт (как в 1С). Строки: «Сальдо на начало» → проводки (Период,
+ * Документ, Операция, Аналитика Дт/Кт, Дебет, Кредит, Текущее сальдо) →
+ * «Обороты за период» → «Конечное сальдо». Текущее = предыдущее + Дт − Кт.
  */
 export const AccountCardTable = ({
   rows,
@@ -76,27 +109,17 @@ export const AccountCardTable = ({
       const summa = toNum(entry.summa)
       let debit = 0
       let credit = 0
-      let corr = ''
-      // Сторона счёта карточки в проводке: Дт → приход (+), Кт → расход (−).
-      if (entry.accountDtCode === cardCode) {
-        debit = summa
-        corr = entry.accountKtCode ?? ''
-        running += summa
-        totalDt += summa
-      } else if (entry.accountKtCode === cardCode) {
+      if (entry.accountKtCode === cardCode && entry.accountDtCode !== cardCode) {
         credit = summa
-        corr = entry.accountDtCode ?? ''
         running -= summa
         totalKt += summa
       } else {
-        // Счёт карточки не найден в проводке (нет фильтра по коду) — показываем
-        // как есть: дебет по сумме, корр-счёт = кредит.
+        // Дт-сторона счёта карточки (или счёт карточки не определён) — приход.
         debit = summa
-        corr = entry.accountKtCode ?? ''
         running += summa
         totalDt += summa
       }
-      return { entry, debit, credit, corr, balance: running }
+      return { entry, debit, credit, balance: running }
     })
     return { lines, totalDt, totalKt, closing: opening + totalDt - totalKt }
   }, [rows, opening, cardCode])
@@ -118,7 +141,9 @@ export const AccountCardTable = ({
           <tr>
             <th className={th}>{t('accountCard.period')}</th>
             <th className={th}>{t('accountCard.document')}</th>
-            <th className={th}>{t('accountCard.corrAccount')}</th>
+            <th className={th}>{t('accountCard.operation')}</th>
+            <th className={th}>{t('accountCard.analyticsDt')}</th>
+            <th className={th}>{t('accountCard.analyticsKt')}</th>
             <th className={`${th} text-right`}>{t('accountCard.debit')}</th>
             <th className={`${th} text-right`}>{t('accountCard.credit')}</th>
             <th className={`${th} text-right`}>
@@ -129,7 +154,7 @@ export const AccountCardTable = ({
         <tbody>
           {/* Сальдо на начало */}
           <tr className="bg-ui-02 font-medium">
-            <td className={td} colSpan={5}>
+            <td className={td} colSpan={7}>
               <Typography variant="body2" className="font-medium text-ui-06">
                 {t('accountCard.openingBalance')}
               </Typography>
@@ -140,24 +165,30 @@ export const AccountCardTable = ({
           </tr>
 
           {/* Проводки */}
-          {lines.map(({ entry, debit, credit, corr, balance }) => (
+          {lines.map(({ entry, debit, credit, balance }) => (
             <tr key={entry.id} className="transition-colors hover:bg-ui-07">
-              <td className={td}>
+              <td className={`${td} whitespace-nowrap`}>
                 <Typography variant="body2" noWrap className="text-ui-06">
                   {typeof entry.period === 'string'
                     ? formatDate(entry.period, 'dd.MM.yyyy HH:mm:ss')
                     : ''}
                 </Typography>
               </td>
-              <td className={td}>
+              <td className={`${td} max-w-52`}>
+                <Typography variant="body2" className="text-ui-06">
+                  {entry.recorderDocumentName ?? ''}
+                </Typography>
+              </td>
+              <td className={`${td} max-w-44`}>
                 <Typography variant="body2" className="text-ui-06">
                   {entry.soderzhanie ?? ''}
                 </Typography>
               </td>
               <td className={td}>
-                <Typography variant="body2" noWrap className="text-ui-06">
-                  {corr}
-                </Typography>
+                <AnalyticsCell items={analyticsList(entry, 'Dt')} />
+              </td>
+              <td className={td}>
+                <AnalyticsCell items={analyticsList(entry, 'Kt')} />
               </td>
               <td className={`${td} text-right`}>
                 <Money v={debit} />
@@ -173,7 +204,7 @@ export const AccountCardTable = ({
 
           {/* Обороты за период */}
           <tr className="bg-ui-02 font-medium">
-            <td className={td} colSpan={3}>
+            <td className={td} colSpan={5}>
               <Typography variant="body2" className="font-medium text-ui-06">
                 {t('accountCard.turnovers')}
               </Typography>
@@ -189,7 +220,7 @@ export const AccountCardTable = ({
 
           {/* Конечное сальдо */}
           <tr className="bg-ui-02 font-bold">
-            <td className={td} colSpan={5}>
+            <td className={td} colSpan={7}>
               <Typography variant="body2" className="font-bold text-ui-06">
                 {t('accountCard.closingBalance')}
               </Typography>

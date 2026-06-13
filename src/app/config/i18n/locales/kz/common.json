@@ -204,6 +204,8 @@
     "openingBalance": "Басындағы сальдо",
     "turnovers": "Кезеңдегі айналымдар",
     "closingBalance": "Соңғы сальдо",
+    "exportExcel": "Excel-ге жүктеу",
+    "print": "Басып шығару",
     "noData": "Кезеңде қозғалыс жоқ"
   },
   "osv": {

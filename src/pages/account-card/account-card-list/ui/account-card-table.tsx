@@ -7,6 +7,10 @@ import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 import { formatDate } from '@/shared/lib/utils/date'
 
 import type { AccountCardEntry } from '../types/account-card'
+import {
+  analyticsList,
+  computeCardLines,
+} from '../lib/utils/compute-card-lines'
 
 interface AccountCardTableProps {
   rows: AccountCardEntry[]
@@ -17,12 +21,6 @@ interface AccountCardTableProps {
   /** Открыть документ-регистратор проводки (клик по колонке «Документ»). */
   onOpenDocument?: (row: AccountCardEntry) => void
   isLoading?: boolean
-}
-
-const toNum = (v: number | string | null | undefined): number => {
-  if (v == null || v === '') return 0
-  const n = typeof v === 'string' ? Number(v) : v
-  return Number.isNaN(n) ? 0 : n
 }
 
 const td = 'border border-ui-04/60 px-3 py-1.5 align-top'
@@ -53,29 +51,6 @@ const Money = ({
   )
 }
 
-/** Список значений аналитики (измерения + субконто стороны) — построчно. */
-const analyticsList = (
-  entry: AccountCardEntry,
-  side: 'Dt' | 'Kt'
-): string[] => {
-  const out: string[] = []
-  const dims = [
-    entry.organizatsiya,
-    entry.podrazdelenie,
-    entry.fkr,
-    entry.spetsifika,
-    entry.istochnikFinansirovaniya,
-    entry.kodPlatnykhUslug,
-  ]
-  for (const d of dims) if (d?.presentation) out.push(d.presentation)
-  const subs = side === 'Dt' ? entry.subkontosDt : entry.subkontosKt
-  for (const s of subs ?? []) {
-    const nm = s.displayName ?? s.nameRu ?? s.code
-    if (nm) out.push(nm)
-  }
-  return out
-}
-
 const AnalyticsCell = ({ items }: { items: string[] }) => (
   <div className="flex max-w-72 flex-col gap-0.5">
     {items.map((it, i) => (
@@ -101,35 +76,10 @@ export const AccountCardTable = ({
 }: AccountCardTableProps) => {
   const { t } = useTranslation()
 
-  const { lines, totalDt, totalKt, closing } = useMemo(() => {
-    const sorted = [...rows].sort((a, b) =>
-      (a.period ?? '').localeCompare(b.period ?? '')
-    )
-    let running = opening
-    let totalDt = 0
-    let totalKt = 0
-    const lines = sorted.map((entry) => {
-      const summa = toNum(entry.summa)
-      let debit = 0
-      let credit = 0
-      let debitQty = 0
-      let creditQty = 0
-      if (entry.accountKtCode === cardCode && entry.accountDtCode !== cardCode) {
-        credit = summa
-        creditQty = toNum(entry.kolichestvoKt)
-        running -= summa
-        totalKt += summa
-      } else {
-        // Дт-сторона счёта карточки (или счёт карточки не определён) — приход.
-        debit = summa
-        debitQty = toNum(entry.kolichestvoDt)
-        running += summa
-        totalDt += summa
-      }
-      return { entry, debit, credit, debitQty, creditQty, balance: running }
-    })
-    return { lines, totalDt, totalKt, closing: opening + totalDt - totalKt }
-  }, [rows, opening, cardCode])
+  const { lines, totalDt, totalKt, closing } = useMemo(
+    () => computeCardLines(rows, opening, cardCode),
+    [rows, opening, cardCode]
+  )
 
   if (isLoading) {
     return (

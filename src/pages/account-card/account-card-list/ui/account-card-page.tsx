@@ -13,10 +13,12 @@ import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { DateTimeInput, AutocompleteInput } from '@/shared/ui/inputs'
 import { formatDate } from '@/shared/lib/utils/date'
+import { exportTableToXlsx } from '@/shared/lib/table-export'
 import type { SelectOption } from '@/shared/types/select-option'
 
 import { useAccountCard } from '../lib/hooks/use-account-card'
 import { useAccountCardOpening } from '../lib/hooks/use-account-card-opening'
+import { buildCardExport } from '../lib/utils/build-card-export'
 import { AccountCardTable } from './account-card-table'
 import type {
   AccountCardEntry,
@@ -126,6 +128,29 @@ export const AccountCardPage = () => {
     void navigate(`/modules/${pageCode}`)
   }
 
+  // Выгрузка сформированной карточки в Excel.
+  const handleExportExcel = () => {
+    if (!params) return
+    const data = buildCardExport(rows, opening, urlAccountCode, {
+      period: t('accountCard.period'),
+      document: t('accountCard.document'),
+      operation: t('accountCard.operation'),
+      analyticsDt: t('accountCard.analyticsDt'),
+      analyticsKt: t('accountCard.analyticsKt'),
+      debit: t('accountCard.debit'),
+      credit: t('accountCard.credit'),
+      currentBalance: t('accountCard.currentBalance'),
+      openingBalance: t('accountCard.openingBalance'),
+      turnovers: t('accountCard.turnovers'),
+      closingBalance: t('accountCard.closingBalance'),
+    })
+    exportTableToXlsx(title, data)
+  }
+
+  const handlePrint = () => {
+    window.print()
+  }
+
   // Открыть документ-регистратор проводки в карточке документа.
   const handleOpenDocument = (row: AccountCardEntry) => {
     if (!row.recorderDocumentTypeCode || row.recorderDocumentEntryId == null)
@@ -180,6 +205,20 @@ export const AccountCardPage = () => {
         >
           {t('osv.generate')}
         </Button>
+        {params != null && (
+          <>
+            <Button
+              variant="outlined"
+              onClick={handleExportExcel}
+              sx={{ height: 40 }}
+            >
+              {t('accountCard.exportExcel')}
+            </Button>
+            <Button variant="outlined" onClick={handlePrint} sx={{ height: 40 }}>
+              {t('accountCard.print')}
+            </Button>
+          </>
+        )}
       </div>
 
       {params != null && (

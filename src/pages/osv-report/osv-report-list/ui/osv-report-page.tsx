@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@mui/material'
+import type { Row } from '@tanstack/react-table'
 
 import { useAccountPlanList } from '@/entities/account-plan'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
@@ -18,6 +19,19 @@ import type { SelectOption } from '@/shared/types/select-option'
 import { useOsvReport } from '../lib/hooks/use-osv-report'
 import { OsvReportTable } from './osv-report-table'
 import type { OsvReportEntry, OsvReportParams } from '../types/osv-report'
+
+/**
+ * Уровень группировки дерева ОСВ (groupLevel) → query-параметр фильтра карточки
+ * счёта. Уровень SUBKONTO (Номенклатура/Физлица) не включён — бэк фильтрует
+ * движения по измерениям проводки (FK-колонки), а не по субконто.
+ */
+const GROUP_LEVEL_TO_FILTER: Record<string, string | undefined> = {
+  ORGANIZATION: 'organizatsiyaId',
+  PODRAZDELENIE: 'podrazdelenieId',
+  FKR: 'fkrId',
+  SPETSIFIKA: 'spetsifikaId',
+  ISTOCHNIK_FINANSIROVANIYA: 'istochnikFinansirovaniyaId',
+}
 
 export const OsvReportPage = () => {
   const { t } = useTranslation()
@@ -120,16 +134,28 @@ export const OsvReportPage = () => {
   }
 
   // Двойной клик по строке ОСВ → карточка счёта (drill-down, как в 1С): движения
-  // по счёту за тот же период.
-  const handleOpenAccountCard = (row: OsvReportEntry) => {
-    const accId = row.accountId ?? params?.accountId
+  // по счёту за тот же период. Если кликнули по узлу измерения (ФКР, Подразделение
+  // и т.д.), наследуем фильтры аналитики ВСЕХ уровней от корня до узла — карточка
+  // строится только по этой ветке дерева.
+  const handleOpenAccountCard = (row: Row<OsvReportEntry>) => {
+    // Цепочка от корня (счёт) до кликнутого узла включительно.
+    const chain = [...row.getParentRows(), row]
+    const rootEntry = chain[0]?.original ?? row.original
+    const accId = rootEntry.accountId ?? params?.accountId
     if (!params || accId == null) return
     const sp = new URLSearchParams({
       from: params.from,
       to: params.to,
       accountId: String(accId),
-      accountCode: row.accountCode ?? '',
+      accountCode: rootEntry.accountCode ?? '',
     })
+    // Уровень группировки ОСВ → query-параметр фильтра карточки.
+    for (const node of chain) {
+      const { groupLevel, groupRefId } = node.original
+      if (groupRefId == null) continue
+      const key = GROUP_LEVEL_TO_FILTER[groupLevel ?? '']
+      if (key) sp.set(key, String(groupRefId))
+    }
     void navigate(`/modules/${pageCode}/account-card?${sp.toString()}`)
   }
 

@@ -6,13 +6,20 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Typography } from '@mui/material'
+import { Button, Typography } from '@mui/material'
 
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 import { formatDate } from '@/shared/lib/utils/date'
 
-import type { AccountCardEntry } from '../types/account-card'
+import type {
+  AccountCardEntry,
+  AccountCardTotals,
+} from '../types/account-card'
+import {
+  analyticsList,
+  computeCardLines,
+} from '../lib/utils/compute-card-lines'
 
 // Логические ширины колонок карточки счёта (ручной рендер → задаём через
 // <colgroup>): даты/числа узкие, документ/операция средние, аналитика широкая.
@@ -23,17 +30,20 @@ const MIN_COL_WIDTH = 60
 
 interface AccountCardTableProps {
   rows: AccountCardEntry[]
-  /** Начальное сальдо счёта (signed = Дт − Кт) на начало периода. */
+  /** Начальное сальдо счёта (signed) на начало периода — вычислено бэком. */
   opening: number
-  /** Код счёта карточки — определяет сторону (Дт/Кт) и корр-счёт. */
-  cardCode: string
+  /** Серверные агрегаты (обороты, конечное сальдо) — итоги при пагинации. */
+  totals?: AccountCardTotals | null
+  /** Всего движений за период (для подписи «загружено X из Y»). */
+  totalCount?: number
+  /** Есть ли ещё непогруженные страницы движений. */
+  hasMore?: boolean
+  /** Догрузить следующую страницу движений (lazy-load). */
+  onLoadMore?: () => void
+  isLoadingMore?: boolean
+  /** Открыть документ-регистратор проводки (клик по колонке «Документ»). */
+  onOpenDocument?: (row: AccountCardEntry) => void
   isLoading?: boolean
-}
-
-const toNum = (v: number | string | null | undefined): number => {
-  if (v == null || v === '') return 0
-  const n = typeof v === 'string' ? Number(v) : v
-  return Number.isNaN(n) ? 0 : n
 }
 
 const td = 'border border-ui-04/60 px-3 py-1.5 align-top'
@@ -64,29 +74,6 @@ const Money = ({
   )
 }
 
-/** Список значений аналитики (измерения + субконто стороны) — построчно. */
-const analyticsList = (
-  entry: AccountCardEntry,
-  side: 'Dt' | 'Kt'
-): string[] => {
-  const out: string[] = []
-  const dims = [
-    entry.organizatsiya,
-    entry.podrazdelenie,
-    entry.fkr,
-    entry.spetsifika,
-    entry.istochnikFinansirovaniya,
-    entry.kodPlatnykhUslug,
-  ]
-  for (const d of dims) if (d?.presentation) out.push(d.presentation)
-  const subs = side === 'Dt' ? entry.subkontosDt : entry.subkontosKt
-  for (const s of subs ?? []) {
-    const nm = s.displayName ?? s.nameRu ?? s.code
-    if (nm) out.push(nm)
-  }
-  return out
-}
-
 const AnalyticsCell = ({ items }: { items: string[] }) => (
   <div className="flex flex-col gap-0.5">
     {items.map((it, i) => (
@@ -101,12 +88,18 @@ const AnalyticsCell = ({ items }: { items: string[] }) => (
  * Карточка счёта — хронология движений по счёту с накопительным сальдо и
  * аналитикой Дт/Кт (как в 1С). Строки: «Сальдо на начало» → проводки (Период,
  * Документ, Операция, Аналитика Дт/Кт, Дебет, Кредит, Текущее сальдо) →
- * «Обороты за период» → «Конечное сальдо». Текущее = предыдущее + Дт − Кт.
+ * «Обороты за период» → «Конечное сальдо». Вся учётная математика считается на
+ * бэке; фронт рендерит готовые значения и переключает страницы (lazy-load).
  */
 export const AccountCardTable = ({
   rows,
   opening,
-  cardCode,
+  totals,
+  totalCount,
+  hasMore,
+  onLoadMore,
+  isLoadingMore,
+  onOpenDocument,
   isLoading,
 }: AccountCardTableProps) => {
   const { t } = useTranslation()
@@ -170,31 +163,12 @@ export const AccountCardTable = ({
     })
   }
 
-  const { lines, totalDt, totalKt, closing } = useMemo(() => {
-    const sorted = [...rows].sort((a, b) =>
-      (a.period ?? '').localeCompare(b.period ?? '')
-    )
-    let running = opening
-    let totalDt = 0
-    let totalKt = 0
-    const lines = sorted.map((entry) => {
-      const summa = toNum(entry.summa)
-      let debit = 0
-      let credit = 0
-      if (entry.accountKtCode === cardCode && entry.accountDtCode !== cardCode) {
-        credit = summa
-        running -= summa
-        totalKt += summa
-      } else {
-        // Дт-сторона счёта карточки (или счёт карточки не определён) — приход.
-        debit = summa
-        running += summa
-        totalDt += summa
-      }
-      return { entry, debit, credit, balance: running }
-    })
-    return { lines, totalDt, totalKt, closing: opening + totalDt - totalKt }
-  }, [rows, opening, cardCode])
+  // Вся учётная математика — на бэке; здесь только переносим серверные поля
+  // строк и итоги в модель таблицы (см. computeCardLines).
+  const { lines, totalDt, totalKt, closing } = useMemo(
+    () => computeCardLines(rows, totals),
+    [rows, totals]
+  )
 
   if (isLoading) {
     return (
@@ -248,99 +222,150 @@ export const AccountCardTable = ({
             ))}
           </colgroup>
           <thead className="bg-ui-02">
-          <tr>
-            <th className={th}>{t('accountCard.period')}</th>
-            <th className={th}>{t('accountCard.document')}</th>
-            <th className={th}>{t('accountCard.operation')}</th>
-            <th className={th}>{t('accountCard.analyticsDt')}</th>
-            <th className={th}>{t('accountCard.analyticsKt')}</th>
-            <th className={`${th} text-right`}>{t('accountCard.debit')}</th>
-            <th className={`${th} text-right`}>{t('accountCard.credit')}</th>
-            <th className={`${th} text-right`}>
-              {t('accountCard.currentBalance')}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {/* Сальдо на начало */}
-          <tr className="bg-ui-02 font-medium">
-            <td className={td} colSpan={7}>
-              <Typography variant="body2" className="font-medium text-ui-06">
-                {t('accountCard.openingBalance')}
-              </Typography>
-            </td>
-            <td className={`${td} text-right`}>
-              <Money v={opening} bold showZero />
-            </td>
-          </tr>
-
-          {/* Проводки */}
-          {lines.map(({ entry, debit, credit, balance }) => (
-            <tr key={entry.id} className="transition-colors hover:bg-ui-07">
-              <td className={`${td} whitespace-nowrap`}>
-                <Typography variant="body2" noWrap className="text-ui-06">
-                  {typeof entry.period === 'string'
-                    ? formatDate(entry.period, 'dd.MM.yyyy HH:mm:ss')
-                    : ''}
+            <tr>
+              <th className={th}>{t('accountCard.period')}</th>
+              <th className={th}>{t('accountCard.document')}</th>
+              <th className={th}>{t('accountCard.operation')}</th>
+              <th className={th}>{t('accountCard.analyticsDt')}</th>
+              <th className={th}>{t('accountCard.analyticsKt')}</th>
+              <th className={`${th} text-right`}>{t('accountCard.debit')}</th>
+              <th className={`${th} text-right`}>{t('accountCard.credit')}</th>
+              <th className={`${th} text-right`}>
+                {t('accountCard.currentBalance')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Сальдо на начало */}
+            <tr className="bg-ui-02 font-medium">
+              <td className={td} colSpan={7}>
+                <Typography variant="body2" className="font-medium text-ui-06">
+                  {t('accountCard.openingBalance')}
                 </Typography>
               </td>
-              <td className={td}>
-                <Typography variant="body2" className="text-ui-06">
-                  {entry.recorderDocumentName ?? ''}
-                </Typography>
-              </td>
-              <td className={td}>
-                <Typography variant="body2" className="text-ui-06">
-                  {entry.soderzhanie ?? ''}
-                </Typography>
-              </td>
-              <td className={td}>
-                <AnalyticsCell items={analyticsList(entry, 'Dt')} />
-              </td>
-              <td className={td}>
-                <AnalyticsCell items={analyticsList(entry, 'Kt')} />
-              </td>
               <td className={`${td} text-right`}>
-                <Money v={debit} />
-              </td>
-              <td className={`${td} text-right`}>
-                <Money v={credit} />
-              </td>
-              <td className={`${td} text-right`}>
-                <Money v={balance} showZero />
+                <Money v={opening} bold showZero />
               </td>
             </tr>
-          ))}
 
-          {/* Обороты за период */}
-          <tr className="bg-ui-02 font-medium">
-            <td className={td} colSpan={5}>
-              <Typography variant="body2" className="font-medium text-ui-06">
-                {t('accountCard.turnovers')}
-              </Typography>
-            </td>
-            <td className={`${td} text-right`}>
-              <Money v={totalDt} bold showZero />
-            </td>
-            <td className={`${td} text-right`}>
-              <Money v={totalKt} bold showZero />
-            </td>
-            <td className={td} />
-          </tr>
+            {/* Проводки */}
+            {lines.map(
+              ({ entry, debit, credit, debitQty, creditQty, balance }) => (
+                <tr key={entry.id} className="transition-colors hover:bg-ui-07">
+                  <td className={`${td} whitespace-nowrap`}>
+                    <Typography variant="body2" noWrap className="text-ui-06">
+                      {typeof entry.period === 'string'
+                        ? formatDate(entry.period, 'dd.MM.yyyy HH:mm:ss')
+                        : ''}
+                    </Typography>
+                  </td>
+                  <td className={td}>
+                    {entry.recorderDocumentName ? (
+                      <button
+                        type="button"
+                        onClick={() => onOpenDocument?.(entry)}
+                        className="text-left text-accent-02 hover:underline"
+                      >
+                        {entry.recorderDocumentName}
+                      </button>
+                    ) : (
+                      ''
+                    )}
+                  </td>
+                  <td className={td}>
+                    <Typography variant="body2" className="text-ui-06">
+                      {entry.soderzhanie ?? ''}
+                    </Typography>
+                  </td>
+                  <td className={td}>
+                    <AnalyticsCell items={analyticsList(entry, 'Dt')} />
+                  </td>
+                  <td className={td}>
+                    <AnalyticsCell items={analyticsList(entry, 'Kt')} />
+                  </td>
+                  <td className={`${td} text-right`}>
+                    <Money v={debit} />
+                    {debitQty !== 0 && (
+                      <Typography
+                        variant="caption"
+                        className="block text-right tabular-nums text-ui-05"
+                      >
+                        {formatWithSpaces(String(debitQty))}
+                      </Typography>
+                    )}
+                  </td>
+                  <td className={`${td} text-right`}>
+                    <Money v={credit} />
+                    {creditQty !== 0 && (
+                      <Typography
+                        variant="caption"
+                        className="block text-right tabular-nums text-ui-05"
+                      >
+                        {formatWithSpaces(String(creditQty))}
+                      </Typography>
+                    )}
+                  </td>
+                  <td className={`${td} text-right`}>
+                    <Money v={balance} showZero />
+                  </td>
+                </tr>
+              )
+            )}
 
-          {/* Конечное сальдо */}
-          <tr className="bg-ui-02 font-bold">
-            <td className={td} colSpan={7}>
-              <Typography variant="body2" className="font-bold text-ui-06">
-                {t('accountCard.closingBalance')}
-              </Typography>
-            </td>
-            <td className={`${td} text-right`}>
-              <Money v={closing} bold showZero />
-            </td>
-          </tr>
-        </tbody>
+            {/* Обороты за период */}
+            <tr className="bg-ui-02 font-medium">
+              <td className={td} colSpan={5}>
+                <Typography variant="body2" className="font-medium text-ui-06">
+                  {t('accountCard.turnovers')}
+                </Typography>
+              </td>
+              <td className={`${td} text-right`}>
+                <Money v={totalDt} bold showZero />
+              </td>
+              <td className={`${td} text-right`}>
+                <Money v={totalKt} bold showZero />
+              </td>
+              <td className={td} />
+            </tr>
+
+            {/* Конечное сальдо */}
+            <tr className="bg-ui-02 font-bold">
+              <td className={td} colSpan={7}>
+                <Typography variant="body2" className="font-bold text-ui-06">
+                  {t('accountCard.closingBalance')}
+                </Typography>
+              </td>
+              <td className={`${td} text-right`}>
+                <Money v={closing} bold showZero />
+              </td>
+            </tr>
+          </tbody>
         </table>
+
+        {/* Постраничная (lazy) подгрузка: показываем сколько загружено и кнопку
+            «Загрузить ещё», когда движений больше одной страницы (>1000). */}
+        {(hasMore || (totalCount != null && totalCount > lines.length)) && (
+          <div className="flex items-center justify-center gap-3 border-t border-ui-04/60 bg-ui-01 px-3 py-2">
+            <Typography variant="caption" className="text-ui-05">
+              {t('accountCard.loadedOf', {
+                loaded: lines.length,
+                total: totalCount ?? lines.length,
+              })}
+            </Typography>
+            {hasMore && (
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => onLoadMore?.()}
+                disabled={isLoadingMore}
+              >
+                {isLoadingMore
+                  ? t('accountCard.loading')
+                  : t('accountCard.loadMore')}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -40,7 +40,14 @@ export const fetchOsvReport = (params: OsvReportParams, signal?: AbortSignal) =>
     params: {
       from: params.from,
       to: params.to,
+      // groupByDimensions — обратная совместимость со старым бэком (полный
+      // разворот). Новый бэк приоритезирует `groupBy` (состав/порядок уровней).
       groupByDimensions: true,
+      // CSV (`?groupBy=ORGANIZATION,FKR`) — Spring биндит в List<String>.
+      ...(params.groupBy && params.groupBy.length > 0
+        ? { groupBy: params.groupBy.join(',') }
+        : {}),
+      ...(params.expandBySubkonto ? { expandBySubkonto: true } : {}),
       ...(params.accountId != null ? { accountId: params.accountId } : {}),
     },
     signal,

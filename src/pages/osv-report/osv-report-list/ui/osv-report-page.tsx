@@ -11,6 +11,10 @@ import type { Row } from '@tanstack/react-table'
 
 import { useAccountPlanList } from '@/entities/account-plan'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
+import {
+  ReportSettingsDrawer,
+  type ReportGroupItem,
+} from '@/features/report-settings'
 import { PageHeader } from '@/widgets/page-header'
 import { DateTimeInput, AutocompleteInput } from '@/shared/ui/inputs'
 import { formatDate } from '@/shared/lib/utils/date'
@@ -18,7 +22,12 @@ import type { SelectOption } from '@/shared/types/select-option'
 
 import { useOsvReport } from '../lib/hooks/use-osv-report'
 import { OsvReportTable } from './osv-report-table'
-import type { OsvReportEntry, OsvReportParams } from '../types/osv-report'
+import {
+  OSV_ALL_DIMENSIONS,
+  OSV_GROUP_DIMENSIONS,
+  type OsvReportEntry,
+  type OsvReportParams,
+} from '../types/osv-report'
 
 /**
  * Уровень группировки дерева ОСВ (groupLevel) → query-параметр фильтра карточки
@@ -32,6 +41,9 @@ const GROUP_LEVEL_TO_FILTER: Record<string, string | undefined> = {
   SPETSIFIKA: 'spetsifikaId',
   ISTOCHNIK_FINANSIROVANIYA: 'istochnikFinansirovaniyaId',
 }
+
+/** Ключ пункта «По субконто» в панели группировки (не измерение). */
+const SUBKONTO_GROUP_KEY = '__subkonto'
 
 export const OsvReportPage = () => {
   const { t } = useTranslation()
@@ -56,6 +68,15 @@ export const OsvReportPage = () => {
   const [from, setFrom] = useState(urlFrom)
   const [to, setTo] = useState(urlTo)
   const [account, setAccount] = useState<SelectOption | null>(null)
+
+  // Группировка (панель «Настройки → Группировка»). По умолчанию все измерения
+  // включены (полное дерево, как сейчас); субконто-разворот выключен. Меняет
+  // запрос → дерево перестраивается на бэке.
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [enabledDims, setEnabledDims] = useState<Set<string>>(
+    () => new Set(OSV_ALL_DIMENSIONS)
+  )
+  const [expandBySubkonto, setExpandBySubkonto] = useState(false)
 
   const { entries: accounts } = useAccountPlanList()
   const accountOptions = useMemo<SelectOption[]>(
@@ -86,8 +107,40 @@ export const OsvReportPage = () => {
       from: urlFrom,
       to: urlTo,
       accountId: urlAccountId ? Number(urlAccountId) : undefined,
+      // Включённые измерения в фиксированном порядке — состав уровней дерева.
+      groupBy: OSV_GROUP_DIMENSIONS.filter((d) => enabledDims.has(d.key)).map(
+        (d) => d.key
+      ),
+      expandBySubkonto,
     }
-  }, [urlFrom, urlTo, urlAccountId])
+  }, [urlFrom, urlTo, urlAccountId, enabledDims, expandBySubkonto])
+
+  // Пункты вкладки «Группировка»: измерения + «По субконто» (разворот листа).
+  const toggleGroup = (key: string) => {
+    if (key === SUBKONTO_GROUP_KEY) {
+      setExpandBySubkonto((v) => !v)
+      return
+    }
+    setEnabledDims((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+  const groupItems = useMemo<ReportGroupItem[]>(() => {
+    const items: ReportGroupItem[] = OSV_GROUP_DIMENSIONS.map((d) => ({
+      key: d.key,
+      label: t(d.labelKey),
+      checked: enabledDims.has(d.key),
+    }))
+    items.push({
+      key: SUBKONTO_GROUP_KEY,
+      label: t('osv.bySubkonto'),
+      checked: expandBySubkonto,
+    })
+    return items
+  }, [enabledDims, expandBySubkonto, t])
 
   const { rows, total, isLoading, isError, refetch } = useOsvReport(
     params,
@@ -202,6 +255,17 @@ export const OsvReportPage = () => {
         >
           {t('osv.generate')}
         </Button>
+        {params != null && (
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setSettingsOpen(true)
+            }}
+            sx={{ height: 40 }}
+          >
+            {t('reportSettings.title')}
+          </Button>
+        )}
       </div>
 
       {isError ? (
@@ -217,6 +281,15 @@ export const OsvReportPage = () => {
           />
         )
       )}
+
+      <ReportSettingsDrawer
+        open={settingsOpen}
+        onClose={() => {
+          setSettingsOpen(false)
+        }}
+        groupItems={groupItems}
+        onToggleGroup={toggleGroup}
+      />
     </div>
   )
 }

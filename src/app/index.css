@@ -2,23 +2,23 @@
 @config '../../tailwind.config.ts';
 
 /* Поля панели параметров отчётов (ОСВ, карточка счёта) — единая ширина (100%
-   контейнера w-64) и высота 40px для разнородных MUI-инпутов. Все инпуты темы
-   filled; у Autocomplete («Счёт») в самом компоненте занижены minHeight:32 и
-   паддинги, поэтому он ниже date-пикеров — форсим height И min-height, плюс
-   возвращаем вертикальные паддинги, чтобы значение центрировалось. Обычный CSS
-   вместо Tailwind-arbitrary — не зависит от версии/синтаксиса. */
+   контейнера w-64). Все инпуты темы filled. «Период» (DateTimePicker) рендерится
+   в полную filled-высоту small, а «Счёт» (Autocomplete) ниже, т.к. в самом
+   компоненте AutocompleteInput для size=small зашиты minHeight:32 и узкие
+   вертикальные паддинги (6px). Здесь убираем это занижение и возвращаем
+   стандартные filled-паддинги small (21px / 4px) — тогда «Счёт» той же высоты,
+   что «Период». Обычный CSS вместо Tailwind-arbitrary — не зависит от версии. */
 .report-param-field .MuiFormControl-root,
 .report-param-field .MuiAutocomplete-root,
 .report-param-field .MuiInputBase-root {
   width: 100% !important;
 }
-.report-param-field .MuiInputBase-root {
-  height: 40px !important;
-  min-height: 40px !important;
+.report-param-field .MuiAutocomplete-root .MuiFilledInput-root {
+  min-height: 0 !important;
 }
 .report-param-field .MuiAutocomplete-input {
-  padding-top: 8px !important;
-  padding-bottom: 8px !important;
+  padding-top: 21px !important;
+  padding-bottom: 4px !important;
 }
 
 /* Перенос текста в ячейке при ручном сужении колонки: текст переносится на

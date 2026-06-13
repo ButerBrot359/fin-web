@@ -17,6 +17,7 @@ import { exportTableToXlsx } from '@/shared/lib/table-export'
 import type { SelectOption } from '@/shared/types/select-option'
 
 import { useAccountCard } from '../lib/hooks/use-account-card'
+import { useOrganizations } from '../lib/hooks/use-organizations'
 import { buildCardExport } from '../lib/utils/build-card-export'
 import { AccountCardTable } from './account-card-table'
 import {
@@ -44,11 +45,13 @@ export const AccountCardPage = () => {
   const urlTo = searchParams.get('to') ?? ''
   const urlAccountId = searchParams.get('accountId')
   const urlAccountCode = searchParams.get('accountCode') ?? ''
+  const urlOrganizationId = searchParams.get('organizatsiyaId')
 
   // Черновики панели фильтров (инициализируются из URL).
   const [from, setFrom] = useState(urlFrom)
   const [to, setTo] = useState(urlTo)
   const [account, setAccount] = useState<SelectOption | null>(null)
+  const [organization, setOrganization] = useState<SelectOption | null>(null)
 
   const { entries: accounts } = useAccountPlanList()
   const accountOptions = useMemo<SelectOption[]>(
@@ -68,6 +71,27 @@ export const AccountCardPage = () => {
     const found = accountOptions.find((o) => String(o.id) === urlAccountId)
     if (found) setAccount(found)
   }, [urlAccountId, accountOptions, account])
+
+  const { organizations } = useOrganizations()
+  const organizationOptions = useMemo<SelectOption[]>(
+    () =>
+      organizations.map((o) => ({
+        id: o.id,
+        code: o.code ?? '',
+        label: o.displayName ?? o.nameRu ?? o.code ?? String(o.id),
+      })),
+    [organizations]
+  )
+
+  // Восстанавливаем выбранную организацию из URL, когда справочник загрузился.
+  useEffect(() => {
+    if (!urlOrganizationId) return
+    if (organization && String(organization.id) === urlOrganizationId) return
+    const found = organizationOptions.find(
+      (o) => String(o.id) === urlOrganizationId
+    )
+    if (found) setOrganization(found)
+  }, [urlOrganizationId, organizationOptions, organization])
 
   const params = useMemo<AccountCardParams | null>(() => {
     if (!urlFrom || !urlTo) return null
@@ -119,6 +143,11 @@ export const AccountCardPage = () => {
         } else {
           next.delete('accountId')
           next.delete('accountCode')
+        }
+        if (organization) {
+          next.set('organizatsiyaId', String(organization.id))
+        } else {
+          next.delete('organizatsiyaId')
         }
         return next
       },
@@ -197,6 +226,16 @@ export const AccountCardPage = () => {
             options={accountOptions}
             onChange={setAccount}
             label={t('osv.account')}
+            size="small"
+            fullWidth
+          />
+        </div>
+        <div className="report-param-field w-64">
+          <AutocompleteInput
+            value={organization}
+            options={organizationOptions}
+            onChange={setOrganization}
+            label={t('accountCard.organization')}
             size="small"
             fullWidth
           />

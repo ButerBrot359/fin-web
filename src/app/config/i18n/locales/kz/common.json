@@ -199,10 +199,12 @@
     "analyticsKt": "Кт аналитикасы",
     "corrAccount": "Корр. шот",
     "organization": "Ұйым",
+    "groupOrganizatsiya": "Ұйым",
     "groupPodrazdelenie": "Бөлімше",
     "groupFkr": "ФКР",
     "groupSpetsifika": "Ерекшелік",
     "groupIstochnik": "Қаржыландыру көзі",
+    "groupKodPlatnykhUslug": "Ақылы қызмет коды",
     "groupSubkonto": "Субконто",
     "debit": "Дебет",
     "credit": "Кредит",
@@ -216,6 +218,10 @@
     "loadMore": "Тағы жүктеу",
     "loading": "Жүктелуде…",
     "noData": "Кезеңде қозғалыс жоқ"
+  },
+  "reportSettings": {
+    "title": "Баптаулар",
+    "grouping": "Топтау"
   },
   "osv": {
     "title": "Айналым-сальдо тізімдемесі",

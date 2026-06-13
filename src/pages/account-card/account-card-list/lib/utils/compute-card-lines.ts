@@ -1,9 +1,12 @@
 import {
-  DEFAULT_ANALYTICS_GROUPS,
+  subkontoGroupKey,
   type AccountCardEntry,
   type AccountCardTotals,
-  type AnalyticsGroups,
+  type HiddenAnalyticsGroups,
+  type RefOption,
 } from '../../types/account-card'
+
+const EMPTY_HIDDEN: HiddenAnalyticsGroups = new Set()
 
 export interface CardLine {
   entry: AccountCardEntry
@@ -24,32 +27,32 @@ export interface CardComputed {
 
 /**
  * Список значений аналитики стороны (измерения + субконто) — построчно.
- * `groups` управляет видимостью переключаемых измерений/субконто (чекбоксы
- * группировки). Организация и КодПлатныхУслуг показываются всегда.
+ * `hidden` — множество ключей скрытых групп (чекбоксы «Группировка»). Измерения
+ * скрываются по ключу из `DIMENSION_GROUP_ITEMS`, субконто — по виду
+ * (`subkonto:<kindRu>`). Пустое множество = показываем всё.
  */
 export const analyticsList = (
   entry: AccountCardEntry,
   side: 'Dt' | 'Kt',
-  groups: AnalyticsGroups = DEFAULT_ANALYTICS_GROUPS
+  hidden: HiddenAnalyticsGroups = EMPTY_HIDDEN
 ): string[] => {
   const out: string[] = []
-  if (entry.organizatsiya?.presentation)
-    out.push(entry.organizatsiya.presentation)
-  if (groups.podrazdelenie && entry.podrazdelenie?.presentation)
-    out.push(entry.podrazdelenie.presentation)
-  if (groups.fkr && entry.fkr?.presentation) out.push(entry.fkr.presentation)
-  if (groups.spetsifika && entry.spetsifika?.presentation)
-    out.push(entry.spetsifika.presentation)
-  if (groups.istochnik && entry.istochnikFinansirovaniya?.presentation)
-    out.push(entry.istochnikFinansirovaniya.presentation)
-  if (entry.kodPlatnykhUslug?.presentation)
-    out.push(entry.kodPlatnykhUslug.presentation)
-  if (groups.subkonto) {
-    const subs = side === 'Dt' ? entry.subkontosDt : entry.subkontosKt
-    for (const s of subs ?? []) {
-      const nm = s.displayName ?? s.nameRu ?? s.code
-      if (nm) out.push(nm)
-    }
+  const dims: [string, RefOption | null | undefined][] = [
+    ['organizatsiya', entry.organizatsiya],
+    ['podrazdelenie', entry.podrazdelenie],
+    ['fkr', entry.fkr],
+    ['spetsifika', entry.spetsifika],
+    ['istochnik', entry.istochnikFinansirovaniya],
+    ['kodPlatnykhUslug', entry.kodPlatnykhUslug],
+  ]
+  for (const [key, d] of dims) {
+    if (!hidden.has(key) && d?.presentation) out.push(d.presentation)
+  }
+  const subs = side === 'Dt' ? entry.subkontosDt : entry.subkontosKt
+  for (const s of subs ?? []) {
+    if (hidden.has(subkontoGroupKey(s.kindRu))) continue
+    const nm = s.displayName ?? s.nameRu ?? s.code
+    if (nm) out.push(nm)
   }
   return out
 }

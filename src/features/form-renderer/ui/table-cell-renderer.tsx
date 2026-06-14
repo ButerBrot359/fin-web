@@ -22,6 +22,8 @@ import { DateTimeInput } from '@/shared/ui/inputs/datetime-input'
 import { AutocompleteInput } from '@/shared/ui/inputs/autocomplete-input'
 import { useDictSidebarStore } from '@/features/dict-sidebar'
 
+import { useCellDependency } from '../lib/hooks/use-cell-dependency'
+
 interface TableCellRendererProps {
   name: string
   column: DocumentAttribute
@@ -126,6 +128,10 @@ const DictCell = ({
       : undefined
   const isServerSearch = !!searchUrl
 
+  // Dependent dictionaries (e.g. Подразделения filtered by owner org) need the
+  // owner filter, which the row lacks — it is sourced from the header field.
+  const { searchParams, disabled } = useCellDependency(column, control)
+
   const [opened, setOpened] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -158,11 +164,11 @@ const DictCell = ({
     unknown,
     SelectOption[]
   >({
-    queryKey: ['dictionary-search', searchUrl, debouncedSearch],
+    queryKey: ['dictionary-search', searchUrl, debouncedSearch, searchParams],
     queryFn: () =>
       apiService.get<DictionarySearchResponse>({
         url: searchUrl!,
-        params: { q: debouncedSearch, size: 30 },
+        params: { q: debouncedSearch, size: 30, ...searchParams },
       }),
     enabled: isServerSearch && opened,
     select: (response) =>
@@ -187,6 +193,7 @@ const DictCell = ({
           mode: 'list',
           domain: resolved.domain,
           typeCode: resolved.typeCode,
+          searchParams,
           onSelect,
         })
       }
@@ -260,6 +267,7 @@ const DictCell = ({
             value={currentValue}
             inputValue={isServerSearch ? inputValue : undefined}
             options={options}
+            disabled={disabled}
             onChange={(newOption) => {
               field.onChange(newOption?.raw ?? null)
             }}

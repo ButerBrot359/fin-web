@@ -227,6 +227,8 @@
     "planType": "Вид плана",
     "source": "Источник финансирования",
     "movement": "Движение финансирования",
+    "excelSectionTitle": "Информация по загрузке из excel",
+    "fileName": "Имя файла",
     "sheetName": "Имя листа",
     "startRow": "Начальная строка",
     "columnOffset": "Смещение колонок",

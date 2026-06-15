@@ -227,6 +227,8 @@
     "planType": "Жоспар түрі",
     "source": "Қаржыландыру көзі",
     "movement": "Қаржыландыру қозғалысы",
+    "excelSectionTitle": "Excel-ден жүктеу туралы ақпарат",
+    "fileName": "Файл атауы",
     "sheetName": "Парақ атауы",
     "startRow": "Бастапқы жол",
     "columnOffset": "Бағандар жылжуы",

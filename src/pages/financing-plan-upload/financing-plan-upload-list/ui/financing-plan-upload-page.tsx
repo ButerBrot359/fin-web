@@ -277,7 +277,21 @@ export const FinancingPlanUploadPage = () => {
         onClose={handleClose}
       />
 
-      <div className="flex flex-wrap items-start gap-4">
+      {/* Верхнее основное действие — как в 1С, «Сформировать документы» сверху. */}
+      <div>
+        <Button
+          variant="contained"
+          color="success"
+          disabled={!canGenerate}
+          onClick={handleGenerate}
+          sx={{ height: 40 }}
+        >
+          {t('financingPlanUpload.generateDocuments')}
+        </Button>
+      </div>
+
+      {/* Реквизиты шапки — вертикальный стек в порядке 1С. */}
+      <div className="flex flex-col gap-3">
         <div className="report-param-field w-64">
           <DateTimeInput
             value={form.data}
@@ -291,7 +305,7 @@ export const FinancingPlanUploadPage = () => {
             fullWidth
           />
         </div>
-        <div className="report-param-field w-64">
+        <div className="report-param-field w-[460px]">
           <AutocompleteInput
             value={organization}
             options={organizationOptions}
@@ -304,7 +318,7 @@ export const FinancingPlanUploadPage = () => {
             fullWidth
           />
         </div>
-        <div className="report-param-field w-64">
+        <div className="report-param-field w-[460px]">
           <AutocompleteInput
             value={vidPlana}
             options={vidPlanaOptions}
@@ -317,7 +331,7 @@ export const FinancingPlanUploadPage = () => {
             fullWidth
           />
         </div>
-        <div className="report-param-field w-64">
+        <div className="report-param-field w-[460px]">
           <AutocompleteInput
             value={istochnik}
             options={istochnikOptions}
@@ -332,7 +346,9 @@ export const FinancingPlanUploadPage = () => {
             fullWidth
           />
         </div>
-        <div className="report-param-field w-64">
+        {/* Нет в оригинале 1С (img_16), но требуется бэком (DvizhenieFinanisrovaniya
+            обязателен для «ПоОбязательствам»). Оставляем последним реквизитом шапки. */}
+        <div className="report-param-field w-[460px]">
           <AutocompleteInput
             value={dvizhenie}
             options={dvizhenieOptions}
@@ -347,46 +363,86 @@ export const FinancingPlanUploadPage = () => {
             fullWidth
           />
         </div>
-        <div className="report-param-field w-64">
-          <TextInput
-            value={form.sheetName}
-            onChange={(e) => {
-              patchForm({ sheetName: e.target.value })
-            }}
-            label={t('financingPlanUpload.sheetName')}
-            placeholder={DEFAULT_SHEET_NAME}
-            size="small"
-            fullWidth
-          />
-        </div>
-        <div className="report-param-field w-40">
-          <NumberInput
-            value={String(form.startRow)}
-            onChange={(e) => {
-              patchForm({
-                startRow: Number((e.target as HTMLInputElement).value) || 0,
-              })
-            }}
-            label={t('financingPlanUpload.startRow')}
-            size="small"
-            fullWidth
-          />
-        </div>
-        <div className="report-param-field w-40">
-          <NumberInput
-            value={form.columnOffset == null ? '' : String(form.columnOffset)}
-            onChange={(e) => {
-              const raw = (e.target as HTMLInputElement).value
-              patchForm({ columnOffset: raw === '' ? null : Number(raw) })
-            }}
-            label={t('financingPlanUpload.columnOffset')}
-            size="small"
-            fullWidth
-          />
-        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-6">
+      {/* Секция загрузки из Excel. */}
+      <Typography variant="subtitle1" className="font-semibold text-ui-06">
+        {t('financingPlanUpload.excelSectionTitle')}
+      </Typography>
+
+      <div className="flex flex-col gap-3">
+        {/* Имя файла + Имя листа в одной строке. */}
+        <div className="flex flex-wrap items-end gap-6">
+          <div className="flex flex-col gap-1">
+            <Typography variant="caption" className="text-ui-05">
+              {t('financingPlanUpload.fileName')}
+            </Typography>
+            <div className="flex items-center gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xls,.xlsx"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <Button
+                variant="outlined"
+                onClick={() => fileInputRef.current?.click()}
+                sx={{ height: 40 }}
+              >
+                {t('financingPlanUpload.chooseFile')}
+              </Button>
+              {file && (
+                <Typography variant="body2" className="text-ui-06">
+                  {file.name}
+                </Typography>
+              )}
+            </div>
+          </div>
+          <div className="report-param-field w-56">
+            <TextInput
+              value={form.sheetName}
+              onChange={(e) => {
+                patchForm({ sheetName: e.target.value })
+              }}
+              label={t('financingPlanUpload.sheetName')}
+              placeholder={DEFAULT_SHEET_NAME}
+              size="small"
+              fullWidth
+            />
+          </div>
+        </div>
+
+        {/* Начальная строка + Смещение колонок в одной строке. */}
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="report-param-field w-40">
+            <NumberInput
+              value={String(form.startRow)}
+              onChange={(e) => {
+                patchForm({
+                  startRow: Number((e.target as HTMLInputElement).value) || 0,
+                })
+              }}
+              label={t('financingPlanUpload.startRow')}
+              size="small"
+              fullWidth
+            />
+          </div>
+          <div className="report-param-field w-40">
+            <NumberInput
+              value={form.columnOffset == null ? '' : String(form.columnOffset)}
+              onChange={(e) => {
+                const raw = (e.target as HTMLInputElement).value
+                patchForm({ columnOffset: raw === '' ? null : Number(raw) })
+              }}
+              label={t('financingPlanUpload.columnOffset')}
+              size="small"
+              fullWidth
+            />
+          </div>
+        </div>
+
+        {/* Единицы суммы. */}
         <div>
           <Typography variant="caption" className="text-ui-05">
             {t('financingPlanUpload.units')}
@@ -411,45 +467,17 @@ export const FinancingPlanUploadPage = () => {
           </RadioGroup>
         </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".xls,.xlsx"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-        <Button
-          variant="outlined"
-          onClick={() => fileInputRef.current?.click()}
-          sx={{ height: 40 }}
-        >
-          {t('financingPlanUpload.chooseFile')}
-        </Button>
-        {file && (
-          <Typography variant="body2" className="text-ui-06">
-            {file.name}
-          </Typography>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-4">
-        <Button
-          variant="contained"
-          disabled={!canParse}
-          onClick={handleParse}
-          sx={{ height: 40 }}
-        >
-          {t('financingPlanUpload.loadFromExcel')}
-        </Button>
-        <Button
-          variant="contained"
-          color="success"
-          disabled={!canGenerate}
-          onClick={handleGenerate}
-          sx={{ height: 40 }}
-        >
-          {t('financingPlanUpload.generateDocuments')}
-        </Button>
+        {/* Загрузить из excel. */}
+        <div>
+          <Button
+            variant="contained"
+            disabled={!canParse}
+            onClick={handleParse}
+            sx={{ height: 40 }}
+          >
+            {t('financingPlanUpload.loadFromExcel')}
+          </Button>
+        </div>
       </div>
 
       {parseResult && parseResult.errors.length > 0 && (

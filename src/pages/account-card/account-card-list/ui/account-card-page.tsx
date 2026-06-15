@@ -284,16 +284,6 @@ export const AccountCardPage = () => {
             fullWidth
           />
         </div>
-        <div className="report-param-field w-64">
-          <AutocompleteInput
-            value={organization}
-            options={organizationOptions}
-            onChange={setOrganization}
-            label={t('accountCard.organization')}
-            size="small"
-            fullWidth
-          />
-        </div>
         <Button
           variant="contained"
           disabled={!canSubmit}
@@ -352,6 +342,8 @@ export const AccountCardPage = () => {
         onToggleGroup={toggleGroup}
         indicatorItems={indicatorItems}
         onToggleIndicator={toggleIndicator}
+        filterItems={filterItems}
+        onFilterChange={onFilterChange}
       />
     </div>
   )

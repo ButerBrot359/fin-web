@@ -1,4 +1,6 @@
 import { useState, type FC } from 'react'
+import { IconButton } from '@mui/material'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 
 import type { NodeProps } from '../../../types/view'
 import { useViewState, useViewStateSetter } from '../../../lib/stores/view-state-store'
@@ -97,12 +99,19 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
 
   const canBrowse = !!targetTypeCode && !readonly && enabled
 
+  const filterSearchParams = filter
+    ? Object.fromEntries(
+        Object.entries(filter).map(([k, v]) => [k, String(v)]),
+      )
+    : undefined
+
   const openDictList = () => {
     useDictSidebarStore.getState().push({
       mode: 'list',
       domain,
       typeCode: targetTypeCode!,
       onSelect: applySelected,
+      searchParams: filterSearchParams,
     })
   }
 
@@ -112,6 +121,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
       domain,
       typeCode: targetTypeCode!,
       onSelect: applySelected,
+      searchParams: filterSearchParams,
     })
   }
 
@@ -142,6 +152,26 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
         onChange={applySelected}
         onShowAll={canBrowse ? openDictList : undefined}
         onAdd={canBrowse ? openDictCreate : undefined}
+        endAction={
+          selectedOption && canBrowse ? (
+            <IconButton
+              sx={{ p: '4px', borderRadius: '6px' }}
+              tabIndex={-1}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                useDictSidebarStore.getState().push({
+                  mode: 'edit',
+                  domain,
+                  typeCode: targetTypeCode!,
+                  entryId: selectedOption.id,
+                  onSelect: applySelected,
+                })
+              }}
+            >
+              <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
+            </IconButton>
+          ) : undefined
+        }
       />
     </div>
   )

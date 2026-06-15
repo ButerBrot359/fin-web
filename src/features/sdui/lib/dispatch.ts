@@ -80,7 +80,7 @@ export function useSduiDispatch() {
           layoutCode: action.type === 'OPEN'
             ? (action.layoutCode ?? null)
             : undefined,
-          route: location.pathname,
+          route: location.pathname + location.search,
           action,
         })
 
@@ -113,7 +113,7 @@ export function useSduiDispatch() {
         }
       }
     },
-    [location.pathname, navigate],
+    [location.pathname, location.search, navigate],
   )
 
   return dispatch

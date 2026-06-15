@@ -1,15 +1,6 @@
 #!/bin/sh
 
 commit_msg=$(cat "$1")
-
-# Allow merge/revert commits (auto-generated messages don't follow the convention)
-if [ -f .git/MERGE_HEAD ]; then
-  exit 0
-fi
-case "$commit_msg" in
-  "Merge "*|"Revert "*) exit 0 ;;
-esac
-
 pattern="^(feat|fix|add|refactor)(\(.+\))?: .+"
 
 if ! echo "$commit_msg" | grep -Eq "$pattern"; then

@@ -134,6 +134,12 @@ export interface OsvReportParams {
   groupBy?: string[]
   /** Разворачивать листы по субконто-1 («По субконто»). */
   expandBySubkonto?: boolean
+  /**
+   * Отборы по измерениям (вкладка «Отборы»): query-параметр → ID значения.
+   * Пустые/null отбрасываются. Ключи — organizatsiyaId/fkrId/… (см.
+   * REPORT_FILTER_DIMENSIONS).
+   */
+  dimensionFilters?: Record<string, number | null>
 }
 
 /**

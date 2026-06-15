@@ -222,7 +222,8 @@
   "reportSettings": {
     "title": "Настройки",
     "grouping": "Группировка",
-    "indicators": "Показатели"
+    "indicators": "Показатели",
+    "filters": "Отборы"
   },
   "osv": {
     "title": "Оборотно-сальдовая ведомость",

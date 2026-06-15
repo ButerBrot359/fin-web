@@ -222,7 +222,8 @@
   "reportSettings": {
     "title": "Баптаулар",
     "grouping": "Топтау",
-    "indicators": "Көрсеткіштер"
+    "indicators": "Көрсеткіштер",
+    "filters": "Сұрыптаулар"
   },
   "osv": {
     "title": "Айналым-сальдо тізімдемесі",

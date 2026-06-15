@@ -312,12 +312,17 @@ export const OsvReportTable = ({
             style={{ left: x - 4 }}
             className="group absolute inset-y-0 z-20 flex w-2 cursor-col-resize touch-none select-none justify-center"
           >
-            {/* тонкая линия 1px по границе; зона захвата — 8px (невидима) */}
+            {/* Тонкая линия 1px по границе; зона захвата — 8px (невидима).
+                Границы Счёт|Наименование и Наименование|Показатели (i=0,1) не
+                имеют структурного border-l, поэтому рисуем сплошную линию —
+                чтобы по чёткости совпадали с разделителями групп. */}
             <div
               className={`h-full w-px ${
                 resizingCol === i
                   ? 'bg-accent-02'
-                  : 'bg-transparent group-hover:bg-accent-02'
+                  : i <= 1
+                    ? 'bg-ui-04 group-hover:bg-accent-02'
+                    : 'bg-transparent group-hover:bg-accent-02'
               }`}
             />
           </div>

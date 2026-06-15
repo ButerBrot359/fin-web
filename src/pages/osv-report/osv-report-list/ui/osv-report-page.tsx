@@ -12,7 +12,9 @@ import type { Row } from '@tanstack/react-table'
 import { useAccountPlanList } from '@/entities/account-plan'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import {
+  REPORT_FILTER_DIMENSIONS,
   ReportSettingsDrawer,
+  type ReportFilterItem,
   type ReportGroupItem,
 } from '@/features/report-settings'
 import { PageHeader } from '@/widgets/page-header'
@@ -79,6 +81,8 @@ export const OsvReportPage = () => {
   const [expandBySubkonto, setExpandBySubkonto] = useState(false)
   // Показатели (вкладка «Показатели»): «Количество» — показ строк «Кол.».
   const [showQuantity, setShowQuantity] = useState(true)
+  // Отборы (вкладка «Отборы»): query-параметр измерения → ID значения.
+  const [filters, setFilters] = useState<Record<string, number | null>>({})
 
   const { entries: accounts } = useAccountPlanList()
   const accountOptions = useMemo<SelectOption[]>(
@@ -114,8 +118,9 @@ export const OsvReportPage = () => {
         (d) => d.key
       ),
       expandBySubkonto,
+      dimensionFilters: filters,
     }
-  }, [urlFrom, urlTo, urlAccountId, enabledDims, expandBySubkonto])
+  }, [urlFrom, urlTo, urlAccountId, enabledDims, expandBySubkonto, filters])
 
   // Пункты вкладки «Группировка»: измерения + «По субконто» (разворот листа).
   const toggleGroup = (key: string) => {
@@ -152,6 +157,20 @@ export const OsvReportPage = () => {
   )
   const toggleIndicator = (key: string) => {
     if (key === 'quantity') setShowQuantity((v) => !v)
+  }
+
+  const filterItems = useMemo<ReportFilterItem[]>(
+    () =>
+      REPORT_FILTER_DIMENSIONS.map((d) => ({
+        key: d.paramKey,
+        label: t(d.labelKey),
+        dictTypeCode: d.dictTypeCode,
+        valueId: filters[d.paramKey] ?? null,
+      })),
+    [filters, t]
+  )
+  const onFilterChange = (key: string, valueId: number | null) => {
+    setFilters((prev) => ({ ...prev, [key]: valueId }))
   }
 
   const { rows, total, isLoading, isError, refetch } = useOsvReport(
@@ -301,6 +320,8 @@ export const OsvReportPage = () => {
         onToggleGroup={toggleGroup}
         indicatorItems={indicatorItems}
         onToggleIndicator={toggleIndicator}
+        filterItems={filterItems}
+        onFilterChange={onFilterChange}
       />
     </div>
   )

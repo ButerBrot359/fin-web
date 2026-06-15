@@ -49,6 +49,12 @@ export const fetchOsvReport = (params: OsvReportParams, signal?: AbortSignal) =>
         : {}),
       ...(params.expandBySubkonto ? { expandBySubkonto: true } : {}),
       ...(params.accountId != null ? { accountId: params.accountId } : {}),
+      // Отборы по измерениям — только заданные (не-null).
+      ...Object.fromEntries(
+        Object.entries(params.dimensionFilters ?? {}).filter(
+          ([, v]) => v != null
+        )
+      ),
     },
     signal,
   })

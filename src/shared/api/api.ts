@@ -38,16 +38,24 @@ const post = <T = unknown>({
 }: RequestWithDataConfig) =>
   makeRequest<T>({ method: 'POST', url, data, params, signal })
 
-// NB: не задаём Content-Type вручную для FormData — axios сам выставит
-// `multipart/form-data; boundary=...`. Ручной заголовок без boundary ломает
-// разбор multipart на стороне Spring.
+// FormData ДОЛЖНА уйти как `multipart/form-data; boundary=...`. У инстанса задан
+// дефолтный `Content-Type: application/json` — он НЕ сбрасывается сам, поэтому
+// FormData уезжала бы как JSON и Spring отвечал бы 415. Сбрасываем заголовок в
+// `undefined`: тогда axios, увидев FormData, сам проставит multipart с boundary.
 const postFormData = <T = unknown>({
   url,
   data,
   params,
   signal,
 }: RequestWithDataConfig) =>
-  makeRequest<T>({ method: 'POST', url, data, params, signal })
+  makeRequest<T>({
+    method: 'POST',
+    url,
+    data,
+    params,
+    signal,
+    headers: { 'Content-Type': undefined } as AxiosRequestConfig['headers'],
+  })
 
 const put = <T = unknown>({ url, data, signal }: RequestWithDataConfig) =>
   makeRequest<T>({ method: 'PUT', url, data, signal })

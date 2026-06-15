@@ -9,6 +9,7 @@ export type TabPageType =
   | 'accounting-register-list'
   | 'osv-report-list'
   | 'account-plan-list'
+  | 'account-card'
 
 export interface WorkspaceTab {
   id: string

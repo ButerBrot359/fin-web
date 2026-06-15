@@ -27,3 +27,26 @@ export const fetchDictionaryEntryById = (
       signal,
     })
     .then((res) => res.data)
+
+/** Активная запись справочника (для выпадающих списков). */
+export interface DictionaryEntryActive {
+  id: number
+  code?: string | null
+  nameRu?: string | null
+  nameKz?: string | null
+  displayName?: string | null
+}
+
+/**
+ * Активные записи произвольного справочника по коду типа — для выпадашек
+ * (фильтры/отборы). Эндпоинт отдаёт массив НАПРЯМУЮ (без обёртки `{ data }`).
+ * GET /api/dictionaries/entries/{typeCode}/active
+ */
+export const fetchDictionaryEntries = (
+  typeCode: string,
+  signal?: AbortSignal
+) =>
+  apiService.get<DictionaryEntryActive[]>({
+    url: `/api/dictionaries/entries/${typeCode}/active`,
+    signal,
+  })

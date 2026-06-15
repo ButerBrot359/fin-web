@@ -20,6 +20,7 @@ export const useOsvReport = (
       params?.accountId ?? null,
       (params?.groupBy ?? []).join(','),
       params?.expandBySubkonto ?? false,
+      JSON.stringify(params?.dimensionFilters ?? {}),
     ],
     queryFn: ({ signal }) => fetchOsvReport(params!, signal),
     // Берём и строки (`list`), и серверную строку «Итого» (`total`).

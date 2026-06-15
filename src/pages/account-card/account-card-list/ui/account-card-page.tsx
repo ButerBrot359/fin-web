@@ -11,7 +11,9 @@ import { Button } from '@mui/material'
 import { useAccountPlanList } from '@/entities/account-plan'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import {
+  REPORT_FILTER_DIMENSIONS,
   ReportSettingsDrawer,
+  type ReportFilterItem,
   type ReportGroupItem,
 } from '@/features/report-settings'
 import { PageHeader } from '@/widgets/page-header'
@@ -21,7 +23,6 @@ import { exportTableToXlsx } from '@/shared/lib/table-export'
 import type { SelectOption } from '@/shared/types/select-option'
 
 import { useAccountCard } from '../lib/hooks/use-account-card'
-import { useOrganizations } from '../lib/hooks/use-organizations'
 import { buildCardExport } from '../lib/utils/build-card-export'
 import { AccountCardTable } from './account-card-table'
 import {
@@ -51,13 +52,11 @@ export const AccountCardPage = () => {
   const urlTo = searchParams.get('to') ?? ''
   const urlAccountId = searchParams.get('accountId')
   const urlAccountCode = searchParams.get('accountCode') ?? ''
-  const urlOrganizationId = searchParams.get('organizatsiyaId')
 
   // Черновики панели фильтров (инициализируются из URL).
   const [from, setFrom] = useState(urlFrom)
   const [to, setTo] = useState(urlTo)
   const [account, setAccount] = useState<SelectOption | null>(null)
-  const [organization, setOrganization] = useState<SelectOption | null>(null)
 
   // Группировка аналитики (панель «Настройки» → «Группировка»). Храним ключи
   // СКРЫТЫХ групп; пусто = показываем всё. Это настройка показа, на запрос не
@@ -103,26 +102,32 @@ export const AccountCardPage = () => {
     if (found) setAccount(found)
   }, [urlAccountId, accountOptions, account])
 
-  const { organizations } = useOrganizations()
-  const organizationOptions = useMemo<SelectOption[]>(
+  // Отборы (вкладка «Отборы») живут в URL — переживают вкладки/F5 и
+  // наследуются при drill-down из ОСВ. Меняются мгновенно (перезапрос).
+  const filterItems = useMemo<ReportFilterItem[]>(
     () =>
-      organizations.map((o) => ({
-        id: o.id,
-        code: o.code ?? '',
-        label: o.displayName ?? o.nameRu ?? o.code ?? String(o.id),
-      })),
-    [organizations]
+      REPORT_FILTER_DIMENSIONS.map((d) => {
+        const raw = searchParams.get(d.paramKey)
+        return {
+          key: d.paramKey,
+          label: t(d.labelKey),
+          dictTypeCode: d.dictTypeCode,
+          valueId: raw ? Number(raw) : null,
+        }
+      }),
+    [searchParams, t]
   )
-
-  // Восстанавливаем выбранную организацию из URL, когда справочник загрузился.
-  useEffect(() => {
-    if (!urlOrganizationId) return
-    if (organization && String(organization.id) === urlOrganizationId) return
-    const found = organizationOptions.find(
-      (o) => String(o.id) === urlOrganizationId
+  const onFilterChange = (key: string, valueId: number | null) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (valueId != null) next.set(key, String(valueId))
+        else next.delete(key)
+        return next
+      },
+      { replace: true }
     )
-    if (found) setOrganization(found)
-  }, [urlOrganizationId, organizationOptions, organization])
+  }
 
   const params = useMemo<AccountCardParams | null>(() => {
     if (!urlFrom || !urlTo) return null
@@ -197,11 +202,6 @@ export const AccountCardPage = () => {
         } else {
           next.delete('accountId')
           next.delete('accountCode')
-        }
-        if (organization) {
-          next.set('organizatsiyaId', String(organization.id))
-        } else {
-          next.delete('organizatsiyaId')
         }
         return next
       },

@@ -38,6 +38,17 @@ const post = <T = unknown>({
 }: RequestWithDataConfig) =>
   makeRequest<T>({ method: 'POST', url, data, params, signal })
 
+// NB: не задаём Content-Type вручную для FormData — axios сам выставит
+// `multipart/form-data; boundary=...`. Ручной заголовок без boundary ломает
+// разбор multipart на стороне Spring.
+const postFormData = <T = unknown>({
+  url,
+  data,
+  params,
+  signal,
+}: RequestWithDataConfig) =>
+  makeRequest<T>({ method: 'POST', url, data, params, signal })
+
 const put = <T = unknown>({ url, data, signal }: RequestWithDataConfig) =>
   makeRequest<T>({ method: 'PUT', url, data, signal })
 
@@ -74,6 +85,7 @@ const postFileBlob = ({ url, data, params, signal }: BlobRequestConfig) =>
 export const apiService = {
   get,
   post,
+  postFormData,
   put,
   patch,
   delete: _delete,

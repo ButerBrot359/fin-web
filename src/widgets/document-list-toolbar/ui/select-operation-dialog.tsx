@@ -82,6 +82,7 @@ export const SelectOperationDialog = ({
               <FormControlLabel
                 key={op.code}
                 value={op.code}
+                disabled={!op.isActive}
                 sx={{ m: 0, gap: '10px' }}
                 control={
                   <Radio

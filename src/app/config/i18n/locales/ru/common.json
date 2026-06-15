@@ -219,6 +219,35 @@
     "loading": "Загрузка…",
     "noData": "Нет движений за период"
   },
+  "financingPlanUpload": {
+    "fromFile": "Из файла",
+    "fromPortalSoon": "Из портала (скоро)",
+    "dateLabel": "Дата",
+    "organization": "Организация",
+    "planType": "Вид плана",
+    "source": "Источник финансирования",
+    "movement": "Движение финансирования",
+    "sheetName": "Имя листа",
+    "startRow": "Начальная строка",
+    "columnOffset": "Смещение колонок",
+    "units": "Единицы суммы",
+    "inTenge": "в тенге",
+    "inThousands": "в тыс. тенге",
+    "chooseFile": "Выбрать файл",
+    "loadFromExcel": "Загрузить из excel",
+    "generateDocuments": "Сформировать документы",
+    "parseErrors": "Ошибки разбора файла",
+    "parseFailed": "Не удалось разобрать файл",
+    "generateFailed": "Не удалось сформировать документ",
+    "generated": "Документ {{number}} сформирован и проведён",
+    "columns": {
+      "rowNumber": "Строка",
+      "fkr": "ФКР",
+      "spetsifika": "Специфика",
+      "month": "Период {{month}}",
+      "total": "Итого"
+    }
+  },
   "reportSettings": {
     "title": "Настройки",
     "grouping": "Группировка",

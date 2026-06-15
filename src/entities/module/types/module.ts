@@ -8,6 +8,7 @@ export enum ModuleElementType {
   AccumulationRegister = 'AccumulationRegister',
   AccountingRegister = 'AccountingRegister',
   AccountPlan = 'AccountPlan',
+  DataProcessor = 'DataProcessor',
 }
 
 export interface ModuleElement {

@@ -219,6 +219,35 @@
     "loading": "Жүктелуде…",
     "noData": "Кезеңде қозғалыс жоқ"
   },
+  "financingPlanUpload": {
+    "fromFile": "Файлдан",
+    "fromPortalSoon": "Порталдан (жақында)",
+    "dateLabel": "Күні",
+    "organization": "Ұйым",
+    "planType": "Жоспар түрі",
+    "source": "Қаржыландыру көзі",
+    "movement": "Қаржыландыру қозғалысы",
+    "sheetName": "Парақ атауы",
+    "startRow": "Бастапқы жол",
+    "columnOffset": "Бағандар жылжуы",
+    "units": "Сома бірлігі",
+    "inTenge": "теңгемен",
+    "inThousands": "мың теңгемен",
+    "chooseFile": "Файл таңдау",
+    "loadFromExcel": "Excel-ден жүктеу",
+    "generateDocuments": "Құжаттарды қалыптастыру",
+    "parseErrors": "Файлды талдау қателері",
+    "parseFailed": "Файлды талдау мүмкін болмады",
+    "generateFailed": "Құжатты қалыптастыру мүмкін болмады",
+    "generated": "{{number}} құжаты қалыптастырылып, өткізілді",
+    "columns": {
+      "rowNumber": "Жол",
+      "fkr": "ФКР",
+      "spetsifika": "Ерекшелік",
+      "month": "Кезең {{month}}",
+      "total": "Барлығы"
+    }
+  },
   "reportSettings": {
     "title": "Баптаулар",
     "grouping": "Топтау",

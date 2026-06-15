@@ -82,6 +82,11 @@ const AccountCardPage = lazy(() =>
     default: m.AccountCardPage,
   }))
 )
+const FinancingPlanUploadPage = lazy(() =>
+  import('@/pages/financing-plan-upload').then((m) => ({
+    default: m.FinancingPlanUploadPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -154,7 +159,11 @@ const AppRoutes = () => {
             path="/modules/:pageCode/account-card"
             element={<AccountCardPage />}
           />
-
+          {/* Обработка: пункт меню type="DataProcessor" → сегмент "dataprocessor". */}
+          <Route
+            path="/modules/:pageCode/dataprocessor/:moduleCode"
+            element={<FinancingPlanUploadPage />}
+          />
         </Routes>
       </Suspense>
     </ErrorBoundary>

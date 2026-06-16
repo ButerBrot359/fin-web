@@ -10,6 +10,7 @@ import { useSduiCacheStore } from '../lib/stores/sdui-cache-store'
 import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
 import { NodeRenderer } from './node-renderer'
+import { DialogHost } from './dialog-host'
 
 interface SduiScreenProps {
   layoutCode?: string
@@ -72,5 +73,10 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
 
   if (!tree) return <PageSkeleton />
 
-  return <NodeRenderer node={tree} />
+  return (
+    <>
+      <NodeRenderer node={tree} />
+      <DialogHost />
+    </>
+  )
 }

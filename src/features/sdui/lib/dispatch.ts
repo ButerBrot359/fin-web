@@ -30,6 +30,11 @@ function notifyDialogListeners() {
   dialogListeners.forEach((l) => l())
 }
 
+export function popDialog(): void {
+  dialogStack = dialogStack.slice(0, -1)
+  notifyDialogListeners()
+}
+
 export function useSduiDispatch() {
   const location = useLocation()
   const navigate = useNavigate()

@@ -1,10 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query'
 
-import {
-  fetchUniversalDomainEntriesPaged,
-  type UniversalPagedParams,
-} from '../../api/universal-domain-api'
+import { fetchUniversalDomainEntries } from '../../api/universal-domain-api'
 import type { UniversalDomainEntry } from '../../types/universal-domain'
 
 const PAGE_SIZE = 25
@@ -17,13 +14,10 @@ interface UseUniversalDomainEntriesOptions {
   sortDir?: string
 }
 
-const buildSort = (sortAttr?: string, sortDir?: string) =>
-  sortAttr ? { sort: `${sortAttr},${(sortDir ?? 'ASC').toLowerCase()}` } : {}
-
 /**
- * Инфинит-листинг записей универсального домена через GET `/paged`. По форме
- * страницы (`content` / `totalElements` / `number` / `last`) совпадает с EAV,
- * поэтому подходит для `EavEntityTable`.
+ * Инфинит-листинг записей универсального домена через GET `/search?q=`. По
+ * форме страницы (`content` / `totalElements` / `number` / `last`) совпадает с
+ * EAV, поэтому подходит для `EavEntityTable`.
  */
 export const useUniversalDomainEntries = (
   domain: string,
@@ -45,10 +39,10 @@ export const useUniversalDomainEntries = (
   } = useInfiniteQuery({
     queryKey: ['universal-domain-entries', domain, typeCode, sortAttr, sortDir],
     queryFn: ({ pageParam, signal }) =>
-      fetchUniversalDomainEntriesPaged(
+      fetchUniversalDomainEntries(
         domain,
         typeCode,
-        { page: pageParam, size: PAGE_SIZE, ...buildSort(sortAttr, sortDir) },
+        { page: pageParam, size: PAGE_SIZE, sortAttr, sortDir },
         signal
       ),
     initialPageParam: 0,
@@ -74,11 +68,12 @@ export const useUniversalDomainEntries = (
     const all: UniversalDomainEntry[] = []
     let page = 0
     for (;;) {
-      const res = await fetchUniversalDomainEntriesPaged(domain, typeCode, {
+      const res = await fetchUniversalDomainEntries(domain, typeCode, {
         page,
         size: EXPORT_PAGE_SIZE,
-        ...buildSort(sortAttr, sortDir),
-      } as UniversalPagedParams)
+        sortAttr,
+        sortDir,
+      })
       const paged = res.data.data
       all.push(...paged.content)
       if (paged.last || page >= EXPORT_MAX_PAGES) break

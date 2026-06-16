@@ -1,7 +1,7 @@
 import { apiService } from '@/shared/api/api'
 import {
   getUniversalTypeUrl,
-  getUniversalPagedUrl,
+  getUniversalSearchUrl,
 } from '@/shared/lib/consts/data-types'
 import type { ApiResponse } from '@/shared/types/api.types'
 import type { DocumentType } from '@/entities/document-type'
@@ -17,7 +17,8 @@ export const getUniversalDomainType = (domain: string, code: string) =>
 export interface UniversalPagedParams {
   page?: number
   size?: number
-  sort?: string
+  sortAttr?: string
+  sortDir?: string
   [key: string]: unknown
 }
 
@@ -32,17 +33,21 @@ export interface UniversalPagedResponse {
 }
 
 /**
- * Пагинируемый список записей через универсальный домен:
- * `GET /api/universaldomain-entries/{domain}/{typeCode}/paged`.
+ * Плоский пагинируемый список записей через универсальный домен:
+ * `GET /api/universaldomain-entries/{domain}/{typeCode}/search?q=`.
+ *
+ * Используем именно `/search` (с пустым `q`), а не `/paged`: `/paged` для
+ * иерархических типов отдаёт только корневой уровень, тогда как `/search`
+ * перечисляет все записи (та же логика, что в `dict-sidebar`).
  */
-export const fetchUniversalDomainEntriesPaged = (
+export const fetchUniversalDomainEntries = (
   domain: string,
   typeCode: string,
   params: UniversalPagedParams,
   signal?: AbortSignal
 ) =>
   apiService.get<UniversalPagedResponse>({
-    url: getUniversalPagedUrl(domain, typeCode),
-    params,
+    url: getUniversalSearchUrl(domain, typeCode),
+    params: { q: '', ...params },
     signal,
   })

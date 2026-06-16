@@ -32,7 +32,11 @@ export const useUniversalDomainColumns = (
         .sort((a, b) => a.tableSortOrder - b.tableSortOrder)
         .map((attr) => ({
           id: attr.code,
-          accessorFn: (row: UniversalDomainEntry) => row.attributes?.[attr.code],
+          // Значение атрибута бэк кладёт либо в `attributes[code]`, либо на
+          // верхний уровень записи (как имя/код у справочников) — берём первое
+          // непустое.
+          accessorFn: (row: UniversalDomainEntry) =>
+            row.attributes?.[attr.code] ?? row[attr.code],
           header: () => <span>{getLocalizedName(attr, i18n.language)}</span>,
           cell: ({ getValue }: { getValue: () => unknown }) =>
             cellText(formatCellValue(getValue(), attr)),

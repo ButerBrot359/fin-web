@@ -18,8 +18,8 @@ export const DialogHost = () => {
             maxWidth="md"
             fullWidth
           >
-            {eff.node.props?.title && (
-              <DialogTitle>{String(eff.node.props.title)}</DialogTitle>
+            {Boolean(eff.node.props?.title) && (
+              <DialogTitle>{String(eff.node.props?.title)}</DialogTitle>
             )}
             <DialogContent>
               <NodeRenderer node={eff.node} />

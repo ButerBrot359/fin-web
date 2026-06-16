@@ -87,6 +87,11 @@ const FinancingPlanUploadPage = lazy(() =>
     default: m.FinancingPlanUploadPage,
   }))
 )
+const UniversalDomainPage = lazy(() =>
+  import('@/pages/universal-domain/universal-domain-list').then((m) => ({
+    default: m.UniversalDomainPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -163,6 +168,16 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/dataprocessor/:moduleCode"
             element={<FinancingPlanUploadPage />}
+          />
+          {/*
+            План видов расчёта (type="CalculationPlan" → сегмент
+            "calculationplan") и прочие типы объектов без выделенного
+            контроллера обслуживаются универсальным доменом — список строится
+            по `?domain=...` + typeCode.
+          */}
+          <Route
+            path="/modules/:pageCode/calculationplan/:moduleCode"
+            element={<UniversalDomainPage />}
           />
         </Routes>
       </Suspense>

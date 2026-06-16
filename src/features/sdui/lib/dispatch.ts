@@ -30,6 +30,11 @@ function notifyDialogListeners() {
   dialogListeners.forEach((l) => l())
 }
 
+export function popDialog(): void {
+  dialogStack = dialogStack.slice(0, -1)
+  notifyDialogListeners()
+}
+
 export function useSduiDispatch() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -90,7 +95,7 @@ export function useSduiDispatch() {
           replaceAll(res.state ?? {})
           // Apply handler.handleOpen patches (e.g. required/enabled/label defaults)
           applyTreePatches(res.patches ?? [])
-          applyValuePatches(res.patches ?? [], useViewStateStore.getState().set)
+          applyValuePatches(res.patches ?? [], useViewStateStore.getState().setFromServer)
           effectHandler.playAll(res.effects ?? [])
         } else if (action.type === 'CLOSE') {
           // reset is done by SduiScreen on unmount
@@ -99,9 +104,13 @@ export function useSduiDispatch() {
           bumpRevision(res.revision)
           if (action.type === 'COMMAND') clearAllErrors()
           applyTreePatches(res.patches ?? [])
-          applyValuePatches(res.patches ?? [], useViewStateStore.getState().set)
+          applyValuePatches(res.patches ?? [], useViewStateStore.getState().setFromServer)
           merge(res.statePatch ?? {})
           effectHandler.playAll(res.effects ?? [])
+          const saveCommands = ['save', 'saveAndClose', 'post', 'postAndClose']
+          if (action.type === 'COMMAND' && saveCommands.includes(action.command ?? '')) {
+            useViewStateStore.getState().resetDirty()
+          }
         }
       } catch (error) {
         if (error instanceof ViewConflictError) {

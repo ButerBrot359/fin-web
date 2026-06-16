@@ -1,8 +1,8 @@
 import { useEffect, type FC } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
-import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
+import { useTabMeta, useWorkspaceTabsStore, useFormCacheStore } from '@/features/workspace-tabs'
 
 import { useTreeStore } from '../lib/stores/tree-store'
 import { useViewStateStore } from '../lib/stores/view-state-store'
@@ -10,6 +10,7 @@ import { useSduiCacheStore } from '../lib/stores/sdui-cache-store'
 import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
 import { NodeRenderer } from './node-renderer'
+import { DialogHost } from './dialog-host'
 
 interface SduiScreenProps {
   layoutCode?: string
@@ -20,9 +21,14 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
   const tree = useTreeStore((s) => s.root)
   const reset = useTreeStore((s) => s.reset)
   const dispatch = useSduiDispatch()
-
+  const navigate = useNavigate()
+  const dirty = useViewStateStore((s) => s.dirty)
 
   useTabMeta((tree?.props?.title as string | undefined) ?? '')
+
+  useEffect(() => {
+    useFormCacheStore.getState().setDirty(location.pathname, dirty)
+  }, [location.pathname, dirty])
 
   useEffect(() => {
     const route = location.pathname
@@ -57,6 +63,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
         void dispatch({ type: 'CLOSE' })
         useSduiCacheStore.getState().remove(route)
       }
+      useFormCacheStore.getState().setDirty(route, false)
       reset()
     }
   }, [location.pathname])
@@ -70,7 +77,30 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
     return () => window.removeEventListener('beforeunload', handler)
   }, [])
 
+  useEffect(() => {
+    const pending = useFormCacheStore.getState().consumePendingAction(location.pathname)
+    if (pending === 'save-and-close') {
+      const route = location.pathname
+      void dispatch({ type: 'COMMAND', command: 'save' }).then(() => {
+        useFormCacheStore.getState().removeTab(route)
+        useWorkspaceTabsStore.getState().closeTab(route)
+        const { tabs } = useWorkspaceTabsStore.getState()
+        if (tabs.length > 0) {
+          const next = tabs[0]
+          void navigate(next.path + next.search)
+        } else {
+          void navigate('/')
+        }
+      })
+    }
+  }, [location.pathname, dispatch, navigate])
+
   if (!tree) return <PageSkeleton />
 
-  return <NodeRenderer node={tree} />
+  return (
+    <>
+      <NodeRenderer node={tree} />
+      <DialogHost />
+    </>
+  )
 }

@@ -1,3 +1,6 @@
 export { SduiScreen } from './ui/sdui-screen'
+export { useViewStateStore } from './lib/stores/view-state-store'
+export { useTreeStore } from './lib/stores/tree-store'
+export { useSduiDispatch } from './lib/dispatch'
 export type { ViewNode, ViewAction, ViewRequest, ViewResponse, NodeProps } from './types/view'
 export type { NodeType } from './types/node-types'

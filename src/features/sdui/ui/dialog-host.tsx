@@ -18,7 +18,7 @@ export const DialogHost = () => {
             maxWidth="md"
             fullWidth
           >
-            {eff.node.props?.title && (
+            {eff.node.props?.title != null && (
               <DialogTitle>{String(eff.node.props.title)}</DialogTitle>
             )}
             <DialogContent>

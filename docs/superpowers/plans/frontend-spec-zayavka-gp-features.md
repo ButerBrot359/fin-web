@@ -6,6 +6,52 @@
 
 ---
 
+## Фича 3 (ДОБАВЛЕНО) — PageHeader для SDUI-страницы: крестик + звёздочка модификации
+
+### Симптом
+На SDUI-форме НЕТ крестика в правом верхнем углу и НЕТ пометки модификации (звёздочки) на самой странице. dirty-трекинг работает (вкладка внизу получает `*` и модалку), но пользователь ждёт крестик/звёздочку на форме, как в старой форме.
+
+### Корень
+`src/pages/documents/documents-entry/ui/document-entry-page.tsx:43-45`:
+```tsx
+if (newView) {
+  return <SduiScreen layoutCode={`${moduleCode}.ФормаОбъекта`} />
+}
+```
+SDUI-ветка рендерит ТОЛЬКО `<SduiScreen>`. СТАРАЯ форма (ниже в том же файле) рендерит `<PageHeader title={pageTitle} onClose={handleClose} />`, где:
+- `pageTitle = isDirty ? `${baseTitle} *` : baseTitle` — звёздочка в заголовке страницы;
+- `onClose={handleClose}` → при `isDirty` открывает `UnsavedChangesDialog`, иначе закрывает вкладку.
+
+Для SDUI этого нет → крестик только на вкладке (`WorkspaceTabBar` внизу `app/layout/layout.tsx`), звёздочка только на вкладке.
+
+### Что сделать (фронт)
+Обернуть SDUI-ветку в тот же `PageHeader` + `UnsavedChangesDialog`, используя dirty из SDUI-стора. Эскиз:
+```tsx
+if (newView) {
+  return <SduiDocumentPage moduleCode={moduleCode} />
+}
+```
+где новый `SduiDocumentPage`:
+```tsx
+const dirty = useViewStateStore((s) => s.dirty)
+const baseTitle = (useTreeStore((s) => s.root?.props?.title as string | undefined)) ?? ''
+const pageTitle = dirty ? `${baseTitle} *` : baseTitle
+// onClose: if (dirty) openUnsavedDialog() else { removeTab(pathname); closeTab(pathname); navigate(listPath) }
+// «Сохранить» в модалке → dispatch COMMAND saveAndClose (или setPendingAction + закрытие, как уже сделано в workspace-tab-bar)
+return (
+  <div className="flex h-full flex-col gap-5 pt-5">
+    <PageHeader title={pageTitle} onClose={handleClose} />
+    <SduiScreen layoutCode={`${moduleCode}.ФормаОбъекта`} />
+    <UnsavedChangesDialog .../>
+  </div>
+)
+```
+Так появятся крестик в правом верхнем углу и звёздочка на самой форме, консистентно со старой формой. dirty уже есть в `view-state-store` (Фича 2), переиспользуй его. (Заголовок можно брать из дерева `tree.props.title` или из инжектированного бэком LABEL-узла `label.docTitle`.)
+
+> Бэк инжектирует видимый заголовок LABEL-узлом, но звёздочку модификации к нему добавить с бэка нельзя (dirty — клиентское состояние). Поэтому звёздочку рисует фронт в `PageHeader`/заголовке.
+
+---
+
 ## Фича 1 — рендер диалогов (для кнопки «Дт/Кт»)
 
 ### Что уже есть

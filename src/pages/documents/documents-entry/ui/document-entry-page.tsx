@@ -7,7 +7,6 @@ import { useDocumentType } from '@/entities/document-type'
 import { useOptionalFormConfig } from '@/entities/form-config'
 
 import { FormRenderer } from '@/features/form-renderer'
-import { SduiScreen } from '@/features/sdui'
 import {
   useTabMeta,
   useWorkspaceTabsStore,
@@ -20,6 +19,7 @@ import { DocumentFormToolbar } from '@/widgets/document-form-toolbar'
 
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
 
+import { SduiDocumentPage } from './sdui-document-page'
 import { DocumentEntrySkeleton } from './document-entry-skeleton'
 import { getFormAttributes } from '../lib/utils/get-form-attributes'
 import {
@@ -41,7 +41,7 @@ export const DocumentEntryPage = () => {
   const { title, attributes, newView } = useDocumentType(moduleCode)
 
   if (newView) {
-    return <SduiScreen layoutCode={`${moduleCode}.ФормаОбъекта`} />
+    return <SduiDocumentPage moduleCode={moduleCode} />
   }
   const { config, isLoading: isLoadingConfig } =
     useOptionalFormConfig(moduleCode)

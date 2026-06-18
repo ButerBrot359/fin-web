@@ -159,7 +159,6 @@
     "empty": "Әзірге бос",
     "add": "Қосу",
     "loadedCount": "{{total}} ішінен {{loaded}} жүктелді",
-    "loadedCountSimple": "{{loaded}} жүктелді",
     "exportExcel": "Excel-ге жүктеп алу",
     "exportEmpty": "Жүктеп алуға деректер жоқ",
     "exportError": "Excel-ге жүктеп алу мүмкін болмады"
@@ -422,8 +421,8 @@
       "maxSubkonto": "Субконто 3-тен артық емес",
       "subkontoPositionsInvalid": "Субконто позициялары 1, 2, 3 үзіліссіз болуы тиіс"
     }
-  },
-  "sdui": {
+  }
+  ,"sdui": {
     "conflict": {
       "staleRevision": "Синхрондау...",
       "sessionNotFound": "Сессия мерзімі аяқталды, қайта ашу..."

@@ -159,7 +159,6 @@
     "empty": "Пока тут пусто",
     "add": "Добавить",
     "loadedCount": "Загружено {{loaded}} из {{total}}",
-    "loadedCountSimple": "Загружено {{loaded}}",
     "exportExcel": "Выгрузить в Excel",
     "exportEmpty": "Нет данных для выгрузки",
     "exportError": "Не удалось выгрузить в Excel"
@@ -422,8 +421,8 @@
       "maxSubkonto": "Не более 3 видов субконто",
       "subkontoPositionsInvalid": "Позиции субконто должны быть 1, 2, 3 без пропусков"
     }
-  },
-  "sdui": {
+  }
+  ,"sdui": {
     "conflict": {
       "staleRevision": "Синхронизирую...",
       "sessionNotFound": "Сессия истекла, переоткрываю..."

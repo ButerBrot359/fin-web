@@ -64,6 +64,12 @@ export interface ViewEffect {
   level?: string
   message?: string
   url?: string
+  sessionId?: string
+  revision?: number
+  state?: Record<string, unknown>
+  parentSessionId?: string
+  targetNodeId?: string
+  value?: unknown
 }
 
 export interface NodeProps {

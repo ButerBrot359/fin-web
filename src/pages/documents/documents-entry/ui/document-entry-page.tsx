@@ -55,7 +55,8 @@ export const DocumentEntryPage = () => {
     queryKey: ['form-events', moduleCode],
     queryFn: async () => {
       const response = await getFormEvents(moduleCode)
-      return response.data as string[]
+      const data = response.data
+      return Array.isArray(data) ? data : ((data as { data?: string[] }).data ?? [])
     },
     staleTime: 10 * 60 * 1000,
   })

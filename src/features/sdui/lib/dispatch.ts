@@ -10,6 +10,7 @@ import { useViewStateStore } from './stores/view-state-store'
 import { applyValuePatches } from './patch-applier'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
+import { useSduiSession } from './sdui-session-context'
 
 // Dialog state kept module-local — simple array-based stack for MVP
 let dialogStack: ViewEffect[] = []
@@ -38,13 +39,13 @@ export function popDialog(): void {
 export function useSduiDispatch() {
   const location = useLocation()
   const navigate = useNavigate()
+  const session = useSduiSession()
 
   const dispatch = useCallback(
     async (action: ViewAction): Promise<void> => {
-      const { formSessionId, revision } = useTreeStore.getState()
-      const { replaceAll, merge } = useViewStateStore.getState()
-      const { setSession, setRoot, bumpRevision, applyPatches: applyTreePatches, clearAllErrors } =
-        useTreeStore.getState()
+      const formSessionId = session.formSessionId
+      const revision = session.revision
+      const { replaceAll, merge, setSession, setRoot, bumpRevision, applyTreePatches, clearAllErrors, setFromServer, resetDirty } = session
 
       const closeSession = async () => {
         if (formSessionId) {
@@ -95,7 +96,7 @@ export function useSduiDispatch() {
           replaceAll(res.state ?? {})
           // Apply handler.handleOpen patches (e.g. required/enabled/label defaults)
           applyTreePatches(res.patches ?? [])
-          applyValuePatches(res.patches ?? [], useViewStateStore.getState().setFromServer)
+          applyValuePatches(res.patches ?? [], setFromServer)
           effectHandler.playAll(res.effects ?? [])
         } else if (action.type === 'CLOSE') {
           // reset is done by SduiScreen on unmount
@@ -104,12 +105,12 @@ export function useSduiDispatch() {
           bumpRevision(res.revision)
           if (action.type === 'COMMAND') clearAllErrors()
           applyTreePatches(res.patches ?? [])
-          applyValuePatches(res.patches ?? [], useViewStateStore.getState().setFromServer)
+          applyValuePatches(res.patches ?? [], setFromServer)
           merge(res.statePatch ?? {})
           effectHandler.playAll(res.effects ?? [])
           const saveCommands = ['save', 'saveAndClose', 'post', 'postAndClose']
           if (action.type === 'COMMAND' && saveCommands.includes(action.command ?? '')) {
-            useViewStateStore.getState().resetDirty()
+            resetDirty()
           }
         }
       } catch (error) {
@@ -122,7 +123,7 @@ export function useSduiDispatch() {
         }
       }
     },
-    [location.pathname, location.search, navigate],
+    [location.pathname, location.search, navigate, session],
   )
 
   return dispatch

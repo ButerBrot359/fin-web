@@ -1,7 +1,7 @@
 import type { FC } from 'react'
 
 import type { NodeProps } from '../../../types/view'
-import { useViewState, useViewStateSetter } from '../../../lib/stores/view-state-store'
+import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { NumberInput } from '@/shared/ui/inputs'
 
@@ -15,8 +15,8 @@ export const NumberFieldNode: FC<NodeProps> = ({ node }) => {
   const flex = node.props?.flex as number | string | undefined
   const precision = (node.props?.precision as number | undefined) ?? 0
 
-  const rawValue = useViewState(node.binding) as number | string | null | undefined
-  const setValue = useViewStateSetter()
+  const { getValue, setValue } = useSduiSession()
+  const rawValue = getValue(node.binding) as number | string | null | undefined
   const dispatch = useSduiDispatch()
 
   if (!visible) return null

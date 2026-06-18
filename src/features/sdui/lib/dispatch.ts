@@ -3,48 +3,79 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-import type { ViewAction, ViewEffect } from '../types/view'
+import type { ViewAction, ViewNode } from '../types/view'
 import { viewTransport, ViewConflictError } from '../api/view-transport'
-import { useTreeStore } from './stores/tree-store'
-import { useViewStateStore } from './stores/view-state-store'
 import { applyValuePatches } from './patch-applier'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
+import { useSduiSession } from './sdui-session-context'
 
-// Dialog state kept module-local — simple array-based stack for MVP
-let dialogStack: ViewEffect[] = []
-let dialogListeners: Array<() => void> = []
+// ─── Panel stack (replaces simple dialog stack) ───
 
-export function getDialogStack(): ViewEffect[] {
-  return dialogStack
+export interface PanelEntry {
+  panelId: string
+  node: ViewNode
+  presentation: 'drawer' | 'modal'
+  session?: {
+    formSessionId: string
+    revision: number
+    parentSessionId?: string
+    targetNodeId?: string
+  }
+  viewState: Record<string, unknown>
 }
 
-export function subscribeDialogs(listener: () => void): () => void {
-  dialogListeners.push(listener)
+let panelStack: PanelEntry[] = []
+let panelListeners: Array<() => void> = []
+
+export function getPanelStack(): PanelEntry[] {
+  return panelStack
+}
+
+export function subscribePanels(listener: () => void): () => void {
+  panelListeners.push(listener)
   return () => {
-    dialogListeners = dialogListeners.filter((l) => l !== listener)
+    panelListeners = panelListeners.filter((l) => l !== listener)
   }
 }
 
-function notifyDialogListeners() {
-  dialogListeners.forEach((l) => l())
+function notifyPanelListeners() {
+  panelListeners.forEach((l) => l())
 }
 
-export function popDialog(): void {
-  dialogStack = dialogStack.slice(0, -1)
-  notifyDialogListeners()
+export function popPanel(): void {
+  panelStack = panelStack.slice(0, -1)
+  notifyPanelListeners()
 }
+
+export function updatePanelSession(panelId: string, rev: number): void {
+  panelStack = panelStack.map((p) =>
+    p.panelId === panelId && p.session
+      ? { ...p, session: { ...p.session, revision: rev } }
+      : p,
+  )
+  notifyPanelListeners()
+}
+
+export function findPanelBySessionId(sessionId: string): PanelEntry | undefined {
+  return panelStack.find((p) => p.session?.formSessionId === sessionId)
+}
+
+// Backward-compatible aliases
+export const getDialogStack = getPanelStack
+export const subscribeDialogs = subscribePanels
+export const popDialog = popPanel
 
 export function useSduiDispatch() {
   const location = useLocation()
   const navigate = useNavigate()
+  const session = useSduiSession()
 
   const dispatch = useCallback(
     async (action: ViewAction): Promise<void> => {
-      const { formSessionId, revision } = useTreeStore.getState()
-      const { replaceAll, merge } = useViewStateStore.getState()
-      const { setSession, setRoot, bumpRevision, applyPatches: applyTreePatches, clearAllErrors } =
-        useTreeStore.getState()
+      const formSessionId = session.formSessionId
+      const revision = session.revision
+      const { replaceAll, merge, setSession, setRoot, bumpRevision, applyTreePatches, clearAllErrors, setFromServer, resetDirty } = session
 
       const closeSession = async () => {
         if (formSessionId) {
@@ -63,14 +94,83 @@ export function useSduiDispatch() {
         navigate,
         closeSession,
         openDialog: (effect) => {
-          dialogStack = [...dialogStack, effect]
-          notifyDialogListeners()
+          const presentation =
+            (effect.node?.props?.presentation as string) ?? 'modal'
+          const entry: PanelEntry = {
+            panelId: effect.node?.id ?? String(Date.now()),
+            node: effect.node!,
+            presentation: presentation as 'drawer' | 'modal',
+            viewState: effect.state ?? {},
+          }
+          if (effect.sessionId) {
+            entry.session = {
+              formSessionId: effect.sessionId,
+              revision: effect.revision ?? 0,
+              parentSessionId: session.formSessionId ?? undefined,
+              targetNodeId: undefined,
+            }
+          }
+          panelStack = [...panelStack, entry]
+          notifyPanelListeners()
         },
         closeDialog: (id) => {
-          dialogStack = dialogStack.filter(
-            (d) => d.node?.id !== id,
-          )
-          notifyDialogListeners()
+          panelStack = panelStack.filter((p) => p.panelId !== id)
+          notifyPanelListeners()
+        },
+        applyToParent: (effect) => {
+          // 1. Pop the child panel
+          popPanel()
+
+          // 2. Dispatch ref.select into the parent session
+          if (effect.parentSessionId && effect.targetNodeId && effect.value) {
+            const parentPanel = findPanelBySessionId(effect.parentSessionId)
+            // Use parent panel's revision, or fall back to root session's revision
+            const parentRevision = parentPanel?.session?.revision ?? session.revision
+
+            void viewTransport.post({
+              formSessionId: effect.parentSessionId,
+              revision: parentRevision,
+              action: {
+                type: 'COMMAND',
+                command: `ref.select:${effect.targetNodeId}`,
+                value: effect.value,
+              },
+            }).then((res) => {
+              // Apply response to the session that owns parentSessionId
+              session.bumpRevision(res.revision)
+              session.clearAllErrors()
+              session.applyTreePatches(res.patches ?? [])
+              applyValuePatches(res.patches ?? [], session.setFromServer)
+              session.merge(res.statePatch ?? {})
+
+              const innerEffectHandler = createEffectHandler({
+                navigate,
+                closeSession: async () => {},
+                openDialog: (eff) => {
+                  const presentation = (eff.node?.props?.presentation as string) ?? 'modal'
+                  const entry: PanelEntry = {
+                    panelId: eff.node?.id ?? String(Date.now()),
+                    node: eff.node!,
+                    presentation: presentation as 'drawer' | 'modal',
+                    viewState: eff.state ?? {},
+                  }
+                  panelStack = [...panelStack, entry]
+                  notifyPanelListeners()
+                },
+                closeDialog: (id) => {
+                  panelStack = panelStack.filter((p) => p.panelId !== id)
+                  notifyPanelListeners()
+                },
+              })
+              innerEffectHandler.playAll(res.effects ?? [])
+            }).catch((error) => {
+              if (error instanceof ViewConflictError && error.data.code === 'SESSION_NOT_FOUND') {
+                showToast('warning', 'Форма устарела, выбор не применён')
+              } else {
+                showToast('error', error instanceof Error ? error.message : 'Ошибка')
+              }
+            })
+          }
         },
       })
 
@@ -95,7 +195,7 @@ export function useSduiDispatch() {
           replaceAll(res.state ?? {})
           // Apply handler.handleOpen patches (e.g. required/enabled/label defaults)
           applyTreePatches(res.patches ?? [])
-          applyValuePatches(res.patches ?? [], useViewStateStore.getState().setFromServer)
+          applyValuePatches(res.patches ?? [], setFromServer)
           effectHandler.playAll(res.effects ?? [])
         } else if (action.type === 'CLOSE') {
           // reset is done by SduiScreen on unmount
@@ -104,12 +204,12 @@ export function useSduiDispatch() {
           bumpRevision(res.revision)
           if (action.type === 'COMMAND') clearAllErrors()
           applyTreePatches(res.patches ?? [])
-          applyValuePatches(res.patches ?? [], useViewStateStore.getState().setFromServer)
+          applyValuePatches(res.patches ?? [], setFromServer)
           merge(res.statePatch ?? {})
           effectHandler.playAll(res.effects ?? [])
           const saveCommands = ['save', 'saveAndClose', 'post', 'postAndClose']
           if (action.type === 'COMMAND' && saveCommands.includes(action.command ?? '')) {
-            useViewStateStore.getState().resetDirty()
+            resetDirty()
           }
         }
       } catch (error) {
@@ -122,7 +222,7 @@ export function useSduiDispatch() {
         }
       }
     },
-    [location.pathname, location.search, navigate],
+    [location.pathname, location.search, navigate, session],
   )
 
   return dispatch

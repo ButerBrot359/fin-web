@@ -3,7 +3,7 @@ import { IconButton } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 
 import type { NodeProps } from '../../../types/view'
-import { useViewState, useViewStateSetter } from '../../../lib/stores/view-state-store'
+import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
@@ -47,9 +47,10 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const domain = (node.props?.domain as string | undefined) ?? 'DICTIONARY'
   const targetTypeCode = node.props?.targetTypeCode as string | undefined
   const filter = node.props?.filter as Record<string, unknown> | undefined
+  const optionsSource = node.props?.optionsSource as { url: string; params?: Record<string, string> } | undefined
 
-  const rawValue = useViewState(node.binding) as ReferenceValue | null | undefined
-  const setValue = useViewStateSetter()
+  const { getValue, setValue } = useSduiSession()
+  const rawValue = getValue(node.binding) as ReferenceValue | null | undefined
   const dispatch = useSduiDispatch()
 
   const [options, setOptions] = useState<SelectOption[]>([])
@@ -67,9 +68,26 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const domainPath = DOMAIN_PATH_MAP[domain] ?? 'dictionary-entries'
 
   const fetchOptions = async (search?: string) => {
-    if (!targetTypeCode) return
     setLoading(true)
     try {
+      if (optionsSource) {
+        const res = await apiService.get<{ content?: EntryItem[]; items?: EntryItem[] }>({
+          url: optionsSource.url,
+          params: { ...optionsSource.params, search, page: 0, size: 20 },
+        })
+        const items = res.data.content ?? res.data.items ?? []
+        setOptions(
+          items.map((item) => ({
+            id: item.id,
+            code: String(item.id),
+            label: (item.presentation ?? item.name ?? String(item.id)) as string,
+          })),
+        )
+        return
+      }
+
+      // Legacy path — field without optionsSource
+      if (!targetTypeCode) return
       const res = await apiService.get<{ content?: EntryItem[]; items?: EntryItem[] }>({
         url: `/api/${domainPath}/${targetTypeCode}/entries`,
         params: { search, page: 0, size: 20, ...filter },
@@ -125,6 +143,15 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     })
   }
 
+  const showAllAction = node.actions?.find(
+    (a) => a.trigger === 'showAll' && a.actionId === 'command'
+  )
+  const allowShowAll = node.props?.allowShowAll as boolean | undefined
+
+  const createAction = node.actions?.find((a) => a.trigger === 'create' && a.actionId === 'command')
+  const openAction = node.actions?.find((a) => a.trigger === 'open' && a.actionId === 'command')
+  const allowCreate = node.props?.allowCreate as boolean | undefined
+
   return (
     <div style={{ flex: flex !== undefined ? flex : undefined }}>
       <AutocompleteInput
@@ -150,10 +177,29 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
           }
         }}
         onChange={applySelected}
-        onShowAll={canBrowse ? openDictList : undefined}
-        onAdd={canBrowse ? openDictCreate : undefined}
+        onShowAll={
+          showAllAction
+            ? () => void dispatch({ type: 'COMMAND', command: showAllAction.command!, sourceNodeId: node.id })
+            : (allowShowAll ?? canBrowse) ? openDictList : undefined
+        }
+        onAdd={
+          createAction
+            ? () => void dispatch({ type: 'COMMAND', command: createAction.command!, sourceNodeId: node.id })
+            : (allowCreate ?? canBrowse) ? openDictCreate : undefined
+        }
         endAction={
-          selectedOption && canBrowse ? (
+          selectedOption && openAction ? (
+            <IconButton
+              sx={{ p: '4px', borderRadius: '6px' }}
+              tabIndex={-1}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                void dispatch({ type: 'COMMAND', command: openAction.command!, sourceNodeId: node.id })
+              }}
+            >
+              <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
+            </IconButton>
+          ) : selectedOption && canBrowse ? (
             <IconButton
               sx={{ p: '4px', borderRadius: '6px' }}
               tabIndex={-1}

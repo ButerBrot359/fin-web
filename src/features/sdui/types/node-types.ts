@@ -9,8 +9,8 @@ export type NodeType =
   // Fields (8)
   | 'TEXT_FIELD' | 'TEXT_AREA' | 'NUMBER_FIELD' | 'DATE_FIELD'
   | 'DATETIME_FIELD' | 'CHECKBOX_FIELD' | 'ENUM_FIELD' | 'REFERENCE_FIELD'
-  // Composite (3)
-  | 'TABLE' | 'TABLE_COLUMN' | 'OBJECT_FIELD'
+  // Composite (4)
+  | 'TABLE' | 'TABLE_COLUMN' | 'OBJECT_FIELD' | 'LIST'
   // Action (3)
   | 'BUTTON' | 'MENU_ITEM' | 'LINK'
 
@@ -19,6 +19,6 @@ export type PatchOp =
   | 'replaceNode' | 'insertNode' | 'removeNode' | 'moveNode'
   | 'setOptions'
 
-export type EffectType = 'navigate' | 'openDialog' | 'closeDialog' | 'notify' | 'download'
+export type EffectType = 'navigate' | 'openDialog' | 'closeDialog' | 'notify' | 'download' | 'applyToParent'
 
 export type ActionType = 'OPEN' | 'EVENT' | 'COMMAND' | 'CLOSE'

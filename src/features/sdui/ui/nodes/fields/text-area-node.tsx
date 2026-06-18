@@ -2,7 +2,7 @@ import type { FC } from 'react'
 import { TextField } from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
-import { useViewState, useViewStateSetter } from '../../../lib/stores/view-state-store'
+import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
 
 export const TextAreaNode: FC<NodeProps> = ({ node }) => {
@@ -17,8 +17,8 @@ export const TextAreaNode: FC<NodeProps> = ({ node }) => {
   const maxLength = node.props?.maxLength as number | undefined
   const rows = (node.props?.rows as number | undefined) ?? 3
 
-  const value = (useViewState(node.binding) as string | undefined) ?? ''
-  const setValue = useViewStateSetter()
+  const { getValue, setValue } = useSduiSession()
+  const value = (getValue(node.binding) as string | undefined) ?? ''
   const dispatch = useSduiDispatch()
 
   if (!visible) return null

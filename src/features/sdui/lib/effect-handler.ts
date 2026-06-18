@@ -11,6 +11,7 @@ export interface EffectHandlerDeps {
   closeSession: () => Promise<void>
   openDialog: (effect: ViewEffect) => void
   closeDialog: (id: string) => void
+  applyToParent?: (effect: ViewEffect) => void
 }
 
 export function createEffectHandler(deps: EffectHandlerDeps) {
@@ -38,6 +39,10 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
 
       case 'download':
         window.open(effect.url!, '_blank')
+        break
+
+      case 'applyToParent':
+        deps.applyToParent?.(effect)
         break
     }
   }

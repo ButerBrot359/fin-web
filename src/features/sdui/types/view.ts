@@ -13,6 +13,7 @@ export interface ViewNode {
 export interface ViewNodeAction {
   trigger: string
   actionId: string
+  command?: string
 }
 
 export interface ViewAction {
@@ -63,6 +64,12 @@ export interface ViewEffect {
   level?: string
   message?: string
   url?: string
+  sessionId?: string
+  revision?: number
+  state?: Record<string, unknown>
+  parentSessionId?: string
+  targetNodeId?: string
+  value?: unknown
 }
 
 export interface NodeProps {

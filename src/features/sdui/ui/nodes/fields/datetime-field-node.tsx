@@ -1,7 +1,7 @@
 import type { FC } from 'react'
 
 import type { NodeProps } from '../../../types/view'
-import { useViewState, useViewStateSetter } from '../../../lib/stores/view-state-store'
+import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { DateTimeInput } from '@/shared/ui/inputs'
 
@@ -13,8 +13,8 @@ export const DatetimeFieldNode: FC<NodeProps> = ({ node }) => {
   const error = node.props?.error as string | undefined
   const flex = node.props?.flex as number | string | undefined
 
-  const value = (useViewState(node.binding) as string | undefined) ?? ''
-  const setValue = useViewStateSetter()
+  const { getValue, setValue } = useSduiSession()
+  const value = (getValue(node.binding) as string | undefined) ?? ''
   const dispatch = useSduiDispatch()
 
   if (!visible) return null

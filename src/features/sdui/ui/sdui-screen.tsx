@@ -1,4 +1,4 @@
-import { useEffect, type FC } from 'react'
+import { useEffect, useMemo, type FC } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
@@ -9,6 +9,7 @@ import { useViewStateStore } from '../lib/stores/view-state-store'
 import { useSduiCacheStore } from '../lib/stores/sdui-cache-store'
 import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
+import { SduiSessionProvider, type SduiSessionValue } from '../lib/sdui-session-context'
 import { NodeRenderer } from './node-renderer'
 import { DialogHost } from './dialog-host'
 
@@ -95,12 +96,35 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
     }
   }, [location.pathname, dispatch, navigate])
 
+  const sessionValue = useMemo<SduiSessionValue>(
+    () => ({
+      formSessionId: useTreeStore.getState().formSessionId,
+      revision: useTreeStore.getState().revision,
+      getValue: (binding) =>
+        binding ? useViewStateStore.getState().state[binding] : undefined,
+      setValue: useViewStateStore.getState().set,
+      setFromServer: useViewStateStore.getState().setFromServer,
+      getAll: useViewStateStore.getState().getAll,
+      replaceAll: useViewStateStore.getState().replaceAll,
+      merge: useViewStateStore.getState().merge,
+      isDirty: dirty,
+      resetDirty: useViewStateStore.getState().resetDirty,
+      tree,
+      setRoot: useTreeStore.getState().setRoot,
+      setSession: useTreeStore.getState().setSession,
+      bumpRevision: useTreeStore.getState().bumpRevision,
+      applyTreePatches: useTreeStore.getState().applyPatches,
+      clearAllErrors: useTreeStore.getState().clearAllErrors,
+    }),
+    [tree, dirty],
+  )
+
   if (!tree) return <PageSkeleton />
 
   return (
-    <>
+    <SduiSessionProvider value={sessionValue}>
       <NodeRenderer node={tree} />
       <DialogHost />
-    </>
+    </SduiSessionProvider>
   )
 }

@@ -3,36 +3,68 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-import type { ViewAction, ViewEffect } from '../types/view'
+import type { ViewAction, ViewNode } from '../types/view'
 import { viewTransport, ViewConflictError } from '../api/view-transport'
 import { applyValuePatches } from './patch-applier'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
 import { useSduiSession } from './sdui-session-context'
 
-// Dialog state kept module-local — simple array-based stack for MVP
-let dialogStack: ViewEffect[] = []
-let dialogListeners: Array<() => void> = []
+// ─── Panel stack (replaces simple dialog stack) ───
 
-export function getDialogStack(): ViewEffect[] {
-  return dialogStack
+export interface PanelEntry {
+  panelId: string
+  node: ViewNode
+  presentation: 'drawer' | 'modal'
+  session?: {
+    formSessionId: string
+    revision: number
+    parentSessionId?: string
+    targetNodeId?: string
+  }
+  viewState: Record<string, unknown>
 }
 
-export function subscribeDialogs(listener: () => void): () => void {
-  dialogListeners.push(listener)
+let panelStack: PanelEntry[] = []
+let panelListeners: Array<() => void> = []
+
+export function getPanelStack(): PanelEntry[] {
+  return panelStack
+}
+
+export function subscribePanels(listener: () => void): () => void {
+  panelListeners.push(listener)
   return () => {
-    dialogListeners = dialogListeners.filter((l) => l !== listener)
+    panelListeners = panelListeners.filter((l) => l !== listener)
   }
 }
 
-function notifyDialogListeners() {
-  dialogListeners.forEach((l) => l())
+function notifyPanelListeners() {
+  panelListeners.forEach((l) => l())
 }
 
-export function popDialog(): void {
-  dialogStack = dialogStack.slice(0, -1)
-  notifyDialogListeners()
+export function popPanel(): void {
+  panelStack = panelStack.slice(0, -1)
+  notifyPanelListeners()
 }
+
+export function updatePanelSession(panelId: string, rev: number): void {
+  panelStack = panelStack.map((p) =>
+    p.panelId === panelId && p.session
+      ? { ...p, session: { ...p.session, revision: rev } }
+      : p,
+  )
+  notifyPanelListeners()
+}
+
+export function findPanelBySessionId(sessionId: string): PanelEntry | undefined {
+  return panelStack.find((p) => p.session?.formSessionId === sessionId)
+}
+
+// Backward-compatible aliases
+export const getDialogStack = getPanelStack
+export const subscribeDialogs = subscribePanels
+export const popDialog = popPanel
 
 export function useSduiDispatch() {
   const location = useLocation()
@@ -62,14 +94,28 @@ export function useSduiDispatch() {
         navigate,
         closeSession,
         openDialog: (effect) => {
-          dialogStack = [...dialogStack, effect]
-          notifyDialogListeners()
+          const presentation =
+            (effect.node?.props?.presentation as string) ?? 'modal'
+          const entry: PanelEntry = {
+            panelId: effect.node?.id ?? String(Date.now()),
+            node: effect.node!,
+            presentation: presentation as 'drawer' | 'modal',
+            viewState: effect.state ?? {},
+          }
+          if (effect.sessionId) {
+            entry.session = {
+              formSessionId: effect.sessionId,
+              revision: effect.revision ?? 0,
+              parentSessionId: session.formSessionId ?? undefined,
+              targetNodeId: undefined,
+            }
+          }
+          panelStack = [...panelStack, entry]
+          notifyPanelListeners()
         },
         closeDialog: (id) => {
-          dialogStack = dialogStack.filter(
-            (d) => d.node?.id !== id,
-          )
-          notifyDialogListeners()
+          panelStack = panelStack.filter((p) => p.panelId !== id)
+          notifyPanelListeners()
         },
       })
 

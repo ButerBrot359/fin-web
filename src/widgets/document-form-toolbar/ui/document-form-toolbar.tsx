@@ -29,6 +29,13 @@ interface AiButtonConfig {
   onPendingChange?: (isPending: boolean) => void
 }
 
+export interface CommandButton {
+  eventName: string
+  label: string
+  onClick: () => void
+  isPending?: boolean
+}
+
 interface DocumentFormToolbarProps {
   isNew?: boolean
   isDirty?: boolean
@@ -36,6 +43,8 @@ interface DocumentFormToolbarProps {
   print: DocumentFormPrint
   onMovements?: () => void
   aiButton: AiButtonConfig
+  commandButtons?: CommandButton[]
+  onClearAll?: () => void
 }
 
 export const DocumentFormToolbar = ({
@@ -45,6 +54,8 @@ export const DocumentFormToolbar = ({
   print,
   onMovements,
   aiButton,
+  commandButtons,
+  onClearAll,
 }: DocumentFormToolbarProps) => {
   const { t } = useTranslation()
 
@@ -60,6 +71,21 @@ export const DocumentFormToolbar = ({
         <Button variant="secondary" onClick={actions.handlePost}>
           {t('documentFormToolbar.post')}
         </Button>
+        {commandButtons?.map((btn) => (
+          <Button
+            key={btn.eventName}
+            variant="secondary"
+            disabled={btn.isPending}
+            onClick={btn.onClick}
+          >
+            {btn.label}
+          </Button>
+        ))}
+        {onClearAll && (
+          <Button variant="secondary" onClick={onClearAll}>
+            {t('documentFormToolbar.clearAll')}
+          </Button>
+        )}
         <PrintDropdownButton
           commands={print.commands}
           disabled={isNew || isDirty}

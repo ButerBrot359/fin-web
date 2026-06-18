@@ -93,7 +93,10 @@
     "print": "Печать",
     "kazSuffix": "каз.",
     "reports": "Отчёты",
-    "more": "Ещё"
+    "more": "Ещё",
+    "fill": "Заполнить",
+    "calculateAll": "Рассчитать всё",
+    "clearAll": "Очистить все"
   },
   "selectOperationDialog": {
     "title": "Выберите операцию",

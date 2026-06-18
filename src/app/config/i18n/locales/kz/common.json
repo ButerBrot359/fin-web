@@ -93,7 +93,10 @@
     "print": "Басып шығару",
     "kazSuffix": "қаз.",
     "reports": "Есептер",
-    "more": "Тағы"
+    "more": "Тағы",
+    "fill": "Толтыру",
+    "calculateAll": "Барлығын есептеу",
+    "clearAll": "Барлығын тазалау"
   },
   "selectOperationDialog": {
     "title": "Операцияны таңдаңыз",

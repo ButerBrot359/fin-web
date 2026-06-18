@@ -3,7 +3,7 @@ import { IconButton } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 
 import type { NodeProps } from '../../../types/view'
-import { useViewState, useViewStateSetter } from '../../../lib/stores/view-state-store'
+import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
@@ -49,8 +49,8 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const filter = node.props?.filter as Record<string, unknown> | undefined
   const optionsSource = node.props?.optionsSource as { url: string; params?: Record<string, string> } | undefined
 
-  const rawValue = useViewState(node.binding) as ReferenceValue | null | undefined
-  const setValue = useViewStateSetter()
+  const { getValue, setValue } = useSduiSession()
+  const rawValue = getValue(node.binding) as ReferenceValue | null | undefined
   const dispatch = useSduiDispatch()
 
   const [options, setOptions] = useState<SelectOption[]>([])

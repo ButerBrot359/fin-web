@@ -2,7 +2,7 @@ import type { FC } from 'react'
 import { Checkbox, FormControlLabel, FormHelperText, FormControl } from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
-import { useViewState, useViewStateSetter } from '../../../lib/stores/view-state-store'
+import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
 
 export const CheckboxFieldNode: FC<NodeProps> = ({ node }) => {
@@ -14,8 +14,8 @@ export const CheckboxFieldNode: FC<NodeProps> = ({ node }) => {
   const error = node.props?.error as string | undefined
   const flex = node.props?.flex as number | string | undefined
 
-  const value = (useViewState(node.binding) as boolean | undefined) ?? false
-  const setValue = useViewStateSetter()
+  const { getValue, setValue } = useSduiSession()
+  const value = (getValue(node.binding) as boolean | undefined) ?? false
   const dispatch = useSduiDispatch()
 
   if (!visible) return null

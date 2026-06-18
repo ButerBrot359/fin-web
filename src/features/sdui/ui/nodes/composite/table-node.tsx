@@ -15,7 +15,7 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
-import { useViewState } from '../../../lib/stores/view-state-store'
+import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
 
 interface ColumnDef {
@@ -47,7 +47,8 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
   const allowAdd = node.props?.allowAdd as boolean | undefined
   const allowDelete = node.props?.allowDelete as boolean | undefined
 
-  const rows = (useViewState(node.binding) as TableRow[] | undefined) ?? []
+  const { getValue } = useSduiSession()
+  const rows = (getValue(node.binding) as TableRow[] | undefined) ?? []
   const dispatch = useSduiDispatch()
 
   const columns = extractColumns(node.children)

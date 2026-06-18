@@ -47,6 +47,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const domain = (node.props?.domain as string | undefined) ?? 'DICTIONARY'
   const targetTypeCode = node.props?.targetTypeCode as string | undefined
   const filter = node.props?.filter as Record<string, unknown> | undefined
+  const optionsSource = node.props?.optionsSource as { url: string; params?: Record<string, string> } | undefined
 
   const rawValue = useViewState(node.binding) as ReferenceValue | null | undefined
   const setValue = useViewStateSetter()
@@ -67,9 +68,26 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const domainPath = DOMAIN_PATH_MAP[domain] ?? 'dictionary-entries'
 
   const fetchOptions = async (search?: string) => {
-    if (!targetTypeCode) return
     setLoading(true)
     try {
+      if (optionsSource) {
+        const res = await apiService.get<{ content?: EntryItem[]; items?: EntryItem[] }>({
+          url: optionsSource.url,
+          params: { ...optionsSource.params, search, page: 0, size: 20 },
+        })
+        const items = res.data.content ?? res.data.items ?? []
+        setOptions(
+          items.map((item) => ({
+            id: item.id,
+            code: String(item.id),
+            label: (item.presentation ?? item.name ?? String(item.id)) as string,
+          })),
+        )
+        return
+      }
+
+      // Legacy path — field without optionsSource
+      if (!targetTypeCode) return
       const res = await apiService.get<{ content?: EntryItem[]; items?: EntryItem[] }>({
         url: `/api/${domainPath}/${targetTypeCode}/entries`,
         params: { search, page: 0, size: 20, ...filter },

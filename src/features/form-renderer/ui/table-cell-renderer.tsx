@@ -391,6 +391,30 @@ const CellInput = ({
     )
   }
 
+  if (dataType === 'OBJECT') {
+    const allowedTypes = column.allowedTypes ?? []
+    const firstType = allowedTypes.find((at) =>
+      REFERENCE_DOMAIN_KINDS.has(at.domainKind)
+    )
+    if (firstType) {
+      const objectColumn = {
+        ...column,
+        domainKind: firstType.domainKind,
+        allowedTypes: [firstType],
+      }
+      return (
+        <Box sx={tableCellWrapperSx}>
+          <DictCell
+            name={name}
+            column={objectColumn}
+            control={control}
+            language={language}
+          />
+        </Box>
+      )
+    }
+  }
+
   switch (dataType) {
     case 'STRING':
     case 'TEXT':

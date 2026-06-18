@@ -1,0 +1,220 @@
+{
+  "name": "RaskhodnyyKassovyyOrder",
+  "title": "Расходный кассовый ордер",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "VidOperatsii"
+              },
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "Nomer",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Data",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "Organizatsiya"
+              },
+              {
+                "type": "Field",
+                "code": "PodrazdelenieOrganizatsii"
+              },
+              {
+                "type": "Field",
+                "code": "SummaDokumenta"
+              },
+              {
+                "type": "Field",
+                "code": "Kassa"
+              },
+              {
+                "type": "Field",
+                "code": "Kontragent"
+              },
+              {
+                "type": "Field",
+                "code": "DogovorKontragenta"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Label",
+                "text": "Основание",
+                "variant": "link"
+              },
+              {
+                "type": "Field",
+                "code": "IstochnikFinansirovaniya"
+              },
+              {
+                "type": "Field",
+                "code": "FKR"
+              },
+              {
+                "type": "Field",
+                "code": "KodPlatnykhUslug"
+              },
+              {
+                "type": "Field",
+                "code": "Spetsifika"
+              },
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "SchetKassy",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "StatyaDDS",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "SchetUchetaBU"
+              },
+              {
+                "type": "Field",
+                "code": "OpisanieRaskhodaPlatezhnogoDokumenta"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Tabs",
+        "panes": [
+          {
+            "key": "details",
+            "label": "Детали",
+            "children": [
+              {
+                "type": "VStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "DokumentOsnovanie"
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Osnovanie"
+                  },
+                  {
+                    "type": "Field",
+                    "code": "FizLitsoVydano"
+                  },
+                  {
+                    "type": "Field",
+                    "code": "VidZadolzhennostiPodotchetnomuLitsu"
+                  },
+                  {
+                    "type": "Field",
+                    "code": "StatyaZatrat"
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Prilozhenie"
+                  },
+                  {
+                    "type": "HStack",
+                    "gap": 3,
+                    "children": [
+                      {
+                        "type": "Field",
+                        "code": "DokumentStroka",
+                        "flex": 1
+                      },
+                      {
+                        "type": "Field",
+                        "code": "Kod",
+                        "flex": 1
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "subaccounts",
+            "label": "Субконто",
+            "children": [
+              {
+                "type": "VStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "Subkonto1"
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Subkonto2"
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Subkonto3"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Separator"
+      },
+      {
+        "type": "HStack",
+        "gap": 3,
+        "children": [
+          {
+            "type": "Field",
+            "code": "Kommentariy",
+            "flex": 1
+          },
+          {
+            "type": "Field",
+            "code": "Otvetstvennyy",
+            "flex": 1
+          }
+        ]
+      }
+    ]
+  }
+}

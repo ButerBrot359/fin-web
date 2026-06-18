@@ -151,7 +151,6 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const createAction = node.actions?.find((a) => a.trigger === 'create' && a.actionId === 'command')
   const openAction = node.actions?.find((a) => a.trigger === 'open' && a.actionId === 'command')
   const allowCreate = node.props?.allowCreate as boolean | undefined
-  const allowOpen = node.props?.allowOpen as boolean | undefined
 
   return (
     <div style={{ flex: flex !== undefined ? flex : undefined }}>

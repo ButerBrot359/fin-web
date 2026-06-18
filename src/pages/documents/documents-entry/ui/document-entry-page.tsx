@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { useDocumentType } from '@/entities/document-type'
+import { useDocumentType, getFormEvents } from '@/entities/document-type'
 import { useOptionalFormConfig } from '@/entities/form-config'
 
-import { FormRenderer } from '@/features/form-renderer'
+import { FormRenderer, type FormRendererHandle } from '@/features/form-renderer'
 import {
   useTabMeta,
   useWorkspaceTabsStore,
@@ -15,7 +15,7 @@ import {
 } from '@/features/workspace-tabs'
 
 import { PageHeader } from '@/widgets/page-header'
-import { DocumentFormToolbar } from '@/widgets/document-form-toolbar'
+import { DocumentFormToolbar, type CommandButton } from '@/widgets/document-form-toolbar'
 
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
 
@@ -47,6 +47,48 @@ export const DocumentEntryPage = () => {
     useOptionalFormConfig(moduleCode)
   const { form, isNew, existingEntry, isLoading } = useDocumentEntryForm()
   const { isDirty } = form.formState
+
+  const formRendererRef = useRef<FormRendererHandle | null>(null)
+
+  const { data: formEvents = [] } = useQuery({
+    queryKey: ['form-events', moduleCode],
+    queryFn: async () => {
+      const response = await getFormEvents(moduleCode)
+      return response.data as string[]
+    },
+    staleTime: 10 * 60 * 1000,
+  })
+
+  const EVENT_BUTTON_CONFIG: Record<string, { label: string; order: number }> = {
+    OnZapolnitPoVsemRabotnikamClick: {
+      label: t('documentFormToolbar.fill'),
+      order: 1,
+    },
+    OnRasschitatVseClick: {
+      label: t('documentFormToolbar.calculateAll'),
+      order: 2,
+    },
+  }
+
+  const commandButtons: CommandButton[] = formEvents
+    .filter((name) => name.endsWith('Click') && EVENT_BUTTON_CONFIG[name])
+    .map((eventName) => ({
+      eventName,
+      label: EVENT_BUTTON_CONFIG[eventName].label,
+      onClick: () => formRendererRef.current?.triggerEvent(eventName),
+    }))
+    .sort(
+      (a, b) =>
+        (EVENT_BUTTON_CONFIG[a.eventName]?.order ?? 99) -
+        (EVENT_BUTTON_CONFIG[b.eventName]?.order ?? 99)
+    )
+
+  const handleClearAll =
+    moduleCode === 'Tarifikatsiya'
+      ? () => {
+          formRendererRef.current?.clearAllTables()
+        }
+      : undefined
 
   const { pendingAction, markClosing } = useFormCache({
     tabId: location.pathname,
@@ -138,6 +180,8 @@ export const DocumentEntryPage = () => {
           commands: printCommands,
         }}
         onMovements={handleMovements}
+        commandButtons={commandButtons}
+        onClearAll={handleClearAll}
         aiButton={{
           moduleCode,
           type: 'documents',
@@ -156,6 +200,7 @@ export const DocumentEntryPage = () => {
             attributes={formAttributes}
             form={form}
             typeCode={moduleCode}
+            handleRef={formRendererRef}
           />
         )}
       </div>

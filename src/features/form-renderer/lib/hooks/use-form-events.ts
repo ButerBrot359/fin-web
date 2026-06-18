@@ -42,7 +42,7 @@ export const useFormEvents = ({
     [attributes]
   )
 
-  const { mutate } = useMutation({
+  const { mutate, isPending } = useMutation({
     mutationFn: (payload: HandleEventPayload) =>
       apiService.post<HandleEventResponse>({
         url: `/api/document-entries/${typeCode}/handle-event`,
@@ -79,5 +79,15 @@ export const useFormEvents = ({
     [eventFieldMap, mutate, form]
   )
 
-  return { onFieldChange }
+  const triggerEvent = useCallback(
+    (eventName: string) => {
+      mutate({
+        eventName,
+        entry: { attributes: form.getValues() },
+      })
+    },
+    [mutate, form]
+  )
+
+  return { onFieldChange, triggerEvent, isPending }
 }

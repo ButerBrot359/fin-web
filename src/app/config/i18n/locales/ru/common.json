@@ -430,5 +430,15 @@
     },
     "unknownNode": "Тип «{{type}}» не поддерживается этой версией клиента",
     "loading": "Загрузка..."
+  },
+  "tarifikatsiya": {
+    "workerSummary": "Итоги по работникам",
+    "worker": "Работник",
+    "position": "Должность",
+    "tariffRate": "Тарифная ставка",
+    "supplements": "Надбавки",
+    "monthlyPayroll": "Месячный ФОТ",
+    "additionalPayroll": "Дополнительный ФОТ",
+    "totalPayroll": "Итого ФОТ"
   }
 }

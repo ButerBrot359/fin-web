@@ -13,6 +13,7 @@ export interface ViewNode {
 export interface ViewNodeAction {
   trigger: string
   actionId: string
+  command?: string
 }
 
 export interface ViewAction {

@@ -78,6 +78,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       panel.domain,
       panel.typeCode,
       'paged',
+      typeData?.isHierarchical,
       panel.searchParams,
       sortAttr,
       sortDir,
@@ -92,6 +93,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
           ...panel.searchParams,
           sortAttr,
           sortDir,
+          ...(typeData?.isHierarchical && { grouped: 'false' }),
         },
         signal
       ),
@@ -100,7 +102,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       const paged = lastPage.data.data
       return paged.last ? undefined : paged.number + 1
     },
-    enabled: !isSearchMode,
+    enabled: !isSearchMode && typeData != null,
     staleTime: 60 * 1000,
     placeholderData: keepPreviousData,
   })

@@ -143,6 +143,11 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     })
   }
 
+  const showAllAction = node.actions?.find(
+    (a) => a.trigger === 'showAll' && a.actionId === 'command'
+  )
+  const allowShowAll = node.props?.allowShowAll as boolean | undefined
+
   return (
     <div style={{ flex: flex !== undefined ? flex : undefined }}>
       <AutocompleteInput
@@ -168,7 +173,11 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
           }
         }}
         onChange={applySelected}
-        onShowAll={canBrowse ? openDictList : undefined}
+        onShowAll={
+          showAllAction
+            ? () => void dispatch({ type: 'COMMAND', command: showAllAction.command!, sourceNodeId: node.id })
+            : (allowShowAll ?? canBrowse) ? openDictList : undefined
+        }
         onAdd={canBrowse ? openDictCreate : undefined}
         endAction={
           selectedOption && canBrowse ? (

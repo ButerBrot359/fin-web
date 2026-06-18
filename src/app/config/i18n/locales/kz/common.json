@@ -93,7 +93,10 @@
     "print": "Басып шығару",
     "kazSuffix": "қаз.",
     "reports": "Есептер",
-    "more": "Тағы"
+    "more": "Тағы",
+    "fill": "Толтыру",
+    "calculateAll": "Барлығын есептеу",
+    "clearAll": "Барлығын тазалау"
   },
   "selectOperationDialog": {
     "title": "Операцияны таңдаңыз",
@@ -427,5 +430,15 @@
     },
     "unknownNode": "«{{type}}» түрі клиенттің осы нұсқасында қолдау көрсетілмейді",
     "loading": "Жүктелуде..."
+  },
+  "tarifikatsiya": {
+    "workerSummary": "Жұмысшылар бойынша қорытындылар",
+    "worker": "Жұмысшы",
+    "position": "Лауазымы",
+    "tariffRate": "Тарифтік мөлшерлеме",
+    "supplements": "Үстемақылар",
+    "monthlyPayroll": "Айлық ЕТҚ",
+    "additionalPayroll": "Қосымша ЕТҚ",
+    "totalPayroll": "Барлығы ЕТҚ"
   }
 }

@@ -17,7 +17,12 @@ export const serializeTableRows = (
         for (const [key, value] of Object.entries(row)) {
           if (key === '_rhfId') continue
           if (value && typeof value === 'object' && 'id' in value) {
-            serialized[key] = (value as { id: number }).id
+            const obj = value as { id: number; _typeCode?: string }
+            if (obj._typeCode) {
+              serialized[key] = { type: obj._typeCode, id: obj.id }
+            } else {
+              serialized[key] = obj.id
+            }
           } else {
             serialized[key] = value
           }

@@ -153,6 +153,23 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
       return null
     }
 
+    if (dataType === 'OBJECT') {
+      const allowedTypes = attribute.allowedTypes ?? []
+      if (allowedTypes.length === 0) return null
+
+      const primaryResolved = { domain: allowedTypes[0].domainKind, typeCode: allowedTypes[0].typeCode }
+      const searchUrl = getUniversalSearchUrl(primaryResolved.domain, primaryResolved.typeCode)
+
+      return (
+        <DictField
+          {...commonProps}
+          searchUrl={searchUrl}
+          disabled={disabled}
+          searchParams={searchParams}
+        />
+      )
+    }
+
     const resolved = resolveAttributeDomain(attribute)
 
     if (resolved && REFERENCE_DOMAIN_KINDS.has(resolved.domain)) {

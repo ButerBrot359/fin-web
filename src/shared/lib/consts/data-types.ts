@@ -20,7 +20,7 @@ export type DataType =
   | 'OBJECT'
   | 'DIRECTORY'
 
-export const IGNORED_DATA_TYPES = new Set<DataType>(['OBJECT'])
+export const IGNORED_DATA_TYPES = new Set<DataType>([])
 
 export const REFERENCE_DOMAIN_KINDS = new Set([
   'DICTIONARY',

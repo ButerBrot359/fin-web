@@ -1,4 +1,5 @@
-import { useRef, useMemo, useCallback } from 'react'
+import { useRef, useMemo, useCallback, useEffect } from 'react'
+import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UseFormReturn } from 'react-hook-form'
 
@@ -11,11 +12,18 @@ import { useFormEvents } from '../lib/hooks/use-form-events'
 import { useTypeDependencies } from '../lib/hooks/use-type-dependencies'
 import { NodeRenderer } from './node-renderer'
 
+export interface FormRendererHandle {
+  triggerEvent(eventName: string): void
+  clearAllTables(): void
+}
+
 interface FormRendererProps {
   config: FormConfig
   attributes: DocumentAttribute[]
   form: UseFormReturn<Record<string, unknown>>
   typeCode: string
+  handleRef?: RefObject<FormRendererHandle | null>
+  sharedTableReplacersRef?: RefObject<Map<string, (rows: Record<string, unknown>[]) => void>>
 }
 
 export const FormRenderer = ({
@@ -23,32 +31,53 @@ export const FormRenderer = ({
   attributes,
   form,
   typeCode,
+  handleRef,
+  sharedTableReplacersRef,
 }: FormRendererProps) => {
   const { i18n } = useTranslation()
   const { dependencyMap } = useTypeDependencies({ attributes })
   const { optionsMap } = useFieldOptions({ attributes, dependencyMap })
 
-  const tableReplacersRef = useRef(
+  const localTableReplacersRef = useRef(
     new Map<string, (rows: Record<string, unknown>[]) => void>()
   )
+
+  const tableReplacersRef = sharedTableReplacersRef ?? localTableReplacersRef
 
   const registerTableReplacer = useCallback(
     (code: string, replacer: (rows: Record<string, unknown>[]) => void) => {
       tableReplacersRef.current.set(code, replacer)
     },
-    []
+    [tableReplacersRef]
   )
 
-  const unregisterTableReplacer = useCallback((code: string) => {
-    tableReplacersRef.current.delete(code)
-  }, [])
+  const unregisterTableReplacer = useCallback(
+    (code: string) => {
+      tableReplacersRef.current.delete(code)
+    },
+    [tableReplacersRef]
+  )
 
-  const { onFieldChange } = useFormEvents({
+  const { onFieldChange, triggerEvent } = useFormEvents({
     typeCode,
     attributes,
     form,
     tableReplacersRef,
   })
+
+  const clearAllTables = useCallback(() => {
+    for (const replacer of tableReplacersRef.current.values()) {
+      replacer([])
+    }
+  }, [tableReplacersRef])
+
+  useEffect(() => {
+    if (!handleRef) return
+    handleRef.current = { triggerEvent, clearAllTables }
+    return () => {
+      handleRef.current = null
+    }
+  }, [handleRef, triggerEvent, clearAllTables])
 
   const contextValue = useMemo(
     () => ({

@@ -13,3 +13,8 @@ export const getOnGetForm = (code: string) =>
   apiService.get<OnGetFormResponseData>({
     url: `/api/document-types/${code}/on-get-form`,
   })
+
+export const getFormEvents = (code: string) =>
+  apiService.get<string[]>({
+    url: `/api/document-types/${code}/form-events`,
+  })

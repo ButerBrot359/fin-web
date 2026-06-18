@@ -7,6 +7,7 @@ import { useDocumentType, getFormEvents } from '@/entities/document-type'
 import { useOptionalFormConfig } from '@/entities/form-config'
 
 import { FormRenderer, type FormRendererHandle } from '@/features/form-renderer'
+import { TarifikatsiyaFormLayout } from '@/features/tarifikatsiya'
 import {
   useTabMeta,
   useWorkspaceTabsStore,
@@ -194,6 +195,14 @@ export const DocumentEntryPage = () => {
       <div className="flex flex-1 flex-col gap-4 rounded-md border-ui-03">
         {isLoadingConfig || isLoading || isAiGenerating ? (
           <DocumentEntrySkeleton />
+        ) : moduleCode === 'Tarifikatsiya' ? (
+          <TarifikatsiyaFormLayout
+            config={formConfig}
+            attributes={formAttributes}
+            form={form}
+            typeCode={moduleCode}
+            handleRef={formRendererRef}
+          />
         ) : (
           <FormRenderer
             config={formConfig}

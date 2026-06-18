@@ -148,6 +148,11 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   )
   const allowShowAll = node.props?.allowShowAll as boolean | undefined
 
+  const createAction = node.actions?.find((a) => a.trigger === 'create' && a.actionId === 'command')
+  const openAction = node.actions?.find((a) => a.trigger === 'open' && a.actionId === 'command')
+  const allowCreate = node.props?.allowCreate as boolean | undefined
+  const allowOpen = node.props?.allowOpen as boolean | undefined
+
   return (
     <div style={{ flex: flex !== undefined ? flex : undefined }}>
       <AutocompleteInput
@@ -178,9 +183,24 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
             ? () => void dispatch({ type: 'COMMAND', command: showAllAction.command!, sourceNodeId: node.id })
             : (allowShowAll ?? canBrowse) ? openDictList : undefined
         }
-        onAdd={canBrowse ? openDictCreate : undefined}
+        onAdd={
+          createAction
+            ? () => void dispatch({ type: 'COMMAND', command: createAction.command!, sourceNodeId: node.id })
+            : (allowCreate ?? canBrowse) ? openDictCreate : undefined
+        }
         endAction={
-          selectedOption && canBrowse ? (
+          selectedOption && openAction ? (
+            <IconButton
+              sx={{ p: '4px', borderRadius: '6px' }}
+              tabIndex={-1}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                void dispatch({ type: 'COMMAND', command: openAction.command!, sourceNodeId: node.id })
+              }}
+            >
+              <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
+            </IconButton>
+          ) : selectedOption && canBrowse ? (
             <IconButton
               sx={{ p: '4px', borderRadius: '6px' }}
               tabIndex={-1}

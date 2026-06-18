@@ -117,6 +117,61 @@ export function useSduiDispatch() {
           panelStack = panelStack.filter((p) => p.panelId !== id)
           notifyPanelListeners()
         },
+        applyToParent: (effect) => {
+          // 1. Pop the child panel
+          popPanel()
+
+          // 2. Dispatch ref.select into the parent session
+          if (effect.parentSessionId && effect.targetNodeId && effect.value) {
+            const parentPanel = findPanelBySessionId(effect.parentSessionId)
+            // Use parent panel's revision, or fall back to root session's revision
+            const parentRevision = parentPanel?.session?.revision ?? session.revision
+
+            void viewTransport.post({
+              formSessionId: effect.parentSessionId,
+              revision: parentRevision,
+              action: {
+                type: 'COMMAND',
+                command: `ref.select:${effect.targetNodeId}`,
+                value: effect.value,
+              },
+            }).then((res) => {
+              // Apply response to the session that owns parentSessionId
+              session.bumpRevision(res.revision)
+              session.clearAllErrors()
+              session.applyTreePatches(res.patches ?? [])
+              applyValuePatches(res.patches ?? [], session.setFromServer)
+              session.merge(res.statePatch ?? {})
+
+              const innerEffectHandler = createEffectHandler({
+                navigate,
+                closeSession: async () => {},
+                openDialog: (eff) => {
+                  const presentation = (eff.node?.props?.presentation as string) ?? 'modal'
+                  const entry: PanelEntry = {
+                    panelId: eff.node?.id ?? String(Date.now()),
+                    node: eff.node!,
+                    presentation: presentation as 'drawer' | 'modal',
+                    viewState: eff.state ?? {},
+                  }
+                  panelStack = [...panelStack, entry]
+                  notifyPanelListeners()
+                },
+                closeDialog: (id) => {
+                  panelStack = panelStack.filter((p) => p.panelId !== id)
+                  notifyPanelListeners()
+                },
+              })
+              innerEffectHandler.playAll(res.effects ?? [])
+            }).catch((error) => {
+              if (error instanceof ViewConflictError && error.data.code === 'SESSION_NOT_FOUND') {
+                showToast('warning', 'Форма устарела, выбор не применён')
+              } else {
+                showToast('error', error instanceof Error ? error.message : 'Ошибка')
+              }
+            })
+          }
+        },
       })
 
       const reopen = async () => {

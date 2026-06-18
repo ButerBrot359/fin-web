@@ -34,7 +34,7 @@ export const TarifikatsiyaFormLayout = ({
   handleRef,
 }: TarifikatsiyaFormLayoutProps) => {
   const consolidatedData = useConsolidatedData(form)
-  const [activeTab, setActiveTab] = useState(TABLE_TABS[0].key)
+  const [activeTab, setActiveTab] = useState<string>(TABLE_TABS[0].key)
 
   // CRITICAL: All FormRenderer instances must share the same tableReplacersRef.
   // When triggerEvent fires from the header FormRenderer, echo response
@@ -49,13 +49,13 @@ export const TarifikatsiyaFormLayout = ({
     layout: {
       type: 'VStack',
       gap: 4,
-      children: config.layout.type === 'VStack'
+      children: 'children' in config.layout
         ? config.layout.children.filter((node) => {
             if (node.type !== 'Field') return true
             const attr = attributes.find((a) => a.code === node.code)
             return attr?.dataType !== 'TABLE'
           })
-        : config.layout.children,
+        : [config.layout],
     },
   }
 

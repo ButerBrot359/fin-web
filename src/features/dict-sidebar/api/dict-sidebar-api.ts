@@ -64,22 +64,6 @@ export const fetchDictEntriesPaged = (
     signal,
   })
 
-/**
- * Плоский пагинируемый листинг через /search (бэкенд-/paged для иерархических
- * справочников возвращает только корневой уровень, а /search ищет по всем уровням).
- */
-export const fetchDictEntriesSearchPaged = (
-  domain: string,
-  typeCode: string,
-  params: PagedParams,
-  signal?: AbortSignal
-) =>
-  apiService.get<PagedResponse<DictEntry>>({
-    url: getUniversalSearchUrl(domain, typeCode),
-    params,
-    signal,
-  })
-
 export const searchDictEntries = (
   domain: string,
   typeCode: string,

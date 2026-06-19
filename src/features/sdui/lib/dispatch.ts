@@ -100,12 +100,12 @@ export function useSduiDispatch() {
             panelId: effect.node?.id ?? String(Date.now()),
             node: effect.node!,
             presentation: presentation as 'drawer' | 'modal',
-            viewState: effect.state ?? {},
+            viewState: effect.childState ?? {},
           }
           if (effect.sessionId) {
             entry.session = {
               formSessionId: effect.sessionId,
-              revision: effect.revision ?? 0,
+              revision: effect.childRevision ?? 0,
               parentSessionId: session.formSessionId ?? undefined,
               targetNodeId: undefined,
             }
@@ -113,56 +113,31 @@ export function useSduiDispatch() {
           panelStack = [...panelStack, entry]
           notifyPanelListeners()
         },
-        closeDialog: (id) => {
-          panelStack = panelStack.filter((p) => p.panelId !== id)
+        closeDialog: (effect) => {
+          // Close the panel
+          panelStack = panelStack.filter((p) => p.panelId !== effect.id)
           notifyPanelListeners()
-        },
-        applyToParent: (effect) => {
-          // 1. Pop the child panel
-          popPanel()
 
-          // 2. Dispatch ref.select into the parent session
-          if (effect.parentSessionId && effect.targetNodeId && effect.value) {
-            const parentPanel = findPanelBySessionId(effect.parentSessionId)
-            // Use parent panel's revision, or fall back to root session's revision
+          // If applyToParent fields are present — relay selection to parent session
+          if (effect.applyToParentSessionId && effect.applyToParentTargetNodeId && effect.applyToParentValue) {
+            const parentPanel = findPanelBySessionId(effect.applyToParentSessionId)
             const parentRevision = parentPanel?.session?.revision ?? session.revision
 
             void viewTransport.post({
-              formSessionId: effect.parentSessionId,
+              formSessionId: effect.applyToParentSessionId,
               revision: parentRevision,
               action: {
                 type: 'COMMAND',
-                command: `ref.select:${effect.targetNodeId}`,
-                value: effect.value,
+                command: `ref.select:${effect.applyToParentTargetNodeId}`,
+                value: effect.applyToParentValue,
               },
             }).then((res) => {
-              // Apply response to the session that owns parentSessionId
               session.bumpRevision(res.revision)
               session.clearAllErrors()
               session.applyTreePatches(res.patches ?? [])
               applyValuePatches(res.patches ?? [], session.setFromServer)
               session.merge(res.statePatch ?? {})
-
-              const innerEffectHandler = createEffectHandler({
-                navigate,
-                closeSession: async () => {},
-                openDialog: (eff) => {
-                  const presentation = (eff.node?.props?.presentation as string) ?? 'modal'
-                  const entry: PanelEntry = {
-                    panelId: eff.node?.id ?? String(Date.now()),
-                    node: eff.node!,
-                    presentation: presentation as 'drawer' | 'modal',
-                    viewState: eff.state ?? {},
-                  }
-                  panelStack = [...panelStack, entry]
-                  notifyPanelListeners()
-                },
-                closeDialog: (id) => {
-                  panelStack = panelStack.filter((p) => p.panelId !== id)
-                  notifyPanelListeners()
-                },
-              })
-              innerEffectHandler.playAll(res.effects ?? [])
+              effectHandler.playAll(res.effects ?? [])
             }).catch((error) => {
               if (error instanceof ViewConflictError && error.data.code === 'SESSION_NOT_FOUND') {
                 showToast('warning', 'Форма устарела, выбор не применён')

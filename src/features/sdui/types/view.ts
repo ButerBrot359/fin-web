@@ -65,11 +65,11 @@ export interface ViewEffect {
   message?: string
   url?: string
   sessionId?: string
-  revision?: number
-  state?: Record<string, unknown>
-  parentSessionId?: string
-  targetNodeId?: string
-  value?: unknown
+  childRevision?: number
+  childState?: Record<string, unknown>
+  applyToParentSessionId?: string
+  applyToParentTargetNodeId?: string
+  applyToParentValue?: unknown
 }
 
 export interface NodeProps {

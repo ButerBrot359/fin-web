@@ -3,37 +3,62 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
+import { cn } from '@/shared/lib/utils/cn'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
 import { fetchDictTypeMetadata } from '../api/dict-sidebar-api'
+import type { DictSidebarPanel } from '../types/dict-sidebar'
 import { DictSidebarHeader } from './dict-sidebar-header'
 import { DictSidebarListView } from './dict-sidebar-list-view'
 import { DictSidebarFormView } from './dict-sidebar-form-view'
 
-export const DictSidebarDrawer = () => {
+/** Renders a single panel's content with its own type-metadata query. */
+const PanelContent = ({
+  panel,
+  isActive,
+}: {
+  panel: DictSidebarPanel
+  isActive: boolean
+}) => {
   const { t, i18n } = useTranslation()
-  const { stack, closeAll } = useDictSidebarStore()
-  const isOpen = stack.length > 0
-  const topPanel = stack[stack.length - 1] as (typeof stack)[number] | undefined
 
   const { data: typeData } = useQuery({
-    queryKey: ['dict-sidebar-type', topPanel?.domain, topPanel?.typeCode],
+    queryKey: ['dict-sidebar-type', panel.domain, panel.typeCode],
     queryFn: ({ signal }) =>
-      fetchDictTypeMetadata(topPanel!.domain, topPanel!.typeCode, signal),
-    enabled: !!topPanel,
+      fetchDictTypeMetadata(panel.domain, panel.typeCode, signal),
     staleTime: 5 * 60 * 1000,
     select: (res) => res.data.data,
   })
 
   const typeName = typeData
     ? getLocalizedName(typeData, i18n.language)
-    : (topPanel?.typeCode ?? '')
+    : (panel.typeCode ?? '')
 
   const title =
-    topPanel?.mode === 'create'
+    panel.mode === 'create'
       ? t('dictSidebar.createTitle', { name: typeName })
-      : topPanel?.mode === 'edit'
-        ? (topPanel.title ?? typeName)
+      : panel.mode === 'edit'
+        ? (panel.title ?? typeName)
         : typeName
+
+  return (
+    <div className={cn('flex h-full flex-col p-7', !isActive && 'hidden')}>
+      {isActive && <DictSidebarHeader title={title} />}
+      {panel.mode === 'list' && <DictSidebarListView panel={panel} />}
+      {(panel.mode === 'create' || panel.mode === 'edit') &&
+        typeData && (
+          <DictSidebarFormView
+            panel={panel}
+            typeData={typeData}
+            typeName={typeName}
+          />
+        )}
+    </div>
+  )
+}
+
+export const DictSidebarDrawer = () => {
+  const { stack, closeAll } = useDictSidebarStore()
+  const isOpen = stack.length > 0
 
   return (
     <Drawer
@@ -55,20 +80,13 @@ export const DictSidebarDrawer = () => {
         },
       }}
     >
-      {topPanel && (
-        <div className="flex h-full flex-col p-7">
-          <DictSidebarHeader title={title} />
-          {topPanel.mode === 'list' && <DictSidebarListView panel={topPanel} />}
-          {(topPanel.mode === 'create' || topPanel.mode === 'edit') &&
-            typeData && (
-              <DictSidebarFormView
-                panel={topPanel}
-                typeData={typeData}
-                typeName={typeName}
-              />
-            )}
-        </div>
-      )}
+      {stack.map((panel, i) => (
+        <PanelContent
+          key={panel.id}
+          panel={panel}
+          isActive={i === stack.length - 1}
+        />
+      ))}
     </Drawer>
   )
 }

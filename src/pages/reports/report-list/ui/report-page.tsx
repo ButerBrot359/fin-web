@@ -347,7 +347,7 @@ const ReportPageContent = ({
                 (isKz ? param.titleKz : param.titleRu) || param.titleRu
               return (
                 <div key={param.code} className="flex flex-wrap gap-4">
-                  <div className="w-64">
+                  <div className="report-param-field w-64">
                     <DateTimeInput
                       value={period.from}
                       onChange={(v) => {
@@ -356,10 +356,11 @@ const ReportPageContent = ({
                       label={`${title}: ${t('reports.periodFrom')}`}
                       required={param.required}
                       error={invalid}
+                      size="small"
                       fullWidth
                     />
                   </div>
-                  <div className="w-64">
+                  <div className="report-param-field w-64">
                     <DateTimeInput
                       value={period.to}
                       onChange={(v) => {
@@ -368,6 +369,7 @@ const ReportPageContent = ({
                       label={`${title}: ${t('reports.periodTo')}`}
                       required={param.required}
                       error={invalid}
+                      size="small"
                       fullWidth
                     />
                   </div>
@@ -378,7 +380,9 @@ const ReportPageContent = ({
               <div
                 key={param.code}
                 className={
-                  param.dataType === 'BOOLEAN' ? 'flex items-center' : 'w-64'
+                  param.dataType === 'BOOLEAN'
+                    ? 'flex items-center'
+                    : 'report-param-field w-64'
                 }
               >
                 <ReportParamField

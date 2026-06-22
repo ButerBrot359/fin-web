@@ -79,6 +79,7 @@ export const ReportParamField = ({
           label={label}
           required={param.required}
           error={invalid}
+          size="small"
           fullWidth
         />
       )
@@ -92,6 +93,7 @@ export const ReportParamField = ({
       return (
         <Autocomplete
           multiple
+          size="small"
           options={accountOptions}
           value={selected}
           onChange={(_e, next) => {
@@ -138,6 +140,7 @@ export const ReportParamField = ({
           label={label}
           required={param.required}
           error={invalid}
+          size="small"
           fullWidth
         />
       )
@@ -156,6 +159,7 @@ export const ReportParamField = ({
           label={label}
           required={param.required}
           error={invalid}
+          size="small"
           fullWidth
         />
       )

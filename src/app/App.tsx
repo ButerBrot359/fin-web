@@ -92,6 +92,11 @@ const UniversalDomainPage = lazy(() =>
     default: m.UniversalDomainPage,
   }))
 )
+const ReportPage = lazy(() =>
+  import('@/pages/reports/report-list').then((m) => ({
+    default: m.ReportPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -178,6 +183,15 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/calculationplan/:moduleCode"
             element={<UniversalDomainPage />}
+          />
+          {/*
+            Универсальная страница отчётов: пункт меню type="Report" →
+            сегмент "report". Любой отчёт рендерится по коду (`:moduleCode`)
+            через метаданные `/api/reports/{code}/meta`.
+          */}
+          <Route
+            path="/modules/:pageCode/report/:moduleCode"
+            element={<ReportPage />}
           />
         </Routes>
       </Suspense>

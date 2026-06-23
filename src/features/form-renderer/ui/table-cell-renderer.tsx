@@ -23,6 +23,7 @@ import { AutocompleteInput } from '@/shared/ui/inputs/autocomplete-input'
 import { useDictSidebarStore } from '@/features/dict-sidebar'
 
 import { useCellDependency } from '../lib/hooks/use-cell-dependency'
+import { mergeSearchParams } from '../lib/utils/field-filter-params'
 
 interface TableCellRendererProps {
   name: string
@@ -138,12 +139,9 @@ const DictCell = ({
     control
   )
 
-  // Серверный фильтр поля (напр. отбор МОЛ по «Организации» документа)
-  // объединяется с af-фильтром зависимости.
-  const searchParams =
-    serverFilterParams || depParams
-      ? { ...serverFilterParams, ...depParams }
-      : undefined
+  // Фильтр поля (напр. отбор МОЛ по «Организации» документа) объединяется
+  // с af-фильтром зависимости (af-условия склеиваются, не затирают друг друга).
+  const searchParams = mergeSearchParams(serverFilterParams, depParams)
 
   const [opened, setOpened] = useState(false)
   const [inputValue, setInputValue] = useState('')

@@ -19,6 +19,7 @@ import emptyImage from '@/shared/assets/info/empty.png'
 
 import { useTableColumns } from '../lib/hooks/use-table-columns'
 import { buildEmptyRow } from '../lib/utils/build-empty-row'
+import { fieldFilterToSearchParams } from '../lib/utils/field-filter-params'
 import { TableCellRenderer } from './table-cell-renderer'
 import { TableFieldToolbar } from './table-field-toolbar'
 import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
@@ -55,7 +56,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
   const { columns, isLoading } = useTableColumns(attribute)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
-  const { registerTableReplacer, unregisterTableReplacer } =
+  const { registerTableReplacer, unregisterTableReplacer, fieldFilters } =
     useFormRendererContext()
 
   // Ensure the table field is initialised in form state before useFieldArray
@@ -107,23 +108,31 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     }
 
     const dataCols: ColumnDef<Record<string, unknown>>[] = columns.map(
-      (col) => ({
-        id: col.code,
-        header: getLocalizedName(col, language),
-        size: getColumnWidth(col.dataType),
-        cell: ({ row }) => (
-          <TableCellRenderer
-            name={`${attribute.code}.${String(row.index)}.${col.code}`}
-            column={col}
-            control={form.control}
-            language={language}
-          />
-        ),
-      })
+      (col) => {
+        // Путь поля строки ТЧ для серверного фильтра = `<КодТЧ><КодКолонки>`
+        // (напр. `OsnovnyeSredstvaMOL`) — отбор МОЛ по «Организации» документа.
+        const serverFilterParams = fieldFilterToSearchParams(
+          fieldFilters[`${attribute.code}${col.code}`]
+        )
+        return {
+          id: col.code,
+          header: getLocalizedName(col, language),
+          size: getColumnWidth(col.dataType),
+          cell: ({ row }) => (
+            <TableCellRenderer
+              name={`${attribute.code}.${String(row.index)}.${col.code}`}
+              column={col}
+              control={form.control}
+              language={language}
+              serverFilterParams={serverFilterParams}
+            />
+          ),
+        }
+      }
     )
 
     return [rowNumCol, ...dataCols]
-  }, [columns, language, attribute.code, form.control])
+  }, [columns, language, attribute.code, form.control, fieldFilters])
 
   const table = useReactTable({
     data: fields as unknown as Record<string, unknown>[],

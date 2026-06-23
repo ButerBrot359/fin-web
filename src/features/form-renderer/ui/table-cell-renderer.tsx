@@ -29,6 +29,8 @@ interface TableCellRendererProps {
   column: DocumentAttribute
   control: Control<Record<string, unknown>>
   language: string
+  /** Серверный фильтр ссылочного поля (query-параметры пикера). */
+  serverFilterParams?: Record<string, string>
 }
 
 const tableCellSx: SxProps<Theme> = {
@@ -120,6 +122,7 @@ const DictCell = ({
   column,
   control,
   language,
+  serverFilterParams,
 }: TableCellRendererProps) => {
   const resolved = resolveAttributeDomain(column)
   const searchUrl =
@@ -130,7 +133,17 @@ const DictCell = ({
 
   // Dependent dictionaries (e.g. Подразделения filtered by owner org) need the
   // owner filter, which the row lacks — it is sourced from the header field.
-  const { searchParams, disabled } = useCellDependency(column, control)
+  const { searchParams: depParams, disabled } = useCellDependency(
+    column,
+    control
+  )
+
+  // Серверный фильтр поля (напр. отбор МОЛ по «Организации» документа)
+  // объединяется с af-фильтром зависимости.
+  const searchParams =
+    serverFilterParams || depParams
+      ? { ...serverFilterParams, ...depParams }
+      : undefined
 
   const [opened, setOpened] = useState(false)
   const [inputValue, setInputValue] = useState('')
@@ -364,6 +377,7 @@ const CellInput = ({
   column,
   control,
   language,
+  serverFilterParams,
   onPickerOpen,
   onPickerClose,
 }: CellInputProps) => {
@@ -378,6 +392,7 @@ const CellInput = ({
           column={column}
           control={control}
           language={language}
+          serverFilterParams={serverFilterParams}
         />
       </Box>
     )
@@ -409,6 +424,7 @@ const CellInput = ({
             column={objectColumn}
             control={control}
             language={language}
+            serverFilterParams={serverFilterParams}
           />
         </Box>
       )
@@ -502,6 +518,7 @@ export const TableCellRenderer = ({
   column,
   control,
   language,
+  serverFilterParams,
 }: TableCellRendererProps) => {
   const { dataType } = column
   const [editing, setEditing] = useState(false)
@@ -562,6 +579,7 @@ export const TableCellRenderer = ({
         column={column}
         control={control}
         language={language}
+        serverFilterParams={serverFilterParams}
         onPickerOpen={() => {
           pickerOpenRef.current = true
         }}

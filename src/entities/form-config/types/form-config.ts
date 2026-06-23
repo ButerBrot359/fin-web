@@ -52,8 +52,22 @@ export type FormNode =
   | LabelNode
   | TabsNode
 
+/**
+ * Серверный фильтр ссылочного поля. Ключ в `fieldFilters` — путь поля:
+ * для шапки = код поля (`MOL`), для строки ТЧ = `<КодТЧ><КодКолонки>`
+ * (напр. `OsnovnyeSredstvaMOL`). `attributeEquals` уже содержит конкретные
+ * значения (напр. id «Организации» документа) — их кладём в запрос пикера
+ * как query-параметры `attributeCode=value`.
+ */
+export interface FieldFilter {
+  domain?: string
+  typeCode?: string
+  attributeEquals?: Record<string, number | string>
+}
+
 export interface FormConfig {
   name: string
   title: string
   layout: FormNode
+  fieldFilters?: Record<string, FieldFilter>
 }

@@ -22,7 +22,14 @@ import {
 import { useDictSidebarStore } from '@/features/dict-sidebar'
 
 import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
-import { fieldFilterToSearchParams } from '../lib/utils/field-filter-params'
+import {
+  fieldFilterToSearchParams,
+  mergeSearchParams,
+} from '../lib/utils/field-filter-params'
+import {
+  getOrgScopeSourceField,
+  synthesizeReferenceFilter,
+} from '../lib/utils/org-scoped-filter'
 import type { FieldDependency } from '../types/renderer-context'
 import { TableField } from './table-field'
 
@@ -72,18 +79,26 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
 
   const disabled = dependency ? !sourceValue : false
 
-  // Серверный фильтр поля (для шапки ключ = код поля), напр. отбор МОЛ
-  // по «Организации» документа. Объединяется с af-фильтром зависимости.
+  // Источник для отбора ссылочного поля (напр. МОЛ → «Организация» документа).
+  // Значение читаем live из формы — фильтр реактивен к смене организации.
+  const orgSourceField = attribute
+    ? getOrgScopeSourceField(attribute)
+    : undefined
+  const orgSourceValue = form.watch(orgSourceField ?? '')
+
+  // Фильтр поля: серверный `fieldFilters` имеет приоритет, иначе синтезируем
+  // из живого значения поля-источника. Объединяется с af-фильтром зависимости.
   const sourceId = sourceValue?.id
   const searchParams = useMemo(() => {
-    const depParam =
+    const depParams =
       dependency && sourceId != null
         ? { af: `${dependency.targetAttributeCode}:${String(sourceId)}` }
         : undefined
-    const filterParams = fieldFilterToSearchParams(fieldFilters[node.code])
-    if (!depParam && !filterParams) return undefined
-    return { ...depParam, ...filterParams }
-  }, [dependency, sourceId, fieldFilters, node.code])
+    const effectiveFilter =
+      fieldFilters[node.code] ??
+      synthesizeReferenceFilter(attribute, () => orgSourceValue)
+    return mergeSearchParams(depParams, fieldFilterToSearchParams(effectiveFilter))
+  }, [dependency, sourceId, fieldFilters, node.code, attribute, orgSourceValue])
 
   if (!attribute) return null
 

@@ -20,6 +20,10 @@ import emptyImage from '@/shared/assets/info/empty.png'
 import { useTableColumns } from '../lib/hooks/use-table-columns'
 import { buildEmptyRow } from '../lib/utils/build-empty-row'
 import { fieldFilterToSearchParams } from '../lib/utils/field-filter-params'
+import {
+  getOrgScopeSourceField,
+  synthesizeReferenceFilter,
+} from '../lib/utils/org-scoped-filter'
 import { TableCellRenderer } from './table-cell-renderer'
 import { TableFieldToolbar } from './table-field-toolbar'
 import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
@@ -58,6 +62,14 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
 
   const { registerTableReplacer, unregisterTableReplacer, fieldFilters } =
     useFormRendererContext()
+
+  // Источник отбора для ссылочных колонок ТЧ (напр. МОЛ → «Организация»
+  // документа из шапки). Значение читаем live — фильтр реактивен.
+  const orgSourceField = useMemo(
+    () => columns.map(getOrgScopeSourceField).find(Boolean),
+    [columns]
+  )
+  const orgSourceValue = form.watch(orgSourceField ?? '')
 
   // Ensure the table field is initialised in form state before useFieldArray
   useEffect(() => {
@@ -109,11 +121,13 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
 
     const dataCols: ColumnDef<Record<string, unknown>>[] = columns.map(
       (col) => {
-        // Путь поля строки ТЧ для серверного фильтра = `<КодТЧ><КодКолонки>`
-        // (напр. `OsnovnyeSredstvaMOL`) — отбор МОЛ по «Организации» документа.
-        const serverFilterParams = fieldFilterToSearchParams(
-          fieldFilters[`${attribute.code}${col.code}`]
-        )
+        // Фильтр колонки ТЧ: серверный `fieldFilters` по пути `<КодТЧ><КодКолонки>`
+        // (напр. `OsnovnyeSredstvaMOL`) имеет приоритет; иначе синтезируем из
+        // живого значения поля-источника (МОЛ → «Организация» документа).
+        const effectiveFilter =
+          fieldFilters[`${attribute.code}${col.code}`] ??
+          synthesizeReferenceFilter(col, () => orgSourceValue)
+        const serverFilterParams = fieldFilterToSearchParams(effectiveFilter)
         return {
           id: col.code,
           header: getLocalizedName(col, language),
@@ -132,7 +146,14 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     )
 
     return [rowNumCol, ...dataCols]
-  }, [columns, language, attribute.code, form.control, fieldFilters])
+  }, [
+    columns,
+    language,
+    attribute.code,
+    form.control,
+    fieldFilters,
+    orgSourceValue,
+  ])
 
   const table = useReactTable({
     data: fields as unknown as Record<string, unknown>[],

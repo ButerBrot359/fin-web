@@ -5,6 +5,7 @@ export {
 } from './lib/hooks/use-form-config'
 export type {
   FormConfig,
+  FieldFilter,
   FormNode,
   VStackNode,
   HStackNode,

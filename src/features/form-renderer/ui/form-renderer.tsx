@@ -17,6 +17,8 @@ export interface FormRendererHandle {
   clearAllTables(): void
 }
 
+const EMPTY_FIELD_FILTERS: NonNullable<FormConfig['fieldFilters']> = {}
+
 interface FormRendererProps {
   config: FormConfig
   attributes: DocumentAttribute[]
@@ -79,6 +81,8 @@ export const FormRenderer = ({
     }
   }, [handleRef, triggerEvent, clearAllTables])
 
+  const fieldFilters = config.fieldFilters ?? EMPTY_FIELD_FILTERS
+
   const contextValue = useMemo(
     () => ({
       attributeMap: new Map(attributes.map((attr) => [attr.code, attr])),
@@ -87,6 +91,7 @@ export const FormRenderer = ({
       optionsMap,
       onFieldChange,
       dependencyMap,
+      fieldFilters,
       registerTableReplacer,
       unregisterTableReplacer,
     }),
@@ -97,6 +102,7 @@ export const FormRenderer = ({
       optionsMap,
       onFieldChange,
       dependencyMap,
+      fieldFilters,
       registerTableReplacer,
       unregisterTableReplacer,
     ]

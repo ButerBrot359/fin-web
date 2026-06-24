@@ -1,5 +1,6 @@
 import type { NavigateFunction } from 'react-router-dom'
 
+import { apiService } from '@/shared/api/api'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { ViewEffect } from '../types/view'
@@ -36,9 +37,20 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
         )
         break
 
-      case 'download':
-        window.open(effect.url!, '_blank')
+      case 'download': {
+        if (!effect.url) break
+        void apiService
+          .getFileBlob({ url: effect.url })
+          .then((res) => {
+            const objectUrl = URL.createObjectURL(res.data)
+            window.open(objectUrl, '_blank')
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
+          })
+          .catch(() =>
+            showToast('error', 'Не удалось сформировать печатную форму'),
+          )
         break
+      }
     }
   }
 

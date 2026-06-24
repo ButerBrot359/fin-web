@@ -9,6 +9,8 @@ import { applyValuePatches } from './patch-applier'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
 import { useSduiSession } from './sdui-session-context'
+import { useTreeStore } from './stores/tree-store'
+import { useViewStateStore } from './stores/view-state-store'
 
 // ─── Panel stack (replaces simple dialog stack) ───
 
@@ -121,7 +123,10 @@ export function useSduiDispatch() {
           // If applyToParent fields are present — relay selection to parent session
           if (effect.applyToParentSessionId && effect.applyToParentTargetNodeId && effect.applyToParentValue) {
             const parentPanel = findPanelBySessionId(effect.applyToParentSessionId)
-            const parentRevision = parentPanel?.session?.revision ?? session.revision
+
+            // Parent is either a panel in the stack or the root form (global stores)
+            const tree = useTreeStore.getState()
+            const parentRevision = parentPanel?.session?.revision ?? tree.revision
 
             void viewTransport.post({
               formSessionId: effect.applyToParentSessionId,
@@ -132,11 +137,18 @@ export function useSduiDispatch() {
                 value: effect.applyToParentValue,
               },
             }).then((res) => {
-              session.bumpRevision(res.revision)
-              session.clearAllErrors()
-              session.applyTreePatches(res.patches ?? [])
-              applyValuePatches(res.patches ?? [], session.setFromServer)
-              session.merge(res.statePatch ?? {})
+              if (parentPanel) {
+                // Parent is a panel — update its session
+                updatePanelSession(parentPanel.panelId, res.revision)
+              } else {
+                // Parent is root — apply to global stores
+                const vs = useViewStateStore.getState()
+                tree.bumpRevision(res.revision)
+                tree.clearAllErrors()
+                tree.applyPatches(res.patches ?? [])
+                applyValuePatches(res.patches ?? [], vs.setFromServer)
+                vs.merge(res.statePatch ?? {})
+              }
               effectHandler.playAll(res.effects ?? [])
             }).catch((error) => {
               if (error instanceof ViewConflictError && error.data.code === 'SESSION_NOT_FOUND') {

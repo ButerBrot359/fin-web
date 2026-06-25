@@ -67,8 +67,14 @@ export function useTableSync(
   const canonRows = (getValue(node.binding) as TableRow[] | undefined) ?? []
   const [localRows, setLocalRows] = useState<TableRow[]>(canonRows)
 
+  // Keep a ref in sync with localRows to avoid stale closures
+  const localRowsRef = useRef<TableRow[]>(canonRows)
+
   const inFlightRef = useRef(false)
   const dirtyRef = useRef<Map<string, Record<string, unknown>>>(new Map())
+  // Flag to trigger a coalesced commit after in-flight response arrives.
+  // Replaces sentinel entries (__delete__, __move__) to avoid phantom rows.
+  const needsCoalescedCommitRef = useRef(false)
   // Promise resolve for flush-before-save: resolves when the in-flight
   // response arrives AND dirty has been re-sent (if any).
   const flushResolveRef = useRef<(() => void) | null>(null)
@@ -87,9 +93,11 @@ export function useTableSync(
   useEffect(() => {
     const dirty = dirtyRef.current
 
-    if (dirty.size === 0) {
+    if (dirty.size === 0 && !needsCoalescedCommitRef.current) {
       // No pending edits — just accept canon as-is
-      setLocalRows(canonRows)
+      const next = canonRows
+      setLocalRows(next)
+      localRowsRef.current = next
       if (inFlightRef.current) {
         inFlightRef.current = false
         flushResolveRef.current?.()
@@ -112,18 +120,20 @@ export function useTableSync(
       return result
     })
 
-    // Keep rows that exist only locally (added while in-flight, with tmp- ids)
+    // Keep rows that exist only locally (added while in-flight, with tmp- ids).
+    // Skip sentinel keys (start with '__') to avoid phantom rows being sent.
     for (const [rowId, patch] of dirty) {
-      if (!canonRows.some((r) => r.rowId === rowId)) {
-        merged.push({ rowId, ...patch } as TableRow)
-      }
+      if (rowId.startsWith('__') || canonRows.some((r) => r.rowId === rowId)) continue
+      merged.push({ rowId, ...patch } as TableRow)
     }
 
     setLocalRows(merged)
+    localRowsRef.current = merged
     inFlightRef.current = false
 
-    // Coalesced commit: dirty was non-empty → send immediately
+    // Coalesced commit: dirty was non-empty or a structural op was pending
     dirtyRef.current = new Map()
+    needsCoalescedCommitRef.current = false
     sendEvent(merged)
 
     // Don't resolve flush yet — the coalesced commit is now in-flight.
@@ -151,6 +161,7 @@ export function useTableSync(
       )
       // Mark form dirty via session.setValue
       if (node.binding) setValue(node.binding, next)
+      localRowsRef.current = next
       return next
     })
 
@@ -167,76 +178,68 @@ export function useTableSync(
       // Already in-flight — edits are in dirtyRef, will coalesce on response
       return
     }
-    sendEvent(localRows)
+    sendEvent(localRowsRef.current)
   }
 
   const addRow = (cols: TableColumnDef[]) => {
     const newRow = buildEmptyRow(cols)
-    setLocalRows((prev) => {
-      const next = [...prev, newRow]
-      if (node.binding) setValue(node.binding, next)
-      return next
-    })
+    const next = [...localRowsRef.current, newRow]
+    setLocalRows(next)
+    localRowsRef.current = next
+    if (node.binding) setValue(node.binding, next)
     if (inFlightRef.current) {
-      // Record entire new row in dirty
+      // Record entire new row in dirty; coalesced commit will send on response
       const { rowId, ...rest } = newRow
       dirtyRef.current.set(rowId, rest)
+      needsCoalescedCommitRef.current = true
     } else {
-      // setLocalRows is async, so read the next state via callback
-      setLocalRows((current) => {
-        sendEvent(current)
-        return current
-      })
+      sendEvent(next)
     }
   }
 
   const deleteRow = (index: number) => {
-    setLocalRows((prev) => {
-      const next = prev.filter((_, i) => i !== index)
-      if (node.binding) setValue(node.binding, next)
-      if (inFlightRef.current) {
-        // Rebuild dirty: remove deleted row, keep rest
-        const deleted = prev[index]
-        if (deleted) dirtyRef.current.delete(deleted.rowId)
-        // Mark that we need a coalesced commit
-        // (we set a sentinel empty entry so dirty.size > 0)
-        if (dirtyRef.current.size === 0) {
-          dirtyRef.current.set('__delete__', {})
-        }
-      } else {
-        sendEvent(next)
-      }
-      return next
-    })
+    const prev = localRowsRef.current
+    const next = prev.filter((_, i) => i !== index)
+    setLocalRows(next)
+    localRowsRef.current = next
+    if (node.binding) setValue(node.binding, next)
+    if (inFlightRef.current) {
+      // Rebuild dirty: remove deleted row, keep rest
+      const deleted = prev[index]
+      if (deleted) dirtyRef.current.delete(deleted.rowId)
+      // Signal that a coalesced commit is needed after in-flight response
+      needsCoalescedCommitRef.current = true
+    } else {
+      sendEvent(next)
+    }
   }
 
   const moveRow = (from: number, to: number) => {
-    setLocalRows((prev) => {
-      const next = [...prev]
-      const [moved] = next.splice(from, 1)
-      next.splice(to, 0, moved)
-      if (node.binding) setValue(node.binding, next)
-      if (inFlightRef.current) {
-        if (dirtyRef.current.size === 0) {
-          dirtyRef.current.set('__move__', {})
-        }
-      } else {
-        sendEvent(next)
-      }
-      return next
-    })
+    const prev = localRowsRef.current
+    const next = [...prev]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    setLocalRows(next)
+    localRowsRef.current = next
+    if (node.binding) setValue(node.binding, next)
+    if (inFlightRef.current) {
+      // Signal that a coalesced commit is needed after in-flight response
+      needsCoalescedCommitRef.current = true
+    } else {
+      sendEvent(next)
+    }
   }
 
   const flushPending = (): Promise<void> => {
-    if (!inFlightRef.current && dirtyRef.current.size === 0) {
+    if (!inFlightRef.current && dirtyRef.current.size === 0 && !needsCoalescedCommitRef.current) {
       // Nothing pending — check if there are uncommitted local changes
       // by comparing local with canon
       const hasUncommittedChanges =
-        JSON.stringify(localRows) !== JSON.stringify(canonRows)
+        JSON.stringify(localRowsRef.current) !== JSON.stringify(canonRows)
       if (hasUncommittedChanges) {
         return new Promise<void>((resolve) => {
           flushResolveRef.current = resolve
-          sendEvent(localRows)
+          sendEvent(localRowsRef.current)
         })
       }
       return Promise.resolve()
@@ -253,14 +256,20 @@ export function useTableSync(
     return new Promise<void>((resolve) => {
       flushResolveRef.current = resolve
       dirtyRef.current = new Map()
-      sendEvent(localRows)
+      needsCoalescedCommitRef.current = false
+      sendEvent(localRowsRef.current)
     })
   }
+
+  // Keep a ref always pointing to the latest flushPending to avoid stale
+  // closure when registered via useEffect([node.binding])
+  const flushPendingRef = useRef<() => Promise<void>>(() => Promise.resolve())
+  flushPendingRef.current = flushPending
 
   // ── Register/unregister flush for flush-before-save ──
   useEffect(() => {
     if (node.binding) {
-      registerPendingFlush(node.binding, flushPending)
+      registerPendingFlush(node.binding, () => flushPendingRef.current())
     }
     return () => {
       if (node.binding) unregisterPendingFlush(node.binding)

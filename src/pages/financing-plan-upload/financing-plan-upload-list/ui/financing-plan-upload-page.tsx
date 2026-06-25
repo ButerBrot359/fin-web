@@ -94,7 +94,14 @@ export const FinancingPlanUploadPage = () => {
   )
 
   // Опции автокомплитов.
-  const { organizationOptions } = useOrganizations()
+  const {
+    organizationOptions,
+    organizationInputValue,
+    isOrganizationsLoading,
+    onOrganizationOpen,
+    onOrganizationInputChange,
+    setOrganizationInputValue,
+  } = useOrganizations()
   const { vidPlanaOptions } = useVidyPlana()
   const { istochnikOptions } = useIstochnikiFinansirovaniya()
   const { dvizhenieOptions } = useDvizheniyaFinansirovaniya()
@@ -308,11 +315,16 @@ export const FinancingPlanUploadPage = () => {
         <div className="report-param-field w-[460px]">
           <AutocompleteInput
             value={organization}
+            inputValue={organizationInputValue}
             options={organizationOptions}
             onChange={(opt) => {
               setOrganization(opt)
+              setOrganizationInputValue(opt?.label ?? '')
               patchForm({ organizatsiyaId: opt ? Number(opt.id) : null })
             }}
+            onInputChange={onOrganizationInputChange}
+            onOpen={onOrganizationOpen}
+            loading={isOrganizationsLoading}
             label={t('financingPlanUpload.organization')}
             size="small"
             fullWidth

@@ -1,6 +1,11 @@
 import { apiService } from '@/shared/api/api'
 import type { ApiResponse } from '@/shared/types/api.types'
 import type { EnumsValue } from '@/entities/document-type'
+import {
+  DICTIONARY_DOMAIN_CONFIG,
+  searchEavEntries,
+  type FilterRequest,
+} from '@/shared/lib/eav'
 
 import {
   DVIZHENIE_DICTIONARY_TYPE_CODE,
@@ -12,28 +17,8 @@ import {
   type ParseResult,
 } from '../types/financing-plan-upload'
 
-/** Код справочника организаций (фильтр «Организация», эндпоинт `/active`). */
+/** Код справочника организаций. */
 export const ORGANIZATIONS_DICTIONARY_TYPE_CODE = 'Organizatsii'
-
-/** Запись справочника организаций (активные) — отдаётся массивом напрямую. */
-export interface OrganizationDto {
-  id: number
-  code?: string | null
-  nameRu?: string | null
-  nameKz?: string | null
-  displayName?: string | null
-}
-
-/**
- * Активные организации.
- * GET /api/dictionaries/entries/Organizatsii/active — массив НАПРЯМУЮ
- * (без обёртки `{ data }`).
- */
-export const fetchOrganizations = (signal?: AbortSignal) =>
-  apiService.get<OrganizationDto[]>({
-    url: `/api/dictionaries/entries/${ORGANIZATIONS_DICTIONARY_TYPE_CODE}/active`,
-    signal,
-  })
 
 /** Значения enum «Виды плана финансирования». Эндпоинт отдаёт массив напрямую (без обёртки `{ data }`). */
 export const fetchVidyPlana = (signal?: AbortSignal) =>
@@ -70,6 +55,29 @@ export const fetchIstochnikiFinansirovaniya = (signal?: AbortSignal) =>
 /** Движения финансирования (справочник). */
 export const fetchDvizheniyaFinansirovaniya = (signal?: AbortSignal) =>
   fetchDictionaryEntries(DVIZHENIE_DICTIONARY_TYPE_CODE, signal)
+
+/** Сколько организаций тянуть за один серверный поиск. */
+const ORGANIZATIONS_SEARCH_SIZE = 50
+
+/**
+ * Серверный поиск организаций по подстроке наименования (рус.) через Filter DSL —
+ * как грид справочника: возвращает ТОЛЬКО совпадения (в отличие от устаревшего
+ * `/active`, который отдавал весь справочник на клиентскую фильтрацию).
+ * Пустой запрос → первая страница без фильтра.
+ */
+export const searchOrganizations = (query: string, signal?: AbortSignal) => {
+  const q = query.trim()
+  const filter: FilterRequest = q
+    ? { filters: [{ field: 'nameRu', op: 'contains', value: q }], logic: 'AND' }
+    : { filters: [], logic: 'AND' }
+  return searchEavEntries<DictionarySearchEntry>(
+    DICTIONARY_DOMAIN_CONFIG,
+    ORGANIZATIONS_DICTIONARY_TYPE_CODE,
+    filter,
+    { page: 0, size: ORGANIZATIONS_SEARCH_SIZE },
+    signal
+  )
+}
 
 /**
  * Разбор Excel с планом финансирования.

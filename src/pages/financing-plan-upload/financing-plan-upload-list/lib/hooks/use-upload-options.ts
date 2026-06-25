@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import type { SelectOption } from '@/shared/types/select-option'
@@ -7,8 +7,8 @@ import type { SelectOption } from '@/shared/types/select-option'
 import {
   fetchDvizheniyaFinansirovaniya,
   fetchIstochnikiFinansirovaniya,
-  fetchOrganizations,
   fetchVidyPlana,
+  searchOrganizations,
   type DictionarySearchEntry,
 } from '../../api/financing-plan-upload-api'
 import { VID_PLANA_PO_OBYAZATELSTVAM } from '../../types/financing-plan-upload'
@@ -29,33 +29,64 @@ const dictEntryToOption = (
   }
 }
 
-/** Активные организации для автокомплита «Организация». */
+/** Задержка debounce серверного поиска организаций, мс. */
+const ORG_SEARCH_DEBOUNCE_MS = 300
+
+/**
+ * Организации для автокомплита «Организация» — серверный поиск по вводу
+ * (Filter DSL, как грид справочника), а не загрузка всего справочника.
+ * Запрос стартует только после открытия списка (`onOrganizationOpen`),
+ * чтобы не дёргать бэк на маунте.
+ */
 export const useOrganizations = () => {
   const { i18n } = useTranslation()
-  const { data } = useQuery({
-    queryKey: ['organizations', 'active'],
-    queryFn: ({ signal }) => fetchOrganizations(signal),
-    select: (res) => res.data,
+  const [opened, setOpened] = useState(false)
+  const [inputValue, setInputValue] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(inputValue)
+    }, ORG_SEARCH_DEBOUNCE_MS)
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [inputValue])
+
+  const { data, isFetching } = useQuery({
+    queryKey: ['organizations', 'search', debouncedSearch],
+    queryFn: ({ signal }) => searchOrganizations(debouncedSearch, signal),
+    select: (res) => res.data.data.content,
+    enabled: opened,
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
   })
 
-  const options = useMemo<SelectOption[]>(
-    () =>
-      (data ?? []).map((o) => {
-        const name =
-          i18n.language === 'kz' && o.nameKz
-            ? o.nameKz
-            : (o.displayName ?? o.nameRu ?? o.code ?? String(o.id))
-        return {
-          id: o.id,
-          code: o.code ?? '',
-          label: name,
-        }
-      }),
+  const organizationOptions = useMemo<SelectOption[]>(
+    () => (data ?? []).map((entry) => dictEntryToOption(entry, i18n.language)),
     [data, i18n.language]
   )
 
-  return { organizationOptions: options }
+  return {
+    organizationOptions,
+    organizationInputValue: inputValue,
+    isOrganizationsLoading: isFetching,
+    onOrganizationOpen: () => {
+      setOpened(true)
+    },
+    setOrganizationInputValue: setInputValue,
+    onOrganizationInputChange: (
+      _event: unknown,
+      value: string,
+      reason: string
+    ) => {
+      // 'reset' прилетает при выборе опции — игнорируем, чтобы не искать по
+      // полному label выбранной записи (его проставляем явно в onChange).
+      if (reason !== 'reset') {
+        setInputValue(value)
+      }
+    },
+  }
 }
 
 /**

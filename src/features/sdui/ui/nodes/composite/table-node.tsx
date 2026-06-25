@@ -17,15 +17,19 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import type { TableColumnDef } from '../../../lib/hooks/use-table-sync'
+import { EditableTable } from './editable-table'
 
-interface ColumnDef {
+interface ReadOnlyColumnDef {
   id: string
   label: string
   binding?: string
   flex?: number | string
 }
 
-function extractColumns(children: ViewNode[] | undefined): ColumnDef[] {
+function extractReadOnlyColumns(
+  children: ViewNode[] | undefined,
+): ReadOnlyColumnDef[] {
   if (!children) return []
   return children
     .filter((c) => c.type === 'TABLE_COLUMN')
@@ -37,34 +41,75 @@ function extractColumns(children: ViewNode[] | undefined): ColumnDef[] {
     }))
 }
 
-interface TableRow {
+function extractEditableColumns(
+  children: ViewNode[] | undefined,
+): TableColumnDef[] {
+  if (!children) return []
+  return children
+    .filter((c) => c.type === 'TABLE_COLUMN')
+    .map((c) => ({
+      id: c.id,
+      label: (c.props?.label as string | undefined) ?? '',
+      binding: (c.props?.binding as string | undefined) ?? '',
+      flex: c.props?.flex as number | string | undefined,
+      cellWidget: (c.props?.cellWidget as string | undefined) ?? 'TEXT_FIELD',
+      dataType: (c.props?.dataType as string | undefined) ?? 'STRING',
+      readonly: c.props?.readonly as boolean | undefined,
+      required: c.props?.required as boolean | undefined,
+    }))
+}
+
+interface SimpleTableRow {
   rowId: string
   [key: string]: unknown
 }
 
 export const TableNode: FC<NodeProps> = ({ node }) => {
+  const editable = (node.props?.editable as boolean | undefined) ?? true
+
+  if (editable) {
+    const columns = extractEditableColumns(node.children)
+    return <EditableTable node={node} columns={columns} />
+  }
+
+  // ── Read-only path (preserved as-is) ──
+  return <ReadOnlyTable node={node} />
+}
+
+const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
   const label = node.props?.label as string | undefined
   const allowAdd = node.props?.allowAdd as boolean | undefined
   const allowDelete = node.props?.allowDelete as boolean | undefined
 
   const { getValue } = useSduiSession()
-  const rows = (getValue(node.binding) as TableRow[] | undefined) ?? []
+  const rows =
+    (getValue(node.binding) as SimpleTableRow[] | undefined) ?? []
   const dispatch = useSduiDispatch()
 
-  const columns = extractColumns(node.children)
+  const columns = extractReadOnlyColumns(node.children)
 
   const handleAdd = () => {
     void dispatch({ type: 'COMMAND', command: `addRow:${node.binding}` })
   }
 
   const handleDelete = (rowId: string) => {
-    void dispatch({ type: 'COMMAND', command: `deleteRow:${node.binding}:${rowId}` })
+    void dispatch({
+      type: 'COMMAND',
+      command: `deleteRow:${node.binding}:${rowId}`,
+    })
   }
 
   return (
     <div>
       {(label || allowAdd) && (
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, gap: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: 8,
+            gap: 8,
+          }}
+        >
           {label && (
             <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
               {label}

@@ -1,0 +1,182 @@
+import type { FC } from 'react'
+import { Box, Checkbox } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material'
+
+import { TextInput, NumberInput, DateTimeInput } from '@/shared/ui/inputs'
+import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
+import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
+
+interface TableCellEditorProps {
+  cellWidget: string
+  dataType: string
+  value: unknown
+  readonly?: boolean
+  onChange: (value: unknown) => void
+  onCommit: () => void
+}
+
+const cellSx: SxProps<Theme> = {
+  mb: 0,
+  position: 'static',
+  '& .MuiInputBase-root': {
+    backgroundColor: 'transparent !important',
+    border: 'none !important',
+    borderRadius: '0 !important',
+    minHeight: '28px !important',
+  },
+  '& .MuiInputBase-input': {
+    padding: '4px 8px !important',
+    fontSize: '14px !important',
+  },
+}
+
+const dateCellSx: SxProps<Theme> = {
+  '& .MuiFormControl-root': { mb: 0, position: 'static', width: '100%' },
+  '& .MuiInputBase-root': {
+    backgroundColor: 'transparent !important',
+    border: 'none !important',
+    borderRadius: '0 !important',
+    minHeight: '28px !important',
+    height: '28px !important',
+    padding: '0 !important',
+  },
+  '& .MuiPickersInputBase-root': {
+    position: 'relative',
+    backgroundColor: 'transparent !important',
+    border: 'none !important',
+    borderRadius: '0 !important',
+    minHeight: '28px !important',
+    height: '28px !important',
+    padding: '0 8px !important',
+  },
+  '& .MuiPickersInputBase-sectionsContainer': {
+    padding: '0 !important',
+    minHeight: '28px !important',
+    height: '28px !important',
+    fontSize: '14px !important',
+  },
+  '& .MuiInputAdornment-root': {
+    width: 0,
+    overflow: 'visible',
+    ml: 0,
+    transform: 'translateX(-24px)',
+  },
+  '& .MuiInputAdornment-root .MuiIconButton-root': { p: '2px' },
+  '& .MuiInputAdornment-root .MuiSvgIcon-root': { fontSize: 16 },
+}
+
+function formatReadonlyValue(value: unknown, dataType: string): string {
+  if (value == null || value === '') return ''
+  switch (dataType) {
+    case 'STRING':
+    case 'TEXT':
+      return String(value)
+    case 'INTEGER':
+    case 'DECIMAL':
+      return formatWithSpaces(String(value))
+    case 'DATE':
+      return typeof value === 'string' ? formatDate(value) : ''
+    case 'DATETIME':
+      return typeof value === 'string' ? formatDateTime(value) : ''
+    case 'BOOLEAN':
+      return value ? '✓' : ''
+    default:
+      return String(value)
+  }
+}
+
+export const TableCellEditor: FC<TableCellEditorProps> = ({
+  cellWidget,
+  dataType,
+  value,
+  readonly,
+  onChange,
+  onCommit,
+}) => {
+  if (readonly) {
+    return (
+      <span style={{ padding: '4px 8px', fontSize: 14, whiteSpace: 'nowrap' }}>
+        {formatReadonlyValue(value, dataType)}
+      </span>
+    )
+  }
+
+  switch (cellWidget) {
+    case 'TEXT_FIELD': {
+      const strValue = value == null ? '' : String(value)
+      return (
+        <TextInput
+          value={strValue}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onCommit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onCommit()
+          }}
+          size="small"
+          sx={cellSx}
+        />
+      )
+    }
+
+    case 'NUMBER_FIELD': {
+      const strValue =
+        value === null || value === undefined ? '' : String(value)
+      return (
+        <NumberInput
+          value={strValue}
+          decimal={dataType === 'DECIMAL'}
+          onChange={(e) => {
+            const raw = e.target.value
+            const parsed = raw === '' ? null : parseFloat(raw)
+            onChange(parsed)
+          }}
+          onBlur={onCommit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onCommit()
+          }}
+          size="small"
+          sx={cellSx}
+        />
+      )
+    }
+
+    case 'DATE_FIELD':
+    case 'DATETIME_FIELD': {
+      const strValue = typeof value === 'string' ? value : ''
+      return (
+        <Box sx={dateCellSx}>
+          <DateTimeInput
+            value={strValue}
+            dateOnly={cellWidget === 'DATE_FIELD'}
+            onChange={(v) => {
+              onChange(v)
+              onCommit()
+            }}
+            size="small"
+          />
+        </Box>
+      )
+    }
+
+    case 'CHECKBOX_FIELD': {
+      return (
+        <Checkbox
+          checked={!!value}
+          onChange={(e) => {
+            onChange(e.target.checked)
+            onCommit()
+          }}
+          size="small"
+          sx={{ p: '2px' }}
+        />
+      )
+    }
+
+    default:
+      return (
+        <span style={{ padding: '4px 8px', fontSize: 14 }}>
+          {String(value ?? '')}
+        </span>
+      )
+  }
+}

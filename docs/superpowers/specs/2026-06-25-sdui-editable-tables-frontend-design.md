@@ -1,7 +1,7 @@
 # Frontend Design: Редактируемые таблицы в SDUI
 
 - **Дата:** 2026-06-25
-- **Статус:** Approved
+- **Статус:** Approved (Phase 1 implemented)
 - **Основа:** [ADR-0011](../plans/ADR-0011-sdui-editable-tables.md), [frontend-impl-tables.md](../plans/frontend-impl-tables.md)
 - **Scope:** Phase 1 — примитивные колонки (TEXT_FIELD, NUMBER_FIELD, DATE_FIELD, CHECKBOX_FIELD). Прувпойнт — ТЧ «График платежей».
 

@@ -1,4 +1,4 @@
-import { useState, type FC } from 'react'
+import { useState, useEffect, type FC } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -39,6 +39,14 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
 
   const sync = useTableSync(node, columns)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+
+  useEffect(() => {
+    setSelectedIndex((prev) => {
+      if (prev === null) return null
+      if (prev >= sync.rows.length) return sync.rows.length > 0 ? sync.rows.length - 1 : null
+      return prev
+    })
+  }, [sync.rows.length])
 
   const tableColumns: ColumnDef<TableRow>[] = columns.map((col) => ({
     id: col.id,

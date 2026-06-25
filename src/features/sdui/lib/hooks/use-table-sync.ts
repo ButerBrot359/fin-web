@@ -121,9 +121,8 @@ export function useTableSync(
     })
 
     // Keep rows that exist only locally (added while in-flight, with tmp- ids).
-    // Skip sentinel keys (start with '__') to avoid phantom rows being sent.
     for (const [rowId, patch] of dirty) {
-      if (rowId.startsWith('__') || canonRows.some((r) => r.rowId === rowId)) continue
+      if (canonRows.some((r) => r.rowId === rowId)) continue
       merged.push({ rowId, ...patch } as TableRow)
     }
 

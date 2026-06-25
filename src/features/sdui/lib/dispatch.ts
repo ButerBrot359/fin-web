@@ -11,6 +11,9 @@ import { createEffectHandler } from './effect-handler'
 import { useSduiSession } from './sdui-session-context'
 import { useTreeStore } from './stores/tree-store'
 import { useViewStateStore } from './stores/view-state-store'
+import { flushAllPendingTableCommits } from './pending-table-commits'
+
+const SAVE_COMMANDS = ['save', 'saveAndClose', 'post', 'postAndClose']
 
 // ─── Panel stack (replaces simple dialog stack) ───
 
@@ -166,6 +169,10 @@ export function useSduiDispatch() {
       }
 
       try {
+        if (action.type === 'COMMAND' && SAVE_COMMANDS.includes(action.command ?? '')) {
+          await flushAllPendingTableCommits()
+        }
+
         const res = await viewTransport.post({
           formSessionId: action.type === 'OPEN' ? null : formSessionId,
           revision: action.type === 'OPEN' ? null : revision,
@@ -194,8 +201,7 @@ export function useSduiDispatch() {
           applyValuePatches(res.patches ?? [], setFromServer)
           merge(res.statePatch ?? {})
           effectHandler.playAll(res.effects ?? [])
-          const saveCommands = ['save', 'saveAndClose', 'post', 'postAndClose']
-          if (action.type === 'COMMAND' && saveCommands.includes(action.command ?? '')) {
+          if (action.type === 'COMMAND' && SAVE_COMMANDS.includes(action.command ?? '')) {
             resetDirty()
           }
         }

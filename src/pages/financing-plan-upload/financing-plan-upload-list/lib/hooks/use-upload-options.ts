@@ -32,6 +32,10 @@ const dictEntryToOption = (
 /** Задержка debounce серверного поиска организаций, мс. */
 const ORG_SEARCH_DEBOUNCE_MS = 300
 
+/** EAV-атрибуты «полное наименование» справочника Organizatsii. */
+const ATTR_NAIMENOVANIE_POLNOE_RUS = 'NaimenovaniePolnoeRus'
+const ATTR_NAIMENOVANIE_POLNOE_KAZ = 'NaimenovaniePolnoeKaz'
+
 /**
  * Организации для автокомплита «Организация» — серверный поиск по вводу
  * (Filter DSL, как грид справочника), а не загрузка всего справочника.
@@ -63,7 +67,31 @@ export const useOrganizations = () => {
   })
 
   const organizationOptions = useMemo<SelectOption[]>(
-    () => (data ?? []).map((entry) => dictEntryToOption(entry, i18n.language)),
+    () =>
+      (data ?? []).map((entry) => {
+        const isKz = i18n.language === 'kz'
+        // Подпись = полное наименование (рус./каз. по языку), как колонка
+        // «Полное наименование» грида справочника — оно различает записи с
+        // одинаковым nameRu. Без префикса кода (id/code остаются значением опции).
+        const fullNameRaw =
+          entry.attributes?.[
+            isKz ? ATTR_NAIMENOVANIE_POLNOE_KAZ : ATTR_NAIMENOVANIE_POLNOE_RUS
+          ]
+        const fullName =
+          typeof fullNameRaw === 'string' && fullNameRaw.trim()
+            ? fullNameRaw
+            : null
+        // null/пусто → fallback на nameRu/nameKz (по языку), затем общие fallbacks.
+        const fallback = isKz ? entry.nameKz : entry.nameRu
+        const label =
+          fullName ??
+          fallback ??
+          entry.nameRu ??
+          entry.displayName ??
+          entry.code ??
+          String(entry.id)
+        return { id: entry.id, code: entry.code ?? '', label }
+      }),
     [data, i18n.language]
   )
 

@@ -34,6 +34,8 @@ export interface DictionarySearchEntry {
   nameRu?: string | null
   nameKz?: string | null
   displayName?: string | null
+  /** EAV-атрибуты записи (примитивы — строки/числа, ссылки — вложенные объекты). */
+  attributes?: Record<string, unknown> | null
 }
 
 /**

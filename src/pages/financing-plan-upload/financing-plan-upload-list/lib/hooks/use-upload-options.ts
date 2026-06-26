@@ -11,7 +11,6 @@ import {
   searchOrganizations,
   type DictionarySearchEntry,
 } from '../../api/financing-plan-upload-api'
-import { VID_PLANA_PO_OBYAZATELSTVAM } from '../../types/financing-plan-upload'
 
 /** Запись справочника → SelectOption (двуязычная подпись). */
 const dictEntryToOption = (
@@ -118,9 +117,8 @@ export const useOrganizations = () => {
 }
 
 /**
- * Виды плана финансирования (enum). MVP: реально поддержан только
- * «по обязательствам» — остальные значения скрываем, чтобы не дать выбрать
- * неподдерживаемый вид.
+ * Виды плана финансирования (enum). Список data-driven — отражает ответ
+ * эндпоинта (и «по обязательствам», и «по платежам»), без фильтрации на клиенте.
  */
 export const useVidyPlana = () => {
   const { data } = useQuery({
@@ -131,10 +129,7 @@ export const useVidyPlana = () => {
   })
 
   const vidPlanaOptions = useMemo<SelectOption[]>(
-    () =>
-      (data ?? [])
-        .filter((v) => v.code === VID_PLANA_PO_OBYAZATELSTVAM)
-        .map((v) => ({ id: v.id, code: v.code, label: v.name })),
+    () => (data ?? []).map((v) => ({ id: v.id, code: v.code, label: v.name })),
     [data]
   )
 

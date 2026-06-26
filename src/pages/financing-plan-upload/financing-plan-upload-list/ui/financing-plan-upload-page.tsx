@@ -41,6 +41,7 @@ import {
   type GenerateRow,
   type ParseResult,
   type UploadFormState,
+  VID_PLANA_PO_OBYAZATELSTVAM,
 } from '../types/financing-plan-upload'
 
 const todayIso = () => new Date().toISOString().slice(0, 10)
@@ -154,6 +155,7 @@ export const FinancingPlanUploadPage = () => {
     !!file &&
     form.organizatsiyaId != null &&
     !!form.vidPlana &&
+    form.istochnikFinansirovaniyaId != null &&
     !parseMutation.isPending
 
   const handleParse = () => {
@@ -197,6 +199,7 @@ export const FinancingPlanUploadPage = () => {
     parseResult?.canGenerate === true &&
     form.organizatsiyaId != null &&
     !!form.vidPlana &&
+    form.istochnikFinansirovaniyaId != null &&
     !generateMutation.isPending
 
   const handleGenerate = () => {
@@ -336,7 +339,14 @@ export const FinancingPlanUploadPage = () => {
             options={vidPlanaOptions}
             onChange={(opt) => {
               setVidPlana(opt)
-              patchForm({ vidPlana: opt ? opt.code : null })
+              // У «по платежам» движения нет — сбрасываем выбранное, чтобы оно
+              // не «утекло» на бэк (для этого вида бэк движение игнорирует).
+              const hasMovement = opt?.code === VID_PLANA_PO_OBYAZATELSTVAM
+              if (!hasMovement) setDvizhenie(null)
+              patchForm({
+                vidPlana: opt ? opt.code : null,
+                ...(hasMovement ? {} : { dvizhenieFinansirovaniyaId: null }),
+              })
             }}
             label={t('financingPlanUpload.planType')}
             size="small"
@@ -354,27 +364,31 @@ export const FinancingPlanUploadPage = () => {
               })
             }}
             label={t('financingPlanUpload.source')}
+            required
             size="small"
             fullWidth
           />
         </div>
-        {/* Нет в оригинале 1С (img_16), но требуется бэком (DvizhenieFinanisrovaniya
-            обязателен для «ПоОбязательствам»). Оставляем последним реквизитом шапки. */}
-        <div className="report-param-field w-[460px]">
-          <AutocompleteInput
-            value={dvizhenie}
-            options={dvizhenieOptions}
-            onChange={(opt) => {
-              setDvizhenie(opt)
-              patchForm({
-                dvizhenieFinansirovaniyaId: opt ? Number(opt.id) : null,
-              })
-            }}
-            label={t('financingPlanUpload.movement')}
-            size="small"
-            fullWidth
-          />
-        </div>
+        {/* Нет в оригинале 1С (img_16), но требуется бэком для «по обязательствам».
+            Для «по платежам» движение скрыто и не отправляется (паритет с 1С —
+            видимость управляется видом плана). Последний реквизит шапки. */}
+        {form.vidPlana === VID_PLANA_PO_OBYAZATELSTVAM && (
+          <div className="report-param-field w-[460px]">
+            <AutocompleteInput
+              value={dvizhenie}
+              options={dvizhenieOptions}
+              onChange={(opt) => {
+                setDvizhenie(opt)
+                patchForm({
+                  dvizhenieFinansirovaniyaId: opt ? Number(opt.id) : null,
+                })
+              }}
+              label={t('financingPlanUpload.movement')}
+              size="small"
+              fullWidth
+            />
+          </div>
+        )}
       </div>
 
       {/* Секция загрузки из Excel. */}

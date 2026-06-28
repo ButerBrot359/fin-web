@@ -64,6 +64,14 @@ interface SimpleTableRow {
   [key: string]: unknown
 }
 
+// Ячейка-ссылка приходит объектом {id, presentation, entityRef}; примитивы — уже строкой.
+function renderCellValue(value: unknown): string {
+  if (value != null && typeof value === 'object' && 'presentation' in value) {
+    return String((value as { presentation: unknown }).presentation ?? '')
+  }
+  return String(value ?? '')
+}
+
 export const TableNode: FC<NodeProps> = ({ node }) => {
   const editable = (node.props?.editable as boolean | undefined) ?? true
 
@@ -155,7 +163,7 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                   {columns.map((col) => (
                     <TableCell key={col.id}>
                       {col.binding !== undefined
-                        ? String(row[col.binding] ?? '')
+                        ? renderCellValue(row[col.binding])
                         : ''}
                     </TableCell>
                   ))}

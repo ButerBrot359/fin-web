@@ -1,4 +1,4 @@
-import { useState, useEffect, type FC } from 'react'
+import { useState, useEffect, useMemo, useRef, type FC } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -38,6 +38,11 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const allowReorder = (node.props?.allowReorder as boolean | undefined) ?? true
 
   const sync = useTableSync(node, columns)
+  // Стабильная ссылка на актуальный sync для мемоизированных cell-колбэков:
+  // без неё useMemo(tableColumns) захватил бы устаревший sync. Методы sync
+  // читают refs, поэтому доступ через syncRef.current корректен.
+  const syncRef = useRef(sync)
+  syncRef.current = sync
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   useEffect(() => {
@@ -48,22 +53,32 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     })
   }, [sync.rows.length])
 
-  const tableColumns: ColumnDef<TableRow>[] = columns.map((col) => ({
-    id: col.id,
-    accessorFn: (row: TableRow) => row[col.binding],
-    header: col.label,
-    size: col.flex ? undefined : 150,
-    cell: ({ row }) => (
-      <TableCellEditor
-        cellWidget={col.cellWidget}
-        dataType={col.dataType}
-        value={row.original[col.binding]}
-        readonly={col.readonly}
-        onChange={(val) => sync.updateCell(row.original.rowId, col.binding, val)}
-        onCommit={sync.commitCell}
-      />
-    ),
-  }))
+  // Мемоизируем колонки по [columns]: при ре-рендере EditableTable (ввод символа →
+  // setLocalRows) определения колонок/cell-функций НЕ пересоздаются, поэтому TanStack
+  // не ремонтит ячейку и инпут сохраняет фокус. cell-колбэки берут актуальный sync
+  // через syncRef.current.
+  const tableColumns = useMemo<ColumnDef<TableRow>[]>(
+    () =>
+      columns.map((col) => ({
+        id: col.id,
+        accessorFn: (row: TableRow) => row[col.binding],
+        header: col.label,
+        size: col.flex ? undefined : 150,
+        cell: ({ row }) => (
+          <TableCellEditor
+            cellWidget={col.cellWidget}
+            dataType={col.dataType}
+            value={row.original[col.binding]}
+            readonly={col.readonly}
+            onChange={(val) =>
+              syncRef.current.updateCell(row.original.rowId, col.binding, val)
+            }
+            onCommit={() => syncRef.current.commitCell()}
+          />
+        ),
+      })),
+    [columns],
+  )
 
   const table = useReactTable({
     data: sync.rows,

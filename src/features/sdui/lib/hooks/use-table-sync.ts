@@ -158,8 +158,12 @@ export function useTableSync(
       const next = prev.map((r) =>
         r.rowId === rowId ? { ...r, [binding]: value } : r,
       )
-      // Mark form dirty via session.setValue
-      if (node.binding) setValue(node.binding, next)
+      // НЕ пишем в session-стор на каждый символ. Запись canon (node.binding)
+      // меняла canonRows → срабатывал useEffect([canonRows]) → лишний ре-рендер;
+      // вместе с пересозданием колонок это ремонтило ячейку и сбрасывало фокус
+      // (баг «ввод по 1 символу»). Правка локальна (localRows); canon
+      // синхронизируется на commit (blur/Enter → EVENT → серверный setValue).
+      // ADR-0011: оптимистичный локальный эхо, canon — только от сервера.
       localRowsRef.current = next
       return next
     })

@@ -1,4 +1,4 @@
-import { useState, type FC } from 'react'
+import { useState, useEffect, type FC } from 'react'
 import { IconButton } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 
@@ -56,6 +56,14 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const [options, setOptions] = useState<SelectOption[]>([])
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Инвалидировать кеш опций при смене параметров источника (напр. смена организации)
+  const paramsKey = optionsSource?.params
+    ? JSON.stringify(optionsSource.params)
+    : JSON.stringify(filter ?? null)
+  useEffect(() => {
+    setOptions([])
+  }, [paramsKey])
 
   if (!visible) return null
 

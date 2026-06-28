@@ -139,11 +139,12 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         id: col.id,
         header: () => <span>{(col.props?.header as string) ?? ''}</span>,
         accessorFn: (row: ListRow) => {
-          const binding = col.props?.binding as string
+          const binding = (col.props?.attributeCode ?? col.props?.binding) as string
           if (!binding) return ''
           const val = resolveBinding(row, binding)
-          if (val && typeof val === 'object' && 'name' in (val as Record<string, unknown>)) {
-            return ((val as Record<string, unknown>).name as string) ?? ''
+          if (val && typeof val === 'object') {
+            const obj = val as Record<string, unknown>
+            return (obj.presentation ?? obj.displayName ?? obj.nameRu ?? obj.name ?? String(obj.id ?? '')) as string
           }
           return val
         },

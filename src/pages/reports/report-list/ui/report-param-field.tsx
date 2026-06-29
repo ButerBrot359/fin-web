@@ -69,8 +69,15 @@ export const ReportParamField = ({
     param.dataType === 'ENUM_REF' ||
     param.dataType === 'REF_LIST'
 
+  // Счёт берётся из единого плана счетов (default). referenceDomain="ACCOUNT_PLAN" —
+  // это маркер домена, а НЕ typeCode плана; передавать его в API нельзя (иначе
+  // /api/account-plan/ACCOUNT_PLAN/entries → 404 «AccountPlan type not found»).
+  const accountTypeCode =
+    param.referenceDomain && param.referenceDomain !== 'ACCOUNT_PLAN'
+      ? param.referenceDomain
+      : undefined
   const { entries: accounts } = useAccountPlanList({
-    typeCode: param.referenceDomain || undefined,
+    typeCode: accountTypeCode,
     enabled: isAccountRef,
   })
   const { entries: dictEntries } = useDictionaryEntries(

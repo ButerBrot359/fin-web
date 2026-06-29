@@ -8,7 +8,13 @@ import {
 } from '@mui/material'
 
 import { useAccountPlanList } from '@/entities/account-plan'
-import { DateTimeInput, NumberInput, TextInput } from '@/shared/ui/inputs'
+import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
+import {
+  AutocompleteInput,
+  DateTimeInput,
+  NumberInput,
+  TextInput,
+} from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
 
 import type { ReportParameterDto } from '../types/report'
@@ -16,10 +22,11 @@ import type { ReportParameterDto } from '../types/report'
 /**
  * Значение одного параметра в форме. Тип зависит от `dataType`:
  * - DATE      → string (ISO)
- * - ACCOUNT_LIST (allowList) → number[] (ID записей счетов)
+ * - ACCOUNT_LIST / REF_LIST (allowList) → number[] (ID записей)
+ * - ACCOUNT_REF / DICTIONARY_REF / ENUM_REF → number (ID записи) | '' (черновик)
  * - BOOLEAN   → boolean
  * - NUMBER    → number | '' (черновик)
- * - STRING / DICTIONARY_REF → string
+ * - STRING    → string
  */
 export type ReportParamValue =
   | string
@@ -52,18 +59,41 @@ export const ReportParamField = ({
   const isKz = i18n.language === 'kz'
   const label = (isKz ? param.titleKz : param.titleRu) || param.titleRu
 
-  // Опции счетов нужны только для ACCOUNT_LIST — грузим лениво (enabled).
-  const isAccountList = param.dataType === 'ACCOUNT_LIST'
-  const { entries: accounts } = useAccountPlanList({ enabled: isAccountList })
-  const accountOptions = useMemo<SelectOption[]>(
-    () =>
-      accounts.map((a) => ({
+  // Источник опций для REF-типов. ACCOUNT_* берёт план счетов; остальные REF —
+  // справочник по referenceDomain. Хуки вызываем безусловно (правила хуков),
+  // включаем лениво по типу параметра.
+  const isAccountRef =
+    param.dataType === 'ACCOUNT_LIST' || param.dataType === 'ACCOUNT_REF'
+  const isDictRef =
+    param.dataType === 'DICTIONARY_REF' ||
+    param.dataType === 'ENUM_REF' ||
+    param.dataType === 'REF_LIST'
+
+  const { entries: accounts } = useAccountPlanList({
+    typeCode: param.referenceDomain || undefined,
+    enabled: isAccountRef,
+  })
+  const { entries: dictEntries } = useDictionaryEntries(
+    isDictRef ? (param.referenceDomain ?? null) : null
+  )
+
+  const refOptions = useMemo<SelectOption[]>(() => {
+    if (isAccountRef) {
+      return accounts.map((a) => ({
         id: a.id,
         code: a.code,
         label: a.nameRu ? `${a.code} — ${a.nameRu}` : a.code,
-      })),
-    [accounts]
-  )
+      }))
+    }
+    if (isDictRef) {
+      return dictEntries.map((e) => ({
+        id: e.id,
+        code: e.code ?? '',
+        label: e.displayName ?? e.nameRu ?? e.code ?? String(e.id),
+      }))
+    }
+    return []
+  }, [isAccountRef, isDictRef, accounts, dictEntries])
 
   switch (param.dataType) {
     case 'DATE':
@@ -84,17 +114,18 @@ export const ReportParamField = ({
         />
       )
 
-    case 'ACCOUNT_LIST': {
-      // Множественный выбор счетов; значение — массив ID записей (бэк ждёт id).
+    case 'ACCOUNT_LIST':
+    case 'REF_LIST': {
+      // Множественный выбор; значение — массив ID записей (бэк ждёт id).
       const selectedIds = Array.isArray(value) ? value : []
-      const selected = accountOptions.filter((o) =>
+      const selected = refOptions.filter((o) =>
         selectedIds.includes(Number(o.id))
       )
       return (
         <Autocomplete
           multiple
           size="small"
-          options={accountOptions}
+          options={refOptions}
           value={selected}
           onChange={(_e, next) => {
             onChange(next.map((o) => Number(o.id)))
@@ -114,6 +145,73 @@ export const ReportParamField = ({
       )
     }
 
+    case 'ACCOUNT_REF':
+    case 'DICTIONARY_REF':
+    case 'ENUM_REF': {
+      // Одиночный выбор из плана счетов / справочника; значение — id (number).
+      const selected =
+        value == null || value === ''
+          ? null
+          : (refOptions.find((o) => Number(o.id) === Number(value)) ?? null)
+      return (
+        <AutocompleteInput
+          value={selected}
+          options={refOptions}
+          onChange={(o) => {
+            onChange(o ? Number(o.id) : '')
+          }}
+          label={label}
+          required={param.required}
+          error={invalid}
+          size="small"
+          fullWidth
+        />
+      )
+    }
+
+    case 'NUMBER': {
+      // NUMBER с фиксированным списком (напр. периодичность) — выпадашка.
+      if (param.allowedValues && param.allowedValues.length > 0) {
+        const options = param.allowedValues.map<SelectOption>((av) => ({
+          id: av.value,
+          code: String(av.value),
+          label: (isKz ? av.titleKz : av.titleRu) || av.titleRu,
+        }))
+        const selected =
+          value == null || value === ''
+            ? null
+            : (options.find((o) => Number(o.id) === Number(value)) ?? null)
+        return (
+          <AutocompleteInput
+            value={selected}
+            options={options}
+            onChange={(o) => {
+              onChange(o ? Number(o.id) : '')
+            }}
+            label={label}
+            required={param.required}
+            error={invalid}
+            size="small"
+            fullWidth
+          />
+        )
+      }
+      return (
+        <NumberInput
+          value={value == null ? '' : String(value)}
+          onChange={(e) => {
+            const raw = e.target.value
+            onChange(raw === '' ? '' : Number(raw))
+          }}
+          label={label}
+          required={param.required}
+          error={invalid}
+          size="small"
+          fullWidth
+        />
+      )
+    }
+
     case 'BOOLEAN':
       return (
         <FormControlLabel
@@ -129,25 +227,6 @@ export const ReportParamField = ({
         />
       )
 
-    case 'NUMBER':
-      return (
-        <NumberInput
-          value={value == null ? '' : String(value)}
-          onChange={(e) => {
-            const raw = e.target.value
-            onChange(raw === '' ? '' : Number(raw))
-          }}
-          label={label}
-          required={param.required}
-          error={invalid}
-          size="small"
-          fullWidth
-        />
-      )
-
-    // DICTIONARY_REF — TODO: подключить выбор из справочника по типу.
-    // Пока текстовый ввод (id/код), чтобы не блокировать форму.
-    case 'DICTIONARY_REF':
     case 'STRING':
     default:
       return (

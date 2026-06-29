@@ -30,7 +30,10 @@ export type ReportParameterType =
   | 'DATE'
   | 'PERIOD'
   | 'ACCOUNT_LIST'
+  | 'ACCOUNT_REF'
   | 'DICTIONARY_REF'
+  | 'ENUM_REF'
+  | 'REF_LIST'
   | 'BOOLEAN'
   | 'STRING'
   | 'NUMBER'
@@ -61,6 +64,13 @@ export interface ReportColumnDto {
   derived?: boolean
 }
 
+/** Одно допустимое значение параметра (для NUMBER с фиксированным списком). */
+export interface ReportAllowedValue {
+  value: number | string
+  titleRu: string
+  titleKz?: string
+}
+
 /** Параметр отчёта — описание поля формы параметров. */
 export interface ReportParameterDto {
   code: string
@@ -71,6 +81,36 @@ export interface ReportParameterDto {
   /** Множественный выбор (например, список счетов). */
   allowList: boolean
   defaultValue?: unknown
+  /** typeCode справочника/плана счетов — источник значений для REF-типов. */
+  referenceDomain?: string
+  /** Логическая группа параметра (period/account/organization/…). */
+  group?: string
+  /** Фиксированный список значений (для NUMBER-выпадашек, напр. периодичность). */
+  allowedValues?: ReportAllowedValue[]
+}
+
+/** Отбор отчёта (вкладка «Отборы» в настройках). */
+export interface ReportFilterDto {
+  field: string
+  titleRu: string
+  titleKz?: string
+  valueType?: string
+  /** typeCode справочника-источника значений отбора. */
+  referenceDomain?: string
+  multi?: boolean
+  comparisons?: string[]
+  defaultComparison?: string
+  group?: string
+}
+
+/** Показатель отчёта (вкладка «Показатели» — управляет видимостью колонок). */
+export interface ReportIndicatorDto {
+  code: string
+  titleRu: string
+  titleKz?: string
+  defaultEnabled: boolean
+  /** Коды колонок результата, скрываемые при выключении показателя. */
+  controlsColumns?: string[]
 }
 
 /** Вариант отчёта (предустановленный набор группировок). */
@@ -87,6 +127,8 @@ export interface ReportMetaDto {
   parameters: ReportParameterDto[]
   columns: ReportColumnDto[]
   variants: ReportVariantDto[]
+  filters: ReportFilterDto[]
+  indicators: ReportIndicatorDto[]
 }
 
 /**
@@ -113,10 +155,18 @@ export interface ReportResultDto {
   total: Record<string, unknown>
 }
 
+/** Структурный отбор в теле запроса формирования отчёта. */
+export interface RunReportFilter {
+  field: string
+  comparison: string
+  values: (number | string)[]
+}
+
 /** Тело запроса формирования отчёта. */
 export interface RunReportBody {
   variantCode?: string
   parameters: Record<string, unknown>
+  filters?: RunReportFilter[]
 }
 
 /** Параметры списка отчётов (`/api/reports`). */

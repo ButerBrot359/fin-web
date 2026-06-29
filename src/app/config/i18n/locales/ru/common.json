@@ -317,6 +317,7 @@
     "notImplemented": "Отчёт ещё не реализован",
     "separateScreen": "Этот отчёт открывается на отдельном экране",
     "print": "Печать",
+    "exportExcel": "Выгрузить в Excel",
     "printNotImplemented": "Печать в разработке"
   },
   "accountPlan": {

@@ -6,21 +6,31 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Button, Tooltip, Typography } from '@mui/material'
+import { Button, Typography } from '@mui/material'
 
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
+import {
+  ReportSettingsDrawer,
+  type ReportFilterItem,
+  type ReportGroupItem,
+} from '@/features/report-settings'
 import { PageHeader } from '@/widgets/page-header'
 import { DateTimeInput } from '@/shared/ui/inputs'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
+import { exportTableToXlsx } from '@/shared/lib/table-export'
 
 import { useReportMeta } from '../lib/hooks/use-report-meta'
 import { useRunReport } from '../lib/hooks/use-run-report'
+import { buildReportExport } from '../lib/utils/build-report-export'
 import { ReportResultTable } from './report-result-table'
 import { ReportParamField, type ReportParamValue } from './report-param-field'
 import type {
+  ReportFilterDto,
+  ReportIndicatorDto,
   ReportMetaDto,
   ReportParameterDto,
   RunReportBody,
+  RunReportFilter,
 } from '../types/report'
 
 /** Значения формы параметров: ключ = `param.code`. */
@@ -33,6 +43,9 @@ interface PeriodValue {
 }
 
 const isPeriod = (p: ReportParameterDto) => p.dataType === 'PERIOD'
+
+/** Префикс ключей URL для отборов (вкладка «Отборы»), чтобы не путать с параметрами. */
+const FILTER_PREFIX = 'flt.'
 
 /**
  * Сериализация значений параметров в строку URL (одно поле на параметр).
@@ -56,6 +69,7 @@ const deserializeParam = (
   switch (param.dataType) {
     case 'PERIOD':
     case 'ACCOUNT_LIST':
+    case 'REF_LIST':
       try {
         return JSON.parse(raw) as ReportParamValue
       } catch {
@@ -64,6 +78,9 @@ const deserializeParam = (
     case 'BOOLEAN':
       return raw === 'true'
     case 'NUMBER':
+    case 'ACCOUNT_REF':
+    case 'DICTIONARY_REF':
+    case 'ENUM_REF':
       return raw === '' ? '' : Number(raw)
     default:
       return raw
@@ -75,6 +92,7 @@ const defaultParamValue = (param: ReportParameterDto): ReportParamValue => {
   if (param.defaultValue != null) return param.defaultValue as ReportParamValue
   switch (param.dataType) {
     case 'ACCOUNT_LIST':
+    case 'REF_LIST':
       return []
     case 'BOOLEAN':
       return false
@@ -99,8 +117,8 @@ const isFilled = (param: ReportParameterDto, v: ReportParamValue): boolean => {
 /**
  * Универсальная страница отчёта. Рендерит ЛЮБОЙ отчёт по коду из `:moduleCode`
  * через метаданные `/api/reports/{code}/meta`: динамическая форма параметров +
- * таблица результата. Applied-параметры живут в URL (как в ОСВ) — переживают
- * переключение вкладок и обновление страницы.
+ * таблица результата. Applied-параметры и отборы живут в URL (как в ОСВ) —
+ * переживают переключение вкладок и обновление страницы.
  */
 export const ReportPage = () => {
   const { t, i18n } = useTranslation()
@@ -145,6 +163,22 @@ export const ReportPage = () => {
     setValues(next)
   }, [meta, searchParams])
 
+  // Структурные отборы из URL (вкладка «Отборы»). Ключ URL = FILTER_PREFIX+field.
+  const appliedFilters = useMemo<RunReportFilter[]>(() => {
+    if (!meta) return []
+    const out: RunReportFilter[] = []
+    for (const f of meta.filters) {
+      const raw = searchParams.get(`${FILTER_PREFIX}${f.field}`)
+      if (raw == null || raw === '') continue
+      out.push({
+        field: f.field,
+        comparison: f.defaultComparison ?? f.comparisons?.[0] ?? 'EQUAL',
+        values: [Number(raw)],
+      })
+    }
+    return out
+  }, [meta, searchParams])
+
   // Applied-параметры — производные от URL. Запрос включается, когда заданы
   // все обязательные параметры (есть хотя бы один query-параметр => применено).
   const appliedBody = useMemo<RunReportBody | null>(() => {
@@ -162,8 +196,11 @@ export const ReportPage = () => {
       .filter((p) => p.required)
       .every((p) => isFilled(p, applied[p.code] as ReportParamValue))
     if (!hasAny || !requiredMet) return null
-    return { parameters: applied }
-  }, [meta, searchParams])
+    return {
+      parameters: applied,
+      ...(appliedFilters.length > 0 ? { filters: appliedFilters } : {}),
+    }
+  }, [meta, searchParams, appliedFilters])
 
   const isDraft = meta?.definition.status === 'DRAFT'
 
@@ -212,14 +249,32 @@ export const ReportPage = () => {
       (p) => (searchParams.get(p.code) ?? '') === (serialized[p.code] ?? '')
     )
     setSearchParams(
-      () => {
+      (prev) => {
         const next = new URLSearchParams()
         for (const [k, v] of Object.entries(serialized)) next.set(k, v)
+        // Сохраняем активные отборы (flt.*) при пересоздании query-строки.
+        for (const [k, v] of prev.entries()) {
+          if (k.startsWith(FILTER_PREFIX)) next.set(k, v)
+        }
         return next
       },
       { replace: true }
     )
     if (sameAsApplied && appliedBody != null) void refetch()
+  }
+
+  // Изменение отбора (вкладка «Отборы») — пишем/удаляем flt.<field> в URL.
+  const onFilterChange = (field: string, valueId: number | null) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        const key = `${FILTER_PREFIX}${field}`
+        if (valueId != null) next.set(key, String(valueId))
+        else next.delete(key)
+        return next
+      },
+      { replace: true }
+    )
   }
 
   const handleClose = () => {
@@ -269,6 +324,7 @@ export const ReportPage = () => {
       isRunning={isRunning}
       isRunError={isRunError}
       result={result}
+      onFilterChange={onFilterChange}
     />
   )
 }
@@ -289,7 +345,12 @@ interface ReportPageContentProps {
   isRunning: boolean
   isRunError: boolean
   result: ReturnType<typeof useRunReport>['result']
+  onFilterChange: (field: string, valueId: number | null) => void
 }
+
+/** Локализованный заголовок отбора/показателя. */
+const localized = (ru: string, kz: string | undefined, isKz: boolean): string =>
+  (isKz ? kz : ru) || ru
 
 /** Контент страницы — выделен, чтобы хуки meta/run вызывались до раннего return. */
 const ReportPageContent = ({
@@ -308,10 +369,128 @@ const ReportPageContent = ({
   isRunning,
   isRunError,
   result,
+  onFilterChange,
 }: ReportPageContentProps) => {
   const { t } = useTranslation()
+  const [searchParams] = useSearchParams()
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const description = meta.definition.description
+
+  // Табличный результат (есть columns+rows) — иначе спец-DTO без таблицы.
+  const tabularResult =
+    result && Array.isArray(result.columns) && Array.isArray(result.rows)
+      ? result
+      : null
+
+  // DIMENSION-колонки результата — пункты вкладки «Группировка».
+  const dimensionColumns = useMemo(
+    () => tabularResult?.columns.filter((c) => c.role === 'DIMENSION') ?? [],
+    [tabularResult]
+  )
+
+  // Состояние показателей (display-only): включён ли показатель. Инициализация
+  // из defaultEnabled; пересобираем при смене набора показателей в meta.
+  const [indicatorState, setIndicatorState] = useState<Record<string, boolean>>(
+    {}
+  )
+  useEffect(() => {
+    const next: Record<string, boolean> = {}
+    for (const ind of meta.indicators) next[ind.code] = ind.defaultEnabled
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIndicatorState(next)
+  }, [meta.indicators])
+
+  // Скрытые DIMENSION-группы (display-only).
+  const [hiddenGroups, setHiddenGroups] = useState<Set<string>>(new Set())
+
+  const indicators: ReportIndicatorDto[] = meta.indicators
+  const filters: ReportFilterDto[] = meta.filters
+
+  // Вкладка «Показатели».
+  const indicatorItems = useMemo<ReportGroupItem[]>(
+    () =>
+      indicators.map((ind) => ({
+        key: ind.code,
+        label: localized(ind.titleRu, ind.titleKz, isKz),
+        checked: indicatorState[ind.code] ?? ind.defaultEnabled,
+      })),
+    [indicators, indicatorState, isKz]
+  )
+  const onToggleIndicator = (key: string) => {
+    setIndicatorState((prev) => {
+      const cur = prev[key] ?? true
+      return { ...prev, [key]: !cur }
+    })
+  }
+
+  // Вкладка «Группировка» — из DIMENSION-колонок результата.
+  const groupItems = useMemo<ReportGroupItem[]>(
+    () =>
+      dimensionColumns.map((col) => ({
+        key: col.code,
+        label: localized(col.titleRu, col.titleKz, isKz),
+        checked: !hiddenGroups.has(col.code),
+      })),
+    [dimensionColumns, hiddenGroups, isKz]
+  )
+  const onToggleGroup = (key: string) => {
+    setHiddenGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  // Вкладка «Отборы» — из meta.filters; значение читаем из URL (flt.<field>).
+  const filterItems = useMemo<ReportFilterItem[]>(
+    () =>
+      filters.map((f) => {
+        const raw = searchParams.get(`${FILTER_PREFIX}${f.field}`)
+        return {
+          key: f.field,
+          label: localized(f.titleRu, f.titleKz, isKz),
+          dictTypeCode: f.referenceDomain ?? '',
+          valueId: raw ? Number(raw) : null,
+        }
+      }),
+    [filters, searchParams, isKz]
+  )
+
+  // Колонки, скрытые настройками: выключенные показатели + скрытые группы.
+  const hiddenColumns = useMemo<Set<string>>(() => {
+    const set = new Set<string>(hiddenGroups)
+    for (const ind of indicators) {
+      const enabled = indicatorState[ind.code] ?? ind.defaultEnabled
+      if (!enabled) {
+        for (const col of ind.controlsColumns ?? []) set.add(col)
+      }
+    }
+    return set
+  }, [hiddenGroups, indicators, indicatorState])
+
+  const hasSettings =
+    filters.length > 0 || indicators.length > 0 || dimensionColumns.length > 0
+
+  const handlePrint = () => {
+    window.print()
+  }
+
+  const handleExportExcel = () => {
+    if (!tabularResult) return
+    const visibleColumns = tabularResult.columns.filter(
+      (c) => !hiddenColumns.has(c.code)
+    )
+    const data = buildReportExport(
+      tabularResult,
+      visibleColumns,
+      t('reports.group'),
+      isKz,
+      t('reports.total')
+    )
+    exportTableToXlsx(reportName, data)
+  }
 
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
@@ -406,14 +585,36 @@ const ReportPageContent = ({
             {t('reports.generate')}
           </Button>
 
-          {/* Печать — заглушка 501: показываем disabled с подсказкой, не вызываем. */}
-          <Tooltip title={t('reports.printNotImplemented')}>
-            <span>
-              <Button variant="outlined" disabled sx={{ height: 48 }}>
+          {/* Печать / Excel / Настройки — когда отчёт сформирован табличный. */}
+          {applied && tabularResult && (
+            <>
+              <Button
+                variant="outlined"
+                onClick={handleExportExcel}
+                sx={{ height: 48 }}
+              >
+                {t('reports.exportExcel')}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={handlePrint}
+                sx={{ height: 48 }}
+              >
                 {t('reports.print')}
               </Button>
-            </span>
-          </Tooltip>
+            </>
+          )}
+          {hasSettings && (
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setSettingsOpen(true)
+              }}
+              sx={{ height: 48 }}
+            >
+              {t('reportSettings.title')}
+            </Button>
+          )}
         </div>
       )}
 
@@ -444,38 +645,37 @@ const ReportPageContent = ({
             </div>
           )}
 
-          {!isRunning && !isRunError && result && (
-            <ReportResult result={result} />
+          {!isRunning && !isRunError && result && !tabularResult && (
+            <div className="rounded-md bg-ui-02 px-4 py-6 text-center">
+              <Typography variant="body1" className="text-ui-06">
+                {t('reports.separateScreen')}
+              </Typography>
+            </div>
+          )}
+
+          {!isRunning && !isRunError && tabularResult && (
+            <ReportResultTable
+              result={tabularResult}
+              hiddenColumns={hiddenColumns}
+            />
           )}
         </>
       )}
+
+      {hasSettings && (
+        <ReportSettingsDrawer
+          open={settingsOpen}
+          onClose={() => {
+            setSettingsOpen(false)
+          }}
+          groupItems={groupItems}
+          onToggleGroup={onToggleGroup}
+          indicatorItems={indicatorItems}
+          onToggleIndicator={onToggleIndicator}
+          filterItems={filterItems}
+          onFilterChange={onFilterChange}
+        />
+      )}
     </div>
   )
-}
-
-/**
- * Рендер результата: если это ReportResultDto (есть columns+rows) — таблица;
- * иначе (NATIVE_DELEGATE спец-DTO без columns/rows) — сообщение, что отчёт
- * открывается на отдельном экране.
- */
-const ReportResult = ({
-  result,
-}: {
-  result: NonNullable<ReturnType<typeof useRunReport>['result']>
-}) => {
-  const { t } = useTranslation()
-
-  const isTabular = Array.isArray(result.columns) && Array.isArray(result.rows)
-
-  if (!isTabular) {
-    return (
-      <div className="rounded-md bg-ui-02 px-4 py-6 text-center">
-        <Typography variant="body1" className="text-ui-06">
-          {t('reports.separateScreen')}
-        </Typography>
-      </div>
-    )
-  }
-
-  return <ReportResultTable result={result} />
 }

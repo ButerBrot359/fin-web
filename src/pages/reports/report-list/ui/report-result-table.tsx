@@ -21,6 +21,8 @@ import type {
 
 interface ReportResultTableProps {
   result: ReportResultDto
+  /** Коды колонок, скрытых настройками (показатели/группировка). */
+  hiddenColumns?: Set<string>
 }
 
 /** Локализованный заголовок колонки. */
@@ -67,12 +69,22 @@ const thBase =
  * стрелкой разворота; остальные — значения `row.cells[col.code]`. Внизу —
  * строка «Итого» из `result.total`. MEASURE-колонки выровнены вправо.
  */
-export const ReportResultTable = ({ result }: ReportResultTableProps) => {
+export const ReportResultTable = ({
+  result,
+  hiddenColumns,
+}: ReportResultTableProps) => {
   const { t, i18n } = useTranslation()
   const isKz = i18n.language === 'kz'
 
   const data = useMemo(() => result.rows, [result.rows])
-  const columns = useMemo(() => result.columns, [result.columns])
+  // Скрываем колонки, выключенные настройками (показатели/группировка).
+  const columns = useMemo(
+    () =>
+      hiddenColumns && hiddenColumns.size > 0
+        ? result.columns.filter((c) => !hiddenColumns.has(c.code))
+        : result.columns,
+    [result.columns, hiddenColumns]
+  )
 
   // По умолчанию дерево раскрыто; при новой выборке сбрасываем.
   const [expanded, setExpanded] = useState<ExpandedState>(true)

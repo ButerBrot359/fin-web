@@ -317,6 +317,7 @@
     "notImplemented": "Есеп әлі іске асырылмаған",
     "separateScreen": "Бұл есеп бөлек экранда ашылады",
     "print": "Басып шығару",
+    "exportExcel": "Excel-ге жүктеу",
     "printNotImplemented": "Басып шығару әзірленуде"
   },
   "accountPlan": {

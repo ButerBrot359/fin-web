@@ -318,7 +318,8 @@
     "separateScreen": "Бұл есеп бөлек экранда ашылады",
     "print": "Басып шығару",
     "exportExcel": "Excel-ге жүктеу",
-    "printNotImplemented": "Басып шығару әзірленуде"
+    "printNotImplemented": "Басып шығару әзірленуде",
+    "resizeHint": "Енін өзгерту үшін тартыңыз"
   },
   "accountPlan": {
     "code": "Коды",

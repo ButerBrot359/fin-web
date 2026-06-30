@@ -318,7 +318,8 @@
     "separateScreen": "Этот отчёт открывается на отдельном экране",
     "print": "Печать",
     "exportExcel": "Выгрузить в Excel",
-    "printNotImplemented": "Печать в разработке"
+    "printNotImplemented": "Печать в разработке",
+    "resizeHint": "Потяните, чтобы изменить ширину"
   },
   "accountPlan": {
     "code": "Код",

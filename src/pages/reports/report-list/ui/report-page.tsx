@@ -14,6 +14,10 @@ import {
   type ReportFilterItem,
   type ReportGroupItem,
 } from '@/features/report-settings'
+import {
+  ReportResultView,
+  isUnifiedRendererEnabled,
+} from '@/features/report-result-view'
 import { PageHeader } from '@/widgets/page-header'
 import { DateTimeInput } from '@/shared/ui/inputs'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
@@ -375,6 +379,13 @@ const ReportPageContent = ({
   const [searchParams] = useSearchParams()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
+  // Флаг унифицированного 1С-рендерера: ?renderer=v2 в URL ∥ localStorage
+  // 'unifiedReportRenderer'=true. По умолчанию OFF — старая таблица.
+  const useUnifiedRenderer = useMemo(
+    () => isUnifiedRendererEnabled(`?${searchParams.toString()}`),
+    [searchParams]
+  )
+
   const description = meta.definition.description
 
   // Табличный результат (есть columns+rows) — иначе спец-DTO без таблицы.
@@ -653,12 +664,22 @@ const ReportPageContent = ({
             </div>
           )}
 
-          {!isRunning && !isRunError && tabularResult && (
-            <ReportResultTable
+          {!isRunning && !isRunError && tabularResult && useUnifiedRenderer && (
+            <ReportResultView
               result={tabularResult}
               hiddenColumns={hiddenColumns}
             />
           )}
+
+          {!isRunning &&
+            !isRunError &&
+            tabularResult &&
+            !useUnifiedRenderer && (
+              <ReportResultTable
+                result={tabularResult}
+                hiddenColumns={hiddenColumns}
+              />
+            )}
         </>
       )}
 

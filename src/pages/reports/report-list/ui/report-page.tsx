@@ -379,8 +379,8 @@ const ReportPageContent = ({
   const [searchParams] = useSearchParams()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
-  // Флаг унифицированного 1С-рендерера: ?renderer=v2 в URL ∥ localStorage
-  // 'unifiedReportRenderer'=true. По умолчанию OFF — старая таблица.
+  // Унифицированный 1С-рендерер включён ПО УМОЛЧАНИЮ; откат на старую таблицу —
+  // ?renderer=v1 (или off/false/0) ∥ localStorage 'unifiedReportRenderer'='false'.
   const useUnifiedRenderer = useMemo(
     () => isUnifiedRendererEnabled(`?${searchParams.toString()}`),
     [searchParams]

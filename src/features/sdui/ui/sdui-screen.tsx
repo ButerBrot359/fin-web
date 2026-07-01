@@ -24,6 +24,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
   const dispatch = useSduiDispatch()
   const navigate = useNavigate()
   const dirty = useViewStateStore((s) => s.dirty)
+  const viewStateValues = useViewStateStore((s) => s.state)
 
   useTabMeta((tree?.props?.title as string | undefined) ?? '')
 
@@ -101,7 +102,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
       formSessionId: useTreeStore.getState().formSessionId,
       revision: useTreeStore.getState().revision,
       getValue: (binding) =>
-        binding ? useViewStateStore.getState().state[binding] : undefined,
+        binding ? viewStateValues[binding] : undefined,
       setValue: useViewStateStore.getState().set,
       setFromServer: useViewStateStore.getState().setFromServer,
       getAll: useViewStateStore.getState().getAll,
@@ -116,7 +117,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
       applyTreePatches: useTreeStore.getState().applyPatches,
       clearAllErrors: useTreeStore.getState().clearAllErrors,
     }),
-    [tree, dirty],
+    [tree, dirty, viewStateValues],
   )
 
   if (!tree) return <PageSkeleton />

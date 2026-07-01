@@ -3,6 +3,11 @@ import { Button, Menu } from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import {
+  needsSelectedRow,
+  refCommandField,
+  useRefPickerSelection,
+} from '../../../lib/stores/ref-picker-selection-store'
 import { NodeRenderer } from '../../node-renderer'
 
 export const ButtonNode: FC<NodeProps> = ({ node }) => {
@@ -14,8 +19,14 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
   const dispatch = useSduiDispatch()
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
 
+  const usesSelectedRow = needsSelectedRow(command)
+  const selectedRowId = useRefPickerSelection(
+    usesSelectedRow ? refCommandField(command) : null,
+  )
+
   const isDropdown = variantProp === 'dropdown' && !!node.children?.length
   const muiVariant = variantProp === 'primary' ? 'contained' : 'outlined'
+  const disabled = !enabled || (usesSelectedRow && selectedRowId == null)
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isDropdown) {
@@ -23,6 +34,16 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
       return
     }
     if (command) {
+      if (usesSelectedRow) {
+        if (selectedRowId == null) return
+        void dispatch({
+          type: 'COMMAND',
+          command,
+          value: { id: selectedRowId },
+          sourceNodeId: node.id,
+        })
+        return
+      }
       void dispatch({ type: 'COMMAND', command })
     }
   }
@@ -31,7 +52,7 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
     <>
       <Button
         variant={muiVariant}
-        disabled={!enabled}
+        disabled={disabled}
         onClick={handleClick}
       >
         {label}

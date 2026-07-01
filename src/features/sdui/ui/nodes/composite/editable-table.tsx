@@ -36,6 +36,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const allowAdd = (node.props?.allowAdd as boolean | undefined) ?? true
   const allowDelete = (node.props?.allowDelete as boolean | undefined) ?? true
   const allowReorder = (node.props?.allowReorder as boolean | undefined) ?? true
+  const showRowNumbers = node.props?.showRowNumbers === true
 
   const sync = useTableSync(node, columns)
   // Стабильная ссылка на актуальный sync для мемоизированных cell-колбэков:
@@ -130,6 +131,11 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           <TableHead>
             {table.getHeaderGroups().map((hg) => (
               <MuiTableRow key={hg.id}>
+                {showRowNumbers && (
+                  <TableCell sx={{ width: 48, textAlign: 'center', fontWeight: 600 }}>
+                    N
+                  </TableCell>
+                )}
                 {hg.headers.map((header) => (
                   <TableCell key={header.id}>
                     {flexRender(
@@ -144,7 +150,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           <TableBody>
             {table.getRowModel().rows.length === 0 ? (
               <MuiTableRow>
-                <TableCell colSpan={columns.length} align="center">
+                <TableCell colSpan={columns.length + (showRowNumbers ? 1 : 0)} align="center">
                   <Typography variant="body2" color="text.secondary">
                     {t('table.empty')}
                   </Typography>
@@ -159,6 +165,13 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                   onClick={() => setSelectedIndex(index)}
                   sx={{ cursor: 'pointer' }}
                 >
+                  {showRowNumbers && (
+                    <TableCell sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {index + 1}
+                      </Typography>
+                    </TableCell>
+                  )}
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} sx={{ p: 0 }}>
                       {flexRender(

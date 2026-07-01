@@ -19,6 +19,7 @@ import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import type { TableColumnDef } from '../../../lib/hooks/use-table-sync'
 import { EditableTable } from './editable-table'
+import { ComplexEditableTable } from './complex-editable-table'
 
 interface ReadOnlyColumnDef {
   id: string
@@ -76,11 +77,26 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
   const editable = (node.props?.editable as boolean | undefined) ?? true
 
   if (editable) {
+    // Route to complex table if COLUMN_GROUP children exist or master-detail props present
+    const hasGroups = node.children?.some((c) => c.type === 'COLUMN_GROUP')
+    const hasMasterDetail = !!(node.props?.masterTable && node.props?.masterKey && node.props?.detailKey)
+    const hasFooter = node.children?.some(
+      (c) => c.type === 'TABLE_COLUMN' && c.props?.footer === true,
+    ) || node.children?.some(
+      (c) => c.type === 'COLUMN_GROUP' && c.children?.some(
+        (cc) => cc.props?.footer === true,
+      ),
+    )
+
+    if (hasGroups || hasMasterDetail || hasFooter) {
+      return <ComplexEditableTable node={node} />
+    }
+
     const columns = extractEditableColumns(node.children)
     return <EditableTable node={node} columns={columns} />
   }
 
-  // ── Read-only path (preserved as-is) ──
+  // Read-only path (preserved as-is)
   return <ReadOnlyTable node={node} />
 }
 

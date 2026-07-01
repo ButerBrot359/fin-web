@@ -20,7 +20,7 @@ const SAVE_COMMANDS = ['save', 'saveAndClose', 'post', 'postAndClose']
 export interface PanelEntry {
   panelId: string
   node: ViewNode
-  presentation: 'drawer' | 'modal'
+  presentation: 'drawer' | 'modal' | 'page'
   session?: {
     formSessionId: string
     revision: number
@@ -104,7 +104,7 @@ export function useSduiDispatch() {
           const entry: PanelEntry = {
             panelId: effect.node?.id ?? String(Date.now()),
             node: effect.node!,
-            presentation: presentation as 'drawer' | 'modal',
+            presentation: presentation as 'drawer' | 'modal' | 'page',
             viewState: effect.childState ?? {},
           }
           if (effect.sessionId) {

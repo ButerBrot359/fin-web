@@ -35,6 +35,7 @@ import { ReferenceFieldNode } from '../ui/nodes/fields/reference-field-node'
 // Composite
 import { TableNode } from '../ui/nodes/composite/table-node'
 import { TableColumnNode } from '../ui/nodes/composite/table-column-node'
+import { ColumnGroupNode } from '../ui/nodes/composite/column-group-node'
 import { ObjectFieldNode } from '../ui/nodes/composite/object-field-node'
 import { ListNode } from '../ui/nodes/composite/list-node'
 // Action
@@ -71,6 +72,7 @@ const registry: Record<string, FC<NodeProps>> = {
   REFERENCE_FIELD: ReferenceFieldNode,
   TABLE: TableNode,
   TABLE_COLUMN: TableColumnNode,
+  COLUMN_GROUP: ColumnGroupNode,
   OBJECT_FIELD: ObjectFieldNode,
   LIST: ListNode,
   BUTTON: ButtonNode,

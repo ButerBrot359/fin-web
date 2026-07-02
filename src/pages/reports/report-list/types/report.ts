@@ -51,8 +51,56 @@ export type ReportColumnFamily =
   | 'CLOSING'
   | 'PLAIN'
 
-/** Макет таблицы результата: плоский регистр (LEDGER) или дерево (TREE). */
-export type ReportLayout = 'LEDGER' | 'TREE'
+/**
+ * Макет результата: плоский регистр (LEDGER), дерево (TREE) или официальный
+ * бланк (FORM — мемориальные ордера, см. {@link ReportFormDto}).
+ */
+export type ReportLayout = 'LEDGER' | 'TREE' | 'FORM'
+
+/** Секция бланка (дебет/кредит субсчёта) со СВОИМИ колонками-графами. */
+export interface ReportFormSectionDto {
+  /** Заголовок секции («Дебет субсчёта № 1010»). */
+  title?: string
+  /** Строка остатка на начало («Остаток на начало месяца: 0»). */
+  openingLine?: string
+  /** Колонки секции: №, дата, графы-кор.счета…, Итого. */
+  columns: ReportColumnDto[]
+  /** Строки: DATA + финальная TOTAL «Итого:». */
+  rows: ReportRowDto[]
+  /** Рендерить строку сквозной нумерации граф. */
+  numberGraphs?: boolean
+  /** Номер первой графы секции (1 у дебетовой, продолжение у кредитовой). */
+  graphNumberStart?: number
+}
+
+/** Подпись бланка («Исполнитель:» — должность/подпись/расшифровка). */
+export interface ReportFormSignatureDto {
+  role: string
+  name?: string
+  captions?: string[]
+}
+
+/** Официальный бланк (мемориальный ордер): шапка, секции, остатки, подписи. */
+export interface ReportFormDto {
+  /** Правовой гриф (несколько строк, мелкий шрифт слева). */
+  legalHeader?: string[]
+  /** «Форма № 381». */
+  formNumber?: string
+  organizationLine?: string
+  organizationCaption?: string
+  /** «№ 1 Мемориальный ордер». */
+  title?: string
+  /** «Период: Январь 2024 г.». */
+  periodLine?: string
+  /** Название накопительной ведомости. */
+  vedomostTitle?: string
+  /** «№ 1010». */
+  accountsLine?: string
+  sections: ReportFormSectionDto[]
+  /** Строки футера («Остаток на конец месяца: …»). */
+  footerLines?: string[]
+  signatures?: ReportFormSignatureDto[]
+}
 
 /** Тип параметра отчёта — определяет, какой инпут рендерить в форме. */
 export type ReportParameterType =
@@ -229,6 +277,8 @@ export interface ReportResultDto {
   organizationTitle?: string
   /** Строки под заголовком: «Выводимые данные: Сумма» и т.п. */
   subtitleLines?: string[]
+  /** Официальный бланк (layout=FORM): мемориальные ордера. */
+  form?: ReportFormDto
 }
 
 /** Структурный отбор в теле запроса формирования отчёта. */

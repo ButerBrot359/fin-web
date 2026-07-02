@@ -7,6 +7,7 @@ import type {
 } from '@/pages/reports/report-list/types/report'
 
 import { formatReportTitle } from '../lib/format-title'
+import { FormView } from './form-view'
 import { LedgerTable } from './ledger-table'
 import { TreeTable } from './tree-table'
 
@@ -38,6 +39,11 @@ export const ReportResultView = ({
 
   const title = formatReportTitle(result)
   const isLedger = result.layout === 'LEDGER'
+
+  // Официальный бланк (мемориальный ордер) — своя шапка, заголовок не нужен.
+  if (result.layout === 'FORM' && result.form) {
+    return <FormView form={result.form} />
+  }
 
   return (
     <div className="flex flex-col gap-1">

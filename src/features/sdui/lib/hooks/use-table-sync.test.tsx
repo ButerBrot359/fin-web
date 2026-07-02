@@ -2,6 +2,7 @@ import { renderHook, act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../types/view'
+import { flushAllPendingTableCommits } from '../pending-table-commits'
 import { useTableSync } from './use-table-sync'
 
 const mockDispatch = vi.fn(() => Promise.resolve(true))
@@ -46,6 +47,8 @@ describe('useTableSync', () => {
     act(() => {
       result.current.updateCell('tmp-x', 'a', 1) // локальное изменение
     })
-    await expect(result.current.flushPending()).rejects.toThrow()
+    await act(async () => {
+      await expect(flushAllPendingTableCommits()).rejects.toThrow()
+    })
   })
 })

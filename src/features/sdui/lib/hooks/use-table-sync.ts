@@ -33,7 +33,6 @@ export interface UseTableSyncResult {
   addRow: (columns: TableColumnDef[]) => void
   deleteRow: (index: number) => void
   moveRow: (from: number, to: number) => void
-  flushPending: () => Promise<void>
 }
 
 function buildEmptyRow(columns: TableColumnDef[]): TableRow {
@@ -314,6 +313,5 @@ export function useTableSync(
     addRow,
     deleteRow,
     moveRow,
-    flushPending,
   }
 }

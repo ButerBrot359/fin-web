@@ -1,4 +1,5 @@
 import type { FC } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Button,
   IconButton,
@@ -91,6 +92,7 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
 }
 
 const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
+  const { t } = useTranslation()
   const label = node.props?.label as string | undefined
   const allowAdd = node.props?.allowAdd as boolean | undefined
   const allowDelete = node.props?.allowDelete as boolean | undefined
@@ -136,7 +138,7 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
               onClick={handleAdd}
               variant="outlined"
             >
-              Добавить
+              {t('table.add')}
             </Button>
           )}
         </div>
@@ -159,7 +161,7 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                   align="center"
                 >
                   <Typography variant="body2" color="text.secondary">
-                    Нет данных
+                    {t('table.empty')}
                   </Typography>
                 </TableCell>
               </TableRow>

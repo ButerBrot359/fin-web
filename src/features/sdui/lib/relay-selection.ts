@@ -1,3 +1,5 @@
+import i18n from 'i18next'
+
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { ViewEffect } from '../types/view'
@@ -48,9 +50,9 @@ export function relaySelectionToParent(
     })
     .catch((error) => {
       if (error instanceof ViewConflictError && error.data.code === 'SESSION_NOT_FOUND') {
-        showToast('warning', 'Форма устарела, выбор не применён')
+        showToast('warning', i18n.t('sdui.refSelectStale'))
       } else {
-        showToast('error', error instanceof Error ? error.message : 'Ошибка')
+        showToast('error', error instanceof Error ? error.message : i18n.t('sdui.error'))
       }
     })
 }

@@ -1,15 +1,32 @@
 import { createElement, Fragment, type ReactNode } from 'react'
 import { flexRender, type Table } from '@tanstack/react-table'
 
-import type { XlsxCell } from '@/shared/lib/xlsx/write-xlsx'
+import type {
+  XlsxCell,
+  XlsxColumnMeta,
+  XlsxHeaderCell,
+  XlsxRowKind,
+} from '@/shared/lib/xlsx/write-xlsx'
 import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 
 /**
- * Данные одного листа Excel: заголовки + матрица значений.
+ * Данные одного листа Excel: заголовки + матрица значений. Опциональные поля
+ * включают «бизнес-оформление» (см. {@link buildXlsxBlob}): заголовок листа,
+ * подзаголовки, многоуровневую шапку, числовые форматы и выделение итогов.
  */
 export interface TableExportData {
   headers: string[]
   rows: XlsxCell[][]
+  /** Заголовок листа (merged строка над таблицей). */
+  title?: string
+  /** Подзаголовки (организация, «Выводимые данные: …»). */
+  subtitleLines?: string[]
+  /** Многоуровневая шапка (имеет приоритет над headers). */
+  headerRows?: XlsxHeaderCell[][]
+  /** Метаданные колонок: числовой формат/выравнивание/ширина. */
+  columns?: XlsxColumnMeta[]
+  /** Вид каждой строки (выделение итогов/сальдо). */
+  rowKinds?: XlsxRowKind[]
 }
 
 /**
@@ -89,7 +106,9 @@ export const extractTableExport = async <T>(
   const leafHeaders = table.getHeaderGroups().at(-1)?.headers ?? []
 
   const exported = leafHeaders.filter((header) => {
-    const meta = header.column.columnDef.meta as TableExportColumnMeta | undefined
+    const meta = header.column.columnDef.meta as
+      | TableExportColumnMeta
+      | undefined
     if (meta?.exportExclude) return false
     // Без аксессора колонка не несёт данных (чисто визуальная) — пропускаем.
     return header.column.accessorFn != null
@@ -112,9 +131,7 @@ export const extractTableExport = async <T>(
   const rows = data
     ? // Полный набор: прогоняем «сырые» строки через аксессоры колонок.
       data.map((row, index) =>
-        exported.map((header) =>
-          toCell(header.column.accessorFn?.(row, index))
-        )
+        exported.map((header) => toCell(header.column.accessorFn?.(row, index)))
       )
     : // Фолбэк: только загруженные в грид строки.
       table

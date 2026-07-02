@@ -1,6 +1,12 @@
 import type { TableExportData } from '@/shared/lib/table-export'
+import type {
+  XlsxCell,
+  XlsxColumnMeta,
+  XlsxHeaderCell,
+  XlsxRowKind,
+} from '@/shared/lib/xlsx/write-xlsx'
 import { formatDate } from '@/shared/lib/utils/date'
-import { formatMoney1C } from '@/features/report-result-view'
+import { formatMoney1C, formatReportTitle } from '@/features/report-result-view'
 
 import type {
   ReportColumnDto,
@@ -15,18 +21,13 @@ const POKAZATEL_COL = 'Pokazatel'
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
 
-/**
- * Заголовок колонки для Excel с учётом двухуровневой шапки: «Дебет / Счет».
- */
-const exportTitle = (col: ReportColumnDto, isKz: boolean): string => {
-  const group = (isKz ? col.groupTitleKz : col.groupTitleRu) || col.groupTitleRu
-  const title = columnTitle(col, isKz)
-  if (group && title) return `${group} / ${title}`
-  return group || title
-}
+/** Локализованный верхний ряд шапки (группа колонок «Дебет»/«Кредит»). */
+const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
+  ((isKz ? col.groupTitleKz : col.groupTitleRu) || col.groupTitleRu) ?? ''
 
 /** Вид строки — span-строка (Сальдо/Обороты/Итого) С ПОДПИСЬЮ labelText. */
-const SPAN_KINDS = new Set([
+const HIGHLIGHT_KINDS = new Set([
+  'GROUP_HEADER',
   'OPENING_BALANCE',
   'TURNOVER',
   'CLOSING_BALANCE',
@@ -35,19 +36,95 @@ const SPAN_KINDS = new Set([
 ])
 
 const isSpanExportRow = (row: ReportRowDto): boolean =>
-  row.rowKind != null && SPAN_KINDS.has(row.rowKind) && row.labelText != null
+  row.rowKind != null &&
+  HIGHLIGHT_KINDS.has(row.rowKind) &&
+  row.rowKind !== 'GROUP_HEADER' &&
+  row.labelText != null
+
+const rowKindOf = (row: ReportRowDto): XlsxRowKind =>
+  row.rowKind != null && HIGHLIGHT_KINDS.has(row.rowKind) ? 'highlight' : 'data'
 
 /**
- * Значение ячейки для Excel: массив в MEASURE — подстроки-показатели с 1С-
- * форматом (2 знака, «Кол.» — 3) через перенос; массив в остальных —
- * многострочная аналитика; MEASURE — 1С-формат с разрядами; dcIndicator —
- * «Д <abs>»/«К <abs>»; пусто для null/0-при-blankOnZero.
+ * Двухуровневая шапка листа из колонок с `groupTitle` («Дебет» над
+ * [Счет|Сумма]); колонки без группы занимают оба ряда (rowSpan=2).
+ * Если групп нет — одноуровневая.
+ */
+const buildHeaderRows = (
+  columns: ReportColumnDto[],
+  isKz: boolean,
+  leadColumnTitle?: string
+): XlsxHeaderCell[][] => {
+  const offset = leadColumnTitle != null ? 1 : 0
+  const hasGroups = columns.some((c) => columnGroupTitle(c, isKz))
+
+  if (!hasGroups) {
+    const row: XlsxHeaderCell[] = []
+    if (leadColumnTitle != null) row.push({ text: leadColumnTitle, col: 0 })
+    columns.forEach((c, i) =>
+      row.push({ text: columnTitle(c, isKz), col: i + offset })
+    )
+    return [row]
+  }
+
+  const top: XlsxHeaderCell[] = []
+  const sub: XlsxHeaderCell[] = []
+  if (leadColumnTitle != null) {
+    top.push({ text: leadColumnTitle, col: 0, rowSpan: 2 })
+  }
+  let i = 0
+  while (i < columns.length) {
+    const group = columnGroupTitle(columns[i], isKz)
+    if (!group) {
+      top.push({
+        text: columnTitle(columns[i], isKz),
+        col: i + offset,
+        rowSpan: 2,
+      })
+      i++
+      continue
+    }
+    let j = i
+    while (j < columns.length && columnGroupTitle(columns[j], isKz) === group) {
+      sub.push({ text: columnTitle(columns[j], isKz), col: j + offset })
+      j++
+    }
+    top.push({ text: group, col: i + offset, colSpan: j - i })
+    i = j
+  }
+  return [top, sub]
+}
+
+/** Метаданные колонок листа: числовой формат и выравнивание. */
+const buildColumnMeta = (
+  columns: ReportColumnDto[],
+  hasLeadColumn: boolean
+): XlsxColumnMeta[] => {
+  const meta: XlsxColumnMeta[] = []
+  if (hasLeadColumn) meta.push({ align: 'left', width: 45 })
+  for (const col of columns) {
+    if (col.role === 'MEASURE') {
+      meta.push({ numFmt: 'money', align: 'right' })
+    } else {
+      meta.push({ align: col.align === 'RIGHT' ? 'right' : 'left' })
+    }
+  }
+  return meta
+}
+
+/**
+ * Значение ячейки для Excel:
+ * - одиночное число MEASURE → НАСТОЯЩЕЕ число (формат разрядов даёт Excel);
+ *   `blankOnZero` ⇒ пусто; `dcIndicator` ⇒ текст «Д <abs>»/«К <abs>»;
+ * - массив в MEASURE — подстроки-показатели, отформатированные текстом
+ *   (2 знака, «Кол.» — 3) через перенос строки;
+ * - массив в остальных — многострочная аналитика через перенос;
+ * - PERIOD — дата в 1С-формате.
  */
 const formatCell = (
   value: unknown,
   col: ReportColumnDto,
   subLabels?: string[]
-): string | number => {
+): XlsxCell => {
   if (value == null || value === '') return ''
   if (Array.isArray(value)) {
     if (col.role === 'MEASURE') {
@@ -56,7 +133,11 @@ const formatCell = (
           if (v == null || v === '') return ''
           const n = typeof v === 'number' ? v : Number(v)
           if (Number.isNaN(n)) return safeText(v)
-          return formatMeasure(n, col, subLabels?.[i] === 'Кол.' ? 3 : 2)
+          if (n === 0 && col.blankOnZero) return ''
+          if (col.dcIndicator) {
+            return `${n < 0 ? 'К' : 'Д'} ${formatMoney1C(Math.abs(n), subDecimals(subLabels, i))}`
+          }
+          return formatMoney1C(n, subDecimals(subLabels, i))
         })
         .join('\n')
     }
@@ -65,7 +146,11 @@ const formatCell = (
   if (col.role === 'MEASURE') {
     const n = typeof value === 'number' ? value : Number(value)
     if (!Number.isNaN(n)) {
-      return formatMeasure(n, col, 2)
+      if (n === 0 && col.blankOnZero) return ''
+      if (col.dcIndicator) {
+        return `${n < 0 ? 'К' : 'Д'} ${formatMoney1C(Math.abs(n), 2)}`
+      }
+      return n
     }
   }
   if (
@@ -82,28 +167,31 @@ const formatCell = (
   return ''
 }
 
+/** Число знаков подстроки-показателя: «Кол.» — 3, остальные — 2. */
+const subDecimals = (subLabels: string[] | undefined, i: number): number =>
+  subLabels?.[i] === 'Кол.' ? 3 : 2
+
 /** Безопасный текст для нечисловых значений подстрок. */
 const safeText = (v: unknown): string =>
   typeof v === 'string' ? v : typeof v === 'number' ? String(v) : ''
 
-/** 1С-формат числа с учётом blankOnZero и признака Д/К. */
-const formatMeasure = (
-  n: number,
-  col: ReportColumnDto,
-  decimals: number
-): string => {
-  if (n === 0 && col.blankOnZero) return ''
-  if (col.dcIndicator) {
-    return `${n < 0 ? 'К' : 'Д'} ${formatMoney1C(Math.abs(n), decimals)}`
+/** Общая «шапка листа»: заголовок отчёта + организация + подзаголовки. */
+const sheetChrome = (result: ReportResultDto) => {
+  const subtitleLines: string[] = []
+  if (result.organizationTitle) subtitleLines.push(result.organizationTitle)
+  if (result.subtitleLines) subtitleLines.push(...result.subtitleLines)
+  return {
+    title: formatReportTitle(result) || result.reportNameRu,
+    subtitleLines,
   }
-  return formatMoney1C(n, decimals)
 }
 
 /**
  * Готовит данные результата отчёта для выгрузки в Excel — 1 в 1 с таблицей
- * (`ReportResultView`). Layout-aware:
+ * (`ReportResultView`), в бизнес-оформлении: заголовок листа, двухуровневая
+ * шапка, числовые ячейки с форматом разрядов, выделенные итоги, автоширина.
  *
- * - **LEDGER** (Карточка/Проводки/Анализ): колонки = реальные колонки
+ * - **LEDGER** (Карточка/Проводки/Анализ/Обороты): колонки = реальные колонки
  *   результата. Span-строки (с labelText) выводят подпись в первую колонку и
  *   суммы — в остальные; выделенные строки без labelText — обычные ячейки.
  * - **TREE** (ОСВ): первая колонка — наименование группы с отступом по уровню;
@@ -130,16 +218,17 @@ const buildLedgerExport = (
   columns: ReportColumnDto[],
   isKz: boolean
 ): TableExportData => {
-  const headers = columns.map((c) => exportTitle(c, isKz))
-  const out: (string | number | null)[][] = []
+  const out: XlsxCell[][] = []
+  const rowKinds: XlsxRowKind[] = []
 
   for (const row of result.rows) {
     const subLabels = Array.isArray(row.cells[POKAZATEL_COL])
       ? (row.cells[POKAZATEL_COL] as unknown[]).map((x) => String(x))
       : undefined
+    rowKinds.push(rowKindOf(row))
     if (isSpanExportRow(row)) {
       const span = Math.min(Math.max(row.labelColSpan ?? 1, 1), columns.length)
-      const line: (string | number | null)[] = []
+      const line: XlsxCell[] = []
       for (let i = 0; i < span; i++) {
         line.push(i === 0 ? (row.labelText ?? row.groupValue ?? '') : '')
       }
@@ -152,7 +241,14 @@ const buildLedgerExport = (
     }
   }
 
-  return { headers, rows: out }
+  return {
+    ...sheetChrome(result),
+    headers: columns.map((c) => columnTitle(c, isKz)),
+    headerRows: buildHeaderRows(columns, isKz),
+    columns: buildColumnMeta(columns, false),
+    rows: out,
+    rowKinds,
+  }
 }
 
 /** TREE: служебная колонка-группа с отступом + дерево + строка «Итого». */
@@ -176,13 +272,14 @@ const buildTreeExport = (
     : columns
   const firstHeader = treeColUsed ? columnTitle(treeCol, isKz) : groupHeader
 
-  const headers = [firstHeader, ...bodyColumns.map((c) => exportTitle(c, isKz))]
-  const out: (string | number | null)[][] = []
+  const out: XlsxCell[][] = []
+  const rowKinds: XlsxRowKind[] = []
 
   const walk = (rows: ReportRowDto[]) => {
     for (const row of rows) {
       const indent = '  '.repeat(row.level)
       const label = row.labelText ?? row.groupValue ?? ''
+      rowKinds.push(rowKindOf(row))
       out.push([
         `${indent}${label}`,
         ...bodyColumns.map((c) => formatCell(row.cells[c.code], c)),
@@ -193,11 +290,19 @@ const buildTreeExport = (
   walk(result.rows)
 
   if (Object.keys(result.total).length > 0) {
+    rowKinds.push('highlight')
     out.push([
       totalLabel,
       ...bodyColumns.map((c) => formatCell(result.total[c.code], c)),
     ])
   }
 
-  return { headers, rows: out }
+  return {
+    ...sheetChrome(result),
+    headers: [firstHeader, ...bodyColumns.map((c) => columnTitle(c, isKz))],
+    headerRows: buildHeaderRows(bodyColumns, isKz, firstHeader),
+    columns: buildColumnMeta(bodyColumns, true),
+    rows: out,
+    rowKinds,
+  }
 }

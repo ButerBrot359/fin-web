@@ -20,6 +20,11 @@ export const exportTableToXlsx = (
     name: sheetName,
     headers: data.headers,
     rows: data.rows,
+    title: data.title,
+    subtitleLines: data.subtitleLines,
+    headerRows: data.headerRows,
+    columns: data.columns,
+    rowKinds: data.rowKinds,
   })
   downloadBlob(blob, `${sanitizeFileName(sheetName)}.xlsx`)
 }

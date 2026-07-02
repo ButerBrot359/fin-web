@@ -16,8 +16,6 @@ import { usePanelStore, type PanelEntry } from './stores/panel-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { relaySelectionToParent } from './relay-selection'
 
-export type { PanelEntry }
-
 const SAVE_COMMANDS = ['save', 'saveAndClose', 'post', 'postAndClose']
 
 export function useSduiDispatch() {

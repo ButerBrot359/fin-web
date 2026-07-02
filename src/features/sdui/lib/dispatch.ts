@@ -78,7 +78,7 @@ export function useSduiDispatch() {
   const session = useSduiSession()
 
   const dispatch = useCallback(
-    async (action: ViewAction): Promise<boolean> => {
+    async (action: ViewAction, isRetry = false): Promise<boolean> => {
       const formSessionId = session.formSessionId
       const revision = session.revision
       const { replaceAll, merge, setSession, setRoot, bumpRevision, applyTreePatches, clearAllErrors, setFromServer, resetDirty } = session
@@ -214,7 +214,14 @@ export function useSduiDispatch() {
         return true
       } catch (error) {
         if (error instanceof ViewConflictError) {
-          handleConflict(error.data, action, reopen)
+          const retry =
+            !isRetry && action.type !== 'OPEN' ? () => dispatch(action, true) : null
+          handleConflict(
+            error.data,
+            { setSession, replaceAll },
+            retry,
+            reopen,
+          )
         } else {
           const message = error instanceof Error ? error.message : i18n.t('sdui.requestError')
           showToast('error', message)

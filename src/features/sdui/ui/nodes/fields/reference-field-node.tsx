@@ -1,4 +1,4 @@
-import { useState, useEffect, type FC } from 'react'
+import { useState, useEffect, useRef, type FC } from 'react'
 import { IconButton } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 
@@ -7,7 +7,7 @@ import { useFieldNode } from '../../../lib/hooks/use-field-node'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
-import { apiService } from '@/shared/api/api'
+import { fetchReferenceOptions } from '../../../api/reference-options'
 import { openReferencePicker } from '../../../lib/reference-picker-gateway'
 
 const DOMAIN_PATH_MAP: Record<string, string> = {
@@ -19,13 +19,6 @@ const DOMAIN_PATH_MAP: Record<string, string> = {
 interface ReferenceValue {
   id: number
   presentation: string
-}
-
-interface EntryItem {
-  id: number
-  presentation?: string
-  name?: string
-  [key: string]: unknown
 }
 
 function toSelectOption(ref: ReferenceValue): SelectOption {
@@ -51,6 +44,9 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const requestSeqRef = useRef(0)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   // Инвалидировать кеш опций при смене параметров источника (напр. смена организации)
   const paramsKey = optionsSource?.params
     ? JSON.stringify(optionsSource.params)
@@ -63,44 +59,32 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
 
   const domainPath = DOMAIN_PATH_MAP[domain] ?? 'dictionary-entries'
 
-  const fetchOptions = async (search?: string) => {
+  const loadOptions = (search?: string) => {
+    const url = optionsSource
+      ? optionsSource.url
+      : targetTypeCode
+        ? `/api/${domainPath}/${targetTypeCode}/entries`
+        : null
+    if (!url) return
+    const params = optionsSource ? optionsSource.params : filter
+    const seq = ++requestSeqRef.current
     setLoading(true)
-    try {
-      if (optionsSource) {
-        const res = await apiService.get<{ content?: EntryItem[]; items?: EntryItem[] }>({
-          url: optionsSource.url,
-          params: { ...optionsSource.params, search, page: 0, size: 20 },
-        })
-        const items = res.data.content ?? res.data.items ?? []
-        setOptions(
-          items.map((item) => ({
-            id: item.id,
-            code: String(item.id),
-            label: (item.presentation ?? item.name ?? String(item.id)) as string,
-          })),
-        )
-        return
-      }
-
-      // Legacy path — field without optionsSource
-      if (!targetTypeCode) return
-      const res = await apiService.get<{ content?: EntryItem[]; items?: EntryItem[] }>({
-        url: `/api/${domainPath}/${targetTypeCode}/entries`,
-        params: { search, page: 0, size: 20, ...filter },
+    fetchReferenceOptions({ url, params, search })
+      .then((opts) => {
+        if (seq !== requestSeqRef.current) return // поздний ответ раннего запроса — игнор
+        setOptions(opts)
       })
-      const items = res.data.content ?? res.data.items ?? []
-      setOptions(
-        items.map((item) => ({
-          id: item.id,
-          code: String(item.id),
-          label: (item.presentation ?? item.name ?? String(item.id)) as string,
-        })),
-      )
-    } catch {
-      // silently fail
-    } finally {
-      setLoading(false)
-    }
+      .catch(() => {
+        if (seq === requestSeqRef.current) setOptions([])
+      })
+      .finally(() => {
+        if (seq === requestSeqRef.current) setLoading(false)
+      })
+  }
+
+  const loadOptionsDebounced = (search: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => loadOptions(search), 300)
   }
 
   const selectedOption = rawValue ? toSelectOption(rawValue) : null
@@ -164,12 +148,12 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
         onInputChange={(_e, val, reason) => {
           setInputValue(val)
           if (reason === 'input') {
-            void fetchOptions(val)
+            loadOptionsDebounced(val)
           }
         }}
         onOpen={() => {
           if (options.length === 0) {
-            void fetchOptions()
+            loadOptions()
           }
         }}
         onChange={applySelected}

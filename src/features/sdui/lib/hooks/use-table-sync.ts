@@ -297,12 +297,9 @@ export function useTableSync(
 
   // ── Register/unregister flush for flush-before-save ──
   useEffect(() => {
-    if (node.binding) {
-      registerPendingFlush(node.binding, () => flushPendingRef.current())
-    }
-    return () => {
-      if (node.binding) unregisterPendingFlush(node.binding)
-    }
+    if (!node.binding) return
+    const token = registerPendingFlush(() => flushPendingRef.current())
+    return () => unregisterPendingFlush(token)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [node.binding])
 

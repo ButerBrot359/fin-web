@@ -109,31 +109,24 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   ])
 
   // ── Footer ──
-  const footerValues = useMemo(() => {
-    if (!node.binding) return undefined
-    return getValue(node.binding + '.footer') as
-      | Record<string, unknown>
-      | undefined
-  }, [node.binding, getValue])
+  const footerValues = node.binding
+    ? (getValue(node.binding + '.footer') as Record<string, unknown> | undefined)
+    : undefined
 
-  const hasFooter = useMemo(
-    () =>
-      Boolean(
-        footerValues &&
-          tableColumns.some((col) => {
-            // Check if any leaf column (recursively) has a footer defined
-            const hasFooterDef = (
-              c: (typeof tableColumns)[number],
-            ): boolean => {
-              if ('columns' in c && Array.isArray(c.columns)) {
-                return c.columns.some(hasFooterDef)
-              }
-              return Boolean(c.footer)
-            }
-            return hasFooterDef(col)
-          }),
-      ),
-    [footerValues, tableColumns],
+  const hasFooter = Boolean(
+    footerValues &&
+      tableColumns.some((col) => {
+        // Check if any leaf column (recursively) has a footer defined
+        const hasFooterDef = (
+          c: (typeof tableColumns)[number],
+        ): boolean => {
+          if ('columns' in c && Array.isArray(c.columns)) {
+            return c.columns.some(hasFooterDef)
+          }
+          return Boolean(c.footer)
+        }
+        return hasFooterDef(col)
+      }),
   )
 
   const table = useReactTable({

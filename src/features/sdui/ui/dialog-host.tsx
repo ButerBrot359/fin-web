@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Dialog, DialogTitle, DialogContent, Drawer, IconButton } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, Drawer, IconButton, Typography } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 
 import { usePanelStore, type PanelEntry } from '../lib/stores/panel-store'
@@ -10,6 +10,9 @@ import {
 import { applyPatches, clearErrors } from '../lib/patch-applier'
 import type { ViewNode, ViewPatch } from '../types/view'
 import { NodeRenderer } from './node-renderer'
+
+const PANEL_BG = '#F2F6FD'
+const BACKDROP_BG = 'rgba(34, 33, 36, 0.6)'
 
 const PanelFormProvider = ({
   panel,
@@ -99,16 +102,16 @@ export const DialogHost = () => {
               fullScreen
               slotProps={{
                 paper: {
-                  sx: { backgroundColor: '#F2F6FD' },
+                  sx: { backgroundColor: PANEL_BG },
                 },
               }}
             >
               <div className="flex h-full flex-col p-7">
                 <div className="flex shrink-0 items-center justify-between">
                   {panel.node.props?.title != null && (
-                    <span className="text-lg font-semibold">
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
                       {String(panel.node.props.title)}
-                    </span>
+                    </Typography>
                   )}
                   <IconButton onClick={() => usePanelStore.getState().pop()}>
                     <CloseIcon sx={{ fontSize: 20 }} />
@@ -138,12 +141,12 @@ export const DialogHost = () => {
                     width,
                     borderTopLeftRadius: 40,
                     borderBottomLeftRadius: 40,
-                    backgroundColor: '#F2F6FD',
+                    backgroundColor: PANEL_BG,
                     overflow: 'hidden',
                   },
                 },
                 backdrop: {
-                  sx: { backgroundColor: 'rgba(34, 33, 36, 0.6)' },
+                  sx: { backgroundColor: BACKDROP_BG },
                 },
               }}
             >

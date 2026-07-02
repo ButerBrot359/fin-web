@@ -5,7 +5,15 @@ import type { ViewRequest, ViewResponse, ConflictError } from '../types/view'
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 30000,
 })
+
+function extractMessage(data: unknown): string | undefined {
+  if (data && typeof data === 'object' && 'message' in data && typeof (data as Record<string, unknown>).message === 'string') {
+    return (data as Record<string, string>).message
+  }
+  return undefined
+}
 
 export class ViewConflictError extends Error {
   constructor(public data: ConflictError) {
@@ -23,10 +31,7 @@ export const viewTransport = {
         throw new ViewConflictError(error.response.data as ConflictError)
       }
       if (axios.isAxiosError(error)) {
-        throw new Error(
-          (error.response?.data as Record<string, unknown>)?.message as string
-            ?? error.message,
-        )
+        throw new Error(extractMessage(error.response?.data) ?? error.message)
       }
       throw error
     }

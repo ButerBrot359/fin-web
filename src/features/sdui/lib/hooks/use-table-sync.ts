@@ -24,6 +24,8 @@ export interface TableRow {
   [key: string]: unknown
 }
 
+const EMPTY_ROWS: TableRow[] = []
+
 export interface UseTableSyncResult {
   rows: TableRow[]
   updateCell: (rowId: string, binding: string, value: unknown) => void
@@ -64,7 +66,7 @@ export function useTableSync(
   const { getValue, setValue } = useSduiSession()
   const dispatch = useSduiDispatch()
 
-  const canonRows = (getValue(node.binding) as TableRow[] | undefined) ?? []
+  const canonRows = (getValue(node.binding) as TableRow[] | undefined) ?? EMPTY_ROWS
   const [localRows, setLocalRows] = useState<TableRow[]>(canonRows)
 
   // Keep a ref in sync with localRows to avoid stale closures

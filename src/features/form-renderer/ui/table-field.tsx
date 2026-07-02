@@ -20,6 +20,7 @@ import emptyImage from '@/shared/assets/info/empty.png'
 import { useTableColumns } from '../lib/hooks/use-table-columns'
 import { buildEmptyRow } from '../lib/utils/build-empty-row'
 import { fieldFilterToSearchParams } from '../lib/utils/field-filter-params'
+import { isFieldVisible, tableColumnPath } from '../lib/utils/field-path'
 import {
   getOrgScopeSourceField,
   synthesizeReferenceFilter,
@@ -60,8 +61,12 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
   const { columns, isLoading } = useTableColumns(attribute)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
-  const { registerTableReplacer, unregisterTableReplacer, fieldFilters } =
-    useFormRendererContext()
+  const {
+    registerTableReplacer,
+    unregisterTableReplacer,
+    fieldFilters,
+    visibilityMap,
+  } = useFormRendererContext()
 
   // Источник отбора для ссылочных колонок ТЧ (напр. МОЛ → «Организация»
   // документа из шапки). Значение читаем live — фильтр реактивен.
@@ -119,13 +124,20 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
       ),
     }
 
-    const dataCols: ColumnDef<Record<string, unknown>>[] = columns.map(
+    // Динамическая видимость колонок (formConfig.visibility) поверх статической
+    // showInForm (уже отфильтровано в use-table-columns): реактивна к смене
+    // значений шапки, поэтому накладывается здесь, а не в кэшируемом хуке.
+    const visibleColumns = columns.filter((col) =>
+      isFieldVisible(visibilityMap, tableColumnPath(attribute.code, col.code))
+    )
+
+    const dataCols: ColumnDef<Record<string, unknown>>[] = visibleColumns.map(
       (col) => {
         // Фильтр колонки ТЧ: серверный `fieldFilters` по пути `<КодТЧ><КодКолонки>`
         // (напр. `OsnovnyeSredstvaMOL`) имеет приоритет; иначе синтезируем из
         // живого значения поля-источника (МОЛ → «Организация» документа).
         const effectiveFilter =
-          fieldFilters[`${attribute.code}${col.code}`] ??
+          fieldFilters[tableColumnPath(attribute.code, col.code)] ??
           synthesizeReferenceFilter(col, () => orgSourceValue)
         const serverFilterParams = fieldFilterToSearchParams(effectiveFilter)
         return {
@@ -152,6 +164,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     attribute.code,
     form.control,
     fieldFilters,
+    visibilityMap,
     orgSourceValue,
   ])
 

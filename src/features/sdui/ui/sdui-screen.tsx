@@ -38,7 +38,6 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   const reset = useTreeStore((s) => s.reset)
   const dispatch = useSduiDispatch()
   const dirty = useViewStateStore((s) => s.dirty)
-  const viewStateValues = useViewStateStore((s) => s.state)
 
   const title = (tree?.props?.title as string | undefined) ?? ''
   useEffect(() => {
@@ -105,12 +104,17 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     }
   }, [location.pathname, dispatch, consumePendingAction, onSavedAndClosed])
 
+  // Стабильность контекста — суть фикса M1: пересоздание только при смене tree/dirty,
+  // не при каждом вводе символа.
   const sessionValue = useMemo<SduiSessionValue>(
     () => ({
-      formSessionId: useTreeStore.getState().formSessionId,
-      revision: useTreeStore.getState().revision,
+      kind: 'root',
+      getSession: () => {
+        const s = useTreeStore.getState()
+        return { formSessionId: s.formSessionId, revision: s.revision }
+      },
       getValue: (binding) =>
-        binding ? viewStateValues[binding] : undefined,
+        binding ? useViewStateStore.getState().state[binding] : undefined,
       setValue: useViewStateStore.getState().set,
       setFromServer: useViewStateStore.getState().setFromServer,
       getAll: useViewStateStore.getState().getAll,
@@ -125,7 +129,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       applyTreePatches: useTreeStore.getState().applyPatches,
       clearAllErrors: useTreeStore.getState().clearAllErrors,
     }),
-    [tree, dirty, viewStateValues],
+    [tree, dirty],
   )
 
   if (!tree) return <PageSkeleton />

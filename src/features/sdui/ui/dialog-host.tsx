@@ -32,8 +32,15 @@ const PanelFormProvider = ({
 
   const sessionValue = useMemo<SduiSessionValue>(
     () => ({
-      formSessionId: panel.session?.formSessionId ?? null,
-      revision: panel.session?.revision ?? null,
+      kind: 'panel',
+      // Ревизия читается из АКТУАЛЬНОГО стека — фикс M2 для панелей.
+      getSession: () => ({
+        formSessionId: panel.session?.formSessionId ?? null,
+        revision:
+          getPanelStack().find((p) => p.panelId === panel.panelId)?.session?.revision ??
+          panel.session?.revision ??
+          null,
+      }),
       getValue: (binding) => (binding ? viewState[binding] : undefined),
       setValue: (binding, value) => {
         setViewState((s) => ({ ...s, [binding]: value }))

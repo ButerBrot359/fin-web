@@ -12,11 +12,14 @@ vi.mock('../dispatch', () => ({
 const sessionState: Record<string, unknown> = {}
 vi.mock('../sdui-session-context', () => ({
   useSduiSession: () => ({
+    kind: 'panel',
+    getSession: () => ({ formSessionId: null, revision: null }),
     getValue: (b?: string) => (b ? sessionState[b] : undefined),
     setValue: (b: string, v: unknown) => {
       sessionState[b] = v
     },
   }),
+  useBindingValue: (b?: string) => (b ? sessionState[b] : undefined),
 }))
 
 const node = { id: 'tbl', type: 'TABLE', binding: 'rows' } as ViewNode

@@ -5,8 +5,8 @@ import { useTreeStore } from './stores/tree-store'
 import { useViewStateStore } from './stores/view-state-store'
 
 export interface SduiSessionValue {
-  formSessionId: string | null
-  revision: number | null
+  kind: 'root' | 'panel'
+  getSession: () => { formSessionId: string | null; revision: number | null }
   getValue: (binding: string | undefined) => unknown
   setValue: (binding: string, value: unknown) => void
   setFromServer: (binding: string, value: unknown) => void
@@ -35,8 +35,11 @@ export const useSduiSession = (): SduiSessionValue => {
 
   // Fallback: global stores (for components outside provider, e.g. SduiScreen itself)
   return {
-    formSessionId: useTreeStore.getState().formSessionId,
-    revision: useTreeStore.getState().revision,
+    kind: 'root',
+    getSession: () => {
+      const s = useTreeStore.getState()
+      return { formSessionId: s.formSessionId, revision: s.revision }
+    },
     getValue: (binding) =>
       binding ? useViewStateStore.getState().state[binding] : undefined,
     setValue: useViewStateStore.getState().set,
@@ -53,6 +56,19 @@ export const useSduiSession = (): SduiSessionValue => {
     applyTreePatches: useTreeStore.getState().applyPatches,
     clearAllErrors: useTreeStore.getState().clearAllErrors,
   }
+}
+
+// Точечная подписка на одно значение из view-state.
+// Рут: zustand-селектор — нода ре-рендерится только при изменении СВОЕГО значения (фикс M1).
+// Панель: локальный useState в PanelFormProvider, читаем через getValue.
+export function useBindingValue(binding: string | undefined): unknown {
+  const session = useSduiSession()
+  // Вызываем безусловно — правила хуков соблюдены.
+  const rootValue = useViewStateStore((s) =>
+    session.kind === 'root' && binding ? s.state[binding] : undefined,
+  )
+  if (session.kind === 'root') return rootValue
+  return session.getValue(binding)
 }
 
 interface SduiSessionProviderProps {

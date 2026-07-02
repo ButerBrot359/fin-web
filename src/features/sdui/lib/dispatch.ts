@@ -79,8 +79,7 @@ export function useSduiDispatch() {
 
   const dispatch = useCallback(
     async (action: ViewAction, isRetry = false): Promise<boolean> => {
-      const formSessionId = session.formSessionId
-      const revision = session.revision
+      const { formSessionId, revision } = session.getSession()
       const { replaceAll, merge, setSession, setRoot, bumpRevision, applyTreePatches, clearAllErrors, setFromServer, resetDirty } = session
 
       const closeSession = async () => {
@@ -112,7 +111,7 @@ export function useSduiDispatch() {
             entry.session = {
               formSessionId: effect.sessionId,
               revision: effect.childRevision ?? 0,
-              parentSessionId: session.formSessionId ?? undefined,
+              parentSessionId: session.getSession().formSessionId ?? undefined,
               targetNodeId: undefined,
             }
           }

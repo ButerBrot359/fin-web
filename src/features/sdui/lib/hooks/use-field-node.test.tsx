@@ -10,11 +10,14 @@ vi.mock('../dispatch', () => ({ useSduiDispatch: () => mockDispatch }))
 const state: Record<string, unknown> = { name: 'Иван' }
 vi.mock('../sdui-session-context', () => ({
   useSduiSession: () => ({
+    kind: 'panel',
+    getSession: () => ({ formSessionId: null, revision: null }),
     getValue: (b?: string) => (b ? state[b] : undefined),
     setValue: (b: string, v: unknown) => {
       state[b] = v
     },
   }),
+  useBindingValue: (b?: string) => (b ? state[b] : undefined),
 }))
 
 describe('useFieldNode', () => {

@@ -1,6 +1,6 @@
 import type { ViewNode } from '../../types/view'
 import { useSduiDispatch } from '../dispatch'
-import { useSduiSession } from '../sdui-session-context'
+import { useSduiSession, useBindingValue } from '../sdui-session-context'
 
 export interface FieldNodeCommon {
   label?: string
@@ -16,8 +16,10 @@ export interface FieldNodeCommon {
 }
 
 export function useFieldNode(node: ViewNode): FieldNodeCommon {
-  const { getValue, setValue } = useSduiSession()
+  const { setValue } = useSduiSession()
   const dispatch = useSduiDispatch()
+  // Точечная подписка: нода ре-рендерится только при изменении своего значения (фикс M1).
+  const value = useBindingValue(node.binding)
 
   return {
     label: node.props?.label as string | undefined,
@@ -27,7 +29,7 @@ export function useFieldNode(node: ViewNode): FieldNodeCommon {
     enabled: (node.props?.enabled as boolean | undefined) ?? true,
     error: node.props?.error as string | undefined,
     flex: node.props?.flex as number | string | undefined,
-    value: getValue(node.binding),
+    value,
     setValue: (v) => {
       if (node.binding) setValue(node.binding, v)
     },

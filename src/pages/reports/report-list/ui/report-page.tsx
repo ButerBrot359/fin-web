@@ -8,6 +8,8 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Button, Typography } from '@mui/material'
 
+import { format, isValid, parseISO } from '@/shared/lib/utils/date'
+
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import {
   ReportSettingsDrawer,
@@ -47,6 +49,38 @@ interface PeriodValue {
 }
 
 const isPeriod = (p: ReportParameterDto) => p.dataType === 'PERIOD'
+
+/**
+ * Нормализация даты для тела `/run`: бэкенд ждёт локальную дату-время без
+ * зоны (`yyyy-MM-dd'T'HH:mm:ss`), а инпуты отдают ISO с `Z` (UTC) — такой
+ * формат бэкенд не парсит, и период молча терялся (отчёт без движений).
+ */
+const toLocalDateTime = (raw: string): string => {
+  if (!raw) return raw
+  const d = parseISO(raw)
+  if (!isValid(d)) return raw
+  return format(d, "yyyy-MM-dd'T'HH:mm:ss")
+}
+
+/** Нормализует PERIOD-значения ({from,to}) в теле запроса формирования. */
+const normalizeBodyDates = (
+  parameters: Record<string, unknown>,
+  metaParams: ReportParameterDto[]
+): Record<string, unknown> => {
+  const out: Record<string, unknown> = { ...parameters }
+  for (const p of metaParams) {
+    if (!isPeriod(p)) continue
+    const v = out[p.code] as PeriodValue | undefined
+    if (v && typeof v === 'object') {
+      out[p.code] = {
+        ...v,
+        from: toLocalDateTime(v.from),
+        to: toLocalDateTime(v.to),
+      }
+    }
+  }
+  return out
+}
 
 /** Префикс ключей URL для отборов (вкладка «Отборы»), чтобы не путать с параметрами. */
 const FILTER_PREFIX = 'flt.'
@@ -201,7 +235,7 @@ export const ReportPage = () => {
       .every((p) => isFilled(p, applied[p.code] as ReportParamValue))
     if (!hasAny || !requiredMet) return null
     return {
-      parameters: applied,
+      parameters: normalizeBodyDates(applied, meta.parameters),
       ...(appliedFilters.length > 0 ? { filters: appliedFilters } : {}),
     }
   }, [meta, searchParams, appliedFilters])
@@ -587,31 +621,40 @@ const ReportPageContent = ({
             )
           })}
 
+          {/* «Сформировать» — фирменная жёлтая кнопка 1С. */}
           <Button
             variant="contained"
+            disableElevation
             disabled={!canSubmit}
             onClick={onSubmit}
-            sx={{ height: 48 }}
+            sx={{
+              height: 48,
+              bgcolor: '#fcd53b',
+              color: '#1a1a1a',
+              fontWeight: 700,
+              border: '1px solid #e3b93c',
+              '&:hover': { bgcolor: '#f6c827' },
+            }}
           >
             {t('reports.generate')}
           </Button>
 
-          {/* Печать / Excel / Настройки — когда отчёт сформирован табличный. */}
+          {/* Печать / Excel — когда отчёт сформирован табличный. */}
           {applied && tabularResult && (
             <>
-              <Button
-                variant="outlined"
-                onClick={handleExportExcel}
-                sx={{ height: 48 }}
-              >
-                {t('reports.exportExcel')}
-              </Button>
               <Button
                 variant="outlined"
                 onClick={handlePrint}
                 sx={{ height: 48 }}
               >
                 {t('reports.print')}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={handleExportExcel}
+                sx={{ height: 48 }}
+              >
+                {t('reports.exportExcel')}
               </Button>
             </>
           )}
@@ -621,11 +664,24 @@ const ReportPageContent = ({
               onClick={() => {
                 setSettingsOpen(true)
               }}
-              sx={{ height: 48 }}
+              sx={{ height: 48, marginLeft: 'auto' }}
             >
               {t('reportSettings.title')}
             </Button>
           )}
+        </div>
+      )}
+
+      {/* Watermark 1С до первого формирования. */}
+      {!applied && meta.parameters.length > 0 && (
+        <div className="flex items-center justify-center py-16">
+          <Typography
+            variant="body2"
+            className="rounded border border-[#d9d9d9] bg-[#fffbe6] px-4 py-2"
+            sx={{ color: '#333' }}
+          >
+            {t('reports.notGenerated')}
+          </Typography>
         </div>
       )}
 
@@ -665,10 +721,12 @@ const ReportPageContent = ({
           )}
 
           {!isRunning && !isRunError && tabularResult && useUnifiedRenderer && (
-            <ReportResultView
-              result={tabularResult}
-              hiddenColumns={hiddenColumns}
-            />
+            <div className="report-print-area">
+              <ReportResultView
+                result={tabularResult}
+                hiddenColumns={hiddenColumns}
+              />
+            </div>
           )}
 
           {!isRunning &&

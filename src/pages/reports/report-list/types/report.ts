@@ -105,6 +105,15 @@ export interface ReportColumnDto {
   blankOnZero?: boolean
   /** Явное выравнивание ячейки (LEFT/RIGHT); по умолчанию — по роли. */
   align?: 'LEFT' | 'RIGHT'
+  /**
+   * Верхний ряд двухуровневой шапки (как «Дебет» над [Счет|Сумма] в 1С).
+   * Соседние колонки с одинаковым groupTitle объединяются colspan;
+   * колонки без groupTitle занимают оба ряда (rowspan=2).
+   */
+  groupTitleRu?: string
+  groupTitleKz?: string
+  /** Рендер значения с 1С-признаком сальдо: «Д <abs>» при ≥0, «К <abs>» при <0. */
+  dcIndicator?: boolean
 }
 
 /** Одно допустимое значение параметра (для NUMBER с фиксированным списком). */
@@ -216,6 +225,10 @@ export interface ReportResultDto {
   titleTemplate?: string
   /** Значения для подстановки в `titleTemplate` ({from},{to},{account}…). */
   appliedTitleValues?: Record<string, unknown>
+  /** Представление организации над заголовком (1С печатает её первой строкой). */
+  organizationTitle?: string
+  /** Строки под заголовком: «Выводимые данные: Сумма» и т.п. */
+  subtitleLines?: string[]
 }
 
 /** Структурный отбор в теле запроса формирования отчёта. */

@@ -48,3 +48,24 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+
+/* Печать отчёта (кнопка «Печать», window.print): на бумагу уходит только
+   результат отчёта — как печать табличного документа в 1С. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .report-print-area,
+  .report-print-area * {
+    visibility: visible;
+  }
+  .report-print-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    overflow: visible !important;
+  }
+  .report-print-area .overflow-auto {
+    overflow: visible !important;
+  }
+}

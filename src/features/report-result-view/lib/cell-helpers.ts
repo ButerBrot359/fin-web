@@ -14,34 +14,52 @@ export const isRightAligned = (col: ReportColumnDto): boolean => {
   return isMeasure(col)
 }
 
-/** Строки-итоги/обороты/сальдо ⇒ значения денежных ячеек жирные. */
-const BOLD_ROW_KINDS = new Set<RowKind>([
-  'CLOSING_BALANCE',
-  'TOTAL',
-  'SUBTOTAL',
-  'TURNOVER',
-])
+/**
+ * Цвет 1С для групп, итогов и шапки колонок — тёмно-зелёный из живого
+ * табличного документа 1С (rgb(0,63,47)); заливок 1С не использует.
+ */
+export const GREEN_1C = 'rgb(0,63,47)'
 
-/** Денежные ячейки этой строки рендерим жирным. */
-export const isBoldMoneyRow = (rowKind?: RowKind): boolean =>
-  rowKind != null && BOLD_ROW_KINDS.has(rowKind)
-
-/** Span-строки LEDGER: подпись растягивается на первые колонки, дальше значения. */
-const SPAN_ROW_KINDS = new Set<RowKind>([
+/** Строки-итоги/обороты/сальдо/группы ⇒ вся строка жирная тёмно-зелёная (1С). */
+const HIGHLIGHT_ROW_KINDS = new Set<RowKind>([
+  'GROUP_HEADER',
   'OPENING_BALANCE',
-  'TURNOVER',
   'CLOSING_BALANCE',
-  'SUBTOTAL',
   'TOTAL',
+  'SUBTOTAL',
+  'TURNOVER',
 ])
 
-/** Является ли строка span-строкой (подпись + значения) в режиме LEDGER. */
-export const isSpanRow = (rowKind?: RowKind): boolean =>
-  rowKind != null && SPAN_ROW_KINDS.has(rowKind)
+/** Строка выделяется 1С-стилем (bold + зелёный), включая текстовые ячейки. */
+export const isHighlightRow = (rowKind?: RowKind): boolean =>
+  rowKind != null && HIGHLIGHT_ROW_KINDS.has(rowKind)
+
+/**
+ * Является ли строка span-строкой (подпись labelText на первые колонки,
+ * дальше значения). Строки-итоги БЕЗ labelText (напр. «Начальное сальдо»
+ * текстом в ячейке Кор.Счета в Анализе счёта) рендерятся как обычные,
+ * но с 1С-выделением.
+ */
+export const isSpanRow = (row: {
+  rowKind?: RowKind
+  labelText?: string
+}): boolean => isHighlightRow(row.rowKind) && row.labelText != null
 
 /** Сальдо «на конец» / «Итого» — самые жирные span-строки. */
 export const isStrongSpanRow = (rowKind?: RowKind): boolean =>
   rowKind === 'CLOSING_BALANCE' || rowKind === 'TOTAL'
+
+/**
+ * Денежный формат 1С: всегда фиксированное число десятичных знаков (2 для
+ * сумм, 3 для количества), разряды пробелами, десятичный разделитель —
+ * запятая («1 350 000,00»).
+ */
+export const formatMoney1C = (value: number, decimals = 2): string => {
+  const negative = value < 0
+  const [intPart, decPart] = Math.abs(value).toFixed(decimals).split('.')
+  const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  return (negative ? '-' : '') + formattedInt + (decPart ? `,${decPart}` : '')
+}
 
 /** Безопасное приведение значения ячейки к числу (или null). */
 export const toNum = (v: unknown): number | null => {

@@ -18,7 +18,12 @@ import type {
   ReportRowDto,
 } from '@/pages/reports/report-list/types/report'
 
-import { isMeasure, isRightAligned } from '../lib/cell-helpers'
+import {
+  GREEN_1C,
+  isHighlightRow,
+  isMeasure,
+  isRightAligned,
+} from '../lib/cell-helpers'
 import { ReportCell } from './report-cell'
 
 interface TreeTableProps {
@@ -26,19 +31,28 @@ interface TreeTableProps {
   columns: ReportColumnDto[]
 }
 
-const tdBase = 'overflow-hidden whitespace-nowrap px-3 py-1.5'
-const thBase =
-  'whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase text-ui-06'
+/** Сетка 1С: тонкие серые линии, плотные ячейки. */
+const tdBase =
+  'overflow-hidden whitespace-nowrap border border-[#d9d9d9] px-1.5 py-0.5'
+const thBase = 'whitespace-nowrap border border-[#d9d9d9] px-1.5 py-1 text-left'
+
+/** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, без капса. */
+const thTextSx = { color: GREEN_1C, fontWeight: 700 }
 
 /** Локализованный заголовок колонки. */
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
 
+/** Локализованный верхний ряд шапки (группа «Сальдо на начало периода» и т.п.). */
+const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
+  ((isKz ? col.groupTitleKz : col.groupTitleRu) || col.groupTitleRu) ?? ''
+
 /**
- * TREE-таблица результата (как ОСВ): рекурсивное дерево по `rows[].children`
- * через TanStack, раскрытие узлов. Денежные ячейки — единый 1С-формат
- * (negativeRed/blankOnZero). Группы (depth 0 ∥ rowKind=GROUP_HEADER) жирные.
- * Внизу — строка «Итого» из `result.total`.
+ * TREE-таблица результата (как ОСВ в 1С): рекурсивное дерево по
+ * `rows[].children`, раскрыто по умолчанию. Первая колонка — группа
+ * (значение `groupValue`, заголовок берётся из первой DIMENSION-колонки,
+ * которая сама в теле не дублируется). Группы и «Итого» — жирные
+ * тёмно-зелёные без заливок; двухуровневая шапка через `groupTitleRu`.
  */
 export const TreeTable = ({ result, columns }: TreeTableProps) => {
   const { t, i18n } = useTranslation()
@@ -50,6 +64,25 @@ export const TreeTable = ({ result, columns }: TreeTableProps) => {
   useEffect(() => {
     setExpanded(true)
   }, [result])
+
+  // Первая DIMENSION-колонка, чьи значения лежат в groupValue строк, — это
+  // «колонка дерева»: её заголовок вешаем на первую колонку и не дублируем.
+  const treeColumn = useMemo<ReportColumnDto | null>(() => {
+    const first = result.columns.find((c) => c.role === 'DIMENSION')
+    if (!first) return null
+    const usedAsGroup = result.rows.some((r) => r.groupCode === first.code)
+    const hasOwnCells = result.rows.some(
+      (r) => r.cells[first.code] != null && r.cells[first.code] !== ''
+    )
+    return usedAsGroup && !hasOwnCells ? first : null
+  }, [result])
+
+  // Колонки тела: без колонки дерева (она рендерится первой, из groupValue).
+  const bodyColumns = useMemo(
+    () =>
+      treeColumn ? columns.filter((c) => c.code !== treeColumn.code) : columns,
+    [columns, treeColumn]
+  )
 
   // Колонка-заглушка для модели дерева TanStack; рендер тела кастомный.
   const tableColumns = useMemo<ColumnDef<ReportRowDto>[]>(
@@ -70,6 +103,49 @@ export const TreeTable = ({ result, columns }: TreeTableProps) => {
       parent ? `${parent.id}.${String(index)}` : String(index),
   })
 
+  const headModel = useMemo(() => {
+    const hasGroups = bodyColumns.some((c) => columnGroupTitle(c, isKz))
+    if (!hasGroups) return null
+    const topRow: {
+      key: string
+      title: string
+      colSpan: number
+      rowSpan: number
+    }[] = []
+    const subRow: { key: string; col: ReportColumnDto }[] = []
+    let i = 0
+    while (i < bodyColumns.length) {
+      const col = bodyColumns[i]
+      const group = columnGroupTitle(col, isKz)
+      if (!group) {
+        topRow.push({
+          key: col.code,
+          title: columnTitle(col, isKz),
+          colSpan: 1,
+          rowSpan: 2,
+        })
+        i++
+        continue
+      }
+      let j = i
+      while (
+        j < bodyColumns.length &&
+        columnGroupTitle(bodyColumns[j], isKz) === group
+      ) {
+        subRow.push({ key: bodyColumns[j].code, col: bodyColumns[j] })
+        j++
+      }
+      topRow.push({
+        key: `grp-${col.code}`,
+        title: group,
+        colSpan: j - i,
+        rowSpan: 1,
+      })
+      i = j
+    }
+    return { topRow, subRow }
+  }, [bodyColumns, isKz])
+
   if (result.rows.length === 0) {
     return (
       <div className="flex items-center justify-center py-10">
@@ -80,11 +156,17 @@ export const TreeTable = ({ result, columns }: TreeTableProps) => {
     )
   }
 
-  /** Жирная ли строка-группа (узел верхнего уровня или явный GROUP_HEADER). */
+  /** Выделенная 1С-строка: группа дерева либо строка-итог по rowKind. */
   const isGroupRow = (row: Row<ReportRowDto>): boolean =>
-    row.original.rowKind === 'GROUP_HEADER' || row.depth === 0
+    isHighlightRow(row.original.rowKind) ||
+    (row.original.rowKind == null && row.depth === 0) ||
+    row.original.rowKind === 'GROUP_HEADER'
 
-  // Первая колонка (наименование группы) со стрелкой разворота и отступом.
+  const treeHeaderTitle = treeColumn
+    ? columnTitle(treeColumn, isKz)
+    : t('reports.group')
+
+  // Первая колонка (наименование группы) со стрелкой разворота и отступом 1С (~13px).
   const renderGroupCell = (row: Row<ReportRowDto>) => {
     const canExpand = row.getCanExpand()
     const isExpanded = row.getIsExpanded()
@@ -93,7 +175,7 @@ export const TreeTable = ({ result, columns }: TreeTableProps) => {
     return (
       <div
         className="flex items-center gap-1"
-        style={{ paddingLeft: row.depth * 20 }}
+        style={{ paddingLeft: row.depth * 13 }}
       >
         {canExpand ? (
           <button
@@ -117,8 +199,7 @@ export const TreeTable = ({ result, columns }: TreeTableProps) => {
         )}
         <Typography
           variant="body2"
-          noWrap
-          className={`text-ui-06 ${bold ? 'font-bold' : ''}`}
+          sx={bold ? { color: GREEN_1C, fontWeight: 700 } : { color: '#333' }}
         >
           {label}
         </Typography>
@@ -127,41 +208,72 @@ export const TreeTable = ({ result, columns }: TreeTableProps) => {
   }
 
   return (
-    <div className="overflow-auto rounded-md border border-ui-04">
-      <table className="w-full border-collapse">
-        <thead className="bg-ui-02">
-          <tr className="border-b border-ui-04">
-            {/* Первая колонка — наименование группы (дерево). */}
-            <th className={`${thBase} text-left`}>{t('reports.group')}</th>
-            {columns.map((col) => (
-              <th
-                key={col.code}
-                className={`${thBase} ${
-                  isRightAligned(col) ? 'text-right' : 'text-left'
-                }`}
-              >
-                {columnTitle(col, isKz)}
+    <div className="overflow-auto rounded-md border border-[#d9d9d9]">
+      <table className="w-full border-collapse bg-white">
+        <thead>
+          {headModel ? (
+            <>
+              <tr>
+                <th rowSpan={2} className={thBase}>
+                  <Typography variant="body2" sx={thTextSx}>
+                    {treeHeaderTitle}
+                  </Typography>
+                </th>
+                {headModel.topRow.map((cell) => (
+                  <th
+                    key={cell.key}
+                    colSpan={cell.colSpan}
+                    rowSpan={cell.rowSpan}
+                    className={thBase}
+                  >
+                    <Typography variant="body2" sx={thTextSx}>
+                      {cell.title}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                {headModel.subRow.map(({ key, col }) => (
+                  <th key={key} className={thBase}>
+                    <Typography variant="body2" sx={thTextSx}>
+                      {columnTitle(col, isKz)}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+            </>
+          ) : (
+            <tr>
+              <th className={thBase}>
+                <Typography variant="body2" sx={thTextSx}>
+                  {treeHeaderTitle}
+                </Typography>
               </th>
-            ))}
-          </tr>
+              {bodyColumns.map((col) => (
+                <th key={col.code} className={thBase}>
+                  <Typography variant="body2" sx={thTextSx}>
+                    {columnTitle(col, isKz)}
+                  </Typography>
+                </th>
+              ))}
+            </tr>
+          )}
         </thead>
         <tbody>
           {table.getRowModel().rows.map((row) => {
             const bold = isGroupRow(row)
-            const rowBg = row.depth === 0 ? 'bg-ui-02' : 'bg-ui-01'
             return (
-              <tr
-                key={row.id}
-                className={`border-t border-ui-04/60 ${rowBg} hover:bg-ui-07`}
-              >
+              <tr key={row.id} className="hover:bg-ui-07">
                 <td className={`${tdBase} align-top`}>
                   {renderGroupCell(row)}
                 </td>
-                {columns.map((col) => (
+                {bodyColumns.map((col) => (
                   <td
                     key={col.code}
                     className={`${tdBase} align-top ${
-                      isMeasure(col) ? 'text-right tabular-nums' : ''
+                      isMeasure(col) || isRightAligned(col)
+                        ? 'text-right tabular-nums'
+                        : ''
                     }`}
                   >
                     <ReportCell
@@ -176,14 +288,17 @@ export const TreeTable = ({ result, columns }: TreeTableProps) => {
           })}
         </tbody>
         {Object.keys(result.total).length > 0 && (
-          <tfoot className="bg-ui-02 font-bold">
-            <tr className="border-t-2 border-ui-03">
+          <tfoot>
+            <tr>
               <td className={tdBase}>
-                <Typography variant="body2" className="font-bold text-ui-06">
+                <Typography
+                  variant="body2"
+                  sx={{ color: GREEN_1C, fontWeight: 700 }}
+                >
                   {t('reports.total')}
                 </Typography>
               </td>
-              {columns.map((col) => (
+              {bodyColumns.map((col) => (
                 <td
                   key={col.code}
                   className={`${tdBase} ${

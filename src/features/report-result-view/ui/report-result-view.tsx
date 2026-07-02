@@ -17,11 +17,11 @@ interface ReportResultViewProps {
 }
 
 /**
- * Единый 1С-fidelity рендерер результата отчёта (ReportResultDto). Над таблицей
- * — жирный заголовок из `titleTemplate`+`appliedTitleValues`. Диспатч по
- * `result.layout`: `LEDGER` ⇒ плоский регистр (карточка-счёта-стиль со span-
- * строками сальдо/оборотов), иначе (`TREE`/отсутствие) ⇒ раскрываемое дерево.
- * Денежный формат, знак и многострочная аналитика — общие для обоих режимов.
+ * Единый 1С-fidelity рендерер результата отчёта (ReportResultDto). Шапка как в
+ * табличном документе 1С: строка организации (жирная) → заголовок отчёта
+ * (жирный, крупный) → строки «Выводимые данные: …». Диспатч по `result.layout`:
+ * `LEDGER` ⇒ плоский регистр (карточка-счёта-стиль со span-строками),
+ * иначе (`TREE`/отсутствие) ⇒ раскрываемое дерево.
  */
 export const ReportResultView = ({
   result,
@@ -40,17 +40,32 @@ export const ReportResultView = ({
   const isLedger = result.layout === 'LEDGER'
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-1">
+      {result.organizationTitle && (
+        <Typography variant="body2" sx={{ color: '#333', fontWeight: 700 }}>
+          {result.organizationTitle}
+        </Typography>
+      )}
       {title && (
-        <Typography variant="body1" className="font-bold text-ui-06">
+        <Typography
+          variant="body1"
+          sx={{ color: '#333', fontWeight: 700, fontSize: 17 }}
+        >
           {title}
         </Typography>
       )}
-      {isLedger ? (
-        <LedgerTable result={result} columns={columns} />
-      ) : (
-        <TreeTable result={result} columns={columns} />
-      )}
+      {result.subtitleLines?.map((line, i) => (
+        <Typography key={i} variant="caption" sx={{ color: '#333' }}>
+          {line}
+        </Typography>
+      ))}
+      <div className="mt-2">
+        {isLedger ? (
+          <LedgerTable result={result} columns={columns} />
+        ) : (
+          <TreeTable result={result} columns={columns} />
+        )}
+      </div>
     </div>
   )
 }

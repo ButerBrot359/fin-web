@@ -15,9 +15,10 @@ import type {
 } from '@/pages/reports/report-list/types/report'
 
 import {
+  GREEN_1C,
+  isHighlightRow,
   isMeasure,
   isRightAligned,
-  isBoldMoneyRow,
   isSpanRow,
   isStrongSpanRow,
 } from '../lib/cell-helpers'
@@ -28,15 +29,77 @@ interface LedgerTableProps {
   columns: ReportColumnDto[]
 }
 
-const MIN_COL_WIDTH = 60
+const MIN_COL_WIDTH = 40
 
-const td = 'border border-ui-04/60 px-3 py-1.5 align-top'
-const th =
-  'overflow-hidden whitespace-nowrap border border-ui-04/60 px-3 py-2 text-left text-xs font-semibold uppercase text-ui-06'
+/** Код колонки «Показатель» — её значения задают подписи подстрок (Сумма/Кол.). */
+const POKAZATEL_COL = 'Pokazatel'
+
+/** Сетка 1С: тонкие серые линии, плотные ячейки, вертикаль по верху. */
+const td = 'border border-[#d9d9d9] px-1.5 py-0.5 align-top'
+const th = 'overflow-hidden border border-[#d9d9d9] px-1.5 py-1 text-left'
+
+/** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, без капса. */
+const thTextSx = { color: GREEN_1C, fontWeight: 700 }
 
 /** Локализованный заголовок колонки. */
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
+
+/** Локализованный верхний ряд шапки (группа колонок «Дебет»/«Кредит»). */
+const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
+  ((isKz ? col.groupTitleKz : col.groupTitleRu) || col.groupTitleRu) ?? ''
+
+/** Ячейка верхнего ряда двухуровневой шапки: либо группа colspan, либо rowspan. */
+interface HeadCell {
+  key: string
+  title: string
+  colSpan: number
+  rowSpan: number
+  col?: ReportColumnDto
+}
+
+/**
+ * Модель двухуровневой шапки: соседние колонки с одинаковым groupTitle
+ * объединяются в группу (colspan) с подколонками во втором ряду; колонки
+ * без groupTitle занимают оба ряда (rowspan=2). Если групп нет вообще —
+ * шапка одноуровневая.
+ */
+const buildHeadModel = (columns: ReportColumnDto[], isKz: boolean) => {
+  const hasGroups = columns.some((c) => columnGroupTitle(c, isKz))
+  if (!hasGroups) return null
+
+  const topRow: HeadCell[] = []
+  const subRow: { key: string; col: ReportColumnDto }[] = []
+  let i = 0
+  while (i < columns.length) {
+    const col = columns[i]
+    const group = columnGroupTitle(col, isKz)
+    if (!group) {
+      topRow.push({
+        key: col.code,
+        title: columnTitle(col, isKz),
+        colSpan: 1,
+        rowSpan: 2,
+        col,
+      })
+      i++
+      continue
+    }
+    let j = i
+    while (j < columns.length && columnGroupTitle(columns[j], isKz) === group) {
+      subRow.push({ key: columns[j].code, col: columns[j] })
+      j++
+    }
+    topRow.push({
+      key: `grp-${col.code}`,
+      title: group,
+      colSpan: j - i,
+      rowSpan: 1,
+    })
+    i = j
+  }
+  return { topRow, subRow }
+}
 
 /**
  * «Логическая» ширина колонки по роли/семейству: аналитика широкая, период и
@@ -44,24 +107,27 @@ const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
  * (auto-fit), как в карточке счёта.
  */
 const logicalWidth = (col: ReportColumnDto): number => {
-  if (isMeasure(col)) return 120
+  if (isMeasure(col)) return 110
+  if (col.groupTitleRu) return 60 // подколонка «Счет» под Дебет/Кредит — узкая
   switch (col.role) {
     case 'PERIOD':
-      return 150
+      return 90
     case 'DIMENSION':
-      return 220
+      return 210
     case 'ATTRIBUTE':
-      return 190
+      return col.code === POKAZATEL_COL ? 70 : 170
     default:
-      return 160
+      return 150
   }
 }
 
 /**
- * LEDGER-таблица (плоский регистр «как в 1С»): ручной рендер с grid-границами,
- * ресайзом колонок (как Excel) и auto-fit на ширину страницы. Span-строки
- * (Сальдо/Обороты/Итого) рисуют подпись на первые `labelColSpan` колонок и
- * значения в остальных; DATA-строки — обычные. Порт из account-card-table.
+ * LEDGER-таблица (плоский регистр «как в 1С»): ручной рендер с серой сеткой,
+ * ресайзом колонок и auto-fit на ширину страницы. Строки-итоги — жирные
+ * тёмно-зелёные без заливки (как в живом 1С). Span-строки (с labelText)
+ * рисуют подпись на первые `labelColSpan` колонок; выделенные строки без
+ * labelText (напр. «Начальное сальдо» Анализа счёта) — обычные ячейки
+ * с 1С-выделением.
  */
 export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
   const { t, i18n } = useTranslation()
@@ -132,6 +198,11 @@ export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
     })
   }
 
+  const headModel = useMemo(
+    () => buildHeadModel(columns, isKz),
+    [columns, isKz]
+  )
+
   if (result.rows.length === 0) {
     return (
       <div className="flex items-center justify-center py-10">
@@ -148,37 +219,57 @@ export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
     colWidths.slice(0, i + 1).reduce((a, b) => a + b, 0)
   )
 
-  /** Рендер одной DATA-строки: значение в каждой колонке по её метаданным. */
-  const renderDataRow = (row: ReportRowDto, key: string) => (
-    <tr key={key} className="transition-colors hover:bg-ui-07">
+  /** Подписи подстрок-показателей строки (значение колонки «Показатель»). */
+  const rowSubLabels = (row: ReportRowDto): string[] | undefined => {
+    const v = row.cells[POKAZATEL_COL]
+    return Array.isArray(v) ? v.map((x) => String(x)) : undefined
+  }
+
+  /** Рендер одной строки по ячейкам; highlight ⇒ 1С-выделение всех ячеек. */
+  const renderCellsRow = (
+    row: ReportRowDto,
+    key: string,
+    highlight: boolean
+  ) => (
+    <tr
+      key={key}
+      className={highlight ? '' : 'transition-colors hover:bg-ui-07'}
+    >
       {columns.map((col) => (
         <td
           key={col.code}
           className={`${td} ${isRightAligned(col) ? 'text-right' : ''}`}
         >
-          <ReportCell value={row.cells[col.code]} col={col} />
+          <ReportCell
+            value={row.cells[col.code]}
+            col={col}
+            bold={highlight}
+            subLabels={rowSubLabels(row)}
+          />
         </td>
       ))}
     </tr>
   )
 
   /**
-   * Рендер span-строки: подпись `labelText` на первые `labelColSpan` колонок
-   * (затенённый фон, жирный для сальдо-конец/итог), затем значения в остальных.
+   * Рендер span-строки: подпись `labelText` на первые `labelColSpan` колонок,
+   * затем значения в остальных. Жирный тёмно-зелёный текст, без заливки (1С).
    */
   const renderSpanRow = (row: ReportRowDto, key: string) => {
     const span = Math.min(row.labelColSpan ?? 1, columns.length)
     const strong = isStrongSpanRow(row.rowKind)
-    const rowClass = strong ? 'bg-ui-02 font-bold' : 'bg-ui-02 font-medium'
-    const labelClass = strong
-      ? 'font-bold text-ui-06'
-      : 'font-medium text-ui-06'
-    const boldMoney = isBoldMoneyRow(row.rowKind)
     return (
-      <tr key={key} className={rowClass}>
+      <tr key={key}>
         {span > 0 && (
           <td className={td} colSpan={span}>
-            <Typography variant="body2" className={labelClass}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: GREEN_1C,
+                fontWeight: 700,
+                fontSize: strong ? 14 : undefined,
+              }}
+            >
               {row.labelText ?? ''}
             </Typography>
           </td>
@@ -191,7 +282,8 @@ export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
             <ReportCell
               value={row.cells[col.code]}
               col={col}
-              bold={boldMoney}
+              bold
+              subLabels={rowSubLabels(row)}
             />
           </td>
         ))}
@@ -202,7 +294,7 @@ export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
   return (
     <div
       ref={containerRef}
-      className="overflow-auto rounded-md border border-ui-04/60"
+      className="overflow-auto rounded-md border border-[#d9d9d9]"
     >
       {/* relative-обёртка: поверх таблицы — разделители-ручки на всю высоту. */}
       <div className="relative" style={{ width: totalWidth }}>
@@ -223,35 +315,65 @@ export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
               className={`h-full w-px ${
                 resizingCol === i
                   ? 'bg-accent-02'
-                  : 'bg-ui-04/40 group-hover:bg-accent-02'
+                  : 'bg-transparent group-hover:bg-accent-02'
               }`}
             />
           </div>
         ))}
-        <table className="w-full table-fixed border-collapse">
+        <table className="w-full table-fixed border-collapse bg-white">
           <colgroup>
             {colWidths.map((w, i) => (
               <col key={i} style={{ width: w }} />
             ))}
           </colgroup>
-          <thead className="bg-ui-02">
-            <tr>
-              {columns.map((col) => (
-                <th
-                  key={col.code}
-                  className={`${th} ${isRightAligned(col) ? 'text-right' : ''}`}
-                >
-                  {columnTitle(col, isKz)}
-                </th>
-              ))}
-            </tr>
+          <thead>
+            {headModel ? (
+              <>
+                <tr>
+                  {headModel.topRow.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={`${th} ${cell.colSpan > 1 ? 'text-center' : ''}`}
+                    >
+                      <Typography variant="body2" sx={thTextSx}>
+                        {cell.title}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {headModel.subRow.map(({ key, col }) => (
+                    <th key={key} className={th}>
+                      <Typography variant="body2" sx={thTextSx}>
+                        {columnTitle(col, isKz)}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+              </>
+            ) : (
+              <tr>
+                {columns.map((col) => (
+                  <th
+                    key={col.code}
+                    className={`${th} ${isRightAligned(col) ? 'text-right' : ''}`}
+                  >
+                    <Typography variant="body2" sx={thTextSx}>
+                      {columnTitle(col, isKz)}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+            )}
           </thead>
           <tbody>
             {result.rows.map((row, idx) => {
               const key = String(idx)
-              return isSpanRow(row.rowKind)
+              return isSpanRow(row)
                 ? renderSpanRow(row, key)
-                : renderDataRow(row, key)
+                : renderCellsRow(row, key, isHighlightRow(row.rowKind))
             })}
           </tbody>
         </table>

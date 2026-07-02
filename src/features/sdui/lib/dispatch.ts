@@ -11,8 +11,6 @@ import { validatePatches } from './validation'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
 import { useSduiSession } from './sdui-session-context'
-import { useTreeStore } from './stores/tree-store'
-import { useViewStateStore } from './stores/view-state-store'
 import { usePanelStore, type PanelEntry } from './stores/panel-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { relaySelectionToParent } from './relay-selection'
@@ -65,7 +63,7 @@ export function useSduiDispatch() {
           usePanelStore.getState().push(entry)
         },
         closeDialog: (effect) => {
-          usePanelStore.getState().remove(effect.id)
+          if (effect.id) usePanelStore.getState().remove(effect.id)
           relaySelectionToParent(effect, (effects) => effectHandler.playAll(effects))
         },
       })

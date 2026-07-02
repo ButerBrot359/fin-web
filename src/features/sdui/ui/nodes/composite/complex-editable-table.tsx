@@ -36,7 +36,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   node,
 }) => {
   const { t } = useTranslation()
-  const { getValue, setValue, setFromServer } = useSduiSession()
+  const { getValue, setFromServer } = useSduiSession()
 
   const allowAdd = (node.props?.allowAdd as boolean | undefined) ?? true
   const allowDelete = (node.props?.allowDelete as boolean | undefined) ?? true

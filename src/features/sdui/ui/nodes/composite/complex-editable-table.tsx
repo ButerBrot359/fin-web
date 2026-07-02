@@ -36,7 +36,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   node,
 }) => {
   const { t } = useTranslation()
-  const { getValue, setValue } = useSduiSession()
+  const { getValue, setValue, setFromServer } = useSduiSession()
 
   const allowAdd = (node.props?.allowAdd as boolean | undefined) ?? true
   const allowDelete = (node.props?.allowDelete as boolean | undefined) ?? true
@@ -147,7 +147,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const handleRowClick = (rowId: string, index: number) => {
     setSelectedIndex(index)
     if (node.binding) {
-      setValue(node.binding + '.__selectedRowId', rowId)
+      setFromServer(node.binding + '.__selectedRowId', rowId)
     }
   }
 

@@ -8,7 +8,7 @@ import { useSduiDispatch } from '../../../lib/dispatch'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
 import { apiService } from '@/shared/api/api'
-import { useDictSidebarStore } from '@/features/dict-sidebar'
+import { openReferencePicker } from '../../../lib/reference-picker-gateway'
 
 const DOMAIN_PATH_MAP: Record<string, string> = {
   DICTIONARY: 'dictionary-entries',
@@ -132,7 +132,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     : undefined
 
   const openDictList = () => {
-    useDictSidebarStore.getState().push({
+    openReferencePicker({
       mode: 'list',
       domain,
       typeCode: targetTypeCode!,
@@ -142,7 +142,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   }
 
   const openDictCreate = () => {
-    useDictSidebarStore.getState().push({
+    openReferencePicker({
       mode: 'create',
       domain,
       typeCode: targetTypeCode!,
@@ -213,7 +213,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
               tabIndex={-1}
               onMouseDown={(e) => {
                 e.preventDefault()
-                useDictSidebarStore.getState().push({
+                openReferencePicker({
                   mode: 'edit',
                   domain,
                   typeCode: targetTypeCode!,

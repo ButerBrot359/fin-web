@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 
 import { MainPage } from '@/pages/main'
@@ -6,7 +6,8 @@ import { MainPage } from '@/pages/main'
 import { TopBar } from '@/widgets/top-bar'
 import { Sidebar } from '@/widgets/sidebar'
 
-import { DictSidebarDrawer } from '@/features/dict-sidebar'
+import { DictSidebarDrawer, useDictSidebarStore } from '@/features/dict-sidebar'
+import { setReferencePickerGateway } from '@/features/sdui'
 import { WorkspaceTabSync } from '@/widgets/workspace-tab-bar'
 
 import { Toaster } from '@/shared/ui/toast/toast'
@@ -200,6 +201,20 @@ const AppRoutes = () => {
 }
 
 function App() {
+  useEffect(() => {
+    setReferencePickerGateway((req) => {
+      useDictSidebarStore.getState().push({
+        mode: req.mode,
+        domain: req.domain,
+        typeCode: req.typeCode,
+        entryId: req.entryId,
+        onSelect: req.onSelect,
+        searchParams: req.searchParams,
+      })
+    })
+    return () => setReferencePickerGateway(null)
+  }, [])
+
   return (
     <BrowserRouter>
       <WorkspaceTabSync />

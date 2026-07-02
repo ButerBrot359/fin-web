@@ -17,6 +17,10 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import {
+  nodeToTableColumnDef,
+  renderCellValue,
+} from '../../../lib/utils/build-column-defs'
 import type { TableColumnDef } from '../../../lib/hooks/use-table-sync'
 import { EditableTable } from './editable-table'
 import { ComplexEditableTable } from './complex-editable-table'
@@ -34,12 +38,15 @@ function extractReadOnlyColumns(
   if (!children) return []
   return children
     .filter((c) => c.type === 'TABLE_COLUMN')
-    .map((c) => ({
-      id: c.id,
-      label: (c.props?.label as string | undefined) ?? '',
-      binding: c.props?.binding as string | undefined,
-      flex: c.props?.flex as number | string | undefined,
-    }))
+    .map((c) => {
+      const col = nodeToTableColumnDef(c)
+      return {
+        id: col.id,
+        label: col.label,
+        binding: col.binding,
+        flex: col.flex,
+      }
+    })
 }
 
 function extractEditableColumns(
@@ -48,29 +55,12 @@ function extractEditableColumns(
   if (!children) return []
   return children
     .filter((c) => c.type === 'TABLE_COLUMN')
-    .map((c) => ({
-      id: c.id,
-      label: (c.props?.label as string | undefined) ?? '',
-      binding: (c.props?.binding as string | undefined) ?? '',
-      flex: c.props?.flex as number | string | undefined,
-      cellWidget: (c.props?.cellWidget as string | undefined) ?? 'TEXT_FIELD',
-      dataType: (c.props?.dataType as string | undefined) ?? 'STRING',
-      readonly: c.props?.readonly as boolean | undefined,
-      required: c.props?.required as boolean | undefined,
-    }))
+    .map((c) => nodeToTableColumnDef(c))
 }
 
 interface SimpleTableRow {
   rowId: string
   [key: string]: unknown
-}
-
-// Ячейка-ссылка приходит объектом {id, presentation, entityRef}; примитивы — уже строкой.
-function renderCellValue(value: unknown): string {
-  if (value != null && typeof value === 'object' && 'presentation' in value) {
-    return String((value as { presentation: unknown }).presentation ?? '')
-  }
-  return String(value ?? '')
 }
 
 export const TableNode: FC<NodeProps> = ({ node }) => {

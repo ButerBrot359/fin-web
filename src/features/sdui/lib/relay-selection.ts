@@ -3,6 +3,7 @@ import { showToast } from '@/shared/ui/toast/show-toast'
 import type { ViewEffect } from '../types/view'
 import { ViewConflictError, viewTransport } from '../api/view-transport'
 import { applyValuePatches } from './patch-applier'
+import { validatePatches } from './validation'
 import { usePanelStore } from './stores/panel-store'
 import { useTreeStore } from './stores/tree-store'
 import { useViewStateStore } from './stores/view-state-store'
@@ -38,8 +39,9 @@ export function relaySelectionToParent(
         const vs = useViewStateStore.getState()
         tree.bumpRevision(res.revision)
         tree.clearAllErrors()
-        tree.applyPatches(res.patches ?? [])
-        applyValuePatches(res.patches ?? [], vs.setFromServer)
+        const patches = validatePatches(res.patches)
+        tree.applyPatches(patches)
+        applyValuePatches(patches, vs.setFromServer)
         vs.merge(res.statePatch ?? {})
       }
       playEffects(res.effects ?? [])

@@ -8,8 +8,7 @@ import {
 } from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
-import { useSduiSession } from '../../../lib/sdui-session-context'
-import { useSduiDispatch } from '../../../lib/dispatch'
+import { useFieldNode } from '../../../lib/hooks/use-field-node'
 
 interface EnumOption {
   value: string
@@ -19,50 +18,35 @@ interface EnumOption {
 }
 
 export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
-  const label = node.props?.label as string | undefined
-  const required = node.props?.required as boolean | undefined
-  const readonly = node.props?.readonly as boolean | undefined
-  const visible = (node.props?.visible as boolean | undefined) ?? true
-  const enabled = (node.props?.enabled as boolean | undefined) ?? true
-  const error = node.props?.error as string | undefined
-  const flex = node.props?.flex as number | string | undefined
+  const f = useFieldNode(node)
   const options = (node.props?.options as EnumOption[] | undefined) ?? []
+  const value = (f.value as string | undefined) ?? ''
 
-  const { getValue, setValue } = useSduiSession()
-  const value = (getValue(node.binding) as string | undefined) ?? ''
-  const dispatch = useSduiDispatch()
-
-  if (!visible) return null
-
-  const fireServerEvent = (trigger: string, newValue: unknown) => {
-    if (node.actions?.some((a) => a.trigger === trigger && a.actionId === 'fieldEvent')) {
-      void dispatch({ type: 'EVENT', sourceNodeId: node.id, trigger, value: newValue })
-    }
-  }
+  if (!f.visible) return null
 
   const labelId = `enum-field-${node.id}-label`
 
   return (
     <FormControl
-      error={!!error}
-      required={required}
-      disabled={!enabled}
-      sx={{ flex: flex !== undefined ? flex : undefined }}
+      error={!!f.error}
+      required={f.required}
+      disabled={!f.enabled}
+      sx={{ flex: f.flex !== undefined ? f.flex : undefined }}
     >
-      {label && <InputLabel id={labelId}>{label}</InputLabel>}
+      {f.label && <InputLabel id={labelId}>{f.label}</InputLabel>}
       <Select
-        labelId={label ? labelId : undefined}
-        label={label}
+        labelId={f.label ? labelId : undefined}
+        label={f.label}
         value={value}
-        readOnly={readonly}
+        readOnly={f.readonly}
         onChange={(e) => {
           const selectedValue = e.target.value
-          if (node.binding) setValue(node.binding, selectedValue)
+          f.setValue(selectedValue)
           const opt = options.find((o) => o.value === selectedValue)
           const enumValue = opt
             ? { id: opt.id ?? selectedValue, code: opt.code ?? opt.value, presentation: opt.label }
             : { id: selectedValue, code: selectedValue, presentation: selectedValue }
-          fireServerEvent('change', enumValue)
+          f.fireServerEvent('change', enumValue)
         }}
       >
         {options.map((opt) => (
@@ -71,7 +55,7 @@ export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
           </MenuItem>
         ))}
       </Select>
-      {error && <FormHelperText>{error}</FormHelperText>}
+      {f.error && <FormHelperText>{f.error}</FormHelperText>}
     </FormControl>
   )
 }

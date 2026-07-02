@@ -3,7 +3,7 @@ import { IconButton } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 
 import type { NodeProps } from '../../../types/view'
-import { useSduiSession } from '../../../lib/sdui-session-context'
+import { useFieldNode } from '../../../lib/hooks/use-field-node'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
@@ -37,21 +37,15 @@ function fromSelectOption(opt: SelectOption): ReferenceValue {
 }
 
 export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
-  const label = node.props?.label as string | undefined
-  const required = node.props?.required as boolean | undefined
-  const readonly = node.props?.readonly as boolean | undefined
-  const visible = (node.props?.visible as boolean | undefined) ?? true
-  const enabled = (node.props?.enabled as boolean | undefined) ?? true
-  const error = node.props?.error as string | undefined
-  const flex = node.props?.flex as number | string | undefined
+  const f = useFieldNode(node)
+  const dispatch = useSduiDispatch()
+
   const domain = (node.props?.domain as string | undefined) ?? 'DICTIONARY'
   const targetTypeCode = node.props?.targetTypeCode as string | undefined
   const filter = node.props?.filter as Record<string, unknown> | undefined
   const optionsSource = node.props?.optionsSource as { url: string; params?: Record<string, string> } | undefined
 
-  const { getValue, setValue } = useSduiSession()
-  const rawValue = getValue(node.binding) as ReferenceValue | null | undefined
-  const dispatch = useSduiDispatch()
+  const rawValue = f.value as ReferenceValue | null | undefined
 
   const [options, setOptions] = useState<SelectOption[]>([])
   const [inputValue, setInputValue] = useState('')
@@ -65,13 +59,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     setOptions([])
   }, [paramsKey])
 
-  if (!visible) return null
-
-  const fireServerEvent = (trigger: string, newValue: unknown) => {
-    if (node.actions?.some((a) => a.trigger === trigger && a.actionId === 'fieldEvent')) {
-      void dispatch({ type: 'EVENT', sourceNodeId: node.id, trigger, value: newValue })
-    }
-  }
+  if (!f.visible) return null
 
   const domainPath = DOMAIN_PATH_MAP[domain] ?? 'dictionary-entries'
 
@@ -119,11 +107,11 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
 
   const applySelected = (opt: SelectOption | null) => {
     const newVal = opt ? fromSelectOption(opt) : null
-    if (node.binding) setValue(node.binding, newVal)
-    fireServerEvent('change', newVal)
+    f.setValue(newVal)
+    f.fireServerEvent('change', newVal)
   }
 
-  const canBrowse = !!targetTypeCode && !readonly && enabled
+  const canBrowse = !!targetTypeCode && !f.readonly && f.enabled
 
   const filterSearchParams = filter
     ? Object.fromEntries(
@@ -161,17 +149,17 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const allowCreate = node.props?.allowCreate as boolean | undefined
 
   return (
-    <div style={{ flex: flex !== undefined ? flex : undefined }}>
+    <div style={{ flex: f.flex !== undefined ? f.flex : undefined }}>
       <AutocompleteInput
         value={selectedOption}
         inputValue={inputValue}
         options={options}
-        label={label}
-        required={required}
-        readOnly={readonly}
-        disabled={!enabled}
-        error={!!error}
-        helperText={error}
+        label={f.label}
+        required={f.required}
+        readOnly={f.readonly}
+        disabled={!f.enabled}
+        error={!!f.error}
+        helperText={f.error}
         loading={loading}
         onInputChange={(_e, val, reason) => {
           setInputValue(val)

@@ -11,12 +11,15 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
-import { Button } from '@/shared/ui/buttons/button'
 import { apiService } from '@/shared/api/api'
 import { cn } from '@/shared/lib/utils/cn'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import {
+  refCommandField,
+  useRefPickerSelectionStore,
+} from '../../../lib/stores/ref-picker-selection-store'
 
 interface ListSource {
   url: string
@@ -128,6 +131,18 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     }
   }, [isLoading])
 
+  // Publish highlighted row to shared store for sibling toolbar buttons (ref.copy / ref.select)
+  const selectField = refCommandField(selectAction?.command)
+  const setSelection = useRefPickerSelectionStore((s) => s.setSelection)
+  const clearSelection = useRefPickerSelectionStore((s) => s.clearSelection)
+  useEffect(() => {
+    if (!selectField) return
+    setSelection(selectField, selectedRowId)
+    return () => {
+      clearSelection(selectField)
+    }
+  }, [selectField, selectedRowId, setSelection, clearSelection])
+
   const dispatchSelect = (action: { command?: string } | undefined, rowId: number) => {
     if (!action?.command) return
     void dispatch({ type: 'COMMAND', command: action.command, value: { id: rowId }, sourceNodeId: node.id })
@@ -180,19 +195,10 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
       ? rowVirtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0)
       : 0
 
-  const handleSelect = () => {
-    if (selectedRowId == null) return
-    dispatchSelect(selectAction, selectedRowId)
-  }
-
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-2">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="primary" onClick={handleSelect} disabled={selectedRowId == null}>
-            {t('dictSidebar.select')}
-          </Button>
-        </div>
+        <div />
         {searchable && (
           <SearchInput
             placeholder={t('pageToolbar.search')}

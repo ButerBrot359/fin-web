@@ -89,6 +89,38 @@ export const DialogHost = () => {
           <NodeRenderer node={panel.node} />
         )
 
+        if (panel.presentation === 'page') {
+          return (
+            <Dialog
+              key={panel.panelId}
+              open
+              onClose={popPanel}
+              fullScreen
+              slotProps={{
+                paper: {
+                  sx: { backgroundColor: '#F2F6FD' },
+                },
+              }}
+            >
+              <div className="flex h-full flex-col p-7">
+                <div className="flex shrink-0 items-center justify-between">
+                  {panel.node.props?.title != null && (
+                    <span className="text-lg font-semibold">
+                      {String(panel.node.props.title)}
+                    </span>
+                  )}
+                  <IconButton onClick={popPanel}>
+                    <CloseIcon sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </div>
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-4">
+                  {content}
+                </div>
+              </div>
+            </Dialog>
+          )
+        }
+
         if (panel.presentation === 'drawer') {
           const width =
             (panel.node.props?.width as number | undefined) ?? 900

@@ -51,24 +51,30 @@ interface PeriodValue {
 const isPeriod = (p: ReportParameterDto) => p.dataType === 'PERIOD'
 
 /**
- * Нормализация даты для тела `/run`: бэкенд ждёт локальную дату-время без
- * зоны (`yyyy-MM-dd'T'HH:mm:ss`), а инпуты отдают ISO с `Z` (UTC) — такой
- * формат бэкенд не парсит, и период молча терялся (отчёт без движений).
+ * Нормализация даты для тела `/run`: бэкенд ждёт локальную дату
+ * (`yyyy-MM-dd`, границы дня он расставляет сам), а инпуты отдают ISO с `Z`
+ * (UTC) — такой формат бэкенд не парсит, и период молча терялся (отчёт без
+ * движений).
  */
 const toLocalDateTime = (raw: string): string => {
   if (!raw) return raw
   const d = parseISO(raw)
   if (!isValid(d)) return raw
-  return format(d, "yyyy-MM-dd'T'HH:mm:ss")
+  return format(d, 'yyyy-MM-dd')
 }
 
-/** Нормализует PERIOD-значения ({from,to}) в теле запроса формирования. */
+/** Нормализует значения дат (DATE-строки и PERIOD-объекты {from,to}) в теле запроса. */
 const normalizeBodyDates = (
   parameters: Record<string, unknown>,
   metaParams: ReportParameterDto[]
 ): Record<string, unknown> => {
   const out: Record<string, unknown> = { ...parameters }
   for (const p of metaParams) {
+    if (p.dataType === 'DATE') {
+      const v = out[p.code]
+      if (typeof v === 'string' && v) out[p.code] = toLocalDateTime(v)
+      continue
+    }
     if (!isPeriod(p)) continue
     const v = out[p.code] as PeriodValue | undefined
     if (v && typeof v === 'object') {

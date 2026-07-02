@@ -57,7 +57,8 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
 
   const unsavedDialog = useUnsavedChangesDialog({
     onSave: () => {
-      void dispatch({ type: 'COMMAND', command: 'save' }).then(() => {
+      void dispatch({ type: 'COMMAND', command: 'save' }).then((ok) => {
+        if (!ok) return
         closeCurrentTab()
         void navigate(listPath)
       })

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { useMutation } from '@tanstack/react-query'
 
@@ -10,6 +10,12 @@ import type { TableReplacersRef } from '../../types/renderer-context'
 interface HandleEventPayload {
   eventName: string
   entry: Record<string, unknown>
+  /**
+   * Сидинг видимости при открытии формы (§5 SCRUM-263): из ответа применяется
+   * только `formConfig.visibility`, `attributes` игнорируются — иначе replace
+   * таблиц пометил бы только что открытый документ как изменённый.
+   */
+  seedOnly?: boolean
 }
 
 interface HandleEventResponse {
@@ -24,6 +30,8 @@ interface UseFormEventsParams {
   attributes: DocumentAttribute[]
   form: UseFormReturn<Record<string, unknown>>
   tableReplacersRef: TableReplacersRef
+  /** Динамическая видимость из `formConfig.visibility` ответа handle-event. */
+  onVisibility?: (visibility: Record<string, boolean>) => void
 }
 
 export const useFormEvents = ({
@@ -31,6 +39,7 @@ export const useFormEvents = ({
   attributes,
   form,
   tableReplacersRef,
+  onVisibility,
 }: UseFormEventsParams) => {
   const eventFieldMap = useMemo(
     () =>
@@ -46,9 +55,18 @@ export const useFormEvents = ({
     mutationFn: (payload: HandleEventPayload) =>
       apiService.post<HandleEventResponse>({
         url: `/api/document-entries/${typeCode}/handle-event`,
-        data: payload,
+        data: { eventName: payload.eventName, entry: payload.entry },
       }),
-    onSuccess: (response) => {
+    onSuccess: (response, variables) => {
+      const formConfig = response.data.data.formConfig as
+        | { visibility?: Record<string, boolean> }
+        | undefined
+      if (formConfig?.visibility && onVisibility) {
+        onVisibility(formConfig.visibility)
+      }
+
+      if (variables.seedOnly) return
+
       const newAttributes = response.data.data.attributes as
         | Record<string, unknown>
         | undefined
@@ -65,6 +83,47 @@ export const useFormEvents = ({
       }
     },
   })
+
+  // Сидинг начальной видимости (§5 SCRUM-263): handle-event присылает
+  // visibility только при изменении поля, поэтому у сохранённого документа
+  // с заполненным полем-триггером карта была бы пустой до первого касания.
+  // Значения существующей записи попадают в форму через form.reset в эффекте
+  // родителя (после маунта), поэтому ждём их через подписку form.watch и при
+  // первом появлении значения у поля с formEvent один раз шлём его событие
+  // (seedOnly — применяется только видимость). Если первым пришло реальное
+  // редактирование пользователя (type === 'change'), сидинг не нужен —
+  // обычный onFieldChange сам обновит видимость.
+  const seededRef = useRef(false)
+
+  useEffect(() => {
+    if (seededRef.current || eventFieldMap.size === 0) return
+
+    const seedIfReady = (values: Record<string, unknown>): boolean => {
+      for (const [fieldCode, eventName] of eventFieldMap) {
+        const value = values[fieldCode]
+        if (value !== undefined && value !== null && value !== '') {
+          seededRef.current = true
+          mutate({ eventName, entry: { attributes: values }, seedOnly: true })
+          return true
+        }
+      }
+      return false
+    }
+
+    if (seedIfReady(form.getValues())) return
+
+    const subscription = form.watch((values, info) => {
+      if (seededRef.current) return
+      if (info.type === 'change') {
+        seededRef.current = true
+        return
+      }
+      seedIfReady(values as Record<string, unknown>)
+    })
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [eventFieldMap, form, mutate])
 
   const onFieldChange = useCallback(
     (fieldCode: string) => {

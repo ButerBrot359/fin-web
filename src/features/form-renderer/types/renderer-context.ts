@@ -23,6 +23,12 @@ export interface FormRendererContextValue {
   dependencyMap: Map<string, FieldDependency>
   /** Серверные фильтры ссылочных полей по пути поля (см. `FieldFilter`). */
   fieldFilters: Record<string, FieldFilter>
+  /**
+   * Динамическая видимость элементов из `formConfig.visibility` (ответ handle-event).
+   * Ключ — путь поля (см. `lib/utils/field-path`). `false` → скрыт;
+   * отсутствие ключа → видим (fallback на статический `showInForm`).
+   */
+  visibilityMap: Record<string, boolean>
   registerTableReplacer: (
     code: string,
     replacer: (rows: Record<string, unknown>[]) => void

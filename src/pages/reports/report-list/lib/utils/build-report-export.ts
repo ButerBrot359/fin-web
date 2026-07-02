@@ -1,4 +1,5 @@
 import type { TableExportData } from '@/shared/lib/table-export'
+import { formatDate } from '@/shared/lib/utils/date'
 import { formatMoney1C } from '@/features/report-result-view'
 
 import type {
@@ -66,6 +67,16 @@ const formatCell = (
     if (!Number.isNaN(n)) {
       return formatMeasure(n, col, 2)
     }
+  }
+  if (
+    col.role === 'PERIOD' &&
+    typeof value === 'string' &&
+    /^\d{4}-\d{2}-\d{2}/.test(value)
+  ) {
+    const pattern = col.format?.includes('HH')
+      ? 'dd.MM.yyyy HH:mm:ss'
+      : 'dd.MM.yyyy'
+    return formatDate(value, pattern) || value
   }
   if (typeof value === 'string' || typeof value === 'number') return value
   return ''

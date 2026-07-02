@@ -1,5 +1,7 @@
 import { Typography } from '@mui/material'
 
+import { formatDate } from '@/shared/lib/utils/date'
+
 import type { ReportColumnDto } from '@/pages/reports/report-list/types/report'
 
 import {
@@ -13,6 +15,17 @@ import {
 
 /** Подпись подстроки-показателя «Кол.» — форматируем количеством (3 знака). */
 const SUB_LABEL_KOLICHESTVO = 'Кол.'
+
+/**
+ * Значение PERIOD-колонки: ISO-строка → 1С-формат по `col.format`
+ * (`dd.MM.yyyy`, с временем — если формат содержит часы).
+ */
+const formatPeriodValue = (raw: string, col: ReportColumnDto): string => {
+  const pattern = col.format?.includes('HH')
+    ? 'dd.MM.yyyy HH:mm:ss'
+    : 'dd.MM.yyyy'
+  return formatDate(raw, pattern) || raw
+}
 
 /** Стиль текста 1С: данные — #333, выделенные строки — зелёный жирный. */
 const textStyle = (highlight?: boolean, negative?: boolean) => ({
@@ -168,8 +181,11 @@ export const ReportCell = ({
     )
   }
 
-  const text = safeString(value)
+  let text = safeString(value)
   if (!text) return null
+  if (col.role === 'PERIOD' && /^\d{4}-\d{2}-\d{2}/.test(text)) {
+    text = formatPeriodValue(text, col)
+  }
   return (
     <Typography
       variant="body2"

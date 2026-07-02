@@ -1,5 +1,6 @@
-import { useMemo, useState, type FC } from 'react'
+import { useEffect, useMemo, useState, type FC } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 
 import {
   SduiScreen,
@@ -29,6 +30,15 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useSduiDispatch()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    return () => {
+      // SDUI пишет мимо TanStack Query — при уходе со страницы сбрасываем
+      // кэш легаси-списков, чтобы список документов показал свежие данные (B5).
+      void queryClient.invalidateQueries({ queryKey: ['document-entries'] })
+    }
+  }, [queryClient])
 
   const dirty = useViewStateStore((s) => s.dirty)
   const baseTitle =

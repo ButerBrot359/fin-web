@@ -26,6 +26,7 @@ import {
   fieldFilterToSearchParams,
   mergeSearchParams,
 } from '../lib/utils/field-filter-params'
+import { headerFieldPath, isFieldVisible } from '../lib/utils/field-path'
 import {
   getOrgScopeSourceField,
   synthesizeReferenceFilter,
@@ -47,6 +48,7 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
     onFieldChange,
     dependencyMap,
     fieldFilters,
+    visibilityMap,
   } = useFormRendererContext()
   const attribute = attributeMap.get(node.code)
 
@@ -101,6 +103,9 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
   }, [dependency, sourceId, fieldFilters, node.code, attribute, orgSourceValue])
 
   if (!attribute) return null
+
+  // Динамическая видимость (formConfig.visibility): проверка после всех хуков.
+  if (!isFieldVisible(visibilityMap, headerFieldPath(node.code))) return null
 
   const { dataType, readonly: isReadOnly } = attribute
 

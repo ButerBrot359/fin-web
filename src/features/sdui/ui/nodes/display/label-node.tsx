@@ -32,7 +32,7 @@ export const LabelNode: FC<NodeProps> = ({ node }) => {
         onClick={
           clickAction
             ? () =>
-                dispatch({
+                void dispatch({
                   type: 'EVENT',
                   sourceNodeId: node.id,
                   trigger: clickAction.trigger,

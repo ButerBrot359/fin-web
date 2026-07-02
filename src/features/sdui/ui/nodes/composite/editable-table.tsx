@@ -133,7 +133,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
               <MuiTableRow key={hg.id}>
                 {showRowNumbers && (
                   <TableCell sx={{ width: 48, textAlign: 'center', fontWeight: 600 }}>
-                    N
+                    {t('table.rowNumber')}
                   </TableCell>
                 )}
                 {hg.headers.map((header) => (

@@ -1,4 +1,4 @@
-import { useRef, useMemo, useCallback, useEffect } from 'react'
+import { useRef, useMemo, useCallback, useEffect, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UseFormReturn } from 'react-hook-form'
@@ -60,11 +60,17 @@ export const FormRenderer = ({
     [tableReplacersRef]
   )
 
+  // Динамическая видимость полей/колонок из formConfig.visibility (SCRUM-263).
+  const [visibilityMap, setVisibilityMap] = useState<Record<string, boolean>>(
+    {}
+  )
+
   const { onFieldChange, triggerEvent } = useFormEvents({
     typeCode,
     attributes,
     form,
     tableReplacersRef,
+    onVisibility: setVisibilityMap,
   })
 
   const clearAllTables = useCallback(() => {
@@ -92,6 +98,7 @@ export const FormRenderer = ({
       onFieldChange,
       dependencyMap,
       fieldFilters,
+      visibilityMap,
       registerTableReplacer,
       unregisterTableReplacer,
     }),
@@ -103,6 +110,7 @@ export const FormRenderer = ({
       onFieldChange,
       dependencyMap,
       fieldFilters,
+      visibilityMap,
       registerTableReplacer,
       unregisterTableReplacer,
     ]

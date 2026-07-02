@@ -42,6 +42,7 @@ function insertAt<T>(arr: T[], index: number, item: T): T[] {
   return result
 }
 
+// Патчи проверены validatePatches — поля по op гарантированы
 function applyOne(root: ViewNode, patch: ViewPatch): ViewNode {
   switch (patch.op) {
     case 'setProp':
@@ -82,6 +83,7 @@ function applyOne(root: ViewNode, patch: ViewPatch): ViewNode {
       }))
 
     default:
+      console.warn('[sdui] unknown patch op', patch)
       return root
   }
 }

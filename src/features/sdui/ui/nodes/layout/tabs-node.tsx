@@ -23,7 +23,7 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
     if (tabNode) {
       const fieldEventAction = tabNode.actions?.find((a) => a.actionId === 'fieldEvent')
       if (fieldEventAction) {
-        dispatch({
+        void dispatch({
           type: 'EVENT',
           sourceNodeId: tabNode.id,
           trigger: fieldEventAction.trigger,

@@ -1,14 +1,14 @@
-import { useState, useEffect, type FC } from 'react'
+import { useState, useEffect, useRef, type FC } from 'react'
 import { IconButton } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 
 import type { NodeProps } from '../../../types/view'
-import { useSduiSession } from '../../../lib/sdui-session-context'
+import { useFieldNode } from '../../../lib/hooks/use-field-node'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
-import { apiService } from '@/shared/api/api'
-import { useDictSidebarStore } from '@/features/dict-sidebar'
+import { fetchReferenceOptions } from '../../../api/reference-options'
+import { openReferencePicker } from '../../../lib/reference-picker-gateway'
 
 const DOMAIN_PATH_MAP: Record<string, string> = {
   DICTIONARY: 'dictionary-entries',
@@ -21,13 +21,6 @@ interface ReferenceValue {
   presentation: string
 }
 
-interface EntryItem {
-  id: number
-  presentation?: string
-  name?: string
-  [key: string]: unknown
-}
-
 function toSelectOption(ref: ReferenceValue): SelectOption {
   return { id: ref.id, code: String(ref.id), label: ref.presentation }
 }
@@ -37,25 +30,22 @@ function fromSelectOption(opt: SelectOption): ReferenceValue {
 }
 
 export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
-  const label = node.props?.label as string | undefined
-  const required = node.props?.required as boolean | undefined
-  const readonly = node.props?.readonly as boolean | undefined
-  const visible = (node.props?.visible as boolean | undefined) ?? true
-  const enabled = (node.props?.enabled as boolean | undefined) ?? true
-  const error = node.props?.error as string | undefined
-  const flex = node.props?.flex as number | string | undefined
+  const f = useFieldNode(node)
+  const dispatch = useSduiDispatch()
+
   const domain = (node.props?.domain as string | undefined) ?? 'DICTIONARY'
   const targetTypeCode = node.props?.targetTypeCode as string | undefined
   const filter = node.props?.filter as Record<string, unknown> | undefined
   const optionsSource = node.props?.optionsSource as { url: string; params?: Record<string, string> } | undefined
 
-  const { getValue, setValue } = useSduiSession()
-  const rawValue = getValue(node.binding) as ReferenceValue | null | undefined
-  const dispatch = useSduiDispatch()
+  const rawValue = f.value as ReferenceValue | null | undefined
 
   const [options, setOptions] = useState<SelectOption[]>([])
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const requestSeqRef = useRef(0)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Инвалидировать кеш опций при смене параметров источника (напр. смена организации)
   const paramsKey = optionsSource?.params
@@ -65,65 +55,53 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     setOptions([])
   }, [paramsKey])
 
-  if (!visible) return null
-
-  const fireServerEvent = (trigger: string, newValue: unknown) => {
-    if (node.actions?.some((a) => a.trigger === trigger && a.actionId === 'fieldEvent')) {
-      void dispatch({ type: 'EVENT', sourceNodeId: node.id, trigger, value: newValue })
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }
+  }, [])
+
+  if (!f.visible) return null
 
   const domainPath = DOMAIN_PATH_MAP[domain] ?? 'dictionary-entries'
 
-  const fetchOptions = async (search?: string) => {
+  const loadOptions = (search?: string) => {
+    const url = optionsSource
+      ? optionsSource.url
+      : targetTypeCode
+        ? `/api/${domainPath}/${targetTypeCode}/entries`
+        : null
+    if (!url) return
+    const params = optionsSource ? optionsSource.params : filter
+    const seq = ++requestSeqRef.current
     setLoading(true)
-    try {
-      if (optionsSource) {
-        const res = await apiService.get<{ content?: EntryItem[]; items?: EntryItem[] }>({
-          url: optionsSource.url,
-          params: { ...optionsSource.params, search, page: 0, size: 20 },
-        })
-        const items = res.data.content ?? res.data.items ?? []
-        setOptions(
-          items.map((item) => ({
-            id: item.id,
-            code: String(item.id),
-            label: (item.presentation ?? item.name ?? String(item.id)) as string,
-          })),
-        )
-        return
-      }
-
-      // Legacy path — field without optionsSource
-      if (!targetTypeCode) return
-      const res = await apiService.get<{ content?: EntryItem[]; items?: EntryItem[] }>({
-        url: `/api/${domainPath}/${targetTypeCode}/entries`,
-        params: { search, page: 0, size: 20, ...filter },
+    fetchReferenceOptions({ url, params, search })
+      .then((opts) => {
+        if (seq !== requestSeqRef.current) return // поздний ответ раннего запроса — игнор
+        setOptions(opts)
       })
-      const items = res.data.content ?? res.data.items ?? []
-      setOptions(
-        items.map((item) => ({
-          id: item.id,
-          code: String(item.id),
-          label: (item.presentation ?? item.name ?? String(item.id)) as string,
-        })),
-      )
-    } catch {
-      // silently fail
-    } finally {
-      setLoading(false)
-    }
+      .catch(() => {
+        if (seq === requestSeqRef.current) setOptions([])
+      })
+      .finally(() => {
+        if (seq === requestSeqRef.current) setLoading(false)
+      })
+  }
+
+  const loadOptionsDebounced = (search: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => loadOptions(search), 300)
   }
 
   const selectedOption = rawValue ? toSelectOption(rawValue) : null
 
   const applySelected = (opt: SelectOption | null) => {
     const newVal = opt ? fromSelectOption(opt) : null
-    if (node.binding) setValue(node.binding, newVal)
-    fireServerEvent('change', newVal)
+    f.setValue(newVal)
+    f.fireServerEvent('change', newVal)
   }
 
-  const canBrowse = !!targetTypeCode && !readonly && enabled
+  const canBrowse = !!targetTypeCode && !f.readonly && f.enabled
 
   const filterSearchParams = filter
     ? Object.fromEntries(
@@ -132,7 +110,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     : undefined
 
   const openDictList = () => {
-    useDictSidebarStore.getState().push({
+    openReferencePicker({
       mode: 'list',
       domain,
       typeCode: targetTypeCode!,
@@ -142,7 +120,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   }
 
   const openDictCreate = () => {
-    useDictSidebarStore.getState().push({
+    openReferencePicker({
       mode: 'create',
       domain,
       typeCode: targetTypeCode!,
@@ -161,27 +139,27 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const allowCreate = node.props?.allowCreate as boolean | undefined
 
   return (
-    <div style={{ flex: flex !== undefined ? flex : undefined }}>
+    <div style={{ flex: f.flex !== undefined ? f.flex : undefined }}>
       <AutocompleteInput
         value={selectedOption}
         inputValue={inputValue}
         options={options}
-        label={label}
-        required={required}
-        readOnly={readonly}
-        disabled={!enabled}
-        error={!!error}
-        helperText={error}
+        label={f.label}
+        required={f.required}
+        readOnly={f.readonly}
+        disabled={!f.enabled}
+        error={!!f.error}
+        helperText={f.error}
         loading={loading}
         onInputChange={(_e, val, reason) => {
           setInputValue(val)
           if (reason === 'input') {
-            void fetchOptions(val)
+            loadOptionsDebounced(val)
           }
         }}
         onOpen={() => {
           if (options.length === 0) {
-            void fetchOptions()
+            loadOptions()
           }
         }}
         onChange={applySelected}
@@ -213,7 +191,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
               tabIndex={-1}
               onMouseDown={(e) => {
                 e.preventDefault()
-                useDictSidebarStore.getState().push({
+                openReferencePicker({
                   mode: 'edit',
                   domain,
                   typeCode: targetTypeCode!,

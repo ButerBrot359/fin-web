@@ -26,7 +26,3 @@ export const useViewStateStore = create<ViewStateStoreState>((set, get) => ({
   resetDirty: () => set({ dirty: false }),
 }))
 
-export const useViewState = (binding: string | undefined) =>
-  useViewStateStore((s) => (binding ? s.state[binding] : undefined))
-
-export const useViewStateSetter = () => useViewStateStore((s) => s.set)

@@ -1,5 +1,6 @@
-import { type FC } from 'react'
+import { useEffect, useMemo, useState, type FC } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 
 import {
   SduiScreen,
@@ -10,6 +11,7 @@ import {
 import {
   useWorkspaceTabsStore,
   useFormCacheStore,
+  useTabMeta,
 } from '@/features/workspace-tabs'
 
 import { PageHeader } from '@/widgets/page-header'
@@ -28,11 +30,23 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useSduiDispatch()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    return () => {
+      // SDUI пишет мимо TanStack Query — при уходе со страницы сбрасываем
+      // кэш легаси-списков, чтобы список документов показал свежие данные (B5).
+      void queryClient.invalidateQueries({ queryKey: ['document-entries'] })
+    }
+  }, [queryClient])
 
   const dirty = useViewStateStore((s) => s.dirty)
   const baseTitle =
     (useTreeStore((s) => s.root?.props?.title) as string | undefined) ?? ''
   const pageTitle = dirty ? `${baseTitle} *` : baseTitle
+
+  const [tabTitle, setTabTitle] = useState('')
+  useTabMeta(tabTitle)
 
   const listPath = getDocumentListPath({ pageCode, moduleCode })
 
@@ -43,7 +57,8 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
 
   const unsavedDialog = useUnsavedChangesDialog({
     onSave: () => {
-      void dispatch({ type: 'COMMAND', command: 'save' }).then(() => {
+      void dispatch({ type: 'COMMAND', command: 'save' }).then((ok) => {
+        if (!ok) return
         closeCurrentTab()
         void navigate(listPath)
       })
@@ -63,10 +78,35 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
     }
   }
 
+  const tabsApi = useMemo(
+    () => ({
+      // Стабильные колбэки: SduiScreen подписан на них эффектами,
+      // пересоздание на каждый рендер вызвало бы лишние срабатывания.
+      shouldPersistSession: (route: string) =>
+        useWorkspaceTabsStore.getState().tabs.some((tab) => tab.id === route),
+      onDirtyChange: (route: string, dirty: boolean) =>
+        useFormCacheStore.getState().setDirty(route, dirty),
+      consumePendingAction: (route: string) =>
+        useFormCacheStore.getState().consumePendingAction(route),
+      onSavedAndClosed: (route: string) => {
+        useFormCacheStore.getState().removeTab(route)
+        useWorkspaceTabsStore.getState().closeTab(route)
+        const { tabs } = useWorkspaceTabsStore.getState()
+        if (tabs.length > 0) {
+          const next = tabs[0]
+          void navigate(next.path + next.search)
+        } else {
+          void navigate('/')
+        }
+      },
+    }),
+    [navigate],
+  )
+
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={pageTitle} onClose={handleClose} />
-      <SduiScreen layoutCode={`${moduleCode}.ФормаОбъекта`} />
+      <SduiScreen layoutCode={`${moduleCode}.ФормаОбъекта`} {...tabsApi} onTitleChange={setTabTitle} />
       <UnsavedChangesDialog
         open={unsavedDialog.isOpen}
         onSave={unsavedDialog.handleSave}

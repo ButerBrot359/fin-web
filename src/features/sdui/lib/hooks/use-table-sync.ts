@@ -24,6 +24,8 @@ export interface TableRow {
   [key: string]: unknown
 }
 
+const EMPTY_ROWS: TableRow[] = []
+
 export interface UseTableSyncResult {
   rows: TableRow[]
   updateCell: (rowId: string, binding: string, value: unknown) => void
@@ -31,7 +33,6 @@ export interface UseTableSyncResult {
   addRow: (columns: TableColumnDef[]) => void
   deleteRow: (index: number) => void
   moveRow: (from: number, to: number) => void
-  flushPending: () => Promise<void>
 }
 
 function buildEmptyRow(columns: TableColumnDef[]): TableRow {
@@ -64,7 +65,7 @@ export function useTableSync(
   const { getValue, setValue } = useSduiSession()
   const dispatch = useSduiDispatch()
 
-  const canonRows = (getValue(node.binding) as TableRow[] | undefined) ?? []
+  const canonRows = (getValue(node.binding) as TableRow[] | undefined) ?? EMPTY_ROWS
   const [localRows, setLocalRows] = useState<TableRow[]>(canonRows)
 
   // Keep a ref in sync with localRows to avoid stale closures
@@ -75,9 +76,10 @@ export function useTableSync(
   // Flag to trigger a coalesced commit after in-flight response arrives.
   // Replaces sentinel entries (__delete__, __move__) to avoid phantom rows.
   const needsCoalescedCommitRef = useRef(false)
-  // Promise resolve for flush-before-save: resolves when the in-flight
+  // Promise resolve/reject for flush-before-save: resolves when the in-flight
   // response arrives AND dirty has been re-sent (if any).
   const flushResolveRef = useRef<(() => void) | null>(null)
+  const flushRejectRef = useRef<((err: Error) => void) | null>(null)
 
   // Track which columns are readonly so re-apply skips them
   const readonlyBindings = useRef(new Set<string>())
@@ -102,6 +104,7 @@ export function useTableSync(
         inFlightRef.current = false
         flushResolveRef.current?.()
         flushResolveRef.current = null
+        flushRejectRef.current = null
       }
       return
     }
@@ -148,6 +151,16 @@ export function useTableSync(
       sourceNodeId: node.id,
       trigger: 'change',
       value: rows,
+    }).then((ok) => {
+      if (ok) return
+      // Ошибка сети/сервера: canon не придёт — снимаем in-flight и роняем flush,
+      // иначе таблица зависает «в полёте» и save молча теряет строки.
+      inFlightRef.current = false
+      dirtyRef.current = new Map()
+      needsCoalescedCommitRef.current = false
+      flushRejectRef.current?.(new Error('table commit failed'))
+      flushResolveRef.current = null
+      flushRejectRef.current = null
     })
   }
 
@@ -168,12 +181,13 @@ export function useTableSync(
       return next
     })
 
-    // If in-flight, record in dirty snapshot
-    if (inFlightRef.current) {
-      const dirty = dirtyRef.current
-      const existing = dirty.get(rowId) ?? {}
-      dirty.set(rowId, { ...existing, [binding]: value })
-    }
+    // Record in dirty snapshot — always (not just when in-flight).
+    // commitCell clears dirty before calling sendEvent, so when canon
+    // arrives after a normal commit, dirty is empty and no phantom
+    // coalesced commit is triggered.
+    const dirty = dirtyRef.current
+    const existing = dirty.get(rowId) ?? {}
+    dirty.set(rowId, { ...existing, [binding]: value })
   }
 
   const commitCell = () => {
@@ -181,6 +195,9 @@ export function useTableSync(
       // Already in-flight — edits are in dirtyRef, will coalesce on response
       return
     }
+    // Clear dirty before sending so the canon response lands cleanly
+    // (no spurious coalesced commit from pre-commit dirty entries).
+    dirtyRef.current = new Map()
     sendEvent(localRowsRef.current)
   }
 
@@ -196,6 +213,8 @@ export function useTableSync(
       dirtyRef.current.set(rowId, rest)
       needsCoalescedCommitRef.current = true
     } else {
+      // Clear pre-commit dirty before sending (localRowsRef already has typed values)
+      dirtyRef.current = new Map()
       sendEvent(next)
     }
   }
@@ -213,6 +232,8 @@ export function useTableSync(
       // Signal that a coalesced commit is needed after in-flight response
       needsCoalescedCommitRef.current = true
     } else {
+      // Clear pre-commit dirty before sending (localRowsRef already has typed values)
+      dirtyRef.current = new Map()
       sendEvent(next)
     }
   }
@@ -229,6 +250,8 @@ export function useTableSync(
       // Signal that a coalesced commit is needed after in-flight response
       needsCoalescedCommitRef.current = true
     } else {
+      // Clear pre-commit dirty before sending (localRowsRef already has typed values)
+      dirtyRef.current = new Map()
       sendEvent(next)
     }
   }
@@ -240,8 +263,9 @@ export function useTableSync(
       const hasUncommittedChanges =
         JSON.stringify(localRowsRef.current) !== JSON.stringify(canonRows)
       if (hasUncommittedChanges) {
-        return new Promise<void>((resolve) => {
+        return new Promise<void>((resolve, reject) => {
           flushResolveRef.current = resolve
+          flushRejectRef.current = reject
           sendEvent(localRowsRef.current)
         })
       }
@@ -250,14 +274,16 @@ export function useTableSync(
 
     if (inFlightRef.current) {
       // Wait for current in-flight + potential coalesced commit to finish
-      return new Promise<void>((resolve) => {
+      return new Promise<void>((resolve, reject) => {
         flushResolveRef.current = resolve
+        flushRejectRef.current = reject
       })
     }
 
     // Dirty exists but no in-flight — send now
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       flushResolveRef.current = resolve
+      flushRejectRef.current = reject
       dirtyRef.current = new Map()
       needsCoalescedCommitRef.current = false
       sendEvent(localRowsRef.current)
@@ -271,12 +297,9 @@ export function useTableSync(
 
   // ── Register/unregister flush for flush-before-save ──
   useEffect(() => {
-    if (node.binding) {
-      registerPendingFlush(node.binding, () => flushPendingRef.current())
-    }
-    return () => {
-      if (node.binding) unregisterPendingFlush(node.binding)
-    }
+    if (!node.binding) return
+    const token = registerPendingFlush(() => flushPendingRef.current())
+    return () => unregisterPendingFlush(token)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [node.binding])
 
@@ -287,6 +310,5 @@ export function useTableSync(
     addRow,
     deleteRow,
     moveRow,
-    flushPending,
   }
 }

@@ -1,14 +1,13 @@
-const registry = new Map<string, () => Promise<void>>()
+const registry = new Map<symbol, () => Promise<void>>()
 
-export function registerPendingFlush(
-  binding: string,
-  flush: () => Promise<void>,
-): void {
-  registry.set(binding, flush)
+export function registerPendingFlush(flush: () => Promise<void>): symbol {
+  const token = Symbol('pending-flush')
+  registry.set(token, flush)
+  return token
 }
 
-export function unregisterPendingFlush(binding: string): void {
-  registry.delete(binding)
+export function unregisterPendingFlush(token: symbol): void {
+  registry.delete(token)
 }
 
 export async function flushAllPendingTableCommits(): Promise<void> {

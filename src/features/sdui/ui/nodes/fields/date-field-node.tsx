@@ -1,45 +1,29 @@
 import type { FC } from 'react'
 
 import type { NodeProps } from '../../../types/view'
-import { useSduiSession } from '../../../lib/sdui-session-context'
-import { useSduiDispatch } from '../../../lib/dispatch'
+import { useFieldNode } from '../../../lib/hooks/use-field-node'
 import { DateTimeInput } from '@/shared/ui/inputs'
 
 export const DateFieldNode: FC<NodeProps> = ({ node }) => {
-  const label = node.props?.label as string | undefined
-  const required = node.props?.required as boolean | undefined
-  const readonly = node.props?.readonly as boolean | undefined
-  const visible = (node.props?.visible as boolean | undefined) ?? true
-  const enabled = (node.props?.enabled as boolean | undefined) ?? true
-  const error = node.props?.error as string | undefined
-  const flex = node.props?.flex as number | string | undefined
+  const f = useFieldNode(node)
+  const value = (f.value as string | undefined) ?? ''
 
-  const { getValue, setValue } = useSduiSession()
-  const value = (getValue(node.binding) as string | undefined) ?? ''
-  const dispatch = useSduiDispatch()
-
-  if (!visible) return null
-
-  const fireServerEvent = (trigger: string, newValue: unknown) => {
-    if (node.actions?.some((a) => a.trigger === trigger && a.actionId === 'fieldEvent')) {
-      void dispatch({ type: 'EVENT', sourceNodeId: node.id, trigger, value: newValue })
-    }
-  }
+  if (!f.visible) return null
 
   return (
-    <div style={{ flex: flex !== undefined ? flex : undefined }}>
+    <div style={{ flex: f.flex !== undefined ? f.flex : undefined }}>
       <DateTimeInput
-        label={label}
+        label={f.label}
         value={value}
         dateOnly={true}
-        required={required}
-        readOnly={readonly}
-        disabled={!enabled}
-        error={!!error}
-        helperText={error}
+        required={f.required}
+        readOnly={f.readonly}
+        disabled={!f.enabled}
+        error={!!f.error}
+        helperText={f.error}
         onChange={(newValue) => {
-          if (node.binding) setValue(node.binding, newValue)
-          fireServerEvent('change', newValue)
+          f.setValue(newValue)
+          f.fireServerEvent('change', newValue)
         }}
       />
     </div>

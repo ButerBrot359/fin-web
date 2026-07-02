@@ -11,7 +11,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
-import { apiService } from '@/shared/api/api'
+import { fetchListPage } from '../../../api/reference-options'
 import { cn } from '@/shared/lib/utils/cn'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
@@ -30,15 +30,6 @@ interface ListRow {
   id: number
   [key: string]: unknown
   attributes?: Record<string, unknown>
-}
-
-interface PagedResponse {
-  data: {
-    content: ListRow[]
-    totalElements: number
-    last: boolean
-    number: number
-  }
 }
 
 const PAGE_SIZE = 25
@@ -77,17 +68,14 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     queryKey: ['sdui-list', source?.url, source?.params, search],
     queryFn: async ({ pageParam, signal }) => {
       if (!source) throw new Error('LIST node: source is required')
-      const res = await apiService.get<PagedResponse>({
+      return fetchListPage({
         url: source.url,
-        params: {
-          ...source.params,
-          page: pageParam,
-          size: PAGE_SIZE,
-          ...(search.trim() && { search: search.trim() }),
-        },
+        params: source.params,
+        page: pageParam as number,
+        size: PAGE_SIZE,
+        search,
         signal,
       })
-      return res.data
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage) => {

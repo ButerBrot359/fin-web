@@ -161,7 +161,8 @@
     "loadedCount": "{{total}} ішінен {{loaded}} жүктелді",
     "exportExcel": "Excel-ге жүктеп алу",
     "exportEmpty": "Жүктеп алуға деректер жоқ",
-    "exportError": "Excel-ге жүктеп алу мүмкін болмады"
+    "exportError": "Excel-ге жүктеп алу мүмкін болмады",
+    "rowNumber": "N"
   },
   "informationRegister": {
     "period": "Кезең",
@@ -447,7 +448,11 @@
       "sessionNotFound": "Сессия мерзімі аяқталды, қайта ашу..."
     },
     "unknownNode": "«{{type}}» түрі клиенттің осы нұсқасында қолдау көрсетілмейді",
-    "loading": "Жүктелуде..."
+    "loading": "Жүктелуде...",
+    "requestError": "Сұраныс қатесі",
+    "tableFlushFailed": "Кесте өзгерістерін сақтау мүмкін болмады",
+    "refSelectStale": "Форма ескі, таңдау қолданылмады",
+    "error": "Қате"
   },
   "tarifikatsiya": {
     "workerSummary": "Жұмысшылар бойынша қорытындылар",

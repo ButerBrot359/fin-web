@@ -160,12 +160,12 @@ export function extractAllLeafColumns(
 }
 
 /** Maps a TABLE_COLUMN ViewNode to the TableColumnDef shape. */
-function nodeToTableColumnDef(node: ViewNode): TableColumnDef {
+export function nodeToTableColumnDef(node: ViewNode): TableColumnDef {
   const props = node.props ?? {}
   return {
     id: node.id,
     label: (props.label as string | undefined) ?? '',
-    binding: (node.binding as string | undefined) ?? node.id,
+    binding: node.binding ?? (props.binding as string | undefined) ?? node.id,
     flex: props.flex as number | string | undefined,
     cellWidget: (props.cellWidget as string | undefined) ?? 'TEXT_FIELD',
     dataType: (props.dataType as string | undefined) ?? 'STRING',

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, type FC } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
-import { useTabMeta, useWorkspaceTabsStore, useFormCacheStore } from '@/features/workspace-tabs'
 
 import { useTreeStore } from '../lib/stores/tree-store'
 import { useViewStateStore } from '../lib/stores/view-state-store'
 import { useSduiCacheStore } from '../lib/stores/sdui-cache-store'
+import { usePanelStore } from '../lib/stores/panel-store'
 import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
 import { SduiSessionProvider, type SduiSessionValue } from '../lib/sdui-session-context'
@@ -15,22 +15,39 @@ import { DialogHost } from './dialog-host'
 
 interface SduiScreenProps {
   layoutCode?: string
+  // Хост решает, сохранять ли сессию в кэш при размонтировании (вкладка ещё открыта)
+  shouldPersistSession?: (route: string) => boolean
+  // Колбэки для интеграции с вкладками; SDUI сам их не реализует
+  onTitleChange?: (title: string) => void
+  onDirtyChange?: (route: string, dirty: boolean) => void
+  // Возвращает pending-действие ('save-and-close' | null) и потребляет его
+  consumePendingAction?: (route: string) => string | null
+  // Вызывается после успешного save-and-close: хост закрывает вкладку и навигирует
+  onSavedAndClosed?: (route: string) => void
 }
 
-export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
+export const SduiScreen: FC<SduiScreenProps> = ({
+  layoutCode,
+  shouldPersistSession,
+  onTitleChange,
+  onDirtyChange,
+  consumePendingAction,
+  onSavedAndClosed,
+}) => {
   const location = useLocation()
   const tree = useTreeStore((s) => s.root)
   const reset = useTreeStore((s) => s.reset)
   const dispatch = useSduiDispatch()
-  const navigate = useNavigate()
   const dirty = useViewStateStore((s) => s.dirty)
-  const viewStateValues = useViewStateStore((s) => s.state)
 
-  useTabMeta((tree?.props?.title as string | undefined) ?? '')
+  const title = (tree?.props?.title as string | undefined) ?? ''
+  useEffect(() => {
+    onTitleChange?.(title)
+  }, [title, onTitleChange])
 
   useEffect(() => {
-    useFormCacheStore.getState().setDirty(location.pathname, dirty)
-  }, [location.pathname, dirty])
+    onDirtyChange?.(location.pathname, dirty)
+  }, [location.pathname, dirty, onDirtyChange])
 
   useEffect(() => {
     const route = location.pathname
@@ -49,12 +66,10 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
     }
 
     return () => {
-      const tabStillExists = useWorkspaceTabsStore
-        .getState()
-        .tabs.some((tab) => tab.id === route)
+      const persist = shouldPersistSession?.(route) ?? false
       const treeState = useTreeStore.getState()
 
-      if (tabStillExists && treeState.root) {
+      if (persist && treeState.root) {
         useSduiCacheStore.getState().save(route, {
           root: treeState.root,
           formSessionId: treeState.formSessionId,
@@ -65,7 +80,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
         void dispatch({ type: 'CLOSE' })
         useSduiCacheStore.getState().remove(route)
       }
-      useFormCacheStore.getState().setDirty(route, false)
+      onDirtyChange?.(route, false)
+      usePanelStore.getState().reset()
       reset()
     }
   }, [location.pathname])
@@ -80,29 +96,27 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
   }, [])
 
   useEffect(() => {
-    const pending = useFormCacheStore.getState().consumePendingAction(location.pathname)
+    const route = location.pathname
+    const pending = consumePendingAction?.(route)
     if (pending === 'save-and-close') {
-      const route = location.pathname
-      void dispatch({ type: 'COMMAND', command: 'save' }).then(() => {
-        useFormCacheStore.getState().removeTab(route)
-        useWorkspaceTabsStore.getState().closeTab(route)
-        const { tabs } = useWorkspaceTabsStore.getState()
-        if (tabs.length > 0) {
-          const next = tabs[0]
-          void navigate(next.path + next.search)
-        } else {
-          void navigate('/')
-        }
+      void dispatch({ type: 'COMMAND', command: 'save' }).then((ok) => {
+        if (!ok) return
+        onSavedAndClosed?.(route)
       })
     }
-  }, [location.pathname, dispatch, navigate])
+  }, [location.pathname, dispatch, consumePendingAction, onSavedAndClosed])
 
+  // Стабильность контекста — суть фикса M1: пересоздание только при смене tree/dirty,
+  // не при каждом вводе символа.
   const sessionValue = useMemo<SduiSessionValue>(
     () => ({
-      formSessionId: useTreeStore.getState().formSessionId,
-      revision: useTreeStore.getState().revision,
+      kind: 'root',
+      getSession: () => {
+        const s = useTreeStore.getState()
+        return { formSessionId: s.formSessionId, revision: s.revision }
+      },
       getValue: (binding) =>
-        binding ? viewStateValues[binding] : undefined,
+        binding ? useViewStateStore.getState().state[binding] : undefined,
       setValue: useViewStateStore.getState().set,
       setFromServer: useViewStateStore.getState().setFromServer,
       getAll: useViewStateStore.getState().getAll,
@@ -117,7 +131,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
       applyTreePatches: useTreeStore.getState().applyPatches,
       clearAllErrors: useTreeStore.getState().clearAllErrors,
     }),
-    [tree, dirty, viewStateValues],
+    [tree, dirty],
   )
 
   if (!tree) return <PageSkeleton />

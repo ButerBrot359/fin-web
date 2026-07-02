@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import i18n from 'i18next'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
@@ -77,7 +78,7 @@ export function useSduiDispatch() {
   const session = useSduiSession()
 
   const dispatch = useCallback(
-    async (action: ViewAction): Promise<void> => {
+    async (action: ViewAction): Promise<boolean> => {
       const formSessionId = session.formSessionId
       const revision = session.revision
       const { replaceAll, merge, setSession, setRoot, bumpRevision, applyTreePatches, clearAllErrors, setFromServer, resetDirty } = session
@@ -170,7 +171,12 @@ export function useSduiDispatch() {
 
       try {
         if (action.type === 'COMMAND' && SAVE_COMMANDS.includes(action.command ?? '')) {
-          await flushAllPendingTableCommits()
+          try {
+            await flushAllPendingTableCommits()
+          } catch {
+            showToast('error', i18n.t('sdui.tableFlushFailed'))
+            return false
+          }
         }
 
         const res = await viewTransport.post({
@@ -205,14 +211,15 @@ export function useSduiDispatch() {
             resetDirty()
           }
         }
+        return true
       } catch (error) {
         if (error instanceof ViewConflictError) {
           handleConflict(error.data, action, reopen)
         } else {
-          const message =
-            error instanceof Error ? error.message : 'Ошибка запроса'
+          const message = error instanceof Error ? error.message : i18n.t('sdui.requestError')
           showToast('error', message)
         }
+        return false
       }
     },
     [location.pathname, location.search, navigate, session],

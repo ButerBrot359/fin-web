@@ -83,7 +83,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({ layoutCode }) => {
     const pending = useFormCacheStore.getState().consumePendingAction(location.pathname)
     if (pending === 'save-and-close') {
       const route = location.pathname
-      void dispatch({ type: 'COMMAND', command: 'save' }).then(() => {
+      void dispatch({ type: 'COMMAND', command: 'save' }).then((ok) => {
+        if (!ok) return
         useFormCacheStore.getState().removeTab(route)
         useWorkspaceTabsStore.getState().closeTab(route)
         const { tabs } = useWorkspaceTabsStore.getState()

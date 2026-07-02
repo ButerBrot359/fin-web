@@ -447,7 +447,9 @@
       "sessionNotFound": "Сессия истекла, переоткрываю..."
     },
     "unknownNode": "Тип «{{type}}» не поддерживается этой версией клиента",
-    "loading": "Загрузка..."
+    "loading": "Загрузка...",
+    "requestError": "Ошибка запроса",
+    "tableFlushFailed": "Не удалось сохранить изменения таблицы"
   },
   "tarifikatsiya": {
     "workerSummary": "Итоги по работникам",

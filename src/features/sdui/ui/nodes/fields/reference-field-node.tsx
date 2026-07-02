@@ -55,6 +55,12 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     setOptions([])
   }, [paramsKey])
 
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
+
   if (!f.visible) return null
 
   const domainPath = DOMAIN_PATH_MAP[domain] ?? 'dictionary-entries'

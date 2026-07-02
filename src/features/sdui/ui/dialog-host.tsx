@@ -1,14 +1,8 @@
-import { useSyncExternalStore, useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Dialog, DialogTitle, DialogContent, Drawer, IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 
-import {
-  getPanelStack,
-  subscribePanels,
-  popPanel,
-  updatePanelSession,
-  type PanelEntry,
-} from '../lib/dispatch'
+import { usePanelStore, type PanelEntry } from '../lib/stores/panel-store'
 import {
   SduiSessionProvider,
   type SduiSessionValue,
@@ -33,11 +27,11 @@ const PanelFormProvider = ({
   const sessionValue = useMemo<SduiSessionValue>(
     () => ({
       kind: 'panel',
-      // Ревизия читается из АКТУАЛЬНОГО стека — фикс M2 для панелей.
+      // Ревизия читается из АКТУАЛЬНОГО стора — фикс M2 для панелей.
       getSession: () => ({
         formSessionId: panel.session?.formSessionId ?? null,
         revision:
-          getPanelStack().find((p) => p.panelId === panel.panelId)?.session?.revision ??
+          usePanelStore.getState().panels.find((p) => p.panelId === panel.panelId)?.session?.revision ??
           panel.session?.revision ??
           null,
       }),
@@ -60,10 +54,10 @@ const PanelFormProvider = ({
       tree,
       setRoot: setTree,
       setSession: (_id, rev) => {
-        updatePanelSession(panel.panelId, rev)
+        usePanelStore.getState().updateSession(panel.panelId, rev)
       },
       bumpRevision: (rev) => {
-        updatePanelSession(panel.panelId, rev)
+        usePanelStore.getState().updateSession(panel.panelId, rev)
       },
       applyTreePatches: (patches: ViewPatch[]) => {
         setTree((t) => applyPatches(t, patches))
@@ -81,7 +75,7 @@ const PanelFormProvider = ({
 }
 
 export const DialogHost = () => {
-  const stack = useSyncExternalStore(subscribePanels, getPanelStack)
+  const stack = usePanelStore((s) => s.panels)
 
   return (
     <>
@@ -101,7 +95,7 @@ export const DialogHost = () => {
             <Dialog
               key={panel.panelId}
               open
-              onClose={popPanel}
+              onClose={() => usePanelStore.getState().pop()}
               fullScreen
               slotProps={{
                 paper: {
@@ -116,7 +110,7 @@ export const DialogHost = () => {
                       {String(panel.node.props.title)}
                     </span>
                   )}
-                  <IconButton onClick={popPanel}>
+                  <IconButton onClick={() => usePanelStore.getState().pop()}>
                     <CloseIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </div>
@@ -137,7 +131,7 @@ export const DialogHost = () => {
               key={panel.panelId}
               anchor="right"
               open
-              onClose={popPanel}
+              onClose={() => usePanelStore.getState().pop()}
               slotProps={{
                 paper: {
                   sx: {
@@ -155,7 +149,7 @@ export const DialogHost = () => {
             >
               <div className="flex h-full flex-col p-7">
                 <div className="flex shrink-0 items-center justify-end">
-                  <IconButton onClick={popPanel}>
+                  <IconButton onClick={() => usePanelStore.getState().pop()}>
                     <CloseIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </div>
@@ -171,7 +165,7 @@ export const DialogHost = () => {
           <Dialog
             key={panel.panelId}
             open
-            onClose={popPanel}
+            onClose={() => usePanelStore.getState().pop()}
             maxWidth="md"
             fullWidth
           >

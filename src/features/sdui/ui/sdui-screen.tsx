@@ -6,6 +6,7 @@ import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { useTreeStore } from '../lib/stores/tree-store'
 import { useViewStateStore } from '../lib/stores/view-state-store'
 import { useSduiCacheStore } from '../lib/stores/sdui-cache-store'
+import { usePanelStore } from '../lib/stores/panel-store'
 import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
 import { SduiSessionProvider, type SduiSessionValue } from '../lib/sdui-session-context'
@@ -80,6 +81,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
         useSduiCacheStore.getState().remove(route)
       }
       onDirtyChange?.(route, false)
+      usePanelStore.getState().reset()
       reset()
     }
   }, [location.pathname])

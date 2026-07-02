@@ -4,7 +4,7 @@ import i18n from 'i18next'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-import type { ViewAction, ViewNode } from '../types/view'
+import type { ViewAction } from '../types/view'
 import { viewTransport, ViewConflictError } from '../api/view-transport'
 import { applyValuePatches } from './patch-applier'
 import { handleConflict } from './conflict-handler'
@@ -12,65 +12,13 @@ import { createEffectHandler } from './effect-handler'
 import { useSduiSession } from './sdui-session-context'
 import { useTreeStore } from './stores/tree-store'
 import { useViewStateStore } from './stores/view-state-store'
+import { usePanelStore, type PanelEntry } from './stores/panel-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
+import { relaySelectionToParent } from './relay-selection'
+
+export type { PanelEntry }
 
 const SAVE_COMMANDS = ['save', 'saveAndClose', 'post', 'postAndClose']
-
-// ─── Panel stack (replaces simple dialog stack) ───
-
-export interface PanelEntry {
-  panelId: string
-  node: ViewNode
-  presentation: 'drawer' | 'modal' | 'page'
-  session?: {
-    formSessionId: string
-    revision: number
-    parentSessionId?: string
-    targetNodeId?: string
-  }
-  viewState: Record<string, unknown>
-}
-
-let panelStack: PanelEntry[] = []
-let panelListeners: Array<() => void> = []
-
-export function getPanelStack(): PanelEntry[] {
-  return panelStack
-}
-
-export function subscribePanels(listener: () => void): () => void {
-  panelListeners.push(listener)
-  return () => {
-    panelListeners = panelListeners.filter((l) => l !== listener)
-  }
-}
-
-function notifyPanelListeners() {
-  panelListeners.forEach((l) => l())
-}
-
-export function popPanel(): void {
-  panelStack = panelStack.slice(0, -1)
-  notifyPanelListeners()
-}
-
-export function updatePanelSession(panelId: string, rev: number): void {
-  panelStack = panelStack.map((p) =>
-    p.panelId === panelId && p.session
-      ? { ...p, session: { ...p.session, revision: rev } }
-      : p,
-  )
-  notifyPanelListeners()
-}
-
-export function findPanelBySessionId(sessionId: string): PanelEntry | undefined {
-  return panelStack.find((p) => p.session?.formSessionId === sessionId)
-}
-
-// Backward-compatible aliases
-export const getDialogStack = getPanelStack
-export const subscribeDialogs = subscribePanels
-export const popDialog = popPanel
 
 export function useSduiDispatch() {
   const location = useLocation()
@@ -115,52 +63,11 @@ export function useSduiDispatch() {
               targetNodeId: undefined,
             }
           }
-          panelStack = [...panelStack, entry]
-          notifyPanelListeners()
+          usePanelStore.getState().push(entry)
         },
         closeDialog: (effect) => {
-          // Close the panel
-          panelStack = panelStack.filter((p) => p.panelId !== effect.id)
-          notifyPanelListeners()
-
-          // If applyToParent fields are present — relay selection to parent session
-          if (effect.applyToParentSessionId && effect.applyToParentTargetNodeId && effect.applyToParentValue) {
-            const parentPanel = findPanelBySessionId(effect.applyToParentSessionId)
-
-            // Parent is either a panel in the stack or the root form (global stores)
-            const tree = useTreeStore.getState()
-            const parentRevision = parentPanel?.session?.revision ?? tree.revision
-
-            void viewTransport.post({
-              formSessionId: effect.applyToParentSessionId,
-              revision: parentRevision,
-              action: {
-                type: 'COMMAND',
-                command: `ref.select:${effect.applyToParentTargetNodeId}`,
-                value: effect.applyToParentValue,
-              },
-            }).then((res) => {
-              if (parentPanel) {
-                // Parent is a panel — update its session
-                updatePanelSession(parentPanel.panelId, res.revision)
-              } else {
-                // Parent is root — apply to global stores
-                const vs = useViewStateStore.getState()
-                tree.bumpRevision(res.revision)
-                tree.clearAllErrors()
-                tree.applyPatches(res.patches ?? [])
-                applyValuePatches(res.patches ?? [], vs.setFromServer)
-                vs.merge(res.statePatch ?? {})
-              }
-              effectHandler.playAll(res.effects ?? [])
-            }).catch((error) => {
-              if (error instanceof ViewConflictError && error.data.code === 'SESSION_NOT_FOUND') {
-                showToast('warning', 'Форма устарела, выбор не применён')
-              } else {
-                showToast('error', error instanceof Error ? error.message : 'Ошибка')
-              }
-            })
-          }
+          usePanelStore.getState().remove(effect.id)
+          relaySelectionToParent(effect, (effects) => effectHandler.playAll(effects))
         },
       })
 

@@ -2,6 +2,8 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
 import { parseISO, isValid } from 'date-fns'
 
+import { CalendarLayout, CalendarNavProvider } from './calendar-layout'
+
 export interface DateTimeInputProps {
   value?: string
   onChange: (value: string) => void
@@ -49,9 +51,33 @@ export const DateTimeInput = ({
     textField: { error, helperText, required, size, fullWidth },
   }
 
+  const slots = { layout: CalendarLayout }
+
   if (dateOnly) {
     return (
-      <DatePicker
+      <CalendarNavProvider
+        value={{ referenceValue: validDate, onSelectDate: handleChange }}
+      >
+        <DatePicker
+          value={validDate}
+          onChange={handleChange}
+          onOpen={onOpen}
+          onClose={onClose}
+          label={label}
+          readOnly={readOnly}
+          disabled={disabled}
+          slots={slots}
+          slotProps={slotProps}
+        />
+      </CalendarNavProvider>
+    )
+  }
+
+  return (
+    <CalendarNavProvider
+      value={{ referenceValue: validDate, onSelectDate: handleChange }}
+    >
+      <DateTimePicker
         value={validDate}
         onChange={handleChange}
         onOpen={onOpen}
@@ -59,21 +85,9 @@ export const DateTimeInput = ({
         label={label}
         readOnly={readOnly}
         disabled={disabled}
+        slots={slots}
         slotProps={slotProps}
       />
-    )
-  }
-
-  return (
-    <DateTimePicker
-      value={validDate}
-      onChange={handleChange}
-      onOpen={onOpen}
-      onClose={onClose}
-      label={label}
-      readOnly={readOnly}
-      disabled={disabled}
-      slotProps={slotProps}
-    />
+    </CalendarNavProvider>
   )
 }

@@ -2,7 +2,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
 import { parseISO, isValid } from 'date-fns'
 
-import { CalendarLayout, CalendarNavProvider } from './calendar-layout'
+import { CalendarSidebar, CalendarNavProvider } from './calendar-layout'
 
 export interface DateTimeInputProps {
   value?: string
@@ -51,7 +51,7 @@ export const DateTimeInput = ({
     textField: { error, helperText, required, size, fullWidth },
   }
 
-  const slots = { layout: CalendarLayout }
+  const slots = { shortcuts: CalendarSidebar }
 
   if (dateOnly) {
     return (

@@ -6,8 +6,7 @@ import Box from '@mui/material/Box'
 import ButtonBase from '@mui/material/ButtonBase'
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
 
-import { usePickerLayout } from '@mui/x-date-pickers/PickersLayout'
-import type { PickersLayoutProps } from '@mui/x-date-pickers/PickersLayout'
+import { pickersLayoutClasses } from '@mui/x-date-pickers/PickersLayout'
 
 import { format, setMonth, setYear, startOfDay } from 'date-fns'
 import type { Locale } from 'date-fns'
@@ -62,7 +61,12 @@ const useMonthLabels = (): string[] => {
 const YEAR_FUTURE_SPAN = 5
 const YEAR_PAST_SPAN = 35
 
-const CalendarSidebar = () => {
+/**
+ * Боковая панель выбора года и месяца. Используется как слот `shortcuts`
+ * пикера, поэтому располагается слева от сетки дней (штатная раскладка MUI),
+ * а сама сетка дней рендерится без изменений.
+ */
+export const CalendarSidebar = () => {
   const nav = useContext(CalendarNavContext)
   const { t } = useTranslation()
   const monthLabels = useMonthLabels()
@@ -130,6 +134,7 @@ const CalendarSidebar = () => {
 
   return (
     <Box
+      className={pickersLayoutClasses.shortcuts}
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -149,20 +154,22 @@ const CalendarSidebar = () => {
             width: '100%',
             justifyContent: 'space-between',
             gap: '4px',
-            height: 32,
-            padding: '0 8px 0 12px',
+            height: 36,
+            padding: '0 10px 0 14px',
             borderRadius: '8px',
-            border: '1.5px solid #2a75f4',
-            color: '#2a75f4',
+            backgroundColor: '#2a75f4',
+            color: '#ffffff',
             fontFamily: FONT_FAMILY,
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: 600,
+            '&:hover': { backgroundColor: '#1f66db' },
           }}
         >
           {activeYear}
           <KeyboardArrowDownRoundedIcon
             sx={{
               fontSize: 20,
+              color: 'inherit',
               transition: 'transform 0.15s',
               transform: yearOpen ? 'rotate(180deg)' : 'none',
             }}
@@ -237,26 +244,3 @@ const CalendarSidebar = () => {
   )
 }
 
-/**
- * Кастомная раскладка пикера: слева — панель выбора года и месяцев (как в
- * дизайне), справа — стандартная сетка дней (и время для DateTimePicker).
- */
-export function CalendarLayout<TValue extends Date | null>(
-  props: PickersLayoutProps<TValue>,
-) {
-  const { toolbar, content, tabs, actionBar } = usePickerLayout(props)
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-      {toolbar}
-      <Box sx={{ display: 'flex', alignItems: 'stretch' }}>
-        <CalendarSidebar />
-        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          {tabs}
-          {content}
-        </Box>
-      </Box>
-      {actionBar}
-    </Box>
-  )
-}

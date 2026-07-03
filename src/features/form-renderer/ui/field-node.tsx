@@ -25,6 +25,7 @@ import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
 import {
   fieldFilterToSearchParams,
   mergeSearchParams,
+  selectionModeToSearchParams,
 } from '../lib/utils/field-filter-params'
 import { headerFieldPath, isFieldVisible } from '../lib/utils/field-path'
 import {
@@ -99,7 +100,10 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
     const effectiveFilter =
       fieldFilters[node.code] ??
       synthesizeReferenceFilter(attribute, () => orgSourceValue)
-    return mergeSearchParams(depParams, fieldFilterToSearchParams(effectiveFilter))
+    return mergeSearchParams(
+      mergeSearchParams(depParams, fieldFilterToSearchParams(effectiveFilter)),
+      selectionModeToSearchParams(attribute?.referenceSelectionMode)
+    )
   }, [dependency, sourceId, fieldFilters, node.code, attribute, orgSourceValue])
 
   if (!attribute) return null

@@ -131,6 +131,9 @@
     "noOptions": "Нет вариантов",
     "loading": "Загрузка..."
   },
+  "calendar": {
+    "today": "Сегодня"
+  },
   "unsavedChangesDialog": {
     "title": "Сохранить изменения?",
     "message": "Данные были изменены",

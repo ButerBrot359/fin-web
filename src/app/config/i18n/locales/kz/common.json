@@ -131,6 +131,9 @@
     "noOptions": "Нұсқалар жоқ",
     "loading": "Жүктелуде..."
   },
+  "calendar": {
+    "today": "Бүгін"
+  },
   "unsavedChangesDialog": {
     "title": "Өзгерістерді сақтау керек пе?",
     "message": "Деректер өзгертілді",

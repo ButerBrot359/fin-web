@@ -8,7 +8,6 @@ import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownR
 
 import { usePickerLayout } from '@mui/x-date-pickers/PickersLayout'
 import type { PickersLayoutProps } from '@mui/x-date-pickers/PickersLayout'
-import type { DateOrTimeView } from '@mui/x-date-pickers/models'
 
 import { format, setMonth, setYear, startOfDay } from 'date-fns'
 import type { Locale } from 'date-fns'
@@ -242,10 +241,9 @@ const CalendarSidebar = () => {
  * Кастомная раскладка пикера: слева — панель выбора года и месяцев (как в
  * дизайне), справа — стандартная сетка дней (и время для DateTimePicker).
  */
-export function CalendarLayout<
-  TValue extends Date | null,
-  TView extends DateOrTimeView | 'meridiem',
->(props: PickersLayoutProps<TValue, TView>) {
+export function CalendarLayout<TValue extends Date | null>(
+  props: PickersLayoutProps<TValue>,
+) {
   const { toolbar, content, tabs, actionBar } = usePickerLayout(props)
 
   return (

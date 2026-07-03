@@ -39,3 +39,14 @@ export const mergeSearchParams = (
   if (a.af && b.af) merged.af = `${a.af},${b.af}`
   return merged
 }
+
+/**
+ * Режим выбора ссылочного атрибута (1С «выбор групп и элементов»,
+ * `referenceSelectionMode` в метаданных). `GROUP` — выбирать можно только
+ * группы (папки): в запросы пикера добавляется `groupsOnly=true`
+ * (см. backend-handoff-os-card-fields.md). Остальные режимы — без отбора.
+ */
+export const selectionModeToSearchParams = (
+  mode: string | null | undefined
+): Record<string, string> | undefined =>
+  mode === 'GROUP' ? { groupsOnly: 'true' } : undefined

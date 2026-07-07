@@ -456,7 +456,8 @@
     "objectField": {
       "type": "Түрі",
       "unsupportedMember": "Түрі қолдау көрсетілмейді (әзірленуде)"
-    }
+    },
+    "downloadError": "Файлды қалыптастыру мүмкін болмады"
   },
   "tarifikatsiya": {
     "workerSummary": "Жұмысшылар бойынша қорытындылар",

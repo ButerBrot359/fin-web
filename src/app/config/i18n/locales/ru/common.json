@@ -456,7 +456,8 @@
     "objectField": {
       "type": "Тип",
       "unsupportedMember": "Тип не поддерживается (в разработке)"
-    }
+    },
+    "downloadError": "Не удалось сформировать файл"
   },
   "tarifikatsiya": {
     "workerSummary": "Итоги по работникам",

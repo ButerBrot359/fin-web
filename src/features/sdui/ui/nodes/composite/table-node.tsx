@@ -74,23 +74,37 @@ interface HeaderModel {
  * COLUMN_GROUP → ячейка верхнего ряда (colSpan = число листьев), листья → нижний ряд.
  * Плоский TABLE_COLUMN при наличии групп → rowSpan=2.
  * Без групп colSpan/rowSpan не проставляются — DOM идентичен прежнему рендеру.
+ * Пустые COLUMN_GROUP пропускаются (colSpan: 0 невалиден).
  */
 export function buildHeaderModel(children: ViewNode[] | undefined): HeaderModel {
   const nodes = children ?? []
-  const hasGroups = nodes.some((c) => c.type === 'COLUMN_GROUP')
+
+  // First pass: check if there are any non-empty groups
+  const hasNonEmptyGroups = nodes.some((node) => {
+    if (node.type === 'COLUMN_GROUP') {
+      return collectLeafColumns(node).length > 0
+    }
+    return false
+  })
+
   const topRow: HeaderCell[] = []
   const bottomRow: HeaderCell[] = []
 
+  // Second pass: build rows
   for (const node of nodes) {
     if (node.type === 'TABLE_COLUMN') {
       const col = nodeToTableColumnDef(node)
       topRow.push({
         id: col.id,
         label: col.label,
-        ...(hasGroups ? { rowSpan: 2 } : {}),
+        ...(hasNonEmptyGroups ? { rowSpan: 2 } : {}),
       })
     } else if (node.type === 'COLUMN_GROUP') {
       const leaves = collectLeafColumns(node)
+      if (leaves.length === 0) {
+        // Skip empty groups entirely
+        continue
+      }
       topRow.push({
         id: node.id,
         label: (node.props?.label as string | undefined) ?? '',
@@ -104,7 +118,7 @@ export function buildHeaderModel(children: ViewNode[] | undefined): HeaderModel 
     }
   }
 
-  return { hasGroups, topRow, bottomRow }
+  return { hasGroups: hasNonEmptyGroups, topRow, bottomRow }
 }
 
 function extractEditableColumns(

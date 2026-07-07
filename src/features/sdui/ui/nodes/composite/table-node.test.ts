@@ -69,4 +69,18 @@ describe('buildHeaderModel', () => {
     ])
     expect(m.bottomRow.map((c) => c.label)).toEqual(['Счёт', 'ФКР', 'Счёт'])
   })
+
+  it('пустая COLUMN_GROUP пропускается: hasGroups=false, плоская колонка без rowSpan', () => {
+    const childrenWithEmptyGroup = [
+      col('c1', 'Период', '_period'),
+      group('g.empty', 'Пустая', []),
+    ]
+    const m = buildHeaderModel(childrenWithEmptyGroup)
+    expect(m.hasGroups).toBe(false)
+    expect(m.bottomRow).toEqual([])
+    expect(m.topRow).toEqual([
+      { id: 'c1', label: 'Период' },
+    ])
+    expect(m.topRow.every((c) => c.colSpan === undefined && c.rowSpan === undefined)).toBe(true)
+  })
 })

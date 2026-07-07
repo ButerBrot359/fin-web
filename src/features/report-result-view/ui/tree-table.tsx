@@ -31,6 +31,8 @@ import { ReportCell } from './report-cell'
 interface TreeTableProps {
   result: ReportResultDto
   columns: ReportColumnDto[]
+  /** Отступ одного уровня дерева в px (1С: обычный 13, уменьшенный 8). */
+  indentPx?: number
 }
 
 /** Сетка 1С: тонкие серые линии, плотные ячейки. */
@@ -56,7 +58,11 @@ const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
  * которая сама в теле не дублируется). Группы и «Итого» — жирные
  * тёмно-зелёные без заливок; двухуровневая шапка через `groupTitleRu`.
  */
-export const TreeTable = ({ result, columns }: TreeTableProps) => {
+export const TreeTable = ({
+  result,
+  columns,
+  indentPx = 13,
+}: TreeTableProps) => {
   const { t, i18n } = useTranslation()
   const isKz = i18n.language === 'kz'
 
@@ -177,7 +183,7 @@ export const TreeTable = ({ result, columns }: TreeTableProps) => {
     return (
       <div
         className="flex items-center gap-1"
-        style={{ paddingLeft: row.depth * 13 }}
+        style={{ paddingLeft: row.depth * indentPx }}
       >
         {canExpand ? (
           <button

@@ -3,6 +3,7 @@ import type { ApiListResponse } from '@/entities/account-plan'
 
 import type {
   ReportDefinitionDto,
+  ReportFilterDto,
   ReportMetaDto,
   ReportResultDto,
   ReportsListParams,
@@ -34,6 +35,22 @@ export const fetchReportsList = (
 export const fetchReportMeta = (code: string, signal?: AbortSignal) =>
   apiService.get<ReportMetaDto>({
     url: `/api/reports/${code}/meta`,
+    signal,
+  })
+
+/**
+ * Динамические поля отбора (вкладка «Отборы»): GET /api/reports/{code}/filter-fields?accountId=
+ * Ответ обёрнут в ApiListResponse (поле `list`). Возвращает КБП-каталог (6 измерений) +
+ * при заданном accountId — динамические поля субконто выбранного счёта.
+ */
+export const fetchFilterFields = (
+  code: string,
+  accountId?: number | null,
+  signal?: AbortSignal
+) =>
+  apiService.get<ApiListResponse<ReportFilterDto>>({
+    url: `/api/reports/${code}/filter-fields`,
+    params: accountId != null ? { accountId } : {},
     signal,
   })
 

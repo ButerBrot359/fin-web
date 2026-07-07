@@ -12,8 +12,10 @@ import { format, isValid, parseISO } from '@/shared/lib/utils/date'
 
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import {
-  ReportSettingsDrawer,
-  type ReportFilterItem,
+  ReportSettingsPanel,
+  isFilterRowReady,
+  type ReportAppearance,
+  type ReportFilterRow,
   type ReportGroupItem,
 } from '@/features/report-settings'
 import {
@@ -27,11 +29,11 @@ import { exportTableToXlsx } from '@/shared/lib/table-export'
 
 import { useReportMeta } from '../lib/hooks/use-report-meta'
 import { useRunReport } from '../lib/hooks/use-run-report'
+import { useFilterFields } from '../lib/hooks/use-filter-fields'
 import { buildReportExport } from '../lib/utils/build-report-export'
 import { ReportResultTable } from './report-result-table'
 import { ReportParamField, type ReportParamValue } from './report-param-field'
 import type {
-  ReportFilterDto,
   ReportIndicatorDto,
   ReportMetaDto,
   ReportParameterDto,
@@ -88,8 +90,50 @@ const normalizeBodyDates = (
   return out
 }
 
-/** Префикс ключей URL для отборов (вкладка «Отборы»), чтобы не путать с параметрами. */
-const FILTER_PREFIX = 'flt.'
+/** Ключ URL для активных отборов (вкладка «Отборы») — весь список одним JSON. */
+const FILTER_URL_KEY = 'flt'
+
+/** Десериализация строк отбора из URL-JSON (с базовой валидацией типов). */
+const parseFilterRows = (raw: string | null): ReportFilterRow[] => {
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    const rows: ReportFilterRow[] = []
+    for (const item of parsed) {
+      if (item == null || typeof item !== 'object') continue
+      const o = item as Record<string, unknown>
+      if (typeof o.field !== 'string') continue
+      rows.push({
+        field: o.field,
+        ...(typeof o.kindId === 'number' ? { kindId: o.kindId } : {}),
+        comparison: typeof o.comparison === 'string' ? o.comparison : 'EQUAL',
+        values: Array.isArray(o.values)
+          ? o.values.filter(
+              (v): v is number | string =>
+                typeof v === 'number' || typeof v === 'string'
+            )
+          : [],
+        enabled: o.enabled !== false,
+      })
+    }
+    return rows
+  } catch {
+    return []
+  }
+}
+
+/** Периодичность отчёта — NUMBER-параметр с фиксированным списком значений. */
+const isPeriodicity = (p: ReportParameterDto): boolean =>
+  p.dataType === 'NUMBER' && (p.allowedValues?.length ?? 0) > 0
+
+/**
+ * Подразделение — параметр КБП, вынесенный из шапки в отбор (в /filter-fields
+ * оно уже есть как поле `podrazdelenie`, значение задаётся во вкладке «Отборы»).
+ */
+const isPodrazdelenie = (p: ReportParameterDto): boolean =>
+  p.referenceDomain === 'PodrazdeleniyaOrganizatsiy' ||
+  /podrazdelenie/i.test(p.code)
 
 /**
  * Сериализация значений параметров в строку URL (одно поле на параметр).
@@ -207,21 +251,23 @@ export const ReportPage = () => {
     setValues(next)
   }, [meta, searchParams])
 
-  // Структурные отборы из URL (вкладка «Отборы»). Ключ URL = FILTER_PREFIX+field.
-  const appliedFilters = useMemo<RunReportFilter[]>(() => {
-    if (!meta) return []
-    const out: RunReportFilter[] = []
-    for (const f of meta.filters) {
-      const raw = searchParams.get(`${FILTER_PREFIX}${f.field}`)
-      if (raw == null || raw === '') continue
-      out.push({
-        field: f.field,
-        comparison: f.defaultComparison ?? f.comparisons?.[0] ?? 'EQUAL',
-        values: [Number(raw)],
-      })
-    }
-    return out
-  }, [meta, searchParams])
+  // Активные отборы (вкладка «Отборы») — весь список в URL одним JSON-параметром.
+  const filterRows = useMemo<ReportFilterRow[]>(
+    () => parseFilterRows(searchParams.get(FILTER_URL_KEY)),
+    [searchParams]
+  )
+
+  // В тело /run уходят только готовые отборы (включён + есть значение при нужде).
+  const appliedFilters = useMemo<RunReportFilter[]>(
+    () =>
+      filterRows.filter(isFilterRowReady).map((r) => ({
+        field: r.field,
+        ...(r.kindId != null ? { kindId: r.kindId } : {}),
+        comparison: r.comparison,
+        values: r.values,
+      })),
+    [filterRows]
+  )
 
   // Applied-параметры — производные от URL. Запрос включается, когда заданы
   // все обязательные параметры (есть хотя бы один query-параметр => применено).
@@ -296,10 +342,9 @@ export const ReportPage = () => {
       (prev) => {
         const next = new URLSearchParams()
         for (const [k, v] of Object.entries(serialized)) next.set(k, v)
-        // Сохраняем активные отборы (flt.*) при пересоздании query-строки.
-        for (const [k, v] of prev.entries()) {
-          if (k.startsWith(FILTER_PREFIX)) next.set(k, v)
-        }
+        // Сохраняем активные отборы (flt) при пересоздании query-строки.
+        const flt = prev.get(FILTER_URL_KEY)
+        if (flt) next.set(FILTER_URL_KEY, flt)
         return next
       },
       { replace: true }
@@ -307,14 +352,13 @@ export const ReportPage = () => {
     if (sameAsApplied && appliedBody != null) void refetch()
   }
 
-  // Изменение отбора (вкладка «Отборы») — пишем/удаляем flt.<field> в URL.
-  const onFilterChange = (field: string, valueId: number | null) => {
+  // Изменение отборов (вкладка «Отборы») — сериализуем весь список в URL (flt).
+  const setFilterRows = (rows: ReportFilterRow[]) => {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
-        const key = `${FILTER_PREFIX}${field}`
-        if (valueId != null) next.set(key, String(valueId))
-        else next.delete(key)
+        if (rows.length > 0) next.set(FILTER_URL_KEY, JSON.stringify(rows))
+        else next.delete(FILTER_URL_KEY)
         return next
       },
       { replace: true }
@@ -353,6 +397,7 @@ export const ReportPage = () => {
 
   return (
     <ReportPageContent
+      code={moduleCode}
       meta={meta}
       reportName={reportName}
       isKz={isKz}
@@ -368,12 +413,14 @@ export const ReportPage = () => {
       isRunning={isRunning}
       isRunError={isRunError}
       result={result}
-      onFilterChange={onFilterChange}
+      filterRows={filterRows}
+      onFilterRowsChange={setFilterRows}
     />
   )
 }
 
 interface ReportPageContentProps {
+  code: string
   meta: ReportMetaDto
   reportName: string
   isKz: boolean
@@ -389,7 +436,8 @@ interface ReportPageContentProps {
   isRunning: boolean
   isRunError: boolean
   result: ReturnType<typeof useRunReport>['result']
-  onFilterChange: (field: string, valueId: number | null) => void
+  filterRows: ReportFilterRow[]
+  onFilterRowsChange: (rows: ReportFilterRow[]) => void
 }
 
 /** Локализованный заголовок отбора/показателя. */
@@ -398,6 +446,7 @@ const localized = (ru: string, kz: string | undefined, isKz: boolean): string =>
 
 /** Контент страницы — выделен, чтобы хуки meta/run вызывались до раннего return. */
 const ReportPageContent = ({
+  code,
   meta,
   reportName,
   isKz,
@@ -413,11 +462,40 @@ const ReportPageContent = ({
   isRunning,
   isRunError,
   result,
-  onFilterChange,
+  filterRows,
+  onFilterRowsChange,
 }: ReportPageContentProps) => {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
-  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // Оформление (вкладка «Оформление»): дефолты как в 1С (обе — вкл).
+  const [appearance, setAppearance] = useState<ReportAppearance>({
+    highlightNegatives: true,
+    reducedIndent: true,
+  })
+  const onAppearanceChange = (patch: Partial<ReportAppearance>) => {
+    setAppearance((prev) => ({ ...prev, ...patch }))
+  }
+
+  // Параметр «Счёт» (ACCOUNT_REF) и его значение — источник accountId для
+  // динамических полей отбора (субконто счёта) в /filter-fields.
+  const accountParam = useMemo(
+    () => meta.parameters.find((p) => p.dataType === 'ACCOUNT_REF'),
+    [meta.parameters]
+  )
+  const accountId =
+    accountParam != null && typeof values[accountParam.code] === 'number'
+      ? (values[accountParam.code] as number)
+      : null
+
+  // Параметр «Периодичность» — выносим из шапки в панель (Основные/Группировка).
+  const periodicityParam = useMemo(
+    () => meta.parameters.find(isPeriodicity),
+    [meta.parameters]
+  )
+
+  // Доступные поля отбора (КБП + субконто выбранного счёта).
+  const { fields: filterFields } = useFilterFields(code, accountId)
 
   // Унифицированный 1С-рендерер включён ПО УМОЛЧАНИЮ; откат на старую таблицу —
   // ?renderer=v1 (или off/false/0) ∥ localStorage 'unifiedReportRenderer'='false'.
@@ -456,7 +534,6 @@ const ReportPageContent = ({
   const [hiddenGroups, setHiddenGroups] = useState<Set<string>>(new Set())
 
   const indicators: ReportIndicatorDto[] = meta.indicators
-  const filters: ReportFilterDto[] = meta.filters
 
   // Вкладка «Показатели».
   const indicatorItems = useMemo<ReportGroupItem[]>(
@@ -494,21 +571,6 @@ const ReportPageContent = ({
     })
   }
 
-  // Вкладка «Отборы» — из meta.filters; значение читаем из URL (flt.<field>).
-  const filterItems = useMemo<ReportFilterItem[]>(
-    () =>
-      filters.map((f) => {
-        const raw = searchParams.get(`${FILTER_PREFIX}${f.field}`)
-        return {
-          key: f.field,
-          label: localized(f.titleRu, f.titleKz, isKz),
-          dictTypeCode: f.referenceDomain ?? '',
-          valueId: raw ? Number(raw) : null,
-        }
-      }),
-    [filters, searchParams, isKz]
-  )
-
   // Колонки, скрытые настройками: выключенные показатели + скрытые группы.
   const hiddenColumns = useMemo<Set<string>>(() => {
     const set = new Set<string>(hiddenGroups)
@@ -521,8 +583,18 @@ const ReportPageContent = ({
     return set
   }, [hiddenGroups, indicators, indicatorState])
 
-  const hasSettings =
-    filters.length > 0 || indicators.length > 0 || dimensionColumns.length > 0
+  // Панель настроек — только для табличных отчётов (не мемориальные ордера/бланки).
+  // Гейт по meta (доступен до формирования): показатели, периодичность, счёт
+  // (динамические отборы субконто) либо табличные колонки.
+  const hasSettings = useMemo(() => {
+    if (meta.definition.kind === 'MEMORIAL_ORDER') return false
+    return (
+      indicators.length > 0 ||
+      periodicityParam != null ||
+      accountParam != null ||
+      meta.columns.some((c) => c.role === 'DIMENSION' || c.role === 'MEASURE')
+    )
+  }, [meta, indicators, periodicityParam, accountParam])
 
   const handlePrint = () => {
     window.print()
@@ -560,72 +632,76 @@ const ReportPageContent = ({
         </Typography>
       ) : (
         <div className="flex flex-wrap items-start gap-4">
-          {meta.parameters.map((param) => {
-            const invalid =
-              showErrors &&
-              param.required &&
-              !isFilled(param, values[param.code])
-            // PERIOD раскрываем в пару полей from/to.
-            if (isPeriod(param)) {
-              const period = (values[param.code] as
-                | PeriodValue
-                | undefined) ?? {
-                from: '',
-                to: '',
+          {/* В шапке — только Период(даты), Счёт, Организация. Периодичность и
+              Подразделение вынесены в докнутую панель настроек (как в 1С). */}
+          {meta.parameters
+            .filter((p) => !isPeriodicity(p) && !isPodrazdelenie(p))
+            .map((param) => {
+              const invalid =
+                showErrors &&
+                param.required &&
+                !isFilled(param, values[param.code])
+              // PERIOD раскрываем в пару полей from/to.
+              if (isPeriod(param)) {
+                const period = (values[param.code] as
+                  | PeriodValue
+                  | undefined) ?? {
+                  from: '',
+                  to: '',
+                }
+                const title =
+                  (isKz ? param.titleKz : param.titleRu) || param.titleRu
+                return (
+                  <div key={param.code} className="flex flex-wrap gap-4">
+                    <div className="report-param-field w-64">
+                      <DateTimeInput
+                        value={period.from}
+                        onChange={(v) => {
+                          setPeriodValue(param.code, { from: v })
+                        }}
+                        label={`${title}: ${t('reports.periodFrom')}`}
+                        required={param.required}
+                        error={invalid}
+                        size="small"
+                        fullWidth
+                      />
+                    </div>
+                    <div className="report-param-field w-64">
+                      <DateTimeInput
+                        value={period.to}
+                        onChange={(v) => {
+                          setPeriodValue(param.code, { to: v })
+                        }}
+                        label={`${title}: ${t('reports.periodTo')}`}
+                        required={param.required}
+                        error={invalid}
+                        size="small"
+                        fullWidth
+                      />
+                    </div>
+                  </div>
+                )
               }
-              const title =
-                (isKz ? param.titleKz : param.titleRu) || param.titleRu
               return (
-                <div key={param.code} className="flex flex-wrap gap-4">
-                  <div className="report-param-field w-64">
-                    <DateTimeInput
-                      value={period.from}
-                      onChange={(v) => {
-                        setPeriodValue(param.code, { from: v })
-                      }}
-                      label={`${title}: ${t('reports.periodFrom')}`}
-                      required={param.required}
-                      error={invalid}
-                      size="small"
-                      fullWidth
-                    />
-                  </div>
-                  <div className="report-param-field w-64">
-                    <DateTimeInput
-                      value={period.to}
-                      onChange={(v) => {
-                        setPeriodValue(param.code, { to: v })
-                      }}
-                      label={`${title}: ${t('reports.periodTo')}`}
-                      required={param.required}
-                      error={invalid}
-                      size="small"
-                      fullWidth
-                    />
-                  </div>
+                <div
+                  key={param.code}
+                  className={
+                    param.dataType === 'BOOLEAN'
+                      ? 'flex items-center'
+                      : 'report-param-field w-64'
+                  }
+                >
+                  <ReportParamField
+                    param={param}
+                    value={values[param.code]}
+                    onChange={(v) => {
+                      setParamValue(param.code, v)
+                    }}
+                    invalid={invalid}
+                  />
                 </div>
               )
-            }
-            return (
-              <div
-                key={param.code}
-                className={
-                  param.dataType === 'BOOLEAN'
-                    ? 'flex items-center'
-                    : 'report-param-field w-64'
-                }
-              >
-                <ReportParamField
-                  param={param}
-                  value={values[param.code]}
-                  onChange={(v) => {
-                    setParamValue(param.code, v)
-                  }}
-                  invalid={invalid}
-                />
-              </div>
-            )
-          })}
+            })}
 
           {/* «Сформировать» — фирменная жёлтая кнопка 1С. */}
           <Button
@@ -664,103 +740,111 @@ const ReportPageContent = ({
               </Button>
             </>
           )}
-          {hasSettings && (
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setSettingsOpen(true)
-              }}
-              sx={{ height: 48, marginLeft: 'auto' }}
-            >
-              {t('reportSettings.title')}
-            </Button>
-          )}
         </div>
       )}
 
-      {/* Watermark 1С до первого формирования. */}
-      {!applied && meta.parameters.length > 0 && (
-        <div className="flex items-center justify-center py-16">
-          <Typography
-            variant="body2"
-            className="rounded border border-[#d9d9d9] bg-[#fffbe6] px-4 py-2"
-            sx={{ color: '#333' }}
-          >
-            {t('reports.notGenerated')}
-          </Typography>
+      {/* Результат слева + докнутая панель настроек справа (всегда видна, как в 1С). */}
+      <div className="flex gap-4">
+        <div className="min-w-0 flex-1">
+          {/* Watermark 1С до первого формирования. */}
+          {!applied && meta.parameters.length > 0 && (
+            <div className="flex items-center justify-center py-16">
+              <Typography
+                variant="body2"
+                className="rounded border border-[#d9d9d9] bg-[#fffbe6] px-4 py-2"
+                sx={{ color: '#333' }}
+              >
+                {t('reports.notGenerated')}
+              </Typography>
+            </div>
+          )}
+
+          {/* Результат. */}
+          {applied && (
+            <>
+              {isRunning && (
+                <div className="flex flex-col gap-2">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <ShimmerBlock key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              )}
+
+              {!isRunning && isRunError && isDraft && (
+                <div className="rounded-md bg-ui-02 px-4 py-6 text-center">
+                  <Typography variant="body1" className="text-ui-06">
+                    {t('reports.notImplemented')}
+                  </Typography>
+                </div>
+              )}
+
+              {!isRunning && isRunError && !isDraft && (
+                <div className="py-4">
+                  <Typography variant="body2" className="text-support-01">
+                    {t('reports.loadError')}
+                  </Typography>
+                </div>
+              )}
+
+              {!isRunning && !isRunError && result && !tabularResult && (
+                <div className="rounded-md bg-ui-02 px-4 py-6 text-center">
+                  <Typography variant="body1" className="text-ui-06">
+                    {t('reports.separateScreen')}
+                  </Typography>
+                </div>
+              )}
+
+              {!isRunning &&
+                !isRunError &&
+                tabularResult &&
+                useUnifiedRenderer && (
+                  <div className="report-print-area">
+                    <ReportResultView
+                      result={tabularResult}
+                      hiddenColumns={hiddenColumns}
+                      appearance={appearance}
+                    />
+                  </div>
+                )}
+
+              {!isRunning &&
+                !isRunError &&
+                tabularResult &&
+                !useUnifiedRenderer && (
+                  <ReportResultTable
+                    result={tabularResult}
+                    hiddenColumns={hiddenColumns}
+                  />
+                )}
+            </>
+          )}
         </div>
-      )}
 
-      {/* Результат. */}
-      {applied && (
-        <>
-          {isRunning && (
-            <div className="flex flex-col gap-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <ShimmerBlock key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          )}
-
-          {!isRunning && isRunError && isDraft && (
-            <div className="rounded-md bg-ui-02 px-4 py-6 text-center">
-              <Typography variant="body1" className="text-ui-06">
-                {t('reports.notImplemented')}
-              </Typography>
-            </div>
-          )}
-
-          {!isRunning && isRunError && !isDraft && (
-            <div className="py-4">
-              <Typography variant="body2" className="text-support-01">
-                {t('reports.loadError')}
-              </Typography>
-            </div>
-          )}
-
-          {!isRunning && !isRunError && result && !tabularResult && (
-            <div className="rounded-md bg-ui-02 px-4 py-6 text-center">
-              <Typography variant="body1" className="text-ui-06">
-                {t('reports.separateScreen')}
-              </Typography>
-            </div>
-          )}
-
-          {!isRunning && !isRunError && tabularResult && useUnifiedRenderer && (
-            <div className="report-print-area">
-              <ReportResultView
-                result={tabularResult}
-                hiddenColumns={hiddenColumns}
-              />
-            </div>
-          )}
-
-          {!isRunning &&
-            !isRunError &&
-            tabularResult &&
-            !useUnifiedRenderer && (
-              <ReportResultTable
-                result={tabularResult}
-                hiddenColumns={hiddenColumns}
-              />
-            )}
-        </>
-      )}
-
-      {hasSettings && (
-        <ReportSettingsDrawer
-          open={settingsOpen}
-          onClose={() => {
-            setSettingsOpen(false)
-          }}
-          groupItems={groupItems}
-          onToggleGroup={onToggleGroup}
-          indicatorItems={indicatorItems}
-          onToggleIndicator={onToggleIndicator}
-          filterItems={filterItems}
-          onFilterChange={onFilterChange}
-        />
-      )}
+        {hasSettings && (
+          <ReportSettingsPanel
+            isKz={isKz}
+            indicatorItems={indicatorItems}
+            onToggleIndicator={onToggleIndicator}
+            groupItems={groupItems}
+            onToggleGroup={onToggleGroup}
+            periodicityParam={periodicityParam}
+            periodicityValue={
+              periodicityParam
+                ? ((values[periodicityParam.code] as number | string | null) ??
+                  null)
+                : null
+            }
+            onPeriodicityChange={(v) => {
+              if (periodicityParam) setParamValue(periodicityParam.code, v)
+            }}
+            filterFields={filterFields}
+            filterRows={filterRows}
+            onFilterRowsChange={onFilterRowsChange}
+            appearance={appearance}
+            onAppearanceChange={onAppearanceChange}
+          />
+        )}
+      </div>
     </div>
   )
 }

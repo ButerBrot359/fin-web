@@ -200,7 +200,14 @@ export interface ReportFilterDto {
   multi?: boolean
   comparisons?: string[]
   defaultComparison?: string
+  /** Группа отбора: "kbp" (КБП-каталог) | "subkonto" (субконто счёта). */
   group?: string
+  /** ID вида субконто (CharacteristicsPlanEntry.id) — routing-ключ для /run. Только у субконто-полей. */
+  kindId?: number
+  /** Позиция вида субконто на счёте (1..3) — для сортировки строк отбора. */
+  position?: number
+  /** 1С показывает эту строку отбора сразу (виды субконто выбранного счёта). */
+  defaultShown?: boolean
 }
 
 /** Показатель отчёта (вкладка «Показатели» — управляет видимостью колонок). */
@@ -286,6 +293,8 @@ export interface RunReportFilter {
   field: string
   comparison: string
   values: (number | string)[]
+  /** ID вида субконто — обязателен для субконто-отбора (иначе бэк не сматчит). */
+  kindId?: number
 }
 
 /** Тело запроса формирования отчёта. */

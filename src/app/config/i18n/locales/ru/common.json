@@ -258,9 +258,20 @@
   },
   "reportSettings": {
     "title": "Настройка",
+    "basic": "Основные",
     "grouping": "Группировка",
     "indicators": "Показатели",
-    "filters": "Отборы"
+    "filters": "Отборы",
+    "appearance": "Оформление",
+    "periodicity": "Периодичность",
+    "highlightNegatives": "Выделять отрицательные",
+    "reducedIndent": "Уменьшенный автоотступ",
+    "addFilter": "Добавить",
+    "field": "Поле",
+    "comparison": "Вид сравнения",
+    "value": "Значение",
+    "removeFilter": "Удалить отбор",
+    "noFilters": "Отборы не заданы"
   },
   "osv": {
     "title": "Оборотно-сальдовая ведомость",

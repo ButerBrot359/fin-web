@@ -1,9 +1,11 @@
 import type { NavigateFunction } from 'react-router-dom'
 
+import i18n from '@/app/config/i18n'
 import { apiService } from '@/shared/api/api'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { ViewEffect } from '../types/view'
+import { parseContentDispositionFilename } from './parse-content-disposition'
 
 type ToastLevel = 'success' | 'error' | 'info' | 'warning'
 
@@ -43,12 +45,26 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
           .getFileBlob({ url: effect.url })
           .then((res) => {
             const objectUrl = URL.createObjectURL(res.data)
-            window.open(objectUrl, '_blank')
+            const disposition = res.headers['content-disposition'] as
+              | string
+              | undefined
+
+            if (disposition && /attachment/i.test(disposition)) {
+              // Сервер требует сохранение на диск (§3.5 SCRUM-268)
+              const a = document.createElement('a')
+              a.href = objectUrl
+              a.download =
+                parseContentDispositionFilename(disposition) || 'download'
+              document.body.appendChild(a)
+              a.click()
+              a.remove()
+            } else {
+              // inline или без заголовка — превью в новой вкладке (как раньше)
+              window.open(objectUrl, '_blank')
+            }
             setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
           })
-          .catch(() =>
-            showToast('error', 'Не удалось сформировать печатную форму'),
-          )
+          .catch(() => showToast('error', i18n.t('sdui.downloadError')))
         break
       }
     }

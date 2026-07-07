@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef, type FC } from 'react'
+import { useState, type FC } from 'react'
 import { IconButton } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
+import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
@@ -40,67 +41,38 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
 
   const rawValue = f.value as ReferenceValue | null | undefined
 
-  const [options, setOptions] = useState<SelectOption[]>([])
   const [inputValue, setInputValue] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  const requestSeqRef = useRef(0)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // Инвалидировать кеш опций при смене параметров источника (напр. смена организации)
-  const paramsKey = optionsSource?.params
-    ? JSON.stringify(optionsSource.params)
-    : JSON.stringify(filter ?? null)
-  useEffect(() => {
-    setOptions([])
-  }, [paramsKey])
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [])
-
-  if (!f.visible) return null
 
   const domainPath = DOMAIN_PATH_MAP[domain] ?? 'dictionary-entries'
+  // Двухветочный источник: приоритет optionsSource с бэка; legacy-фолбэк по domain+typeCode
+  // (временный мост — см. отклонение D-2 в ревизии SDUI, раздел 9).
+  const url = optionsSource
+    ? optionsSource.url
+    : targetTypeCode
+      ? `/api/${domainPath}/${targetTypeCode}/entries`
+      : null
+  const params = optionsSource ? optionsSource.params : filter
 
-  const loadOptions = (search?: string) => {
-    const url = optionsSource
-      ? optionsSource.url
-      : targetTypeCode
-        ? `/api/${domainPath}/${targetTypeCode}/entries`
-        : null
-    if (!url) return
-    const params = optionsSource ? optionsSource.params : filter
-    const seq = ++requestSeqRef.current
-    setLoading(true)
-    fetchReferenceOptions({ url, params, search })
-      .then((opts) => {
-        if (seq !== requestSeqRef.current) return // поздний ответ раннего запроса — игнор
-        setOptions(opts)
-      })
-      .catch(() => {
-        if (seq === requestSeqRef.current) setOptions([])
-      })
-      .finally(() => {
-        if (seq === requestSeqRef.current) setLoading(false)
-      })
-  }
+  const resetKey = optionsSource?.params
+    ? JSON.stringify(optionsSource.params)
+    : JSON.stringify(filter ?? null)
 
-  const loadOptionsDebounced = (search: string) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => loadOptions(search), 300)
-  }
+  const { options, loading, load, loadDebounced, resetOptions } = useReferenceOptions(
+    (search?: string) =>
+      url ? fetchReferenceOptions({ url, params, search }) : Promise.resolve([]),
+    resetKey,
+  )
+
+  if (!f.visible) return null
 
   const selectedOption = rawValue ? toSelectOption(rawValue) : null
 
   const applySelected = (opt: SelectOption | null) => {
     const newVal = opt ? fromSelectOption(opt) : null
     f.setValue(newVal)
-    // Сброс локального кэша опций: следующий onOpen перезапросит свежий список,
+    // Сброс кэша опций: следующий onOpen перезапросит свежий список,
     // и запись, созданная из формы выбора, появится без перезагрузки страницы.
-    setOptions([])
+    resetOptions()
     f.fireServerEvent('change', newVal)
   }
 
@@ -157,12 +129,12 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
         onInputChange={(_e, val, reason) => {
           setInputValue(val)
           if (reason === 'input') {
-            loadOptionsDebounced(val)
+            loadDebounced(val)
           }
         }}
         onOpen={() => {
           if (options.length === 0) {
-            loadOptions()
+            load()
           }
         }}
         onChange={applySelected}

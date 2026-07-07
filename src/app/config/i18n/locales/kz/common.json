@@ -452,7 +452,12 @@
     "requestError": "Сұраныс қатесі",
     "tableFlushFailed": "Кесте өзгерістерін сақтау мүмкін болмады",
     "refSelectStale": "Форма ескі, таңдау қолданылмады",
-    "error": "Қате"
+    "error": "Қате",
+    "objectField": {
+      "type": "Түрі",
+      "unsupportedMember": "Түрі қолдау көрсетілмейді (әзірленуде)"
+    },
+    "downloadError": "Файлды қалыптастыру мүмкін болмады"
   },
   "tarifikatsiya": {
     "workerSummary": "Жұмысшылар бойынша қорытындылар",

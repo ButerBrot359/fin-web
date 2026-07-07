@@ -14,13 +14,7 @@ import { NodeRenderer } from './node-renderer'
 const PANEL_BG = '#F2F6FD'
 const BACKDROP_BG = 'rgba(34, 33, 36, 0.6)'
 
-const PanelFormProvider = ({
-  panel,
-  children,
-}: {
-  panel: PanelEntry
-  children: React.ReactNode
-}) => {
+const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
   const [tree, setTree] = useState<ViewNode>(panel.node)
   const [viewState, setViewState] = useState<Record<string, unknown>>(
     panel.viewState,
@@ -72,8 +66,11 @@ const PanelFormProvider = ({
     [panel.session, panel.panelId, tree, viewState, dirty],
   )
 
+  // Рендер из ЖИВОГО tree-стейта: патчи setProp видны сразу (фикс §3.4 SCRUM-268)
   return (
-    <SduiSessionProvider value={sessionValue}>{children}</SduiSessionProvider>
+    <SduiSessionProvider value={sessionValue}>
+      <NodeRenderer node={tree} />
+    </SduiSessionProvider>
   )
 }
 
@@ -86,10 +83,9 @@ export const DialogHost = () => {
         if (!panel.node) return null
 
         const content = panel.session ? (
-          <PanelFormProvider panel={panel}>
-            <NodeRenderer node={panel.node} />
-          </PanelFormProvider>
+          <PanelFormProvider panel={panel} />
         ) : (
+          // Панель без сессии: патчей не бывает, статичного снимка достаточно
           <NodeRenderer node={panel.node} />
         )
 
@@ -108,9 +104,9 @@ export const DialogHost = () => {
             >
               <div className="flex h-full flex-col p-7">
                 <div className="flex shrink-0 items-center justify-between">
-                  {panel.node.props?.title != null && (
+                  {typeof panel.node.props?.title === 'string' && (
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {String(panel.node.props.title)}
+                      {panel.node.props.title}
                     </Typography>
                   )}
                   <IconButton onClick={() => usePanelStore.getState().pop()}>
@@ -172,8 +168,8 @@ export const DialogHost = () => {
             maxWidth="md"
             fullWidth
           >
-            {panel.node.props?.title != null && (
-              <DialogTitle>{String(panel.node.props.title)}</DialogTitle>
+            {typeof panel.node.props?.title === 'string' && (
+              <DialogTitle>{panel.node.props.title}</DialogTitle>
             )}
             <DialogContent>{content}</DialogContent>
           </Dialog>

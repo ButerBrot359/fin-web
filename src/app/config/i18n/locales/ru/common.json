@@ -452,7 +452,12 @@
     "requestError": "Ошибка запроса",
     "tableFlushFailed": "Не удалось сохранить изменения таблицы",
     "refSelectStale": "Форма устарела, выбор не применён",
-    "error": "Ошибка"
+    "error": "Ошибка",
+    "objectField": {
+      "type": "Тип",
+      "unsupportedMember": "Тип не поддерживается (в разработке)"
+    },
+    "downloadError": "Не удалось сформировать файл"
   },
   "tarifikatsiya": {
     "workerSummary": "Итоги по работникам",

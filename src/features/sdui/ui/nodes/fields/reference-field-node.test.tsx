@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
+import type { SelectOption } from '@/shared/types/select-option'
 import { ReferenceFieldNode } from './reference-field-node'
 
 const mockDispatch = vi.fn(() => Promise.resolve(true))
@@ -24,7 +25,7 @@ vi.mock('../../../lib/reference-picker-gateway', () => ({
   openReferencePicker: vi.fn(),
 }))
 
-const fetchMock = vi.fn()
+const fetchMock = vi.fn<(...args: unknown[]) => Promise<SelectOption[]>>()
 vi.mock('../../../api/reference-options', () => ({
   fetchReferenceOptions: (...args: unknown[]) => fetchMock(...args),
 }))
@@ -57,6 +58,8 @@ describe('ReferenceFieldNode — кэш опций', () => {
 
     // Повторное открытие: кэш снова пуст → запрос №2
     fireEvent.keyDown(input, { key: 'ArrowDown' })
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    })
   })
 })

@@ -19,7 +19,9 @@ import type {
 } from '@/pages/reports/report-list/types/report'
 
 import {
+  DATA_FS,
   GREEN_1C,
+  HEAD_FS,
   isHighlightRow,
   isMeasure,
   isRightAligned,
@@ -36,8 +38,8 @@ const tdBase =
   'overflow-hidden whitespace-nowrap border border-[#d9d9d9] px-1.5 py-0.5'
 const thBase = 'whitespace-nowrap border border-[#d9d9d9] px-1.5 py-1 text-left'
 
-/** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, без капса. */
-const thTextSx = { color: GREEN_1C, fontWeight: 700 }
+/** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, 13px, без капса. */
+const thTextSx = { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
 
 /** Локализованный заголовок колонки. */
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
@@ -199,7 +201,11 @@ export const TreeTable = ({ result, columns }: TreeTableProps) => {
         )}
         <Typography
           variant="body2"
-          sx={bold ? { color: GREEN_1C, fontWeight: 700 } : { color: '#333' }}
+          sx={
+            bold
+              ? { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
+              : { color: '#333', fontSize: DATA_FS }
+          }
         >
           {label}
         </Typography>
@@ -293,7 +299,7 @@ export const TreeTable = ({ result, columns }: TreeTableProps) => {
               <td className={tdBase}>
                 <Typography
                   variant="body2"
-                  sx={{ color: GREEN_1C, fontWeight: 700 }}
+                  sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
                 >
                   {t('reports.total')}
                 </Typography>

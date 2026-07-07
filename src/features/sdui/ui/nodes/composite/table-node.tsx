@@ -33,21 +33,92 @@ interface ReadOnlyColumnDef {
   flex?: number | string
 }
 
-function extractReadOnlyColumns(
+/** Рекурсивно собирает листовые TABLE_COLUMN (включая вложенные в COLUMN_GROUP) в порядке документа. */
+function collectLeafColumns(node: ViewNode): ViewNode[] {
+  if (node.type === 'TABLE_COLUMN') return [node]
+  if (node.type === 'COLUMN_GROUP') return (node.children ?? []).flatMap(collectLeafColumns)
+  return []
+}
+
+export function extractReadOnlyColumns(
   children: ViewNode[] | undefined,
 ): ReadOnlyColumnDef[] {
   if (!children) return []
-  return children
-    .filter((c) => c.type === 'TABLE_COLUMN')
-    .map((c) => {
-      const col = nodeToTableColumnDef(c)
-      return {
+  return children.flatMap(collectLeafColumns).map((c) => {
+    const col = nodeToTableColumnDef(c)
+    return {
+      id: col.id,
+      label: col.label,
+      binding: col.binding,
+      flex: col.flex,
+    }
+  })
+}
+
+interface HeaderCell {
+  id: string
+  label: string
+  colSpan?: number
+  rowSpan?: number
+  align?: 'center'
+}
+
+interface HeaderModel {
+  hasGroups: boolean
+  topRow: HeaderCell[]
+  bottomRow: HeaderCell[]
+}
+
+/**
+ * Модель двухрядной шапки read-only таблицы.
+ * COLUMN_GROUP → ячейка верхнего ряда (colSpan = число листьев), листья → нижний ряд.
+ * Плоский TABLE_COLUMN при наличии групп → rowSpan=2.
+ * Без групп colSpan/rowSpan не проставляются — DOM идентичен прежнему рендеру.
+ * Пустые COLUMN_GROUP пропускаются (colSpan: 0 невалиден).
+ */
+export function buildHeaderModel(children: ViewNode[] | undefined): HeaderModel {
+  const nodes = children ?? []
+
+  // First pass: check if there are any non-empty groups
+  const hasNonEmptyGroups = nodes.some((node) => {
+    if (node.type === 'COLUMN_GROUP') {
+      return collectLeafColumns(node).length > 0
+    }
+    return false
+  })
+
+  const topRow: HeaderCell[] = []
+  const bottomRow: HeaderCell[] = []
+
+  // Second pass: build rows
+  for (const node of nodes) {
+    if (node.type === 'TABLE_COLUMN') {
+      const col = nodeToTableColumnDef(node)
+      topRow.push({
         id: col.id,
         label: col.label,
-        binding: col.binding,
-        flex: col.flex,
+        ...(hasNonEmptyGroups ? { rowSpan: 2 } : {}),
+      })
+    } else if (node.type === 'COLUMN_GROUP') {
+      const leaves = collectLeafColumns(node)
+      if (leaves.length === 0) {
+        // Skip empty groups entirely
+        continue
       }
-    })
+      topRow.push({
+        id: node.id,
+        label: (node.props?.label as string | undefined) ?? '',
+        colSpan: leaves.length,
+        align: 'center',
+      })
+      for (const leaf of leaves) {
+        const col = nodeToTableColumnDef(leaf)
+        bottomRow.push({ id: col.id, label: col.label })
+      }
+    }
+  }
+
+  return { hasGroups: hasNonEmptyGroups, topRow, bottomRow }
 }
 
 function extractEditableColumns(
@@ -103,6 +174,7 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
   const dispatch = useSduiDispatch()
 
   const columns = extractReadOnlyColumns(node.children)
+  const headerModel = buildHeaderModel(node.children)
 
   const handleAdd = () => {
     void dispatch({ type: 'COMMAND', command: `addRow:${node.binding}` })
@@ -147,11 +219,30 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
         <Table size="small">
           <TableHead>
             <TableRow>
-              {columns.map((col) => (
-                <TableCell key={col.id}>{col.label}</TableCell>
+              {headerModel.topRow.map((cell) => (
+                <TableCell
+                  key={cell.id}
+                  colSpan={cell.colSpan}
+                  rowSpan={cell.rowSpan}
+                  align={cell.align}
+                >
+                  {cell.label}
+                </TableCell>
               ))}
-              {allowDelete && <TableCell padding="checkbox" />}
+              {allowDelete && (
+                <TableCell
+                  padding="checkbox"
+                  rowSpan={headerModel.hasGroups ? 2 : undefined}
+                />
+              )}
             </TableRow>
+            {headerModel.hasGroups && (
+              <TableRow>
+                {headerModel.bottomRow.map((cell) => (
+                  <TableCell key={cell.id}>{cell.label}</TableCell>
+                ))}
+              </TableRow>
+            )}
           </TableHead>
           <TableBody>
             {rows.length === 0 ? (

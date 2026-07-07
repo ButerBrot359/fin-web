@@ -98,6 +98,9 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const applySelected = (opt: SelectOption | null) => {
     const newVal = opt ? fromSelectOption(opt) : null
     f.setValue(newVal)
+    // Сброс локального кэша опций: следующий onOpen перезапросит свежий список,
+    // и запись, созданная из формы выбора, появится без перезагрузки страницы.
+    setOptions([])
     f.fireServerEvent('change', newVal)
   }
 

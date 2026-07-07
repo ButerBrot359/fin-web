@@ -34,6 +34,11 @@ const DocumentMovementsPage = lazy(() =>
     default: m.DocumentMovementsPage,
   }))
 )
+const DocumentRedirect = lazy(() =>
+  import('@/pages/documents/document-redirect').then((m) => ({
+    default: m.DocumentRedirect,
+  }))
+)
 const DictionaryPage = lazy(() =>
   import('@/pages/dictionaries/dictionary-list').then((m) => ({
     default: m.DictionaryPage,
@@ -123,6 +128,20 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/document/:moduleCode/:entryId/movements"
             element={<DocumentMovementsPage />}
+          />
+          {/*
+            SCRUM-268 §3.6: плоские ссылки с бэка /documents/:typeCode[/new] —
+            фронт резолвит раздел по метаданным модулей и редиректит в
+            /modules/:pageCode/document/:typeCode. Временный мост до
+            server-driven shell (отклонение D-1, ревизия SDUI раздел 9).
+          */}
+          <Route
+            path="/documents/:typeCode"
+            element={<DocumentRedirect mode="list" />}
+          />
+          <Route
+            path="/documents/:typeCode/new"
+            element={<DocumentRedirect mode="new" />}
           />
           <Route
             path="/modules/:pageCode/dictionary/:moduleCode"

@@ -41,7 +41,7 @@ describe('useWorkspaceTabGatewayBinding', () => {
       panels: [
         {
           panelId: 'p1',
-          node: { id: 'n', type: 'CONTAINER' },
+          node: { id: 'n', type: 'VSTACK' },
           presentation: 'page',
           viewState: {},
         },

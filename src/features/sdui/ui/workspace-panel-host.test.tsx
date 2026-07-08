@@ -10,7 +10,7 @@ vi.mock('./node-renderer', () => ({
 
 const makePanel = (panelId: string): PanelEntry => ({
   panelId,
-  node: { id: 'root.movements', type: 'CONTAINER' },
+  node: { id: 'root.movements', type: 'VSTACK' },
   presentation: 'page',
   viewState: {},
   openInWorkspaceTab: true,

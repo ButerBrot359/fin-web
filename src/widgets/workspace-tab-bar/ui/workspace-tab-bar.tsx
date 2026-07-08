@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   useWorkspaceTabsStore,
   useFormCacheStore,
+  notifyPanelTabClose,
 } from '@/features/workspace-tabs'
 
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
@@ -17,6 +18,11 @@ const navigateAfterClose = (
   const remaining = useWorkspaceTabsStore.getState()
   if (remaining.tabs.length > 0) {
     const nextTab = remaining.tabs[0]
+    if (nextTab.pageType === 'sdui-panel') {
+      // Панельная вкладка живёт вне роутера — активируем без навигации
+      remaining.setActiveTab(nextTab.id)
+      return
+    }
     void navigate(nextTab.path + nextTab.search)
   } else if (activeTabId === null) {
     void navigate('/')
@@ -40,12 +46,22 @@ export const WorkspaceTabBar = () => {
     const tab = tabs.find((t) => t.id === tabId)
     if (!tab) return
     setActiveTab(tab.id)
+    // Панельная вкладка (sdui-panel) не привязана к роуту: контент рендерит
+    // WorkspacePanelHost по activeTabId, навигация не нужна (и сломала бы URL).
+    if (tab.pageType === 'sdui-panel') return
     void navigate(tab.path + tab.search)
   }
 
   const performClose = (tabId: string) => {
-    useFormCacheStore.getState().removeTab(tabId)
+    const tab = useWorkspaceTabsStore
+      .getState()
+      .tabs.find((t) => t.id === tabId)
+    const isPanel = tab?.pageType === 'sdui-panel'
+    // У панельных вкладок нет кэша формы
+    if (!isPanel) useFormCacheStore.getState().removeTab(tabId)
     const closed = closeTab(tabId)
+    // Реестр (Task 6) уведомляет app-биндинг → panel-store.remove(panelId)
+    if (isPanel && closed?.panelId) notifyPanelTabClose(closed.panelId)
     if (closed?.id === activeTabId) {
       navigateAfterClose(navigate, useWorkspaceTabsStore.getState().activeTabId)
     }

@@ -15,6 +15,7 @@ import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
 
 import { Layout } from './layout/layout'
+import { useWorkspaceTabGatewayBinding } from './providers/workspace-tab-binding'
 
 const ModulePage = lazy(() =>
   import('@/pages/module').then((m) => ({ default: m.ModulePage }))
@@ -220,6 +221,8 @@ const AppRoutes = () => {
 }
 
 function App() {
+  useWorkspaceTabGatewayBinding()
+
   useEffect(() => {
     setReferencePickerGateway((req) => {
       useDictSidebarStore.getState().push({

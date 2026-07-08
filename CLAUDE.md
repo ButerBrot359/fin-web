@@ -48,10 +48,40 @@ features/example/
 └── api/                  # Запросы к бэкенду
 ```
 
+## Архитектура: SDUI vs Легаси
+
+В проекте два мира. **Легаси** — статические страницы и form-renderer, будет удалён после миграции. **SDUI** — новая архитектура: бэкенд присылает дерево нод (`POST /api/view`), фронт рендерит его без бизнес-логики.
+
+### Граница
+
+| Зона | Пути |
+|---|---|
+| **SDUI** | `src/features/sdui/`, `src/pages/documents/documents-entry/ui/sdui-document-page.tsx`, `src/pages/documents/document-redirect/` |
+| **Легаси** | `src/features/form-renderer/`, `src/features/generate-form-config/`, `src/features/tarifikatsiya/`, `src/features/dict-sidebar/`, `src/pages/documents/documents-entry/ui/legacy-document-entry-page.tsx`, `src/pages/documents/document-list/`, `src/pages/documents/document-movements/`, `src/pages/dictionaries/`, `src/pages/account-plan/`, `src/pages/account-card/`, `src/pages/accounting-register/`, `src/pages/accumulation-register/`, `src/pages/information-register/`, `src/pages/financing-plan-upload/`, `src/pages/osv-report/`, `src/pages/reports/`, `src/pages/universal-domain/`, `src/entities/form-config/`, `src/shared/lib/eav/`, `src/shared/lib/filter/`, `src/shared/lib/dictionary-entry/` |
+| **Общее** | `src/shared/ui/`, `src/shared/api/`, `src/shared/types/`, `src/entities/*` (кроме form-config), `src/features/workspace-tabs/`, `src/features/table-filter/`, `src/features/navigation-buttons/`, `src/features/favorite-button/` |
+
+**Точка ветвления:** `src/pages/documents/documents-entry/ui/document-entry-page.tsx` — флаг `newView` из `useDocumentType`.
+
+### Правила изоляции
+
+- Прямые импорты между SDUI и легаси **запрещены в обе стороны**.
+- Единственный допустимый мост — gateway-паттерн (образец: `src/features/sdui/lib/reference-picker-gateway.ts`): SDUI владеет интерфейсом, реализация подключается на уровне `app/`. Новый gateway — только с явного согласования с пользователем.
+- Таска по легаси → не трогать SDUI и не рефакторить легаси под новые стандарты (минимальные изменения).
+- Таска по SDUI → не трогать легаси.
+- Изменения в общем коде (`shared/`, общие features) не должны ломать ни один из миров.
+
+### Документация SDUI
+
+- Авторитетная спека архитектуры: `docs/superpowers/specs/2026-07-02-sdui-course-audit.md`
+- Карта границы легаси/SDUI: `docs/superpowers/specs/2026-07-02-sdui-code-review.md`
+
 ## Правила кода
 
 - Для текстов всегда использовать `useTranslation` из `react-i18next` и ключи из `common.json`. Не хардкодить строки в JSX.
 - Для текстовых элементов использовать `<Typography>` из `@mui/material`.
+- Один файл — одна ответственность, максимальная декомпозиция.
+- Новый код: цель ~200 строк на файл; файл >300 строк обязан быть разбит.
+- Легаси-файлы под лимит строк не рефакторим.
 
 ## Проверки
 

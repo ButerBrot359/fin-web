@@ -82,6 +82,10 @@ export const DialogHost = () => {
       {stack.map((panel) => {
         if (!panel.node) return null
 
+        // Панель, открытая в workspace-вкладке, рендерится через
+        // WorkspacePanelHost — DialogHost её не показывает.
+        if (panel.openInWorkspaceTab) return null
+
         const content = panel.session ? (
           <PanelFormProvider panel={panel} />
         ) : (

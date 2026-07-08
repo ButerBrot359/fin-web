@@ -25,6 +25,7 @@ import {
 import type { TableColumnDef } from '../../../lib/hooks/use-table-sync'
 import { EditableTable } from './editable-table'
 import { ComplexEditableTable } from './complex-editable-table'
+import { AccountingPostingsBlock } from './accounting-postings-block'
 
 interface ReadOnlyColumnDef {
   id: string
@@ -158,7 +159,10 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
     return <EditableTable node={node} columns={columns} />
   }
 
-  // Read-only path (preserved as-is)
+  // Read-only path: бухрегистр — 1С-блок, остальные — прежняя таблица
+  if (node.props?.regKind === 'ACCOUNTING') {
+    return <AccountingPostingsBlock node={node} />
+  }
   return <ReadOnlyTable node={node} />
 }
 
@@ -167,6 +171,7 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
   const label = node.props?.label as string | undefined
   const allowAdd = node.props?.allowAdd as boolean | undefined
   const allowDelete = node.props?.allowDelete as boolean | undefined
+  const showRowNumbers = node.props?.showRowNumbers === true
 
   const { getValue } = useSduiSession()
   const rows =
@@ -219,6 +224,15 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
         <Table size="small">
           <TableHead>
             <TableRow>
+              {showRowNumbers && (
+                <TableCell
+                  align="center"
+                  rowSpan={headerModel.hasGroups ? 2 : undefined}
+                  sx={{ width: 48 }}
+                >
+                  {t('table.rowNumber')}
+                </TableCell>
+              )}
               {headerModel.topRow.map((cell) => (
                 <TableCell
                   key={cell.id}
@@ -248,7 +262,7 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + (allowDelete ? 1 : 0)}
+                  colSpan={columns.length + (allowDelete ? 1 : 0) + (showRowNumbers ? 1 : 0)}
                   align="center"
                 >
                   <Typography variant="body2" color="text.secondary">
@@ -257,8 +271,11 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((row) => (
+              rows.map((row, idx) => (
                 <TableRow key={row.rowId}>
+                  {showRowNumbers && (
+                    <TableCell align="center">{idx + 1}</TableCell>
+                  )}
                   {columns.map((col) => (
                     <TableCell key={col.id}>
                       {col.binding !== undefined

@@ -10,6 +10,7 @@ export type TabPageType =
   | 'osv-report-list'
   | 'account-plan-list'
   | 'account-card'
+  | 'sdui-panel'
 
 export interface WorkspaceTab {
   id: string
@@ -18,4 +19,7 @@ export interface WorkspaceTab {
   title: string
   pageType: TabPageType
   createdAt: number
+  // Только для pageType 'sdui-panel': id панели в сторе владельца контента (SDUI).
+  // Панельные вкладки не маршрутные: path = '', search = ''.
+  panelId?: string
 }

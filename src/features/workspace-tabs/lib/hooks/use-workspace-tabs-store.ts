@@ -13,6 +13,7 @@ interface WorkspaceTabsStore {
     search: string,
     pageType: TabPageType
   ) => string | null
+  activateOrCreatePanel: (id: string, title: string, panelId: string) => void
   closeTab: (tabId: string) => WorkspaceTab | undefined
   setActiveTab: (tabId: string) => void
   setTabTitle: (tabId: string, title: string) => void
@@ -67,6 +68,38 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
         return id
       },
 
+      // Панельная вкладка (sdui-panel): не маршрутная, id = стабильный tabKey.
+      // Повторный вызов с тем же id переиспользует вкладку (обновляя panelId).
+      activateOrCreatePanel: (id, title, panelId) => {
+        const { tabs } = get()
+
+        const existing = tabs.find((t) => t.id === id)
+        if (existing) {
+          set({
+            activeTabId: existing.id,
+            tabs: updateTab(tabs, existing.id, (t) => ({ ...t, title, panelId })),
+          })
+          return
+        }
+
+        const tab: WorkspaceTab = {
+          id,
+          path: '',
+          search: '',
+          title,
+          pageType: 'sdui-panel',
+          panelId,
+          createdAt: Date.now(),
+        }
+
+        let newTabs = [...tabs, tab]
+        if (newTabs.length > MAX_TABS) {
+          newTabs = [newTabs[0], ...newTabs.slice(2)]
+        }
+
+        set({ tabs: newTabs, activeTabId: id })
+      },
+
       closeTab: (tabId) => {
         const { tabs, activeTabId } = get()
         const idx = tabs.findIndex((t) => t.id === tabId)
@@ -110,10 +143,17 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
     {
       name: 'workspace-tabs',
       storage: createJSONStorage(() => sessionStorage),
-      partialize: (state) => ({
-        tabs: state.tabs,
-        activeTabId: state.activeTabId,
-      }),
+      // Панельные вкладки не персистим: их контент — in-memory panel-store SDUI,
+      // перезагрузку не переживает (иначе после reload осиротевшая вкладка).
+      partialize: (state) => {
+        const tabs = state.tabs.filter((t) => t.pageType !== 'sdui-panel')
+        return {
+          tabs,
+          activeTabId: tabs.some((t) => t.id === state.activeTabId)
+            ? state.activeTabId
+            : null,
+        }
+      },
     }
   )
 )

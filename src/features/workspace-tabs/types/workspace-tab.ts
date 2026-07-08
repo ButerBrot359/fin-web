@@ -8,6 +8,7 @@ export type TabPageType =
   | 'information-register-list'
   | 'accounting-register-list'
   | 'osv-report-list'
+  | 'report-list'
   | 'account-plan-list'
   | 'account-card'
   | 'sdui-panel'

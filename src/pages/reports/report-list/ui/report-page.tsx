@@ -468,6 +468,10 @@ const ReportPageContent = ({
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
 
+  // Видимость докнутой панели настроек — тоггл «Скрыть/Показать настройки»
+  // (аналог одноимённой кнопки 1С). По умолчанию видна, как сейчас.
+  const [settingsVisible, setSettingsVisible] = useState(true)
+
   // Оформление (вкладка «Оформление»): дефолты как в 1С (обе — вкл).
   const [appearance, setAppearance] = useState<ReportAppearance>({
     highlightNegatives: true,
@@ -740,10 +744,27 @@ const ReportPageContent = ({
               </Button>
             </>
           )}
+
+          {/* Тоггл докнутой панели настроек (аналог 1С «Скрыть настройки»). */}
+          {hasSettings && (
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setSettingsVisible((v) => !v)
+              }}
+              sx={{ height: 48 }}
+            >
+              {t(
+                settingsVisible
+                  ? 'reports.hideSettings'
+                  : 'reports.showSettings'
+              )}
+            </Button>
+          )}
         </div>
       )}
 
-      {/* Результат слева + докнутая панель настроек справа (всегда видна, как в 1С). */}
+      {/* Результат слева + докнутая панель настроек справа (тоггл «Скрыть настройки», как в 1С). */}
       <div className="flex gap-4">
         <div className="min-w-0 flex-1">
           {/* Watermark 1С до первого формирования. */}
@@ -820,7 +841,7 @@ const ReportPageContent = ({
           )}
         </div>
 
-        {hasSettings && (
+        {hasSettings && settingsVisible && (
           <ReportSettingsPanel
             isKz={isKz}
             indicatorItems={indicatorItems}

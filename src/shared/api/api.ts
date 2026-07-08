@@ -4,6 +4,7 @@ import axios, {
   type AxiosResponse,
 } from 'axios'
 
+import i18n from '@/app/config/i18n'
 import type {
   BlobRequestConfig,
   RequestConfig,
@@ -15,6 +16,18 @@ const instance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+})
+
+// Текущий язык шлём на бэкенд заголовком `Accept-Language` на КАЖДЫЙ запрос.
+// `i18n.language` читаем динамически внутри интерсептора (а не один раз на старте):
+// после `i18n.changeLanguage` следующий запрос уходит уже с новым языком — инстанс
+// пересоздавать не нужно. По этому заголовку бэкенд локализует серверно-рендеримый
+// контент отчётов (бланк мемориального ордера, titleTemplate): `kz` → казахский,
+// `ru`/пусто → русский. Интерсептор навешан только на этот инстанс; SDUI-транспорт
+// (`features/sdui/api/view-transport.ts`) — отдельный axios-инстанс и не затрагивается.
+instance.interceptors.request.use((config) => {
+  config.headers.set('Accept-Language', i18n.language)
+  return config
 })
 
 const makeRequest = <T>(

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { runReport } from '../../api/reports-api'
 import type { RunReportBody } from '../../types/report'
@@ -17,8 +18,11 @@ export const useRunReport = (
   body: RunReportBody | null,
   enabled: boolean
 ) => {
+  // Язык — в ключе кэша: при смене языка ключ меняется и отчёт перезапрашивается
+  // (заголовок Accept-Language уходит с новым языком через интерсептор api.ts).
+  const { i18n } = useTranslation()
   const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
-    queryKey: ['report-run', code, JSON.stringify(body)],
+    queryKey: ['report-run', code, i18n.language, JSON.stringify(body)],
     queryFn: ({ signal }) => runReport(code!, body!, signal),
     // Эндпоинт run отдаёт ReportResultDto напрямую — берём `res.data`.
     select: (res) => res.data,

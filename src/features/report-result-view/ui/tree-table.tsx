@@ -43,6 +43,31 @@ const thBase = 'whitespace-nowrap border border-[#d9d9d9] px-1.5 py-1 text-left'
 /** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, 13px, без капса. */
 const thTextSx = { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
 
+/** Ширина одного символа колонки (`width` приходит в символах, как в 1С). */
+const CHAR_PX = 8
+
+/** Дефолт-ширина колонки «дерева» (наименование группы) без backend-width. */
+const TREE_COL_DEFAULT_PX = 240
+
+/**
+ * Ширина колонки тела в px: приоритет — backend-`width` (символы × CHAR_PX);
+ * при её отсутствии — дефолт по роли. Нужна для table-fixed раскладки, чтобы
+ * колонки имели натуральную ширину и таблица не растягивалась на весь экран.
+ */
+const bodyColWidthPx = (col: ReportColumnDto): number => {
+  if (col.width != null) return col.width * CHAR_PX
+  switch (col.role) {
+    case 'MEASURE':
+      return 120
+    case 'PERIOD':
+      return 90
+    case 'DIMENSION':
+      return 180
+    default:
+      return 150
+  }
+}
+
 /** Локализованный заголовок колонки. */
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
@@ -174,6 +199,10 @@ export const TreeTable = ({
     ? columnTitle(treeColumn, isKz)
     : t('reports.group')
 
+  // Ширина первой колонки (наименование группы): backend-width либо дефолт.
+  const treeColWidthPx =
+    treeColumn?.width != null ? treeColumn.width * CHAR_PX : TREE_COL_DEFAULT_PX
+
   // Первая колонка (наименование группы) со стрелкой разворота и отступом 1С (~13px).
   const renderGroupCell = (row: Row<ReportRowDto>) => {
     const canExpand = row.getCanExpand()
@@ -221,7 +250,13 @@ export const TreeTable = ({
 
   return (
     <div className="overflow-auto rounded-md border border-[#d9d9d9]">
-      <table className="w-full border-collapse bg-white">
+      <table className="table-fixed border-collapse bg-white">
+        <colgroup>
+          <col style={{ width: treeColWidthPx }} />
+          {bodyColumns.map((col) => (
+            <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
+          ))}
+        </colgroup>
         <thead>
           {headModel ? (
             <>

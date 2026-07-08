@@ -15,11 +15,9 @@ const patterns: [RegExp, TabPageType][] = [
     /^\/modules\/[^/]+\/informationregister\/[^/]+$/,
     'information-register-list',
   ],
-  [
-    /^\/modules\/[^/]+\/accountingregister\/[^/]+$/,
-    'accounting-register-list',
-  ],
+  [/^\/modules\/[^/]+\/accountingregister\/[^/]+$/, 'accounting-register-list'],
   [/^\/modules\/[^/]+\/accountingreport\/[^/]+$/, 'osv-report-list'],
+  [/^\/modules\/[^/]+\/report\/[^/]+$/, 'report-list'],
   [/^\/modules\/[^/]+\/accountplan\/[^/]+$/, 'account-plan-list'],
   [/^\/modules\/[^/]+\/account-card$/, 'account-card'],
   [/^\/modules\/[^/]+$/, 'module'],

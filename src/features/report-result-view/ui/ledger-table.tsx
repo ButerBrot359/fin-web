@@ -31,6 +31,9 @@ interface LedgerTableProps {
 
 const MIN_COL_WIDTH = 40
 
+/** Ширина одного символа колонки (`width` приходит в символах, как в 1С). */
+const CHAR_PX = 8
+
 /** Код колонки «Показатель» — её значения задают подписи подстрок (Сумма/Кол.). */
 const POKAZATEL_COL = 'Pokazatel'
 
@@ -102,11 +105,13 @@ const buildHeadModel = (columns: ReportColumnDto[], isKz: boolean) => {
 }
 
 /**
- * «Логическая» ширина колонки по роли/семейству: аналитика широкая, период и
- * документ средние, числа узкие. Пропорции масштабируются на ширину страницы
- * (auto-fit), как в карточке счёта.
+ * «Логическая» ширина колонки: приоритет — ширина из backend (`width` в
+ * символах × CHAR_PX, как в бланке); при её отсутствии — дефолт по
+ * роли/семейству (аналитика широкая, период и документ средние, числа узкие).
+ * Ширины ужимаются при переполнении (auto-fit), но не растягиваются.
  */
 const logicalWidth = (col: ReportColumnDto): number => {
+  if (col.width != null) return col.width * CHAR_PX
   if (isMeasure(col)) return 110
   if (col.groupTitleRu) return 60 // подколонка «Счет» под Дебет/Кредит — узкая
   switch (col.role) {
@@ -149,7 +154,9 @@ export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
     setColWidths(defaultWidths)
   }, [defaultWidths])
 
-  // При первом показе вписываем колонки на всю ширину, сохраняя пропорции.
+  // При первом показе ужимаем колонки под ширину контейнера ТОЛЬКО при
+  // переполнении (scale ≤ 1); если натуральная ширина влезает — оставляем её,
+  // чтобы таблица не растягивалась на весь экран (как в 1С).
   useLayoutEffect(() => {
     if (fitDoneRef.current || columns.length === 0) return
     const el = containerRef.current
@@ -158,7 +165,7 @@ export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
     if (avail <= 0) return
     const sum = defaultWidths.reduce((a, b) => a + b, 0)
     if (sum <= 0) return
-    const scale = avail / sum
+    const scale = Math.min(1, avail / sum)
     fitDoneRef.current = true
     setColWidths(
       defaultWidths.map((w) => Math.max(MIN_COL_WIDTH, Math.round(w * scale)))

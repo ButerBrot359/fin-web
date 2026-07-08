@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { fetchFilterFields } from '../../api/reports-api'
 
@@ -12,8 +13,11 @@ export const useFilterFields = (
   code: string | undefined,
   accountId?: number | null
 ) => {
+  // Язык в ключе кэша — названия полей отбора локализованы; при смене языка
+  // список полей перезапрашивается.
+  const { i18n } = useTranslation()
   const { data, isLoading } = useQuery({
-    queryKey: ['report-filter-fields', code, accountId ?? null],
+    queryKey: ['report-filter-fields', code, accountId ?? null, i18n.language],
     queryFn: ({ signal }) => fetchFilterFields(code!, accountId, signal),
     select: (res) => res.data.list,
     enabled: !!code,

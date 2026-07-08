@@ -14,14 +14,128 @@ import { ReportCell } from './report-cell'
 const td = 'border border-[#d9d9d9] px-1.5 py-0.5 align-top'
 const th = 'border border-[#d9d9d9] px-1.5 py-1 text-center align-middle'
 
+/** Ширина одного символа колонки (`width` приходит в символах, как в 1С). */
+const CHAR_PX = 8
+
 /** Локализованный заголовок колонки. */
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
 
+/** Локализованный верхний ряд шапки (группа «Дебет субсчетов» и т.п.); '' ⇒ нет. */
+const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
+  ((isKz ? col.groupTitleKz : col.groupTitleRu) || col.groupTitleRu) ?? ''
+
+/** Локализованный средний ряд шапки (подгруппа «7060» и т.п.); '' ⇒ нет. */
+const columnSubGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
+  ((isKz ? col.subGroupTitleKz : col.subGroupTitleRu) || col.subGroupTitleRu) ??
+  ''
+
+/** Ячейка шапки: заголовок + объединения. */
+interface HeadCell {
+  key: string
+  title: string
+  colSpan: number
+  rowSpan: number
+}
+
 /**
- * Таблица одной секции бланка (дебет/кредит субсчёта): шапка из колонок
- * секции, строка сквозной нумерации граф (как в 1С: 1..13, 14..26),
- * DATA-строки и жирная строка «Итого:».
+ * Модель многоуровневой шапки бланка — generic для 1/2/3 рядов по наличию
+ * `groupTitleRu`/`subGroupTitleRu` (SDUI: рисуем присланное, без хардкода):
+ * - ряд 1 (группы): соседние колонки с одинаковым groupTitle → colSpan;
+ *   колонка без groupTitle занимает всю высоту шапки (rowSpan=levels);
+ * - ряд 2 (подгруппы): внутри группы соседние одинаковые subGroupTitle →
+ *   colSpan; колонка группы без subGroupTitle занимает ряды 2–3 (rowSpan=2);
+ * - ряд 3 (листья): titleRu каждой колонки.
+ */
+const buildHeadModel = (
+  cols: ReportColumnDto[],
+  isKz: boolean
+): HeadCell[][] | null => {
+  const hasGroup = cols.some((c) => columnGroupTitle(c, isKz))
+  const hasSub = cols.some((c) => columnSubGroupTitle(c, isKz))
+  const levels = hasSub ? 3 : hasGroup ? 2 : 1
+  if (levels === 1) return null
+
+  const row1: HeadCell[] = []
+  const row2: HeadCell[] = []
+  const row3: HeadCell[] = []
+
+  let i = 0
+  while (i < cols.length) {
+    const group = columnGroupTitle(cols[i], isKz)
+    if (!group) {
+      // Колонка без группы — заголовок на всю высоту шапки.
+      row1.push({
+        key: cols[i].code,
+        title: columnTitle(cols[i], isKz),
+        colSpan: 1,
+        rowSpan: levels,
+      })
+      i++
+      continue
+    }
+    // Границы группы одинакового groupTitle.
+    let j = i
+    while (j < cols.length && columnGroupTitle(cols[j], isKz) === group) j++
+    row1.push({
+      key: `g-${cols[i].code}`,
+      title: group,
+      colSpan: j - i,
+      rowSpan: 1,
+    })
+
+    if (levels === 2) {
+      for (let k = i; k < j; k++)
+        row2.push({
+          key: cols[k].code,
+          title: columnTitle(cols[k], isKz),
+          colSpan: 1,
+          rowSpan: 1,
+        })
+    } else {
+      // Средний ряд подгрупп внутри [i, j).
+      let k = i
+      while (k < j) {
+        const sub = columnSubGroupTitle(cols[k], isKz)
+        if (!sub) {
+          // Колонка группы без подгруппы — заголовок на ряды 2–3.
+          row2.push({
+            key: cols[k].code,
+            title: columnTitle(cols[k], isKz),
+            colSpan: 1,
+            rowSpan: 2,
+          })
+          k++
+          continue
+        }
+        let m = k
+        while (m < j && columnSubGroupTitle(cols[m], isKz) === sub) m++
+        row2.push({
+          key: `s-${cols[k].code}`,
+          title: sub,
+          colSpan: m - k,
+          rowSpan: 1,
+        })
+        for (let p = k; p < m; p++)
+          row3.push({
+            key: cols[p].code,
+            title: columnTitle(cols[p], isKz),
+            colSpan: 1,
+            rowSpan: 1,
+          })
+        k = m
+      }
+    }
+    i = j
+  }
+
+  return levels === 3 ? [row1, row2, row3] : [row1, row2]
+}
+
+/**
+ * Таблица одной секции бланка (дебет/кредит субсчёта): многоуровневая шапка
+ * (группы/подгруппы/листья), строка сквозной нумерации граф (как в 1С:
+ * 1..13, 14..26), DATA-строки и жирная строка «Итого:».
  */
 const SectionTable = ({
   section,
@@ -32,6 +146,7 @@ const SectionTable = ({
 }) => {
   const cols = section.columns
   const start = section.graphNumberStart ?? 1
+  const headRows = buildHeadModel(cols, isKz)
   return (
     <table className="w-full table-fixed border-collapse bg-white">
       <colgroup>
@@ -40,25 +155,46 @@ const SectionTable = ({
             key={c.code}
             style={{
               width:
-                i === 0
-                  ? 44
-                  : c.role === 'PERIOD' || c.role === 'ATTRIBUTE'
-                    ? 150
-                    : undefined,
+                c.width != null
+                  ? c.width * CHAR_PX
+                  : i === 0
+                    ? 44
+                    : c.role === 'PERIOD' || c.role === 'ATTRIBUTE'
+                      ? 150
+                      : undefined,
             }}
           />
         ))}
       </colgroup>
       <thead>
-        <tr>
-          {cols.map((col) => (
-            <th key={col.code} className={th}>
-              <Typography variant="caption" sx={{ color: '#333' }}>
-                {columnTitle(col, isKz)}
-              </Typography>
-            </th>
-          ))}
-        </tr>
+        {headRows ? (
+          headRows.map((cells, ri) => (
+            <tr key={ri}>
+              {cells.map((cell) => (
+                <th
+                  key={cell.key}
+                  colSpan={cell.colSpan}
+                  rowSpan={cell.rowSpan}
+                  className={th}
+                >
+                  <Typography variant="caption" sx={{ color: '#333' }}>
+                    {cell.title}
+                  </Typography>
+                </th>
+              ))}
+            </tr>
+          ))
+        ) : (
+          <tr>
+            {cols.map((col) => (
+              <th key={col.code} className={th}>
+                <Typography variant="caption" sx={{ color: '#333' }}>
+                  {columnTitle(col, isKz)}
+                </Typography>
+              </th>
+            ))}
+          </tr>
+        )}
         {section.numberGraphs && (
           <tr>
             {cols.map((col, i) => (

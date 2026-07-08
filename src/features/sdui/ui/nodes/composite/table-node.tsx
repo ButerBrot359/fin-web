@@ -171,6 +171,7 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
   const label = node.props?.label as string | undefined
   const allowAdd = node.props?.allowAdd as boolean | undefined
   const allowDelete = node.props?.allowDelete as boolean | undefined
+  const showRowNumbers = node.props?.showRowNumbers === true
 
   const { getValue } = useSduiSession()
   const rows =
@@ -223,6 +224,15 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
         <Table size="small">
           <TableHead>
             <TableRow>
+              {showRowNumbers && (
+                <TableCell
+                  align="center"
+                  rowSpan={headerModel.hasGroups ? 2 : undefined}
+                  sx={{ width: 48 }}
+                >
+                  {t('table.rowNumber')}
+                </TableCell>
+              )}
               {headerModel.topRow.map((cell) => (
                 <TableCell
                   key={cell.id}
@@ -252,7 +262,7 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + (allowDelete ? 1 : 0)}
+                  colSpan={columns.length + (allowDelete ? 1 : 0) + (showRowNumbers ? 1 : 0)}
                   align="center"
                 >
                   <Typography variant="body2" color="text.secondary">
@@ -261,8 +271,11 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((row) => (
+              rows.map((row, idx) => (
                 <TableRow key={row.rowId}>
+                  {showRowNumbers && (
+                    <TableCell align="center">{idx + 1}</TableCell>
+                  )}
                   {columns.map((col) => (
                     <TableCell key={col.id}>
                       {col.binding !== undefined

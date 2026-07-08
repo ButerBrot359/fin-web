@@ -11,10 +11,20 @@ import { FormView } from './form-view'
 import { LedgerTable } from './ledger-table'
 import { TreeTable } from './tree-table'
 
+/** Настройки вкладки «Оформление» (проброс из панели настроек отчёта). */
+export interface ReportResultAppearance {
+  /** Выделять отрицательные значения красным. */
+  highlightNegatives: boolean
+  /** Уменьшенный автоотступ уровней дерева. */
+  reducedIndent: boolean
+}
+
 interface ReportResultViewProps {
   result: ReportResultDto
   /** Коды колонок, скрытых настройками (показатели/группировка). */
   hiddenColumns?: Set<string>
+  /** Оформление (вкладка «Оформление»). Отсутствие ⇒ текущее поведение 1С. */
+  appearance?: ReportResultAppearance
 }
 
 /**
@@ -27,15 +37,25 @@ interface ReportResultViewProps {
 export const ReportResultView = ({
   result,
   hiddenColumns,
+  appearance,
 }: ReportResultViewProps) => {
-  // Скрываем колонки, выключенные настройками (показатели/группировка).
-  const columns = useMemo<ReportColumnDto[]>(
-    () =>
+  // Скрываем колонки, выключенные настройками (показатели/группировка), и —
+  // когда «Выделять отрицательные» выключено — гасим negativeRed на колонках
+  // (эффективно отключает красную окраску во всех ячейках, включая итоги).
+  const columns = useMemo<ReportColumnDto[]>(() => {
+    const base =
       hiddenColumns && hiddenColumns.size > 0
         ? result.columns.filter((c) => !hiddenColumns.has(c.code))
-        : result.columns,
-    [result.columns, hiddenColumns]
-  )
+        : result.columns
+    if (appearance && !appearance.highlightNegatives) {
+      return base.map((c) => (c.negativeRed ? { ...c, negativeRed: false } : c))
+    }
+    return base
+  }, [result.columns, hiddenColumns, appearance])
+
+  // Автоотступ уровней дерева: 8px при «Уменьшенный автоотступ», иначе 13px
+  // (дефолт = текущее поведение, когда appearance не задан).
+  const indentPx = appearance ? (appearance.reducedIndent ? 8 : 13) : 13
 
   const title = formatReportTitle(result)
   const isLedger = result.layout === 'LEDGER'
@@ -69,7 +89,7 @@ export const ReportResultView = ({
         {isLedger ? (
           <LedgerTable result={result} columns={columns} />
         ) : (
-          <TreeTable result={result} columns={columns} />
+          <TreeTable result={result} columns={columns} indentPx={indentPx} />
         )}
       </div>
     </div>

@@ -114,6 +114,9 @@ export const ReportParamField = ({
             onChange(v)
           }}
           label={label}
+          // Отчёты 1С оперируют ДАТАМИ периода (без времени) — как в форме
+          // отчёта 1С; убираем сегмент hh:mm (был DateTimePicker).
+          dateOnly
           required={param.required}
           error={invalid}
           size="small"

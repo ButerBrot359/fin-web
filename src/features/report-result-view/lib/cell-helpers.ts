@@ -20,6 +20,13 @@ export const isRightAligned = (col: ReportColumnDto): boolean => {
  */
 export const GREEN_1C = 'rgb(0,63,47)'
 
+/**
+ * Кегли 1С из живого табличного документа: данные ~11px, шапка колонок и
+ * строки-итоги/группы ~13px (bold). Держим отчёт таким же плотным, как 1С.
+ */
+export const DATA_FS = 11
+export const HEAD_FS = 13
+
 /** Строки-итоги/обороты/сальдо/группы ⇒ вся строка жирная тёмно-зелёная (1С). */
 const HIGHLIGHT_ROW_KINDS = new Set<RowKind>([
   'GROUP_HEADER',

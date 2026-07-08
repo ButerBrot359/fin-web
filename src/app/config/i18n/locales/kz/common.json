@@ -258,10 +258,19 @@
   },
   "reportSettings": {
     "title": "Баптаулар",
-    "main": "Негізгі",
+    "basic": "Негізгі",
     "grouping": "Топтау",
     "indicators": "Көрсеткіштер",
     "filters": "Сұрыптаулар",
+    "appearance": "Безендіру",
+    "periodicity": "Кезеңділік",
+    "highlightNegatives": "Теріс мәндерді бөлектеу",
+    "reducedIndent": "Кішірейтілген авто шегініс",
+    "addFilter": "Қосу",
+    "field": "Өріс",
+    "comparison": "Салыстыру түрі",
+    "value": "Мән",
+    "removeFilter": "Сұрыптауды жою",
     "noFilters": "Сұрыптаулар берілмеген"
   },
   "osv": {

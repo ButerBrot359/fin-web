@@ -5,7 +5,9 @@ import { formatDate } from '@/shared/lib/utils/date'
 import type { ReportColumnDto } from '@/pages/reports/report-list/types/report'
 
 import {
+  DATA_FS,
   GREEN_1C,
+  HEAD_FS,
   formatMoney1C,
   isMeasure,
   isRightAligned,
@@ -27,10 +29,12 @@ const formatPeriodValue = (raw: string, col: ReportColumnDto): string => {
   return formatDate(raw, pattern) || raw
 }
 
-/** Стиль текста 1С: данные — #333, выделенные строки — зелёный жирный. */
+/** Стиль текста 1С: данные — #333/11px, выделенные строки — зелёный жирный/13px. */
 const textStyle = (highlight?: boolean, negative?: boolean) => ({
   color: negative ? 'rgb(255,0,0)' : highlight ? GREEN_1C : '#333',
   fontWeight: highlight ? 700 : 400,
+  fontSize: highlight ? HEAD_FS : DATA_FS,
+  lineHeight: 1.3,
 })
 
 /**
@@ -61,7 +65,11 @@ export const MoneyCell = ({
   let isNeg = false
   if (dcIndicator) {
     // Признак Д/К вместо знака: дебетовое (≥0) / кредитовое (<0) сальдо.
-    text = `${value < 0 ? 'К' : 'Д'} ${formatMoney1C(Math.abs(value), decimals)}`
+    // Нулевое сальдо 1С показывает без буквы — просто «0,00» (сальдо на начало).
+    text =
+      value === 0
+        ? formatMoney1C(0, decimals)
+        : `${value < 0 ? 'К' : 'Д'} ${formatMoney1C(Math.abs(value), decimals)}`
   } else {
     text = formatMoney1C(value, decimals)
     isNeg = !!negativeRed && value < 0

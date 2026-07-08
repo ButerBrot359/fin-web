@@ -16,11 +16,11 @@ import type {
 
 import {
   GREEN_1C,
+  HEAD_FS,
   isHighlightRow,
   isMeasure,
   isRightAligned,
   isSpanRow,
-  isStrongSpanRow,
 } from '../lib/cell-helpers'
 import { ReportCell } from './report-cell'
 
@@ -38,8 +38,8 @@ const POKAZATEL_COL = 'Pokazatel'
 const td = 'border border-[#d9d9d9] px-1.5 py-0.5 align-top'
 const th = 'overflow-hidden border border-[#d9d9d9] px-1.5 py-1 text-left'
 
-/** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, без капса. */
-const thTextSx = { color: GREEN_1C, fontWeight: 700 }
+/** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, 13px, без капса. */
+const thTextSx = { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
 
 /** Локализованный заголовок колонки. */
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
@@ -257,7 +257,6 @@ export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
    */
   const renderSpanRow = (row: ReportRowDto, key: string) => {
     const span = Math.min(row.labelColSpan ?? 1, columns.length)
-    const strong = isStrongSpanRow(row.rowKind)
     return (
       <tr key={key}>
         {span > 0 && (
@@ -267,7 +266,7 @@ export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
               sx={{
                 color: GREEN_1C,
                 fontWeight: 700,
-                fontSize: strong ? 14 : undefined,
+                fontSize: HEAD_FS,
               }}
             >
               {row.labelText ?? ''}

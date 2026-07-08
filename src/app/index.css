@@ -65,7 +65,8 @@ body {
     width: 100%;
     overflow: visible !important;
   }
-  .report-print-area .overflow-auto {
+  .report-print-area .overflow-auto,
+  .report-print-area .overflow-x-auto {
     overflow: visible !important;
   }
 }

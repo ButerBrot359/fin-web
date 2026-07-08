@@ -13,6 +13,10 @@ export interface PanelEntry {
     targetNodeId?: string
   }
   viewState: Record<string, unknown>
+  // Панель показывается workspace-вкладкой (Блок D): DialogHost её пропускает,
+  // живёт до закрытия вкладки (переживает reset() при размонтировании формы).
+  openInWorkspaceTab?: boolean
+  tabKey?: string
 }
 
 interface PanelStore {
@@ -41,5 +45,9 @@ export const usePanelStore = create<PanelStore>((set, get) => ({
     })),
   findBySessionId: (sessionId) =>
     get().panels.find((p) => p.session?.formSessionId === sessionId),
-  reset: () => set({ panels: [] }),
+  // reset зовётся при размонтировании SduiScreen (sdui-screen.tsx): диалоги
+  // умирают вместе с формой, а панели workspace-вкладок самодостаточны
+  // (childState) и живут до закрытия своей вкладки.
+  reset: () =>
+    set((s) => ({ panels: s.panels.filter((p) => p.openInWorkspaceTab) })),
 }))

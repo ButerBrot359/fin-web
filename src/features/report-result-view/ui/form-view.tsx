@@ -10,9 +10,12 @@ import type {
 import { isHighlightRow, isRightAligned } from '../lib/cell-helpers'
 import { ReportCell } from './report-cell'
 
-/** Сетка бланка: тонкие серые линии, плотные ячейки (как табличный документ 1С). */
-const td = 'border border-[#d9d9d9] px-1.5 py-0.5 align-top'
-const th = 'border border-[#d9d9d9] px-1.5 py-1 text-center align-middle'
+/**
+ * Сетка бланка 1С: чёткая серая рамка каждой ячейки (официальная форма
+ * печатается с выраженной сеткой, темнее аналитических отчётов), плотные ячейки.
+ */
+const td = 'border border-[#808080] px-1.5 py-0.5 align-top'
+const th = 'border border-[#808080] px-1.5 py-1 text-center align-middle'
 
 /** Ширина одного символа колонки (`width` приходит в символах, как в 1С). */
 const CHAR_PX = 8
@@ -36,6 +39,8 @@ interface HeadCell {
   title: string
   colSpan: number
   rowSpan: number
+  /** Средний ряд — номер счёта-подгруппы (1С печатает его жирным курсивом). */
+  emphasis?: boolean
 }
 
 /**
@@ -115,6 +120,7 @@ const buildHeadModel = (
           title: sub,
           colSpan: m - k,
           rowSpan: 1,
+          emphasis: true,
         })
         for (let p = k; p < m; p++)
           row3.push({
@@ -177,7 +183,14 @@ const SectionTable = ({
                   rowSpan={cell.rowSpan}
                   className={th}
                 >
-                  <Typography variant="caption" sx={{ color: '#333' }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: '#333',
+                      fontWeight: cell.emphasis ? 700 : undefined,
+                      fontStyle: cell.emphasis ? 'italic' : undefined,
+                    }}
+                  >
                     {cell.title}
                   </Typography>
                 </th>
@@ -254,7 +267,7 @@ export const FormView = ({ form }: { form: ReportFormDto }) => {
   const isKz = i18n.language === 'kz'
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-1 bg-white text-[#333]">
+    <div className="flex w-full flex-col gap-1 bg-white text-[#333]">
       {/* Гриф и номер формы. */}
       <div className="flex items-start justify-between">
         <div>
@@ -335,7 +348,11 @@ export const FormView = ({ form }: { form: ReportFormDto }) => {
               {section.openingLine}
             </Typography>
           )}
-          <SectionTable section={section} isKz={isKz} />
+          {/* Горизонтальный скролл: широкий бланк (много граф-субсчетов) не
+              обрезается и не ломает страницу; на печати разворачивается целиком. */}
+          <div className="overflow-x-auto">
+            <SectionTable section={section} isKz={isKz} />
+          </div>
         </div>
       ))}
 

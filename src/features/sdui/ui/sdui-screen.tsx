@@ -1,5 +1,6 @@
 import { useEffect, useMemo, type FC } from 'react'
 import { useLocation } from 'react-router-dom'
+import i18n from 'i18next'
 
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 
@@ -10,6 +11,7 @@ import { usePanelStore } from '../lib/stores/panel-store'
 import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
 import { SduiSessionProvider, type SduiSessionValue } from '../lib/sdui-session-context'
+import { reopenFormForLanguageChange } from '../lib/language-reopen'
 import { NodeRenderer } from './node-renderer'
 import { DialogHost } from './dialog-host'
 
@@ -98,6 +100,22 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [])
+
+  // Смена языка: язык фиксируется в form-session на OPEN, поэтому нужен
+  // re-OPEN. Отдельная подписка (а не deps главного эффекта): cleanup
+  // с persist=true иначе сохранил бы стейл-сессию, которую restore-ветка
+  // тут же воскресила бы.
+  useEffect(() => {
+    const handler = () => {
+      void reopenFormForLanguageChange({
+        dispatch,
+        route: location.pathname,
+        layoutCode,
+      })
+    }
+    i18n.on('languageChanged', handler)
+    return () => i18n.off('languageChanged', handler)
+  }, [location.pathname, layoutCode, dispatch])
 
   useEffect(() => {
     const route = location.pathname

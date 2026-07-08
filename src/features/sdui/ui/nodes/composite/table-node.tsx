@@ -25,6 +25,7 @@ import {
 import type { TableColumnDef } from '../../../lib/hooks/use-table-sync'
 import { EditableTable } from './editable-table'
 import { ComplexEditableTable } from './complex-editable-table'
+import { AccountingPostingsBlock } from './accounting-postings-block'
 
 interface ReadOnlyColumnDef {
   id: string
@@ -158,7 +159,10 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
     return <EditableTable node={node} columns={columns} />
   }
 
-  // Read-only path (preserved as-is)
+  // Read-only path: бухрегистр — 1С-блок, остальные — прежняя таблица
+  if (node.props?.regKind === 'ACCOUNTING') {
+    return <AccountingPostingsBlock node={node} />
+  }
   return <ReadOnlyTable node={node} />
 }
 

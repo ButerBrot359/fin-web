@@ -36,6 +36,9 @@ describe('formatSum', () => {
   it('"12345.00" → "12 345,00"', () => {
     expect(formatSum('12345.00')).toBe('12 345,00')
   })
+  it('"2000.0000" (scale-4 бэка) → "2 000,00"', () => {
+    expect(formatSum('2000.0000')).toBe('2 000,00')
+  })
   it('пусто → ""', () => {
     expect(formatSum('')).toBe('')
     expect(formatSum(null)).toBe('')

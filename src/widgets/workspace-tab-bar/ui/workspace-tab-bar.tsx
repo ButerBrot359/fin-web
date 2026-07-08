@@ -17,7 +17,9 @@ const navigateAfterClose = (
 ) => {
   const remaining = useWorkspaceTabsStore.getState()
   if (remaining.tabs.length > 0) {
-    const nextTab = remaining.tabs[0]
+    const nextTab =
+      remaining.tabs.find((t) => t.id === remaining.activeTabId) ??
+      remaining.tabs[0]
     if (nextTab.pageType === 'sdui-panel') {
       // Панельная вкладка живёт вне роутера — активируем без навигации
       remaining.setActiveTab(nextTab.id)

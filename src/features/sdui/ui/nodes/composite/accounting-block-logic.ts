@@ -68,10 +68,12 @@ export function resolveCellValue(v: unknown): string {
   return String(v)
 }
 
-/** Сумма/количество: бэк шлёт "12345.00" (toPlainString) → "12 345,00". */
+/** Сумма/количество: бэк шлёт "2000.0000" (toPlainString) → "2 000,00". */
 export function formatSum(v: unknown): string {
   if (v == null || v === '') return ''
-  return formatWithSpaces(String(v))
+  const n = Number(v)
+  const plain = Number.isFinite(n) ? n.toFixed(2) : String(v)
+  return formatWithSpaces(plain)
 }
 
 /** binding → props.label по листьям TABLE_COLUMN (включая вложенные в COLUMN_GROUP). */

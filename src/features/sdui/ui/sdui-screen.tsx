@@ -75,10 +75,14 @@ export const SduiScreen: FC<SduiScreenProps> = ({
           formSessionId: treeState.formSessionId,
           revision: treeState.revision,
           viewState: useViewStateStore.getState().getAll(),
+          dirty: useViewStateStore.getState().dirty,
         })
       } else {
         void dispatch({ type: 'CLOSE' })
         useSduiCacheStore.getState().remove(route)
+        // Сбросить state+dirty: SDUI-экран размонтирован, стейл dirty
+        // не должен триггерить confirm переключения языка
+        useViewStateStore.getState().replaceAll({})
       }
       onDirtyChange?.(route, false)
       usePanelStore.getState().reset()

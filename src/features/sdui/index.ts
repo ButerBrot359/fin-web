@@ -6,3 +6,6 @@ export type { ViewNode, ViewAction, ViewRequest, ViewResponse, NodeProps } from 
 export type { NodeType } from './types/node-types'
 export { setReferencePickerGateway, openReferencePicker } from './lib/reference-picker-gateway'
 export type { ReferencePickerRequest } from './lib/reference-picker-gateway'
+export { setWorkspaceTabGateway, openPanelTab } from './lib/workspace-tab-gateway'
+export type { OpenPanelTabParams, WorkspaceTabGatewayImpl } from './lib/workspace-tab-gateway'
+export { usePanelStore } from './lib/stores/panel-store'

@@ -6,19 +6,24 @@ const viewNodeSchema: z.ZodType<ViewNode> = z.lazy(() =>
   z.object({
     id: z.string(),
     type: z.string(),
-    binding: z.string().optional(),
-    value: z.unknown().optional(),
-    props: z.record(z.string(), z.unknown()).optional(),
+    // Бэк (Jackson) сериализует узлы с ЯВНЫМИ null (binding:null, children:null,
+    // actions:null, ...), а не с отсутствующими полями. Базовый tree идёт через setRoot
+    // без валидации, но узлы внутри insertNode/replaceNode-патчей валидируются здесь —
+    // поэтому optional-поля должны принимать И null (.nullish), иначе весь патч молча
+    // отбрасывается как malformed (напр. insertNode label.ispolneno не вставлялся).
+    binding: z.string().nullish(),
+    value: z.unknown().nullish(),
+    props: z.record(z.string(), z.unknown()).nullish(),
     actions: z
       .array(
         z.object({
           trigger: z.string(),
           actionId: z.string(),
-          command: z.string().optional(),
+          command: z.string().nullish(),
         }),
       )
-      .optional(),
-    children: z.array(viewNodeSchema).optional(),
+      .nullish(),
+    children: z.array(viewNodeSchema).nullish(),
   }),
 ) as z.ZodType<ViewNode>
 

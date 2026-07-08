@@ -27,4 +27,24 @@ describe('validatePatches', () => {
     expect(warn).toHaveBeenCalledTimes(2)
     warn.mockRestore()
   })
+
+  it('пропускает insertNode/replaceNode с явными null-полями узла (Jackson)', () => {
+    const nodeWithNulls = {
+      id: 'label.ispolneno',
+      type: 'LABEL',
+      props: { variant: 'heading', text: 'Заявка исполнена на 1000.00 из 1000.00' },
+      binding: null,
+      value: null,
+      children: null,
+      actions: null,
+    }
+    const patches = [
+      { op: 'insertNode', parentId: 'body', index: 2, node: nodeWithNulls },
+      { op: 'replaceNode', nodeId: 'label.ispolneno', node: nodeWithNulls },
+    ]
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(validatePatches(patches)).toHaveLength(2)
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
 })

@@ -36,6 +36,10 @@ describe('panel-store', () => {
 })
 
 describe('panel-store reset', () => {
+  beforeEach(() => {
+    usePanelStore.setState({ panels: [] })
+  })
+
   it('сбрасывает диалоги, но сохраняет панели workspace-вкладок', () => {
     usePanelStore.getState().push({
       panelId: 'dlg',

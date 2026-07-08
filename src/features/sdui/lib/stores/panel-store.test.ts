@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { ViewNode } from '../../types/view'
 import { usePanelStore, type PanelEntry } from './panel-store'
 
+const node = { id: 'n1', type: 'PAGE' } as ViewNode
+
 const entry = (id: string, sessionId?: string): PanelEntry => ({
   panelId: id,
   node: { id, type: 'PAGE' } as ViewNode,
@@ -14,7 +16,7 @@ const entry = (id: string, sessionId?: string): PanelEntry => ({
 })
 
 describe('panel-store', () => {
-  beforeEach(() => usePanelStore.getState().reset())
+  beforeEach(() => usePanelStore.setState({ panels: [] }))
 
   it('push/pop/remove управляют стеком', () => {
     const s = usePanelStore.getState()
@@ -30,5 +32,28 @@ describe('panel-store', () => {
     usePanelStore.getState().push(entry('a', 'fs-1'))
     usePanelStore.getState().updateSession('a', 5)
     expect(usePanelStore.getState().findBySessionId('fs-1')?.session?.revision).toBe(5)
+  })
+})
+
+describe('panel-store reset', () => {
+  it('сбрасывает диалоги, но сохраняет панели workspace-вкладок', () => {
+    usePanelStore.getState().push({
+      panelId: 'dlg',
+      node,
+      presentation: 'modal',
+      viewState: {},
+    })
+    usePanelStore.getState().push({
+      panelId: 'tab',
+      node,
+      presentation: 'page',
+      viewState: {},
+      openInWorkspaceTab: true,
+      tabKey: 'movements:1',
+    })
+    usePanelStore.getState().reset()
+    const panels = usePanelStore.getState().panels
+    expect(panels).toHaveLength(1)
+    expect(panels[0].panelId).toBe('tab')
   })
 })

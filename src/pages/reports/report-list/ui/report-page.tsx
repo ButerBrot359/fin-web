@@ -521,9 +521,6 @@ const ReportPageContent = ({
     return set
   }, [hiddenGroups, indicators, indicatorState])
 
-  const hasSettings =
-    filters.length > 0 || indicators.length > 0 || dimensionColumns.length > 0
-
   const handlePrint = () => {
     window.print()
   }
@@ -553,130 +550,126 @@ const ReportPageContent = ({
         </Typography>
       )}
 
-      {/* Динамическая форма параметров по meta.parameters. */}
-      {meta.parameters.length === 0 ? (
+      {/* Заметка, если у отчёта нет параметров (кнопки при этом остаются). */}
+      {meta.parameters.length === 0 && (
         <Typography variant="body2" className="text-ui-05">
           {t('reports.noParams')}
         </Typography>
-      ) : (
-        <div className="flex flex-wrap items-start gap-4">
-          {meta.parameters.map((param) => {
-            const invalid =
-              showErrors &&
-              param.required &&
-              !isFilled(param, values[param.code])
-            // PERIOD раскрываем в пару полей from/to.
-            if (isPeriod(param)) {
-              const period = (values[param.code] as
-                | PeriodValue
-                | undefined) ?? {
-                from: '',
-                to: '',
-              }
-              const title =
-                (isKz ? param.titleKz : param.titleRu) || param.titleRu
-              return (
-                <div key={param.code} className="flex flex-wrap gap-4">
-                  <div className="report-param-field w-64">
-                    <DateTimeInput
-                      value={period.from}
-                      onChange={(v) => {
-                        setPeriodValue(param.code, { from: v })
-                      }}
-                      label={`${title}: ${t('reports.periodFrom')}`}
-                      required={param.required}
-                      error={invalid}
-                      size="small"
-                      fullWidth
-                    />
-                  </div>
-                  <div className="report-param-field w-64">
-                    <DateTimeInput
-                      value={period.to}
-                      onChange={(v) => {
-                        setPeriodValue(param.code, { to: v })
-                      }}
-                      label={`${title}: ${t('reports.periodTo')}`}
-                      required={param.required}
-                      error={invalid}
-                      size="small"
-                      fullWidth
-                    />
-                  </div>
-                </div>
-              )
+      )}
+
+      {/* Панель: параметры (если есть) + действия. «Настройки» видна всегда. */}
+      <div className="flex flex-wrap items-start gap-4">
+        {meta.parameters.map((param) => {
+          const invalid =
+            showErrors && param.required && !isFilled(param, values[param.code])
+          // PERIOD раскрываем в пару полей from/to.
+          if (isPeriod(param)) {
+            const period = (values[param.code] as PeriodValue | undefined) ?? {
+              from: '',
+              to: '',
             }
+            const title =
+              (isKz ? param.titleKz : param.titleRu) || param.titleRu
             return (
-              <div
-                key={param.code}
-                className={
-                  param.dataType === 'BOOLEAN'
-                    ? 'flex items-center'
-                    : 'report-param-field w-64'
-                }
-              >
-                <ReportParamField
-                  param={param}
-                  value={values[param.code]}
-                  onChange={(v) => {
-                    setParamValue(param.code, v)
-                  }}
-                  invalid={invalid}
-                />
+              <div key={param.code} className="flex flex-wrap gap-4">
+                <div className="report-param-field w-64">
+                  <DateTimeInput
+                    value={period.from}
+                    onChange={(v) => {
+                      setPeriodValue(param.code, { from: v })
+                    }}
+                    label={`${title}: ${t('reports.periodFrom')}`}
+                    required={param.required}
+                    error={invalid}
+                    size="small"
+                    fullWidth
+                  />
+                </div>
+                <div className="report-param-field w-64">
+                  <DateTimeInput
+                    value={period.to}
+                    onChange={(v) => {
+                      setPeriodValue(param.code, { to: v })
+                    }}
+                    label={`${title}: ${t('reports.periodTo')}`}
+                    required={param.required}
+                    error={invalid}
+                    size="small"
+                    fullWidth
+                  />
+                </div>
               </div>
             )
-          })}
+          }
+          return (
+            <div
+              key={param.code}
+              className={
+                param.dataType === 'BOOLEAN'
+                  ? 'flex items-center'
+                  : 'report-param-field w-64'
+              }
+            >
+              <ReportParamField
+                param={param}
+                value={values[param.code]}
+                onChange={(v) => {
+                  setParamValue(param.code, v)
+                }}
+                invalid={invalid}
+              />
+            </div>
+          )
+        })}
 
-          {/* «Сформировать» — фирменная жёлтая кнопка 1С. */}
-          <Button
-            variant="contained"
-            disableElevation
-            disabled={!canSubmit}
-            onClick={onSubmit}
-            sx={{
-              height: 48,
-              bgcolor: '#fcd53b',
-              color: '#1a1a1a',
-              fontWeight: 700,
-              border: '1px solid #e3b93c',
-              '&:hover': { bgcolor: '#f6c827' },
-            }}
-          >
-            {t('reports.generate')}
-          </Button>
+        {/* «Сформировать» — фирменная жёлтая кнопка 1С. */}
+        <Button
+          variant="contained"
+          disableElevation
+          disabled={!canSubmit}
+          onClick={onSubmit}
+          sx={{
+            height: 48,
+            bgcolor: '#fcd53b',
+            color: '#1a1a1a',
+            fontWeight: 700,
+            border: '1px solid #e3b93c',
+            '&:hover': { bgcolor: '#f6c827' },
+          }}
+        >
+          {t('reports.generate')}
+        </Button>
 
-          {/* Печать / Excel — когда отчёт сформирован табличный. */}
-          {applied && tabularResult && (
-            <>
-              <Button
-                variant="outlined"
-                onClick={handlePrint}
-                sx={{ height: 48 }}
-              >
-                {t('reports.print')}
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={handleExportExcel}
-                sx={{ height: 48 }}
-              >
-                {t('reports.exportExcel')}
-              </Button>
-            </>
-          )}
-          {hasSettings && (
+        {/* Печать / Excel — когда отчёт сформирован табличный. */}
+        {applied && tabularResult && (
+          <>
             <Button
               variant="outlined"
-              onClick={() => {
-                setSettingsOpen(true)
-              }}
-              sx={{ height: 48, marginLeft: 'auto' }}
+              onClick={handlePrint}
+              sx={{ height: 48 }}
             >
-              {t('reportSettings.title')}
+              {t('reports.print')}
             </Button>
-          )}
-        </div>
-      )}
+            <Button
+              variant="outlined"
+              onClick={handleExportExcel}
+              sx={{ height: 48 }}
+            >
+              {t('reports.exportExcel')}
+            </Button>
+          </>
+        )}
+        {/* «Настройки» — всегда доступна, открывает шторку по клику. */}
+        <Button
+          variant="outlined"
+          onClick={() => {
+            setSettingsOpen(true)
+          }}
+          sx={{ height: 48, marginLeft: 'auto' }}
+        >
+          {t('reportSettings.title')}
+        </Button>
+      </div>
 
       {/* Watermark 1С до первого формирования. */}
       {!applied && meta.parameters.length > 0 && (
@@ -747,20 +740,23 @@ const ReportPageContent = ({
         </>
       )}
 
-      {hasSettings && (
-        <ReportSettingsDrawer
-          open={settingsOpen}
-          onClose={() => {
-            setSettingsOpen(false)
-          }}
-          groupItems={groupItems}
-          onToggleGroup={onToggleGroup}
-          indicatorItems={indicatorItems}
-          onToggleIndicator={onToggleIndicator}
-          filterItems={filterItems}
-          onFilterChange={onFilterChange}
-        />
-      )}
+      <ReportSettingsDrawer
+        open={settingsOpen}
+        onClose={() => {
+          setSettingsOpen(false)
+        }}
+        layout={
+          meta.definition.engineType === 'GENERIC_COMPOSITION'
+            ? 'SKD'
+            : 'CLASSIC'
+        }
+        groupItems={groupItems}
+        onToggleGroup={onToggleGroup}
+        indicatorItems={indicatorItems}
+        onToggleIndicator={onToggleIndicator}
+        filterItems={filterItems}
+        onFilterChange={onFilterChange}
+      />
     </div>
   )
 }

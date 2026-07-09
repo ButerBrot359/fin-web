@@ -145,7 +145,9 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     // «Счёт учёта» строки (домен ACCOUNT_PLAN) — по нему субконто-ячейки сужают
     // тип через виды субконто счёта. Предполагается один счёт на строку ТЧ.
     const accountColumnCode = columns.find(
-      (col) => resolveAttributeDomain(col)?.domain === 'ACCOUNT_PLAN'
+      (col) =>
+        col.dataType === 'ACCOUNT_PLAN' ||
+        resolveAttributeDomain(col)?.domain === 'ACCOUNT_PLAN'
     )?.code
 
     const dataCols: ColumnDef<Record<string, unknown>>[] = visibleColumns.map(

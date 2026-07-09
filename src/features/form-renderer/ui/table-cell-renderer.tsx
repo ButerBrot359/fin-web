@@ -399,7 +399,8 @@ const kindToNarrowed = (
 
 /** Позиция субконто из кода колонки: `...Subkonto1` → 1 (иначе undefined). */
 const parseSubkontoPosition = (code: string): number | undefined => {
-  const match = /Subkonto(\d+)$/i.exec(code)
+  // «Субконто» транслитерируется как Subkonto/Subconto; цифра позиции — в конце.
+  const match = /Sub[ck]onto(\d+)$/i.exec(code)
   return match ? Number(match[1]) : undefined
 }
 
@@ -436,8 +437,14 @@ const SubkontoObjectCell = ({
   const accountValue = useWatch({
     control,
     name: accountFieldName ?? '__subkonto_no_account__',
-  }) as { id?: number | string } | null | undefined
-  const accountId = accountFieldName ? accountValue?.id : undefined
+  }) as { id?: number | string } | number | string | null | undefined
+  // Значение счёта — обычно объект справочника {id, ...}, но подстрахуемся и на
+  // случай голого id (число/строка).
+  const accountId = !accountFieldName
+    ? undefined
+    : accountValue != null && typeof accountValue === 'object'
+      ? accountValue.id
+      : accountValue
 
   const { kinds } = useAccountSubkontoKinds(accountId ?? null)
 
@@ -540,6 +547,24 @@ const CellInput = ({
   accountFieldName,
 }: CellInputProps) => {
   const { dataType } = column
+
+  // OBJECT (составное субконто) — ДО общей ссылочной проверки: у OBJECT
+  // allowedTypes[0].domainKind ссылочный (напр. DOCUMENT «Заявки ГПС»), поэтому
+  // ветка `REFERENCE_DOMAIN_KINDS` перехватила бы ячейку и показала полный
+  // первый тип вместо сужения по счёту. Сужение/фолбэк — внутри SubkontoObjectCell.
+  if (dataType === 'OBJECT') {
+    return (
+      <SubkontoObjectCell
+        name={name}
+        column={column}
+        control={control}
+        language={language}
+        serverFilterParams={serverFilterParams}
+        accountFieldName={accountFieldName}
+      />
+    )
+  }
+
   const cellResolved = resolveAttributeDomain(column)
 
   if (cellResolved && REFERENCE_DOMAIN_KINDS.has(cellResolved.domain)) {
@@ -561,19 +586,6 @@ const CellInput = ({
       <Box sx={tableCellWrapperSx}>
         <EnumCell name={name} column={column} control={control} />
       </Box>
-    )
-  }
-
-  if (dataType === 'OBJECT') {
-    return (
-      <SubkontoObjectCell
-        name={name}
-        column={column}
-        control={control}
-        language={language}
-        serverFilterParams={serverFilterParams}
-        accountFieldName={accountFieldName}
-      />
     )
   }
 

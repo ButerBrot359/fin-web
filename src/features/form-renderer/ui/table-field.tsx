@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { DocumentAttribute } from '@/entities/document-type'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
+import { resolveAttributeDomain } from '@/shared/lib/consts/data-types'
 import emptyImage from '@/shared/assets/info/empty.png'
 
 import { useTableColumns } from '../lib/hooks/use-table-columns'
@@ -66,7 +67,6 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     unregisterTableReplacer,
     fieldFilters,
     visibilityMap,
-    triggerEvent,
   } = useFormRendererContext()
 
   // Источник отбора для ссылочных колонок ТЧ (напр. МОЛ → «Организация»
@@ -132,6 +132,12 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
       isFieldVisible(visibilityMap, tableColumnPath(attribute.code, col.code))
     )
 
+    // «Счёт учёта» строки (домен ACCOUNT_PLAN) — по нему субконто-ячейки сужают
+    // тип через виды субконто счёта. Предполагается один счёт на строку ТЧ.
+    const accountColumnCode = columns.find(
+      (col) => resolveAttributeDomain(col)?.domain === 'ACCOUNT_PLAN'
+    )?.code
+
     const dataCols: ColumnDef<Record<string, unknown>>[] = visibleColumns.map(
       (col) => {
         // Фильтр колонки ТЧ: серверный `fieldFilters` по пути `<КодТЧ><КодКолонки>`
@@ -141,10 +147,6 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
           fieldFilters[tableColumnPath(attribute.code, col.code)] ??
           synthesizeReferenceFilter(col, () => orgSourceValue)
         const serverFilterParams = fieldFilterToSearchParams(effectiveFilter)
-        // Колонка с formEvent (напр. «Счёт учёта») при изменении дёргает
-        // серверное событие: бэк пересчитывает строку (в т.ч. суженные типы
-        // субконто в `__subkontoAllowedTypes`) и присылает обновлённые строки.
-        const columnEvent = col.formEvent
         return {
           id: col.code,
           header: getLocalizedName(col, language),
@@ -156,13 +158,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
               control={form.control}
               language={language}
               serverFilterParams={serverFilterParams}
-              onValueChange={
-                columnEvent
-                  ? () => {
-                      triggerEvent(columnEvent)
-                    }
-                  : undefined
-              }
+              accountColumnCode={accountColumnCode}
             />
           ),
         }
@@ -178,7 +174,6 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     fieldFilters,
     visibilityMap,
     orgSourceValue,
-    triggerEvent,
   ])
 
   const table = useReactTable({

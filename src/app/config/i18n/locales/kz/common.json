@@ -322,6 +322,9 @@
   },
   "reports": {
     "title": "Есеп",
+    "detailSection": "Егжей-тегжелеу",
+    "filtersSection": "Іріктеулер",
+    "hideSettingsOnSubmit": "Есеп қалыптастырғанда баптауларды жасыру",
     "generate": "Қалыптастыру",
     "periodFrom": "бастап",
     "periodTo": "дейін",

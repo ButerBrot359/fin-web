@@ -23,12 +23,12 @@ const ORG_SCOPED_REFERENCE_TYPES: Record<string, ScopeRule[]> = {
   FizicheskieLitsa: [
     { sourceField: 'Organizatsiya', targetAttribute: 'Organizatsiya' },
   ],
-  // «Договор контрагента» ограничивается договорами, принадлежащими и
-  // «Организации», и «Контрагенту» документа: Organizatsiya = Организация
-  // документа И Vladelets (владелец договора) = Контрагент документа. Отбор
-  // применяется и к выпадашке, и к пикеру «Показать все» (оба берут searchParams).
+  // «Договор контрагента» ограничивается договорами выбранного «Контрагента»:
+  // Vladelets (владелец договора) = Контрагент документа. По организации НЕ
+  // фильтруем — договор привязан к контрагенту через владельца, а реквизит
+  // «Организация» у договора часто не заполнен (строгий отбор по нему скрыл бы
+  // валидные договоры). Отбор применяется и к выпадашке, и к пикеру «Показать все».
   DogovoryKontragentov: [
-    { sourceField: 'Organizatsiya', targetAttribute: 'Organizatsiya' },
     { sourceField: 'Kontragent', targetAttribute: 'Vladelets' },
   ],
 }

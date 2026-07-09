@@ -33,6 +33,7 @@ import { useFilterFields } from '../lib/hooks/use-filter-fields'
 import { buildReportExport } from '../lib/utils/build-report-export'
 import { ReportResultTable } from './report-result-table'
 import { ReportParamField, type ReportParamValue } from './report-param-field'
+import { MemorialOrderSettingsPanel } from './memorial-order-settings-panel'
 import type {
   ReportIndicatorDto,
   ReportMetaDto,
@@ -134,6 +135,27 @@ const isPeriodicity = (p: ReportParameterDto): boolean =>
 const isPodrazdelenie = (p: ReportParameterDto): boolean =>
   p.referenceDomain === 'PodrazdeleniyaOrganizatsiy' ||
   /podrazdelenie/i.test(p.code)
+
+/**
+ * Нормализация кода параметра для сопоставления с кодами отборов бланка МО-13:
+ * без хвоста `Id` (fkr/fkrId → fkr, molId → mol), в нижний регистр.
+ */
+const normalizeParamCode = (code: string): string =>
+  code.replace(/id$/i, '').toLowerCase()
+
+/**
+ * Коды параметров-отборов бланка МО-13 (нормализованные): «Классификация
+ * расходов», «Специфика», «Источник финансирования», «Код платных услуг», «МОЛ».
+ * Только по ним раскладываем блок «Отборы» — «Организация», период, список
+ * счетов и прочие параметры остаются в шапке над бланком (как в 1С).
+ */
+const MO13_FILTER_CODES = new Set([
+  'fkr',
+  'spetsifika',
+  'istochnikfinansirovaniya',
+  'kodplatnykhuslug',
+  'mol',
+])
 
 /**
  * Сериализация значений параметров в строку URL (одно поле на параметр).
@@ -477,6 +499,38 @@ const ReportPageContent = ({
     setAppearance((prev) => ({ ...prev, ...patch }))
   }
 
+  // Бланк-мемориальный ордер (МО-13/Форма 396): параметры детализации и отборы
+  // уезжают в боковую панель «Настройки» (скрыта по умолчанию, тумблер-кнопка).
+  const isMemorialOrder = meta.definition.kind === 'MEMORIAL_ORDER'
+  const [showSettings, setShowSettings] = useState(false)
+  const [hideSettingsOnSubmit, setHideSettingsOnSubmit] = useState(false)
+
+  // «Детализация» — параметры-флажки (BOOLEAN). «Отборы» — только справочные
+  // параметры-отборы по кодам {@link MO13_FILTER_CODES} (сравнение EQUAL).
+  // «Организация» (обязательный ref), период и список счетов в панель НЕ уходят —
+  // остаются в шапке над бланком, как в 1С.
+  const detailParams = useMemo<ReportParameterDto[]>(
+    () =>
+      isMemorialOrder
+        ? meta.parameters.filter((p) => p.dataType === 'BOOLEAN')
+        : [],
+    [isMemorialOrder, meta.parameters]
+  )
+  const filterParams = useMemo<ReportParameterDto[]>(
+    () =>
+      isMemorialOrder
+        ? meta.parameters.filter((p) =>
+            MO13_FILTER_CODES.has(normalizeParamCode(p.code))
+          )
+        : [],
+    [isMemorialOrder, meta.parameters]
+  )
+  // Коды параметров, вынесенных в панель — исключаем их из верхней шапки.
+  const settingsParamCodes = useMemo<Set<string>>(
+    () => new Set([...detailParams, ...filterParams].map((p) => p.code)),
+    [detailParams, filterParams]
+  )
+
   // Параметр «Счёт» (ACCOUNT_REF) и его значение — источник accountId для
   // динамических полей отбора (субконто счёта) в /filter-fields.
   const accountParam = useMemo(
@@ -635,7 +689,12 @@ const ReportPageContent = ({
           {/* В шапке — только Период(даты), Счёт, Организация. Периодичность и
               Подразделение вынесены в докнутую панель настроек (как в 1С). */}
           {meta.parameters
-            .filter((p) => !isPeriodicity(p) && !isPodrazdelenie(p))
+            .filter(
+              (p) =>
+                !isPeriodicity(p) &&
+                !isPodrazdelenie(p) &&
+                !settingsParamCodes.has(p.code)
+            )
             .map((param) => {
               const invalid =
                 showErrors &&
@@ -708,7 +767,11 @@ const ReportPageContent = ({
             variant="contained"
             disableElevation
             disabled={!canSubmit}
-            onClick={onSubmit}
+            onClick={() => {
+              onSubmit()
+              // «Скрывать настройки при формировании отчёта» — прячем панель.
+              if (canSubmit && hideSettingsOnSubmit) setShowSettings(false)
+            }}
             sx={{
               height: 48,
               bgcolor: '#fcd53b',
@@ -720,6 +783,22 @@ const ReportPageContent = ({
           >
             {t('reports.generate')}
           </Button>
+
+          {/* «Настройки» (бланк-МО): тумблер боковой панели, скрытой по умолчанию. */}
+          {isMemorialOrder &&
+            (detailParams.length > 0 || filterParams.length > 0) && (
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setShowSettings((v) => !v)
+                }}
+                sx={{ height: 48 }}
+              >
+                {showSettings
+                  ? t('reports.hideSettings')
+                  : t('reports.showSettings')}
+              </Button>
+            )}
 
           {/* Печать / Excel — когда отчёт сформирован табличный. */}
           {applied && tabularResult && (
@@ -819,6 +898,18 @@ const ReportPageContent = ({
             </>
           )}
         </div>
+
+        {isMemorialOrder && showSettings && (
+          <MemorialOrderSettingsPanel
+            detailParams={detailParams}
+            filterParams={filterParams}
+            values={values}
+            setParamValue={setParamValue}
+            isKz={isKz}
+            hideOnSubmit={hideSettingsOnSubmit}
+            onHideOnSubmitChange={setHideSettingsOnSubmit}
+          />
+        )}
 
         {hasSettings && (
           <ReportSettingsPanel

@@ -32,6 +32,12 @@ interface TableCellRendererProps {
   language: string
   /** Серверный фильтр ссылочного поля (query-параметры пикера). */
   serverFilterParams?: Record<string, string>
+  /**
+   * Дискретное изменение значения ячейки (выбор в пикере/чекбоксе/дате).
+   * Задан только для колонок с formEvent — дёргает серверное событие,
+   * чтобы бэк пересчитал строку (напр. суженные типы субконто по счёту).
+   */
+  onValueChange?: () => void
 }
 
 /**
@@ -170,6 +176,7 @@ const DictCell = ({
   control,
   language,
   serverFilterParams,
+  onValueChange,
 }: TableCellRendererProps) => {
   const resolved = resolveAttributeDomain(column)
   const searchUrl =
@@ -264,6 +271,7 @@ const DictCell = ({
           typeCode: resolved.typeCode,
           onSelect: (val: SelectOption) => {
             fieldOnChange(val.raw ?? null)
+            onValueChange?.()
           },
         })
       }
@@ -278,6 +286,7 @@ const DictCell = ({
           entryId,
           onSelect: (val: SelectOption) => {
             fieldOnChange(val.raw ?? null)
+            onValueChange?.()
           },
         })
       }
@@ -296,6 +305,7 @@ const DictCell = ({
           ? () => {
               handleShowAll((val: SelectOption) => {
                 field.onChange(val.raw ?? null)
+                onValueChange?.()
               })
             }
           : undefined
@@ -327,6 +337,7 @@ const DictCell = ({
             disabled={disabled}
             onChange={(newOption) => {
               field.onChange(newOption?.raw ?? null)
+              onValueChange?.()
             }}
             onInputChange={
               isServerSearch
@@ -356,6 +367,7 @@ const EnumCell = ({
   name,
   column,
   control,
+  onValueChange,
 }: Omit<TableCellRendererProps, 'language'>) => {
   const enumTypeCode =
     (column.allowedTypes as { typeCode: string }[] | undefined)?.[0]
@@ -398,6 +410,7 @@ const EnumCell = ({
             options={options}
             onChange={(newOption) => {
               field.onChange(newOption?.raw ?? null)
+              onValueChange?.()
             }}
             onOpen={() => {
               setOpened(true)
@@ -427,6 +440,7 @@ const CellInput = ({
   onPickerOpen,
   onPickerClose,
   subkontoAllowedTypes,
+  onValueChange,
 }: CellInputProps) => {
   const { dataType } = column
   const cellResolved = resolveAttributeDomain(column)
@@ -440,6 +454,7 @@ const CellInput = ({
           control={control}
           language={language}
           serverFilterParams={serverFilterParams}
+          onValueChange={onValueChange}
         />
       </Box>
     )
@@ -448,7 +463,12 @@ const CellInput = ({
   if (dataType === 'ENUMS') {
     return (
       <Box sx={tableCellWrapperSx}>
-        <EnumCell name={name} column={column} control={control} />
+        <EnumCell
+          name={name}
+          column={column}
+          control={control}
+          onValueChange={onValueChange}
+        />
       </Box>
     )
   }
@@ -481,6 +501,7 @@ const CellInput = ({
               control={control}
               language={language}
               serverFilterParams={serverFilterParams}
+              onValueChange={onValueChange}
             />
           </Box>
         )
@@ -494,7 +515,12 @@ const CellInput = ({
         } as DocumentAttribute
         return (
           <Box sx={tableCellWrapperSx}>
-            <EnumCell name={name} column={enumColumn} control={control} />
+            <EnumCell
+              name={name}
+              column={enumColumn}
+              control={control}
+              onValueChange={onValueChange}
+            />
           </Box>
         )
       }
@@ -519,6 +545,7 @@ const CellInput = ({
             control={control}
             language={language}
             serverFilterParams={serverFilterParams}
+            onValueChange={onValueChange}
           />
         </Box>
       )
@@ -576,7 +603,10 @@ const CellInput = ({
             <Box sx={tableCellWrapperSx}>
               <DateTimeInput
                 value={(field.value as string | undefined) ?? undefined}
-                onChange={field.onChange}
+                onChange={(v) => {
+                  field.onChange(v)
+                  onValueChange?.()
+                }}
                 dateOnly={dataType === 'DATE'}
                 size="small"
                 onOpen={onPickerOpen}
@@ -613,6 +643,7 @@ export const TableCellRenderer = ({
   control,
   language,
   serverFilterParams,
+  onValueChange,
 }: TableCellRendererProps) => {
   const { dataType } = column
   const [editing, setEditing] = useState(false)
@@ -640,6 +671,7 @@ export const TableCellRenderer = ({
             checked={!!field.value}
             onChange={(e) => {
               field.onChange(e.target.checked)
+              onValueChange?.()
             }}
             size="small"
             sx={{ p: 0 }}
@@ -685,6 +717,7 @@ export const TableCellRenderer = ({
         language={language}
         serverFilterParams={serverFilterParams}
         subkontoAllowedTypes={subkontoAllowedTypes}
+        onValueChange={onValueChange}
         onPickerOpen={() => {
           pickerOpenRef.current = true
         }}

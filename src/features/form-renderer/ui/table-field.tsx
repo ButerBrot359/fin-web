@@ -66,6 +66,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     unregisterTableReplacer,
     fieldFilters,
     visibilityMap,
+    triggerEvent,
   } = useFormRendererContext()
 
   // Источник отбора для ссылочных колонок ТЧ (напр. МОЛ → «Организация»
@@ -140,6 +141,10 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
           fieldFilters[tableColumnPath(attribute.code, col.code)] ??
           synthesizeReferenceFilter(col, () => orgSourceValue)
         const serverFilterParams = fieldFilterToSearchParams(effectiveFilter)
+        // Колонка с formEvent (напр. «Счёт учёта») при изменении дёргает
+        // серверное событие: бэк пересчитывает строку (в т.ч. суженные типы
+        // субконто в `__subkontoAllowedTypes`) и присылает обновлённые строки.
+        const columnEvent = col.formEvent
         return {
           id: col.code,
           header: getLocalizedName(col, language),
@@ -151,6 +156,13 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
               control={form.control}
               language={language}
               serverFilterParams={serverFilterParams}
+              onValueChange={
+                columnEvent
+                  ? () => {
+                      triggerEvent(columnEvent)
+                    }
+                  : undefined
+              }
             />
           ),
         }
@@ -166,6 +178,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     fieldFilters,
     visibilityMap,
     orgSourceValue,
+    triggerEvent,
   ])
 
   const table = useReactTable({

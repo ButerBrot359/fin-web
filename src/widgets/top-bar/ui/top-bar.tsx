@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next'
 import UserIcon from '@/shared/assets/icons/user.svg'
 import MenuIcon from '@/shared/assets/icons/menu.svg'
 import { Button } from '@/shared/ui/buttons'
+import { ConfirmDialog } from '@/shared/ui/confirm-dialog/confirm-dialog'
 
 import { TOOLBAR_ACTIONS } from '../lib/consts/toolbar-actions'
+import { useLanguageSwitch } from '../lib/hooks/use-language-switch'
 
 const LANGUAGE_LABELS: Record<string, string> = {
   ru: 'РУС',
@@ -14,11 +16,8 @@ const LANGUAGE_LABELS: Record<string, string> = {
 
 export const TopBar = () => {
   const { t, i18n } = useTranslation()
-
-  const toggleLanguage = () => {
-    const nextLang = i18n.language === 'ru' ? 'kz' : 'ru'
-    void i18n.changeLanguage(nextLang)
-  }
+  const { confirmOpen, requestToggle, confirmSwitch, cancelSwitch } =
+    useLanguageSwitch()
 
   return (
     <div className="flex justify-end">
@@ -43,7 +42,7 @@ export const TopBar = () => {
         <Button
           variant="tertiary"
           aria-label="Switch language"
-          onClick={toggleLanguage}
+          onClick={requestToggle}
           className="px-2"
         >
           <Typography variant="body2" className="font-medium">
@@ -68,6 +67,16 @@ export const TopBar = () => {
           startIcon={<MenuIcon className="h-5 w-5" />}
         />
       </nav>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title={t('languageSwitchDialog.title')}
+        message={t('languageSwitchDialog.message')}
+        confirmLabel={t('languageSwitchDialog.confirm')}
+        cancelLabel={t('actions.cancel')}
+        onConfirm={confirmSwitch}
+        onCancel={cancelSwitch}
+      />
     </div>
   )
 }

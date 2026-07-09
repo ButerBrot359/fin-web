@@ -15,6 +15,9 @@ export interface SduiCacheEntry {
   formSessionId: string | null
   revision: number | null
   viewState: Record<string, unknown>
+  // Были ли несохранённые изменения на момент ухода со вкладки —
+  // нужен для confirm при переключении языка (SCRUM-268)
+  dirty: boolean
 }
 
 interface SduiCacheStore {
@@ -22,6 +25,7 @@ interface SduiCacheStore {
   save: (route: string, entry: SduiCacheEntry) => void
   get: (route: string) => SduiCacheEntry | undefined
   remove: (route: string) => void
+  clear: () => void
 }
 
 export const useSduiCacheStore = create<SduiCacheStore>((set, get) => ({
@@ -35,4 +39,5 @@ export const useSduiCacheStore = create<SduiCacheStore>((set, get) => ({
       delete next[route]
       return { cache: next }
     }),
+  clear: () => set({ cache: {} }),
 }))

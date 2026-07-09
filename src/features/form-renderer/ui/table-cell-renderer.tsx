@@ -418,8 +418,13 @@ interface SubkontoObjectCellProps {
  * OBJECT-ячейка субконто ТЧ. Сужает пикер до фактического вида субконто по
  * «Счёту учёта» строки: `GET /account-plan/entries/{id}/subkonto-kinds`, запись
  * с position = номеру колонки (Субконто1/2/3). DICTIONARY/DOCUMENT → пикер
- * справочника/документа, ENUMS → перечисление. Если вида для позиции нет
- * (или COMPOSITE/PRIMITIVE) — полный составной тип (первый ссылочный член).
+ * справочника/документа, ENUMS → перечисление.
+ *
+ * Поведение по позиции при выбранном счёте:
+ *   - вид субконто есть  → пикер этого типа;
+ *   - вида нет (позиция > числа субконто счёта) → пустая неактивная ячейка;
+ *   - вид COMPOSITE/PRIMITIVE → полный составной тип (однозначно не сужается).
+ * Счёт не выбран / колонка не субконто → полный составной тип (как раньше).
  *
  * Реактивность: `useWatch` по счёту + queryKey по его id — смена счёта
  * перезапрашивает виды и перерисовывает тип без переоткрытия документа.
@@ -447,12 +452,68 @@ const SubkontoObjectCell = ({
       : accountValue
 
   const { kinds } = useAccountSubkontoKinds(accountId ?? null)
-
   const position = parseSubkontoPosition(column.code)
-  const narrowed =
-    position != null
-      ? kindToNarrowed(kinds.find((k) => k.position === position))
-      : null
+
+  // Полный составной тип колонки (первый ссылочный член) — прежнее поведение.
+  // Применяется, когда сузить нельзя: не субконто-колонка, счёт не выбран или
+  // вид субконто на позиции есть, но COMPOSITE/PRIMITIVE (однозначно не сужается).
+  const renderFullType = () => {
+    const firstType = (column.allowedTypes ?? []).find((at) =>
+      REFERENCE_DOMAIN_KINDS.has(at.domainKind)
+    )
+    if (firstType) {
+      const objectColumn = {
+        ...column,
+        domainKind: firstType.domainKind,
+        allowedTypes: [firstType],
+      }
+      return (
+        <Box sx={tableCellWrapperSx}>
+          <DictCell
+            name={name}
+            column={objectColumn}
+            control={control}
+            language={language}
+            serverFilterParams={serverFilterParams}
+          />
+        </Box>
+      )
+    }
+    // OBJECT без ссылочного типа — обычный текстовый ввод (как было).
+    return (
+      <Controller
+        name={name}
+        control={control}
+        render={({ field: { ref, ...field } }) => (
+          <TextInput
+            {...field}
+            inputRef={ref}
+            value={(field.value as string) || ''}
+            size="small"
+            autoFocus
+            sx={tableCellSx}
+          />
+        )}
+      />
+    )
+  }
+
+  // Не субконто-колонка или счёт строки не выбран → полный тип (как раньше).
+  if (position == null || accountId == null) return renderFullType()
+
+  const kind = kinds.find((k) => k.position === position)
+
+  // Счёт выбран, но на этой позиции у него нет вида субконто → ячейка пустая и
+  // неактивная (напр. у счёта 2411 всего 2 субконто → Субконто3 остаётся пустым).
+  if (!kind) {
+    return (
+      <Box sx={tableCellWrapperSx}>
+        <TextInput value="" disabled size="small" sx={tableCellSx} />
+      </Box>
+    )
+  }
+
+  const narrowed = kindToNarrowed(kind)
 
   if (narrowed && REFERENCE_DOMAIN_KINDS.has(narrowed.domainKind)) {
     const objectColumn = {
@@ -487,46 +548,8 @@ const SubkontoObjectCell = ({
     )
   }
 
-  // Fallback: полный составной тип (первый ссылочный член) — прежнее поведение.
-  const firstType = (column.allowedTypes ?? []).find((at) =>
-    REFERENCE_DOMAIN_KINDS.has(at.domainKind)
-  )
-  if (firstType) {
-    const objectColumn = {
-      ...column,
-      domainKind: firstType.domainKind,
-      allowedTypes: [firstType],
-    }
-    return (
-      <Box sx={tableCellWrapperSx}>
-        <DictCell
-          name={name}
-          column={objectColumn}
-          control={control}
-          language={language}
-          serverFilterParams={serverFilterParams}
-        />
-      </Box>
-    )
-  }
-
-  // OBJECT без ссылочного типа — обычный текстовый ввод (как было).
-  return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field: { ref, ...field } }) => (
-        <TextInput
-          {...field}
-          inputRef={ref}
-          value={(field.value as string) || ''}
-          size="small"
-          autoFocus
-          sx={tableCellSx}
-        />
-      )}
-    />
-  )
+  // Вид на позиции есть, но COMPOSITE/PRIMITIVE — однозначно не сужается.
+  return renderFullType()
 }
 
 interface CellInputProps extends TableCellRendererProps {

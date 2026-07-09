@@ -130,8 +130,15 @@ const DictCell = ({
   control,
   language,
   serverFilterParams,
-}: TableCellRendererProps) => {
+  valueTypeCode,
+}: TableCellRendererProps & { valueTypeCode?: string }) => {
   const resolved = resolveAttributeDomain(column)
+
+  // Составное субконто: сохраняем конкретный тип значения, чтобы serialize
+  // отправил {type, id} (иначе бэк по одному id не знает вид субконто и берёт
+  // первый — документ «Заявка ГПС» — и проводка получается неверной).
+  const stampType = (raw: Record<string, unknown> | null | undefined) =>
+    raw ? (valueTypeCode ? { ...raw, _typeCode: valueTypeCode } : raw) : null
   const searchUrl =
     resolved && REFERENCE_DOMAIN_KINDS.has(resolved.domain)
       ? getUniversalSearchUrl(resolved.domain, resolved.typeCode)
@@ -223,7 +230,7 @@ const DictCell = ({
           domain: resolved.domain,
           typeCode: resolved.typeCode,
           onSelect: (val: SelectOption) => {
-            fieldOnChange(val.raw ?? null)
+            fieldOnChange(stampType(val.raw))
           },
         })
       }
@@ -237,7 +244,7 @@ const DictCell = ({
           typeCode: resolved.typeCode,
           entryId,
           onSelect: (val: SelectOption) => {
-            fieldOnChange(val.raw ?? null)
+            fieldOnChange(stampType(val.raw))
           },
         })
       }
@@ -255,7 +262,7 @@ const DictCell = ({
         const showAllHandler = handleShowAll
           ? () => {
               handleShowAll((val: SelectOption) => {
-                field.onChange(val.raw ?? null)
+                field.onChange(stampType(val.raw))
               })
             }
           : undefined
@@ -286,7 +293,7 @@ const DictCell = ({
             options={options}
             disabled={disabled}
             onChange={(newOption) => {
-              field.onChange(newOption?.raw ?? null)
+              field.onChange(stampType(newOption?.raw))
             }}
             onInputChange={
               isServerSearch
@@ -316,10 +323,16 @@ const EnumCell = ({
   name,
   column,
   control,
-}: Omit<TableCellRendererProps, 'language'>) => {
+  valueTypeCode,
+}: Omit<TableCellRendererProps, 'language'> & { valueTypeCode?: string }) => {
   const enumTypeCode =
     (column.allowedTypes as { typeCode: string }[] | undefined)?.[0]
       ?.typeCode ?? ''
+
+  // Составное субконто-перечисление: сохраняем тип, чтобы serialize отправил
+  // {type, id} (см. DictCell.stampType).
+  const stampType = (raw: Record<string, unknown> | null | undefined) =>
+    raw ? (valueTypeCode ? { ...raw, _typeCode: valueTypeCode } : raw) : null
 
   const [opened, setOpened] = useState(false)
 
@@ -357,7 +370,7 @@ const EnumCell = ({
             value={currentValue}
             options={options}
             onChange={(newOption) => {
-              field.onChange(newOption?.raw ?? null)
+              field.onChange(stampType(newOption?.raw))
             }}
             onOpen={() => {
               setOpened(true)
@@ -531,6 +544,7 @@ const SubkontoObjectCell = ({
           control={control}
           language={language}
           serverFilterParams={serverFilterParams}
+          valueTypeCode={narrowed.typeCode}
         />
       </Box>
     )
@@ -543,7 +557,12 @@ const SubkontoObjectCell = ({
     } as DocumentAttribute
     return (
       <Box sx={tableCellWrapperSx}>
-        <EnumCell name={name} column={enumColumn} control={control} />
+        <EnumCell
+          name={name}
+          column={enumColumn}
+          control={control}
+          valueTypeCode={narrowed.typeCode}
+        />
       </Box>
     )
   }

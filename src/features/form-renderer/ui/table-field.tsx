@@ -23,7 +23,7 @@ import { buildEmptyRow } from '../lib/utils/build-empty-row'
 import { fieldFilterToSearchParams } from '../lib/utils/field-filter-params'
 import { isFieldVisible, tableColumnPath } from '../lib/utils/field-path'
 import {
-  getOrgScopeSourceField,
+  getOrgScopeSourceFields,
   synthesizeReferenceFilter,
 } from '../lib/utils/org-scoped-filter'
 import { TableCellRenderer } from './table-cell-renderer'
@@ -69,13 +69,23 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     visibilityMap,
   } = useFormRendererContext()
 
-  // Источник отбора для ссылочных колонок ТЧ (напр. МОЛ → «Организация»
-  // документа из шапки). Значение читаем live — фильтр реактивен.
-  const orgSourceField = useMemo(
-    () => columns.map(getOrgScopeSourceField).find(Boolean),
+  // Поля-источники отбора для ссылочных колонок ТЧ (напр. МОЛ → «Организация»
+  // документа из шапки; «Договор контрагента» → «Организация» + «Контрагент»).
+  // Значения читаем live — фильтр реактивен.
+  const orgSourceFields = useMemo(
+    () => [...new Set(columns.flatMap(getOrgScopeSourceFields))],
     [columns]
   )
-  const orgSourceValue = form.watch(orgSourceField ?? '')
+  const orgSourceValues = form.watch(
+    orgSourceFields.length > 0 ? orgSourceFields : ['']
+  )
+  // Сериализованные id источников — стабильный триггер пересчёта колонок.
+  const orgSourceSignature = orgSourceFields
+    .map(
+      (code, i) =>
+        `${code}:${(orgSourceValues[i] as { id?: unknown } | null | undefined)?.id ?? ''}`
+    )
+    .join(',')
 
   // Ensure the table field is initialised in form state before useFieldArray
   useEffect(() => {
@@ -145,7 +155,10 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
         // живого значения поля-источника (МОЛ → «Организация» документа).
         const effectiveFilter =
           fieldFilters[tableColumnPath(attribute.code, col.code)] ??
-          synthesizeReferenceFilter(col, () => orgSourceValue)
+          synthesizeReferenceFilter(col, (code) => {
+            const idx = orgSourceFields.indexOf(code)
+            return idx >= 0 ? orgSourceValues[idx] : undefined
+          })
         const serverFilterParams = fieldFilterToSearchParams(effectiveFilter)
         return {
           id: col.code,
@@ -166,6 +179,8 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     )
 
     return [rowNumCol, ...dataCols]
+    // orgSourceValues читается по актуальному рендеру; пересчёт триггерит orgSourceSignature.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     columns,
     language,
@@ -173,7 +188,8 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     form.control,
     fieldFilters,
     visibilityMap,
-    orgSourceValue,
+    orgSourceFields,
+    orgSourceSignature,
   ])
 
   const table = useReactTable({

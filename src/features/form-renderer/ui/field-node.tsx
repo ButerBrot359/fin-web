@@ -29,7 +29,7 @@ import {
 } from '../lib/utils/field-filter-params'
 import { headerFieldPath, isFieldVisible } from '../lib/utils/field-path'
 import {
-  getOrgScopeSourceField,
+  getOrgScopeSourceFields,
   synthesizeReferenceFilter,
 } from '../lib/utils/org-scoped-filter'
 import type { FieldDependency } from '../types/renderer-context'
@@ -82,15 +82,27 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
 
   const disabled = dependency ? !sourceValue : false
 
-  // Источник для отбора ссылочного поля (напр. МОЛ → «Организация» документа).
-  // Значение читаем live из формы — фильтр реактивен к смене организации.
-  const orgSourceField = attribute
-    ? getOrgScopeSourceField(attribute)
-    : undefined
-  const orgSourceValue = form.watch(orgSourceField ?? '')
+  // Поля-источники для отбора ссылочного поля (напр. МОЛ → «Организация»;
+  // «Договор контрагента» → «Организация» + «Контрагент»). Значения читаем live
+  // из формы — фильтр реактивен к их смене.
+  const orgSourceFields = useMemo(
+    () => (attribute ? getOrgScopeSourceFields(attribute) : []),
+    [attribute]
+  )
+  const orgSourceValues = form.watch(
+    orgSourceFields.length > 0 ? orgSourceFields : ['']
+  )
+  // Сериализованные id источников — стабильный триггер пересчёта searchParams
+  // (сам массив orgSourceValues пересоздаётся каждый рендер).
+  const orgSourceSignature = orgSourceFields
+    .map(
+      (code, i) =>
+        `${code}:${(orgSourceValues[i] as { id?: unknown } | null | undefined)?.id ?? ''}`
+    )
+    .join(',')
 
   // Фильтр поля: серверный `fieldFilters` имеет приоритет, иначе синтезируем
-  // из живого значения поля-источника. Объединяется с af-фильтром зависимости.
+  // из живых значений полей-источников. Объединяется с af-фильтром зависимости.
   const sourceId = sourceValue?.id
   const searchParams = useMemo(() => {
     const depParams =
@@ -99,12 +111,25 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
         : undefined
     const effectiveFilter =
       fieldFilters[node.code] ??
-      synthesizeReferenceFilter(attribute, () => orgSourceValue)
+      synthesizeReferenceFilter(attribute, (code) => {
+        const idx = orgSourceFields.indexOf(code)
+        return idx >= 0 ? orgSourceValues[idx] : undefined
+      })
     return mergeSearchParams(
       mergeSearchParams(depParams, fieldFilterToSearchParams(effectiveFilter)),
       selectionModeToSearchParams(attribute?.referenceSelectionMode)
     )
-  }, [dependency, sourceId, fieldFilters, node.code, attribute, orgSourceValue])
+    // orgSourceValues читается по актуальному рендеру; пересчёт триггерит orgSourceSignature.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    dependency,
+    sourceId,
+    fieldFilters,
+    node.code,
+    attribute,
+    orgSourceFields,
+    orgSourceSignature,
+  ])
 
   if (!attribute) return null
 

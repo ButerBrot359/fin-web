@@ -10,3 +10,4 @@ export { setWorkspaceTabGateway, openPanelTab } from './lib/workspace-tab-gatewa
 export type { OpenPanelTabParams, WorkspaceTabGatewayImpl } from './lib/workspace-tab-gateway'
 export { usePanelStore } from './lib/stores/panel-store'
 export { WorkspacePanelHost } from './ui/workspace-panel-host'
+export { hasSduiUnsavedWork, closeAllSduiSessions } from './lib/language-session-control'

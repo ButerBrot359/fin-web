@@ -1,6 +1,8 @@
 import axios from 'axios'
+import i18n from 'i18next'
 
 import type { ViewRequest, ViewResponse, ConflictError } from '../types/view'
+import { resolveViewLanguage } from './view-language'
 
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -24,7 +26,10 @@ export class ViewConflictError extends Error {
 export const viewTransport = {
   post: async (req: ViewRequest): Promise<ViewResponse> => {
     try {
-      const res = await instance.post<ViewResponse>('/api/view', req)
+      const res = await instance.post<ViewResponse>('/api/view', {
+        ...req,
+        language: resolveViewLanguage(i18n.language),
+      })
       return res.data
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 409) {

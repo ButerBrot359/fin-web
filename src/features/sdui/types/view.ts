@@ -32,6 +32,8 @@ export interface ViewRequest {
   route?: string
   action: ViewAction
   state?: Record<string, unknown>
+  // Язык интерфейса формы; сервер читает только на OPEN (SCRUM-268)
+  language?: string
 }
 
 export interface ViewResponse {

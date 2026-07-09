@@ -336,8 +336,8 @@
     "printNotImplemented": "Печать в разработке",
     "resizeHint": "Потяните, чтобы изменить ширину",
     "notGenerated": "Отчет не сформирован. Нажмите \"Сформировать\" для получения отчета.",
-    "showSettings": "Показать настройки",
     "hideSettings": "Скрыть настройки",
+    "showSettings": "Показать настройки",
     "detailSection": "Детализация",
     "filtersSection": "Отборы",
     "hideSettingsOnSubmit": "Скрывать настройки при формировании отчёта"

@@ -21,6 +21,10 @@ import { NumberInput } from '@/shared/ui/inputs/number-input'
 import { DateTimeInput } from '@/shared/ui/inputs/datetime-input'
 import { AutocompleteInput } from '@/shared/ui/inputs/autocomplete-input'
 import { useDictSidebarStore } from '@/features/dict-sidebar'
+import {
+  useAccountSubkontoKinds,
+  type AccountPlanSubkontoKindDto,
+} from '@/entities/account-plan'
 
 import { useCellDependency } from '../lib/hooks/use-cell-dependency'
 import { mergeSearchParams } from '../lib/utils/field-filter-params'
@@ -32,58 +36,8 @@ interface TableCellRendererProps {
   language: string
   /** Серверный фильтр ссылочного поля (query-параметры пикера). */
   serverFilterParams?: Record<string, string>
-  /**
-   * Дискретное изменение значения ячейки (выбор в пикере/чекбоксе/дате).
-   * Задан только для колонок с formEvent — дёргает серверное событие,
-   * чтобы бэк пересчитал строку (напр. суженные типы субконто по счёту).
-   */
-  onValueChange?: () => void
-}
-
-/**
- * Суженный тип ячейки-субконто для КОНКРЕТНОЙ строки ТЧ (ключ строки
- * `__subkontoAllowedTypes[<кодКолонки>]`). Тип определяется «Видами субконто»
- * счёта строки, поэтому приходит per-row, а не через props колонки.
- *
- * Толерантны к двум формам элемента, которые может отдать бэк:
- *  - составная (`props.allowedTypes` / CompositeFieldPropsResolver):
- *    `domainKind` + `targetTypeCode`;
- *  - нативная (AccountPlanSubkontoKindDto): `valueKind` + `value*TypeCode`.
- */
-interface NarrowedSubkontoType {
-  position: number
-  // Составная форма (совпадает с членом props.allowedTypes составного поля).
-  domainKind?: string
-  targetTypeCode?: string
-  presentation?: string
-  optionsSource?: { url: string; params?: Record<string, string> }
-  // Нативная форма видов субконто счёта (фолбэк совместимости).
-  valueKind?: string
-  valueDictionaryTypeCode?: string | null
-  valueEnumsTypeCode?: string | null
-  valueDocumentTypeCode?: string | null
-}
-
-/** Служебный ключ строки ТЧ: суженные типы ячеек-субконто (см. NarrowedSubkontoType). */
-const SUBKONTO_ALLOWED_TYPES_KEY = '__subkontoAllowedTypes'
-
-/**
- * Приводит член суженного списка к паре {домен, typeCode} независимо от формы.
- * Составная форма приоритетна; иначе — нативные поля вида субконто счёта.
- * Возвращает null, если тип не резолвится (напр. COMPOSITE/PRIMITIVE).
- */
-const resolveNarrowedMember = (
-  member: NarrowedSubkontoType
-): { domainKind: string; typeCode: string } | null => {
-  const domainKind = member.domainKind ?? member.valueKind
-  const typeCode =
-    member.targetTypeCode ??
-    member.valueDictionaryTypeCode ??
-    member.valueEnumsTypeCode ??
-    member.valueDocumentTypeCode ??
-    undefined
-  if (!domainKind || !typeCode) return null
-  return { domainKind, typeCode }
+  /** Код колонки «Счёт учёта» ТЧ — источник сужения типов субконто по строке. */
+  accountColumnCode?: string
 }
 
 const tableCellSx: SxProps<Theme> = {
@@ -176,7 +130,6 @@ const DictCell = ({
   control,
   language,
   serverFilterParams,
-  onValueChange,
 }: TableCellRendererProps) => {
   const resolved = resolveAttributeDomain(column)
   const searchUrl =
@@ -271,7 +224,6 @@ const DictCell = ({
           typeCode: resolved.typeCode,
           onSelect: (val: SelectOption) => {
             fieldOnChange(val.raw ?? null)
-            onValueChange?.()
           },
         })
       }
@@ -286,7 +238,6 @@ const DictCell = ({
           entryId,
           onSelect: (val: SelectOption) => {
             fieldOnChange(val.raw ?? null)
-            onValueChange?.()
           },
         })
       }
@@ -305,7 +256,6 @@ const DictCell = ({
           ? () => {
               handleShowAll((val: SelectOption) => {
                 field.onChange(val.raw ?? null)
-                onValueChange?.()
               })
             }
           : undefined
@@ -337,7 +287,6 @@ const DictCell = ({
             disabled={disabled}
             onChange={(newOption) => {
               field.onChange(newOption?.raw ?? null)
-              onValueChange?.()
             }}
             onInputChange={
               isServerSearch
@@ -367,7 +316,6 @@ const EnumCell = ({
   name,
   column,
   control,
-  onValueChange,
 }: Omit<TableCellRendererProps, 'language'>) => {
   const enumTypeCode =
     (column.allowedTypes as { typeCode: string }[] | undefined)?.[0]
@@ -410,7 +358,6 @@ const EnumCell = ({
             options={options}
             onChange={(newOption) => {
               field.onChange(newOption?.raw ?? null)
-              onValueChange?.()
             }}
             onOpen={() => {
               setOpened(true)
@@ -424,11 +371,162 @@ const EnumCell = ({
   )
 }
 
+/**
+ * Вид субконто счёта (AccountPlanSubkontoKindDto) → пара {домен, typeCode} для
+ * пикера. COMPOSITE/PRIMITIVE однозначно не сужаются → null (полный тип).
+ */
+const kindToNarrowed = (
+  kind: AccountPlanSubkontoKindDto | undefined
+): { domainKind: string; typeCode: string } | null => {
+  if (!kind) return null
+  switch (kind.valueKind) {
+    case 'DICTIONARY':
+      return kind.valueDictionaryTypeCode
+        ? { domainKind: 'DICTIONARY', typeCode: kind.valueDictionaryTypeCode }
+        : null
+    case 'DOCUMENT':
+      return kind.valueDocumentTypeCode
+        ? { domainKind: 'DOCUMENT', typeCode: kind.valueDocumentTypeCode }
+        : null
+    case 'ENUMS':
+      return kind.valueEnumsTypeCode
+        ? { domainKind: 'ENUMS', typeCode: kind.valueEnumsTypeCode }
+        : null
+    default:
+      return null
+  }
+}
+
+/** Позиция субконто из кода колонки: `...Subkonto1` → 1 (иначе undefined). */
+const parseSubkontoPosition = (code: string): number | undefined => {
+  const match = /Subkonto(\d+)$/i.exec(code)
+  return match ? Number(match[1]) : undefined
+}
+
+interface SubkontoObjectCellProps {
+  name: string
+  column: DocumentAttribute
+  control: Control<Record<string, unknown>>
+  language: string
+  serverFilterParams?: Record<string, string>
+  /** RHF-путь к «Счёту учёта» этой строки. */
+  accountFieldName?: string
+}
+
+/**
+ * OBJECT-ячейка субконто ТЧ. Сужает пикер до фактического вида субконто по
+ * «Счёту учёта» строки: `GET /account-plan/entries/{id}/subkonto-kinds`, запись
+ * с position = номеру колонки (Субконто1/2/3). DICTIONARY/DOCUMENT → пикер
+ * справочника/документа, ENUMS → перечисление. Если вида для позиции нет
+ * (или COMPOSITE/PRIMITIVE) — полный составной тип (первый ссылочный член).
+ *
+ * Реактивность: `useWatch` по счёту + queryKey по его id — смена счёта
+ * перезапрашивает виды и перерисовывает тип без переоткрытия документа.
+ */
+const SubkontoObjectCell = ({
+  name,
+  column,
+  control,
+  language,
+  serverFilterParams,
+  accountFieldName,
+}: SubkontoObjectCellProps) => {
+  // Сентинел вместо пустого name: подписка на несуществующий путь не вызывает
+  // ре-рендеры (в отличие от name '' — тот подписывает на всю форму).
+  const accountValue = useWatch({
+    control,
+    name: accountFieldName ?? '__subkonto_no_account__',
+  }) as { id?: number | string } | null | undefined
+  const accountId = accountFieldName ? accountValue?.id : undefined
+
+  const { kinds } = useAccountSubkontoKinds(accountId ?? null)
+
+  const position = parseSubkontoPosition(column.code)
+  const narrowed =
+    position != null
+      ? kindToNarrowed(kinds.find((k) => k.position === position))
+      : null
+
+  if (narrowed && REFERENCE_DOMAIN_KINDS.has(narrowed.domainKind)) {
+    const objectColumn = {
+      ...column,
+      domainKind: narrowed.domainKind,
+      allowedTypes: [
+        { domainKind: narrowed.domainKind, typeCode: narrowed.typeCode },
+      ],
+    } as DocumentAttribute
+    return (
+      <Box sx={tableCellWrapperSx}>
+        <DictCell
+          name={name}
+          column={objectColumn}
+          control={control}
+          language={language}
+          serverFilterParams={serverFilterParams}
+        />
+      </Box>
+    )
+  }
+
+  if (narrowed && narrowed.domainKind === 'ENUMS') {
+    const enumColumn = {
+      ...column,
+      allowedTypes: [{ domainKind: 'ENUMS', typeCode: narrowed.typeCode }],
+    } as DocumentAttribute
+    return (
+      <Box sx={tableCellWrapperSx}>
+        <EnumCell name={name} column={enumColumn} control={control} />
+      </Box>
+    )
+  }
+
+  // Fallback: полный составной тип (первый ссылочный член) — прежнее поведение.
+  const firstType = (column.allowedTypes ?? []).find((at) =>
+    REFERENCE_DOMAIN_KINDS.has(at.domainKind)
+  )
+  if (firstType) {
+    const objectColumn = {
+      ...column,
+      domainKind: firstType.domainKind,
+      allowedTypes: [firstType],
+    }
+    return (
+      <Box sx={tableCellWrapperSx}>
+        <DictCell
+          name={name}
+          column={objectColumn}
+          control={control}
+          language={language}
+          serverFilterParams={serverFilterParams}
+        />
+      </Box>
+    )
+  }
+
+  // OBJECT без ссылочного типа — обычный текстовый ввод (как было).
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field: { ref, ...field } }) => (
+        <TextInput
+          {...field}
+          inputRef={ref}
+          value={(field.value as string) || ''}
+          size="small"
+          autoFocus
+          sx={tableCellSx}
+        />
+      )}
+    />
+  )
+}
+
 interface CellInputProps extends TableCellRendererProps {
   onPickerOpen?: () => void
   onPickerClose?: () => void
-  /** Суженные типы ячейки-субконто для этой строки (per-row, из ключа строки). */
-  subkontoAllowedTypes?: NarrowedSubkontoType[]
+  /** RHF-путь к «Счёту учёта» этой строки (для запроса видов субконто). */
+  accountFieldName?: string
 }
 
 const CellInput = ({
@@ -439,8 +537,7 @@ const CellInput = ({
   serverFilterParams,
   onPickerOpen,
   onPickerClose,
-  subkontoAllowedTypes,
-  onValueChange,
+  accountFieldName,
 }: CellInputProps) => {
   const { dataType } = column
   const cellResolved = resolveAttributeDomain(column)
@@ -454,7 +551,6 @@ const CellInput = ({
           control={control}
           language={language}
           serverFilterParams={serverFilterParams}
-          onValueChange={onValueChange}
         />
       </Box>
     )
@@ -463,93 +559,22 @@ const CellInput = ({
   if (dataType === 'ENUMS') {
     return (
       <Box sx={tableCellWrapperSx}>
-        <EnumCell
-          name={name}
-          column={column}
-          control={control}
-          onValueChange={onValueChange}
-        />
+        <EnumCell name={name} column={column} control={control} />
       </Box>
     )
   }
 
   if (dataType === 'OBJECT') {
-    // Per-row сужение (backend `__subkontoAllowedTypes`): конкретный вид субконто
-    // по счёту ЭТОЙ строки перекрывает полный составной тип колонки. Обычно один
-    // член → селектор типа не нужен, сразу пикер нужного справочника/перечисления.
-    const narrowedMember = (subkontoAllowedTypes ?? [])
-      .slice()
-      .sort((a, b) => a.position - b.position)[0]
-    const narrowed = narrowedMember
-      ? resolveNarrowedMember(narrowedMember)
-      : null
-
-    if (narrowed) {
-      if (REFERENCE_DOMAIN_KINDS.has(narrowed.domainKind)) {
-        const objectColumn = {
-          ...column,
-          domainKind: narrowed.domainKind,
-          allowedTypes: [
-            { domainKind: narrowed.domainKind, typeCode: narrowed.typeCode },
-          ],
-        } as DocumentAttribute
-        return (
-          <Box sx={tableCellWrapperSx}>
-            <DictCell
-              name={name}
-              column={objectColumn}
-              control={control}
-              language={language}
-              serverFilterParams={serverFilterParams}
-              onValueChange={onValueChange}
-            />
-          </Box>
-        )
-      }
-
-      // Домен без optionsSource (ENUMS) — штатный путь перечислений.
-      if (narrowed.domainKind === 'ENUMS') {
-        const enumColumn = {
-          ...column,
-          allowedTypes: [{ domainKind: 'ENUMS', typeCode: narrowed.typeCode }],
-        } as DocumentAttribute
-        return (
-          <Box sx={tableCellWrapperSx}>
-            <EnumCell
-              name={name}
-              column={enumColumn}
-              control={control}
-              onValueChange={onValueChange}
-            />
-          </Box>
-        )
-      }
-      // Нерезолвимый домен — падаем в штатное поведение полного типа ниже.
-    }
-
-    const allowedTypes = column.allowedTypes ?? []
-    const firstType = allowedTypes.find((at) =>
-      REFERENCE_DOMAIN_KINDS.has(at.domainKind)
+    return (
+      <SubkontoObjectCell
+        name={name}
+        column={column}
+        control={control}
+        language={language}
+        serverFilterParams={serverFilterParams}
+        accountFieldName={accountFieldName}
+      />
     )
-    if (firstType) {
-      const objectColumn = {
-        ...column,
-        domainKind: firstType.domainKind,
-        allowedTypes: [firstType],
-      }
-      return (
-        <Box sx={tableCellWrapperSx}>
-          <DictCell
-            name={name}
-            column={objectColumn}
-            control={control}
-            language={language}
-            serverFilterParams={serverFilterParams}
-            onValueChange={onValueChange}
-          />
-        </Box>
-      )
-    }
   }
 
   switch (dataType) {
@@ -603,10 +628,7 @@ const CellInput = ({
             <Box sx={tableCellWrapperSx}>
               <DateTimeInput
                 value={(field.value as string | undefined) ?? undefined}
-                onChange={(v) => {
-                  field.onChange(v)
-                  onValueChange?.()
-                }}
+                onChange={field.onChange}
                 dateOnly={dataType === 'DATE'}
                 size="small"
                 onOpen={onPickerOpen}
@@ -643,7 +665,7 @@ export const TableCellRenderer = ({
   control,
   language,
   serverFilterParams,
-  onValueChange,
+  accountColumnCode,
 }: TableCellRendererProps) => {
   const { dataType } = column
   const [editing, setEditing] = useState(false)
@@ -651,15 +673,12 @@ export const TableCellRenderer = ({
   const pickerOpenRef = useRef(false)
   const value = useWatch({ control, name })
 
-  // Суженные типы субконто приходят per-row: читаем их с уровня строки
-  // (`<путьСтроки>.__subkontoAllowedTypes`), а не из props колонки. useWatch
-  // делает сужение реактивным, если строку пропатчат (напр. ответом события).
+  // Путь к «Счёту учёта» этой строки — по нему субконто-ячейка берёт виды
+  // субконто счёта (эндпоинт /subkonto-kinds) для сужения типа.
   const rowPath = name.slice(0, name.lastIndexOf('.'))
-  const subkontoMap = useWatch({
-    control,
-    name: `${rowPath}.${SUBKONTO_ALLOWED_TYPES_KEY}`,
-  }) as Record<string, NarrowedSubkontoType[]> | undefined
-  const subkontoAllowedTypes = subkontoMap?.[column.code]
+  const accountFieldName = accountColumnCode
+    ? `${rowPath}.${accountColumnCode}`
+    : undefined
 
   if (dataType === 'BOOLEAN') {
     return (
@@ -671,7 +690,6 @@ export const TableCellRenderer = ({
             checked={!!field.value}
             onChange={(e) => {
               field.onChange(e.target.checked)
-              onValueChange?.()
             }}
             size="small"
             sx={{ p: 0 }}
@@ -716,8 +734,7 @@ export const TableCellRenderer = ({
         control={control}
         language={language}
         serverFilterParams={serverFilterParams}
-        subkontoAllowedTypes={subkontoAllowedTypes}
-        onValueChange={onValueChange}
+        accountFieldName={accountFieldName}
         onPickerOpen={() => {
           pickerOpenRef.current = true
         }}

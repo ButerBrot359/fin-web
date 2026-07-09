@@ -16,9 +16,6 @@ export const serializeTableRows = (
         const serialized: Record<string, unknown> = {}
         for (const [key, value] of Object.entries(row)) {
           if (key === '_rhfId') continue
-          // Служебный per-row ключ сужения субконто — не значение ячейки,
-          // на сервер не отправляем (backend отдаёт его только на OPEN).
-          if (key === '__subkontoAllowedTypes') continue
           if (value && typeof value === 'object' && 'id' in value) {
             const obj = value as { id: number; _typeCode?: string }
             if (obj._typeCode) {

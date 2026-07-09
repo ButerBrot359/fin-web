@@ -34,6 +34,52 @@ interface TableCellRendererProps {
   serverFilterParams?: Record<string, string>
 }
 
+/**
+ * Суженный тип ячейки-субконто для КОНКРЕТНОЙ строки ТЧ (ключ строки
+ * `__subkontoAllowedTypes[<кодКолонки>]`). Тип определяется «Видами субконто»
+ * счёта строки, поэтому приходит per-row, а не через props колонки.
+ *
+ * Толерантны к двум формам элемента, которые может отдать бэк:
+ *  - составная (`props.allowedTypes` / CompositeFieldPropsResolver):
+ *    `domainKind` + `targetTypeCode`;
+ *  - нативная (AccountPlanSubkontoKindDto): `valueKind` + `value*TypeCode`.
+ */
+interface NarrowedSubkontoType {
+  position: number
+  // Составная форма (совпадает с членом props.allowedTypes составного поля).
+  domainKind?: string
+  targetTypeCode?: string
+  presentation?: string
+  optionsSource?: { url: string; params?: Record<string, string> }
+  // Нативная форма видов субконто счёта (фолбэк совместимости).
+  valueKind?: string
+  valueDictionaryTypeCode?: string | null
+  valueEnumsTypeCode?: string | null
+  valueDocumentTypeCode?: string | null
+}
+
+/** Служебный ключ строки ТЧ: суженные типы ячеек-субконто (см. NarrowedSubkontoType). */
+const SUBKONTO_ALLOWED_TYPES_KEY = '__subkontoAllowedTypes'
+
+/**
+ * Приводит член суженного списка к паре {домен, typeCode} независимо от формы.
+ * Составная форма приоритетна; иначе — нативные поля вида субконто счёта.
+ * Возвращает null, если тип не резолвится (напр. COMPOSITE/PRIMITIVE).
+ */
+const resolveNarrowedMember = (
+  member: NarrowedSubkontoType
+): { domainKind: string; typeCode: string } | null => {
+  const domainKind = member.domainKind ?? member.valueKind
+  const typeCode =
+    member.targetTypeCode ??
+    member.valueDictionaryTypeCode ??
+    member.valueEnumsTypeCode ??
+    member.valueDocumentTypeCode ??
+    undefined
+  if (!domainKind || !typeCode) return null
+  return { domainKind, typeCode }
+}
+
 const tableCellSx: SxProps<Theme> = {
   mb: 0,
   position: 'static',
@@ -368,6 +414,8 @@ const EnumCell = ({
 interface CellInputProps extends TableCellRendererProps {
   onPickerOpen?: () => void
   onPickerClose?: () => void
+  /** Суженные типы ячейки-субконто для этой строки (per-row, из ключа строки). */
+  subkontoAllowedTypes?: NarrowedSubkontoType[]
 }
 
 const CellInput = ({
@@ -378,6 +426,7 @@ const CellInput = ({
   serverFilterParams,
   onPickerOpen,
   onPickerClose,
+  subkontoAllowedTypes,
 }: CellInputProps) => {
   const { dataType } = column
   const cellResolved = resolveAttributeDomain(column)
@@ -405,6 +454,53 @@ const CellInput = ({
   }
 
   if (dataType === 'OBJECT') {
+    // Per-row сужение (backend `__subkontoAllowedTypes`): конкретный вид субконто
+    // по счёту ЭТОЙ строки перекрывает полный составной тип колонки. Обычно один
+    // член → селектор типа не нужен, сразу пикер нужного справочника/перечисления.
+    const narrowedMember = (subkontoAllowedTypes ?? [])
+      .slice()
+      .sort((a, b) => a.position - b.position)[0]
+    const narrowed = narrowedMember
+      ? resolveNarrowedMember(narrowedMember)
+      : null
+
+    if (narrowed) {
+      if (REFERENCE_DOMAIN_KINDS.has(narrowed.domainKind)) {
+        const objectColumn = {
+          ...column,
+          domainKind: narrowed.domainKind,
+          allowedTypes: [
+            { domainKind: narrowed.domainKind, typeCode: narrowed.typeCode },
+          ],
+        } as DocumentAttribute
+        return (
+          <Box sx={tableCellWrapperSx}>
+            <DictCell
+              name={name}
+              column={objectColumn}
+              control={control}
+              language={language}
+              serverFilterParams={serverFilterParams}
+            />
+          </Box>
+        )
+      }
+
+      // Домен без optionsSource (ENUMS) — штатный путь перечислений.
+      if (narrowed.domainKind === 'ENUMS') {
+        const enumColumn = {
+          ...column,
+          allowedTypes: [{ domainKind: 'ENUMS', typeCode: narrowed.typeCode }],
+        } as DocumentAttribute
+        return (
+          <Box sx={tableCellWrapperSx}>
+            <EnumCell name={name} column={enumColumn} control={control} />
+          </Box>
+        )
+      }
+      // Нерезолвимый домен — падаем в штатное поведение полного типа ниже.
+    }
+
     const allowedTypes = column.allowedTypes ?? []
     const firstType = allowedTypes.find((at) =>
       REFERENCE_DOMAIN_KINDS.has(at.domainKind)
@@ -524,6 +620,16 @@ export const TableCellRenderer = ({
   const pickerOpenRef = useRef(false)
   const value = useWatch({ control, name })
 
+  // Суженные типы субконто приходят per-row: читаем их с уровня строки
+  // (`<путьСтроки>.__subkontoAllowedTypes`), а не из props колонки. useWatch
+  // делает сужение реактивным, если строку пропатчат (напр. ответом события).
+  const rowPath = name.slice(0, name.lastIndexOf('.'))
+  const subkontoMap = useWatch({
+    control,
+    name: `${rowPath}.${SUBKONTO_ALLOWED_TYPES_KEY}`,
+  }) as Record<string, NarrowedSubkontoType[]> | undefined
+  const subkontoAllowedTypes = subkontoMap?.[column.code]
+
   if (dataType === 'BOOLEAN') {
     return (
       <Controller
@@ -578,6 +684,7 @@ export const TableCellRenderer = ({
         control={control}
         language={language}
         serverFilterParams={serverFilterParams}
+        subkontoAllowedTypes={subkontoAllowedTypes}
         onPickerOpen={() => {
           pickerOpenRef.current = true
         }}

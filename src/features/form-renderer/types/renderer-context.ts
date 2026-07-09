@@ -20,6 +20,8 @@ export interface FormRendererContextValue {
   language: string
   optionsMap: Record<string, SelectOption[]>
   onFieldChange: (fieldCode: string) => void
+  /** Прямой запуск серверного события по имени (для formEvent колонок ТЧ). */
+  triggerEvent: (eventName: string) => void
   dependencyMap: Map<string, FieldDependency>
   /** Серверные фильтры ссылочных полей по пути поля (см. `FieldFilter`). */
   fieldFilters: Record<string, FieldFilter>

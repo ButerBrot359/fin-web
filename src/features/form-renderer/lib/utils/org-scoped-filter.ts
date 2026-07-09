@@ -21,6 +21,13 @@ const ORG_SCOPED_REFERENCE_TYPES: Record<
     sourceField: 'Organizatsiya',
     targetAttribute: 'Organizatsiya',
   },
+  // «Договор контрагента» ограничивается договорами «Контрагента» документа:
+  // владелец договора (Vladelets) = выбранный в документе Контрагент. Отбор
+  // применяется и к выпадашке, и к пикеру «Показать все» (оба берут searchParams).
+  DogovoryKontragentov: {
+    sourceField: 'Kontragent',
+    targetAttribute: 'Vladelets',
+  },
 }
 
 const getRule = (attribute: DocumentAttribute) => {

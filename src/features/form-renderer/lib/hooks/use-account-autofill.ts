@@ -19,6 +19,7 @@ interface UchetParamsData {
   vidVNAId?: number | string | null
   schetUchetaAmortizatsiiId?: number | string | null
   schetUchetaAmortizatsiiCode?: string | null
+  molId?: number | string | null
   pervonachalnayaStoimost?: number | null
   tekushchayaStoimost?: number | null
   srokPoleznogoIspolzovaniya?: number | null
@@ -65,7 +66,7 @@ async function fetchAndApply(
   // Пустой data ({}) — счёт не задан: ничего не подставляем.
   if (!data) return
   // Копируем id в локали — сужение переживает промежуточные вызовы функций.
-  const { schetUchetaId, vidVNAId, schetUchetaAmortizatsiiId } = data
+  const { schetUchetaId, vidVNAId, schetUchetaAmortizatsiiId, molId } = data
   if (schetUchetaId == null) return
 
   // Гвард от гонки: применяем, только если в строке всё ещё выбран тот же элемент.
@@ -97,6 +98,10 @@ async function fetchAndApply(
       buildAccountRef(schetUchetaAmortizatsiiId, data.schetUchetaAmortizatsiiCode)
     )
   }
+  // МОЛ — ссылка, в ответе только id (без кода): ставим id, показ резолвится позже.
+  if (targets.molCol && molId != null) {
+    setCell(form, `${rowPath}.${targets.molCol}`, buildAccountRef(molId, ''))
+  }
   set(targets.pervonachalnayaStoimostCol, data.pervonachalnayaStoimost)
   set(targets.tekushchayaStoimostCol, data.tekushchayaStoimost)
   set(targets.spiCol, data.srokPoleznogoIspolzovaniya)
@@ -113,12 +118,17 @@ async function fetchAndApply(
 export function useAccountAutofill(
   form: UseFormReturn<Record<string, unknown>>,
   tableCode: string,
-  columns: DocumentAttribute[]
+  columns: DocumentAttribute[],
+  /** Дата документа (шапка) — для «Даты ввода» строки ОС/НМА. */
+  documentDate?: unknown
 ): void {
   const config: AccountAutofillConfig | null = useMemo(
     () => resolveAccountAutofill(columns),
     [columns]
   )
+  // Актуальная дата документа без пересоздания подписки.
+  const documentDateRef = useRef(documentDate)
+  documentDateRef.current = documentDate
   // Строки, для которых нужно пропустить один подбор по ВидВНА (см. fetchAndApply).
   const suppressVidVna = useRef<Set<string>>(new Set())
 
@@ -145,6 +155,13 @@ export function useAccountAutofill(
 
       const id = getRefId(form, `${rowPath}.${trigger.triggerCol}`)
       if (id == null) return
+
+      // «Дата ввода» строки ОС/НМА = дата документа (не из эндпоинта): ставим при
+      // выборе актива. Бэк её не возвращает.
+      const docDate = documentDateRef.current
+      if (trigger.kind === 'asset' && config.targets.dataVvodaCol && docDate != null) {
+        setCell(form, `${rowPath}.${config.targets.dataVvodaCol}`, docDate)
+      }
 
       void fetchAndApply(
         trigger.kind,

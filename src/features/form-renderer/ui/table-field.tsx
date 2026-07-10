@@ -65,11 +65,28 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   const {
+    attributeMap,
     registerTableReplacer,
     unregisterTableReplacer,
     fieldFilters,
     visibilityMap,
   } = useFormRendererContext()
+
+  // Дата документа (шапка) — для «Даты ввода» строки ОС/НМА (см. useAccountAutofill).
+  const documentDateFieldCode = useMemo(() => {
+    for (const attr of attributeMap.values()) {
+      if (
+        (attr.dataType === 'DATE' || attr.dataType === 'DATETIME') &&
+        (attr.code1C === 'Дата' || attr.code === 'Data')
+      ) {
+        return attr.code
+      }
+    }
+    return undefined
+  }, [attributeMap])
+  const documentDate = form.watch(
+    documentDateFieldCode ?? '__document_date_absent__'
+  )
 
   // Поля-источники отбора для ссылочных колонок ТЧ (напр. МОЛ → «Организация»
   // документа из шапки; «Договор контрагента» → «Организация» + «Контрагент»).
@@ -146,9 +163,9 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     }
   }, [form, attribute.code, sumRecalc])
 
-  // Автоподстановка «Счёт учёта» по выбранному элементу (Номенклатура/ВидВНА):
-  // GET-эндпоинт по id → значения в ячейки строки (см. хук).
-  useAccountAutofill(form, attribute.code, columns)
+  // Автоподстановка полей строки по выбранному элементу (Актив/ВидВНА/Номенклатура):
+  // GET-эндпоинт по id → значения в ячейки строки; «Дата ввода» — из даты документа.
+  useAccountAutofill(form, attribute.code, columns, documentDate)
 
   // Sync useFieldArray when form is reset with external data (existing entry)
   const hasSynced = useRef(false)

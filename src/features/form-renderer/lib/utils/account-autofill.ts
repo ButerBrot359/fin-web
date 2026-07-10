@@ -15,10 +15,13 @@ export interface AutofillTargets {
   schetUchetaCol?: string
   vidVnaCol?: string
   schetAmortizatsiiCol?: string
+  molCol?: string
   spiCol?: string
   nachislyatCol?: string
   pervonachalnayaStoimostCol?: string
   tekushchayaStoimostCol?: string
+  /** «Дата ввода» строки ОС/НМА — фронт ставит из даты документа (шапка). */
+  dataVvodaCol?: string
 }
 
 export interface AccountAutofillConfig {
@@ -75,6 +78,11 @@ export const resolveAccountAutofill = (
       ['VidVna', 'VidVNA'],
       ['ВидВНА', 'Вид ВНА', 'Вид актива']
     ),
+    molCol: findCol(
+      columns,
+      ['MOL', 'MaterialnoOtvetstvennoeLitso'],
+      ['МОЛ', 'Материально ответственное лицо', 'Материально-ответственное лицо']
+    ),
     spiCol: findCol(
       columns,
       ['SrokPoleznogoIspolzovaniya'],
@@ -94,6 +102,11 @@ export const resolveAccountAutofill = (
       columns,
       ['TekushchayaStoimost'],
       ['Текущая стоимость']
+    ),
+    dataVvodaCol: findCol(
+      columns,
+      ['DataVvoda', 'DataPrinyatiyaKUchetu', 'DataPrinyatiya'],
+      ['Дата ввода', 'Дата принятия к учету', 'Дата принятия к учёту']
     ),
   }
 

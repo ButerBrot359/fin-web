@@ -133,8 +133,11 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
         form.getValues(`${rowPath}.${price}`)
       )
       // setValue(sum) снова триггерит watch, но colCode=sum ≠ qty/price — без цикла.
+      // `as never`: RHF выводит тип значения по динамическому пути как undefined.
       if (Number(form.getValues(`${rowPath}.${sum}`)) !== newSum) {
-        form.setValue(`${rowPath}.${sum}`, newSum, { shouldDirty: true })
+        form.setValue(`${rowPath}.${sum}`, newSum as never, {
+          shouldDirty: true,
+        })
       }
     })
     return () => {

@@ -299,6 +299,17 @@ export interface ReportResultDto {
   form?: ReportFormDto
 }
 
+/**
+ * Спец-DTO нетабличного отчёта-бланка (напр. «Инвентарная карточка ОС»): его
+ * /run отдаёт не columns/rows, а печатную модель + служебные сообщения. На
+ * фронте отображается серверным PDF (/print); отсюда читаем только
+ * неблокирующие сообщения пред-валидации.
+ */
+export interface ReportBlankResultDto {
+  /** Сообщения пред-валидации (B0): «Строка №N: …». Неблокирующие (как в 1С). */
+  validationMessages?: string[]
+}
+
 /** Структурный отбор в теле запроса формирования отчёта. */
 export interface RunReportFilter {
   field: string

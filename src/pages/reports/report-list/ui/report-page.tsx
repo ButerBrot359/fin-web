@@ -32,9 +32,11 @@ import { useRunReport } from '../lib/hooks/use-run-report'
 import { useFilterFields } from '../lib/hooks/use-filter-fields'
 import { buildReportExport } from '../lib/utils/build-report-export'
 import { ReportResultTable } from './report-result-table'
+import { ReportPdfView } from './report-pdf-view'
 import { ReportParamField, type ReportParamValue } from './report-param-field'
 import { MemorialOrderSettingsPanel } from './memorial-order-settings-panel'
 import type {
+  ReportBlankResultDto,
   ReportIndicatorDto,
   ReportMetaDto,
   ReportParameterDto,
@@ -440,6 +442,7 @@ export const ReportPage = () => {
       onSubmit={handleSubmit}
       onClose={handleClose}
       applied={appliedBody != null}
+      appliedBody={appliedBody}
       isDraft={isDraft}
       isRunning={isRunning}
       isRunError={isRunError}
@@ -463,6 +466,7 @@ interface ReportPageContentProps {
   onSubmit: () => void
   onClose: () => void
   applied: boolean
+  appliedBody: RunReportBody | null
   isDraft: boolean
   isRunning: boolean
   isRunError: boolean
@@ -489,6 +493,7 @@ const ReportPageContent = ({
   onSubmit,
   onClose,
   applied,
+  appliedBody,
   isDraft,
   isRunning,
   isRunError,
@@ -923,11 +928,21 @@ const ReportPageContent = ({
                 </div>
               )}
 
+              {/* Нетабличный результат (спец-DTO без columns/rows — отчёт-бланк,
+                  например «Инвентарная карточка ОС»): показываем серверный PDF
+                  (/print) + неблокирующий список B0-сообщений (как окно сообщений
+                  формы 1С). Если печать не реализована (501) — ReportPdfView сам
+                  покажет фолбэк «отдельный экран». */}
               {!isRunning && !isRunError && result && !tabularResult && (
-                <div className="rounded-md bg-ui-02 px-4 py-6 text-center">
-                  <Typography variant="body1" className="text-ui-06">
-                    {t('reports.separateScreen')}
-                  </Typography>
+                <div className="report-print-area">
+                  <ReportPdfView
+                    code={code}
+                    body={appliedBody}
+                    validationMessages={
+                      (result as unknown as ReportBlankResultDto)
+                        .validationMessages
+                    }
+                  />
                 </div>
               )}
 

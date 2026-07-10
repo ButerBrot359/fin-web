@@ -28,6 +28,11 @@ export const fieldFilterToSearchParams = (
  * Объединяет два набора query-параметров пикера. Параметр `af` (отбор по
  * атрибуту) склеивается через запятую, чтобы фильтр зависимости и серверный
  * фильтр поля применялись вместе, а не затирали друг друга.
+ *
+ * Дубли `af`-условий убираются: зависимость (`dependsOn`) и синтезированный
+ * фильтр поля часто дают одно и то же условие (напр. оба `Vladelets:<id>`).
+ * Без дедупликации получалось `af=Vladelets:1,Vladelets:1` — бэкенд не мог
+ * разобрать склеенное значение и игнорировал отбор (возвращал все записи).
  */
 export const mergeSearchParams = (
   a: Record<string, string> | undefined,
@@ -36,7 +41,11 @@ export const mergeSearchParams = (
   if (!a) return b
   if (!b) return a
   const merged = { ...a, ...b }
-  if (a.af && b.af) merged.af = `${a.af},${b.af}`
+  if (a.af && b.af) {
+    merged.af = Array.from(
+      new Set([...a.af.split(','), ...b.af.split(',')].filter(Boolean))
+    ).join(',')
+  }
   return merged
 }
 

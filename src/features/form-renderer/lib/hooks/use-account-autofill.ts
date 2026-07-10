@@ -52,7 +52,7 @@ async function fetchAndApply(
   if (schetUchetaId == null) return
 
   // Гвард от гонки: применяем только если в строке всё ещё выбран тот же элемент.
-  const current = form.getValues(`${rowPath}.${cfg.triggerCol}`) as {
+  const current = form.getValues(`${rowPath}.${cfg.triggerCol}`) as unknown as {
     id?: number | string
   } | null
   if (current?.id !== id) return
@@ -104,9 +104,9 @@ export function useAccountAutofill(
       if (colCode !== config.triggerCol) return
 
       const rowPath = `${tableCode}.${rowIndex}`
-      const selected = form.getValues(`${rowPath}.${config.triggerCol}`) as {
-        id?: number | string
-      } | null
+      const selected = form.getValues(
+        `${rowPath}.${config.triggerCol}`
+      ) as unknown as { id?: number | string } | null
       const id = selected?.id
       if (id == null) return
 

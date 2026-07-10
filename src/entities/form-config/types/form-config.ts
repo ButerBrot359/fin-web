@@ -65,9 +65,35 @@ export interface FieldFilter {
   attributeEquals?: Record<string, number | string>
 }
 
+/** Условие правила оформления: сравнение значения `attribute` строки с `value`. */
+export interface AppearanceCondition {
+  attribute: string
+  operator: 'less' | 'greater' | 'equal'
+  value: number | string
+}
+
+/** Правило: при выполнении `when` показать `text` цветом `textColor`. */
+export interface AppearanceRule {
+  when: AppearanceCondition
+  text: string
+  textColor?: string
+}
+
+/**
+ * Условное оформление ячейки колонки ТЧ (доменное, не per-row): один набор
+ * правил применяется ко всем строкам указанных `tableParts`, вычисление — по
+ * значению строки. Приходит в `formConfig` (OPEN + события), как `fieldFilters`.
+ */
+export interface ConditionalAppearance {
+  tableParts: string[]
+  column: string
+  rules: AppearanceRule[]
+}
+
 export interface FormConfig {
   name: string
   title: string
   layout: FormNode
   fieldFilters?: Record<string, FieldFilter>
+  conditionalAppearance?: ConditionalAppearance[]
 }

@@ -2,7 +2,7 @@ import type { RefObject } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import type { DocumentAttribute } from '@/entities/document-type'
-import type { FieldFilter } from '@/entities/form-config'
+import type { FieldFilter, ConditionalAppearance } from '@/entities/form-config'
 import type { SelectOption } from '@/shared/types/select-option'
 
 export interface FieldDependency {
@@ -29,6 +29,11 @@ export interface FormRendererContextValue {
    * отсутствие ключа → видим (fallback на статический `showInForm`).
    */
   visibilityMap: Record<string, boolean>
+  /**
+   * Условное оформление ячеек ТЧ из `formConfig.conditionalAppearance` (OPEN +
+   * события). Доменное: набор правил на колонку, вычисление — по значению строки.
+   */
+  conditionalAppearance: ConditionalAppearance[]
   registerTableReplacer: (
     code: string,
     replacer: (rows: Record<string, unknown>[]) => void

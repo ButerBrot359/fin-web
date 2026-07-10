@@ -22,6 +22,7 @@ import { useTableColumns } from '../lib/hooks/use-table-columns'
 import { useAccountAutofill } from '../lib/hooks/use-account-autofill'
 import { buildEmptyRow } from '../lib/utils/build-empty-row'
 import { resolveSumRecalc, computeRowSum } from '../lib/utils/row-sum-recalc'
+import { findColumnAppearanceRules } from '../lib/utils/conditional-appearance'
 import { fieldFilterToSearchParams } from '../lib/utils/field-filter-params'
 import { isFieldVisible, tableColumnPath } from '../lib/utils/field-path'
 import {
@@ -70,6 +71,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     unregisterTableReplacer,
     fieldFilters,
     visibilityMap,
+    conditionalAppearance,
   } = useFormRendererContext()
 
   // Дата документа (шапка) — для «Даты ввода» строки ОС/НМА (см. useAccountAutofill).
@@ -221,6 +223,12 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
             return idx >= 0 ? orgSourceValues[idx] : undefined
           })
         const serverFilterParams = fieldFilterToSearchParams(effectiveFilter)
+        // Условное оформление колонки (напр. «Излишки/недостачи Количество»).
+        const appearanceRules = findColumnAppearanceRules(
+          conditionalAppearance,
+          attribute.code,
+          col.code
+        )
         return {
           id: col.code,
           header: getLocalizedName(col, language),
@@ -233,6 +241,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
               language={language}
               serverFilterParams={serverFilterParams}
               accountColumnCode={accountColumnCode}
+              appearanceRules={appearanceRules}
             />
           ),
         }
@@ -249,6 +258,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     form.control,
     fieldFilters,
     visibilityMap,
+    conditionalAppearance,
     orgSourceFields,
     orgSourceSignature,
   ])

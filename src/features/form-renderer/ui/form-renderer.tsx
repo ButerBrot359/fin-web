@@ -3,7 +3,7 @@ import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UseFormReturn } from 'react-hook-form'
 
-import type { FormConfig } from '@/entities/form-config'
+import type { FormConfig, ConditionalAppearance } from '@/entities/form-config'
 import type { DocumentAttribute } from '@/entities/document-type'
 
 import { FormRendererContext } from '../lib/hooks/use-form-renderer-context'
@@ -18,6 +18,7 @@ export interface FormRendererHandle {
 }
 
 const EMPTY_FIELD_FILTERS: NonNullable<FormConfig['fieldFilters']> = {}
+const EMPTY_APPEARANCE: ConditionalAppearance[] = []
 
 interface FormRendererProps {
   config: FormConfig
@@ -65,12 +66,19 @@ export const FormRenderer = ({
     {}
   )
 
+  // Условное оформление ячеек ТЧ из formConfig.conditionalAppearance: приходит на
+  // OPEN и на событиях. Динамическое значение (если пришло) приоритетнее статического.
+  const [dynamicAppearance, setDynamicAppearance] = useState<
+    ConditionalAppearance[] | null
+  >(null)
+
   const { onFieldChange, triggerEvent } = useFormEvents({
     typeCode,
     attributes,
     form,
     tableReplacersRef,
     onVisibility: setVisibilityMap,
+    onConditionalAppearance: setDynamicAppearance,
   })
 
   const clearAllTables = useCallback(() => {
@@ -88,6 +96,8 @@ export const FormRenderer = ({
   }, [handleRef, triggerEvent, clearAllTables])
 
   const fieldFilters = config.fieldFilters ?? EMPTY_FIELD_FILTERS
+  const conditionalAppearance =
+    dynamicAppearance ?? config.conditionalAppearance ?? EMPTY_APPEARANCE
 
   const contextValue = useMemo(
     () => ({
@@ -99,6 +109,7 @@ export const FormRenderer = ({
       dependencyMap,
       fieldFilters,
       visibilityMap,
+      conditionalAppearance,
       registerTableReplacer,
       unregisterTableReplacer,
     }),
@@ -111,6 +122,7 @@ export const FormRenderer = ({
       dependencyMap,
       fieldFilters,
       visibilityMap,
+      conditionalAppearance,
       registerTableReplacer,
       unregisterTableReplacer,
     ]

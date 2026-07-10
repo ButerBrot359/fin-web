@@ -19,6 +19,7 @@ import { resolveAttributeDomain } from '@/shared/lib/consts/data-types'
 import emptyImage from '@/shared/assets/info/empty.png'
 
 import { useTableColumns } from '../lib/hooks/use-table-columns'
+import { useAccountAutofill } from '../lib/hooks/use-account-autofill'
 import { buildEmptyRow } from '../lib/utils/build-empty-row'
 import { resolveSumRecalc, computeRowSum } from '../lib/utils/row-sum-recalc'
 import { fieldFilterToSearchParams } from '../lib/utils/field-filter-params'
@@ -144,6 +145,10 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
       subscription.unsubscribe()
     }
   }, [form, attribute.code, sumRecalc])
+
+  // Автоподстановка «Счёт учёта» по выбранному элементу (Номенклатура/ВидВНА):
+  // GET-эндпоинт по id → значения в ячейки строки (см. хук).
+  useAccountAutofill(form, attribute.code, columns)
 
   // Sync useFieldArray when form is reset with external data (existing entry)
   const hasSynced = useRef(false)

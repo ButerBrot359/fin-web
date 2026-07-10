@@ -306,6 +306,11 @@ export interface ReportResultDto {
  * неблокирующие сообщения пред-валидации.
  */
 export interface ReportBlankResultDto {
+  /**
+   * Печатные карточки (per-asset). Пустой массив ⇒ печатать нечего (нет активов
+   * на выбранную дату / все отсеяны валидацией) — /print звать не нужно.
+   */
+  cards?: unknown[]
   /** Сообщения пред-валидации (B0): «Строка №N: …». Неблокирующие (как в 1С). */
   validationMessages?: string[]
 }

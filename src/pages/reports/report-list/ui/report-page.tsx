@@ -938,6 +938,10 @@ const ReportPageContent = ({
                   <ReportPdfView
                     code={code}
                     body={appliedBody}
+                    hasCards={
+                      ((result as unknown as ReportBlankResultDto).cards
+                        ?.length ?? 0) > 0
+                    }
                     validationMessages={
                       (result as unknown as ReportBlankResultDto)
                         .validationMessages

@@ -12,6 +12,12 @@ interface ReportPdfViewProps {
   /** Применённое тело запроса (те же параметры, что и у /run). */
   body: RunReportBody | null
   /**
+   * Есть ли что печатать (из /run: cards.length > 0). Если карточек нет — /print
+   * НЕ вызывается (иначе бэк отвечает 400 «no printable assets»); показываем
+   * только сообщения + «нет данных», как пустой результат в 1С.
+   */
+  hasCards: boolean
+  /**
    * Служебные сообщения пред-валидации (B0) из /run — неблокирующий список над
    * документом (как окно сообщений формы 1С). Пусто ⇒ блок не показывается.
    */
@@ -32,10 +38,16 @@ interface ReportPdfViewProps {
 export const ReportPdfView = ({
   code,
   body,
+  hasCards,
   validationMessages,
 }: ReportPdfViewProps) => {
   const { t } = useTranslation()
-  const { blob, isLoading, isError } = usePrintReport(code, body, body != null)
+  // Печать запрашиваем только когда есть что печатать — иначе бэк вернёт 400.
+  const { blob, isLoading, isError } = usePrintReport(
+    code,
+    body,
+    body != null && hasCards
+  )
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   // Объектный URL создаём из Blob и обязательно освобождаем при смене/анмаунте
@@ -78,6 +90,22 @@ export const ReportPdfView = ({
       </ul>
     </Alert>
   )
+
+  // Печатать нечего (нет ОС на выбранную дату / все отсеяны валидацией):
+  // показываем сообщения + «нет данных», как пустой результат в 1С. /print не
+  // вызываем (он бы вернул 400).
+  if (!hasCards) {
+    return (
+      <div className="flex flex-col gap-2">
+        {messagesBlock}
+        <div className="rounded-md bg-ui-02 px-4 py-6 text-center">
+          <Typography variant="body1" className="text-ui-06">
+            {t('reports.noData')}
+          </Typography>
+        </div>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (

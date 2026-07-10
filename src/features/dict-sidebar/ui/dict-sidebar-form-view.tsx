@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -95,7 +95,7 @@ export const DictSidebarFormView = ({
 
   useEffect(() => {
     if (!copyFromData || savedEntryId) return
-    const { Nomer: _, Kod: _k, ...restAttrs } = (copyFromData.attributes ?? {}) as Record<string, unknown>
+    const { Nomer: _, Kod: _k, ...restAttrs } = (copyFromData.attributes ?? {})
     const values: Record<string, unknown> = { ...restAttrs }
     values.nameRu = copyFromData.nameRu
     values.nameKz = copyFromData.nameKz
@@ -105,6 +105,19 @@ export const DictSidebarFormView = ({
       form.setValue(key, value, { shouldDirty: true })
     }
   }, [copyFromData, savedEntryId, form])
+
+  // Предзаполнение формы создания дефолтами из панели (напр. Vladelets = контрагент
+  // документа при создании нового договора). Только режим создания — не
+  // редактирование (entryId) и не копирование (copyFromId). Одноразово.
+  const seededDefaultsRef = useRef(false)
+  useEffect(() => {
+    if (savedEntryId || panel.copyFromId || seededDefaultsRef.current) return
+    if (!panel.defaults) return
+    seededDefaultsRef.current = true
+    for (const [key, value] of Object.entries(panel.defaults)) {
+      form.setValue(key, value, { shouldDirty: true })
+    }
+  }, [panel.defaults, panel.copyFromId, savedEntryId, form])
 
   // План счетов: «Подчинён счёту» — встроенное поле сущности (parentName),
   // а виды субконто — отдельная коллекция (subkontoKinds), показываемая своей

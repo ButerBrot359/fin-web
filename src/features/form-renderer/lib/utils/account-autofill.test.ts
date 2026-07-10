@@ -39,12 +39,14 @@ describe('resolveAccountAutofill', () => {
     const cfg = resolveAccountAutofill([
       col('OsnovnoeSredstvo'),
       col('VidVna'),
+      col('MOL'),
       account('SchetUcheta'),
       account('SchetUchetaAmortizatsii'),
       col('PervonachalnayaStoimost'),
       col('TekushchayaStoimost'),
       col('SrokPoleznogoIspolzovaniya'),
       col('NachislyatAmortizatsiyu', { dataType: 'BOOLEAN' }),
+      col('DataVvoda', { dataType: 'DATE' }),
     ])
     expect(cfg?.triggers).toEqual([
       { kind: 'asset', triggerCol: 'OsnovnoeSredstvo' },
@@ -54,10 +56,12 @@ describe('resolveAccountAutofill', () => {
       schetUchetaCol: 'SchetUcheta',
       schetAmortizatsiiCol: 'SchetUchetaAmortizatsii',
       vidVnaCol: 'VidVna',
+      molCol: 'MOL',
       spiCol: 'SrokPoleznogoIspolzovaniya',
       nachislyatCol: 'NachislyatAmortizatsiyu',
       pervonachalnayaStoimostCol: 'PervonachalnayaStoimost',
       tekushchayaStoimostCol: 'TekushchayaStoimost',
+      dataVvodaCol: 'DataVvoda',
     })
   })
 

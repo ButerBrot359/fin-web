@@ -6,6 +6,9 @@ export {
 export type {
   FormConfig,
   FieldFilter,
+  ConditionalAppearance,
+  AppearanceRule,
+  AppearanceCondition,
   FormNode,
   VStackNode,
   HStackNode,

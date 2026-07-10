@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 
 import { apiService } from '@/shared/api/api'
 import type { DocumentAttribute } from '@/entities/document-type'
+import type { ConditionalAppearance } from '@/entities/form-config'
 
 import type { TableReplacersRef } from '../../types/renderer-context'
 
@@ -32,6 +33,8 @@ interface UseFormEventsParams {
   tableReplacersRef: TableReplacersRef
   /** Динамическая видимость из `formConfig.visibility` ответа handle-event. */
   onVisibility?: (visibility: Record<string, boolean>) => void
+  /** Условное оформление из `formConfig.conditionalAppearance` ответа handle-event. */
+  onConditionalAppearance?: (appearance: ConditionalAppearance[]) => void
 }
 
 export const useFormEvents = ({
@@ -40,6 +43,7 @@ export const useFormEvents = ({
   form,
   tableReplacersRef,
   onVisibility,
+  onConditionalAppearance,
 }: UseFormEventsParams) => {
   const eventFieldMap = useMemo(
     () =>
@@ -59,10 +63,16 @@ export const useFormEvents = ({
       }),
     onSuccess: (response, variables) => {
       const formConfig = response.data.data.formConfig as
-        | { visibility?: Record<string, boolean> }
+        | {
+            visibility?: Record<string, boolean>
+            conditionalAppearance?: ConditionalAppearance[]
+          }
         | undefined
       if (formConfig?.visibility && onVisibility) {
         onVisibility(formConfig.visibility)
+      }
+      if (formConfig?.conditionalAppearance && onConditionalAppearance) {
+        onConditionalAppearance(formConfig.conditionalAppearance)
       }
 
       if (variables.seedOnly) return

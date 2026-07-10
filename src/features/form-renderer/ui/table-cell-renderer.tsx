@@ -26,8 +26,11 @@ import {
   type AccountPlanSubkontoKindDto,
 } from '@/entities/account-plan'
 
+import type { AppearanceRule } from '@/entities/form-config'
+
 import { useCellDependency } from '../lib/hooks/use-cell-dependency'
 import { mergeSearchParams } from '../lib/utils/field-filter-params'
+import { evaluateAppearance } from '../lib/utils/conditional-appearance'
 
 interface TableCellRendererProps {
   name: string
@@ -38,6 +41,8 @@ interface TableCellRendererProps {
   serverFilterParams?: Record<string, string>
   /** Код колонки «Счёт учёта» ТЧ — источник сужения типов субконто по строке. */
   accountColumnCode?: string
+  /** Правила условного оформления колонки (текст/цвет по значению ячейки). */
+  appearanceRules?: AppearanceRule[]
 }
 
 const tableCellSx: SxProps<Theme> = {
@@ -720,6 +725,7 @@ export const TableCellRenderer = ({
   language,
   serverFilterParams,
   accountColumnCode,
+  appearanceRules,
 }: TableCellRendererProps) => {
   const { dataType } = column
   const [editing, setEditing] = useState(false)
@@ -754,10 +760,16 @@ export const TableCellRenderer = ({
   }
 
   if (!editing) {
-    const displayText = formatCellValue(value, column)
+    // \u0423\u0441\u043B\u043E\u0432\u043D\u043E\u0435 \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 (\u043D\u0430\u043F\u0440. \u00AB\u041D\u0435\u0434\u043E\u0441\u0442\u0430\u0447\u0430\u00BB/\u00AB\u0418\u0437\u043B\u0438\u0448\u043A\u0438\u00BB): \u043F\u0440\u0438 \u0441\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u0438 \u043F\u0440\u0430\u0432\u0438\u043B\u0430
+    // \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u043C \u0435\u0433\u043E \u0442\u0435\u043A\u0441\u0442 \u0446\u0432\u0435\u0442\u043E\u043C \u0432\u043C\u0435\u0441\u0442\u043E \u0447\u0438\u0441\u043B\u0430, \u0438\u043D\u0430\u0447\u0435 \u2014 \u043E\u0431\u044B\u0447\u043D\u043E\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435.
+    const appearance = evaluateAppearance(appearanceRules, value)
+    const displayText = appearance
+      ? appearance.text
+      : formatCellValue(value, column)
     return (
       <div
         className="flex min-h-[28px] cursor-text items-center truncate border-b-2 border-transparent px-2 py-1 text-body2 text-ui-06 hover:bg-ui-04"
+        style={appearance?.color ? { color: appearance.color } : undefined}
         onClick={() => {
           setEditing(true)
         }}

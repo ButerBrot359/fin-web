@@ -23,14 +23,10 @@ const ORG_SCOPED_REFERENCE_TYPES: Record<string, ScopeRule[]> = {
   FizicheskieLitsa: [
     { sourceField: 'Organizatsiya', targetAttribute: 'Organizatsiya' },
   ],
-  // «Договор контрагента» ограничивается договорами выбранного «Контрагента»:
-  // Vladelets (владелец договора) = Контрагент документа. По организации НЕ
-  // фильтруем — договор привязан к контрагенту через владельца, а реквизит
-  // «Организация» у договора часто не заполнен (строгий отбор по нему скрыл бы
-  // валидные договоры). Отбор применяется и к выпадашке, и к пикеру «Показать все».
-  DogovoryKontragentov: [
-    { sourceField: 'Kontragent', targetAttribute: 'Vladelets' },
-  ],
+  // NB: «Договор контрагента» (DogovoryKontragentov) здесь НЕ добавляем — у типа
+  // уже есть серверный dependsOn (Kontragent → Vladelets), из которого рендерер
+  // строит af=Vladelets:<id>. Дублирующее правило давало второй такой же af и
+  // ломало отбор (af=Vladelets:1,Vladelets:1 → бэкенд не разбирал → показывал всё).
 }
 
 const getRules = (attribute: DocumentAttribute): ScopeRule[] | undefined => {

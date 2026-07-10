@@ -302,6 +302,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                 mode: 'create',
                 domain: panel.domain,
                 typeCode: panel.typeCode,
+                defaults: panel.defaults,
                 onSelect: panel.onSelect,
               })
             }}

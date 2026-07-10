@@ -97,7 +97,7 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
   const orgSourceSignature = orgSourceFields
     .map(
       (code, i) =>
-        `${code}:${(orgSourceValues[i] as { id?: unknown } | null | undefined)?.id ?? ''}`
+        `${code}:${String((orgSourceValues[i] as { id?: string | number } | null | undefined)?.id ?? '')}`
     )
     .join(',')
 
@@ -239,12 +239,22 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
 
       const push = useDictSidebarStore.getState().push
 
+      // При создании новой записи из ссылочного поля предзаполняем реквизит-владелец
+      // значением поля-источника по зависимости справочника (dependsOn). Напр. для
+      // «Договор контрагента» это Vladelets = Контрагент документа — пользователю не
+      // нужно выбирать контрагента вручную в форме нового договора.
+      const createDefaults =
+        dependency && sourceValue
+          ? { [dependency.targetAttributeCode]: sourceValue }
+          : undefined
+
       const handleShowAll = (onSelect: (value: SelectOption) => void) => {
         push({
           mode: 'list',
           domain: resolved.domain,
           typeCode: resolved.typeCode,
           searchParams,
+          defaults: createDefaults,
           onSelect,
         })
       }
@@ -254,6 +264,7 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
           mode: 'create',
           domain: resolved.domain,
           typeCode: resolved.typeCode,
+          defaults: createDefaults,
           onSelect: (val: SelectOption) => {
             form.setValue(node.code, val.raw ?? null)
             handleValueChange?.()

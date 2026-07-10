@@ -158,6 +158,15 @@ const MO13_FILTER_CODES = new Set([
 ])
 
 /**
+ * Тумблер формы (напр. «Язык формы (рус/каз)») — BOOLEAN с group='form'.
+ * Для табличных СКД-отчётов (ТМЗ) выносим его из шапки в чекбоксы вкладки
+ * «Основные» панели настроек (как «Детализация» у МО). У бланков-МО язык уже
+ * попадает в свою панель через detailParams — там isFormToggle не используется.
+ */
+const isFormToggle = (p: ReportParameterDto): boolean =>
+  p.dataType === 'BOOLEAN' && p.group === 'form'
+
+/**
  * Сериализация значений параметров в строку URL (одно поле на параметр).
  * Массивы/объекты — JSON. Так applied-параметры переживают переключение
  * вкладок и обновление страницы (как в ОСВ).
@@ -570,10 +579,21 @@ const ReportPageContent = ({
       ? result
       : null
 
-  // DIMENSION-колонки результата — пункты вкладки «Группировка».
+  // DIMENSION-колонки — пункты вкладки «Группировка». До формирования берём из
+  // meta.columns (коды совпадают с колонками результата), чтобы разрезы были
+  // видны сразу, как в 1С; после формирования — из результата.
   const dimensionColumns = useMemo(
-    () => tabularResult?.columns.filter((c) => c.role === 'DIMENSION') ?? [],
-    [tabularResult]
+    () =>
+      (tabularResult?.columns ?? meta.columns).filter(
+        (c) => c.role === 'DIMENSION'
+      ),
+    [tabularResult, meta.columns]
+  )
+
+  // Тумблеры формы (язык и т.п.) — раздел вкладки «Основные» панели ТМЗ (как у МО).
+  const formToggleParams = useMemo(
+    () => meta.parameters.filter(isFormToggle),
+    [meta.parameters]
   )
 
   // Состояние показателей (display-only): включён ли показатель. Инициализация
@@ -629,6 +649,21 @@ const ReportPageContent = ({
     })
   }
 
+  // Тумблеры формы (язык и т.п.) — чекбоксы вкладки «Основные». В отличие от
+  // показателей/группировки это реальные параметры отчёта (уходят в /run).
+  const formToggleItems = useMemo<ReportGroupItem[]>(
+    () =>
+      formToggleParams.map((p) => ({
+        key: p.code,
+        label: localized(p.titleRu, p.titleKz, isKz),
+        checked: values[p.code] === true,
+      })),
+    [formToggleParams, values, isKz]
+  )
+  const onToggleFormParam = (key: string) => {
+    setParamValue(key, values[key] !== true)
+  }
+
   // Колонки, скрытые настройками: выключенные показатели + скрытые группы.
   const hiddenColumns = useMemo<Set<string>>(() => {
     const set = new Set<string>(hiddenGroups)
@@ -650,9 +685,10 @@ const ReportPageContent = ({
       indicators.length > 0 ||
       periodicityParam != null ||
       accountParam != null ||
+      formToggleParams.length > 0 ||
       meta.columns.some((c) => c.role === 'DIMENSION' || c.role === 'MEASURE')
     )
-  }, [meta, indicators, periodicityParam, accountParam])
+  }, [meta, indicators, periodicityParam, accountParam, formToggleParams])
 
   const handlePrint = () => {
     window.print()
@@ -697,7 +733,8 @@ const ReportPageContent = ({
               (p) =>
                 !isPeriodicity(p) &&
                 !isPodrazdelenie(p) &&
-                !settingsParamCodes.has(p.code)
+                !settingsParamCodes.has(p.code) &&
+                !isFormToggle(p)
             )
             .map((param) => {
               const invalid =
@@ -923,6 +960,8 @@ const ReportPageContent = ({
         {hasSettings && settingsVisible && (
           <ReportSettingsPanel
             isKz={isKz}
+            formToggleItems={formToggleItems}
+            onToggleFormParam={onToggleFormParam}
             indicatorItems={indicatorItems}
             onToggleIndicator={onToggleIndicator}
             groupItems={groupItems}

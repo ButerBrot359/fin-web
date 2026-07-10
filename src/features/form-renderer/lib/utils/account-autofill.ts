@@ -1,19 +1,29 @@
 import type { DocumentAttribute } from '@/entities/document-type'
 import { resolveAttributeDomain } from '@/shared/lib/consts/data-types'
 
-/**
- * Конфиг автоподстановки «Счёт учёта» в строке ТЧ по выбранному элементу.
- * Триггер — Номенклатура (ТМЗ/Услуги) или ВидВНА (ОС/НМА). Значения — коды
- * колонок этой ТЧ; вся логика подбора счёта — на бэке (GET-эндпоинт).
- */
-export interface AccountAutofillConfig {
-  trigger: 'nomenklatura' | 'vidVna'
+/** Тип триггера автоподстановки — определяет GET-эндпоинт. */
+export type AutofillTriggerKind = 'asset' | 'vidVna' | 'nomenklatura'
+
+export interface AutofillTrigger {
+  kind: AutofillTriggerKind
+  /** Код колонки-триггера (Основное средство/НМА, ВидВНА, Номенклатура). */
   triggerCol: string
-  schetUchetaCol: string
-  /** Только для ВидВНА (ОС/НМА). */
+}
+
+/** Колонки-цели ТЧ, куда раскладывается ответ эндпоинта (какие есть). */
+export interface AutofillTargets {
+  schetUchetaCol?: string
+  vidVnaCol?: string
   schetAmortizatsiiCol?: string
   spiCol?: string
   nachislyatCol?: string
+  pervonachalnayaStoimostCol?: string
+  tekushchayaStoimostCol?: string
+}
+
+export interface AccountAutofillConfig {
+  triggers: AutofillTrigger[]
+  targets: AutofillTargets
 }
 
 const eqOrEnds = (code: string, root: string): boolean => {
@@ -42,14 +52,14 @@ const accountColumns = (columns: DocumentAttribute[]): DocumentAttribute[] =>
   )
 
 /**
- * Определяет триггер и целевые колонки. Возвращает null, если в ТЧ нет колонки
- * «Счёт учёта» или нет триггера (Номенклатура/ВидВНА) — тогда автоподстановки нет.
+ * Определяет триггеры (Основное средство/НМА, ВидВНА, Номенклатура) и целевые
+ * колонки ТЧ. Возвращает null, если нет колонки «Счёт учёта» или ни одного
+ * триггера. Вся логика подбора счёта — на бэке (GET по id элемента).
  */
 export const resolveAccountAutofill = (
   columns: DocumentAttribute[]
 ): AccountAutofillConfig | null => {
   const accounts = accountColumns(columns)
-  // «Счёт учёта» = ссылочный счёт, не являющийся счётом амортизации.
   const schetUchetaCol = (
     accounts.find((c) => !isAmort(c.code) && eqOrEnds(c.code, 'SchetUcheta')) ??
     accounts.find((c) => !isAmort(c.code)) ??
@@ -57,52 +67,73 @@ export const resolveAccountAutofill = (
   )?.code
   if (!schetUchetaCol) return null
 
-  const vidVnaCol = findCol(
+  const targets: AutofillTargets = {
+    schetUchetaCol,
+    schetAmortizatsiiCol: accounts.find((c) => isAmort(c.code))?.code,
+    vidVnaCol: findCol(
+      columns,
+      ['VidVna', 'VidVNA'],
+      ['ВидВНА', 'Вид ВНА', 'Вид актива']
+    ),
+    spiCol: findCol(
+      columns,
+      ['SrokPoleznogoIspolzovaniya'],
+      ['Срок полезного использования', 'СПИ']
+    ),
+    nachislyatCol: findCol(
+      columns,
+      ['NachislyatAmortizatsiyu'],
+      ['Начислять амортизацию']
+    ),
+    pervonachalnayaStoimostCol: findCol(
+      columns,
+      ['PervonachalnayaStoimost'],
+      ['Первоначальная стоимость']
+    ),
+    tekushchayaStoimostCol: findCol(
+      columns,
+      ['TekushchayaStoimost'],
+      ['Текущая стоимость']
+    ),
+  }
+
+  const triggers: AutofillTrigger[] = []
+
+  const assetCol = findCol(
     columns,
-    ['VidVna', 'VidVNA'],
-    ['ВидВНА', 'Вид ВНА', 'Вид актива']
+    ['OsnovnoeSredstvo', 'NematerialnyyAktiv', 'VneoborotnyyAktiv'],
+    ['Основное средство', 'Нематериальный актив', 'Внеоборотный актив', 'Актив']
   )
-  if (vidVnaCol) {
-    return {
-      trigger: 'vidVna',
-      triggerCol: vidVnaCol,
-      schetUchetaCol,
-      schetAmortizatsiiCol: accounts.find((c) => isAmort(c.code))?.code,
-      spiCol: findCol(
-        columns,
-        ['SrokPoleznogoIspolzovaniya'],
-        ['Срок полезного использования', 'СПИ']
-      ),
-      nachislyatCol: findCol(
-        columns,
-        ['NachislyatAmortizatsiyu'],
-        ['Начислять амортизацию']
-      ),
-    }
+  if (assetCol) triggers.push({ kind: 'asset', triggerCol: assetCol })
+
+  if (targets.vidVnaCol) {
+    triggers.push({ kind: 'vidVna', triggerCol: targets.vidVnaCol })
   }
 
   const nomenklaturaCol = findCol(columns, ['Nomenklatura'], ['Номенклатура'])
   if (nomenklaturaCol) {
-    return {
-      trigger: 'nomenklatura',
-      triggerCol: nomenklaturaCol,
-      schetUchetaCol,
-    }
+    triggers.push({ kind: 'nomenklatura', triggerCol: nomenklaturaCol })
   }
 
-  return null
+  return triggers.length > 0 ? { triggers, targets } : null
 }
 
-/** URL GET-эндпоинта подбора счёта по id выбранного элемента. */
+/** URL GET-эндпоинта подбора по типу триггера и id выбранного элемента. */
 export const accountAutofillUrl = (
-  cfg: AccountAutofillConfig,
+  kind: AutofillTriggerKind,
   id: number | string
-): string =>
-  cfg.trigger === 'vidVna'
-    ? `/api/vneoborotnye-aktivy/vid-vna/${id}/uchet-params`
-    : `/api/nomenklatura/${id}/schet-ucheta`
+): string => {
+  switch (kind) {
+    case 'asset':
+      return `/api/vneoborotnye-aktivy/asset/${id}/uchet-params`
+    case 'vidVna':
+      return `/api/vneoborotnye-aktivy/vid-vna/${id}/uchet-params`
+    case 'nomenklatura':
+      return `/api/nomenklatura/${id}/schet-ucheta`
+  }
+}
 
-/** Значение ссылки на счёт для ячейки-пикера: id (для сохранения) + код (для показа). */
+/** Значение ссылки на счёт/вид для ячейки-пикера: id (сохраняем) + код (показываем). */
 export const buildAccountRef = (
   id: number | string,
   code: unknown

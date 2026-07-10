@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import type { DocumentAttribute } from '@/entities/document-type'
@@ -9,79 +9,105 @@ import {
   accountAutofillUrl,
   buildAccountRef,
   type AccountAutofillConfig,
+  type AutofillTargets,
+  type AutofillTriggerKind,
 } from '../utils/account-autofill'
+
+interface UchetParamsData {
+  schetUchetaId?: number | string | null
+  schetUchetaCode?: string | null
+  vidVNAId?: number | string | null
+  schetUchetaAmortizatsiiId?: number | string | null
+  schetUchetaAmortizatsiiCode?: string | null
+  pervonachalnayaStoimost?: number | null
+  tekushchayaStoimost?: number | null
+  srokPoleznogoIspolzovaniya?: number | null
+  nachislyatAmortizatsiyu?: boolean | null
+}
 
 interface UchetParamsResponse {
   success: boolean
-  data: {
-    schetUchetaId?: number | string | null
-    schetUchetaCode?: string | null
-    schetUchetaAmortizatsiiId?: number | string | null
-    schetUchetaAmortizatsiiCode?: string | null
-    srokPoleznogoIspolzovaniya?: number | null
-    nachislyatAmortizatsiyu?: boolean | null
-  }
+  data: UchetParamsData
 }
 
-// RHF по динамическому пути на форме Record<string, unknown> выводит тип значения
-// как undefined — приводим значение через `never`.
+// RHF по динамическому пути (форма Record<string, unknown>) выводит тип значения
+// как undefined — приводим через `never`/`unknown`.
 const setCell = (
   form: UseFormReturn<Record<string, unknown>>,
   path: string,
   value: unknown
 ) => form.setValue(path, value as never, { shouldDirty: true })
 
+const getRefId = (
+  form: UseFormReturn<Record<string, unknown>>,
+  path: string
+): number | string | undefined =>
+  (form.getValues(path) as unknown as { id?: number | string } | null)?.id
+
 async function fetchAndApply(
-  cfg: AccountAutofillConfig,
+  kind: AutofillTriggerKind,
+  triggerCol: string,
+  targets: AutofillTargets,
   id: number | string,
   form: UseFormReturn<Record<string, unknown>>,
-  rowPath: string
+  rowPath: string,
+  suppressVidVna: Set<string>
 ): Promise<void> {
-  let data: UchetParamsResponse['data'] | undefined
+  let data: UchetParamsData | undefined
   try {
     const res = await apiService.get<UchetParamsResponse>({
-      url: accountAutofillUrl(cfg, id),
+      url: accountAutofillUrl(kind, id),
     })
     data = res.data?.data
   } catch {
-    return // сеть/сервер — молча, поле не трогаем
+    return // сеть/сервер — молча, поля не трогаем
   }
-  // Пустой data ({}) — счёт для элемента не задан: ничего не подставляем.
+  // Пустой data ({}) — счёт не задан: ничего не подставляем.
   if (!data) return
-  const schetUchetaId = data.schetUchetaId
+  // Копируем id в локали — сужение переживает промежуточные вызовы функций.
+  const { schetUchetaId, vidVNAId, schetUchetaAmortizatsiiId } = data
   if (schetUchetaId == null) return
 
-  // Гвард от гонки: применяем только если в строке всё ещё выбран тот же элемент.
-  const current = form.getValues(`${rowPath}.${cfg.triggerCol}`) as unknown as {
-    id?: number | string
-  } | null
-  if (current?.id !== id) return
+  // Гвард от гонки: применяем, только если в строке всё ещё выбран тот же элемент.
+  if (getRefId(form, `${rowPath}.${triggerCol}`) !== id) return
 
-  setCell(
-    form,
-    `${rowPath}.${cfg.schetUchetaCol}`,
-    buildAccountRef(schetUchetaId, data.schetUchetaCode)
-  )
+  const set = (col: string | undefined, value: unknown) => {
+    if (col && value != null) setCell(form, `${rowPath}.${col}`, value)
+  }
 
-  const amortId = data.schetUchetaAmortizatsiiId
-  if (cfg.schetAmortizatsiiCol && amortId != null) {
+  set(targets.schetUchetaCol, buildAccountRef(schetUchetaId, data.schetUchetaCode))
+
+  // Вид ВНА (только при выборе актива): ставим id. Меняем лишь при реальной смене
+  // (иначе watch не сработает и «глушилка» зависнет). Чтобы установка не
+  // спровоцировала повторный подбор по виду (он бы перебил счёт из карточки
+  // актива) — гасим одно срабатывание vidVna-триггера для этой строки.
+  if (
+    targets.vidVnaCol &&
+    vidVNAId != null &&
+    getRefId(form, `${rowPath}.${targets.vidVnaCol}`) !== vidVNAId
+  ) {
+    suppressVidVna.add(rowPath)
+    setCell(form, `${rowPath}.${targets.vidVnaCol}`, buildAccountRef(vidVNAId, ''))
+  }
+
+  if (targets.schetAmortizatsiiCol && schetUchetaAmortizatsiiId != null) {
     setCell(
       form,
-      `${rowPath}.${cfg.schetAmortizatsiiCol}`,
-      buildAccountRef(amortId, data.schetUchetaAmortizatsiiCode)
+      `${rowPath}.${targets.schetAmortizatsiiCol}`,
+      buildAccountRef(schetUchetaAmortizatsiiId, data.schetUchetaAmortizatsiiCode)
     )
   }
-  if (cfg.spiCol && data.srokPoleznogoIspolzovaniya != null) {
-    setCell(form, `${rowPath}.${cfg.spiCol}`, data.srokPoleznogoIspolzovaniya)
-  }
-  if (cfg.nachislyatCol && data.nachislyatAmortizatsiyu != null) {
-    setCell(form, `${rowPath}.${cfg.nachislyatCol}`, data.nachislyatAmortizatsiyu)
-  }
+  set(targets.pervonachalnayaStoimostCol, data.pervonachalnayaStoimost)
+  set(targets.tekushchayaStoimostCol, data.tekushchayaStoimost)
+  set(targets.spiCol, data.srokPoleznogoIspolzovaniya)
+  set(targets.nachislyatCol, data.nachislyatAmortizatsiyu)
 }
 
 /**
- * Автоподстановка «Счёт учёта» (и для ОС/НМА — амортизации/СПИ/признака) в строке
- * ТЧ при выборе Номенклатуры/ВидВНА: GET по id элемента → значения в ячейки.
+ * Автоподстановка полей строки ТЧ по выбранному элементу (самодостаточные GET):
+ *  - Основное средство/НМА → счёт учёта, ВидВНА, стоимости, амортизация, СПИ;
+ *  - ВидВНА (ручная смена) → пере-подбор счёта/амортизации/СПИ;
+ *  - Номенклатура (ТМЗ) → счёт учёта.
  * На лету, без сохранения; на загрузке (replace) не срабатывает (watch без name).
  */
 export function useAccountAutofill(
@@ -89,7 +115,12 @@ export function useAccountAutofill(
   tableCode: string,
   columns: DocumentAttribute[]
 ): void {
-  const config = useMemo(() => resolveAccountAutofill(columns), [columns])
+  const config: AccountAutofillConfig | null = useMemo(
+    () => resolveAccountAutofill(columns),
+    [columns]
+  )
+  // Строки, для которых нужно пропустить один подбор по ВидВНА (см. fetchAndApply).
+  const suppressVidVna = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     if (!config) return
@@ -101,16 +132,29 @@ export function useAccountAutofill(
       if (dot < 0) return
       const rowIndex = rest.slice(0, dot)
       const colCode = rest.slice(dot + 1)
-      if (colCode !== config.triggerCol) return
+
+      const trigger = config.triggers.find((t) => t.triggerCol === colCode)
+      if (!trigger) return
 
       const rowPath = `${tableCode}.${rowIndex}`
-      const selected = form.getValues(
-        `${rowPath}.${config.triggerCol}`
-      ) as unknown as { id?: number | string } | null
-      const id = selected?.id
+      // Программная установка ВидВНА из подбора по активу — не пере-подбираем.
+      if (trigger.kind === 'vidVna' && suppressVidVna.current.has(rowPath)) {
+        suppressVidVna.current.delete(rowPath)
+        return
+      }
+
+      const id = getRefId(form, `${rowPath}.${trigger.triggerCol}`)
       if (id == null) return
 
-      void fetchAndApply(config, id, form, rowPath)
+      void fetchAndApply(
+        trigger.kind,
+        trigger.triggerCol,
+        config.targets,
+        id,
+        form,
+        rowPath,
+        suppressVidVna.current
+      )
     })
     return () => {
       subscription.unsubscribe()

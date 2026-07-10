@@ -24,42 +24,51 @@ const account = (code: string): DocumentAttribute =>
 
 describe('resolveAccountAutofill', () => {
   it('ТМЗ/Услуги: триггер — Номенклатура, цель — Счёт учёта', () => {
-    const cols = [col('Nomenklatura'), account('SchetUcheta'), col('Summa')]
-    expect(resolveAccountAutofill(cols)).toEqual({
-      trigger: 'nomenklatura',
-      triggerCol: 'Nomenklatura',
-      schetUchetaCol: 'SchetUcheta',
-    })
+    const cfg = resolveAccountAutofill([
+      col('Nomenklatura'),
+      account('SchetUcheta'),
+      col('Summa'),
+    ])
+    expect(cfg?.triggers).toEqual([
+      { kind: 'nomenklatura', triggerCol: 'Nomenklatura' },
+    ])
+    expect(cfg?.targets.schetUchetaCol).toBe('SchetUcheta')
   })
 
-  it('ОС/НМА: триггер — ВидВНА, отдельные счёт учёта и счёт амортизации', () => {
-    const cols = [
+  it('ОС/НМА: два триггера (актив + ВидВНА) и расширенные цели', () => {
+    const cfg = resolveAccountAutofill([
+      col('OsnovnoeSredstvo'),
       col('VidVna'),
       account('SchetUcheta'),
       account('SchetUchetaAmortizatsii'),
+      col('PervonachalnayaStoimost'),
+      col('TekushchayaStoimost'),
       col('SrokPoleznogoIspolzovaniya'),
       col('NachislyatAmortizatsiyu', { dataType: 'BOOLEAN' }),
-    ]
-    expect(resolveAccountAutofill(cols)).toEqual({
-      trigger: 'vidVna',
-      triggerCol: 'VidVna',
+    ])
+    expect(cfg?.triggers).toEqual([
+      { kind: 'asset', triggerCol: 'OsnovnoeSredstvo' },
+      { kind: 'vidVna', triggerCol: 'VidVna' },
+    ])
+    expect(cfg?.targets).toEqual({
       schetUchetaCol: 'SchetUcheta',
       schetAmortizatsiiCol: 'SchetUchetaAmortizatsii',
+      vidVnaCol: 'VidVna',
       spiCol: 'SrokPoleznogoIspolzovaniya',
       nachislyatCol: 'NachislyatAmortizatsiyu',
+      pervonachalnayaStoimostCol: 'PervonachalnayaStoimost',
+      tekushchayaStoimostCol: 'TekushchayaStoimost',
     })
   })
 
-  it('ВидВНА в приоритете над Номенклатурой; счёт амортизации не путается с учётным', () => {
-    const cols = [
+  it('счёт учёта не путается со счётом амортизации', () => {
+    const cfg = resolveAccountAutofill([
       account('SchetUchetaAmortizatsii'),
       account('SchetUcheta'),
       col('VidVna'),
-    ]
-    const cfg = resolveAccountAutofill(cols)
-    expect(cfg?.trigger).toBe('vidVna')
-    expect(cfg?.schetUchetaCol).toBe('SchetUcheta')
-    expect(cfg?.schetAmortizatsiiCol).toBe('SchetUchetaAmortizatsii')
+    ])
+    expect(cfg?.targets.schetUchetaCol).toBe('SchetUcheta')
+    expect(cfg?.targets.schetAmortizatsiiCol).toBe('SchetUchetaAmortizatsii')
   })
 
   it('нет счёта учёта или триггера → null', () => {
@@ -69,28 +78,25 @@ describe('resolveAccountAutofill', () => {
 })
 
 describe('accountAutofillUrl', () => {
-  it('строит URL по триггеру', () => {
-    expect(
-      accountAutofillUrl(
-        { trigger: 'nomenklatura', triggerCol: 'Nomenklatura', schetUchetaCol: 'SchetUcheta' },
-        42
-      )
-    ).toBe('/api/nomenklatura/42/schet-ucheta')
-    expect(
-      accountAutofillUrl(
-        { trigger: 'vidVna', triggerCol: 'VidVna', schetUchetaCol: 'SchetUcheta' },
-        7
-      )
-    ).toBe('/api/vneoborotnye-aktivy/vid-vna/7/uchet-params')
+  it('строит URL по типу триггера', () => {
+    expect(accountAutofillUrl('asset', 12)).toBe(
+      '/api/vneoborotnye-aktivy/asset/12/uchet-params'
+    )
+    expect(accountAutofillUrl('vidVna', 7)).toBe(
+      '/api/vneoborotnye-aktivy/vid-vna/7/uchet-params'
+    )
+    expect(accountAutofillUrl('nomenklatura', 42)).toBe(
+      '/api/nomenklatura/42/schet-ucheta'
+    )
   })
 })
 
 describe('buildAccountRef', () => {
   it('id для сохранения + код для показа', () => {
-    expect(buildAccountRef(148, '2411')).toEqual({
+    expect(buildAccountRef(148, '2360')).toEqual({
       id: 148,
-      code: '2411',
-      displayName: '2411',
+      code: '2360',
+      displayName: '2360',
     })
   })
 })

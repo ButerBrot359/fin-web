@@ -20,6 +20,7 @@ import emptyImage from '@/shared/assets/info/empty.png'
 
 import { useTableColumns } from '../lib/hooks/use-table-columns'
 import { buildEmptyRow } from '../lib/utils/build-empty-row'
+import { resolveSumRecalc, computeRowSum } from '../lib/utils/row-sum-recalc'
 import { fieldFilterToSearchParams } from '../lib/utils/field-filter-params'
 import { isFieldVisible, tableColumnPath } from '../lib/utils/field-path'
 import {
@@ -107,6 +108,39 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
       unregisterTableReplacer(attribute.code)
     }
   }, [attribute.code, replace, registerTableReplacer, unregisterTableReplacer])
+
+  // Пересчёт «Сумма = Цена × Количество» в строке на лету (клиентский аналог
+  // clientHint recalcRow). Колонки определяются по каноническим токенам.
+  const sumRecalc = useMemo(() => resolveSumRecalc(columns), [columns])
+
+  useEffect(() => {
+    if (!sumRecalc) return
+    const { qty, price, sum } = sumRecalc
+    const prefix = `${attribute.code}.`
+    const subscription = form.watch((_values, { name }) => {
+      // Реагируем только на изменение Количества/Цены в строке ЭТОЙ ТЧ.
+      if (!name || !name.startsWith(prefix)) return
+      const rest = name.slice(prefix.length)
+      const dot = rest.indexOf('.')
+      if (dot < 0) return
+      const rowIndex = rest.slice(0, dot)
+      const colCode = rest.slice(dot + 1)
+      if (colCode !== qty && colCode !== price) return
+
+      const rowPath = `${attribute.code}.${rowIndex}`
+      const newSum = computeRowSum(
+        form.getValues(`${rowPath}.${qty}`),
+        form.getValues(`${rowPath}.${price}`)
+      )
+      // setValue(sum) снова триггерит watch, но colCode=sum ≠ qty/price — без цикла.
+      if (Number(form.getValues(`${rowPath}.${sum}`)) !== newSum) {
+        form.setValue(`${rowPath}.${sum}`, newSum, { shouldDirty: true })
+      }
+    })
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [form, attribute.code, sumRecalc])
 
   // Sync useFieldArray when form is reset with external data (existing entry)
   const hasSynced = useRef(false)

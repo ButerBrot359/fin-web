@@ -20,6 +20,7 @@ import {
 import { PageHeader } from '@/widgets/page-header'
 import { DateTimeInput, AutocompleteInput } from '@/shared/ui/inputs'
 import { formatDate } from '@/shared/lib/utils/date'
+import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
 import type { SelectOption } from '@/shared/types/select-option'
 
 import { useOsvReport } from '../lib/hooks/use-osv-report'
@@ -64,12 +65,16 @@ export const OsvReportPage = () => {
   const urlFrom = searchParams.get('from') ?? ''
   const urlTo = searchParams.get('to') ?? ''
   const urlAccountId = searchParams.get('accountId')
+  const urlOrganizatsiyaId = searchParams.get('organizatsiyaId')
 
   // Черновики полей формы (что пользователь правит до «Сформировать»).
   // Инициализируются из URL — при перемонтировании подхватывают applied-значения.
   const [from, setFrom] = useState(urlFrom)
   const [to, setTo] = useState(urlTo)
   const [account, setAccount] = useState<SelectOption | null>(null)
+  // Отбор по организации — в шапке (как счёт): черновик, применяется по
+  // «Сформировать», хранится в URL (?organizatsiyaId) и уходит в dimensionFilters.
+  const [organizatsiya, setOrganizatsiya] = useState<SelectOption | null>(null)
 
   // Группировка (панель «Настройки → Группировка»). По умолчанию все измерения
   // включены (полное дерево, как сейчас); субконто-разворот выключен. Меняет
@@ -95,6 +100,17 @@ export const OsvReportPage = () => {
     [accounts]
   )
 
+  const { entries: organizations } = useDictionaryEntries('Organizatsii')
+  const organizationOptions = useMemo<SelectOption[]>(
+    () =>
+      organizations.map((o) => ({
+        id: o.id,
+        code: o.code ?? '',
+        label: o.displayName ?? o.nameRu ?? o.code ?? String(o.id),
+      })),
+    [organizations]
+  )
+
   // Восстанавливаем выбранный счёт из URL (при монтировании / смене URL, когда
   // справочник счетов загрузился). НЕ зависим от `account` и НЕ сбрасываем его в
   // null — иначе ручной выбор в выпадающем списке тут же затирался бы (поле
@@ -104,6 +120,16 @@ export const OsvReportPage = () => {
     const found = accountOptions.find((o) => String(o.id) === urlAccountId)
     if (found) setAccount(found)
   }, [urlAccountId, accountOptions])
+
+  // Аналогично восстанавливаем выбранную организацию из URL, когда справочник
+  // организаций загрузился. НЕ сбрасываем в null (см. счёт выше).
+  useEffect(() => {
+    if (!urlOrganizatsiyaId) return
+    const found = organizationOptions.find(
+      (o) => String(o.id) === urlOrganizatsiyaId
+    )
+    if (found) setOrganizatsiya(found)
+  }, [urlOrganizatsiyaId, organizationOptions])
 
   // Applied-параметры — производные от URL. Запрос включается, когда заданы
   // обе границы периода.
@@ -118,9 +144,24 @@ export const OsvReportPage = () => {
         (d) => d.key
       ),
       expandBySubkonto,
-      dimensionFilters: filters,
+      // Отбор по организации из шапки (URL) + отборы боковой панели. Организация
+      // задаётся только в шапке, поэтому в `filters` её нет — конфликта ключей нет.
+      dimensionFilters: {
+        ...filters,
+        ...(urlOrganizatsiyaId
+          ? { organizatsiyaId: Number(urlOrganizatsiyaId) }
+          : {}),
+      },
     }
-  }, [urlFrom, urlTo, urlAccountId, enabledDims, expandBySubkonto, filters])
+  }, [
+    urlFrom,
+    urlTo,
+    urlAccountId,
+    urlOrganizatsiyaId,
+    enabledDims,
+    expandBySubkonto,
+    filters,
+  ])
 
   // Пункты вкладки «Группировка»: измерения + «По субконто» (разворот листа).
   const toggleGroup = (key: string) => {
@@ -159,9 +200,13 @@ export const OsvReportPage = () => {
     if (key === 'quantity') setShowQuantity((v) => !v)
   }
 
+  // Организация вынесена в шапку — исключаем её из боковой панели «Отборы»,
+  // чтобы отбор не задавался в двух местах.
   const filterItems = useMemo<ReportFilterItem[]>(
     () =>
-      REPORT_FILTER_DIMENSIONS.map((d) => ({
+      REPORT_FILTER_DIMENSIONS.filter(
+        (d) => d.paramKey !== 'organizatsiyaId'
+      ).map((d) => ({
         key: d.paramKey,
         label: t(d.labelKey),
         dictTypeCode: d.dictTypeCode,
@@ -183,10 +228,14 @@ export const OsvReportPage = () => {
   const handleSubmit = () => {
     if (!canSubmit) return
     const accountId = account ? String(account.id) : undefined
+    const organizatsiyaId = organizatsiya ? String(organizatsiya.id) : undefined
     // Те же параметры, что уже применены → URL/queryKey не изменится и
     // автозапроса не будет: форсим refetch вручную.
     const sameAsApplied =
-      urlFrom === from && urlTo === to && (urlAccountId ?? undefined) === accountId
+      urlFrom === from &&
+      urlTo === to &&
+      (urlAccountId ?? undefined) === accountId &&
+      (urlOrganizatsiyaId ?? undefined) === organizatsiyaId
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
@@ -194,6 +243,8 @@ export const OsvReportPage = () => {
         next.set('to', to)
         if (accountId) next.set('accountId', accountId)
         else next.delete('accountId')
+        if (organizatsiyaId) next.set('organizatsiyaId', organizatsiyaId)
+        else next.delete('organizatsiyaId')
         return next
       },
       { replace: true }
@@ -272,6 +323,15 @@ export const OsvReportPage = () => {
             options={accountOptions}
             onChange={setAccount}
             label={t('osv.account')}
+            fullWidth
+          />
+        </div>
+        <div className="report-param-field w-64">
+          <AutocompleteInput
+            value={organizatsiya}
+            options={organizationOptions}
+            onChange={setOrganizatsiya}
+            label={t('osv.levelOrganization')}
             fullWidth
           />
         </div>

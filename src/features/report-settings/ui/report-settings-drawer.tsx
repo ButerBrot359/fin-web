@@ -128,7 +128,7 @@ export const ReportSettingsDrawer = ({
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}>
-      <div className="flex w-[420px] max-w-[92vw] flex-col gap-3 p-4">
+      <div className="flex w-[480px] max-w-[92vw] flex-col gap-3 p-4">
         <div className="flex items-center justify-between">
           <Typography variant="h6" className="font-semibold text-ui-06">
             {t('reportSettings.title')}

@@ -297,6 +297,8 @@
     "quantity": "Кол.",
     "byAccount": "по счёту",
     "forPeriod": "за",
+    "openElement": "Открыть",
+    "accountCard": "Карточка счёта",
     "levelOrganization": "Организация",
     "levelSubdivision": "Подразделение",
     "levelFkr": "ФКР",

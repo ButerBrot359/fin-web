@@ -44,7 +44,6 @@ export const FilterPicker = ({
         onChange(o ? Number(o.id) : null)
       }}
       label={label}
-      size="small"
       fullWidth
     />
   )

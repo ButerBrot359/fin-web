@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import {
   useLocation,
   useNavigate,
@@ -24,7 +24,9 @@ import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictiona
 import type { SelectOption } from '@/shared/types/select-option'
 
 import { useOsvReport } from '../lib/hooks/use-osv-report'
+import { resolveOpenTarget } from '../lib/resolve-open-target'
 import { OsvReportTable } from './osv-report-table'
+import { OsvRowContextMenu, type OsvMenuPosition } from './osv-row-context-menu'
 import {
   OSV_DEFAULT_DIMENSIONS,
   OSV_GROUP_DIMENSIONS,
@@ -268,8 +270,8 @@ export const OsvReportPage = () => {
     void navigate(`/modules/${pageCode}`)
   }
 
-  // Двойной клик по строке ОСВ → карточка счёта (drill-down, как в 1С): движения
-  // по счёту за тот же период. Если кликнули по узлу измерения (ФКР, Подразделение
+  // Пункт меню «Карточка счёта» → карточка счёта (drill-down, как в 1С): движения
+  // по счёту за тот же период. Если строка — узел измерения (ФКР, Подразделение
   // и т.д.), наследуем фильтры аналитики ВСЕХ уровней от корня до узла — карточка
   // строится только по этой ветке дерева.
   const handleOpenAccountCard = (row: Row<OsvReportEntry>) => {
@@ -292,6 +294,48 @@ export const OsvReportPage = () => {
       if (key) sp.set(key, String(groupRefId))
     }
     void navigate(`/modules/${pageCode}/account-card?${sp.toString()}`)
+  }
+
+  // Меню выбора по двойному клику, как в 1С: «Открыть <элемент>» + «Карточка
+  // счёта N». Открывается у курсора; сам переход выполняют пункты меню.
+  const [menu, setMenu] = useState<{
+    pos: OsvMenuPosition
+    row: Row<OsvReportEntry>
+  } | null>(null)
+
+  const handleRowDoubleClick = (
+    row: Row<OsvReportEntry>,
+    e: ReactMouseEvent
+  ) => {
+    // Двойной клик выделяет текст строки — снимаем выделение, чтобы меню
+    // открывалось «чисто».
+    window.getSelection()?.removeAllRanges()
+    setMenu({ pos: { top: e.clientY, left: e.clientX }, row })
+  }
+
+  const menuRow = menu?.row ?? null
+  const openTarget = menuRow ? resolveOpenTarget(menuRow.original) : null
+  const openLabel = openTarget
+    ? openTarget.name
+      ? `${t('osv.openElement')} «${openTarget.name}»`
+      : t('osv.openElement')
+    : null
+
+  // Код счёта для подписи «Карточка счёта N» — из корня ветки (строка-счёт).
+  const menuAccountCode = menuRow
+    ? ([...menuRow.getParentRows(), menuRow][0]?.original.accountCode ??
+        menuRow.original.accountCode ??
+        '')
+    : ''
+
+  const handleOpenElement = () => {
+    if (!openTarget) return
+    const { kind, typeCode, id } = openTarget
+    const path =
+      kind === 'dictionary'
+        ? `/modules/${pageCode}/dictionary/${typeCode}/${String(id)}`
+        : `/modules/${pageCode}/document/${typeCode}/${String(id)}`
+    void navigate(path)
   }
 
   return (
@@ -364,7 +408,7 @@ export const OsvReportPage = () => {
             rows={rows}
             total={total}
             title={reportTitle}
-            onRowDoubleClick={handleOpenAccountCard}
+            onRowDoubleClick={handleRowDoubleClick}
             showQuantity={showQuantity}
             isLoading={isLoading}
           />
@@ -382,6 +426,19 @@ export const OsvReportPage = () => {
         onToggleIndicator={toggleIndicator}
         filterItems={filterItems}
         onFilterChange={onFilterChange}
+      />
+
+      <OsvRowContextMenu
+        position={menu?.pos ?? null}
+        onClose={() => {
+          setMenu(null)
+        }}
+        openLabel={openLabel}
+        onOpen={handleOpenElement}
+        accountCardLabel={`${t('osv.accountCard')} ${menuAccountCode}`}
+        onOpenAccountCard={() => {
+          if (menuRow) handleOpenAccountCard(menuRow)
+        }}
       />
     </div>
   )

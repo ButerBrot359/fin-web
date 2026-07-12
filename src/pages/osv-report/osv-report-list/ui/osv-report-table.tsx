@@ -33,11 +33,11 @@ interface OsvReportTableProps {
   /** Заголовок отчёта (название + счёт + период), как в 1С. */
   title?: string
   /**
-   * Двойной клик по строке — открыть карточку счёта (drill-down). Передаём
-   * `Row` (а не данные), чтобы получить цепочку родителей дерева и унаследовать
-   * фильтры аналитики всех уровней (Организация → … → ФКР → …).
+   * Двойной клик по строке — открыть меню выбора («Открыть элемент» / «Карточка
+   * счёта»), как в 1С. Передаём `Row` (для цепочки родителей — наследование
+   * фильтров аналитики) и событие (для позиции меню у курсора).
    */
-  onRowDoubleClick?: (row: Row<OsvReportEntry>) => void
+  onRowDoubleClick?: (row: Row<OsvReportEntry>, e: ReactMouseEvent) => void
   /** Показывать строки «Кол.» (показатель «Количество»). */
   showQuantity?: boolean
   isLoading?: boolean
@@ -390,7 +390,7 @@ export const OsvReportTable = ({
             <tbody
               key={row.id}
               className={`group ${onRowDoubleClick ? 'cursor-pointer' : ''}`}
-              onDoubleClick={() => onRowDoubleClick?.(row)}
+              onDoubleClick={(e) => onRowDoubleClick?.(row, e)}
             >
               {/* Строка показателя «Сумма» */}
                 <tr className={`border-t border-ui-04/60 ${rowBg} group-hover:bg-ui-07`}>

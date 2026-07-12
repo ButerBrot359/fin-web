@@ -22,6 +22,10 @@ import { useTableColumns } from '../lib/hooks/use-table-columns'
 import { useAccountAutofill } from '../lib/hooks/use-account-autofill'
 import { buildEmptyRow } from '../lib/utils/build-empty-row'
 import { resolveSumRecalc, computeRowSum } from '../lib/utils/row-sum-recalc'
+import {
+  resolveInventoryRecalc,
+  computeInventory,
+} from '../lib/utils/inventory-recalc'
 import { findColumnAppearanceRules } from '../lib/utils/conditional-appearance'
 import { fieldFilterToSearchParams } from '../lib/utils/field-filter-params'
 import { isFieldVisible, tableColumnPath } from '../lib/utils/field-path'
@@ -164,6 +168,57 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
       subscription.unsubscribe()
     }
   }, [form, attribute.code, sumRecalc])
+
+  // Пересчёт излишков/недостач в строке инвентаризации ВНА (зеркало 1С): при
+  // смене наличия/стоимости учёта или факта пересчитываем Количество и Стоимость.
+  const inventoryRecalc = useMemo(
+    () => resolveInventoryRecalc(columns),
+    [columns]
+  )
+
+  useEffect(() => {
+    if (!inventoryRecalc) return
+    const {
+      uchetCol,
+      faktCol,
+      stoimUchetCol,
+      stoimFaktCol,
+      kolCol,
+      stoimResultCol,
+    } = inventoryRecalc
+    const triggers = new Set([uchetCol, faktCol, stoimUchetCol, stoimFaktCol])
+    const prefix = `${attribute.code}.`
+    const subscription = form.watch((_values, { name }) => {
+      if (!name || !name.startsWith(prefix)) return
+      const rest = name.slice(prefix.length)
+      const dot = rest.indexOf('.')
+      if (dot < 0) return
+      const rowIndex = rest.slice(0, dot)
+      const colCode = rest.slice(dot + 1)
+      if (!triggers.has(colCode)) return
+
+      const rowPath = `${attribute.code}.${rowIndex}`
+      const { kol, stoim } = computeInventory(
+        form.getValues(`${rowPath}.${uchetCol}`),
+        form.getValues(`${rowPath}.${faktCol}`),
+        form.getValues(`${rowPath}.${stoimUchetCol}`),
+        form.getValues(`${rowPath}.${stoimFaktCol}`)
+      )
+      // setValue результатов снова триггерит watch, но их колонки не в triggers —
+      // цикла нет. `as never`: RHF выводит тип значения по динамическому пути как undefined.
+      if (Number(form.getValues(`${rowPath}.${kolCol}`)) !== kol) {
+        form.setValue(`${rowPath}.${kolCol}`, kol as never, { shouldDirty: true })
+      }
+      if (Number(form.getValues(`${rowPath}.${stoimResultCol}`)) !== stoim) {
+        form.setValue(`${rowPath}.${stoimResultCol}`, stoim as never, {
+          shouldDirty: true,
+        })
+      }
+    })
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [form, attribute.code, inventoryRecalc])
 
   // Автоподстановка полей строки по выбранному элементу (Актив/ВидВНА/Номенклатура):
   // GET-эндпоинт по id → значения в ячейки строки; «Дата ввода» — из даты документа.

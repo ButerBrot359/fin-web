@@ -68,7 +68,8 @@ inline-автокомплит ячейки уже используют `displayN
      `{ af: '<attrCode>:<id>' }`, несколько пар — af через запятую (формат уже
      поддержан `mergeSearchParams` и бэком);
    - пустая ячейка (`null`/undefined/без `id`) — пара пропускается; все пустые или
-     `rowFilter === undefined` → `{}`.
+     `rowFilter === undefined` → `undefined` (конвенция `useCellDependency`:
+     undefined = «фильтра нет», не участвует в `mergeSearchParams` и queryKey).
 
    Паттерн зеркалит `useCellDependency` (тот же контракт «вернуть searchParams»),
    но метаданные не грузит и читает строку, а не шапку.
@@ -103,9 +104,9 @@ inline-автокомплит ячейки уже используют `displayN
 Vitest на `useRowFilter` (renderHook + FormProvider-обёртка):
 
 1. заполненная ячейка → `{ af: 'SchetUcheta:4711' }`;
-2. пустая ячейка → `{}`;
+2. пустая или не-ссылочная ячейка → `undefined`;
 3. две пары map → af через запятую;
-4. `rowFilter === undefined` → `{}`.
+4. `rowFilter === undefined` → `undefined`.
 
 ## Приёмка руками (dev, после выкладки бэка)
 

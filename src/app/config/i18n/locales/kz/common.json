@@ -84,7 +84,8 @@
     "more": "Тағы",
     "unpost": "Өткізуді болдырмау",
     "unpostSuccess": "Өткізу болдырмалды",
-    "unpostError": "Өткізуді болдырмау қатесі"
+    "unpostError": "Өткізуді болдырмау қатесі",
+    "movementsError": "Құжат қозғалыстарын жүктеу мүмкін болмады"
   },
   "documentFormToolbar": {
     "postAndClose": "Өткізу және жабу",
@@ -277,7 +278,8 @@
     "comparison": "Салыстыру түрі",
     "value": "Мән",
     "removeFilter": "Сұрыптауды жою",
-    "noFilters": "Сұрыптаулар берілмеген"
+    "noFilters": "Сұрыптаулар берілмеген",
+    "noGrouping": "Топтау бөлімдері берілмеген"
   },
   "osv": {
     "title": "Айналым-сальдо тізімдемесі",
@@ -297,6 +299,8 @@
     "quantity": "Саны",
     "byAccount": "шот бойынша",
     "forPeriod": "кезеңі",
+    "openElement": "Ашу",
+    "accountCard": "Шот карточкасы",
     "levelOrganization": "Ұйым",
     "levelSubdivision": "Бөлімше",
     "levelFkr": "ФКР",
@@ -324,6 +328,7 @@
   "reports": {
     "title": "Есеп",
     "detailSection": "Егжей-тегжелеу",
+    "russianLanguage": "Орыс тілі",
     "filtersSection": "Іріктеулер",
     "hideSettingsOnSubmit": "Есеп қалыптастырғанда баптауларды жасыру",
     "generate": "Қалыптастыру",
@@ -340,6 +345,9 @@
     "loadError": "Есепті қалыптастыру мүмкін болмады",
     "notImplemented": "Есеп әлі іске асырылмаған",
     "separateScreen": "Бұл есеп бөлек экранда ашылады",
+    "openInNewTab": "Жаңа қойындыда ашу",
+    "pdfTitle": "Есептің баспа нысаны",
+    "validationMessages": "Хабарламалар:",
     "print": "Басып шығару",
     "exportExcel": "Excel-ге жүктеу",
     "printNotImplemented": "Басып шығару әзірленуде",

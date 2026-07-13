@@ -94,7 +94,7 @@ export const MemorialOrderSettingsPanel = ({
                         }}
                       />
                     }
-                    label={paramLabel(p, isKz)}
+                    label={t('reports.russianLanguage')}
                   />
                 ) : (
                   <FormControlLabel

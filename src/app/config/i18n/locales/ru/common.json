@@ -84,7 +84,8 @@
     "more": "Ещё",
     "unpost": "Отменить проведение",
     "unpostSuccess": "Проведение отменено",
-    "unpostError": "Ошибка отмены проведения"
+    "unpostError": "Ошибка отмены проведения",
+    "movementsError": "Не удалось загрузить движения документа"
   },
   "documentFormToolbar": {
     "postAndClose": "Провести и закрыть",
@@ -277,7 +278,8 @@
     "comparison": "Вид сравнения",
     "value": "Значение",
     "removeFilter": "Удалить отбор",
-    "noFilters": "Отборы не заданы"
+    "noFilters": "Отборы не заданы",
+    "noGrouping": "Разрезы группировки не заданы"
   },
   "osv": {
     "title": "Оборотно-сальдовая ведомость",
@@ -297,6 +299,8 @@
     "quantity": "Кол.",
     "byAccount": "по счёту",
     "forPeriod": "за",
+    "openElement": "Открыть",
+    "accountCard": "Карточка счёта",
     "levelOrganization": "Организация",
     "levelSubdivision": "Подразделение",
     "levelFkr": "ФКР",
@@ -324,6 +328,7 @@
   "reports": {
     "title": "Отчёт",
     "detailSection": "Детализация",
+    "russianLanguage": "Русский язык",
     "filtersSection": "Отборы",
     "hideSettingsOnSubmit": "Скрывать настройки при формировании отчёта",
     "generate": "Сформировать",
@@ -340,6 +345,9 @@
     "loadError": "Не удалось сформировать отчёт",
     "notImplemented": "Отчёт ещё не реализован",
     "separateScreen": "Этот отчёт открывается на отдельном экране",
+    "openInNewTab": "Открыть в новой вкладке",
+    "pdfTitle": "Печатная форма отчёта",
+    "validationMessages": "Сообщения:",
     "print": "Печать",
     "exportExcel": "Выгрузить в Excel",
     "printNotImplemented": "Печать в разработке",

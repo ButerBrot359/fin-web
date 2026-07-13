@@ -37,7 +37,6 @@ export const DocumentPage = () => {
   useFilterUrlSync(moduleCode)
 
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
-  const [selectedRowName, setSelectedRowName] = useState<string | null>(null)
   const [sorting, setSorting] = useState<SortingState>([])
 
   const sortAttr = sorting[0]?.id
@@ -66,7 +65,6 @@ export const DocumentPage = () => {
 
   const handleSelectRow = (row: DocumentEntry) => {
     setSelectedRowId(row.id)
-    setSelectedRowName(row.nameRu)
   }
 
   const handleDoubleClick = (row: DocumentEntry) => {
@@ -83,10 +81,7 @@ export const DocumentPage = () => {
   return (
     <div className="flex flex-col gap-5 pt-5 h-full">
       <PageHeader title={title} onClose={handleClose} />
-      <DocumentListToolbar
-        selectedRowId={selectedRowId}
-        selectedRowName={selectedRowName}
-      />
+      <DocumentListToolbar selectedRowId={selectedRowId} />
       <ActiveFiltersBar tableId={moduleCode} columns={columnsMeta} />
       <EavEntityTable<DocumentEntry>
         filterTableId={moduleCode}

@@ -72,3 +72,25 @@ export const runReport = (
     data: body,
     signal,
   })
+
+/**
+ * Печать отчёта в PDF: POST /api/reports/{code}/print?language=Ru|Kz
+ * Тело — тот же RunReportBody, что и у /run. Ответ — PDF (Blob).
+ *
+ * Используется для отчётов, которые в 1С являются печатной формой-бланком
+ * (например «Инвентарная карточка ОС»): их /run отдаёт спец-DTO без таблицы,
+ * а отображаемый результат — готовый PDF с сервера. Для отчётов без движка
+ * печати бэк отвечает HTTP 501 — вызывающий код показывает фолбэк.
+ */
+export const printReport = (
+  code: string,
+  body: RunReportBody,
+  language: 'Ru' | 'Kz',
+  signal?: AbortSignal
+) =>
+  apiService.postFileBlob({
+    url: `/api/reports/${code}/print`,
+    data: body,
+    params: { language },
+    signal,
+  })

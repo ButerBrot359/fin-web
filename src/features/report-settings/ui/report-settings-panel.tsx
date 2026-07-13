@@ -31,10 +31,13 @@ interface ReportSettingsPanelProps {
   variantOptions: SelectOption[]
   selectedVariant: string | null
   onVariantChange: (code: string) => void
+  /** Тумблеры формы (напр. «Язык формы (рус/каз)») — верх вкладки «Основные», как у МО. */
+  formToggleItems: ReportGroupItem[]
+  onToggleFormParam: (key: string) => void
   /** Показатели (Сумма / Количество / …) — раздел «Показатели» вкладки «Основные». */
   indicatorItems: ReportGroupItem[]
   onToggleIndicator: (key: string) => void
-  /** Группировки-измерения результата — раздел «Группировка». */
+  /** Группировки-измерения результата — отдельная вкладка «Группировка». */
   groupItems: ReportGroupItem[]
   onToggleGroup: (key: string) => void
   /** Параметр «Периодичность» (NUMBER+allowedValues) — раздел «Группировка». */
@@ -99,6 +102,8 @@ export const ReportSettingsPanel = ({
   variantOptions,
   selectedVariant,
   onVariantChange,
+  formToggleItems,
+  onToggleFormParam,
   indicatorItems,
   onToggleIndicator,
   groupItems,
@@ -152,6 +157,10 @@ export const ReportSettingsPanel = ({
           sx={{ textTransform: 'none', minHeight: 40 }}
         />
         <Tab
+          label={t('reportSettings.grouping')}
+          sx={{ textTransform: 'none', minHeight: 40 }}
+        />
+        <Tab
           label={t('reportSettings.filters')}
           sx={{ textTransform: 'none', minHeight: 40 }}
         />
@@ -165,6 +174,14 @@ export const ReportSettingsPanel = ({
         {/* ── Основные ─────────────────────────────────────────────── */}
         {tab === 0 && (
           <>
+            {/* Тумблеры формы (язык и т.п.) — сверху, как «Детализация» у МО. */}
+            {formToggleItems.length > 0 && (
+              <CheckboxList
+                items={formToggleItems}
+                onToggle={onToggleFormParam}
+              />
+            )}
+
             {indicatorItems.length > 0 && (
               <>
                 <SectionTitle>{t('reportSettings.indicators')}</SectionTitle>
@@ -174,12 +191,12 @@ export const ReportSettingsPanel = ({
                 />
               </>
             )}
+          </>
+        )}
 
-            {(variantOptions.length > 1 ||
-              periodicityParam ||
-              groupItems.length > 0) && (
-              <SectionTitle>{t('reportSettings.grouping')}</SectionTitle>
-            )}
+        {/* ── Группировка ──────────────────────────────────────────── */}
+        {tab === 1 && (
+          <>
             {variantOptions.length > 1 && (
               <AutocompleteInput
                 value={
@@ -208,14 +225,20 @@ export const ReportSettingsPanel = ({
                 fullWidth
               />
             )}
-            {groupItems.length > 0 && (
+            {groupItems.length > 0 ? (
               <CheckboxList items={groupItems} onToggle={onToggleGroup} />
+            ) : (
+              !periodicityParam && (
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {t('reportSettings.noGrouping')}
+                </Typography>
+              )
             )}
           </>
         )}
 
         {/* ── Отборы ───────────────────────────────────────────────── */}
-        {tab === 1 && (
+        {tab === 2 && (
           <ReportFilterTable
             fields={filterFields}
             rows={filterRows}
@@ -225,7 +248,7 @@ export const ReportSettingsPanel = ({
         )}
 
         {/* ── Оформление ───────────────────────────────────────────── */}
-        {tab === 2 && (
+        {tab === 3 && (
           <div className="flex flex-col">
             <FormControlLabel
               control={

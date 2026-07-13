@@ -128,7 +128,7 @@ export const ReportSettingsDrawer = ({
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}>
-      <div className="flex w-80 flex-col gap-3 p-4">
+      <div className="flex w-[480px] max-w-[92vw] flex-col gap-3 p-4">
         <div className="flex items-center justify-between">
           <Typography variant="h6" className="font-semibold text-ui-06">
             {t('reportSettings.title')}
@@ -153,7 +153,11 @@ export const ReportSettingsDrawer = ({
             variant="fullWidth"
           >
             {tabs.map((tb) => (
-              <Tab key={tb.label} label={tb.label} />
+              <Tab
+                key={tb.label}
+                label={tb.label}
+                sx={{ minWidth: 0, px: 1, textTransform: 'none' }}
+              />
             ))}
           </Tabs>
         ) : (

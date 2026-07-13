@@ -33,9 +33,11 @@ import { useRunReport } from '../lib/hooks/use-run-report'
 import { useFilterFields } from '../lib/hooks/use-filter-fields'
 import { buildReportExport } from '../lib/utils/build-report-export'
 import { ReportResultTable } from './report-result-table'
+import { ReportPdfView } from './report-pdf-view'
 import { ReportParamField, type ReportParamValue } from './report-param-field'
 import { MemorialOrderSettingsPanel } from './memorial-order-settings-panel'
 import type {
+  ReportBlankResultDto,
   ReportIndicatorDto,
   ReportMetaDto,
   ReportParameterDto,
@@ -141,25 +143,24 @@ const isPodrazdelenie = (p: ReportParameterDto): boolean =>
   /podrazdelenie/i.test(p.code)
 
 /**
- * Нормализация кода параметра для сопоставления с кодами отборов бланка МО-13:
- * без хвоста `Id` (fkr/fkrId → fkr, molId → mol), в нижний регистр.
+ * Тумблер формы (напр. «Язык формы (рус/каз)») — BOOLEAN с group='form'.
+ * Для табличных СКД-отчётов (ТМЗ) выносим его из шапки в чекбоксы вкладки
+ * «Основные» панели настроек (как «Детализация» у МО). У бланков-МО язык уже
+ * попадает в свою панель через detailParams — там isFormToggle не используется.
  */
-const normalizeParamCode = (code: string): string =>
-  code.replace(/id$/i, '').toLowerCase()
+const isFormToggle = (p: ReportParameterDto): boolean =>
+  p.dataType === 'BOOLEAN' && p.group === 'form'
 
 /**
- * Коды параметров-отборов бланка МО-13 (нормализованные): «Классификация
- * расходов», «Специфика», «Источник финансирования», «Код платных услуг», «МОЛ».
- * Только по ним раскладываем блок «Отборы» — «Организация», период, список
- * счетов и прочие параметры остаются в шапке над бланком (как в 1С).
+ * Параметр «Организация» — остаётся в шапке бланка (как период). Определяем по
+ * справочнику-источнику или коду (устойчиво к регистру/суффиксам).
  */
-const MO13_FILTER_CODES = new Set([
-  'fkr',
-  'spetsifika',
-  'istochnikfinansirovaniya',
-  'kodplatnykhuslug',
-  'mol',
-])
+const isOrganizatsiya = (p: ReportParameterDto): boolean =>
+  p.referenceDomain === 'Organizatsii' || /organizatsiya/i.test(p.code)
+
+/** Параметр «Список счетов» (ACCOUNT_LIST) — остаётся в шапке бланка, как в 1С. */
+const isAccountList = (p: ReportParameterDto): boolean =>
+  p.dataType === 'ACCOUNT_LIST'
 
 /**
  * Сериализация значений параметров в строку URL (одно поле на параметр).
@@ -455,6 +456,7 @@ export const ReportPage = () => {
       onSubmit={handleSubmit}
       onClose={handleClose}
       applied={appliedBody != null}
+      appliedBody={appliedBody}
       isDraft={isDraft}
       isRunning={isRunning}
       isRunError={isRunError}
@@ -480,6 +482,7 @@ interface ReportPageContentProps {
   onSubmit: () => void
   onClose: () => void
   applied: boolean
+  appliedBody: RunReportBody | null
   isDraft: boolean
   isRunning: boolean
   isRunError: boolean
@@ -509,6 +512,7 @@ const ReportPageContent = ({
   onSubmit,
   onClose,
   applied,
+  appliedBody,
   isDraft,
   isRunning,
   isRunError,
@@ -551,10 +555,13 @@ const ReportPageContent = ({
   const [showSettings, setShowSettings] = useState(false)
   const [hideSettingsOnSubmit, setHideSettingsOnSubmit] = useState(false)
 
-  // «Детализация» — параметры-флажки (BOOLEAN). «Отборы» — только справочные
-  // параметры-отборы по кодам {@link MO13_FILTER_CODES} (сравнение EQUAL).
-  // «Организация» (обязательный ref), период и список счетов в панель НЕ уходят —
-  // остаются в шапке над бланком, как в 1С.
+  // Раскладка как в 1С. В шапке над бланком остаются период, «Организация» и
+  // «Список счетов». Всё прочее уходит в панель «Настройки»:
+  //  • «Детализация» — параметры-флажки (BOOLEAN, включая тумблер языка);
+  //  • «Отбор» — единая таблица «Поле | Тип сравнения | Список» (сравнение
+  //    «Равно») со ВСЕМИ справочными параметрами-отборами: Классификация
+  //    расходов (ФКР), Специфика, Источник финансирования, Код платных услуг,
+  //    Программа, Код администратора, Подпрограмма, Контрагент.
   const detailParams = useMemo<ReportParameterDto[]>(
     () =>
       isMemorialOrder
@@ -565,8 +572,17 @@ const ReportPageContent = ({
   const filterParams = useMemo<ReportParameterDto[]>(
     () =>
       isMemorialOrder
-        ? meta.parameters.filter((p) =>
-            MO13_FILTER_CODES.has(normalizeParamCode(p.code))
+        ? meta.parameters.filter(
+            (p) =>
+              // Период — это PERIOD или ПАРА DATE-параметров («Начало/Конец
+              // периода»); все они остаются в шапке, а не в «Отборе».
+              !isPeriod(p) &&
+              p.dataType !== 'DATE' &&
+              !isOrganizatsiya(p) &&
+              !isAccountList(p) &&
+              !isPeriodicity(p) &&
+              !isPodrazdelenie(p) &&
+              p.dataType !== 'BOOLEAN'
           )
         : [],
     [isMemorialOrder, meta.parameters]
@@ -612,10 +628,21 @@ const ReportPageContent = ({
       ? result
       : null
 
-  // DIMENSION-колонки результата — пункты вкладки «Группировка».
+  // DIMENSION-колонки — пункты вкладки «Группировка». До формирования берём из
+  // meta.columns (коды совпадают с колонками результата), чтобы разрезы были
+  // видны сразу, как в 1С; после формирования — из результата.
   const dimensionColumns = useMemo(
-    () => tabularResult?.columns.filter((c) => c.role === 'DIMENSION') ?? [],
-    [tabularResult]
+    () =>
+      (tabularResult?.columns ?? meta.columns).filter(
+        (c) => c.role === 'DIMENSION'
+      ),
+    [tabularResult, meta.columns]
+  )
+
+  // Тумблеры формы (язык и т.п.) — раздел вкладки «Основные» панели ТМЗ (как у МО).
+  const formToggleParams = useMemo(
+    () => meta.parameters.filter(isFormToggle),
+    [meta.parameters]
   )
 
   // Состояние показателей (display-only): включён ли показатель. Инициализация
@@ -671,6 +698,24 @@ const ReportPageContent = ({
     })
   }
 
+  // Тумблеры формы (язык и т.п.) — чекбоксы вкладки «Основные». В отличие от
+  // показателей/группировки это реальные параметры отчёта (уходят в /run).
+  const formToggleItems = useMemo<ReportGroupItem[]>(
+    () =>
+      formToggleParams.map((p) => ({
+        key: p.code,
+        // Тумблер языка формы подписываем «Русский язык» (вкл=рус / выкл=каз).
+        label: /yazyk/i.test(p.code)
+          ? t('reports.russianLanguage')
+          : localized(p.titleRu, p.titleKz, isKz),
+        checked: values[p.code] === true,
+      })),
+    [formToggleParams, values, isKz, t]
+  )
+  const onToggleFormParam = (key: string) => {
+    setParamValue(key, values[key] !== true)
+  }
+
   // Колонки, скрытые настройками: выключенные показатели + скрытые группы.
   const hiddenColumns = useMemo<Set<string>>(() => {
     const set = new Set<string>(hiddenGroups)
@@ -693,9 +738,10 @@ const ReportPageContent = ({
       indicators.length > 0 ||
       periodicityParam != null ||
       accountParam != null ||
+      formToggleParams.length > 0 ||
       meta.columns.some((c) => c.role === 'DIMENSION' || c.role === 'MEASURE')
     )
-  }, [meta, indicators, periodicityParam, accountParam])
+  }, [meta, indicators, periodicityParam, accountParam, formToggleParams])
 
   const handlePrint = () => {
     window.print()
@@ -740,7 +786,8 @@ const ReportPageContent = ({
               (p) =>
                 !isPeriodicity(p) &&
                 !isPodrazdelenie(p) &&
-                !settingsParamCodes.has(p.code)
+                !settingsParamCodes.has(p.code) &&
+                !isFormToggle(p)
             )
             .map((param) => {
               const invalid =
@@ -929,11 +976,25 @@ const ReportPageContent = ({
                 </div>
               )}
 
+              {/* Нетабличный результат (спец-DTO без columns/rows — отчёт-бланк,
+                  например «Инвентарная карточка ОС»): показываем серверный PDF
+                  (/print) + неблокирующий список B0-сообщений (как окно сообщений
+                  формы 1С). Если печать не реализована (501) — ReportPdfView сам
+                  покажет фолбэк «отдельный экран». */}
               {!isRunning && !isRunError && result && !tabularResult && (
-                <div className="rounded-md bg-ui-02 px-4 py-6 text-center">
-                  <Typography variant="body1" className="text-ui-06">
-                    {t('reports.separateScreen')}
-                  </Typography>
+                <div className="report-print-area">
+                  <ReportPdfView
+                    code={code}
+                    body={appliedBody}
+                    hasCards={
+                      ((result as unknown as ReportBlankResultDto).cards
+                        ?.length ?? 0) > 0
+                    }
+                    validationMessages={
+                      (result as unknown as ReportBlankResultDto)
+                        .validationMessages
+                    }
+                  />
                 </div>
               )}
 
@@ -969,6 +1030,8 @@ const ReportPageContent = ({
             variantOptions={variantOptions}
             selectedVariant={selectedVariant}
             onVariantChange={onVariantChange}
+            formToggleItems={formToggleItems}
+            onToggleFormParam={onToggleFormParam}
             indicatorItems={indicatorItems}
             onToggleIndicator={onToggleIndicator}
             groupItems={groupItems}

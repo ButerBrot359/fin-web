@@ -18,8 +18,26 @@ export interface OsvSubkonto {
   valueType?: string | null
   /** ID элемента справочника — для субконто-справочника. */
   dictionaryEntryReferenceId?: number | null
+  /** ID записи документа — для субконто-документа. */
+  documentEntryReferenceId?: number | null
   /** ID записи плана видов характеристик — для характеристик. */
   characteristicsPlanEntryId?: number | null
+  /**
+   * Код типа справочника (при `valueType === 'DICTIONARY'`) — бэк резолвит,
+   * чтобы фронт собрал маршрут «Открыть элемент» (`/dictionary/{code}/{id}`).
+   */
+  dictionaryTypeCode?: string | null
+  /**
+   * Код типа документа (при `valueType === 'DOCUMENT'`) — для маршрута
+   * «Открыть элемент» (`/document/{code}/{id}`).
+   */
+  documentTypeCode?: string | null
+  /** Резолвленное имя элемента (бэк) — для подписи пункта меню. */
+  displayName?: string | null
+  /** nameRu записи-значения субконто (бэк). */
+  nameRu?: string | null
+  /** Код записи-значения субконто (бэк). */
+  code?: string | null
 }
 
 /**

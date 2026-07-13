@@ -63,4 +63,9 @@ export interface DocumentAttribute {
   showInForm: boolean
   defaultValue: string | null
   formEvent: string | null
+  // Отбор пикера ссылочной колонки ТЧ по сестринской ячейке той же строки
+  // (SCRUM-281): ключ — af-код атрибута ЦЕЛЕВОГО справочника, значение —
+  // binding колонки ТЕКУЩЕЙ строки. У атрибутов без правила ключ в JSON
+  // отсутствует вовсе.
+  rowFilter?: Record<string, string>
 }

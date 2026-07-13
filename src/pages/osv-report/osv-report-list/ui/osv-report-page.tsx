@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import {
   useLocation,
   useNavigate,
@@ -20,10 +20,13 @@ import {
 import { PageHeader } from '@/widgets/page-header'
 import { DateTimeInput, AutocompleteInput } from '@/shared/ui/inputs'
 import { formatDate } from '@/shared/lib/utils/date'
+import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
 import type { SelectOption } from '@/shared/types/select-option'
 
 import { useOsvReport } from '../lib/hooks/use-osv-report'
+import { resolveOpenTarget } from '../lib/resolve-open-target'
 import { OsvReportTable } from './osv-report-table'
+import { OsvRowContextMenu, type OsvMenuPosition } from './osv-row-context-menu'
 import {
   OSV_DEFAULT_DIMENSIONS,
   OSV_GROUP_DIMENSIONS,
@@ -64,12 +67,16 @@ export const OsvReportPage = () => {
   const urlFrom = searchParams.get('from') ?? ''
   const urlTo = searchParams.get('to') ?? ''
   const urlAccountId = searchParams.get('accountId')
+  const urlOrganizatsiyaId = searchParams.get('organizatsiyaId')
 
   // Черновики полей формы (что пользователь правит до «Сформировать»).
   // Инициализируются из URL — при перемонтировании подхватывают applied-значения.
   const [from, setFrom] = useState(urlFrom)
   const [to, setTo] = useState(urlTo)
   const [account, setAccount] = useState<SelectOption | null>(null)
+  // Отбор по организации — в шапке (как счёт): черновик, применяется по
+  // «Сформировать», хранится в URL (?organizatsiyaId) и уходит в dimensionFilters.
+  const [organizatsiya, setOrganizatsiya] = useState<SelectOption | null>(null)
 
   // Группировка (панель «Настройки → Группировка»). По умолчанию все измерения
   // включены (полное дерево, как сейчас); субконто-разворот выключен. Меняет
@@ -95,6 +102,17 @@ export const OsvReportPage = () => {
     [accounts]
   )
 
+  const { entries: organizations } = useDictionaryEntries('Organizatsii')
+  const organizationOptions = useMemo<SelectOption[]>(
+    () =>
+      organizations.map((o) => ({
+        id: o.id,
+        code: o.code ?? '',
+        label: o.displayName ?? o.nameRu ?? o.code ?? String(o.id),
+      })),
+    [organizations]
+  )
+
   // Восстанавливаем выбранный счёт из URL (при монтировании / смене URL, когда
   // справочник счетов загрузился). НЕ зависим от `account` и НЕ сбрасываем его в
   // null — иначе ручной выбор в выпадающем списке тут же затирался бы (поле
@@ -104,6 +122,16 @@ export const OsvReportPage = () => {
     const found = accountOptions.find((o) => String(o.id) === urlAccountId)
     if (found) setAccount(found)
   }, [urlAccountId, accountOptions])
+
+  // Аналогично восстанавливаем выбранную организацию из URL, когда справочник
+  // организаций загрузился. НЕ сбрасываем в null (см. счёт выше).
+  useEffect(() => {
+    if (!urlOrganizatsiyaId) return
+    const found = organizationOptions.find(
+      (o) => String(o.id) === urlOrganizatsiyaId
+    )
+    if (found) setOrganizatsiya(found)
+  }, [urlOrganizatsiyaId, organizationOptions])
 
   // Applied-параметры — производные от URL. Запрос включается, когда заданы
   // обе границы периода.
@@ -118,9 +146,24 @@ export const OsvReportPage = () => {
         (d) => d.key
       ),
       expandBySubkonto,
-      dimensionFilters: filters,
+      // Отбор по организации из шапки (URL) + отборы боковой панели. Организация
+      // задаётся только в шапке, поэтому в `filters` её нет — конфликта ключей нет.
+      dimensionFilters: {
+        ...filters,
+        ...(urlOrganizatsiyaId
+          ? { organizatsiyaId: Number(urlOrganizatsiyaId) }
+          : {}),
+      },
     }
-  }, [urlFrom, urlTo, urlAccountId, enabledDims, expandBySubkonto, filters])
+  }, [
+    urlFrom,
+    urlTo,
+    urlAccountId,
+    urlOrganizatsiyaId,
+    enabledDims,
+    expandBySubkonto,
+    filters,
+  ])
 
   // Пункты вкладки «Группировка»: измерения + «По субконто» (разворот листа).
   const toggleGroup = (key: string) => {
@@ -159,9 +202,13 @@ export const OsvReportPage = () => {
     if (key === 'quantity') setShowQuantity((v) => !v)
   }
 
+  // Организация вынесена в шапку — исключаем её из боковой панели «Отборы»,
+  // чтобы отбор не задавался в двух местах.
   const filterItems = useMemo<ReportFilterItem[]>(
     () =>
-      REPORT_FILTER_DIMENSIONS.map((d) => ({
+      REPORT_FILTER_DIMENSIONS.filter(
+        (d) => d.paramKey !== 'organizatsiyaId'
+      ).map((d) => ({
         key: d.paramKey,
         label: t(d.labelKey),
         dictTypeCode: d.dictTypeCode,
@@ -183,10 +230,14 @@ export const OsvReportPage = () => {
   const handleSubmit = () => {
     if (!canSubmit) return
     const accountId = account ? String(account.id) : undefined
+    const organizatsiyaId = organizatsiya ? String(organizatsiya.id) : undefined
     // Те же параметры, что уже применены → URL/queryKey не изменится и
     // автозапроса не будет: форсим refetch вручную.
     const sameAsApplied =
-      urlFrom === from && urlTo === to && (urlAccountId ?? undefined) === accountId
+      urlFrom === from &&
+      urlTo === to &&
+      (urlAccountId ?? undefined) === accountId &&
+      (urlOrganizatsiyaId ?? undefined) === organizatsiyaId
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
@@ -194,6 +245,8 @@ export const OsvReportPage = () => {
         next.set('to', to)
         if (accountId) next.set('accountId', accountId)
         else next.delete('accountId')
+        if (organizatsiyaId) next.set('organizatsiyaId', organizatsiyaId)
+        else next.delete('organizatsiyaId')
         return next
       },
       { replace: true }
@@ -217,8 +270,8 @@ export const OsvReportPage = () => {
     void navigate(`/modules/${pageCode}`)
   }
 
-  // Двойной клик по строке ОСВ → карточка счёта (drill-down, как в 1С): движения
-  // по счёту за тот же период. Если кликнули по узлу измерения (ФКР, Подразделение
+  // Пункт меню «Карточка счёта» → карточка счёта (drill-down, как в 1С): движения
+  // по счёту за тот же период. Если строка — узел измерения (ФКР, Подразделение
   // и т.д.), наследуем фильтры аналитики ВСЕХ уровней от корня до узла — карточка
   // строится только по этой ветке дерева.
   const handleOpenAccountCard = (row: Row<OsvReportEntry>) => {
@@ -241,6 +294,48 @@ export const OsvReportPage = () => {
       if (key) sp.set(key, String(groupRefId))
     }
     void navigate(`/modules/${pageCode}/account-card?${sp.toString()}`)
+  }
+
+  // Меню выбора по двойному клику, как в 1С: «Открыть <элемент>» + «Карточка
+  // счёта N». Открывается у курсора; сам переход выполняют пункты меню.
+  const [menu, setMenu] = useState<{
+    pos: OsvMenuPosition
+    row: Row<OsvReportEntry>
+  } | null>(null)
+
+  const handleRowDoubleClick = (
+    row: Row<OsvReportEntry>,
+    e: ReactMouseEvent
+  ) => {
+    // Двойной клик выделяет текст строки — снимаем выделение, чтобы меню
+    // открывалось «чисто».
+    window.getSelection()?.removeAllRanges()
+    setMenu({ pos: { top: e.clientY, left: e.clientX }, row })
+  }
+
+  const menuRow = menu?.row ?? null
+  const openTarget = menuRow ? resolveOpenTarget(menuRow.original) : null
+  const openLabel = openTarget
+    ? openTarget.name
+      ? `${t('osv.openElement')} «${openTarget.name}»`
+      : t('osv.openElement')
+    : null
+
+  // Код счёта для подписи «Карточка счёта N» — из корня ветки (строка-счёт).
+  const menuAccountCode = menuRow
+    ? ([...menuRow.getParentRows(), menuRow][0]?.original.accountCode ??
+        menuRow.original.accountCode ??
+        '')
+    : ''
+
+  const handleOpenElement = () => {
+    if (!openTarget) return
+    const { kind, typeCode, id } = openTarget
+    const path =
+      kind === 'dictionary'
+        ? `/modules/${pageCode}/dictionary/${typeCode}/${String(id)}`
+        : `/modules/${pageCode}/document/${typeCode}/${String(id)}`
+    void navigate(path)
   }
 
   return (
@@ -275,6 +370,15 @@ export const OsvReportPage = () => {
             fullWidth
           />
         </div>
+        <div className="report-param-field w-64">
+          <AutocompleteInput
+            value={organizatsiya}
+            options={organizationOptions}
+            onChange={setOrganizatsiya}
+            label={t('osv.levelOrganization')}
+            fullWidth
+          />
+        </div>
         <Button
           variant="contained"
           disabled={!canSubmit}
@@ -304,7 +408,7 @@ export const OsvReportPage = () => {
             rows={rows}
             total={total}
             title={reportTitle}
-            onRowDoubleClick={handleOpenAccountCard}
+            onRowDoubleClick={handleRowDoubleClick}
             showQuantity={showQuantity}
             isLoading={isLoading}
           />
@@ -322,6 +426,19 @@ export const OsvReportPage = () => {
         onToggleIndicator={toggleIndicator}
         filterItems={filterItems}
         onFilterChange={onFilterChange}
+      />
+
+      <OsvRowContextMenu
+        position={menu?.pos ?? null}
+        onClose={() => {
+          setMenu(null)
+        }}
+        openLabel={openLabel}
+        onOpen={handleOpenElement}
+        accountCardLabel={`${t('osv.accountCard')} ${menuAccountCode}`}
+        onOpenAccountCard={() => {
+          if (menuRow) handleOpenAccountCard(menuRow)
+        }}
       />
     </div>
   )

@@ -230,7 +230,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
 
     const nameColumn: ColumnDef<DictEntry> = {
       id: 'nameRu',
-      accessorFn: (row) => getLocalizedName(row, i18n.language),
+      accessorFn: (row) => row.displayName ?? getLocalizedName(row, i18n.language),
       header: () => <span>{t('documentTable.link')}</span>,
       cell: (info) => (
         <Typography variant="body2" noWrap className="text-ui-06">

@@ -135,6 +135,10 @@ export const ReportParamField = ({
         <Autocomplete
           multiple
           size="small"
+          // Компактные чипы, как в 1С: показываем 1 + «+N», иначе длинный список
+          // счетов расползается по шапке и наслаивается на кнопки. При фокусе MUI
+          // раскрывает все теги для редактирования.
+          limitTags={1}
           options={refOptions}
           value={selected}
           onChange={(_e, next) => {

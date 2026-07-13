@@ -80,6 +80,19 @@ export interface ReportFormSignatureDto {
   captions?: string[]
 }
 
+/**
+ * Блок гос-бланка над титулом (напр. М-44): реквизиты приказа (side=RIGHT) или
+ * организация (side=LEFT). `lines` выводятся КАК ЕСТЬ (пробелы байт-в-байт).
+ * `underline` — линия-строка под текстом (рукописная строка бланка); `caption` —
+ * мелкая приглушённая подпись под блоком (или null).
+ */
+export interface ReportHeaderBlockDto {
+  side: 'LEFT' | 'RIGHT'
+  lines: string[]
+  underline: boolean
+  caption: string | null
+}
+
 /** Официальный бланк (мемориальный ордер): шапка, секции, остатки, подписи. */
 export interface ReportFormDto {
   /** Правовой гриф (несколько строк, мелкий шрифт слева). */
@@ -297,6 +310,12 @@ export interface ReportResultDto {
   subtitleLines?: string[]
   /** Официальный бланк (layout=FORM): мемориальные ордера. */
   form?: ReportFormDto
+  /** Блоки гос-бланка над титулом (М-44): реквизиты приказа / организация. */
+  headerBlocks?: ReportHeaderBlockDto[]
+  /** Строка периода под титулом («Период: 01.01.2026 - 01.01.2027»). Пусто ⇒ не рендерить. */
+  periodLine?: string
+  /** Подвал-подписи после таблицы (структура — как подпись мем-ордера). */
+  footerBlock?: ReportFormSignatureDto
 }
 
 /** Структурный отбор в теле запроса формирования отчёта. */

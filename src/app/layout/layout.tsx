@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { WorkspacePanelHost } from '@/features/sdui'
-import { performTabClose, useWorkspaceTabsStore } from '@/features/workspace-tabs'
+import { performTabBack, performTabClose, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { WorkspaceTabBar } from '@/widgets/workspace-tab-bar'
 
@@ -24,6 +24,11 @@ export const Layout = ({ sidebar, header, children }: LayoutProps) => {
     if (activePanelTab) performTabClose(activePanelTab.id, navigate)
   }
 
+  // «Назад» — на вкладку-опенер (панель остаётся в баре); «✕» — закрыть
+  const handleBackPanelTab = () => {
+    if (activePanelTab) performTabBack(activePanelTab.id, navigate)
+  }
+
   return (
     <div className="flex h-screen w-full bg-ui-06">
       {sidebar}
@@ -36,12 +41,12 @@ export const Layout = ({ sidebar, header, children }: LayoutProps) => {
           {activePanelTab?.panelId && (
             <div className="flex h-full min-h-0 flex-col">
               {/* Chrome панельной вкладки (баг #2): заголовок = props.title
-                  от бэка («Движения документа: {название}»), «назад» и
-                  крестик закрывают вкладку — роут под панелью не менялся,
-                  navigate(-1) тут не годится. */}
+                  от бэка («Движения документа: {название}»), «назад» возвращает
+                  на вкладку-опенер (панель остаётся в баре), крестик закрывает
+                  вкладку — роут под панелью не менялся, navigate(-1) тут не годится. */}
               <PageHeader
                 title={activePanelTab.title}
-                onBack={handleClosePanelTab}
+                onBack={handleBackPanelTab}
                 onClose={handleClosePanelTab}
               />
               <div className="min-h-0 flex-1 overflow-auto">

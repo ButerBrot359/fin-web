@@ -11,3 +11,4 @@ export type { OpenPanelTabParams, WorkspaceTabGatewayImpl } from './lib/workspac
 export { usePanelStore } from './lib/stores/panel-store'
 export { WorkspacePanelHost } from './ui/workspace-panel-host'
 export { hasSduiUnsavedWork, closeAllSduiSessions } from './lib/language-session-control'
+export { openMovementsForEntry } from './lib/open-movements'

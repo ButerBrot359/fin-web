@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { unpostDocumentEntry } from '@/entities/document-entry'
+import { openMovementsForEntry } from '@/features/sdui'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import { apiService } from '@/shared/api/api'
@@ -72,6 +73,15 @@ export const DocumentListToolbar = ({
     },
   })
 
+  // ДтКт: движения открываются SDUI workspace-вкладкой (паритет с формой),
+  // legacy-роут .../movements больше не используется.
+  const movementsMutation = useMutation({
+    mutationFn: (id: number) => openMovementsForEntry(String(id)),
+    onError: () => {
+      showToast('error', t('documentListToolbar.movementsError'))
+    },
+  })
+
   const handleCreate = async () => {
     if (!pageCode || !moduleCode) return
 
@@ -119,14 +129,8 @@ export const DocumentListToolbar = ({
   }
 
   const handleMovements = () => {
-    if (!selectedRowId) return
-    const params = new URLSearchParams({
-      title: selectedRowName ?? '',
-      from: 'list',
-    })
-    void navigate(
-      `/modules/${pageCode}/document/${moduleCode}/${String(selectedRowId)}/movements?${params.toString()}`
-    )
+    if (selectedRowId == null) return
+    movementsMutation.mutate(selectedRowId)
   }
 
   return (
@@ -154,7 +158,7 @@ export const DocumentListToolbar = ({
               variant="secondary"
               aria-label={t('actions.debitCredit')}
               startIcon={<DebetKreditIcon className="h-5 w-5" />}
-              disabled={selectedRowId == null}
+              disabled={selectedRowId == null || movementsMutation.isPending}
               onClick={handleMovements}
             />
             <Button

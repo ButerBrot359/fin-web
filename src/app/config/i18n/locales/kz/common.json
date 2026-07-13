@@ -84,7 +84,8 @@
     "more": "Тағы",
     "unpost": "Өткізуді болдырмау",
     "unpostSuccess": "Өткізу болдырмалды",
-    "unpostError": "Өткізуді болдырмау қатесі"
+    "unpostError": "Өткізуді болдырмау қатесі",
+    "movementsError": "Құжат қозғалыстарын жүктеу мүмкін болмады"
   },
   "documentFormToolbar": {
     "postAndClose": "Өткізу және жабу",

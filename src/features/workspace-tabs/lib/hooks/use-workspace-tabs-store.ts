@@ -89,7 +89,8 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
           title,
           pageType: 'sdui-panel',
           panelId,
-          // Опенер фиксируется при создании; сама панель опенером быть не может
+          // Опенер фиксируется при создании; исключена только самоссылка
+          // (опенером может быть и другая панельная вкладка)
           openerTabId:
             activeTabId && activeTabId !== id ? activeTabId : undefined,
           createdAt: Date.now(),

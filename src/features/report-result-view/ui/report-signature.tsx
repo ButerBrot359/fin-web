@@ -16,7 +16,9 @@ export const ReportSignature = ({
   const captions = signature.captions ?? ['подпись']
   const lastIdx = captions.length - 1
   return (
-    <div className="mt-8 flex items-end gap-6">
+    // Ширину подвала ограничиваем (≈ ширина бланка), чтобы графы не растягивались
+    // на всю широкую таблицу, а стояли компактно, как в 1С.
+    <div className="mt-8 flex max-w-[900px] items-end gap-6">
       <Typography variant="body2" sx={{ color: '#333' }} className="shrink-0">
         {signature.role}
       </Typography>

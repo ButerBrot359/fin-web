@@ -72,14 +72,37 @@ const bodyColWidthPx = (col: ReportColumnDto): number => {
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
 
-/** Локализованный верхний ряд шапки (группа «Сальдо на начало периода» и т.п.). */
-const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
+// Разделитель уровней при ВРЕМЕННОЙ склейке от бэка: « — » (em-dash в пробелах).
+// Пока бэк не отдаёт subGroupTitle, он склеивает «Группа — Подгруппа» в groupTitle
+// (напр. «Оборот с … — Итого приход»); внутренний период — обычный дефис « - »,
+// поэтому режем строго по em-dash. Когда бэк начнёт слать subGroupTitle — он
+// приоритетнее, и разбор не задействуется.
+const LEVEL_SEP = /\s—\s/
+
+const rawGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
   ((isKz ? col.groupTitleKz : col.groupTitleRu) || col.groupTitleRu) ?? ''
 
-/** Локализованный средний ряд шапки (подгруппа «Итого приход» / счёт «7060»). */
-const columnSubGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
+const rawSubGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
   ((isKz ? col.subGroupTitleKz : col.subGroupTitleRu) || col.subGroupTitleRu) ??
   ''
+
+/** Верхний ряд шапки: при склейке без subGroupTitle — левая часть « — ». */
+const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string => {
+  const raw = rawGroupTitle(col, isKz)
+  if (!rawSubGroupTitle(col, isKz)) {
+    const parts = raw.split(LEVEL_SEP)
+    if (parts.length > 1) return parts[0]
+  }
+  return raw
+}
+
+/** Средний ряд шапки: subGroupTitle бэка, иначе правая часть склейки « — ». */
+const columnSubGroupTitle = (col: ReportColumnDto, isKz: boolean): string => {
+  const sub = rawSubGroupTitle(col, isKz)
+  if (sub) return sub
+  const parts = rawGroupTitle(col, isKz).split(LEVEL_SEP)
+  return parts.length > 1 ? parts.slice(1).join('—') : ''
+}
 
 /**
  * TREE-таблица результата (как ОСВ в 1С): рекурсивное дерево по

@@ -23,9 +23,8 @@ import { useSduiSession } from '../../../lib/sdui-session-context'
 import {
   buildColumnDefs,
   extractAllLeafColumns,
-  renderCellValue,
-  normalizeKey,
 } from '../../../lib/utils/build-column-defs'
+import { renderCellValue, normalizeKey } from '../../../lib/utils/cell-value'
 import { TableToolbar } from './table-toolbar'
 
 interface ComplexEditableTableProps {

@@ -72,9 +72,37 @@ const bodyColWidthPx = (col: ReportColumnDto): number => {
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
 
-/** Локализованный верхний ряд шапки (группа «Сальдо на начало периода» и т.п.). */
-const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
+// Разделитель уровней при ВРЕМЕННОЙ склейке от бэка: « — » (em-dash в пробелах).
+// Пока бэк не отдаёт subGroupTitle, он склеивает «Группа — Подгруппа» в groupTitle
+// (напр. «Оборот с … — Итого приход»); внутренний период — обычный дефис « - »,
+// поэтому режем строго по em-dash. Когда бэк начнёт слать subGroupTitle — он
+// приоритетнее, и разбор не задействуется.
+const LEVEL_SEP = /\s—\s/
+
+const rawGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
   ((isKz ? col.groupTitleKz : col.groupTitleRu) || col.groupTitleRu) ?? ''
+
+const rawSubGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
+  ((isKz ? col.subGroupTitleKz : col.subGroupTitleRu) || col.subGroupTitleRu) ??
+  ''
+
+/** Верхний ряд шапки: при склейке без subGroupTitle — левая часть « — ». */
+const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string => {
+  const raw = rawGroupTitle(col, isKz)
+  if (!rawSubGroupTitle(col, isKz)) {
+    const parts = raw.split(LEVEL_SEP)
+    if (parts.length > 1) return parts[0]
+  }
+  return raw
+}
+
+/** Средний ряд шапки: subGroupTitle бэка, иначе правая часть склейки « — ». */
+const columnSubGroupTitle = (col: ReportColumnDto, isKz: boolean): string => {
+  const sub = rawSubGroupTitle(col, isKz)
+  if (sub) return sub
+  const parts = rawGroupTitle(col, isKz).split(LEVEL_SEP)
+  return parts.length > 1 ? parts.slice(1).join('—') : ''
+}
 
 /**
  * TREE-таблица результата (как ОСВ в 1С): рекурсивное дерево по
@@ -179,6 +207,90 @@ export const TreeTable = ({
     return { topRow, subRow }
   }, [bodyColumns, isKz])
 
+  // Трёхуровневая шапка (Блок Д): groupTitle → subGroupTitle → title. Строится
+  // только если есть subGroupTitle; иначе используется 2-уровневая (headModel).
+  //  - колонка без groupTitle → rowSpan=3 (верхний ряд);
+  //  - группа без subGroupTitle у колонки → mid-ячейка rowSpan=2 (title колонки);
+  //  - есть subGroupTitle → group (top) / subGroup (mid, colSpan) / title (bot).
+  const headModel3 = useMemo(() => {
+    const hasSub = bodyColumns.some((c) => columnSubGroupTitle(c, isKz))
+    if (!hasSub) return null
+
+    const topRow: {
+      key: string
+      title: string
+      colSpan: number
+      rowSpan: number
+    }[] = []
+    const midRow: {
+      key: string
+      title: string
+      colSpan: number
+      rowSpan: number
+    }[] = []
+    const botRow: { key: string; col: ReportColumnDto }[] = []
+
+    let i = 0
+    while (i < bodyColumns.length) {
+      const col = bodyColumns[i]
+      const group = columnGroupTitle(col, isKz)
+      if (!group) {
+        topRow.push({
+          key: col.code,
+          title: columnTitle(col, isKz),
+          colSpan: 1,
+          rowSpan: 3,
+        })
+        i++
+        continue
+      }
+      let j = i
+      while (
+        j < bodyColumns.length &&
+        columnGroupTitle(bodyColumns[j], isKz) === group
+      ) {
+        j++
+      }
+      topRow.push({
+        key: `grp-${col.code}`,
+        title: group,
+        colSpan: j - i,
+        rowSpan: 1,
+      })
+      let k = i
+      while (k < j) {
+        const c = bodyColumns[k]
+        const sub = columnSubGroupTitle(c, isKz)
+        if (!sub) {
+          midRow.push({
+            key: c.code,
+            title: columnTitle(c, isKz),
+            colSpan: 1,
+            rowSpan: 2,
+          })
+          k++
+          continue
+        }
+        let m = k
+        while (m < j && columnSubGroupTitle(bodyColumns[m], isKz) === sub) {
+          m++
+        }
+        midRow.push({
+          key: `sub-${c.code}`,
+          title: sub,
+          colSpan: m - k,
+          rowSpan: 1,
+        })
+        for (let x = k; x < m; x++) {
+          botRow.push({ key: bodyColumns[x].code, col: bodyColumns[x] })
+        }
+        k = m
+      }
+      i = j
+    }
+    return { topRow, midRow, botRow }
+  }, [bodyColumns, isKz])
+
   if (result.rows.length === 0) {
     return (
       <div className="flex items-center justify-center py-10">
@@ -258,7 +370,52 @@ export const TreeTable = ({
           ))}
         </colgroup>
         <thead>
-          {headModel ? (
+          {headModel3 ? (
+            <>
+              <tr>
+                <th rowSpan={3} className={thBase}>
+                  <Typography variant="body2" sx={thTextSx}>
+                    {treeHeaderTitle}
+                  </Typography>
+                </th>
+                {headModel3.topRow.map((cell) => (
+                  <th
+                    key={cell.key}
+                    colSpan={cell.colSpan}
+                    rowSpan={cell.rowSpan}
+                    className={thBase}
+                  >
+                    <Typography variant="body2" sx={thTextSx}>
+                      {cell.title}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                {headModel3.midRow.map((cell) => (
+                  <th
+                    key={cell.key}
+                    colSpan={cell.colSpan}
+                    rowSpan={cell.rowSpan}
+                    className={thBase}
+                  >
+                    <Typography variant="body2" sx={thTextSx}>
+                      {cell.title}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                {headModel3.botRow.map(({ key, col }) => (
+                  <th key={key} className={thBase}>
+                    <Typography variant="body2" sx={thTextSx}>
+                      {columnTitle(col, isKz)}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+            </>
+          ) : headModel ? (
             <>
               <tr>
                 <th rowSpan={2} className={thBase}>

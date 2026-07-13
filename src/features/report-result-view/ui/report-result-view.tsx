@@ -10,6 +10,8 @@ import { formatReportTitle } from '../lib/format-title'
 import { FormView } from './form-view'
 import { LedgerTable } from './ledger-table'
 import { TreeTable } from './tree-table'
+import { ReportHeaderBlocks } from './report-header-blocks'
+import { ReportSignature } from './report-signature'
 
 /** Настройки вкладки «Оформление» (проброс из панели настроек отчёта). */
 export interface ReportResultAppearance {
@@ -59,6 +61,8 @@ export const ReportResultView = ({
 
   const title = formatReportTitle(result)
   const isLedger = result.layout === 'LEDGER'
+  // Гос-бланк (М-44): титул и период центрируются над таблицей, как в 1С.
+  const isBlank = !!result.headerBlocks && result.headerBlocks.length > 0
 
   // Официальный бланк (мемориальный ордер) — своя шапка, заголовок не нужен.
   if (result.layout === 'FORM' && result.form) {
@@ -67,6 +71,9 @@ export const ReportResultView = ({
 
   return (
     <div className="flex flex-col gap-1">
+      {result.headerBlocks && result.headerBlocks.length > 0 && (
+        <ReportHeaderBlocks blocks={result.headerBlocks} />
+      )}
       {result.organizationTitle && (
         <Typography variant="body2" sx={{ color: '#333', fontWeight: 700 }}>
           {result.organizationTitle}
@@ -75,9 +82,27 @@ export const ReportResultView = ({
       {title && (
         <Typography
           variant="body1"
-          sx={{ color: '#333', fontWeight: 700, fontSize: 17 }}
+          sx={{
+            color: '#333',
+            fontWeight: 700,
+            fontSize: 17,
+            ...(isBlank ? { textAlign: 'center', maxWidth: 900 } : {}),
+          }}
         >
           {title}
+        </Typography>
+      )}
+      {/* Строка периода сразу под титулом (полужирно, мельче титула). */}
+      {result.periodLine && (
+        <Typography
+          variant="body2"
+          sx={{
+            color: '#333',
+            fontWeight: 700,
+            ...(isBlank ? { textAlign: 'center', maxWidth: 900 } : {}),
+          }}
+        >
+          {result.periodLine}
         </Typography>
       )}
       {result.subtitleLines?.map((line, i) => (
@@ -92,6 +117,7 @@ export const ReportResultView = ({
           <TreeTable result={result} columns={columns} indentPx={indentPx} />
         )}
       </div>
+      {result.footerBlock && <ReportSignature signature={result.footerBlock} />}
     </div>
   )
 }

@@ -326,6 +326,7 @@
   "reports": {
     "title": "Отчёт",
     "detailSection": "Детализация",
+    "russianLanguage": "Русский язык",
     "filtersSection": "Отборы",
     "hideSettingsOnSubmit": "Скрывать настройки при формировании отчёта",
     "generate": "Сформировать",

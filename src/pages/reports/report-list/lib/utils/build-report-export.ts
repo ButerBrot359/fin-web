@@ -175,15 +175,49 @@ const subDecimals = (subLabels: string[] | undefined, i: number): number =>
 const safeText = (v: unknown): string =>
   typeof v === 'string' ? v : typeof v === 'number' ? String(v) : ''
 
-/** Общая «шапка листа»: заголовок отчёта + организация + подзаголовки. */
+/**
+ * Общая «шапка листа»: гос-бланк (headerBlocks) + организация + строка периода +
+ * подзаголовки. Excel не позиционирует бланк точь-в-точь как экран — строки
+ * попадают под титул (SHOULD: «добавить строки сверху листа»), данные не теряются.
+ */
 const sheetChrome = (result: ReportResultDto) => {
   const subtitleLines: string[] = []
+  for (const block of result.headerBlocks ?? []) {
+    subtitleLines.push(...block.lines)
+    if (block.caption) subtitleLines.push(block.caption)
+  }
   if (result.organizationTitle) subtitleLines.push(result.organizationTitle)
+  if (result.periodLine) subtitleLines.push(result.periodLine)
   if (result.subtitleLines) subtitleLines.push(...result.subtitleLines)
   return {
     title: formatReportTitle(result) || result.reportNameRu,
     subtitleLines,
   }
+}
+
+/**
+ * Дописывает подвал-подписи (footerBlock) отдельными строками в конец листа:
+ * пустая строка-разделитель, затем роль + ФИО (над последней графой), затем
+ * подписи граф. Роль — в первой колонке, графы — начиная со второй.
+ */
+const appendFooter = (
+  out: XlsxCell[][],
+  rowKinds: XlsxRowKind[],
+  result: ReportResultDto
+): void => {
+  const footer = result.footerBlock
+  if (!footer) return
+  const captions = footer.captions ?? ['подпись']
+  const lastIdx = captions.length - 1
+  out.push([''])
+  rowKinds.push('data')
+  out.push([
+    footer.role,
+    ...captions.map((_c, i) => (i === lastIdx ? (footer.name ?? '') : '')),
+  ])
+  rowKinds.push('data')
+  out.push(['', ...captions])
+  rowKinds.push('data')
 }
 
 /**
@@ -241,6 +275,8 @@ const buildLedgerExport = (
     }
   }
 
+  appendFooter(out, rowKinds, result)
+
   return {
     ...sheetChrome(result),
     headers: columns.map((c) => columnTitle(c, isKz)),
@@ -296,6 +332,8 @@ const buildTreeExport = (
       ...bodyColumns.map((c) => formatCell(result.total[c.code], c)),
     ])
   }
+
+  appendFooter(out, rowKinds, result)
 
   return {
     ...sheetChrome(result),

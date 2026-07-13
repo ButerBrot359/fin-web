@@ -27,6 +27,10 @@ const GREEN_1C = 'rgb(0,63,47)'
 
 interface ReportSettingsPanelProps {
   isKz: boolean
+  /** Варианты группировки отчёта (селектор «Вариант»). ≤1 ⇒ не показывать. */
+  variantOptions: SelectOption[]
+  selectedVariant: string | null
+  onVariantChange: (code: string) => void
   /** Тумблеры формы (напр. «Язык формы (рус/каз)») — верх вкладки «Основные», как у МО. */
   formToggleItems: ReportGroupItem[]
   onToggleFormParam: (key: string) => void
@@ -95,6 +99,9 @@ const CheckboxList = ({
  */
 export const ReportSettingsPanel = ({
   isKz,
+  variantOptions,
+  selectedVariant,
+  onVariantChange,
   formToggleItems,
   onToggleFormParam,
   indicatorItems,
@@ -190,6 +197,22 @@ export const ReportSettingsPanel = ({
         {/* ── Группировка ──────────────────────────────────────────── */}
         {tab === 1 && (
           <>
+            {variantOptions.length > 1 && (
+              <AutocompleteInput
+                value={
+                  variantOptions.find(
+                    (o) => String(o.id) === selectedVariant
+                  ) ?? null
+                }
+                options={variantOptions}
+                onChange={(o) => {
+                  if (o) onVariantChange(String(o.id))
+                }}
+                label={t('reportSettings.variant')}
+                size="small"
+                fullWidth
+              />
+            )}
             {periodicityParam && (
               <AutocompleteInput
                 value={periodicitySelected}

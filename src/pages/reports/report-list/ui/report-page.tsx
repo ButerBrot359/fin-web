@@ -24,6 +24,7 @@ import {
 } from '@/features/report-result-view'
 import { PageHeader } from '@/widgets/page-header'
 import { DateTimeInput } from '@/shared/ui/inputs'
+import type { SelectOption } from '@/shared/types/select-option'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { exportTableToXlsx } from '@/shared/lib/table-export'
 
@@ -95,6 +96,9 @@ const normalizeBodyDates = (
 
 /** Ключ URL для активных отборов (вкладка «Отборы») — весь список одним JSON. */
 const FILTER_URL_KEY = 'flt'
+
+/** Ключ URL для выбранного варианта группировки (селектор «Вариант»). */
+const VARIANT_URL_KEY = '__variant'
 
 /** Десериализация строк отбора из URL-JSON (с базовой валидацией типов). */
 const parseFilterRows = (raw: string | null): ReportFilterRow[] => {
@@ -309,11 +313,29 @@ export const ReportPage = () => {
       .filter((p) => p.required)
       .every((p) => isFilled(p, applied[p.code] as ReportParamValue))
     if (!hasAny || !requiredMet) return null
+    const variantCode =
+      searchParams.get(VARIANT_URL_KEY) ?? meta.variants?.[0]?.code
     return {
       parameters: normalizeBodyDates(applied, meta.parameters),
+      ...(variantCode ? { variantCode } : {}),
       ...(appliedFilters.length > 0 ? { filters: appliedFilters } : {}),
     }
   }, [meta, searchParams, appliedFilters])
+
+  // Выбранный вариант группировки (для селектора): из URL или первый из meta.
+  const selectedVariant =
+    searchParams.get(VARIANT_URL_KEY) ?? meta?.variants?.[0]?.code ?? null
+
+  const setVariant = (code: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set(VARIANT_URL_KEY, code)
+        return next
+      },
+      { replace: true }
+    )
+  }
 
   const isDraft = meta?.definition.status === 'DRAFT'
 
@@ -365,9 +387,11 @@ export const ReportPage = () => {
       (prev) => {
         const next = new URLSearchParams()
         for (const [k, v] of Object.entries(serialized)) next.set(k, v)
-        // Сохраняем активные отборы (flt) при пересоздании query-строки.
+        // Сохраняем активные отборы (flt) и вариант при пересоздании query-строки.
         const flt = prev.get(FILTER_URL_KEY)
         if (flt) next.set(FILTER_URL_KEY, flt)
+        const variant = prev.get(VARIANT_URL_KEY)
+        if (variant) next.set(VARIANT_URL_KEY, variant)
         return next
       },
       { replace: true }
@@ -439,6 +463,8 @@ export const ReportPage = () => {
       result={result}
       filterRows={filterRows}
       onFilterRowsChange={setFilterRows}
+      selectedVariant={selectedVariant}
+      onVariantChange={setVariant}
     />
   )
 }
@@ -463,6 +489,9 @@ interface ReportPageContentProps {
   result: ReturnType<typeof useRunReport>['result']
   filterRows: ReportFilterRow[]
   onFilterRowsChange: (rows: ReportFilterRow[]) => void
+  /** Выбранный вариант группировки (код) и его смена — раздел «Группировка». */
+  selectedVariant: string | null
+  onVariantChange: (code: string) => void
 }
 
 /** Локализованный заголовок отбора/показателя. */
@@ -490,9 +519,22 @@ const ReportPageContent = ({
   result,
   filterRows,
   onFilterRowsChange,
+  selectedVariant,
+  onVariantChange,
 }: ReportPageContentProps) => {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
+
+  // Варианты группировки отчёта (селектор в панели). Лейбл — nameKz при KZ.
+  const variantOptions = useMemo<SelectOption[]>(
+    () =>
+      meta.variants.map((v) => ({
+        id: v.code,
+        code: v.code,
+        label: localized(v.nameRu, v.nameKz, isKz),
+      })),
+    [meta.variants, isKz]
+  )
 
   // Видимость докнутой панели настроек — тоггл «Скрыть/Показать настройки»
   // (аналог одноимённой кнопки 1С). По умолчанию видна, как сейчас.
@@ -692,6 +734,7 @@ const ReportPageContent = ({
   const hasSettings = useMemo(() => {
     if (meta.definition.kind === 'MEMORIAL_ORDER') return false
     return (
+      meta.variants.length > 1 ||
       indicators.length > 0 ||
       periodicityParam != null ||
       accountParam != null ||
@@ -984,6 +1027,9 @@ const ReportPageContent = ({
         {hasSettings && settingsVisible && (
           <ReportSettingsPanel
             isKz={isKz}
+            variantOptions={variantOptions}
+            selectedVariant={selectedVariant}
+            onVariantChange={onVariantChange}
             formToggleItems={formToggleItems}
             onToggleFormParam={onToggleFormParam}
             indicatorItems={indicatorItems}

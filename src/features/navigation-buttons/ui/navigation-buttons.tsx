@@ -5,11 +5,21 @@ import { useTranslation } from 'react-i18next'
 import ArrowLeftIcon from '@/shared/assets/navigation/arrow-left-default.svg'
 import ArrowRightIcon from '@/shared/assets/navigation/arrow-right-default.svg'
 
-export const NavigationButtons = () => {
+interface NavigationButtonsProps {
+  // Панельная workspace-вкладка живёт вне роутера: «назад» там — закрытие
+  // вкладки, а не navigate(-1). Без пропа поведение прежнее.
+  onBack?: () => void
+}
+
+export const NavigationButtons = ({ onBack }: NavigationButtonsProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
   const handleBack = async () => {
+    if (onBack) {
+      onBack()
+      return
+    }
     await navigate(-1)
   }
 

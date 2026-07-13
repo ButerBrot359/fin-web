@@ -37,12 +37,10 @@ interface OnGetFormField {
 
 interface DocumentListToolbarProps {
   selectedRowId?: number | null
-  selectedRowName?: string | null
 }
 
 export const DocumentListToolbar = ({
   selectedRowId,
-  selectedRowName,
 }: DocumentListToolbarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()

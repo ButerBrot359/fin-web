@@ -4,6 +4,19 @@ import type {
   RowKind,
 } from '@/pages/reports/report-list/types/report'
 
+/**
+ * Язык РЕНДЕРА отчёта: язык, на котором его сформировал бэк (`result.language`),
+ * иначе — язык приложения. Определяет выбор titleRu/titleKz и локаль итога, чтобы
+ * таблица совпадала с языком отчёта (он может отличаться от языка UI).
+ */
+export const resolveReportLang = (
+  reportLanguage: string | undefined,
+  appLanguage: string
+): 'ru' | 'kz' => {
+  const src = reportLanguage || appLanguage
+  return /^(kz|kk)/i.test(src) ? 'kz' : 'ru'
+}
+
 /** MEASURE — числовая колонка (выравнивание вправо, разрядность). */
 export const isMeasure = (col: ReportColumnDto): boolean =>
   col.role === 'MEASURE'

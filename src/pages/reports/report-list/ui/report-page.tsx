@@ -532,7 +532,10 @@ const ReportPageContent = ({
       isMemorialOrder
         ? meta.parameters.filter(
             (p) =>
+              // Период — это PERIOD или ПАРА DATE-параметров («Начало/Конец
+              // периода»); все они остаются в шапке, а не в «Отборе».
               !isPeriod(p) &&
+              p.dataType !== 'DATE' &&
               !isOrganizatsiya(p) &&
               !isAccountList(p) &&
               !isPeriodicity(p) &&

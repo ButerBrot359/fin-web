@@ -6,12 +6,14 @@ import { TextInput, NumberInput, DateTimeInput } from '@/shared/ui/inputs'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 import { renderCellValue } from '../../../lib/utils/cell-value'
+import { ReferenceCellEditor } from './reference-cell-editor'
 
 interface TableCellEditorProps {
   cellWidget: string
   dataType: string
   value: unknown
   readonly?: boolean
+  props?: Record<string, unknown>
   onChange: (value: unknown) => void
   onCommit: () => void
 }
@@ -95,6 +97,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   dataType,
   value,
   readonly,
+  props,
   onChange,
   onCommit,
 }) => {
@@ -176,6 +179,17 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
         />
       )
     }
+
+    case 'REFERENCE_FIELD':
+    case 'ENUM_FIELD':
+      return (
+        <ReferenceCellEditor
+          colProps={props ?? {}}
+          value={value}
+          onChange={onChange}
+          onCommit={onCommit}
+        />
+      )
 
     default:
       return (

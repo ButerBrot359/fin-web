@@ -44,6 +44,7 @@ export function buildColumnDefs(
             dataType: col.dataType,
             value: info.row.original[col.binding],
             readonly: col.readonly,
+            props: col.props,
             onChange: (val: unknown) =>
               syncRef.current?.updateCell(
                 info.row.original.rowId,
@@ -84,6 +85,7 @@ export function buildColumnDefs(
                   dataType: childCol.dataType,
                   value: info.row.original[childCol.binding],
                   readonly: childCol.readonly,
+                  props: childCol.props,
                   onChange: (val: unknown) =>
                     syncRef.current?.updateCell(
                       info.row.original.rowId,
@@ -149,5 +151,6 @@ export function nodeToTableColumnDef(node: ViewNode): TableColumnDef {
     dataType: (props.dataType as string | undefined) ?? 'STRING',
     readonly: (props.readonly as boolean | undefined) ?? false,
     required: (props.required as boolean | undefined) ?? false,
+    props,
   }
 }

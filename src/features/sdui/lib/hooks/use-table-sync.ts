@@ -17,6 +17,7 @@ export interface TableColumnDef {
   dataType: string
   readonly?: boolean
   required?: boolean
+  props: Record<string, unknown>
 }
 
 export interface TableRow {

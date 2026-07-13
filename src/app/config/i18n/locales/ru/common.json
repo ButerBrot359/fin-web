@@ -84,7 +84,8 @@
     "more": "Ещё",
     "unpost": "Отменить проведение",
     "unpostSuccess": "Проведение отменено",
-    "unpostError": "Ошибка отмены проведения"
+    "unpostError": "Ошибка отмены проведения",
+    "movementsError": "Не удалось загрузить движения документа"
   },
   "documentFormToolbar": {
     "postAndClose": "Провести и закрыть",

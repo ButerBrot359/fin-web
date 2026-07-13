@@ -11,9 +11,10 @@ import CrossIcon from '@/shared/assets/icons/cross.svg'
 interface PageHeaderProps {
   title: string
   onClose?: () => void
+  onBack?: () => void
 }
 
-export const PageHeader = ({ title, onClose }: PageHeaderProps) => {
+export const PageHeader = ({ title, onClose, onBack }: PageHeaderProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -28,7 +29,7 @@ export const PageHeader = ({ title, onClose }: PageHeaderProps) => {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <NavigationButtons />
+        <NavigationButtons onBack={onBack} />
         <FavoriteButton />
 
         <Typography variant="h5" fontWeight={600}>

@@ -31,14 +31,19 @@ export const useDocumentEntryForm = () => {
   const isNew = !entryId || entryId === 'new'
   const vidOperatsii = searchParams.get('VidOperatsii')
   const copyFrom = searchParams.get('copyFrom')
-  const newEntryParams = vidOperatsii
-    ? { VidOperatsii: vidOperatsii }
-    : undefined
+  const basisId = searchParams.get('basisId')
+  const newEntryParams =
+    vidOperatsii || basisId
+      ? {
+          ...(vidOperatsii && { VidOperatsii: vidOperatsii }),
+          ...(basisId && { basisId }),
+        }
+      : undefined
 
   const { data: newEntryData, isLoading: isLoadingNewEntry } = useQuery({
-    queryKey: ['document-entry-new', moduleCode, vidOperatsii],
+    queryKey: ['document-entry-new', moduleCode, vidOperatsii, basisId],
     queryFn: () => getNewDocumentEntry(moduleCode, newEntryParams),
-    enabled: isNew && !!vidOperatsii && !copyFrom,
+    enabled: isNew && (!!vidOperatsii || !!basisId) && !copyFrom,
     select: (response) => response.data.data,
   })
 
@@ -66,7 +71,7 @@ export const useDocumentEntryForm = () => {
     if (!isNew && existingEntry?.attributes) {
       defaults = existingEntry.attributes
     } else if (isNew && copyFromData?.attributes) {
-      const { Nomer: _, Kod: _k, ...rest } = copyFromData.attributes as Record<string, unknown>
+      const { Nomer: _, Kod: _k, ...rest } = copyFromData.attributes
       const copiedValues = { ...rest, Data: new Date().toISOString() }
       const emptyDefaults = { Data: new Date().toISOString() }
 
@@ -78,7 +83,7 @@ export const useDocumentEntryForm = () => {
       return
     } else if (isNew && newEntryData?.attributes) {
       defaults = { Data: new Date().toISOString(), ...newEntryData.attributes }
-    } else if (isNew && !vidOperatsii && !copyFrom) {
+    } else if (isNew && !vidOperatsii && !copyFrom && !basisId) {
       defaults = { Data: new Date().toISOString() }
     }
 
@@ -106,7 +111,7 @@ export const useDocumentEntryForm = () => {
     } else if (!form.formState.isDirty && !restoredRef.current) {
       form.reset(defaults)
     }
-  }, [isNew, existingEntry, newEntryData, copyFromData, vidOperatsii, copyFrom, form, pathname])
+  }, [isNew, existingEntry, newEntryData, copyFromData, vidOperatsii, copyFrom, basisId, form, pathname])
 
   return {
     form,

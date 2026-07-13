@@ -23,6 +23,9 @@ export interface ViewAction {
   command?: string
   value?: unknown
   layoutCode?: string
+  // Маркер полноты снимка строк ТЧ на table-level EVENT (спека reference-cell §2.2):
+  // true = полный массив, бэк может делать full-replace (включая пустой [] = удалить все)
+  fullSnapshot?: boolean
 }
 
 export interface ViewRequest {

@@ -71,7 +71,7 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
       // Панельная вкладка (sdui-panel): не маршрутная, id = стабильный tabKey.
       // Повторный вызов с тем же id переиспользует вкладку (обновляя panelId).
       activateOrCreatePanel: (id, title, panelId) => {
-        const { tabs } = get()
+        const { tabs, activeTabId } = get()
 
         const existing = tabs.find((t) => t.id === id)
         if (existing) {
@@ -89,6 +89,10 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
           title,
           pageType: 'sdui-panel',
           panelId,
+          // Опенер фиксируется при создании; исключена только самоссылка
+          // (опенером может быть и другая панельная вкладка)
+          openerTabId:
+            activeTabId && activeTabId !== id ? activeTabId : undefined,
           createdAt: Date.now(),
         }
 

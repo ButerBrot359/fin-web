@@ -10,6 +10,7 @@ import {
 import { applyPatches, clearErrors } from '../lib/patch-applier'
 import type { ViewNode, ViewPatch } from '../types/view'
 import { NodeRenderer } from './node-renderer'
+import { PanelStateProvider } from '../lib/panel-state-provider'
 
 const PANEL_BG = '#F2F6FD'
 const BACKDROP_BG = 'rgba(34, 33, 36, 0.6)'
@@ -45,9 +46,9 @@ const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
         setViewState(s)
         setDirty(false)
       },
-      merge: (patch) => setViewState((s) => ({ ...s, ...patch })),
+      merge: (patch) => { setViewState((s) => ({ ...s, ...patch })); },
       isDirty: dirty,
-      resetDirty: () => setDirty(false),
+      resetDirty: () => { setDirty(false); },
       tree,
       setRoot: setTree,
       setSession: (_id, rev) => {
@@ -80,8 +81,6 @@ export const DialogHost = () => {
   return (
     <>
       {stack.map((panel) => {
-        if (!panel.node) return null
-
         // Панель, открытая в workspace-вкладке, рендерится через
         // WorkspacePanelHost — DialogHost её не показывает.
         if (panel.openInWorkspaceTab) return null
@@ -89,8 +88,12 @@ export const DialogHost = () => {
         const content = panel.session ? (
           <PanelFormProvider panel={panel} />
         ) : (
-          // Панель без сессии: патчей не бывает, статичного снимка достаточно
-          <NodeRenderer node={panel.node} />
+          // Панель без сессии (childState): патчей не бывает, но биндинги
+          // должны читать значения из снимка viewState — без read-only
+          // сессии диалог рендерится пустым.
+          <PanelStateProvider panel={panel}>
+            <NodeRenderer node={panel.node} />
+          </PanelStateProvider>
         )
 
         if (panel.presentation === 'page') {
@@ -98,7 +101,7 @@ export const DialogHost = () => {
             <Dialog
               key={panel.panelId}
               open
-              onClose={() => usePanelStore.getState().pop()}
+              onClose={() => { usePanelStore.getState().pop(); }}
               fullScreen
               slotProps={{
                 paper: {
@@ -113,7 +116,7 @@ export const DialogHost = () => {
                       {panel.node.props.title}
                     </Typography>
                   )}
-                  <IconButton onClick={() => usePanelStore.getState().pop()}>
+                  <IconButton onClick={() => { usePanelStore.getState().pop(); }}>
                     <CloseIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </div>
@@ -134,7 +137,7 @@ export const DialogHost = () => {
               key={panel.panelId}
               anchor="right"
               open
-              onClose={() => usePanelStore.getState().pop()}
+              onClose={() => { usePanelStore.getState().pop(); }}
               slotProps={{
                 paper: {
                   sx: {
@@ -152,7 +155,7 @@ export const DialogHost = () => {
             >
               <div className="flex h-full flex-col p-7">
                 <div className="flex shrink-0 items-center justify-end">
-                  <IconButton onClick={() => usePanelStore.getState().pop()}>
+                  <IconButton onClick={() => { usePanelStore.getState().pop(); }}>
                     <CloseIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </div>
@@ -168,7 +171,7 @@ export const DialogHost = () => {
           <Dialog
             key={panel.panelId}
             open
-            onClose={() => usePanelStore.getState().pop()}
+            onClose={() => { usePanelStore.getState().pop(); }}
             maxWidth="md"
             fullWidth
           >

@@ -4,39 +4,18 @@ import { useNavigate } from 'react-router-dom'
 import {
   useWorkspaceTabsStore,
   useFormCacheStore,
-  notifyPanelTabClose,
+  performTabClose,
 } from '@/features/workspace-tabs'
 
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
 
 import { WorkspaceTabItem } from './workspace-tab-item'
 
-const navigateAfterClose = (
-  navigate: ReturnType<typeof useNavigate>,
-  activeTabId: string | null
-) => {
-  const remaining = useWorkspaceTabsStore.getState()
-  if (remaining.tabs.length > 0) {
-    const nextTab =
-      remaining.tabs.find((t) => t.id === remaining.activeTabId) ??
-      remaining.tabs[0]
-    if (nextTab.pageType === 'sdui-panel') {
-      // Панельная вкладка живёт вне роутера — активируем без навигации
-      remaining.setActiveTab(nextTab.id)
-      return
-    }
-    void navigate(nextTab.path + nextTab.search)
-  } else if (activeTabId === null) {
-    void navigate('/')
-  }
-}
-
 export const WorkspaceTabBar = () => {
   const navigate = useNavigate()
 
   const tabs = useWorkspaceTabsStore((s) => s.tabs)
   const activeTabId = useWorkspaceTabsStore((s) => s.activeTabId)
-  const closeTab = useWorkspaceTabsStore((s) => s.closeTab)
   const setActiveTab = useWorkspaceTabsStore((s) => s.setActiveTab)
 
   const [dirtyCloseTabId, setDirtyCloseTabId] = useState<string | null>(null)
@@ -55,18 +34,7 @@ export const WorkspaceTabBar = () => {
   }
 
   const performClose = (tabId: string) => {
-    const tab = useWorkspaceTabsStore
-      .getState()
-      .tabs.find((t) => t.id === tabId)
-    const isPanel = tab?.pageType === 'sdui-panel'
-    // У панельных вкладок нет кэша формы
-    if (!isPanel) useFormCacheStore.getState().removeTab(tabId)
-    const closed = closeTab(tabId)
-    // Реестр (Task 6) уведомляет app-биндинг → panel-store.remove(panelId)
-    if (isPanel && closed?.panelId) notifyPanelTabClose(closed.panelId)
-    if (closed?.id === activeTabId) {
-      navigateAfterClose(navigate, useWorkspaceTabsStore.getState().activeTabId)
-    }
+    performTabClose(tabId, navigate)
   }
 
   const handleClose = (e: React.MouseEvent, tabId: string) => {

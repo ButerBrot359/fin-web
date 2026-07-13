@@ -23,6 +23,7 @@ import { AutocompleteInput } from '@/shared/ui/inputs/autocomplete-input'
 import { useDictSidebarStore } from '@/features/dict-sidebar'
 
 import { useCellDependency } from '../lib/hooks/use-cell-dependency'
+import { useRowFilter } from '../lib/hooks/use-row-filter'
 import { mergeSearchParams } from '../lib/utils/field-filter-params'
 
 interface TableCellRendererProps {
@@ -139,9 +140,22 @@ const DictCell = ({
     control
   )
 
+  // rowFilter (SCRUM-281): отбор по сестринской ячейке ТОЙ ЖЕ строки
+  // (напр. «Вид ВНА» по «Счёту учёта»). name = '<КодТЧ>.<idx>.<col>' →
+  // префикс строки = name без последнего сегмента.
+  const rowParams = useRowFilter(
+    column.rowFilter,
+    name.slice(0, name.lastIndexOf('.')),
+    control
+  )
+
   // Фильтр поля (напр. отбор МОЛ по «Организации» документа) объединяется
-  // с af-фильтром зависимости (af-условия склеиваются, не затирают друг друга).
-  const searchParams = mergeSearchParams(serverFilterParams, depParams)
+  // с af-фильтрами зависимости и строки (af-условия склеиваются, не
+  // затирают друг друга).
+  const searchParams = mergeSearchParams(
+    mergeSearchParams(serverFilterParams, depParams),
+    rowParams
+  )
 
   const [opened, setOpened] = useState(false)
   const [inputValue, setInputValue] = useState('')

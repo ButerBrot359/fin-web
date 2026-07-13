@@ -84,13 +84,26 @@ export const ReportParamField = ({
     isDictRef ? (param.referenceDomain ?? null) : null
   )
 
+  // Пул счетов «Списка счетов» ограничен счетами ОТЧЁТА (как в 1С — в выпадающем
+  // списке только счета ордера, а не весь план счетов). Источник — defaultValue
+  // параметра (ID счетов отчёта, задаётся бэком). Пусто ⇒ показываем весь план
+  // (прежнее поведение для прочих ACCOUNT_LIST-параметров без дефолта).
+  const allowedAccountIds = useMemo<Set<number> | null>(() => {
+    if (param.dataType !== 'ACCOUNT_LIST') return null
+    const def = param.defaultValue
+    if (!Array.isArray(def) || def.length === 0) return null
+    return new Set(def.map((v) => Number(v)))
+  }, [param.dataType, param.defaultValue])
+
   const refOptions = useMemo<SelectOption[]>(() => {
     if (isAccountRef) {
-      return accounts.map((a) => ({
-        id: a.id,
-        code: a.code,
-        label: a.nameRu ? `${a.code} — ${a.nameRu}` : a.code,
-      }))
+      return accounts
+        .filter((a) => !allowedAccountIds || allowedAccountIds.has(Number(a.id)))
+        .map((a) => ({
+          id: a.id,
+          code: a.code,
+          label: a.nameRu ? `${a.code} — ${a.nameRu}` : a.code,
+        }))
     }
     if (isDictRef) {
       return dictEntries.map((e) => ({
@@ -100,7 +113,7 @@ export const ReportParamField = ({
       }))
     }
     return []
-  }, [isAccountRef, isDictRef, accounts, dictEntries])
+  }, [isAccountRef, isDictRef, accounts, dictEntries, allowedAccountIds])
 
   switch (param.dataType) {
     case 'DATE':
@@ -139,6 +152,9 @@ export const ReportParamField = ({
           // счетов расползается по шапке и наслаивается на кнопки. При фокусе MUI
           // раскрывает все теги для редактирования.
           limitTags={1}
+          // Фиксированная ширина: выбранные чипы переносятся ВНИЗ (не растягивают
+          // поле в длину по шапке), как в 1С.
+          sx={{ width: 300 }}
           options={refOptions}
           value={selected}
           onChange={(_e, next) => {

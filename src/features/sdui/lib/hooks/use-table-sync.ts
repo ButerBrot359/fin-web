@@ -17,6 +17,7 @@ export interface TableColumnDef {
   dataType: string
   readonly?: boolean
   required?: boolean
+  props: Record<string, unknown>
 }
 
 export interface TableRow {
@@ -151,6 +152,8 @@ export function useTableSync(
       sourceNodeId: node.id,
       trigger: 'change',
       value: rows,
+      // rows здесь всегда полный локальный снимок (ADR-0011 §3.4) — маркер безусловный
+      fullSnapshot: true,
     }).then((ok) => {
       if (ok) return
       // Ошибка сети/сервера: canon не придёт — снимаем in-flight и роняем flush,

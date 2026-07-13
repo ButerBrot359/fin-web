@@ -10,28 +10,6 @@ import type {
 import { TableCellEditor } from '../../ui/nodes/composite/table-cell-editor'
 
 /**
- * If value is an object with a `presentation` field, return it as string.
- * Otherwise return String(value ?? '').
- */
-export function renderCellValue(value: unknown): string {
-  if (value !== null && typeof value === 'object' && 'presentation' in value) {
-    return String((value as Record<string, unknown>).presentation ?? '')
-  }
-  return String(value ?? '')
-}
-
-/**
- * If value is an object with an `id` field, return the id.
- * Otherwise return value as-is.
- */
-export function normalizeKey(value: unknown): unknown {
-  if (value !== null && typeof value === 'object' && 'id' in value) {
-    return (value as Record<string, unknown>).id
-  }
-  return value
-}
-
-/**
  * Recursively builds TanStack Table column definitions from SDUI ViewNode children.
  *
  * - TABLE_COLUMN  → leaf ColumnDef with cell editor
@@ -66,6 +44,7 @@ export function buildColumnDefs(
             dataType: col.dataType,
             value: info.row.original[col.binding],
             readonly: col.readonly,
+            props: col.props,
             onChange: (val: unknown) =>
               syncRef.current?.updateCell(
                 info.row.original.rowId,
@@ -106,6 +85,7 @@ export function buildColumnDefs(
                   dataType: childCol.dataType,
                   value: info.row.original[childCol.binding],
                   readonly: childCol.readonly,
+                  props: childCol.props,
                   onChange: (val: unknown) =>
                     syncRef.current?.updateCell(
                       info.row.original.rowId,
@@ -171,5 +151,6 @@ export function nodeToTableColumnDef(node: ViewNode): TableColumnDef {
     dataType: (props.dataType as string | undefined) ?? 'STRING',
     readonly: (props.readonly as boolean | undefined) ?? false,
     required: (props.required as boolean | undefined) ?? false,
+    props,
   }
 }

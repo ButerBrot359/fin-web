@@ -51,4 +51,22 @@ describe('useTableSync', () => {
       await expect(flushAllPendingTableCommits()).rejects.toThrow()
     })
   })
+
+  it('commitCell шлёт table-level EVENT с fullSnapshot: true и полным массивом строк', () => {
+    sessionState.rows = [{ rowId: '1', a: 1 }]
+    const { result } = renderHook(() => useTableSync(node, []))
+    act(() => {
+      result.current.updateCell('1', 'a', 2)
+    })
+    act(() => {
+      result.current.commitCell()
+    })
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'EVENT',
+      sourceNodeId: 'tbl',
+      trigger: 'change',
+      value: [{ rowId: '1', a: 2 }],
+      fullSnapshot: true,
+    })
+  })
 })

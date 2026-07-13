@@ -18,10 +18,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
-import {
-  nodeToTableColumnDef,
-  renderCellValue,
-} from '../../../lib/utils/build-column-defs'
+import { nodeToTableColumnDef } from '../../../lib/utils/build-column-defs'
+import { renderCellValue } from '../../../lib/utils/cell-value'
 import type { TableColumnDef } from '../../../lib/hooks/use-table-sync'
 import { EditableTable } from './editable-table'
 import { ComplexEditableTable } from './complex-editable-table'

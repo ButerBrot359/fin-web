@@ -14,7 +14,7 @@
 ## Global Constraints
 
 - НЕ запускать `tsc --noEmit`, `npm run lint`, `npm run build` (CLAUDE.md; lint-staged сам отработает на коммите).
-- Unit-тестов в проекте нет — TDD-циклы не применяются; проверка ручная (Task 6).
+- В проекте есть vitest (`npm test` = `vitest run`); для затронутого кода писать/обновлять тесты и запускать сфокусированно `npx vitest run <путь>` перед коммитом. Полную acceptance-проверку на стенде делает Task 6.
 - Формат коммитов: `feat|fix|add|refactor: описание`.
 - Не хардкодить строки в JSX (в этой фиче пользовательских текстов нет).
 - Не использовать `useMemo`/`useCallback` без явной perf-причины.
@@ -113,10 +113,51 @@ import { renderCellValue, normalizeKey } from '../../../lib/utils/cell-value'
 Run: `grep -rn "renderCellValue\|normalizeKey" src/ --include="*.ts" --include="*.tsx" | grep -v "cell-value"`
 Expected: только `table-node.tsx` и `complex-editable-table.tsx` (импорт из `cell-value` + места использования), ноль упоминаний `build-column-defs` в связке с этими функциями.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Тесты на перенесённые функции**
+
+Создать `src/features/sdui/lib/utils/cell-value.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest'
+
+import { renderCellValue, normalizeKey } from './cell-value'
+
+describe('renderCellValue', () => {
+  it('объект с presentation → presentation строкой', () => {
+    expect(renderCellValue({ id: 5, presentation: 'ИПН 10%' })).toBe('ИПН 10%')
+  })
+
+  it('presentation null → пустая строка', () => {
+    expect(renderCellValue({ id: 5, presentation: null })).toBe('')
+  })
+
+  it('примитивы и null → String(value ?? "")', () => {
+    expect(renderCellValue('abc')).toBe('abc')
+    expect(renderCellValue(42)).toBe('42')
+    expect(renderCellValue(null)).toBe('')
+    expect(renderCellValue(undefined)).toBe('')
+  })
+})
+
+describe('normalizeKey', () => {
+  it('объект с id → id', () => {
+    expect(normalizeKey({ id: '7', presentation: 'x' })).toBe('7')
+  })
+
+  it('примитив → как есть', () => {
+    expect(normalizeKey(7)).toBe(7)
+    expect(normalizeKey(null)).toBe(null)
+  })
+})
+```
+
+Run: `npx vitest run src/features/sdui/lib/utils`
+Expected: PASS (cell-value.test.ts + существующий build-column-defs.test.ts).
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/features/sdui/lib/utils/cell-value.ts src/features/sdui/lib/utils/build-column-defs.ts src/features/sdui/ui/nodes/composite/table-node.tsx src/features/sdui/ui/nodes/composite/complex-editable-table.tsx
+git add src/features/sdui/lib/utils/cell-value.ts src/features/sdui/lib/utils/cell-value.test.ts src/features/sdui/lib/utils/build-column-defs.ts src/features/sdui/ui/nodes/composite/table-node.tsx src/features/sdui/ui/nodes/composite/complex-editable-table.tsx
 git commit -m "refactor: вынос renderCellValue/normalizeKey в cell-value.ts"
 ```
 
@@ -357,11 +398,86 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
 - Хуки (`useState`, `useReferenceOptions`) вызываются ДО раннего `return` при `!url` — rules of hooks соблюдены.
 - Никаких `onShowAll`/`onAdd`/`endAction`/`label` — в ячейке ТЧ только выбор из дропдауна (спека §1.3(a), «Вне scope»).
 - Выбор → `onChange` + сразу `onCommit` — тот же паттерн, что `DATE_FIELD`/`CHECKBOX_FIELD` в `table-cell-editor.tsx`.
+- Контролируемый `inputValue` синхронизируется с выбранным значением через безусловный `setInputValue(val)` в `onInputChange` — MUI вызывает его с reason `'reset'` на маунте и смене value (тот же механизм, что в `ReferenceFieldNode`).
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 2: Тесты компонента**
+
+Создать `src/features/sdui/ui/nodes/composite/reference-cell-editor.test.tsx` (паттерн — `reference-field-node.test.tsx`):
+
+```tsx
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+
+import type { SelectOption } from '@/shared/types/select-option'
+import { ReferenceCellEditor } from './reference-cell-editor'
+
+const fetchMock = vi.fn<(...args: unknown[]) => Promise<SelectOption[]>>()
+vi.mock('../../../api/reference-options', () => ({
+  fetchReferenceOptions: (...args: unknown[]) => fetchMock(...args),
+}))
+
+describe('ReferenceCellEditor', () => {
+  beforeEach(() => {
+    fetchMock.mockReset()
+    fetchMock.mockResolvedValue([{ id: 5, code: '5', label: 'ИПН 10%' }])
+  })
+
+  it('выбор опции → onChange({id, presentation}) + onCommit', async () => {
+    const onChange = vi.fn()
+    const onCommit = vi.fn()
+    render(
+      <ReferenceCellEditor
+        colProps={{
+          optionsSource: { url: '/api/dictionary-entries/VychetyIPN/entries' },
+        }}
+        value={null}
+        onChange={onChange}
+        onCommit={onCommit}
+      />,
+    )
+    const input = screen.getByRole('combobox')
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    fireEvent.click(await screen.findByText('ИПН 10%'))
+    expect(onChange).toHaveBeenCalledWith({ id: 5, presentation: 'ИПН 10%' })
+    expect(onCommit).toHaveBeenCalledTimes(1)
+  })
+
+  it('текущее значение показывает presentation, не объект', () => {
+    render(
+      <ReferenceCellEditor
+        colProps={{ optionsSource: { url: '/x' } }}
+        value={{ id: '5', presentation: 'ИПН 10%' }}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    )
+    expect((screen.getByRole('combobox') as HTMLInputElement).value).toBe(
+      'ИПН 10%',
+    )
+  })
+
+  it('без optionsSource и targetTypeCode — нейтральное отображение, не падает', () => {
+    render(
+      <ReferenceCellEditor
+        colProps={{}}
+        value={{ id: 1, presentation: 'Значение' }}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    )
+    expect(screen.getByText('Значение')).toBeTruthy()
+    expect(screen.queryByRole('combobox')).toBeNull()
+  })
+})
+```
+
+Run: `npx vitest run src/features/sdui/ui/nodes/composite/reference-cell-editor.test.tsx`
+Expected: 3/3 PASS.
+
+- [ ] **Step 3: Commit**
 
 ```bash
-git add src/features/sdui/ui/nodes/composite/reference-cell-editor.tsx
+git add src/features/sdui/ui/nodes/composite/reference-cell-editor.tsx src/features/sdui/ui/nodes/composite/reference-cell-editor.test.tsx
 git commit -m "add: ReferenceCellEditor — компактный пикер для ячейки ТЧ"
 ```
 
@@ -572,10 +688,37 @@ const sendEvent = (rows: TableRow[]) => {
 
 Per-field EVENT (`fireServerEvent` в `use-field-node`) и COMMAND — НЕ трогать: флаг только для table-level.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: Тест на payload dispatch**
+
+Добавить в существующий `src/features/sdui/lib/hooks/use-table-sync.test.tsx` (внутри `describe('useTableSync', ...)`, моки `mockDispatch`/`sessionState` уже есть в файле):
+
+```tsx
+it('commitCell шлёт table-level EVENT с fullSnapshot: true и полным массивом строк', () => {
+  sessionState.rows = [{ rowId: '1', a: 1 }]
+  const { result } = renderHook(() => useTableSync(node, []))
+  act(() => {
+    result.current.updateCell('1', 'a', 2)
+  })
+  act(() => {
+    result.current.commitCell()
+  })
+  expect(mockDispatch).toHaveBeenCalledWith({
+    type: 'EVENT',
+    sourceNodeId: 'tbl',
+    trigger: 'change',
+    value: [{ rowId: '1', a: 2 }],
+    fullSnapshot: true,
+  })
+})
+```
+
+Run: `npx vitest run src/features/sdui/lib/hooks/use-table-sync.test.tsx`
+Expected: все тесты файла PASS (существующие + новый).
+
+- [ ] **Step 4: Commit**
 
 ```bash
-git add src/features/sdui/types/view.ts src/features/sdui/lib/hooks/use-table-sync.ts
+git add src/features/sdui/types/view.ts src/features/sdui/lib/hooks/use-table-sync.ts src/features/sdui/lib/hooks/use-table-sync.test.tsx
 git commit -m "feat: fullSnapshot true на table-level EVENT редактируемых ТЧ"
 ```
 

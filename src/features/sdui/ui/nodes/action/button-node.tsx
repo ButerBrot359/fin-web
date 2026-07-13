@@ -93,7 +93,7 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
         <Menu
           anchorEl={menuAnchor}
           open={Boolean(menuAnchor)}
-          onClose={() => setMenuAnchor(null)}
+          onClose={() => { setMenuAnchor(null); }}
         >
           {node.children?.map((c) => <NodeRenderer key={c.id} node={c} />)}
         </Menu>

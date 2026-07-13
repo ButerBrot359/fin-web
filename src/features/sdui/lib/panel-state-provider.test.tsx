@@ -37,7 +37,7 @@ describe('PanelStateProvider (childState-панель без сессии)', () 
   })
 
   it('setValue — warn + noop, не бросает', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     expect(() =>
       render(
         <PanelStateProvider panel={panel}>

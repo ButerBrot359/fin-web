@@ -2,8 +2,10 @@ import type { ReactNode } from 'react'
 
 // Inline-SVG: строгий CSP панелей блокирует сетевые ассеты,
 // поэтому глифы вшиты в код. Неизвестное имя → null (кнопка
-// деградирует до текста, никогда не пустая).
-const RelatedHierarchyIcon = () => (
+// деградирует до текста, никогда не пустая). Глифы — статичные
+// ReactNode-константы, не компоненты: файл экспортирует только
+// функцию, и react-refresh не ругается на смешанный экспорт.
+const relatedHierarchyIcon: ReactNode = (
   <svg
     width="20"
     height="20"
@@ -25,13 +27,12 @@ const RelatedHierarchyIcon = () => (
   </svg>
 )
 
-const BUTTON_ICON_MAP: Record<string, () => ReactNode> = {
-  'related-hierarchy': RelatedHierarchyIcon,
+const BUTTON_ICON_MAP: Record<string, ReactNode> = {
+  'related-hierarchy': relatedHierarchyIcon,
 }
 
 /** Иконка по имени или null для неизвестного (кнопка деградирует до текста). */
 export function resolveButtonIcon(name: string | undefined): ReactNode | null {
   if (!name || !Object.hasOwn(BUTTON_ICON_MAP, name)) return null
-  const Icon = BUTTON_ICON_MAP[name]
-  return <Icon />
+  return BUTTON_ICON_MAP[name]
 }

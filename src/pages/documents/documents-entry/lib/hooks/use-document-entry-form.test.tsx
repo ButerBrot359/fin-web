@@ -45,9 +45,9 @@ describe('useDocumentEntryForm: basisId', () => {
     renderHook(() => useDocumentEntryForm(), { wrapper })
 
     await waitFor(() =>
-      expect(getNewDocumentEntry).toHaveBeenCalledWith('SchetKOplate', {
+      { expect(getNewDocumentEntry).toHaveBeenCalledWith('SchetKOplate', {
         basisId: '5',
-      }),
+      }); },
     )
     expect(getDocumentEntry).not.toHaveBeenCalled()
   })
@@ -55,7 +55,7 @@ describe('useDocumentEntryForm: basisId', () => {
   it('без параметров /new не зовётся', async () => {
     const { result } = renderHook(() => useDocumentEntryForm(), { wrapper })
 
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await waitFor(() => { expect(result.current.isLoading).toBe(false); })
     expect(getNewDocumentEntry).not.toHaveBeenCalled()
   })
 })

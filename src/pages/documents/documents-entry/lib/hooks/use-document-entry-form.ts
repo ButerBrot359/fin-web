@@ -71,7 +71,7 @@ export const useDocumentEntryForm = () => {
     if (!isNew && existingEntry?.attributes) {
       defaults = existingEntry.attributes
     } else if (isNew && copyFromData?.attributes) {
-      const { Nomer: _, Kod: _k, ...rest } = copyFromData.attributes as Record<string, unknown>
+      const { Nomer: _, Kod: _k, ...rest } = copyFromData.attributes
       const copiedValues = { ...rest, Data: new Date().toISOString() }
       const emptyDefaults = { Data: new Date().toISOString() }
 

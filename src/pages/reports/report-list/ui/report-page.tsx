@@ -139,27 +139,6 @@ const isPodrazdelenie = (p: ReportParameterDto): boolean =>
   /podrazdelenie/i.test(p.code)
 
 /**
- * Нормализация кода параметра для сопоставления с кодами отборов бланка МО-13:
- * без хвоста `Id` (fkr/fkrId → fkr, molId → mol), в нижний регистр.
- */
-const normalizeParamCode = (code: string): string =>
-  code.replace(/id$/i, '').toLowerCase()
-
-/**
- * Коды параметров-отборов бланка МО-13 (нормализованные): «Классификация
- * расходов», «Специфика», «Источник финансирования», «Код платных услуг», «МОЛ».
- * Только по ним раскладываем блок «Отборы» — «Организация», период, список
- * счетов и прочие параметры остаются в шапке над бланком (как в 1С).
- */
-const MO13_FILTER_CODES = new Set([
-  'fkr',
-  'spetsifika',
-  'istochnikfinansirovaniya',
-  'kodplatnykhuslug',
-  'mol',
-])
-
-/**
  * Тумблер формы (напр. «Язык формы (рус/каз)») — BOOLEAN с group='form'.
  * Для табличных СКД-отчётов (ТМЗ) выносим его из шапки в чекбоксы вкладки
  * «Основные» панели настроек (как «Детализация» у МО). У бланков-МО язык уже
@@ -167,6 +146,17 @@ const MO13_FILTER_CODES = new Set([
  */
 const isFormToggle = (p: ReportParameterDto): boolean =>
   p.dataType === 'BOOLEAN' && p.group === 'form'
+
+/**
+ * Параметр «Организация» — остаётся в шапке бланка (как период). Определяем по
+ * справочнику-источнику или коду (устойчиво к регистру/суффиксам).
+ */
+const isOrganizatsiya = (p: ReportParameterDto): boolean =>
+  p.referenceDomain === 'Organizatsii' || /organizatsiya/i.test(p.code)
+
+/** Параметр «Список счетов» (ACCOUNT_LIST) — остаётся в шапке бланка, как в 1С. */
+const isAccountList = (p: ReportParameterDto): boolean =>
+  p.dataType === 'ACCOUNT_LIST'
 
 /**
  * Сериализация значений параметров в строку URL (одно поле на параметр).
@@ -523,10 +513,13 @@ const ReportPageContent = ({
   const [showSettings, setShowSettings] = useState(false)
   const [hideSettingsOnSubmit, setHideSettingsOnSubmit] = useState(false)
 
-  // «Детализация» — параметры-флажки (BOOLEAN). «Отборы» — только справочные
-  // параметры-отборы по кодам {@link MO13_FILTER_CODES} (сравнение EQUAL).
-  // «Организация» (обязательный ref), период и список счетов в панель НЕ уходят —
-  // остаются в шапке над бланком, как в 1С.
+  // Раскладка как в 1С. В шапке над бланком остаются период, «Организация» и
+  // «Список счетов». Всё прочее уходит в панель «Настройки»:
+  //  • «Детализация» — параметры-флажки (BOOLEAN, включая тумблер языка);
+  //  • «Отбор» — единая таблица «Поле | Тип сравнения | Список» (сравнение
+  //    «Равно») со ВСЕМИ справочными параметрами-отборами: Классификация
+  //    расходов (ФКР), Специфика, Источник финансирования, Код платных услуг,
+  //    Программа, Код администратора, Подпрограмма, Контрагент.
   const detailParams = useMemo<ReportParameterDto[]>(
     () =>
       isMemorialOrder
@@ -537,8 +530,14 @@ const ReportPageContent = ({
   const filterParams = useMemo<ReportParameterDto[]>(
     () =>
       isMemorialOrder
-        ? meta.parameters.filter((p) =>
-            MO13_FILTER_CODES.has(normalizeParamCode(p.code))
+        ? meta.parameters.filter(
+            (p) =>
+              !isPeriod(p) &&
+              !isOrganizatsiya(p) &&
+              !isAccountList(p) &&
+              !isPeriodicity(p) &&
+              !isPodrazdelenie(p) &&
+              p.dataType !== 'BOOLEAN'
           )
         : [],
     [isMemorialOrder, meta.parameters]
@@ -660,10 +659,13 @@ const ReportPageContent = ({
     () =>
       formToggleParams.map((p) => ({
         key: p.code,
-        label: localized(p.titleRu, p.titleKz, isKz),
+        // Тумблер языка формы подписываем «Русский язык» (вкл=рус / выкл=каз).
+        label: /yazyk/i.test(p.code)
+          ? t('reports.russianLanguage')
+          : localized(p.titleRu, p.titleKz, isKz),
         checked: values[p.code] === true,
       })),
-    [formToggleParams, values, isKz]
+    [formToggleParams, values, isKz, t]
   )
   const onToggleFormParam = (key: string) => {
     setParamValue(key, values[key] !== true)

@@ -326,6 +326,7 @@
   "reports": {
     "title": "Есеп",
     "detailSection": "Егжей-тегжелеу",
+    "russianLanguage": "Орыс тілі",
     "filtersSection": "Іріктеулер",
     "hideSettingsOnSubmit": "Есеп қалыптастырғанда баптауларды жасыру",
     "generate": "Қалыптастыру",

@@ -25,6 +25,7 @@ import {
   isHighlightRow,
   isMeasure,
   isRightAligned,
+  resolveReportLang,
 } from '../lib/cell-helpers'
 import { ReportCell } from './report-cell'
 
@@ -117,7 +118,11 @@ export const TreeTable = ({
   indentPx = 13,
 }: TreeTableProps) => {
   const { t, i18n } = useTranslation()
-  const isKz = i18n.language === 'kz'
+  // Язык РЕНДЕРА = язык, на котором отчёт сформировал бэк (result.language),
+  // иначе — язык приложения. Так шапки колонок и итог на языке отчёта, даже
+  // если UI приложения на другом языке (пер-отчётный язык / Accept-Language).
+  const reportLang = resolveReportLang(result.language, i18n.language)
+  const isKz = reportLang === 'kz'
 
   const data = useMemo(() => result.rows, [result.rows])
 
@@ -499,7 +504,7 @@ export const TreeTable = ({
                   variant="body2"
                   sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
                 >
-                  {t('reports.total')}
+                  {t('reports.total', { lng: reportLang })}
                 </Typography>
               </td>
               {bodyColumns.map((col) => (

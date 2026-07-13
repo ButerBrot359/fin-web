@@ -5,6 +5,7 @@ import type { SxProps, Theme } from '@mui/material'
 import { TextInput, NumberInput, DateTimeInput } from '@/shared/ui/inputs'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
+import { renderCellValue } from '../../../lib/utils/cell-value'
 
 interface TableCellEditorProps {
   cellWidget: string
@@ -67,6 +68,10 @@ const dateCellSx: SxProps<Theme> = {
 
 function formatReadonlyValue(value: unknown, dataType: string): string {
   if (value == null || value === '') return ''
+  // Ссылочные/enum значения {id, presentation} — показываем presentation
+  if (typeof value === 'object' && 'presentation' in value) {
+    return renderCellValue(value)
+  }
   switch (dataType) {
     case 'STRING':
     case 'TEXT':
@@ -81,7 +86,7 @@ function formatReadonlyValue(value: unknown, dataType: string): string {
     case 'BOOLEAN':
       return value ? '✓' : ''
     default:
-      return String(value)
+      return renderCellValue(value)
   }
 }
 
@@ -175,7 +180,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
     default:
       return (
         <span style={{ padding: '4px 8px', fontSize: 14 }}>
-          {String(value ?? '')}
+          {renderCellValue(value)}
         </span>
       )
   }

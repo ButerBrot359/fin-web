@@ -421,6 +421,17 @@ export const FormView = ({ form }: { form: ReportFormDto }) => {
           ))}
         </div>
       )}
+
+      {/* Примечание/памятка — ПОСЛЕ подписей (порядок 1С: подписи → памятка). */}
+      {form.noteLines && form.noteLines.length > 0 && (
+        <div className="mt-6 flex flex-col gap-1">
+          {form.noteLines.map((line, i) => (
+            <Typography key={i} variant="body2" sx={{ color: '#333' }}>
+              {line}
+            </Typography>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

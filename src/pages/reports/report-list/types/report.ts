@@ -110,9 +110,11 @@ export interface ReportFormDto {
   /** «№ 1010». */
   accountsLine?: string
   sections: ReportFormSectionDto[]
-  /** Строки футера («Остаток на конец месяца: …»). */
+  /** Строки футера («Остаток на конец месяца: …») — ДО подписей. */
   footerLines?: string[]
   signatures?: ReportFormSignatureDto[]
+  /** Примечание/памятка — выводится ПОСЛЕ подписей (порядок 1С). */
+  noteLines?: string[]
 }
 
 /** Тип параметра отчёта — определяет, какой инпут рендерить в форме. */

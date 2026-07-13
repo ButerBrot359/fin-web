@@ -11,10 +11,10 @@ import { validatePatches } from './validation'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
 import { useSduiSession } from './sdui-session-context'
-import { usePanelStore, type PanelEntry } from './stores/panel-store'
+import { usePanelStore } from './stores/panel-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { relaySelectionToParent } from './relay-selection'
-import { openPanelTab } from './workspace-tab-gateway'
+import { openDialogAsPanel } from './open-dialog-panel'
 
 const SAVE_COMMANDS = ['save', 'saveAndClose', 'post', 'postAndClose']
 
@@ -45,40 +45,7 @@ export function useSduiDispatch() {
         navigate,
         closeSession,
         openDialog: (effect) => {
-          const props = effect.node?.props
-          const presentation = (props?.presentation as string) ?? 'modal'
-          const panelId = effect.node?.id ?? String(Date.now())
-          const tabKey = props?.tabKey as string | undefined
-          // Блок D: page-панель с openInWorkspaceTab уходит в workspace-вкладку.
-          // Если gateway не забинден — openPanelTab вернёт false и панель
-          // откатится на прежний fullScreen Dialog.
-          const inTab =
-            props?.openInWorkspaceTab === true &&
-            typeof tabKey === 'string' &&
-            openPanelTab({
-              tabKey,
-              title: (props?.title as string | undefined) ?? '',
-              panelId,
-            })
-          const entry: PanelEntry = {
-            panelId,
-            node: effect.node!,
-            presentation: presentation as 'drawer' | 'modal' | 'page',
-            viewState: effect.childState ?? {},
-            ...(inTab ? { openInWorkspaceTab: true, tabKey } : {}),
-          }
-          if (effect.sessionId) {
-            entry.session = {
-              formSessionId: effect.sessionId,
-              revision: effect.childRevision ?? 0,
-              parentSessionId: session.getSession().formSessionId ?? undefined,
-              targetNodeId: undefined,
-            }
-          }
-          // Повторное открытие того же документа (тот же tabKey → тот же
-          // node.id): свежий PanelEntry с новым childState заменяет старый.
-          if (inTab) usePanelStore.getState().remove(panelId)
-          usePanelStore.getState().push(entry)
+          openDialogAsPanel(effect, session.getSession().formSessionId ?? undefined)
         },
         closeDialog: (effect) => {
           if (effect.id) usePanelStore.getState().remove(effect.id)

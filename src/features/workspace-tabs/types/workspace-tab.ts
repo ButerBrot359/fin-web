@@ -22,4 +22,7 @@ export interface WorkspaceTab {
   // Только для pageType 'sdui-panel': id панели в сторе владельца контента (SDUI).
   // Панельные вкладки не маршрутные: path = '', search = ''.
   panelId?: string
+  // Только для pageType 'sdui-panel': id вкладки, из которой панель открыта.
+  // «Назад» возвращает на неё, оставляя панель в баре (SCRUM-265).
+  openerTabId?: string
 }

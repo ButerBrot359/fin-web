@@ -10,6 +10,7 @@ import {
 import { applyPatches, clearErrors } from '../lib/patch-applier'
 import type { ViewNode, ViewPatch } from '../types/view'
 import { NodeRenderer } from './node-renderer'
+import { PanelStateProvider } from '../lib/panel-state-provider'
 
 const PANEL_BG = '#F2F6FD'
 const BACKDROP_BG = 'rgba(34, 33, 36, 0.6)'
@@ -89,8 +90,12 @@ export const DialogHost = () => {
         const content = panel.session ? (
           <PanelFormProvider panel={panel} />
         ) : (
-          // Панель без сессии: патчей не бывает, статичного снимка достаточно
-          <NodeRenderer node={panel.node} />
+          // Панель без сессии (childState): патчей не бывает, но биндинги
+          // должны читать значения из снимка viewState — без read-only
+          // сессии диалог рендерится пустым.
+          <PanelStateProvider panel={panel}>
+            <NodeRenderer node={panel.node} />
+          </PanelStateProvider>
         )
 
         if (panel.presentation === 'page') {

@@ -87,7 +87,7 @@ export const MemorialOrderSettingsPanel = ({
                   // Инвентарной карточке). Значение параметра — boolean (true=рус).
                   <div key={p.code} className="my-1">
                     <LanguageSelect
-                      label={t('reportSettings.language')}
+                      label={t('reports.language')}
                       value={checked}
                       onChange={(isRu) => {
                         setParamValue(p.code, isRu)

@@ -185,7 +185,7 @@ export const ReportSettingsPanel = ({
             {/* Язык формы — выпадающий список Русский/Казахский (как в Инв. карточке). */}
             {hasLanguage && (
               <LanguageSelect
-                label={t('reportSettings.language')}
+                label={t('reports.language')}
                 value={languageIsRu}
                 onChange={onLanguageChange}
               />

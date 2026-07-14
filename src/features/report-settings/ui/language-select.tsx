@@ -35,7 +35,9 @@ export const LanguageSelect = ({
         onChange(o?.id === 'RU')
       }}
       label={label}
-      size="small"
+      // medium (обычная высота): у filled-поля с size="small" «плавающая» метка
+      // «Язык» наезжала на значение «Русский» — не хватало высоты.
+      size="medium"
       fullWidth
     />
   )

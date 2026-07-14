@@ -4,6 +4,7 @@ export type {
   ReportFilterItem,
 } from './ui/report-settings-drawer'
 export { ReportSettingsPanel } from './ui/report-settings-panel'
+export { LanguageSelect } from './ui/language-select'
 export { ReportFilterTable } from './ui/report-filter-table'
 export {
   comparisonLabel,

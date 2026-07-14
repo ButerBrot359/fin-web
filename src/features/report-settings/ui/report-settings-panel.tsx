@@ -16,6 +16,7 @@ import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
 
 import type { ReportGroupItem } from './report-settings-drawer'
+import { LanguageSelect } from './language-select'
 import { ReportFilterTable } from './report-filter-table'
 import type {
   ReportAppearance,
@@ -31,7 +32,11 @@ interface ReportSettingsPanelProps {
   variantOptions: SelectOption[]
   selectedVariant: string | null
   onVariantChange: (code: string) => void
-  /** Тумблеры формы (напр. «Язык формы (рус/каз)») — верх вкладки «Основные», как у МО. */
+  /** Язык формы (Русский/Казахский) — выпадающий список вверху «Основных», как в 1С. */
+  hasLanguage: boolean
+  languageIsRu: boolean
+  onLanguageChange: (isRu: boolean) => void
+  /** Прочие тумблеры формы (без языка) — верх вкладки «Основные», как у МО. */
   formToggleItems: ReportGroupItem[]
   onToggleFormParam: (key: string) => void
   /** Показатели (Сумма / Количество / …) — раздел «Показатели» вкладки «Основные». */
@@ -102,6 +107,9 @@ export const ReportSettingsPanel = ({
   variantOptions,
   selectedVariant,
   onVariantChange,
+  hasLanguage,
+  languageIsRu,
+  onLanguageChange,
   formToggleItems,
   onToggleFormParam,
   indicatorItems,
@@ -174,7 +182,16 @@ export const ReportSettingsPanel = ({
         {/* ── Основные ─────────────────────────────────────────────── */}
         {tab === 0 && (
           <>
-            {/* Тумблеры формы (язык и т.п.) — сверху, как «Детализация» у МО. */}
+            {/* Язык формы — выпадающий список Русский/Казахский (как в Инв. карточке). */}
+            {hasLanguage && (
+              <LanguageSelect
+                label={t('reportSettings.language')}
+                value={languageIsRu}
+                onChange={onLanguageChange}
+              />
+            )}
+
+            {/* Прочие тумблеры формы — сверху, как «Детализация» у МО. */}
             {formToggleItems.length > 0 && (
               <CheckboxList
                 items={formToggleItems}

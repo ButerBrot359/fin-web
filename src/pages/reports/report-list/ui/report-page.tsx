@@ -644,6 +644,12 @@ const ReportPageContent = ({
     () => meta.parameters.filter(isFormToggle),
     [meta.parameters]
   )
+  // Параметр «Язык формы» (boolean group='form') — выводим ВЫПАДАЮЩИМ списком
+  // Русский/Казахский (как в Инвентарной карточке), а не чекбоксом.
+  const languageParam = useMemo(
+    () => formToggleParams.find((p) => /yazyk/i.test(p.code)) ?? null,
+    [formToggleParams]
+  )
 
   // Состояние показателей (display-only): включён ли показатель. Инициализация
   // из defaultEnabled; пересобираем при смене набора показателей в meta.
@@ -698,19 +704,18 @@ const ReportPageContent = ({
     })
   }
 
-  // Тумблеры формы (язык и т.п.) — чекбоксы вкладки «Основные». В отличие от
-  // показателей/группировки это реальные параметры отчёта (уходят в /run).
+  // Прочие тумблеры формы (без языка — он идёт выпадающим списком) — чекбоксы
+  // вкладки «Основные». Это реальные параметры отчёта (уходят в /run).
   const formToggleItems = useMemo<ReportGroupItem[]>(
     () =>
-      formToggleParams.map((p) => ({
-        key: p.code,
-        // Тумблер языка формы подписываем «Русский язык» (вкл=рус / выкл=каз).
-        label: /yazyk/i.test(p.code)
-          ? t('reports.russianLanguage')
-          : localized(p.titleRu, p.titleKz, isKz),
-        checked: values[p.code] === true,
-      })),
-    [formToggleParams, values, isKz, t]
+      formToggleParams
+        .filter((p) => !/yazyk/i.test(p.code))
+        .map((p) => ({
+          key: p.code,
+          label: localized(p.titleRu, p.titleKz, isKz),
+          checked: values[p.code] === true,
+        })),
+    [formToggleParams, values, isKz]
   )
   const onToggleFormParam = (key: string) => {
     setParamValue(key, values[key] !== true)
@@ -1030,6 +1035,13 @@ const ReportPageContent = ({
             variantOptions={variantOptions}
             selectedVariant={selectedVariant}
             onVariantChange={onVariantChange}
+            hasLanguage={languageParam != null}
+            languageIsRu={
+              languageParam ? values[languageParam.code] === true : false
+            }
+            onLanguageChange={(isRu) => {
+              if (languageParam) setParamValue(languageParam.code, isRu)
+            }}
             formToggleItems={formToggleItems}
             onToggleFormParam={onToggleFormParam}
             indicatorItems={indicatorItems}

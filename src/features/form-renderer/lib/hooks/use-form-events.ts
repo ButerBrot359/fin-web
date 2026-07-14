@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 
 import { apiService } from '@/shared/api/api'
 import type { DocumentAttribute } from '@/entities/document-type'
-import type { ConditionalAppearance } from '@/entities/form-config'
+import type { ConditionalAppearance, FieldFilter } from '@/entities/form-config'
 
 import type { TableReplacersRef } from '../../types/renderer-context'
 
@@ -35,6 +35,13 @@ interface UseFormEventsParams {
   onVisibility?: (visibility: Record<string, boolean>) => void
   /** Условное оформление из `formConfig.conditionalAppearance` ответа handle-event. */
   onConditionalAppearance?: (appearance: ConditionalAppearance[]) => void
+  /**
+   * Отборы пикеров из `formConfig.fieldFilters` переизданного дескриптора
+   * (§1 наряда КБП-ВНО-ОТБОР). Дескриптор переиздаётся на OnChange, поэтому
+   * фильтры полей нужно применять и из ответов событий, не только из первого
+   * (OPEN) конфига.
+   */
+  onFieldFilters?: (filters: Record<string, FieldFilter>) => void
 }
 
 export const useFormEvents = ({
@@ -44,6 +51,7 @@ export const useFormEvents = ({
   tableReplacersRef,
   onVisibility,
   onConditionalAppearance,
+  onFieldFilters,
 }: UseFormEventsParams) => {
   const eventFieldMap = useMemo(
     () =>
@@ -66,6 +74,7 @@ export const useFormEvents = ({
         | {
             visibility?: Record<string, boolean>
             conditionalAppearance?: ConditionalAppearance[]
+            fieldFilters?: Record<string, FieldFilter>
           }
         | undefined
       if (formConfig?.visibility && onVisibility) {
@@ -73,6 +82,9 @@ export const useFormEvents = ({
       }
       if (formConfig?.conditionalAppearance && onConditionalAppearance) {
         onConditionalAppearance(formConfig.conditionalAppearance)
+      }
+      if (formConfig?.fieldFilters && onFieldFilters) {
+        onFieldFilters(formConfig.fieldFilters)
       }
 
       if (variables.seedOnly) return

@@ -3,7 +3,43 @@ import { describe, it, expect } from 'vitest'
 import {
   selectionModeToSearchParams,
   mergeSearchParams,
+  fieldFilterToSearchParams,
 } from './field-filter-params'
+
+describe('fieldFilterToSearchParams', () => {
+  it('attributeEquals с двумя ENUMS-условиями → af с обоими id как есть', () => {
+    // Кейс пикера «Движение ОС» документа ВНА: id из дескриптора без перемапа.
+    expect(
+      fieldFilterToSearchParams({
+        attributeEquals: { VidDvizheniya: 1226, ObektDvizheniya: 1141 },
+      })
+    ).toEqual({ af: 'VidDvizheniya:1226,ObektDvizheniya:1141' })
+  })
+
+  it('одно условие → одиночный af', () => {
+    expect(
+      fieldFilterToSearchParams({ attributeEquals: { Organizatsiya: 30294 } })
+    ).toEqual({ af: 'Organizatsiya:30294' })
+  })
+
+  it('нет attributeEquals / пусто / нет фильтра → undefined (без af)', () => {
+    expect(fieldFilterToSearchParams(undefined)).toBeUndefined()
+    expect(fieldFilterToSearchParams({})).toBeUndefined()
+    expect(
+      fieldFilterToSearchParams({ attributeEquals: {} })
+    ).toBeUndefined()
+  })
+
+  it('af сохраняется вместе со строкой поиска при слиянии', () => {
+    const af = fieldFilterToSearchParams({
+      attributeEquals: { VidDvizheniya: 1226 },
+    })
+    expect(mergeSearchParams(af, { q: 'Лом' })).toEqual({
+      af: 'VidDvizheniya:1226',
+      q: 'Лом',
+    })
+  })
+})
 
 describe('selectionModeToSearchParams', () => {
   it('GROUP → { groupsOnly: "true" }', () => {

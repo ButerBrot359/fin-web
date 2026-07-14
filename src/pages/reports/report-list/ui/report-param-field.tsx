@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
   Checkbox,
+  Chip,
   FormControlLabel,
   TextField,
+  Typography,
 } from '@mui/material'
 
 import { useAccountPlanList } from '@/entities/account-plan'
@@ -148,13 +150,35 @@ export const ReportParamField = ({
         <Autocomplete
           multiple
           size="small"
-          // Компактные чипы, как в 1С: показываем 1 + «+N», иначе длинный список
-          // счетов расползается по шапке и наслаивается на кнопки. При фокусе MUI
-          // раскрывает все теги для редактирования.
-          limitTags={1}
-          // Фиксированная ширина: выбранные чипы переносятся ВНИЗ (не растягивают
-          // поле в длину по шапке), как в 1С.
+          // Фиксированная ширина, чтобы поле не растягивалось по шапке.
           sx={{ width: 300 }}
+          // Компактная подпись значения: ВСЕГДА «1 чип + N» (даже при клике/фокусе)
+          // — выбранные счета не «вылезают» за поле; для выбора есть выпадающий
+          // список опций. Иначе MUI при фокусе раскрывает все теги и они наезжают
+          // на кнопки шапки.
+          renderTags={(tagValue, getTagProps) => {
+            if (tagValue.length === 0) return null
+            const { key, ...tagProps } = getTagProps({ index: 0 })
+            return (
+              <>
+                <Chip
+                  key={key}
+                  {...tagProps}
+                  size="small"
+                  label={tagValue[0].label}
+                  sx={{ maxWidth: 150 }}
+                />
+                {tagValue.length > 1 && (
+                  <Typography
+                    variant="caption"
+                    sx={{ ml: 0.5, color: '#666', whiteSpace: 'nowrap' }}
+                  >
+                    +{tagValue.length - 1}
+                  </Typography>
+                )}
+              </>
+            )
+          }}
           options={refOptions}
           value={selected}
           onChange={(_e, next) => {

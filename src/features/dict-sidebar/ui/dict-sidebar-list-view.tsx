@@ -19,16 +19,18 @@ import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
 import { Button } from '@/shared/ui/buttons/button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
-import type { DocumentAttribute } from '@/entities/document-type'
 import type { SelectOption } from '@/shared/types/select-option'
-import { formatDate } from '@/shared/lib/utils/date'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { cn } from '@/shared/lib/utils/cn'
 
 import type { DictSidebarPanel } from '../types/dict-sidebar'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
+import { useColumnWidths } from '../lib/hooks/use-column-widths'
+import { buildDictColumns, mapDictColumns } from '../lib/utils/dict-columns'
+import { DictTree } from './dict-tree'
 import {
   fetchDictTypeMetadata,
+  fetchDictColumns,
   fetchDictEntriesPaged,
   searchDictEntries,
   type DictEntry,
@@ -43,7 +45,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   const { pop, push } = useDictSidebarStore()
 
   const [search, setSearch] = useState('')
-  const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
+  const [selectedEntry, setSelectedEntry] = useState<DictEntry | null>(null)
   const [sorting, setSorting] = useState<SortingState>([])
 
   const sortAttr = sorting[0]?.id
@@ -61,6 +63,10 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   })
 
   const isSearchMode = search.trim().length > 0
+  // Дерево — только для иерархических типов и в режиме навигации (не поиска):
+  // поиск возвращает плоский список совпадений по всему справочнику.
+  const isHierarchical = !!typeData?.isHierarchical
+  const isTree = isHierarchical && !isSearchMode
 
   const PAGE_SIZE = 25
 
@@ -102,7 +108,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       const paged = lastPage.data.data
       return paged.last ? undefined : paged.number + 1
     },
-    enabled: !isSearchMode && typeData != null,
+    enabled: !isSearchMode && typeData != null && !isHierarchical,
     staleTime: 60 * 1000,
     placeholderData: keepPreviousData,
   })
@@ -168,79 +174,44 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     }
   }, [isLoading])
 
-  const visibleAttributes = useMemo(
+  // Колонки диалога из GET /dictionaries/entries/{typeCode}/columns. Контракт
+  // не зафиксирован — при ошибке/пустом ответе откатываемся на атрибуты типа.
+  const { data: columnDtos } = useQuery({
+    queryKey: ['dict-sidebar-columns', panel.typeCode],
+    queryFn: ({ signal }) => fetchDictColumns(panel.typeCode, signal),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+    select: (res) => res.data.data,
+  })
+
+  // Общая модель колонок для плоской таблицы и дерева (Код / Наименование…).
+  const dictColumns = useMemo(() => {
+    const fromEndpoint =
+      columnDtos && columnDtos.length > 0
+        ? mapDictColumns(columnDtos, i18n.language)
+        : []
+    return fromEndpoint.length > 0
+      ? fromEndpoint
+      : buildDictColumns(
+          typeData?.attributes ?? [],
+          panel.typeCode,
+          i18n.language,
+          t
+        )
+  }, [columnDtos, typeData?.attributes, panel.typeCode, i18n.language, t])
+
+  const { widthOf, startResize } = useColumnWidths(panel.typeCode)
+
+  const columns = useMemo<ColumnDef<DictEntry>[]>(
     () =>
-      [...(typeData?.attributes ?? [])]
-        .filter((attr: DocumentAttribute) => attr.showInList)
-        .sort(
-          (a: DocumentAttribute, b: DocumentAttribute) =>
-            a.tableSortOrder - b.tableSortOrder
-        ),
-    [typeData?.attributes]
+      dictColumns.map((col) => ({
+        id: col.id,
+        enableSorting: col.sortable,
+        header: () => <span>{col.title}</span>,
+        cell: ({ row }) => col.render(row.original),
+      })),
+    [dictColumns]
   )
-
-  const columns = useMemo<ColumnDef<DictEntry>[]>(() => {
-    const attributeColumns: ColumnDef<DictEntry>[] = visibleAttributes.map(
-      (attr) => ({
-        id: attr.code,
-        accessorFn: (row: DictEntry) => {
-          if (
-            attr.code === 'Kod' &&
-            panel.typeCode === 'EdiniyPlanSchetovGosUchrezhdeniya'
-          ) {
-            return row.code || row.attributes?.[attr.code]
-          }
-          return row.attributes?.[attr.code]
-        },
-        header: () => {
-          const name = getLocalizedName(attr, i18n.language)
-          return <span>{name}</span>
-        },
-        cell: (info: { getValue: () => unknown }) => {
-          const value = info.getValue()
-
-          if (
-            (attr.dataType === 'DATE' || attr.dataType === 'DATETIME') &&
-            typeof value === 'string'
-          ) {
-            const fmt =
-              attr.dataType === 'DATE' ? 'dd.MM.yyyy' : 'dd.MM.yyyy HH:mm:ss'
-            return (
-              <Typography variant="body2" noWrap className="text-ui-06">
-                {formatDate(value, fmt)}
-              </Typography>
-            )
-          }
-
-          const display =
-            typeof value === 'object' && value !== null
-              ? ((value as Record<string, unknown>).name ??
-                (value as Record<string, unknown>).nameRu)
-              : value
-          return (
-            <Typography variant="body2" noWrap className="text-ui-06">
-              {typeof display === 'string' || typeof display === 'number'
-                ? display
-                : ''}
-            </Typography>
-          )
-        },
-      })
-    )
-
-    const nameColumn: ColumnDef<DictEntry> = {
-      id: 'nameRu',
-      accessorFn: (row) => row.displayName ?? getLocalizedName(row, i18n.language),
-      header: () => <span>{t('documentTable.link')}</span>,
-      cell: (info) => (
-        <Typography variant="body2" noWrap className="text-ui-06">
-          {info.getValue() as string}
-        </Typography>
-      ),
-    }
-
-    return [...attributeColumns, nameColumn]
-  }, [visibleAttributes, i18n.language, t, panel.typeCode])
 
   const table = useReactTable({
     data: entries,
@@ -266,8 +237,6 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     virtualRows.length > 0
       ? rowVirtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0)
       : 0
-
-  const selectedEntry = entries.find((e) => e.id === selectedRowId)
 
   const handleSelect = () => {
     if (!selectedEntry) return
@@ -312,15 +281,16 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
           <Button
             variant="secondary"
             aria-label={t('actions.copy')}
-            disabled={selectedRowId == null}
+            disabled={selectedEntry == null}
             startIcon={<CopyDocIcon className="h-5 w-5" />}
             onClick={() => {
+              if (!selectedEntry) return
               push({
                 mode: 'create',
                 domain: panel.domain,
                 typeCode: panel.typeCode,
                 onSelect: panel.onSelect,
-                copyFromId: selectedRowId!,
+                copyFromId: selectedEntry.id,
               })
             }}
           />
@@ -353,6 +323,16 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
               {t('inputs.loading')}
             </Typography>
           </div>
+        ) : isTree ? (
+          <DictTree
+            panel={panel}
+            columns={dictColumns}
+            selectedId={selectedEntry?.id ?? null}
+            onSelectRow={setSelectedEntry}
+            onConfirm={handleSelect}
+            widthOf={widthOf}
+            startResize={startResize}
+          />
         ) : entries.length === 0 ? (
           <div className="flex items-center justify-center py-20">
             <Typography className="text-ui-05">
@@ -363,9 +343,22 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
           <>
             <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
               <table
-                className="w-full border-separate"
-                style={{ borderSpacing: '2px' }}
+                className="border-separate"
+                style={{
+                  borderSpacing: '2px',
+                  tableLayout: 'fixed',
+                  width: dictColumns.reduce(
+                    (sum, col) => sum + widthOf(col.id),
+                    0
+                  ),
+                  minWidth: '100%',
+                }}
               >
+                <colgroup>
+                  {dictColumns.map((col) => (
+                    <col key={col.id} style={{ width: widthOf(col.id) }} />
+                  ))}
+                </colgroup>
                 <thead>
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
@@ -377,21 +370,23 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                           <th
                             key={header.id}
                             className={cn(
-                              'sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06',
+                              'sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06 relative',
                               canSort && 'cursor-pointer select-none'
                             )}
                             onClick={header.column.getToggleSortingHandler()}
                           >
                             {header.isPlaceholder ? null : (
-                              <span className="inline-flex items-center gap-1">
-                                {flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
+                              <span className="inline-flex items-center gap-1 max-w-full">
+                                <span className="truncate">
+                                  {flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext()
+                                  )}
+                                </span>
                                 {sorted && (
                                   <span
                                     className={cn(
-                                      'text-[10px] leading-none',
+                                      'text-[10px] leading-none shrink-0',
                                       sorted === 'asc' && 'rotate-180'
                                     )}
                                   >
@@ -400,6 +395,13 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                                 )}
                               </span>
                             )}
+                            <div
+                              role="separator"
+                              aria-orientation="vertical"
+                              onMouseDown={(e) => startResize(header.column.id, e)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-ui-04"
+                            />
                           </th>
                         )
                       })}
@@ -414,13 +416,13 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                   )}
                   {virtualRows.map((virtualRow) => {
                     const row = rows[virtualRow.index]
-                    const isSelected = selectedRowId === row.original.id
+                    const isSelected = selectedEntry?.id === row.original.id
 
                     return (
                       <tr
                         key={row.id}
                         onClick={() => {
-                          setSelectedRowId(row.original.id)
+                          setSelectedEntry(row.original)
                         }}
                         onDoubleClick={handleSelect}
                         className={cn(
@@ -435,7 +437,7 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
-                            className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
+                            className="truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
                           >
                             {flexRender(
                               cell.column.columnDef.cell,

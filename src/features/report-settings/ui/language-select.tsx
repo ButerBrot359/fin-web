@@ -21,8 +21,8 @@ export const LanguageSelect = ({
   const { t } = useTranslation()
   const options = useMemo<SelectOption[]>(
     () => [
-      { id: 'RU', code: 'RU', label: t('reportSettings.russian') },
-      { id: 'KZ', code: 'KZ', label: t('reportSettings.kazakh') },
+      { id: 'RU', code: 'RU', label: t('reports.russian') },
+      { id: 'KZ', code: 'KZ', label: t('reports.kazakh') },
     ],
     [t]
   )

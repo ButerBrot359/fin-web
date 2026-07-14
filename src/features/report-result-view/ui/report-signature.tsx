@@ -16,29 +16,36 @@ export const ReportSignature = ({
   const captions = signature.captions ?? ['подпись']
   const lastIdx = captions.length - 1
   return (
-    // Ширину подвала ограничиваем (≈ ширина бланка), чтобы графы не растягивались
-    // на всю широкую таблицу, а стояли компактно, как в 1С.
-    <div className="mt-8 flex max-w-[900px] items-end gap-6">
-      <Typography variant="body2" sx={{ color: '#333' }} className="shrink-0">
+    // Как в 1С: слева роль, правее — компактные графы фикс-ширины (линии НЕ
+    // растягиваются на всю таблицу). Подпись-графа (должность/подпись/расшифровка)
+    // стоит НАД линией; ФИО — под линией (у графы «расшифровка подписи»).
+    <div className="mt-8 flex flex-wrap items-start gap-x-8 gap-y-3">
+      <Typography
+        variant="body2"
+        sx={{ color: '#333' }}
+        className="shrink-0 pt-4"
+      >
         {signature.role}
       </Typography>
-      <div className="flex flex-1 gap-8">
-        {captions.map((caption, ci) => (
-          <div key={ci} className="flex flex-1 flex-col items-center">
-            <Typography
-              variant="body2"
-              sx={{ color: '#333' }}
-              className="min-h-5 truncate"
-            >
-              {ci === lastIdx ? (signature.name ?? '') : ''}
-            </Typography>
-            <div className="w-full border-t border-[#333]" />
-            <Typography variant="caption" sx={{ color: '#666', fontSize: 10 }}>
-              {caption}
-            </Typography>
-          </div>
-        ))}
-      </div>
+      {captions.map((caption, ci) => (
+        <div key={ci} className="flex w-52 flex-col items-center">
+          <Typography
+            variant="caption"
+            sx={{ color: '#666', fontSize: 10 }}
+            className="min-h-4"
+          >
+            {caption}
+          </Typography>
+          <div className="w-full border-t border-[#333]" />
+          <Typography
+            variant="body2"
+            sx={{ color: '#333' }}
+            className="min-h-5 truncate"
+          >
+            {ci === lastIdx ? (signature.name ?? '') : ''}
+          </Typography>
+        </div>
+      ))}
     </div>
   )
 }

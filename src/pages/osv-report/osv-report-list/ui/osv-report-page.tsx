@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import {
   useLocation,
   useNavigate,
@@ -78,14 +78,16 @@ export const OsvReportPage = () => {
   // «Сформировать», хранится в URL (?organizatsiyaId) и уходит в dimensionFilters.
   const [organizatsiya, setOrganizatsiya] = useState<SelectOption | null>(null)
 
-  // Группировка (панель «Настройки → Группировка»). По умолчанию все измерения
-  // включены (полное дерево, как сейчас); субконто-разворот выключен. Меняет
-  // запрос → дерево перестраивается на бэке.
+  // Группировка (панель «Настройки → Группировка»). Дефолт — как базовый
+  // вариант ОСВ в 1С: измерения выключены (OSV_DEFAULT_DIMENSIONS пуст),
+  // включён только разворот Счёт → Субконто («По субконто»). Измерения
+  // пользователь добавляет сам на вкладке «Группировка». Меняет запрос →
+  // дерево перестраивается на бэке.
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [enabledDims, setEnabledDims] = useState<Set<string>>(
     () => new Set(OSV_DEFAULT_DIMENSIONS)
   )
-  const [expandBySubkonto, setExpandBySubkonto] = useState(false)
+  const [expandBySubkonto, setExpandBySubkonto] = useState(true)
   // Показатели (вкладка «Показатели»): «Количество» — показ строк «Кол.».
   const [showQuantity, setShowQuantity] = useState(true)
   // Отборы (вкладка «Отборы»): query-параметр измерения → ID значения.
@@ -116,22 +118,41 @@ export const OsvReportPage = () => {
   // Восстанавливаем выбранный счёт из URL (при монтировании / смене URL, когда
   // справочник счетов загрузился). НЕ зависим от `account` и НЕ сбрасываем его в
   // null — иначе ручной выбор в выпадающем списке тут же затирался бы (поле
-  // очищалось), ведь URL обновляется только при «Сформировать».
-  useEffect(() => {
-    if (!urlAccountId) return
-    const found = accountOptions.find((o) => String(o.id) === urlAccountId)
-    if (found) setAccount(found)
-  }, [urlAccountId, accountOptions])
+  // очищалось), ведь URL обновляется только при «Сформировать». Корректировка
+  // состояния выполняется прямо в рендере (паттерн «adjust state on change»
+  // из react.dev), а не в эффекте — setState в эффекте даёт каскадный ререндер.
+  const urlAccount = useMemo(
+    () =>
+      urlAccountId
+        ? (accountOptions.find((o) => String(o.id) === urlAccountId) ?? null)
+        : null,
+    [urlAccountId, accountOptions]
+  )
+  const [prevUrlAccount, setPrevUrlAccount] = useState<SelectOption | null>(
+    null
+  )
+  if (urlAccount !== prevUrlAccount) {
+    setPrevUrlAccount(urlAccount)
+    if (urlAccount) setAccount(urlAccount)
+  }
 
   // Аналогично восстанавливаем выбранную организацию из URL, когда справочник
   // организаций загрузился. НЕ сбрасываем в null (см. счёт выше).
-  useEffect(() => {
-    if (!urlOrganizatsiyaId) return
-    const found = organizationOptions.find(
-      (o) => String(o.id) === urlOrganizatsiyaId
-    )
-    if (found) setOrganizatsiya(found)
-  }, [urlOrganizatsiyaId, organizationOptions])
+  const urlOrganizatsiya = useMemo(
+    () =>
+      urlOrganizatsiyaId
+        ? (organizationOptions.find(
+            (o) => String(o.id) === urlOrganizatsiyaId
+          ) ?? null)
+        : null,
+    [urlOrganizatsiyaId, organizationOptions]
+  )
+  const [prevUrlOrganizatsiya, setPrevUrlOrganizatsiya] =
+    useState<SelectOption | null>(null)
+  if (urlOrganizatsiya !== prevUrlOrganizatsiya) {
+    setPrevUrlOrganizatsiya(urlOrganizatsiya)
+    if (urlOrganizatsiya) setOrganizatsiya(urlOrganizatsiya)
+  }
 
   // Applied-параметры — производные от URL. Запрос включается, когда заданы
   // обе границы периода.
@@ -261,7 +282,7 @@ export const OsvReportPage = () => {
     const period = `${formatDate(params.from)} — ${formatDate(params.to)}`
     const acc =
       account && params.accountId === Number(account.id) ? account : null
-    const accPart = acc ? ` ${t('osv.byAccount')} ${acc.code ?? acc.label}` : ''
+    const accPart = acc ? ` ${t('osv.byAccount')} ${acc.code || acc.label}` : ''
     return `${t('osv.title')}${accPart} ${t('osv.forPeriod')} ${period}`
   }, [params, account, t])
 
@@ -324,8 +345,8 @@ export const OsvReportPage = () => {
   // Код счёта для подписи «Карточка счёта N» — из корня ветки (строка-счёт).
   const menuAccountCode = menuRow
     ? ([...menuRow.getParentRows(), menuRow][0]?.original.accountCode ??
-        menuRow.original.accountCode ??
-        '')
+      menuRow.original.accountCode ??
+      '')
     : ''
 
   const handleOpenElement = () => {

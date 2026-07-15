@@ -73,16 +73,22 @@ const toNum = (v: number | string | null | undefined): number => {
 // Сальдо кон) — у «дебетовых» ячеек (чётные индексы 0,2,4), как линии в 1С.
 const groupBorder = (i: number) => (i % 2 === 0 ? 'border-l border-ui-04' : '')
 
-/** Денежная/количественная ячейка: разряды, пусто для null/0, минус — красным. */
+/** Денежная/количественная ячейка: разряды, пусто для null/0, минус — красным.
+ *  Количество (`qty`) — с 3 десятичными знаками (ЧДЦ=3, как в 1С). */
 const ValueCell = ({
   v,
   bold,
+  qty,
 }: {
   v: number | string | null | undefined
   bold?: boolean
+  qty?: boolean
 }) => {
   const num = toNum(v)
-  const text = v == null || v === '' || num === 0 ? '' : formatWithSpaces(String(v))
+  const text =
+    v == null || v === '' || num === 0
+      ? ''
+      : formatWithSpaces(qty ? num.toFixed(3) : String(v))
   return (
     <Typography
       variant="body2"
@@ -243,7 +249,10 @@ export const OsvReportTable = ({
     return (
       // Иерархия: стрелка разворота сдвигается каскадом по глубине дерева
       // (как в 1С) — вместе с отступом наименования делает вложенность явной.
-      <div className="flex items-center gap-1" style={{ paddingLeft: row.depth * 20 }}>
+      <div
+        className="flex items-center gap-1"
+        style={{ paddingLeft: row.depth * 20 }}
+      >
         {canExpand ? (
           <button
             type="button"
@@ -328,72 +337,83 @@ export const OsvReportTable = ({
           </div>
         ))}
         <table className="w-full table-fixed border-collapse">
-        <colgroup>
-          {colWidths.map((w, i) => (
-            <col key={i} style={{ width: w }} />
-          ))}
-        </colgroup>
-        <thead className="bg-ui-02">
-          {/* Уровень 1 — группы колонок (как в 1С). */}
-          <tr className="border-b border-ui-04">
-            {/* Колонка «Счёт» с легендой уровней группировки (как в 1С):
-                перечень измерений, по которым строится разворот дерева. */}
-            <th rowSpan={2} className={`${thBase} align-top text-left`}>
-              <div>{t('osv.account')}</div>
-              <div className="mt-1 space-y-0.5 font-normal normal-case text-ui-05">
-                <div>{t('osv.levelOrganization')}</div>
-                <div>{t('osv.levelSubdivision')}</div>
-                <div>{t('osv.levelFkr')}</div>
-                <div>{t('osv.levelSpetsifika')}</div>
-                <div>{t('osv.levelFundingSource')}</div>
-                <div>{t('osv.levelNomenclature')}</div>
-                <div>{t('osv.levelIndividuals')}</div>
-              </div>
-            </th>
-            <th rowSpan={2} className={`${thBase} text-left`}>
-              {t('osv.accountName')}
-            </th>
-            <th rowSpan={2} className={`${thBase} text-left`}>
-              {t('osv.indicators')}
-            </th>
-            <th colSpan={2} className={`${thBase} border-l border-ui-04 text-center`}>
-              {t('osv.openingBalance')}
-            </th>
-            <th colSpan={2} className={`${thBase} border-l border-ui-04 text-center`}>
-              {t('osv.turnovers')}
-            </th>
-            <th colSpan={2} className={`${thBase} border-l border-ui-04 text-center`}>
-              {t('osv.closingBalance')}
-            </th>
-          </tr>
-          {/* Уровень 2 — Дебет/Кредит внутри каждой группы. */}
-          <tr>
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <th
-                key={i}
-                className={`${thBase} text-right normal-case ${groupBorder(i)}`}
-              >
-                {i % 2 === 0 ? t('osv.debit') : t('osv.credit')}
-              </th>
+          <colgroup>
+            {colWidths.map((w, i) => (
+              <col key={i} style={{ width: w }} />
             ))}
-          </tr>
-        </thead>
-        {table.getRowModel().rows.map((row) => {
-          const isAccount = row.depth === 0
-          // Строка-счёт — выделена фоном и жирным, как в 1С; дочерние узлы —
-          // лёгкий фон по глубине для читаемой иерархии.
-          const rowBg = isAccount ? 'bg-ui-02' : 'bg-ui-01'
-          const bold = isAccount
-          // Каждая запись — отдельный <tbody class="group">, чтобы при наведении
-          // подсвечивались ОБЕ строки показателя (Сумма + Кол.) разом, как в 1С.
-          return (
-            <tbody
-              key={row.id}
-              className={`group ${onRowDoubleClick ? 'cursor-pointer' : ''}`}
-              onDoubleClick={(e) => onRowDoubleClick?.(row, e)}
-            >
-              {/* Строка показателя «Сумма» */}
-                <tr className={`border-t border-ui-04/60 ${rowBg} group-hover:bg-ui-07`}>
+          </colgroup>
+          <thead className="bg-ui-02">
+            {/* Уровень 1 — группы колонок (как в 1С). */}
+            <tr className="border-b border-ui-04">
+              {/* Колонка «Счёт» с легендой уровней группировки (как в 1С):
+                перечень измерений, по которым строится разворот дерева. */}
+              <th rowSpan={2} className={`${thBase} align-top text-left`}>
+                <div>{t('osv.account')}</div>
+                <div className="mt-1 space-y-0.5 font-normal normal-case text-ui-05">
+                  <div>{t('osv.levelOrganization')}</div>
+                  <div>{t('osv.levelSubdivision')}</div>
+                  <div>{t('osv.levelFkr')}</div>
+                  <div>{t('osv.levelSpetsifika')}</div>
+                  <div>{t('osv.levelFundingSource')}</div>
+                  <div>{t('osv.levelNomenclature')}</div>
+                  <div>{t('osv.levelIndividuals')}</div>
+                </div>
+              </th>
+              <th rowSpan={2} className={`${thBase} text-left`}>
+                {t('osv.accountName')}
+              </th>
+              <th rowSpan={2} className={`${thBase} text-left`}>
+                {t('osv.indicators')}
+              </th>
+              <th
+                colSpan={2}
+                className={`${thBase} border-l border-ui-04 text-center`}
+              >
+                {t('osv.openingBalance')}
+              </th>
+              <th
+                colSpan={2}
+                className={`${thBase} border-l border-ui-04 text-center`}
+              >
+                {t('osv.turnovers')}
+              </th>
+              <th
+                colSpan={2}
+                className={`${thBase} border-l border-ui-04 text-center`}
+              >
+                {t('osv.closingBalance')}
+              </th>
+            </tr>
+            {/* Уровень 2 — Дебет/Кредит внутри каждой группы. */}
+            <tr>
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <th
+                  key={i}
+                  className={`${thBase} text-right normal-case ${groupBorder(i)}`}
+                >
+                  {i % 2 === 0 ? t('osv.debit') : t('osv.credit')}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          {table.getRowModel().rows.map((row) => {
+            const isAccount = row.depth === 0
+            // Строка-счёт — выделена фоном и жирным, как в 1С; дочерние узлы —
+            // лёгкий фон по глубине для читаемой иерархии.
+            const rowBg = isAccount ? 'bg-ui-02' : 'bg-ui-01'
+            const bold = isAccount
+            // Каждая запись — отдельный <tbody class="group">, чтобы при наведении
+            // подсвечивались ОБЕ строки показателя (Сумма + Кол.) разом, как в 1С.
+            return (
+              <tbody
+                key={row.id}
+                className={`group ${onRowDoubleClick ? 'cursor-pointer' : ''}`}
+                onDoubleClick={(e) => onRowDoubleClick?.(row, e)}
+              >
+                {/* Строка показателя «Сумма» */}
+                <tr
+                  className={`border-t border-ui-04/60 ${rowBg} group-hover:bg-ui-07`}
+                >
                   <td
                     rowSpan={showQuantity ? 2 : 1}
                     className="overflow-hidden whitespace-nowrap px-3 py-1.5 align-top"
@@ -410,8 +430,14 @@ export const OsvReportTable = ({
                     {row.depth > 0 ? (
                       <DimensionNameCell node={row.original} />
                     ) : (
-                      <Typography variant="body2" noWrap className="font-bold text-ui-06">
-                        {row.original.accountNameRu ?? row.original.accountCode ?? ''}
+                      <Typography
+                        variant="body2"
+                        noWrap
+                        className="font-bold text-ui-06"
+                      >
+                        {row.original.accountNameRu ??
+                          row.original.accountCode ??
+                          ''}
                       </Typography>
                     )}
                   </td>
@@ -436,53 +462,53 @@ export const OsvReportTable = ({
                     </td>
                     {QTY_FIELDS.map((f, i) => (
                       <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
-                        <ValueCell v={row.original[f]} bold={bold} />
+                        <ValueCell v={row.original[f]} bold={bold} qty />
                       </td>
                     ))}
                   </tr>
                 )}
-            </tbody>
-          )
-        })}
-        {total && (
-          <tfoot className="bg-ui-02 font-bold">
-            <tr className="border-t-2 border-ui-03">
-              <td
-                rowSpan={showQuantity ? 2 : 1}
-                colSpan={2}
-                className="overflow-hidden whitespace-nowrap px-3 py-1.5 align-top"
-              >
-                <Typography variant="body2" className="font-bold text-ui-06">
-                  {t('osv.total')}
-                </Typography>
-              </td>
-              <td className={tdValue}>
-                <Typography variant="body2" noWrap className="text-ui-05">
-                  {t('osv.sum')}
-                </Typography>
-              </td>
-              {SUM_FIELDS.map((f, i) => (
-                <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
-                  <ValueCell v={total[f]} bold />
-                </td>
-              ))}
-            </tr>
-            {showQuantity && (
-              <tr>
-                <td className={tdValue}>
-                  <Typography variant="body2" noWrap className="text-ui-05">
-                    {t('osv.quantity')}
+              </tbody>
+            )
+          })}
+          {total && (
+            <tfoot className="bg-ui-02 font-bold">
+              <tr className="border-t-2 border-ui-03">
+                <td
+                  rowSpan={showQuantity ? 2 : 1}
+                  colSpan={2}
+                  className="overflow-hidden whitespace-nowrap px-3 py-1.5 align-top"
+                >
+                  <Typography variant="body2" className="font-bold text-ui-06">
+                    {t('osv.total')}
                   </Typography>
                 </td>
-                {QTY_FIELDS.map((f, i) => (
+                <td className={tdValue}>
+                  <Typography variant="body2" noWrap className="text-ui-05">
+                    {t('osv.sum')}
+                  </Typography>
+                </td>
+                {SUM_FIELDS.map((f, i) => (
                   <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
                     <ValueCell v={total[f]} bold />
                   </td>
                 ))}
               </tr>
-            )}
-          </tfoot>
-        )}
+              {showQuantity && (
+                <tr>
+                  <td className={tdValue}>
+                    <Typography variant="body2" noWrap className="text-ui-05">
+                      {t('osv.quantity')}
+                    </Typography>
+                  </td>
+                  {QTY_FIELDS.map((f, i) => (
+                    <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
+                      <ValueCell v={total[f]} bold qty />
+                    </td>
+                  ))}
+                </tr>
+              )}
+            </tfoot>
+          )}
         </table>
       </div>
     </div>

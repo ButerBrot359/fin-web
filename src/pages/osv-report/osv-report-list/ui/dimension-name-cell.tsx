@@ -29,7 +29,7 @@ export const DimensionNameCell = ({ node }: DimensionNameCellProps) => {
   }
 
   // groupRefName может быть null (нет значения) или пустой строкой —
-  // в обоих случаях показываем «Без значения».
+  // в обоих случаях показываем «<...>» (как пустая аналитика в 1С).
   const name = node.groupRefName?.trim()
   return (
     <Typography variant="body2" noWrap className="text-ui-06">

@@ -23,6 +23,7 @@ import {
   isUnifiedRendererEnabled,
 } from '@/features/report-result-view'
 import { PageHeader } from '@/widgets/page-header'
+import { getDocumentEntry } from '@/entities/document-entry'
 import { DateTimeInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
@@ -41,6 +42,7 @@ import type {
   ReportIndicatorDto,
   ReportMetaDto,
   ReportParameterDto,
+  ReportRowDto,
   RunReportBody,
   RunReportFilter,
 } from '../types/report'
@@ -314,7 +316,7 @@ export const ReportPage = () => {
       .every((p) => isFilled(p, applied[p.code] as ReportParamValue))
     if (!hasAny || !requiredMet) return null
     const variantCode =
-      searchParams.get(VARIANT_URL_KEY) ?? meta.variants?.[0]?.code
+      searchParams.get(VARIANT_URL_KEY) ?? meta.variants[0]?.code
     return {
       parameters: normalizeBodyDates(applied, meta.parameters),
       ...(variantCode ? { variantCode } : {}),
@@ -324,7 +326,7 @@ export const ReportPage = () => {
 
   // Выбранный вариант группировки (для селектора): из URL или первый из meta.
   const selectedVariant =
-    searchParams.get(VARIANT_URL_KEY) ?? meta?.variants?.[0]?.code ?? null
+    searchParams.get(VARIANT_URL_KEY) ?? meta?.variants[0]?.code ?? null
 
   const setVariant = (code: string) => {
     setSearchParams(
@@ -417,6 +419,27 @@ export const ReportPage = () => {
     void navigate(`/modules/${pageCode}`)
   }
 
+  // Расшифровка (drill-down) строки данных: открыть документ-регистратор, как
+  // в 1С. `groupRefId` строки — id записи документа с бэка; typeCode в строке
+  // отсутствует, поэтому резолвим его запросом записи по id (тот же эндпоинт,
+  // что грузит карточку документа) и строим маршрут как в карточке счёта.
+  const handleOpenDocument = (row: ReportRowDto) => {
+    const id = row.groupRefId
+    if (id == null) return
+    void (async () => {
+      try {
+        const res = await getDocumentEntry(String(id))
+        const typeCode = res.data.data.documentTypeCode
+        if (!typeCode) return
+        await navigate(
+          `/modules/${pageCode}/document/${typeCode}/${String(id)}`
+        )
+      } catch {
+        // Запись не найдена / groupRefId — не документ: молча не открываем.
+      }
+    })()
+  }
+
   if (isMetaLoading) {
     return (
       <div className="flex h-full flex-col gap-5 pt-5">
@@ -465,6 +488,7 @@ export const ReportPage = () => {
       onFilterRowsChange={setFilterRows}
       selectedVariant={selectedVariant}
       onVariantChange={setVariant}
+      onOpenDocument={handleOpenDocument}
     />
   )
 }
@@ -492,6 +516,8 @@ interface ReportPageContentProps {
   /** Выбранный вариант группировки (код) и его смена — раздел «Группировка». */
   selectedVariant: string | null
   onVariantChange: (code: string) => void
+  /** Двойной клик по строке данных — открыть документ-регистратор (drill-down). */
+  onOpenDocument: (row: ReportRowDto) => void
 }
 
 /** Локализованный заголовок отбора/показателя. */
@@ -521,6 +547,7 @@ const ReportPageContent = ({
   onFilterRowsChange,
   selectedVariant,
   onVariantChange,
+  onOpenDocument,
 }: ReportPageContentProps) => {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
@@ -1012,6 +1039,7 @@ const ReportPageContent = ({
                       result={tabularResult}
                       hiddenColumns={hiddenColumns}
                       appearance={appearance}
+                      onOpenDocument={onOpenDocument}
                     />
                   </div>
                 )}

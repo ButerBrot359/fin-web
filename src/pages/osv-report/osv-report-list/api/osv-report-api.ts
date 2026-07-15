@@ -30,9 +30,10 @@ export const OSV_REGISTER_TYPE_CODE = 'ZhurnalProvodokGosUchrezhdeniya'
  * строка содержит рекурсивный `children[]` — многоуровневый разворот по
  * измерениям (ORGANIZATION → … → SUBKONTO), см. OsvReportEntry.
  *
- * `groupByDimensions` всегда `true` — этот экран показывает полную
- * иерархию по измерениям, как ОСВ в 1С. Параметр приоритетнее
- * `expandBySubkonto` на бэке.
+ * `groupByDimensions=true` отправляется только при непустом `groupBy`
+ * (пользователь включил измерения на вкладке «Группировка»). Без измерений
+ * запрос уходит без обоих параметров — строки по счетам; включённый
+ * `expandBySubkonto` даёт базовый вариант ОСВ 1С (Счёт → Субконто).
  */
 export const fetchOsvReport = (params: OsvReportParams, signal?: AbortSignal) =>
   apiService.get<OsvReportResponse>({
@@ -42,10 +43,13 @@ export const fetchOsvReport = (params: OsvReportParams, signal?: AbortSignal) =>
       to: params.to,
       // groupByDimensions — обратная совместимость со старым бэком (полный
       // разворот). Новый бэк приоритезирует `groupBy` (состав/порядок уровней).
-      groupByDimensions: true,
+      // Отправляем ТОЛЬКО при непустом groupBy: на бэке пустой groupBy +
+      // groupByDimensions=true → принудительно ПОЛНОЕ дерево измерений, а
+      // дефолт ОСВ (как в 1С) — без измерений, только Счёт → Субконто
+      // (expandBySubkonto).
       // CSV (`?groupBy=ORGANIZATION,FKR`) — Spring биндит в List<String>.
       ...(params.groupBy && params.groupBy.length > 0
-        ? { groupBy: params.groupBy.join(',') }
+        ? { groupByDimensions: true, groupBy: params.groupBy.join(',') }
         : {}),
       ...(params.expandBySubkonto ? { expandBySubkonto: true } : {}),
       ...(params.accountId != null ? { accountId: params.accountId } : {}),

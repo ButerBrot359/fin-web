@@ -177,11 +177,13 @@ export const ReportParamField = ({
             // чтобы «Организация» стояла вровень с «Начало/Конец периода».
             '& .MuiAutocomplete-inputRoot': {
               flexWrap: 'nowrap',
-              // Центрируем сводку и поле ввода по вертикали — иначе значение
-              // прижималось к нижней границе (стояло криво, не как текст дат).
+              // Центрируем сводку и поле ввода по вертикали. Небольшой перевес
+              // верхнего паддинга над нижним опускает содержимое на ~2px ниже —
+              // значение садится точно в центр поля, вровень с текстом дат
+              // («15.07.2021»), а не выше под подписью «Организация».
               alignItems: 'center',
               overflow: 'hidden',
-              paddingTop: '1px !important',
+              paddingTop: '5px !important',
               paddingBottom: '1px !important',
               paddingRight: '56px !important',
               minHeight: 40,

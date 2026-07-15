@@ -66,7 +66,7 @@ export const ReportResultView = ({
 
   // Официальный бланк (мемориальный ордер) — своя шапка, заголовок не нужен.
   if (result.layout === 'FORM' && result.form) {
-    return <FormView form={result.form} />
+    return <FormView form={result.form} language={result.language} />
   }
 
   return (

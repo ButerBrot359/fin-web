@@ -149,6 +149,9 @@ export const ReportParamField = ({
       return (
         <Autocomplete
           multiple
+          // Чекбоксы у каждой опции (как в 1С «Доступные организации»); список не
+          // закрывается при выборе — можно отметить несколько подряд.
+          disableCloseOnSelect
           size="small"
           // Фиксированная ширина, чтобы поле не растягивалось по шапке.
           sx={{ width: 300 }}
@@ -187,6 +190,19 @@ export const ReportParamField = ({
           getOptionLabel={(o) => o.label}
           isOptionEqualToValue={(o, v) => o.id === v.id}
           noOptionsText={t('inputs.noOptions')}
+          renderOption={(props, option, { selected }) => {
+            const { key, ...optionProps } = props
+            return (
+              <li key={key} {...optionProps}>
+                <Checkbox
+                  size="small"
+                  checked={selected}
+                  sx={{ mr: 1, p: 0.5 }}
+                />
+                {option.label}
+              </li>
+            )
+          }}
           renderInput={(params) => (
             <TextField
               {...params}

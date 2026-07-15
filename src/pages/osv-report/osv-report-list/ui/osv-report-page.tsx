@@ -56,7 +56,7 @@ export const OsvReportPage = () => {
   const location = useLocation()
   const { pageCode = '' } = useParams()
 
-  useTabMeta(t('osv.title'))
+  useTabMeta(t('osv.reportName'))
 
   // Применённые параметры отчёта живут в URL (?from&to&accountId), а не в
   // локальном useState — иначе они теряются при переключении вкладок (страница
@@ -340,7 +340,7 @@ export const OsvReportPage = () => {
 
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
-      <PageHeader title={t('osv.title')} onClose={handleClose} />
+      <PageHeader title={t('osv.reportName')} onClose={handleClose} />
 
       <div className="flex flex-wrap items-start gap-4">
         <div className="report-param-field w-64">

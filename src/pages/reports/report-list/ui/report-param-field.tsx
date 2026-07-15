@@ -171,23 +171,26 @@ export const ReportParamField = ({
               top: '50%',
               transform: 'translateY(-50%)',
             },
-            // Высота поля = высоте соседних дат (small TextField ≈ 40px). У
-            // multiple-Autocomplete inputRoot добавляет вертикальные паддинги под
-            // теги и поле становится выше соседей — обнуляем их и центрируем контент,
-            // чтобы «Организация» стояла вровень с «Начало/Конец периода».
+            // Фиксируем строку инпута в 40px (= высоте соседних дат) и центрируем
+            // её содержимое по вертикали флексом. Сводка и поле ввода — обычные
+            // in-flow дети этой строки, поэтому центрируются так же, как текст в
+            // одиночном поле «Организация» в МО9 (без абсолютного позиционирования,
+            // которое в этом контейнере уезжало вверх под подпись).
             '& .MuiAutocomplete-inputRoot': {
               flexWrap: 'nowrap',
               alignItems: 'center',
+              height: 40,
+              boxSizing: 'border-box',
               overflow: 'hidden',
-              paddingTop: '1px !important',
-              paddingBottom: '1px !important',
+              paddingTop: '0 !important',
+              paddingBottom: '0 !important',
+              paddingLeft: '8px !important',
               paddingRight: '56px !important',
-              minHeight: 40,
             },
             '& .MuiAutocomplete-input': {
               minWidth: 24,
-              paddingTop: '2.5px !important',
-              paddingBottom: '2.5px !important',
+              paddingTop: '0 !important',
+              paddingBottom: '0 !important',
             },
             // При наборе (фокусе) прячем сводку выбранного — поле поиска раскрывается
             // на всю ширину, текст поиска ровный и не зажат между значением и иконками.
@@ -205,25 +208,14 @@ export const ReportParamField = ({
                 component="span"
                 className="report-ms-summary"
                 sx={{
-                  // Абсолютно позиционируем сводку по центру области инпута —
-                  // ровно как текст одиночного поля «Организация» в МО9. Не зависит
-                  // от MUI-паддингов под теги, поэтому значение всегда по центру.
-                  // left=14 совпадает с началом текста outlined-инпута, right=56
-                  // резервирует место под иконки (очистить + шеврон). Вертикаль —
-                  // тем же приёмом, что и иконки endAdornment (top:50%+translateY),
-                  // который в этом контейнере центрирует надёжно (top/bottom:0 —
-                  // нет, содержимое уезжало вверх под подпись).
-                  position: 'absolute',
-                  left: 14,
-                  right: 56,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  display: 'flex',
+                  // In-flow дитя строки инпута (высота 40px, align-items:center) —
+                  // центрируется по вертикали вместе с полем ввода, ровно как текст
+                  // одиночного поля «Организация» в МО9.
+                  display: 'inline-flex',
                   alignItems: 'center',
                   minWidth: 0,
+                  flexShrink: 1,
                   overflow: 'hidden',
-                  // Клик проходит сквозь сводку в поле — открывает список.
-                  pointerEvents: 'none',
                 }}
               >
                 {/* Имя первого выбранного — обрезается многоточием. */}

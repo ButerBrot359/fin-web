@@ -153,8 +153,21 @@ export const ReportParamField = ({
           // закрывается при выборе — можно отметить несколько подряд.
           disableCloseOnSelect
           size="small"
-          // Фиксированная ширина, чтобы поле не растягивалось по шапке.
-          sx={{ width: 300 }}
+          // Всегда показывать стрелку-шеврон (аффорданс «раскрыть список»), а не
+          // кликать по полю вслепую.
+          forcePopupIcon
+          sx={{
+            // Фиксированная ширина, чтобы поле не растягивалось по шапке.
+            width: 300,
+            // Тег(и) — в ОДНУ строку и не вылезают за поле; справа резервируем место
+            // под иконки (очистить + стрелка), чтобы стрелка была всегда видна.
+            '& .MuiAutocomplete-inputRoot': {
+              flexWrap: 'nowrap',
+              overflow: 'hidden',
+              paddingRight: '60px !important',
+            },
+            '& .MuiAutocomplete-input': { minWidth: 24 },
+          }}
           // Компактная подпись значения: ВСЕГДА «1 чип + N» (даже при клике/фокусе)
           // — выбранные счета не «вылезают» за поле; для выбора есть выпадающий
           // список опций. Иначе MUI при фокусе раскрывает все теги и они наезжают
@@ -169,12 +182,17 @@ export const ReportParamField = ({
                   {...tagProps}
                   size="small"
                   label={tagValue[0].label}
-                  sx={{ maxWidth: 150 }}
+                  sx={{ maxWidth: 120 }}
                 />
                 {tagValue.length > 1 && (
                   <Typography
                     variant="caption"
-                    sx={{ ml: 0.5, color: '#666', whiteSpace: 'nowrap' }}
+                    sx={{
+                      ml: 0.5,
+                      color: '#666',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
                   >
                     +{tagValue.length - 1}
                   </Typography>

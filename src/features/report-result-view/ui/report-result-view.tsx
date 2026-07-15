@@ -4,6 +4,7 @@ import { Typography } from '@mui/material'
 import type {
   ReportColumnDto,
   ReportResultDto,
+  ReportRowDto,
 } from '@/pages/reports/report-list/types/report'
 
 import { formatReportTitle } from '../lib/format-title'
@@ -27,6 +28,11 @@ interface ReportResultViewProps {
   hiddenColumns?: Set<string>
   /** Оформление (вкладка «Оформление»). Отсутствие ⇒ текущее поведение 1С. */
   appearance?: ReportResultAppearance
+  /**
+   * Двойной клик по строке данных (rowKind DATA) LEDGER-таблицы — открыть
+   * документ-регистратор (drill-down, как в 1С). Навигацию выполняет страница.
+   */
+  onOpenDocument?: (row: ReportRowDto) => void
 }
 
 /**
@@ -40,6 +46,7 @@ export const ReportResultView = ({
   result,
   hiddenColumns,
   appearance,
+  onOpenDocument,
 }: ReportResultViewProps) => {
   // Скрываем колонки, выключенные настройками (показатели/группировка), и —
   // когда «Выделять отрицательные» выключено — гасим negativeRed на колонках
@@ -112,7 +119,11 @@ export const ReportResultView = ({
       ))}
       <div className="mt-2">
         {isLedger ? (
-          <LedgerTable result={result} columns={columns} />
+          <LedgerTable
+            result={result}
+            columns={columns}
+            onOpenDocument={onOpenDocument}
+          />
         ) : (
           <TreeTable result={result} columns={columns} indentPx={indentPx} />
         )}

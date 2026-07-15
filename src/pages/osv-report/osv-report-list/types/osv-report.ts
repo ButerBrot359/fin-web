@@ -174,13 +174,8 @@ export const OSV_GROUP_DIMENSIONS = [
 ] as const
 
 /**
- * Измерения, включённые по умолчанию (как в 1С): основные пять. КодПлатныхУслуг
- * по умолчанию выключен (доступен чекбоксом).
+ * Измерения, включённые по умолчанию — НИ ОДНОГО (как базовый вариант ОСВ
+ * в 1С: развертка только Счёт → Субконто, см. дефолт `expandBySubkonto=true`
+ * на странице). Измерения пользователь добавляет сам на вкладке «Группировка».
  */
-export const OSV_DEFAULT_DIMENSIONS: string[] = [
-  'ORGANIZATION',
-  'PODRAZDELENIE',
-  'FKR',
-  'SPETSIFIKA',
-  'ISTOCHNIK_FINANSIROVANIYA',
-]
+export const OSV_DEFAULT_DIMENSIONS: string[] = []

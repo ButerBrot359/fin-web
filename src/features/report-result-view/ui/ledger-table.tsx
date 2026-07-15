@@ -28,6 +28,12 @@ import { ReportCell } from './report-cell'
 interface LedgerTableProps {
   result: ReportResultDto
   columns: ReportColumnDto[]
+  /**
+   * Двойной клик по строке данных (rowKind DATA) — открыть документ-регистратор
+   * (drill-down, как в 1С). Вызывается только для строк с `groupRefId`
+   * (id записи документа с бэка); навигацию выполняет страница.
+   */
+  onOpenDocument?: (row: ReportRowDto) => void
 }
 
 const MIN_COL_WIDTH = 40
@@ -135,7 +141,11 @@ const logicalWidth = (col: ReportColumnDto): number => {
  * labelText (напр. «Начальное сальдо» Анализа счёта) — обычные ячейки
  * с 1С-выделением.
  */
-export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
+export const LedgerTable = ({
+  result,
+  columns,
+  onOpenDocument,
+}: LedgerTableProps) => {
   const { t, i18n } = useTranslation()
   // Язык рендера = язык отчёта (result.language), иначе — язык приложения.
   const isKz = resolveReportLang(result.language, i18n.language) === 'kz'
@@ -234,31 +244,51 @@ export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
     return Array.isArray(v) ? v.map((x) => String(x)) : undefined
   }
 
-  /** Рендер одной строки по ячейкам; highlight ⇒ 1С-выделение всех ячеек. */
+  /** Рендер одной строки по ячейкам; highlight ⇒ 1С-выделение всех ячеек.
+   *  Строка данных (rowKind DATA) с `groupRefId` — двойной клик открывает
+   *  документ-регистратор (drill-down, как в 1С). */
   const renderCellsRow = (
     row: ReportRowDto,
     key: string,
     highlight: boolean
-  ) => (
-    <tr
-      key={key}
-      className={highlight ? '' : 'transition-colors hover:bg-ui-07'}
-    >
-      {columns.map((col) => (
-        <td
-          key={col.code}
-          className={`${td} ${isRightAligned(col) ? 'text-right' : ''}`}
-        >
-          <ReportCell
-            value={row.cells[col.code]}
-            col={col}
-            bold={highlight}
-            subLabels={rowSubLabels(row)}
-          />
-        </td>
-      ))}
-    </tr>
-  )
+  ) => {
+    const isDataRow = (row.rowKind ?? 'DATA') === 'DATA'
+    const canOpen =
+      isDataRow && row.groupRefId != null && onOpenDocument != null
+    return (
+      <tr
+        key={key}
+        className={
+          highlight
+            ? ''
+            : `transition-colors hover:bg-ui-07 ${canOpen ? 'cursor-pointer' : ''}`
+        }
+        onDoubleClick={
+          canOpen
+            ? () => {
+                // Двойной клик выделяет текст ячейки — снимаем выделение.
+                window.getSelection()?.removeAllRanges()
+                onOpenDocument(row)
+              }
+            : undefined
+        }
+      >
+        {columns.map((col) => (
+          <td
+            key={col.code}
+            className={`${td} ${isRightAligned(col) ? 'text-right' : ''}`}
+          >
+            <ReportCell
+              value={row.cells[col.code]}
+              col={col}
+              bold={highlight}
+              subLabels={rowSubLabels(row)}
+            />
+          </td>
+        ))}
+      </tr>
+    )
+  }
 
   /**
    * Рендер span-строки: подпись `labelText` на первые `labelColSpan` колонок,

@@ -19,7 +19,7 @@ interface SubkontoNameCellProps {
  * Резолвит ID субконто в человекочитаемое имя тем же механизмом, что и
  * измерения журнала проводок (`DimensionCell`): через
  * `useDictionaryEntry` + `resolveDictionaryEntryLabel`. Для субконто без
- * аналитики показывает i18n-метку «Без субконто».
+ * аналитики показывает «<...>» (как пустая аналитика в 1С).
  */
 export const SubkontoNameCell = ({ subkonto }: SubkontoNameCellProps) => {
   const { t } = useTranslation()

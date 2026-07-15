@@ -25,10 +25,11 @@ import type { MovementGroup } from '../api/document-movements-api'
 //  строка 3: Субконто3 · Источник финансирования · Код платных услуг
 //
 // `*Label` — код колонки для ЗАГОЛОВКА (единый над Дт и Кт), `*Dt`/`*Kt` —
-// РАЗДЕЛЬНЫЕ биндинги значений сторон. Раньше обе стороны читали один ключ
-// (`a1`/`a2`), из-за чего кредитная аналитика (Подразделение/ФКР/…) показывала
-// дебетовое значение. Имена Dt/Kt — контракт бэка (REST `/movements`:
-// `podrazdelenieDt`/`podrazdelenieKt` и т.д.); `kolichestvo` — общее на проводку.
+// РАЗДЕЛЬНЫЕ биндинги значений сторон (бэк отдаёт их в REST `entries[]`:
+// `podrazdelenieDt`/`podrazdelenieKt` и т.д., та же механика, что у
+// `subkonto*Dt/Kt`). Раньше обе стороны читали один ключ, из-за чего кредитная
+// аналитика показывала дебетовое значение. `kolichestvo` — общее на проводку.
+// Одиночное `Podrazdelenie` (коллапс-поле) намеренно = Дт — на стороны не берём.
 const ROW_FIELDS = [
   {
     subDt: 'subkonto1Dt',
@@ -170,8 +171,8 @@ export const AccountingPostingsTable = ({ group }: { group: MovementGroup }) => 
                 const first = r === 0
                 const topBorder = first ? 'border-t-2 border-ui-04' : ''
                 const numeric = rf.a2Label === 'kolichestvo' // строка с «Количество»
-                // Дебет: новый Dt-биндинг, фолбэк на легаси-код (без Dt/Kt) —
-                // чтобы дебет не сломался, если бэк ещё не отдаёт Dt-поле.
+                // Дебет: Dt-биндинг, фолбэк на легаси-код (одиночное поле = Дт) —
+                // если у entry ещё нет Dt-поля, дебет не сломается.
                 const a1DtVal = entry[rf.a1Dt] ?? entry[rf.a1Label]
                 const a2DtVal = entry[rf.a2Dt] ?? entry[rf.a2Label]
                 return (

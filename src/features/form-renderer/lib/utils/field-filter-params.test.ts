@@ -41,6 +41,33 @@ describe('fieldFilterToSearchParams', () => {
   })
 })
 
+describe('комбо fieldFilters(af=) + rowFilter(parent=) в одном запросе (§C.2)', () => {
+  it('af= и parent= сосуществуют через цепочку merge (как в DictCell)', () => {
+    // DictCell: merge(merge(merge(serverFilterParams, depParams), rowParams), parentParams)
+    const serverFilterParams = fieldFilterToSearchParams({
+      attributeEquals: { VidDvizheniya: 1226 },
+    })
+    const parentParams = { parent: '55' }
+    const merged = mergeSearchParams(
+      mergeSearchParams(mergeSearchParams(serverFilterParams, undefined), undefined),
+      parentParams
+    )
+    expect(merged).toEqual({ af: 'VidDvizheniya:1226', parent: '55' })
+  })
+
+  it('колонка только с rowFilter → parent= без af=', () => {
+    expect(mergeSearchParams(undefined, { parent: '55' })).toEqual({
+      parent: '55',
+    })
+  })
+
+  it('колонка без фильтров → пусто (ни af=, ни parent=)', () => {
+    expect(
+      mergeSearchParams(mergeSearchParams(undefined, undefined), undefined)
+    ).toBeUndefined()
+  })
+})
+
 describe('selectionModeToSearchParams', () => {
   it('GROUP → { groupsOnly: "true" }', () => {
     expect(selectionModeToSearchParams('GROUP')).toEqual({

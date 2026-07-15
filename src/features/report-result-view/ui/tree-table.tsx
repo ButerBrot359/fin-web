@@ -606,7 +606,55 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
     return { hasGroups, leafRows, topRow, subRow }
   }, [leafColumns, isKz])
 
+  // Многоуровневая шапка МЕР (форма 326): groupTitle → subGroupTitle → title.
+  // Раскладывается по рядам этажей: top → 1-й этаж, mid → 2-й этаж, bot → ряд листьев.
+  // - колонка без groupTitle → rowSpan=3 (весь столбец шапки);
+  // - группа без subGroupTitle (Остаток) → title в mid-ряду rowSpan=2;
+  // - есть subGroupTitle (Оборот: Дебет/Кредит) → group/subGroup/title по рядам.
+  const measureHead3 = useMemo(() => {
+    const hasGroups = measureColumns.some((c) => columnGroupTitle(c, isKz))
+    if (!hasGroups) return null
+    const topRow: { key: string; title: string; colSpan: number; rowSpan: number }[] = []
+    const midRow: { key: string; title: string; colSpan: number; rowSpan: number }[] = []
+    const botRow: { key: string; col: ReportColumnDto }[] = []
+    let i = 0
+    while (i < measureColumns.length) {
+      const col = measureColumns[i]
+      const group = columnGroupTitle(col, isKz)
+      if (!group) {
+        topRow.push({ key: col.code, title: columnTitle(col, isKz), colSpan: 1, rowSpan: 3 })
+        i++
+        continue
+      }
+      let j = i
+      while (j < measureColumns.length && columnGroupTitle(measureColumns[j], isKz) === group) j++
+      topRow.push({ key: `grp-${col.code}`, title: group, colSpan: j - i, rowSpan: 1 })
+      let k = i
+      while (k < j) {
+        const c = measureColumns[k]
+        const sub = columnSubGroupTitle(c, isKz)
+        if (!sub) {
+          midRow.push({ key: c.code, title: columnTitle(c, isKz), colSpan: 1, rowSpan: 2 })
+          k++
+          continue
+        }
+        let m = k
+        while (m < j && columnSubGroupTitle(measureColumns[m], isKz) === sub) m++
+        midRow.push({ key: `sub-${c.code}`, title: sub, colSpan: m - k, rowSpan: 1 })
+        for (let x = k; x < m; x++) botRow.push({ key: measureColumns[x].code, col: measureColumns[x] })
+        k = m
+      }
+      i = j
+    }
+    return { topRow, midRow, botRow }
+  }, [measureColumns, isKz])
+
   const totalHeaderRows = floorCodes.length + leafHead.leafRows
+
+  // Многоуровневую шапку мер выводим, когда этажей ровно 2 и лист-ряд один (форма 326):
+  // top→этаж1, mid→этаж2, bot→ряд листьев. Иначе — прежний одноуровневый вывод мер.
+  const useMeasure3 =
+    measureHead3 != null && floorCodes.length === 2 && leafHead.leafRows === 1
 
   const data = useMemo(() => result.rows, [result.rows])
   const [expanded, setExpanded] = useState<ExpandedState>(true)
@@ -712,18 +760,36 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                     {title}
                   </Typography>
                 </th>
-                {idx === 0 &&
-                  measureColumns.map((m) => (
-                    <th
-                      key={m.code}
-                      rowSpan={totalHeaderRows}
-                      className={`${thBase} align-bottom`}
-                    >
-                      <Typography variant="body2" sx={thTextSx}>
-                        {columnTitle(m, isKz)}
-                      </Typography>
-                    </th>
-                  ))}
+                {useMeasure3
+                  ? (idx === 0
+                      ? (measureHead3?.topRow ?? [])
+                      : idx === 1
+                        ? (measureHead3?.midRow ?? [])
+                        : []
+                    ).map((cell) => (
+                      <th
+                        key={cell.key}
+                        colSpan={cell.colSpan}
+                        rowSpan={cell.rowSpan}
+                        className={thBase}
+                      >
+                        <Typography variant="body2" sx={thTextSx}>
+                          {cell.title}
+                        </Typography>
+                      </th>
+                    ))
+                  : idx === 0 &&
+                    measureColumns.map((m) => (
+                      <th
+                        key={m.code}
+                        rowSpan={totalHeaderRows}
+                        className={`${thBase} align-bottom`}
+                      >
+                        <Typography variant="body2" sx={thTextSx}>
+                          {columnTitle(m, isKz)}
+                        </Typography>
+                      </th>
+                    ))}
               </tr>
             )
           })}
@@ -762,6 +828,15 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                   </Typography>
                 </th>
               ))}
+              {/* Форма 326: нижний ряд шапки мер (Кол-во/Сумма под Дебет/Кредит). */}
+              {useMeasure3 &&
+                (measureHead3?.botRow ?? []).map(({ key, col }) => (
+                  <th key={key} className={thBase}>
+                    <Typography variant="body2" sx={thTextSx}>
+                      {columnTitle(col, isKz)}
+                    </Typography>
+                  </th>
+                ))}
             </tr>
           )}
         </thead>

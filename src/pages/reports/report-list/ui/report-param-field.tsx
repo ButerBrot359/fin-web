@@ -2,8 +2,8 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
+  Box,
   Checkbox,
-  Chip,
   FormControlLabel,
   TextField,
   Typography,
@@ -149,44 +149,93 @@ export const ReportParamField = ({
       return (
         <Autocomplete
           multiple
+          // Чекбоксы у каждой опции (как в 1С «Доступные организации»); список не
+          // закрывается при выборе — можно отметить несколько подряд.
+          disableCloseOnSelect
           size="small"
-          // Фиксированная ширина, чтобы поле не растягивалось по шапке.
-          // minHeight 40 + центрирование чипа — высота как у date-полей (small
-          // TextField ≈ 40px). Без этого autocomplete-multiple ниже обычного
-          // TextField, и в контейнере `items-start` значение «Организации»
-          // стоит выше текста «Периода».
+          // Всегда показывать стрелку-шеврон (аффорданс «раскрыть список»), а не
+          // кликать по полю вслепую.
+          forcePopupIcon
+          // Ширину задаёт контейнер (шапка — w-64, как у полей дат) → поле выровнено
+          // с соседями и не вылезает; в докнутой панели заполняет её ширину.
+          fullWidth
           sx={{
-            width: 300,
-            '& .MuiAutocomplete-inputRoot': {
-              minHeight: 40,
-              alignItems: 'center',
+            // Копируем конфигурацию рабочего одиночного AutocompleteInput (им же
+            // рендерится «Организация» в МО9 — стоит ровно): тема даёт filled-вариант,
+            // и весь фикс — minHeight 32 + переопределение «плавающего» paddingTop:22
+            // инпута на 6/6. Тогда значение центрируется по вертикали, а подпись
+            // остаётся на месте (её НЕ надо ужимать своими паддингами — это и ломало
+            // раньше: подпись налезала на значение). Иконки (очистить + шеврон) — как
+            // в теме, in-flow справа (endAdornment не трогаем). overflow:hidden на
+            // корне обрезает длинную сводку, gap/flexWrap:nowrap уже заданы темой.
+            '& .MuiFilledInput-root': { minHeight: 32, overflow: 'hidden' },
+            '& .MuiAutocomplete-input': {
+              minWidth: 24,
+              paddingTop: '6px !important',
+              paddingBottom: '6px !important',
+            },
+            // При наборе (фокусе) прячем сводку — поле поиска раскрывается на всю ширину.
+            '& .MuiFilledInput-root.Mui-focused .report-ms-summary': {
+              display: 'none',
             },
           }}
-          // Компактная подпись значения: ВСЕГДА «1 чип + N» (даже при клике/фокусе)
-          // — выбранные счета не «вылезают» за поле; для выбора есть выпадающий
-          // список опций. Иначе MUI при фокусе раскрывает все теги и они наезжают
-          // на кнопки шапки.
-          renderTags={(tagValue, getTagProps) => {
+          // Значение — компактная СВОДКА одной строкой («Имя» или «Имя (+N)») с
+          // многоточием, а не чипы: не «вылезает» за поле и не зажимает поиск. При
+          // фокусе (наборе) сводка скрывается (см. sx) — поле поиска на всю ширину.
+          renderTags={(tagValue) => {
             if (tagValue.length === 0) return null
-            const { key, ...tagProps } = getTagProps({ index: 0 })
             return (
-              <>
-                <Chip
-                  key={key}
-                  {...tagProps}
-                  size="small"
-                  label={tagValue[0].label}
-                  sx={{ maxWidth: 150 }}
-                />
+              <Box
+                component="span"
+                className="report-ms-summary"
+                sx={{
+                  // In-flow дитя строки инпута (minHeight 32, align-items:center из
+                  // темы) — центрируется по вертикали вместе с полем ввода, ровно как
+                  // текст одиночного поля «Организация» в МО9. flexShrink+ellipsis —
+                  // длинное имя ужимается, иконки справа остаются видны.
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  minWidth: 0,
+                  flexShrink: 1,
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Имя первого выбранного — обрезается многоточием. Шрифт как у
+                    значения поля/дат (16px / 500 из темы filled-инпута): иначе мелкий
+                    body2 (14px) визуально «висел» выше, чем текст дат. */}
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: 16,
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    color: '#222124',
+                    minWidth: 0,
+                  }}
+                >
+                  {tagValue[0].label}
+                </Typography>
+                {/* «+N» (сколько ещё выбрано) — ВСЕГДА видно, не обрезается. */}
                 {tagValue.length > 1 && (
                   <Typography
-                    variant="caption"
-                    sx={{ ml: 0.5, color: '#666', whiteSpace: 'nowrap' }}
+                    component="span"
+                    sx={{
+                      ml: 0.5,
+                      fontSize: 16,
+                      fontWeight: 500,
+                      lineHeight: 1.4,
+                      color: '#666',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
                   >
                     +{tagValue.length - 1}
                   </Typography>
                 )}
-              </>
+              </Box>
             )
           }}
           options={refOptions}
@@ -197,6 +246,19 @@ export const ReportParamField = ({
           getOptionLabel={(o) => o.label}
           isOptionEqualToValue={(o, v) => o.id === v.id}
           noOptionsText={t('inputs.noOptions')}
+          renderOption={(props, option, { selected }) => {
+            const { key, ...optionProps } = props
+            return (
+              <li key={key} {...optionProps}>
+                <Checkbox
+                  size="small"
+                  checked={selected}
+                  sx={{ mr: 1, p: 0.5 }}
+                />
+                {option.label}
+              </li>
+            )
+          }}
           renderInput={(params) => (
             <TextField
               {...params}

@@ -63,10 +63,14 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   })
 
   const isSearchMode = search.trim().length > 0
-  // Дерево — только для иерархических типов и в режиме навигации (не поиска):
-  // поиск возвращает плоский список совпадений по всему справочнику.
+  // Row-scope parent-отбор (КБП-ПОК-ВИДВНА): «Показать все» с ?parent=<группа>
+  // показывает ПЛОСКИЙ отфильтрованный список детей группы (как эталон 1С — виды
+  // выбранной группы ОС), а не полное дерево справочника.
+  const hasParentFilter = panel.searchParams?.parent != null
+  // Дерево — только для иерархических типов в режиме навигации (не поиск, не parent-отбор):
+  // поиск и parent-отбор возвращают плоский список.
   const isHierarchical = !!typeData?.isHierarchical
-  const isTree = isHierarchical && !isSearchMode
+  const isTree = isHierarchical && !isSearchMode && !hasParentFilter
 
   const PAGE_SIZE = 25
 
@@ -99,7 +103,11 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
           ...panel.searchParams,
           sortAttr,
           sortDir,
-          ...(typeData?.isHierarchical && { grouped: 'false' }),
+          // Иерархический + parent-отбор → grouped=true, чтобы применился parentId
+          // (дети группы). Без parent — grouped=false (плоские листья, как раньше).
+          ...(typeData?.isHierarchical && {
+            grouped: hasParentFilter ? 'true' : 'false',
+          }),
         },
         signal
       ),
@@ -108,7 +116,10 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       const paged = lastPage.data.data
       return paged.last ? undefined : paged.number + 1
     },
-    enabled: !isSearchMode && typeData != null && !isHierarchical,
+    enabled:
+      !isSearchMode &&
+      typeData != null &&
+      (!isHierarchical || hasParentFilter),
     staleTime: 60 * 1000,
     placeholderData: keepPreviousData,
   })

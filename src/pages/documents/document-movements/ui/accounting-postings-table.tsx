@@ -83,7 +83,18 @@ const thBase =
   'whitespace-nowrap px-3 py-1.5 text-left text-[11px] font-semibold uppercase text-ui-06 align-bottom'
 const cellPad = 'px-3 py-1.5 align-top'
 
-export const AccountingPostingsTable = ({ group }: { group: MovementGroup }) => {
+export const AccountingPostingsTable = ({
+  group,
+  creditOverrides,
+}: {
+  group: MovementGroup
+  /**
+   * Кредитные значения измерений по `*Label`-коду (напр. `Podrazdelenie` = Лаура),
+   * выведенные из накопительного регистра, когда accounting-группа отдаёт
+   * измерение одним полем (=Дт). Приоритет ниже прямого `*Kt`, выше одиночного.
+   */
+  creditOverrides?: Record<string, unknown>
+}) => {
   const { t, i18n } = useTranslation()
   const lang = i18n.language
 
@@ -177,8 +188,17 @@ export const AccountingPostingsTable = ({ group }: { group: MovementGroup }) => 
                 // значение (напр. подразделение Кт = Лаура), а не дебетовое.
                 const a1DtVal = entry[rf.a1Dt] ?? entry[rf.a1Label]
                 const a2DtVal = entry[rf.a2Dt] ?? entry[rf.a2Label]
-                const a1KtVal = entry[rf.a1Kt] ?? entry[rf.a1Label]
-                const a2KtVal = entry[rf.a2Kt] ?? entry[rf.a2Label]
+                // Кредит: прямое `*Kt` → выведенный кредит (из накопит. регистра)
+                // → одиночный код. Так подразделение Кт = Лаура даже когда бэк
+                // отдаёт его одним полем.
+                const a1KtVal =
+                  entry[rf.a1Kt] ??
+                  creditOverrides?.[rf.a1Label] ??
+                  entry[rf.a1Label]
+                const a2KtVal =
+                  entry[rf.a2Kt] ??
+                  creditOverrides?.[rf.a2Label] ??
+                  entry[rf.a2Label]
                 return (
                   <tr
                     key={r}

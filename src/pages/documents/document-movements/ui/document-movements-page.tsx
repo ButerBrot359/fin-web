@@ -28,6 +28,7 @@ import {
   type MovementGroup,
   type MovementColumnMeta,
 } from '../api/document-movements-api'
+import { deriveCreditDimensions } from '../lib/derive-credit-dimensions'
 import { AccountingPostingsTable } from './accounting-postings-table'
 
 /** Код регистра бухгалтерии — рендерится раскладкой 1С (Дебет/Кредит). */
@@ -189,6 +190,10 @@ export const DocumentMovementsPage = () => {
   })
 
   const groups = data ?? []
+  // Кредитные значения измерений (напр. подразделение Кт = «расход») из
+  // накопительного регистра того же ответа — accounting-группа их одним полем
+  // (=Дт) не отдаёт. См. deriveCreditDimensions.
+  const creditDimensions = useMemo(() => deriveCreditDimensions(groups), [groups])
   const [activeTab, setActiveTab] = useState<string | null>(null)
 
   const currentTab =
@@ -256,7 +261,10 @@ export const DocumentMovementsPage = () => {
 
           {activeGroup &&
             (activeGroup.registerTypeCode === ACCOUNTING_REGISTER_CODE ? (
-              <AccountingPostingsTable group={activeGroup} />
+              <AccountingPostingsTable
+                group={activeGroup}
+                creditOverrides={creditDimensions}
+              />
             ) : (
               <MovementTable group={activeGroup} />
             ))}

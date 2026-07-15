@@ -27,6 +27,27 @@ const Text = ({ children }: { children: ReactNode }) => (
 )
 
 /**
+ * 1С-конвенция: счета (План счетов) в списках показываются КОДОМ (2350), а не
+ * наименованием. Для ссылочной колонки с целевым доменом ACCOUNT_PLAN ячейка
+ * рендерит `code` ссылки; для прочих ссылок — имя (name/nameRu). См. тест-кейс
+ * «Показать все — счета отображать как код».
+ */
+const isAccountRef = (
+  dataType?: string | null,
+  domainKind?: string | null
+): boolean => dataType === 'ACCOUNT_PLAN' || domainKind === 'ACCOUNT_PLAN'
+
+/** Значение ссылочной ячейки: код (для счетов) либо имя. */
+const renderRefValue = (value: unknown, asCode: boolean): string | number => {
+  if (typeof value !== 'object' || value === null) {
+    return typeof value === 'string' || typeof value === 'number' ? value : ''
+  }
+  const v = value as Record<string, unknown>
+  const picked = asCode ? (v.code ?? v.name ?? v.nameRu) : (v.name ?? v.nameRu)
+  return typeof picked === 'string' || typeof picked === 'number' ? picked : ''
+}
+
+/**
  * Строит колонки из видимых атрибутов типа (`showInList`, порядок
  * `tableSortOrder`) плюс колонку представления (`displayName`). Логика значений
  * повторяет прежний рендер плоской таблицы, чтобы дерево и таблица совпадали.
@@ -61,18 +82,8 @@ export const buildDictColumns = (
         return <Text>{formatDate(value, fmt)}</Text>
       }
 
-      const display =
-        typeof value === 'object' && value !== null
-          ? ((value as Record<string, unknown>).name ??
-            (value as Record<string, unknown>).nameRu)
-          : value
-      return (
-        <Text>
-          {typeof display === 'string' || typeof display === 'number'
-            ? display
-            : ''}
-        </Text>
-      )
+      const asCode = isAccountRef(attr.dataType, attr.domainKind)
+      return <Text>{renderRefValue(value, asCode)}</Text>
     },
   }))
 
@@ -88,11 +99,17 @@ export const buildDictColumns = (
   return [...attributeColumns, nameColumn]
 }
 
-/** Значение ячейки по ключу колонки с бэка: топ-поля записи ∥ её `attributes`. */
+/**
+ * Значение ячейки по ключу колонки с бэка: топ-поля записи ∥ её `attributes`.
+ * `accountRef` — колонка-ссылка на счёт (План счетов): ссылочное значение
+ * показываем КОДОМ (2350), а не наименованием (1С-конвенция, тест-кейс «Показать
+ * все — счета отображать как код»).
+ */
 const renderEntryField = (
   entry: DictEntry,
   key: string,
-  asCode: boolean
+  asCode: boolean,
+  accountRef: boolean
 ): string | number => {
   if (asCode) return entry.code ?? ''
   switch (key) {
@@ -105,17 +122,8 @@ const renderEntryField = (
       return entry.displayName ?? entry.nameRu ?? ''
     case 'nameKz':
       return entry.nameKz ?? ''
-    default: {
-      const value = entry.attributes?.[key]
-      const display =
-        typeof value === 'object' && value !== null
-          ? ((value as Record<string, unknown>).name ??
-            (value as Record<string, unknown>).nameRu)
-          : value
-      return typeof display === 'string' || typeof display === 'number'
-        ? display
-        : ''
-    }
+    default:
+      return renderRefValue(entry.attributes?.[key], accountRef)
   }
 }
 
@@ -140,11 +148,14 @@ export const mapDictColumns = (
         dto.title ??
         key
       const asCode = dto.displayAsCode === true
+      const accountRef = isAccountRef(dto.dataType, dto.referencedDomainKind)
       return {
         id: key,
         title,
         sortable: dto.sortable ?? true,
-        render: (entry) => <Text>{renderEntryField(entry, key, asCode)}</Text>,
+        render: (entry) => (
+          <Text>{renderEntryField(entry, key, asCode, accountRef)}</Text>
+        ),
       }
     })
     .filter((col): col is DictColumn => col !== null)

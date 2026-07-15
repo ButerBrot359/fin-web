@@ -30,6 +30,7 @@ import type { AppearanceRule } from '@/entities/form-config'
 
 import { useCellDependency } from '../lib/hooks/use-cell-dependency'
 import { useRowFilter } from '../lib/hooks/use-row-filter'
+import { useParentFilter } from '../lib/hooks/use-parent-filter'
 import { mergeSearchParams } from '../lib/utils/field-filter-params'
 import { evaluateAppearance } from '../lib/utils/conditional-appearance'
 
@@ -159,20 +160,24 @@ const DictCell = ({
   )
 
   // rowFilter (SCRUM-281): отбор по сестринской ячейке ТОЙ ЖЕ строки
-  // (напр. «Вид ВНА» по «Счёту учёта»). name = '<КодТЧ>.<idx>.<col>' →
+  // (напр. отбор по EAV-атрибуту → af=). name = '<КодТЧ>.<idx>.<col>' →
   // префикс строки = name без последнего сегмента.
-  const rowParams = useRowFilter(
-    column.rowFilter,
-    name.slice(0, name.lastIndexOf('.')),
-    control
-  )
+  const rowPrefix = name.slice(0, name.lastIndexOf('.'))
+  const rowParams = useRowFilter(column.rowFilter, rowPrefix, control)
+
+  // Row-scope parent-отбор (КБП-ПОК-ВИДВНА): пикер «Вид ВНА» ⊂ ГруппаОС ОС строки.
+  // Ленивый резолв ГруппаОС по ячейке «ОсновноеСредство» той же строки → ?parent=.
+  const parentParams = useParentFilter(column.rowFilter, rowPrefix, control)
 
   // Фильтр поля (напр. отбор МОЛ по «Организации» документа) объединяется
-  // с af-фильтрами зависимости и строки (af-условия склеиваются, не
-  // затирают друг друга).
+  // с af-фильтрами зависимости и строки (af-условия склеиваются, не затирают
+  // друг друга) и с parent-отбором (отдельный query-параметр, сосуществует с af=).
   const searchParams = mergeSearchParams(
-    mergeSearchParams(serverFilterParams, depParams),
-    rowParams
+    mergeSearchParams(
+      mergeSearchParams(serverFilterParams, depParams),
+      rowParams
+    ),
+    parentParams
   )
 
   const [opened, setOpened] = useState(false)

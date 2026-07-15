@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Checkbox, FormControlLabel, Switch, Typography } from '@mui/material'
+import { Checkbox, FormControlLabel, Typography } from '@mui/material'
 
-import { comparisonLabel } from '@/features/report-settings'
+import { comparisonLabel, LanguageSelect } from '@/features/report-settings'
 
 import type { ReportParameterDto } from '../types/report'
 import { ReportParamField, type ReportParamValue } from './report-param-field'
@@ -83,19 +83,17 @@ export const MemorialOrderSettingsPanel = ({
                   setParamValue(p.code, v)
                 }
                 return isLanguageParam(p) ? (
-                  <FormControlLabel
-                    key={p.code}
-                    control={
-                      <Switch
-                        size="small"
-                        checked={checked}
-                        onChange={(e) => {
-                          onToggle(e.target.checked)
-                        }}
-                      />
-                    }
-                    label={t('reports.russianLanguage')}
-                  />
+                  // Язык формы — выпадающий список Русский/Казахский (как в
+                  // Инвентарной карточке). Значение параметра — boolean (true=рус).
+                  <div key={p.code} className="my-1">
+                    <LanguageSelect
+                      label={t('reports.language')}
+                      value={checked}
+                      onChange={(isRu) => {
+                        setParamValue(p.code, isRu)
+                      }}
+                    />
+                  </div>
                 ) : (
                   <FormControlLabel
                     key={p.code}

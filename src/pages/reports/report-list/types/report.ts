@@ -110,9 +110,11 @@ export interface ReportFormDto {
   /** «№ 1010». */
   accountsLine?: string
   sections: ReportFormSectionDto[]
-  /** Строки футера («Остаток на конец месяца: …»). */
+  /** Строки футера («Остаток на конец месяца: …») — ДО подписей. */
   footerLines?: string[]
   signatures?: ReportFormSignatureDto[]
+  /** Примечание/памятка — выводится ПОСЛЕ подписей (порядок 1С). */
+  noteLines?: string[]
 }
 
 /** Тип параметра отчёта — определяет, какой инпут рендерить в форме. */
@@ -323,6 +325,13 @@ export interface ReportResultDto {
   periodLine?: string
   /** Подвал-подписи после таблицы (структура — как подпись мем-ордера). */
   footerBlock?: ReportFormSignatureDto
+  /**
+   * Коды измерений-группировок, рисуемых «этажами» (1С-«Ведомость»): их подписи
+   * идут стопкой в шапке, а значения — полосами-бэндами по телу (colspan по
+   * детальным колонкам), а НЕ отдельными колонками. Порядок = сверху вниз
+   * ([Schet, Podrazdelenie, Mol]). Пусто/отсутствие ⇒ прежнее дерево с отступами.
+   */
+  groupFloorCodes?: string[]
 }
 
 /**

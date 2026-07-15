@@ -227,30 +227,47 @@ const SectionTable = ({
       <tbody>
         {section.rows.map((row, idx) => {
           const highlight = isHighlightRow(row.rowKind)
+          // Подпись «Всего»/«Барлығы» объединяется по первым `labelColSpan`
+          // колонкам (№пп|Дата|Номер|Наименование), как в 1С — иначе метка сидит
+          // в одной графе, а не растянута по описательным колонкам.
+          const labelSpan =
+            highlight && row.labelText
+              ? Math.min(row.labelColSpan ?? 1, cols.length)
+              : 0
           return (
             <tr key={idx}>
-              {cols.map((col, ci) => (
-                <td
-                  key={col.code}
-                  className={`${td} ${isRightAligned(col) ? 'text-right' : ci === 0 ? 'text-center' : ''}`}
-                >
-                  {highlight && ci === 0 && row.labelText ? (
-                    <Typography
-                      variant="body2"
-                      sx={{ color: '#333', fontWeight: 700 }}
-                      className="text-center"
+              {cols.map((col, ci) => {
+                // Ячейки, поглощённые colSpan подписи, не рендерим.
+                if (labelSpan > 1 && ci > 0 && ci < labelSpan) return null
+                if (labelSpan > 0 && ci === 0) {
+                  return (
+                    <td
+                      key={col.code}
+                      colSpan={labelSpan}
+                      className={`${td} text-right`}
                     >
-                      {row.labelText}
-                    </Typography>
-                  ) : (
+                      <Typography
+                        variant="body2"
+                        sx={{ color: '#333', fontWeight: 700 }}
+                      >
+                        {row.labelText}
+                      </Typography>
+                    </td>
+                  )
+                }
+                return (
+                  <td
+                    key={col.code}
+                    className={`${td} ${isRightAligned(col) ? 'text-right' : ci === 0 ? 'text-center' : ''}`}
+                  >
                     <ReportCell
                       value={row.cells[col.code]}
                       col={col}
                       bold={highlight}
                     />
-                  )}
-                </td>
-              ))}
+                  </td>
+                )
+              })}
             </tr>
           )
         })}
@@ -428,6 +445,17 @@ export const FormView = ({
           <Typography variant="body2" sx={{ color: '#333' }}>
             {isKz ? 'парақ' : 'лист'}
           </Typography>
+        </div>
+      )}
+
+      {/* Примечание/памятка — ПОСЛЕ подписей (порядок 1С: подписи → памятка). */}
+      {form.noteLines && form.noteLines.length > 0 && (
+        <div className="mt-6 flex flex-col gap-1">
+          {form.noteLines.map((line, i) => (
+            <Typography key={i} variant="body2" sx={{ color: '#333' }}>
+              {line}
+            </Typography>
+          ))}
         </div>
       )}
     </div>

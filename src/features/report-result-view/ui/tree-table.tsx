@@ -112,11 +112,18 @@ const columnSubGroupTitle = (col: ReportColumnDto, isKz: boolean): string => {
  * которая сама в теле не дублируется). Группы и «Итого» — жирные
  * тёмно-зелёные без заливок; двухуровневая шапка через `groupTitleRu`.
  */
-export const TreeTable = ({
-  result,
-  columns,
-  indentPx = 13,
-}: TreeTableProps) => {
+/**
+ * Роутер рендера дерева: при наличии `result.groupFloorCodes` — 1С-«Ведомость»
+ * (группировки этажами + полосы-бэнды), иначе — обычное дерево-с-отступами (ОСВ).
+ */
+export const TreeTable = (props: TreeTableProps) => {
+  if (props.result.groupFloorCodes && props.result.groupFloorCodes.length > 0) {
+    return <FloorTreeTable {...props} />
+  }
+  return <PlainTreeTable {...props} />
+}
+
+const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
   const { t, i18n } = useTranslation()
   // Язык РЕНДЕРА = язык, на котором отчёт сформировал бэк (result.language),
   // иначе — язык приложения. Так шапки колонок и итог на языке отчёта, даже
@@ -515,6 +522,319 @@ export const TreeTable = ({
                   }`}
                 >
                   <ReportCell value={result.total[col.code]} col={col} bold />
+                </td>
+              ))}
+            </tr>
+          </tfoot>
+        )}
+      </table>
+    </div>
+  )
+}
+
+/**
+ * TREE-таблица «этажами» (1С-«Ведомость», напр. Ведомость остатков ТМЗ):
+ * группировки `result.groupFloorCodes` (Счёт / Подразделение / МОЛ) — НЕ колонки,
+ * а вертикальные подписи-этажи в шапке + полосы-бэнды по телу (colspan по
+ * детальным колонкам). Детальное зерно (Номенклатура) — листовые строки, чьи
+ * реквизиты (№ п/п, Номенкл. номер, Наименование, Ед. изм.) — обычные колонки.
+ * MEASURE (Количество/Сумма) — колонки на всю высоту шапки (rowSpan). Двухэтажный
+ * заголовок детальной колонки (напр. «Дополнительные поля» над «Единица измерения»)
+ * — через `groupTitleRu`.
+ */
+const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
+  const { t, i18n } = useTranslation()
+  const reportLang = resolveReportLang(result.language, i18n.language)
+  const isKz = reportLang === 'kz'
+
+  const floorCodes = result.groupFloorCodes ?? []
+
+  // Детальные колонки = всё, что НЕ измерение-группировка (роль ≠ DIMENSION):
+  // листовые реквизиты (leaf) + суммовые (measures). Группировки-этажи из
+  // `columns` исключаются — они рендерятся подписями-этажами и бэндами.
+  const leafColumns = useMemo(
+    () => columns.filter((c) => c.role !== 'DIMENSION' && !isMeasure(c)),
+    [columns]
+  )
+  const measureColumns = useMemo(
+    () => columns.filter((c) => isMeasure(c)),
+    [columns]
+  )
+
+  // Двухэтажный заголовок детальных колонок (напр. «Дополнительные поля» над
+  // «Единица измерения»): верхний ряд групп + нижний ряд титулов колонок группы.
+  const leafHead = useMemo(() => {
+    const hasGroups = leafColumns.some((c) => columnGroupTitle(c, isKz))
+    const leafRows = hasGroups ? 2 : 1
+    const topRow: {
+      key: string
+      title: string
+      colSpan: number
+      rowSpan: number
+    }[] = []
+    const subRow: { key: string; col: ReportColumnDto }[] = []
+    let i = 0
+    while (i < leafColumns.length) {
+      const col = leafColumns[i]
+      const group = columnGroupTitle(col, isKz)
+      if (!group) {
+        topRow.push({
+          key: col.code,
+          title: columnTitle(col, isKz),
+          colSpan: 1,
+          rowSpan: leafRows,
+        })
+        i++
+        continue
+      }
+      let j = i
+      while (
+        j < leafColumns.length &&
+        columnGroupTitle(leafColumns[j], isKz) === group
+      ) {
+        subRow.push({ key: leafColumns[j].code, col: leafColumns[j] })
+        j++
+      }
+      topRow.push({
+        key: `grp-${col.code}`,
+        title: group,
+        colSpan: j - i,
+        rowSpan: 1,
+      })
+      i = j
+    }
+    return { hasGroups, leafRows, topRow, subRow }
+  }, [leafColumns, isKz])
+
+  const totalHeaderRows = floorCodes.length + leafHead.leafRows
+
+  const data = useMemo(() => result.rows, [result.rows])
+  const [expanded, setExpanded] = useState<ExpandedState>(true)
+  useEffect(() => {
+    setExpanded(true)
+  }, [result])
+
+  const tableColumns = useMemo<ColumnDef<ReportRowDto>[]>(
+    () => [{ id: 'tree', accessorFn: (r) => r.groupValue ?? null }],
+    []
+  )
+  const table = useReactTable({
+    data,
+    columns: tableColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    getSubRows: (row) => (row.children.length > 0 ? row.children : undefined),
+    state: { expanded },
+    onExpandedChange: setExpanded,
+    autoResetExpanded: false,
+    getRowId: (_row, index, parent) =>
+      parent ? `${parent.id}.${String(index)}` : String(index),
+  })
+
+  if (result.rows.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <Typography variant="body2" className="text-ui-05">
+          {t('reports.noData')}
+        </Typography>
+      </div>
+    )
+  }
+
+  // Полоса-бэнд группировки: строка-узел дерева (есть дети) либо явный GROUP_HEADER.
+  const isBandRow = (row: Row<ReportRowDto>): boolean =>
+    row.getCanExpand() ||
+    row.original.children.length > 0 ||
+    row.original.rowKind === 'GROUP_HEADER'
+
+  // Ячейка бэнда (colspan по детальным колонкам): стрелка + отступ уровня + подпись.
+  const renderBandCell = (row: Row<ReportRowDto>) => {
+    const canExpand = row.getCanExpand()
+    const isExpanded = row.getIsExpanded()
+    const label = row.original.labelText ?? row.original.groupValue ?? ''
+    return (
+      <div
+        className="flex items-center gap-1"
+        style={{ paddingLeft: row.depth * indentPx }}
+      >
+        {canExpand ? (
+          <button
+            type="button"
+            aria-label={
+              isExpanded ? t('reports.collapse') : t('reports.expand')
+            }
+            className="flex h-4 w-4 items-center justify-center"
+            onClick={() => {
+              row.toggleExpanded()
+            }}
+          >
+            <ArrowDownIcon
+              className={`h-3 w-3 shrink-0 transition-transform ${
+                isExpanded ? '' : '-rotate-90'
+              }`}
+            />
+          </button>
+        ) : (
+          <span className="h-4 w-4 shrink-0" />
+        )}
+        <Typography
+          variant="body2"
+          sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
+        >
+          {label}
+        </Typography>
+      </div>
+    )
+  }
+
+  return (
+    <div className="overflow-auto rounded-md border border-[#d9d9d9]">
+      <table className="table-fixed border-collapse bg-white">
+        <colgroup>
+          {leafColumns.map((col) => (
+            <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
+          ))}
+          {measureColumns.map((col) => (
+            <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
+          ))}
+        </colgroup>
+        <thead>
+          {floorCodes.map((code, idx) => {
+            const col = result.columns.find((c) => c.code === code)
+            const title = col ? columnTitle(col, isKz) : code
+            return (
+              <tr key={`floor-${code}`}>
+                <th
+                  colSpan={leafColumns.length}
+                  className={`${thBase} align-bottom`}
+                >
+                  <Typography variant="body2" sx={thTextSx}>
+                    {title}
+                  </Typography>
+                </th>
+                {idx === 0 &&
+                  measureColumns.map((m) => (
+                    <th
+                      key={m.code}
+                      rowSpan={totalHeaderRows}
+                      className={`${thBase} align-bottom`}
+                    >
+                      <Typography variant="body2" sx={thTextSx}>
+                        {columnTitle(m, isKz)}
+                      </Typography>
+                    </th>
+                  ))}
+              </tr>
+            )
+          })}
+          {leafHead.hasGroups ? (
+            <>
+              <tr>
+                {leafHead.topRow.map((cell) => (
+                  <th
+                    key={cell.key}
+                    colSpan={cell.colSpan}
+                    rowSpan={cell.rowSpan}
+                    className={thBase}
+                  >
+                    <Typography variant="body2" sx={thTextSx}>
+                      {cell.title}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                {leafHead.subRow.map(({ key, col }) => (
+                  <th key={key} className={thBase}>
+                    <Typography variant="body2" sx={thTextSx}>
+                      {columnTitle(col, isKz)}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+            </>
+          ) : (
+            <tr>
+              {leafColumns.map((col) => (
+                <th key={col.code} className={thBase}>
+                  <Typography variant="body2" sx={thTextSx}>
+                    {columnTitle(col, isKz)}
+                  </Typography>
+                </th>
+              ))}
+            </tr>
+          )}
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.map((row) => {
+            if (isBandRow(row)) {
+              return (
+                <tr key={row.id} className="hover:bg-ui-07">
+                  <td
+                    colSpan={leafColumns.length}
+                    className={`${tdBase} align-top`}
+                  >
+                    {renderBandCell(row)}
+                  </td>
+                  {measureColumns.map((m) => (
+                    <td
+                      key={m.code}
+                      className={`${tdBase} align-top text-right tabular-nums`}
+                    >
+                      <ReportCell
+                        value={row.original.cells[m.code]}
+                        col={m}
+                        bold
+                      />
+                    </td>
+                  ))}
+                </tr>
+              )
+            }
+            return (
+              <tr key={row.id} className="hover:bg-ui-07">
+                {leafColumns.map((col) => (
+                  <td
+                    key={col.code}
+                    className={`${tdBase} align-top ${
+                      isRightAligned(col) ? 'text-right tabular-nums' : ''
+                    }`}
+                  >
+                    <ReportCell
+                      value={row.original.cells[col.code]}
+                      col={col}
+                    />
+                  </td>
+                ))}
+                {measureColumns.map((m) => (
+                  <td
+                    key={m.code}
+                    className={`${tdBase} align-top text-right tabular-nums`}
+                  >
+                    <ReportCell value={row.original.cells[m.code]} col={m} />
+                  </td>
+                ))}
+              </tr>
+            )
+          })}
+        </tbody>
+        {Object.keys(result.total).length > 0 && (
+          <tfoot>
+            <tr>
+              <td colSpan={leafColumns.length} className={tdBase}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
+                >
+                  {t('reports.total', { lng: reportLang })}
+                </Typography>
+              </td>
+              {measureColumns.map((m) => (
+                <td
+                  key={m.code}
+                  className={`${tdBase} text-right tabular-nums`}
+                >
+                  <ReportCell value={result.total[m.code]} col={m} bold />
                 </td>
               ))}
             </tr>

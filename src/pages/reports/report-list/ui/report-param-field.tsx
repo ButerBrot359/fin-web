@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
   Checkbox,
+  Chip,
   FormControlLabel,
   TextField,
+  Typography,
 } from '@mui/material'
 
 import { useAccountPlanList } from '@/entities/account-plan'
@@ -84,13 +86,26 @@ export const ReportParamField = ({
     isDictRef ? (param.referenceDomain ?? null) : null
   )
 
+  // Пул счетов «Списка счетов» ограничен счетами ОТЧЁТА (как в 1С — в выпадающем
+  // списке только счета ордера, а не весь план счетов). Источник — defaultValue
+  // параметра (ID счетов отчёта, задаётся бэком). Пусто ⇒ показываем весь план
+  // (прежнее поведение для прочих ACCOUNT_LIST-параметров без дефолта).
+  const allowedAccountIds = useMemo<Set<number> | null>(() => {
+    if (param.dataType !== 'ACCOUNT_LIST') return null
+    const def = param.defaultValue
+    if (!Array.isArray(def) || def.length === 0) return null
+    return new Set(def.map((v) => Number(v)))
+  }, [param.dataType, param.defaultValue])
+
   const refOptions = useMemo<SelectOption[]>(() => {
     if (isAccountRef) {
-      return accounts.map((a) => ({
-        id: a.id,
-        code: a.code,
-        label: a.nameRu ? `${a.code} — ${a.nameRu}` : a.code,
-      }))
+      return accounts
+        .filter((a) => !allowedAccountIds || allowedAccountIds.has(Number(a.id)))
+        .map((a) => ({
+          id: a.id,
+          code: a.code,
+          label: a.nameRu ? `${a.code} — ${a.nameRu}` : a.code,
+        }))
     }
     if (isDictRef) {
       return dictEntries.map((e) => ({
@@ -100,7 +115,7 @@ export const ReportParamField = ({
       }))
     }
     return []
-  }, [isAccountRef, isDictRef, accounts, dictEntries])
+  }, [isAccountRef, isDictRef, accounts, dictEntries, allowedAccountIds])
 
   switch (param.dataType) {
     case 'DATE':
@@ -135,6 +150,35 @@ export const ReportParamField = ({
         <Autocomplete
           multiple
           size="small"
+          // Фиксированная ширина, чтобы поле не растягивалось по шапке.
+          sx={{ width: 300 }}
+          // Компактная подпись значения: ВСЕГДА «1 чип + N» (даже при клике/фокусе)
+          // — выбранные счета не «вылезают» за поле; для выбора есть выпадающий
+          // список опций. Иначе MUI при фокусе раскрывает все теги и они наезжают
+          // на кнопки шапки.
+          renderTags={(tagValue, getTagProps) => {
+            if (tagValue.length === 0) return null
+            const { key, ...tagProps } = getTagProps({ index: 0 })
+            return (
+              <>
+                <Chip
+                  key={key}
+                  {...tagProps}
+                  size="small"
+                  label={tagValue[0].label}
+                  sx={{ maxWidth: 150 }}
+                />
+                {tagValue.length > 1 && (
+                  <Typography
+                    variant="caption"
+                    sx={{ ml: 0.5, color: '#666', whiteSpace: 'nowrap' }}
+                  >
+                    +{tagValue.length - 1}
+                  </Typography>
+                )}
+              </>
+            )
+          }}
           options={refOptions}
           value={selected}
           onChange={(_e, next) => {

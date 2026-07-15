@@ -171,10 +171,14 @@ export const AccountingPostingsTable = ({ group }: { group: MovementGroup }) => 
                 const first = r === 0
                 const topBorder = first ? 'border-t-2 border-ui-04' : ''
                 const numeric = rf.a2Label === 'kolichestvo' // строка с «Количество»
-                // Дебет: Dt-биндинг, фолбэк на легаси-код (одиночное поле = Дт) —
-                // если у entry ещё нет Dt-поля, дебет не сломается.
+                // Значения по сторонам: раздельное поле `*Dt`/`*Kt`, а если его
+                // нет (одиночный/коллапс-контракт) — фолбэк на общий код, чтобы
+                // ячейки не пустовали. При наличии `*Kt` кредит показывает СВОЁ
+                // значение (напр. подразделение Кт = Лаура), а не дебетовое.
                 const a1DtVal = entry[rf.a1Dt] ?? entry[rf.a1Label]
                 const a2DtVal = entry[rf.a2Dt] ?? entry[rf.a2Label]
+                const a1KtVal = entry[rf.a1Kt] ?? entry[rf.a1Label]
+                const a2KtVal = entry[rf.a2Kt] ?? entry[rf.a2Label]
                 return (
                   <tr
                     key={r}
@@ -220,16 +224,15 @@ export const AccountingPostingsTable = ({ group }: { group: MovementGroup }) => 
                         </Typography>
                       </td>
                     )}
-                    {/* Кредит: значения субконто / аналитика1 / аналитика2 —
-                        строго Kt-биндинги (иначе показывался бы дебет). */}
+                    {/* Кредит: субконто (строго Kt) + аналитика (Kt с фолбэком). */}
                     <td className={cn(cellPad, 'max-w-52')}>
                       <Val v={entry[rf.subKt]} />
                     </td>
                     <td className={cn(cellPad, 'max-w-52')}>
-                      <Val v={entry[rf.a1Kt]} />
+                      <Val v={a1KtVal} />
                     </td>
                     <td className={cn(cellPad, 'max-w-52')}>
-                      <Val v={entry[rf.a2Kt]} numeric={numeric} />
+                      <Val v={a2KtVal} numeric={numeric} />
                     </td>
                     {first && (
                       <>

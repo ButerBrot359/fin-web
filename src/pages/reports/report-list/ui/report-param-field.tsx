@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
+  Box,
   Checkbox,
   FormControlLabel,
   TextField,
@@ -187,22 +188,47 @@ export const ReportParamField = ({
           renderTags={(tagValue) => {
             if (tagValue.length === 0) return null
             return (
-              <Typography
+              <Box
                 component="span"
-                variant="body2"
                 className="report-ms-summary"
                 sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  minWidth: 0,
                   maxWidth: 210,
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  color: '#333',
                 }}
               >
-                {tagValue.length === 1
-                  ? tagValue[0].label
-                  : `${tagValue[0].label} (+${tagValue.length - 1})`}
-              </Typography>
+                {/* Имя первого выбранного — обрезается многоточием. */}
+                <Typography
+                  component="span"
+                  variant="body2"
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    color: '#333',
+                    minWidth: 0,
+                  }}
+                >
+                  {tagValue[0].label}
+                </Typography>
+                {/* «+N» (сколько ещё выбрано) — ВСЕГДА видно, не обрезается. */}
+                {tagValue.length > 1 && (
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    sx={{
+                      ml: 0.5,
+                      color: '#666',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    +{tagValue.length - 1}
+                  </Typography>
+                )}
+              </Box>
             )
           }}
           options={refOptions}

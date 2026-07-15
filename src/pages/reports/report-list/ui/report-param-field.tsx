@@ -159,11 +159,22 @@ export const ReportParamField = ({
           sx={{
             // Фиксированная ширина, чтобы поле не растягивалось по шапке.
             width: 300,
-            // В теме проекта endAdornment (очистить + стрелка) — inline/flex
-            // (position:static), поэтому длинный тег выдавливал стрелку за поле.
-            // Запрещаем блоку иконок сжиматься/выдавливаться — стрелка-шеврон
-            // всегда видна справа; сжимается вместо неё поле ввода.
-            '& .MuiAutocomplete-endAdornment': { flexShrink: 0 },
+            // Тема проекта делает endAdornment inline (position:static), поэтому длинный
+            // тег выдавливал иконки за пределы поля (наезд на кнопку). Возвращаем
+            // стандартное поведение MUI: иконки (очистить + стрелка) — абсолютом справа
+            // (всегда видны), а теги/ввод — в одну строку с обрезкой и резервом справа,
+            // чтобы не заходили под иконки и не вылезали за поле.
+            '& .MuiAutocomplete-endAdornment': {
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+            },
+            '& .MuiAutocomplete-inputRoot': {
+              flexWrap: 'nowrap',
+              overflow: 'hidden',
+              paddingRight: '56px !important',
+            },
             '& .MuiAutocomplete-input': { minWidth: 24 },
           }}
           // Компактная подпись значения: ВСЕГДА «1 чип + N» (даже при клике/фокусе)

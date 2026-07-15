@@ -160,41 +160,22 @@ export const ReportParamField = ({
           // с соседями и не вылезает; в докнутой панели заполняет её ширину.
           fullWidth
           sx={{
-            // Тема проекта делает endAdornment inline (position:static), поэтому длинный
-            // тег выдавливал иконки за пределы поля (наезд на кнопку). Возвращаем
-            // стандартное поведение MUI: иконки (очистить + стрелка) — абсолютом справа
-            // (всегда видны), а теги/ввод — в одну строку с обрезкой и резервом справа,
-            // чтобы не заходили под иконки и не вылезали за поле.
-            '& .MuiAutocomplete-endAdornment': {
-              position: 'absolute',
-              right: 8,
-              top: '50%',
-              transform: 'translateY(-50%)',
-            },
-            // Фиксируем строку инпута в 40px (= высоте соседних дат) и центрируем
-            // её содержимое по вертикали флексом. Сводка и поле ввода — обычные
-            // in-flow дети этой строки, поэтому центрируются так же, как текст в
-            // одиночном поле «Организация» в МО9 (без абсолютного позиционирования,
-            // которое в этом контейнере уезжало вверх под подпись).
-            '& .MuiAutocomplete-inputRoot': {
-              flexWrap: 'nowrap',
-              alignItems: 'center',
-              height: 40,
-              boxSizing: 'border-box',
-              overflow: 'hidden',
-              paddingTop: '0 !important',
-              paddingBottom: '0 !important',
-              paddingLeft: '8px !important',
-              paddingRight: '56px !important',
-            },
+            // Копируем конфигурацию рабочего одиночного AutocompleteInput (им же
+            // рендерится «Организация» в МО9 — стоит ровно): тема даёт filled-вариант,
+            // и весь фикс — minHeight 32 + переопределение «плавающего» paddingTop:22
+            // инпута на 6/6. Тогда значение центрируется по вертикали, а подпись
+            // остаётся на месте (её НЕ надо ужимать своими паддингами — это и ломало
+            // раньше: подпись налезала на значение). Иконки (очистить + шеврон) — как
+            // в теме, in-flow справа (endAdornment не трогаем). overflow:hidden на
+            // корне обрезает длинную сводку, gap/flexWrap:nowrap уже заданы темой.
+            '& .MuiFilledInput-root': { minHeight: 32, overflow: 'hidden' },
             '& .MuiAutocomplete-input': {
               minWidth: 24,
-              paddingTop: '0 !important',
-              paddingBottom: '0 !important',
+              paddingTop: '6px !important',
+              paddingBottom: '6px !important',
             },
-            // При наборе (фокусе) прячем сводку выбранного — поле поиска раскрывается
-            // на всю ширину, текст поиска ровный и не зажат между значением и иконками.
-            '& .MuiAutocomplete-inputRoot.Mui-focused .report-ms-summary': {
+            // При наборе (фокусе) прячем сводку — поле поиска раскрывается на всю ширину.
+            '& .MuiFilledInput-root.Mui-focused .report-ms-summary': {
               display: 'none',
             },
           }}
@@ -208,9 +189,10 @@ export const ReportParamField = ({
                 component="span"
                 className="report-ms-summary"
                 sx={{
-                  // In-flow дитя строки инпута (высота 40px, align-items:center) —
-                  // центрируется по вертикали вместе с полем ввода, ровно как текст
-                  // одиночного поля «Организация» в МО9.
+                  // In-flow дитя строки инпута (minHeight 32, align-items:center из
+                  // темы) — центрируется по вертикали вместе с полем ввода, ровно как
+                  // текст одиночного поля «Организация» в МО9. flexShrink+ellipsis —
+                  // длинное имя ужимается, иконки справа остаются видны.
                   display: 'inline-flex',
                   alignItems: 'center',
                   minWidth: 0,

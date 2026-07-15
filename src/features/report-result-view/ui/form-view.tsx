@@ -431,18 +431,19 @@ export const FormView = ({
       )}
 
       {/* Обязательная строка бланка мем-ордера (1С): «Приложение ___ лист».
-          Рендерим вместе с подписями (часть подвала), на языке отчёта. */}
+          Рендерим вместе с подписями (часть подвала), на языке отчёта. Размер шрифта —
+          как у подписей-граф «(тегі, аты…)» (caption/10px), чтобы подвал был единообразным. */}
       {form.signatures && form.signatures.length > 0 && (
         <div className="mt-6 flex items-end gap-2">
           <Typography
-            variant="body2"
-            sx={{ color: '#333' }}
+            variant="caption"
+            sx={{ color: '#666', fontSize: 10 }}
             className="w-44 shrink-0"
           >
             {isKz ? 'Қосымшасы' : 'Приложение'}
           </Typography>
           <div className="w-40 self-end border-t border-[#333]" />
-          <Typography variant="body2" sx={{ color: '#333' }}>
+          <Typography variant="caption" sx={{ color: '#666', fontSize: 10 }}>
             {isKz ? 'парақ' : 'лист'}
           </Typography>
         </div>

@@ -177,13 +177,9 @@ export const ReportParamField = ({
             // чтобы «Организация» стояла вровень с «Начало/Конец периода».
             '& .MuiAutocomplete-inputRoot': {
               flexWrap: 'nowrap',
-              // Центрируем сводку и поле ввода по вертикали. Небольшой перевес
-              // верхнего паддинга над нижним опускает содержимое на ~2px ниже —
-              // значение садится точно в центр поля, вровень с текстом дат
-              // («15.07.2021»), а не выше под подписью «Организация».
               alignItems: 'center',
               overflow: 'hidden',
-              paddingTop: '5px !important',
+              paddingTop: '1px !important',
               paddingBottom: '1px !important',
               paddingRight: '56px !important',
               minHeight: 40,
@@ -209,11 +205,22 @@ export const ReportParamField = ({
                 component="span"
                 className="report-ms-summary"
                 sx={{
-                  display: 'inline-flex',
+                  // Абсолютно позиционируем сводку по центру области инпута —
+                  // ровно как текст одиночного поля «Организация» в МО9. Не зависит
+                  // от MUI-паддингов под теги, поэтому значение всегда по центру.
+                  // left=14 совпадает с началом текста outlined-инпута, right=56
+                  // резервирует место под иконки (очистить + шеврон).
+                  position: 'absolute',
+                  left: 14,
+                  right: 56,
+                  top: 0,
+                  bottom: 0,
+                  display: 'flex',
                   alignItems: 'center',
                   minWidth: 0,
-                  maxWidth: 210,
                   overflow: 'hidden',
+                  // Клик проходит сквозь сводку в поле — открывает список.
+                  pointerEvents: 'none',
                 }}
               >
                 {/* Имя первого выбранного — обрезается многоточием. */}

@@ -200,15 +200,19 @@ export const ReportParamField = ({
                   overflow: 'hidden',
                 }}
               >
-                {/* Имя первого выбранного — обрезается многоточием. */}
+                {/* Имя первого выбранного — обрезается многоточием. Шрифт как у
+                    значения поля/дат (16px / 500 из темы filled-инпута): иначе мелкий
+                    body2 (14px) визуально «висел» выше, чем текст дат. */}
                 <Typography
                   component="span"
-                  variant="body2"
                   sx={{
+                    fontSize: 16,
+                    fontWeight: 500,
+                    lineHeight: 1.4,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    color: '#333',
+                    color: '#222124',
                     minWidth: 0,
                   }}
                 >
@@ -218,9 +222,11 @@ export const ReportParamField = ({
                 {tagValue.length > 1 && (
                   <Typography
                     component="span"
-                    variant="body2"
                     sx={{
                       ml: 0.5,
+                      fontSize: 16,
+                      fontWeight: 500,
+                      lineHeight: 1.4,
                       color: '#666',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,

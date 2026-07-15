@@ -27,6 +27,7 @@ export const NumberInput = ({
   readOnly,
   decimal,
   onChange,
+  onFocus,
   slotProps,
   value,
   inputRef: externalInputRef,
@@ -63,10 +64,15 @@ export const NumberInput = ({
     const typed = input.value
     let raw = stripSpaces(typed).replace(',', '.')
 
-    // Replace solitary "0" when user types another digit next to it: "05" | "50" -> "5"
+    // Дефолтный «0» не «прилипает». Набор одной цифры рядом с 0: "05" | "50" -> "5".
+    // Вставка (Ctrl+V) многозначного числа в «0» (каретка в конце): "012345" -> "12345"
+    // — иначе значение отбраковывалось регэкспом ниже и вставка «не срабатывала».
     let cursorToEnd = false
     if (rawValue === '0' && /^\d{2}$/.test(raw)) {
       raw = raw.replace('0', '') || '0'
+      cursorToEnd = true
+    } else if (rawValue === '0' && /^0\d+$/.test(raw)) {
+      raw = raw.replace(/^0+/, '') || '0'
       cursorToEnd = true
     }
 
@@ -102,6 +108,15 @@ export const NumberInput = ({
     onChange?.(e)
   }
 
+  // Дефолтный «0» ведёт себя как пустое поле (как в 1С): при фокусе выделяется
+  // целиком, поэтому ввод ИЛИ вставка (Ctrl+V) заменяют его без ручного удаления.
+  const handleFocus: TextFieldProps['onFocus'] = (e) => {
+    if (rawValue === '0') {
+      ;(e.target as HTMLInputElement).select()
+    }
+    onFocus?.(e)
+  }
+
   return (
     <Tooltip
       title={displayValue}
@@ -119,6 +134,7 @@ export const NumberInput = ({
         value={displayValue}
         {...rest}
         onChange={handleChange}
+        onFocus={handleFocus}
         inputRef={setInputRef}
         slotProps={{
           ...slotProps,

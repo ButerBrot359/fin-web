@@ -37,6 +37,8 @@ export interface DictEntry {
   displayName?: string
   isActive: boolean
   isGroup?: boolean
+  /** Родитель в иерархии (для дерева «Показать все»); null у записей корня. */
+  parentId?: number | null
   /** Родительский счёт (план счетов): готовое имя с бэка, read-only. */
   parentName?: string | null
   attributes: Record<string, unknown> | null
@@ -49,6 +51,35 @@ export const fetchDictTypeMetadata = (
 ) =>
   apiService.get<ApiResponse<DocumentType>>({
     url: getUniversalTypeUrl(domain, typeCode),
+    signal,
+  })
+
+/**
+ * Описание колонки диалога справочника с бэка
+ * (`GET /api/dictionaries/entries/{typeCode}/columns`). Форма терпимая: разные
+ * поля-синонимы ключа/заголовка, т.к. точный контракт не зафиксирован —
+ * парсер (`mapDictColumns`) берёт первое доступное. `displayAsCode` → в ячейке
+ * показывать `code` записи.
+ */
+export interface DictColumnDto {
+  key?: string
+  code?: string
+  field?: string
+  attributeCode?: string
+  title?: string
+  titleRu?: string
+  titleKz?: string
+  nameRu?: string
+  nameKz?: string
+  displayAsCode?: boolean
+  dataType?: string
+  sortable?: boolean
+  [k: string]: unknown
+}
+
+export const fetchDictColumns = (typeCode: string, signal?: AbortSignal) =>
+  apiService.get<ApiResponse<DictColumnDto[]>>({
+    url: `/api/dictionaries/entries/${typeCode}/columns`,
     signal,
   })
 

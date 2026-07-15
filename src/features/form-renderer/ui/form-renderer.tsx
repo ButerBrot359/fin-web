@@ -3,7 +3,11 @@ import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UseFormReturn } from 'react-hook-form'
 
-import type { FormConfig, ConditionalAppearance } from '@/entities/form-config'
+import type {
+  FormConfig,
+  ConditionalAppearance,
+  FieldFilter,
+} from '@/entities/form-config'
 import type { DocumentAttribute } from '@/entities/document-type'
 
 import { FormRendererContext } from '../lib/hooks/use-form-renderer-context'
@@ -72,6 +76,14 @@ export const FormRenderer = ({
     ConditionalAppearance[] | null
   >(null)
 
+  // Отборы пикеров из переизданного дескриптора (§1 КБП-ВНО-ОТБОР). Дескриптор
+  // переиздаётся на OnChange, поэтому фильтры полей из событий накапливаем
+  // поверх статических (ключ = `<ТЧ><Колонка>`), не только из первого конфига.
+  const [dynamicFieldFilters, setDynamicFieldFilters] = useState<Record<
+    string,
+    FieldFilter
+  > | null>(null)
+
   const { onFieldChange, triggerEvent } = useFormEvents({
     typeCode,
     attributes,
@@ -79,6 +91,8 @@ export const FormRenderer = ({
     tableReplacersRef,
     onVisibility: setVisibilityMap,
     onConditionalAppearance: setDynamicAppearance,
+    onFieldFilters: (filters) =>
+      setDynamicFieldFilters((prev) => ({ ...prev, ...filters })),
   })
 
   const clearAllTables = useCallback(() => {
@@ -95,7 +109,16 @@ export const FormRenderer = ({
     }
   }, [handleRef, triggerEvent, clearAllTables])
 
-  const fieldFilters = config.fieldFilters ?? EMPTY_FIELD_FILTERS
+  // Статические фильтры из OPEN-конфига + переизданные из событий (события
+  // приоритетнее для своих ключей). Поля без фильтра нигде не появляются —
+  // прочие пикеры не задеты.
+  const fieldFilters = useMemo(
+    () =>
+      dynamicFieldFilters
+        ? { ...config.fieldFilters, ...dynamicFieldFilters }
+        : config.fieldFilters ?? EMPTY_FIELD_FILTERS,
+    [config.fieldFilters, dynamicFieldFilters]
+  )
   const conditionalAppearance =
     dynamicAppearance ?? config.conditionalAppearance ?? EMPTY_APPEARANCE
 

@@ -21,6 +21,7 @@ import {
   isMeasure,
   isRightAligned,
   isSpanRow,
+  resolveReportLang,
 } from '../lib/cell-helpers'
 import { ReportCell } from './report-cell'
 
@@ -136,7 +137,8 @@ const logicalWidth = (col: ReportColumnDto): number => {
  */
 export const LedgerTable = ({ result, columns }: LedgerTableProps) => {
   const { t, i18n } = useTranslation()
-  const isKz = i18n.language === 'kz'
+  // Язык рендера = язык отчёта (result.language), иначе — язык приложения.
+  const isKz = resolveReportLang(result.language, i18n.language) === 'kz'
 
   const defaultWidths = useMemo(
     () => columns.map((c) => logicalWidth(c)),

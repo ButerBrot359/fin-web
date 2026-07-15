@@ -23,14 +23,43 @@ import type { MovementGroup } from '../api/document-movements-api'
 //  строка 1: Субконто1 · ФКР · Подразделение
 //  строка 2: Субконто2 · Специфика · Количество
 //  строка 3: Субконто3 · Источник финансирования · Код платных услуг
+//
+// `*Label` — код колонки для ЗАГОЛОВКА (единый над Дт и Кт), `*Dt`/`*Kt` —
+// РАЗДЕЛЬНЫЕ биндинги значений сторон (бэк отдаёт их в REST `entries[]`:
+// `podrazdelenieDt`/`podrazdelenieKt` и т.д., та же механика, что у
+// `subkonto*Dt/Kt`). Раньше обе стороны читали один ключ, из-за чего кредитная
+// аналитика показывала дебетовое значение. `kolichestvo` — общее на проводку.
+// Одиночное `Podrazdelenie` (коллапс-поле) намеренно = Дт — на стороны не берём.
 const ROW_FIELDS = [
-  { subDt: 'subkonto1Dt', subKt: 'subkonto1Kt', a1: 'FKR', a2: 'Podrazdelenie' },
-  { subDt: 'subkonto2Dt', subKt: 'subkonto2Kt', a1: 'Spetsifika', a2: 'kolichestvo' },
+  {
+    subDt: 'subkonto1Dt',
+    subKt: 'subkonto1Kt',
+    a1Label: 'FKR',
+    a1Dt: 'fkrDt',
+    a1Kt: 'fkrKt',
+    a2Label: 'Podrazdelenie',
+    a2Dt: 'podrazdelenieDt',
+    a2Kt: 'podrazdelenieKt',
+  },
+  {
+    subDt: 'subkonto2Dt',
+    subKt: 'subkonto2Kt',
+    a1Label: 'Spetsifika',
+    a1Dt: 'spetsifikaDt',
+    a1Kt: 'spetsifikaKt',
+    a2Label: 'kolichestvo',
+    a2Dt: 'kolichestvo',
+    a2Kt: 'kolichestvo',
+  },
   {
     subDt: 'subkonto3Dt',
     subKt: 'subkonto3Kt',
-    a1: 'IstochnikFinansirovaniya',
-    a2: 'KodPlatnykhUslug',
+    a1Label: 'IstochnikFinansirovaniya',
+    a1Dt: 'istochnikFinansirovaniyaDt',
+    a1Kt: 'istochnikFinansirovaniyaKt',
+    a2Label: 'KodPlatnykhUslug',
+    a2Dt: 'kodPlatnykhUslugDt',
+    a2Kt: 'kodPlatnykhUslugKt',
   },
 ] as const
 
@@ -78,8 +107,8 @@ export const AccountingPostingsTable = ({ group }: { group: MovementGroup }) => 
   // Метки трёх строк блока (для шапки): субконто 1/2/3 одной стороны.
   const sideLabels = (side: 'Dt' | 'Kt') =>
     ROW_FIELDS.map((rf) => label(side === 'Dt' ? rf.subDt : rf.subKt))
-  const a1Labels = ROW_FIELDS.map((rf) => label(rf.a1))
-  const a2Labels = ROW_FIELDS.map((rf) => label(rf.a2))
+  const a1Labels = ROW_FIELDS.map((rf) => label(rf.a1Label))
+  const a2Labels = ROW_FIELDS.map((rf) => label(rf.a2Label))
 
   const bl = 'border-l border-ui-04'
 
@@ -141,7 +170,11 @@ export const AccountingPostingsTable = ({ group }: { group: MovementGroup }) => 
               {ROW_FIELDS.map((rf, r) => {
                 const first = r === 0
                 const topBorder = first ? 'border-t-2 border-ui-04' : ''
-                const numeric = rf.a2 === 'kolichestvo' // строка с «Количество»
+                const numeric = rf.a2Label === 'kolichestvo' // строка с «Количество»
+                // Дебет: Dt-биндинг, фолбэк на легаси-код (одиночное поле = Дт) —
+                // если у entry ещё нет Dt-поля, дебет не сломается.
+                const a1DtVal = entry[rf.a1Dt] ?? entry[rf.a1Label]
+                const a2DtVal = entry[rf.a2Dt] ?? entry[rf.a2Label]
                 return (
                   <tr
                     key={r}
@@ -175,10 +208,10 @@ export const AccountingPostingsTable = ({ group }: { group: MovementGroup }) => 
                       <Val v={entry[rf.subDt]} />
                     </td>
                     <td className={cn(cellPad, 'max-w-52')}>
-                      <Val v={entry[rf.a1]} />
+                      <Val v={a1DtVal} />
                     </td>
                     <td className={cn(cellPad, 'max-w-52')}>
-                      <Val v={entry[rf.a2]} numeric={numeric} />
+                      <Val v={a2DtVal} numeric={numeric} />
                     </td>
                     {first && (
                       <td rowSpan={3} className={cn(cellPad, bl, 'align-middle')}>
@@ -187,15 +220,16 @@ export const AccountingPostingsTable = ({ group }: { group: MovementGroup }) => 
                         </Typography>
                       </td>
                     )}
-                    {/* Кредит: значения субконто / аналитика1 / аналитика2 */}
+                    {/* Кредит: значения субконто / аналитика1 / аналитика2 —
+                        строго Kt-биндинги (иначе показывался бы дебет). */}
                     <td className={cn(cellPad, 'max-w-52')}>
                       <Val v={entry[rf.subKt]} />
                     </td>
                     <td className={cn(cellPad, 'max-w-52')}>
-                      <Val v={entry[rf.a1]} />
+                      <Val v={entry[rf.a1Kt]} />
                     </td>
                     <td className={cn(cellPad, 'max-w-52')}>
-                      <Val v={entry[rf.a2]} numeric={numeric} />
+                      <Val v={entry[rf.a2Kt]} numeric={numeric} />
                     </td>
                     {first && (
                       <>

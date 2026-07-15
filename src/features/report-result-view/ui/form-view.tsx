@@ -7,7 +7,11 @@ import type {
   ReportFormSectionDto,
 } from '@/pages/reports/report-list/types/report'
 
-import { isHighlightRow, isRightAligned } from '../lib/cell-helpers'
+import {
+  isHighlightRow,
+  isRightAligned,
+  resolveReportLang,
+} from '../lib/cell-helpers'
 import { ReportCell } from './report-cell'
 
 /**
@@ -279,9 +283,16 @@ const SectionTable = ({
  * субсчёта с графами-кор.счетами и сквозной нумерацией, остатки на
  * начало/конец месяца и подписи.
  */
-export const FormView = ({ form }: { form: ReportFormDto }) => {
+export const FormView = ({
+  form,
+  language,
+}: {
+  form: ReportFormDto
+  language?: string
+}) => {
   const { i18n } = useTranslation()
-  const isKz = i18n.language === 'kz'
+  // Язык бланка — по языку отчёта (может отличаться от языка UI), фолбэк на UI.
+  const isKz = resolveReportLang(language, i18n.language) === 'kz'
 
   return (
     <div className="flex w-full flex-col gap-1 bg-white text-[#333]">
@@ -345,11 +356,8 @@ export const FormView = ({ form }: { form: ReportFormDto }) => {
             {form.vedomostTitle}
           </Typography>
         )}
-        {form.accountsLine && (
-          <Typography variant="body2" sx={{ color: '#333', fontWeight: 700 }}>
-            {form.accountsLine}
-          </Typography>
-        )}
+        {/* Список счетов в заголовок не выводим (эталон 1С: счета — параметр
+            «Список счетов» и примечание-Ескерту, не часть названия формы). */}
       </div>
 
       {/* Секции (дебет/кредит субсчёта). */}
@@ -419,6 +427,24 @@ export const FormView = ({ form }: { form: ReportFormDto }) => {
               ))}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Обязательная строка бланка мем-ордера (1С): «Приложение ___ лист».
+          Рендерим вместе с подписями (часть подвала), на языке отчёта. */}
+      {form.signatures && form.signatures.length > 0 && (
+        <div className="mt-6 flex items-end gap-2">
+          <Typography
+            variant="body2"
+            sx={{ color: '#333' }}
+            className="w-44 shrink-0"
+          >
+            {isKz ? 'Қосымшасы' : 'Приложение'}
+          </Typography>
+          <div className="w-40 self-end border-t border-[#333]" />
+          <Typography variant="body2" sx={{ color: '#333' }}>
+            {isKz ? 'парақ' : 'лист'}
+          </Typography>
         </div>
       )}
 

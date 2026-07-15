@@ -73,6 +73,8 @@ export interface DictColumnDto {
   nameKz?: string
   displayAsCode?: boolean
   dataType?: string
+  /** Домен целевого типа ссылочного атрибута (напр. ACCOUNT_PLAN у «Счёта учёта»). */
+  referencedDomainKind?: string
   sortable?: boolean
   [k: string]: unknown
 }

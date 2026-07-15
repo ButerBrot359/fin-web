@@ -29,6 +29,14 @@
 
 ## Фикс (фронт, применён)
 
+**Эндпоинт.** Полностраничные «Движения документа» звали
+`GET /api/document-entries/id/{id}/movements` — этот вариант отдаёт измерения
+ОДНИМ (коллапс-)полем. РАЗДЕЛЬНЫЕ Дт/Кт-поля отдаёт вариант БЕЗ `id/`:
+`GET /api/document-entries/{id}/movements` (проверено разведкой; так же ходит
+`unpost`). `fetchDocumentMovements` переключён на него, с фолбэком на прежний
+путь при ошибке (грид не ломается).
+`src/pages/documents/document-movements/api/document-movements-api.ts`.
+
 `src/pages/documents/document-movements/ui/accounting-postings-table.tsx`:
 - `ROW_FIELDS`: заголовок колонки (`*Label`) отделён от значений сторон
   (`*Dt`/`*Kt`); значения бэка — `podrazdelenieDt`/`podrazdelenieKt`,

@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
   Checkbox,
-  Chip,
   FormControlLabel,
   TextField,
   Typography,
@@ -176,37 +175,34 @@ export const ReportParamField = ({
               paddingRight: '56px !important',
             },
             '& .MuiAutocomplete-input': { minWidth: 24 },
+            // При наборе (фокусе) прячем сводку выбранного — поле поиска раскрывается
+            // на всю ширину, текст поиска ровный и не зажат между значением и иконками.
+            '& .MuiAutocomplete-inputRoot.Mui-focused .report-ms-summary': {
+              display: 'none',
+            },
           }}
-          // Компактная подпись значения: ВСЕГДА «1 чип + N» (даже при клике/фокусе)
-          // — выбранные счета не «вылезают» за поле; для выбора есть выпадающий
-          // список опций. Иначе MUI при фокусе раскрывает все теги и они наезжают
-          // на кнопки шапки.
-          renderTags={(tagValue, getTagProps) => {
+          // Значение — компактная СВОДКА одной строкой («Имя» или «Имя (+N)») с
+          // многоточием, а не чипы: не «вылезает» за поле и не зажимает поиск. При
+          // фокусе (наборе) сводка скрывается (см. sx) — поле поиска на всю ширину.
+          renderTags={(tagValue) => {
             if (tagValue.length === 0) return null
-            const { key, ...tagProps } = getTagProps({ index: 0 })
             return (
-              <>
-                <Chip
-                  key={key}
-                  {...tagProps}
-                  size="small"
-                  label={tagValue[0].label}
-                  sx={{ maxWidth: 120 }}
-                />
-                {tagValue.length > 1 && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      ml: 0.5,
-                      color: '#666',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}
-                  >
-                    +{tagValue.length - 1}
-                  </Typography>
-                )}
-              </>
+              <Typography
+                component="span"
+                variant="body2"
+                className="report-ms-summary"
+                sx={{
+                  maxWidth: 210,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  color: '#333',
+                }}
+              >
+                {tagValue.length === 1
+                  ? tagValue[0].label
+                  : `${tagValue[0].label} (+${tagValue.length - 1})`}
+              </Typography>
             )
           }}
           options={refOptions}

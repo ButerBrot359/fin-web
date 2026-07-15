@@ -171,12 +171,26 @@ export const ReportParamField = ({
               top: '50%',
               transform: 'translateY(-50%)',
             },
+            // Высота поля = высоте соседних дат (small TextField ≈ 40px). У
+            // multiple-Autocomplete inputRoot добавляет вертикальные паддинги под
+            // теги и поле становится выше соседей — обнуляем их и центрируем контент,
+            // чтобы «Организация» стояла вровень с «Начало/Конец периода».
             '& .MuiAutocomplete-inputRoot': {
               flexWrap: 'nowrap',
+              // Центрируем сводку и поле ввода по вертикали — иначе значение
+              // прижималось к нижней границе (стояло криво, не как текст дат).
+              alignItems: 'center',
               overflow: 'hidden',
+              paddingTop: '1px !important',
+              paddingBottom: '1px !important',
               paddingRight: '56px !important',
+              minHeight: 40,
             },
-            '& .MuiAutocomplete-input': { minWidth: 24 },
+            '& .MuiAutocomplete-input': {
+              minWidth: 24,
+              paddingTop: '2.5px !important',
+              paddingBottom: '2.5px !important',
+            },
             // При наборе (фокусе) прячем сводку выбранного — поле поиска раскрывается
             // на всю ширину, текст поиска ровный и не зажат между значением и иконками.
             '& .MuiAutocomplete-inputRoot.Mui-focused .report-ms-summary': {

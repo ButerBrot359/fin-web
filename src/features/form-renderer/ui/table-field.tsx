@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next'
 import type { DocumentAttribute } from '@/entities/document-type'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { resolveAttributeDomain } from '@/shared/lib/consts/data-types'
+import { usePersistedColumnSizing } from '@/shared/lib/table/use-persisted-column-sizing'
 import emptyImage from '@/shared/assets/info/empty.png'
 
 import { useTableColumns } from '../lib/hooks/use-table-columns'
@@ -322,11 +323,26 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     orgSourceSignature,
   ])
 
+  // Изменяемая ширина колонок ТЧ (эталон 1С): тянем границы заголовков мышью,
+  // ширины сохраняются per-ТЧ. Ключ — код типа-строки (уникален для документа+ТЧ).
+  const rowTypeCode =
+    (attribute.allowedTypes as { typeCode: string }[] | undefined)?.[0]
+      ?.typeCode ?? attribute.code
+  const { columnSizing, onColumnSizingChange } =
+    usePersistedColumnSizing(rowTypeCode)
+
   const table = useReactTable({
     data: fields as unknown as Record<string, unknown>[],
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (_, index) => fields[index]?.id ?? String(index),
+    enableColumnResizing: true,
+    columnResizeMode: 'onChange',
+    // min 40 — не заклампить служебную колонку «#» (size 40) и не дать колонкам
+    // схлопнуться в ноль при ресайзе.
+    defaultColumn: { minSize: 40 },
+    state: { columnSizing },
+    onColumnSizingChange,
   })
 
   const handleAdd = () => {
@@ -381,7 +397,14 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
         </div>
       ) : (
         <div className="overflow-x-auto pb-3">
-          <table className="w-full border-collapse rounded border border-ui-03">
+          <table
+            className="border-collapse rounded border border-ui-03"
+            style={{
+              tableLayout: 'fixed',
+              width: table.getTotalSize(),
+              minWidth: '100%',
+            }}
+          >
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr
@@ -391,12 +414,24 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="whitespace-nowrap border-r border-ui-03 px-2 py-1 text-left text-body2 font-medium text-ui-05 last:border-r-0"
-                      style={{ minWidth: header.getSize() }}
+                      className="relative whitespace-nowrap overflow-hidden text-ellipsis border-r border-ui-03 px-2 py-1 text-left text-body2 font-medium text-ui-05 last:border-r-0"
+                      style={{ width: header.getSize() }}
                     >
                       {flexRender(
                         header.column.columnDef.header,
                         header.getContext()
+                      )}
+                      {header.column.getCanResize() && (
+                        <div
+                          role="separator"
+                          aria-orientation="vertical"
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`absolute right-0 top-0 h-full w-1.5 cursor-col-resize touch-none select-none hover:bg-accent-02 ${
+                            header.column.getIsResizing() ? 'bg-accent-02' : ''
+                          }`}
+                        />
                       )}
                     </th>
                   ))}
@@ -417,8 +452,8 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className="border-r border-ui-03 px-1 py-px last:border-r-0"
-                      style={{ minWidth: cell.column.getSize() }}
+                      className="overflow-hidden border-r border-ui-03 px-1 py-px last:border-r-0"
+                      style={{ width: cell.column.getSize() }}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

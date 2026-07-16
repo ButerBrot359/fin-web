@@ -19,12 +19,16 @@ import { useTranslation } from 'react-i18next'
 
 import type { ViewNode } from '../../../types/view'
 import { useTableSync, type TableRow } from '../../../lib/hooks/use-table-sync'
-import { useSduiSession } from '../../../lib/sdui-session-context'
+import { useSduiSession, useBindingValue } from '../../../lib/sdui-session-context'
 import {
   buildColumnDefs,
   extractAllLeafColumns,
 } from '../../../lib/utils/build-column-defs'
-import { renderCellValue, normalizeKey } from '../../../lib/utils/cell-value'
+import { renderCellValue } from '../../../lib/utils/cell-value'
+import {
+  findSelectedMasterRow,
+  filterDetailRows,
+} from '../../../lib/utils/master-detail'
 import { TableToolbar } from './table-toolbar'
 
 interface ComplexEditableTableProps {
@@ -77,35 +81,23 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   }, [sync.rows.length])
 
   // ── Master-detail filtering ──
+  // Реактивные подписки (SCRUM-282 #4): getValue давал разовый снимок,
+  // detail не ре-рендерился при выборе master-строки.
+  const selectedMasterRowId = useBindingValue(
+    isMasterDetail && masterTable ? masterTable + '.__selectedRowId' : undefined,
+  ) as string | undefined
+  const masterRows = useBindingValue(
+    isMasterDetail && masterTable ? masterTable : undefined,
+  ) as TableRow[] | undefined
+
+  const selectedMasterRow = findSelectedMasterRow(masterRows, selectedMasterRowId)
+  const masterKeyValue =
+    selectedMasterRow && masterKey ? selectedMasterRow[masterKey] : undefined
+
   const visibleRows = useMemo<TableRow[]>(() => {
-    if (!isMasterDetail || !masterTable || !masterKey || !detailKey) {
-      return sync.rows
-    }
-
-    const selectedMasterRowId = getValue(masterTable + '.__selectedRowId') as
-      | string
-      | undefined
-    if (!selectedMasterRowId) return sync.rows
-
-    const masterRows = (getValue(masterTable) as TableRow[] | undefined) ?? []
-    const selectedMasterRow = masterRows.find(
-      (r) => r.rowId === selectedMasterRowId,
-    )
-    if (!selectedMasterRow) return sync.rows
-
-    const masterKeyValue = normalizeKey(selectedMasterRow[masterKey])
-
-    return sync.rows.filter(
-      (row) => normalizeKey(row[detailKey]) === masterKeyValue,
-    )
-  }, [
-    sync.rows,
-    isMasterDetail,
-    masterTable,
-    masterKey,
-    detailKey,
-    getValue,
-  ])
+    if (!isMasterDetail || !masterKey || !detailKey) return sync.rows
+    return filterDetailRows(sync.rows, selectedMasterRow, masterKey, detailKey)
+  }, [sync.rows, isMasterDetail, masterKey, detailKey, selectedMasterRow])
 
   // ── Footer ──
   const footerValues = node.binding

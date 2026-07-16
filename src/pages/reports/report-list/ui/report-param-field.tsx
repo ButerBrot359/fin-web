@@ -160,20 +160,15 @@ export const ReportParamField = ({
           // с соседями и не вылезает; в докнутой панели заполняет её ширину.
           fullWidth
           sx={{
-            // Копируем конфигурацию рабочего одиночного AutocompleteInput (им же
-            // рендерится «Организация» в МО9 — стоит ровно): тема даёт filled-вариант,
-            // и весь фикс — minHeight 32 + переопределение «плавающего» paddingTop:22
-            // инпута на 6/6. Тогда значение центрируется по вертикали, а подпись
-            // остаётся на месте (её НЕ надо ужимать своими паддингами — это и ломало
-            // раньше: подпись налезала на значение). Иконки (очистить + шеврон) — как
-            // в теме, in-flow справа (endAdornment не трогаем). overflow:hidden на
-            // корне обрезает длинную сводку, gap/flexWrap:nowrap уже заданы темой.
-            '& .MuiFilledInput-root': { minHeight: 32, overflow: 'hidden' },
-            '& .MuiAutocomplete-input': {
-              minWidth: 24,
-              paddingTop: '6px !important',
-              paddingBottom: '6px !important',
-            },
+            // Высоту и вертикаль НЕ ужимаем: тема (filled default) даёт tall-инпут
+            // с paddingTop:22 у значения и minHeight 44 — ровно как у date-полей и
+            // одиночного «Организация» (который стоит ровно). Сводка (in-flow дитя,
+            // центрируется темой `inputRoot align-items:center`) встаёт на тот же
+            // уровень, что значение дат. Прежние minHeight:32 + paddingTop:6
+            // компактили поле → сводка «висела» ВЫШЕ текста дат.
+            // overflow:hidden обрезает длинную сводку (не «вылезает» за поле).
+            '& .MuiFilledInput-root': { overflow: 'hidden' },
+            '& .MuiAutocomplete-input': { minWidth: 24 },
             // При наборе (фокусе) прячем сводку — поле поиска раскрывается на всю ширину.
             '& .MuiFilledInput-root.Mui-focused .report-ms-summary': {
               display: 'none',
@@ -189,14 +184,10 @@ export const ReportParamField = ({
                 component="span"
                 className="report-ms-summary"
                 sx={{
-                  // Позиция значения — как у date-полей: их текст сидит на
-                  // paddingTop:6 (sectionsContainer small, см. тему), а не по центру
-                  // бокса. Центрирование (align-items:center из темы) визуально
-                  // поднимало сводку выше текста «Периода», т.к. бокс автокомплита
-                  // ниже date-бокса. Поэтому НЕ центрируем, а прижимаем к верху с
-                  // тем же отступом 6px → одинаковый уровень независимо от высоты.
-                  alignSelf: 'flex-start',
-                  mt: '6px',
+                  // In-flow дитя строки инпута — центрируется по вертикали темой
+                  // (`inputRoot align-items:center`) в tall-боксе (44px), ровно как
+                  // значение дат и одиночного «Организация». flexShrink+ellipsis —
+                  // длинное имя ужимается, иконки справа остаются видны.
                   display: 'inline-flex',
                   alignItems: 'center',
                   minWidth: 0,

@@ -12,11 +12,13 @@ import {
 } from '@tanstack/react-table'
 import { Skeleton, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
+import { useLocation } from 'react-router-dom'
 
 import type { DocumentAttribute } from '@/entities/document-type'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { resolveAttributeDomain } from '@/shared/lib/consts/data-types'
 import { usePersistedColumnSizing } from '@/shared/lib/table/use-persisted-column-sizing'
+import { usePersistedScroll } from '@/shared/lib/table/use-persisted-scroll'
 import emptyImage from '@/shared/assets/info/empty.png'
 
 import { useTableColumns } from '../lib/hooks/use-table-columns'
@@ -331,6 +333,13 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
   const { columnSizing, onColumnSizingChange } =
     usePersistedColumnSizing(rowTypeCode)
 
+  // Запоминаем горизонтальную/вертикальную прокрутку ТЧ, чтобы при возврате к
+  // документу (ремаунт формы через историю/табы) таблица не прыгала в начало.
+  const { pathname } = useLocation()
+  const { setRef: setScrollRef, onScroll: onTableScroll } = usePersistedScroll(
+    `${pathname}::${attribute.code}`
+  )
+
   const table = useReactTable({
     data: fields as unknown as Record<string, unknown>[],
     columns: tableColumns,
@@ -396,7 +405,11 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
           </Typography>
         </div>
       ) : (
-        <div className="overflow-x-auto pb-3">
+        <div
+          ref={setScrollRef}
+          onScroll={onTableScroll}
+          className="overflow-x-auto pb-3"
+        >
           <table
             className="border-collapse rounded border border-ui-03"
             style={{

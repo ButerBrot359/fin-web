@@ -19,13 +19,23 @@ import { useTranslation } from 'react-i18next'
 
 import type { ViewNode } from '../../../types/view'
 import { useTableSync, type TableRow } from '../../../lib/hooks/use-table-sync'
-import { useSduiSession } from '../../../lib/sdui-session-context'
+import { useSduiSession, useBindingValue } from '../../../lib/sdui-session-context'
 import {
   buildColumnDefs,
   extractAllLeafColumns,
 } from '../../../lib/utils/build-column-defs'
-import { renderCellValue, normalizeKey } from '../../../lib/utils/cell-value'
+import { renderCellValue } from '../../../lib/utils/cell-value'
+import {
+  findSelectedMasterRow,
+  filterDetailRows,
+} from '../../../lib/utils/master-detail'
 import { TableToolbar } from './table-toolbar'
+
+// Единая высота строки для master-detail пары (SCRUM-282 #3): в ячейках VERTICAL-групп
+// стопки редакторов разной высоты (checkbox+text vs date+date), без общей высоты
+// строки таблицы разъезжаются. height на <tr> работает как min-height.
+// Позже уедет в конфиг-сервис стилей.
+const ROW_HEIGHT = 72
 
 interface ComplexEditableTableProps {
   node: ViewNode
@@ -40,6 +50,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const allowAdd = (node.props?.allowAdd as boolean | undefined) ?? true
   const allowDelete = (node.props?.allowDelete as boolean | undefined) ?? true
   const allowReorder = (node.props?.allowReorder as boolean | undefined) ?? true
+  const showRowNumbers = node.props?.showRowNumbers === true
 
   // Master-detail props
   const masterTable = node.props?.masterTable as string | undefined
@@ -65,47 +76,44 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     [node.children],
   )
 
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-
-  useEffect(() => {
-    setSelectedIndex((prev) => {
-      if (prev === null) return null
-      if (prev >= sync.rows.length)
-        return sync.rows.length > 0 ? sync.rows.length - 1 : null
-      return prev
-    })
-  }, [sync.rows.length])
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
 
   // ── Master-detail filtering ──
+  // Реактивные подписки (SCRUM-282 #4): getValue давал разовый снимок,
+  // detail не ре-рендерился при выборе master-строки.
+  const selectedMasterRowId = useBindingValue(
+    isMasterDetail && masterTable ? masterTable + '.__selectedRowId' : undefined,
+  ) as string | undefined
+  const masterRows = useBindingValue(
+    isMasterDetail && masterTable ? masterTable : undefined,
+  ) as TableRow[] | undefined
+
+  const selectedMasterRow = findSelectedMasterRow(masterRows, selectedMasterRowId)
+  const masterKeyValue =
+    selectedMasterRow && masterKey ? selectedMasterRow[masterKey] : undefined
+
   const visibleRows = useMemo<TableRow[]>(() => {
-    if (!isMasterDetail || !masterTable || !masterKey || !detailKey) {
-      return sync.rows
+    if (!isMasterDetail || !masterKey || !detailKey) return sync.rows
+    return filterDetailRows(sync.rows, selectedMasterRow, masterKey, detailKey)
+  }, [sync.rows, isMasterDetail, masterKey, detailKey, selectedMasterRow])
+
+  // Индекс выбранной строки в текущем видимом наборе (не в полном sync.rows —
+  // при активном master-detail фильтре это разные массивы, SCRUM-282 C1).
+  const selectedVisibleIndex =
+    selectedRowId != null
+      ? visibleRows.findIndex((r) => r.rowId === selectedRowId)
+      : -1
+
+  // Сброс выбора, если выбранная строка выпала из видимого набора — покрывает
+  // и смену master-строки, и удаление/фильтрацию строки (SCRUM-282 I2).
+  useEffect(() => {
+    if (
+      selectedRowId != null &&
+      !visibleRows.some((r) => r.rowId === selectedRowId)
+    ) {
+      setSelectedRowId(null)
     }
-
-    const selectedMasterRowId = getValue(masterTable + '.__selectedRowId') as
-      | string
-      | undefined
-    if (!selectedMasterRowId) return sync.rows
-
-    const masterRows = (getValue(masterTable) as TableRow[] | undefined) ?? []
-    const selectedMasterRow = masterRows.find(
-      (r) => r.rowId === selectedMasterRowId,
-    )
-    if (!selectedMasterRow) return sync.rows
-
-    const masterKeyValue = normalizeKey(selectedMasterRow[masterKey])
-
-    return sync.rows.filter(
-      (row) => normalizeKey(row[detailKey]) === masterKeyValue,
-    )
-  }, [
-    sync.rows,
-    isMasterDetail,
-    masterTable,
-    masterKey,
-    detailKey,
-    getValue,
-  ])
+  }, [visibleRows, selectedRowId])
 
   // ── Footer ──
   const footerValues = node.binding
@@ -136,30 +144,45 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   })
 
   // Publish selected rowId to session for detail tables
-  const handleRowClick = (rowId: string, index: number) => {
-    setSelectedIndex(index)
+  const handleRowClick = (rowId: string) => {
+    setSelectedRowId(rowId)
     if (node.binding) {
       setFromServer(node.binding + '.__selectedRowId', rowId)
     }
   }
 
-  const handleAdd = () => sync.addRow(flatColumns)
-  const handleRemove = () => {
-    if (selectedIndex !== null) {
-      sync.deleteRow(selectedIndex)
-      setSelectedIndex(null)
+  // Detail-таблица: новая строка сразу получает ключ связи выбранной master-строки;
+  // без выбранной master-строки добавление заблокировано (canAdd ниже) — как в 1С.
+  const handleAdd = () => {
+    if (isMasterDetail && detailKey) {
+      if (masterKeyValue === undefined) return
+      sync.addRow(flatColumns, { [detailKey]: masterKeyValue })
+      return
     }
+    sync.addRow(flatColumns)
   }
+  // Удаляем по rowId из ПОЛНОГО массива sync.rows (SCRUM-282 C1): selectedVisibleIndex
+  // указывает на позицию в отфильтрованном visibleRows и не годится для sync.deleteRow.
+  const handleRemove = () => {
+    if (selectedRowId === null) return
+    const globalIndex = sync.rows.findIndex((r) => r.rowId === selectedRowId)
+    if (globalIndex >= 0) sync.deleteRow(globalIndex)
+    setSelectedRowId(null)
+  }
+  // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail в
+  // тулбаре) — там visibleRows === sync.rows, поэтому selectedVisibleIndex совпадает
+  // с глобальным индексом и move корректен.
   const handleMoveUp = () => {
-    if (selectedIndex !== null && selectedIndex > 0) {
-      sync.moveRow(selectedIndex, selectedIndex - 1)
-      setSelectedIndex(selectedIndex - 1)
+    if (selectedVisibleIndex > 0) {
+      sync.moveRow(selectedVisibleIndex, selectedVisibleIndex - 1)
     }
   }
   const handleMoveDown = () => {
-    if (selectedIndex !== null && selectedIndex < sync.rows.length - 1) {
-      sync.moveRow(selectedIndex, selectedIndex + 1)
-      setSelectedIndex(selectedIndex + 1)
+    if (
+      selectedVisibleIndex >= 0 &&
+      selectedVisibleIndex < visibleRows.length - 1
+    ) {
+      sync.moveRow(selectedVisibleIndex, selectedVisibleIndex + 1)
     }
   }
 
@@ -173,21 +196,32 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           onMoveUp={handleMoveUp}
           onMoveDown={handleMoveDown}
           onRemove={handleRemove}
-          canMoveUp={selectedIndex !== null && selectedIndex > 0}
+          canMoveUp={!isMasterDetail && selectedVisibleIndex > 0}
           canMoveDown={
-            selectedIndex !== null && selectedIndex < sync.rows.length - 1
+            !isMasterDetail &&
+            selectedVisibleIndex >= 0 &&
+            selectedVisibleIndex < visibleRows.length - 1
           }
-          canRemove={selectedIndex !== null}
+          canRemove={selectedRowId !== null}
+          canAdd={!isMasterDetail || masterKeyValue !== undefined}
           allowAdd={allowAdd}
-          allowReorder={allowReorder}
+          allowReorder={allowReorder && !isMasterDetail}
           allowDelete={allowDelete}
         />
       </div>
       <TableContainer component={Paper}>
         <Table size="small">
           <TableHead>
-            {table.getHeaderGroups().map((hg) => (
+            {table.getHeaderGroups().map((hg, hgIndex) => (
               <MuiTableRow key={hg.id}>
+                {showRowNumbers && hgIndex === 0 && (
+                  <TableCell
+                    rowSpan={table.getHeaderGroups().length}
+                    sx={{ width: 48, textAlign: 'center', fontWeight: 600 }}
+                  >
+                    {t('table.rowNumber')}
+                  </TableCell>
+                )}
                 {hg.headers.map((header) =>
                   header.isPlaceholder ? (
                     <TableCell key={header.id} colSpan={header.colSpan} />
@@ -206,7 +240,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           <TableBody>
             {visibleRows.length === 0 ? (
               <MuiTableRow>
-                <TableCell colSpan={leafColumnCount} align="center">
+                <TableCell
+                  colSpan={leafColumnCount + (showRowNumbers ? 1 : 0)}
+                  align="center"
+                >
                   <Typography variant="body2" color="text.secondary">
                     {t('table.empty')}
                   </Typography>
@@ -217,10 +254,17 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                 <MuiTableRow
                   key={row.id}
                   hover
-                  selected={selectedIndex === index}
-                  onClick={() => handleRowClick(row.id, index)}
-                  sx={{ cursor: 'pointer' }}
+                  selected={row.id === selectedRowId}
+                  onClick={() => handleRowClick(row.id)}
+                  sx={{ cursor: 'pointer', height: ROW_HEIGHT }}
                 >
+                  {showRowNumbers && (
+                    <TableCell sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {index + 1}
+                      </Typography>
+                    </TableCell>
+                  )}
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} sx={{ p: 0 }}>
                       {flexRender(
@@ -237,6 +281,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
             <TableFooter>
               {table.getFooterGroups().map((fg) => (
                 <MuiTableRow key={fg.id}>
+                  {showRowNumbers && <TableCell />}
                   {fg.headers.map((header) => {
                     const footerId = header.column.columnDef.footer
                     const footerText =

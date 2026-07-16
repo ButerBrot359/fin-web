@@ -9,7 +9,11 @@ import {
   Typography,
 } from '@mui/material'
 
-import { useAccountPlanList } from '@/entities/account-plan'
+import {
+  SUBCONTO_BU_TYPE_CODE,
+  useAccountPlanList,
+  useSubcontoBuTypes,
+} from '@/entities/account-plan'
 import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
 import {
   AutocompleteInput,
@@ -66,10 +70,32 @@ export const ReportParamField = ({
   // включаем лениво по типу параметра.
   const isAccountRef =
     param.dataType === 'ACCOUNT_LIST' || param.dataType === 'ACCOUNT_REF'
+
+  // Маркер домена «План видов характеристик» (не Dictionary) — напр.
+  // SpisokVidovSubkonto у Карточки/Анализа субконто, referenceDomain =
+  // "CHARACTERISTICS_PLAN:VidySubcontoBu" (см. ReportDefinitionImporter#DOMAIN_VIDY_SUBKONTO_BU).
+  // По умолчанию referenceDomain у REF_LIST/DICTIONARY_REF/ENUM_REF трактуется как typeCode
+  // справочника (useDictionaryEntries бьёт в /api/dictionaries/...) — для CharacteristicsPlan
+  // нужен другой источник (/api/characteristics-plan/{typeCode}/entries).
+  const CHARACTERISTICS_PLAN_PREFIX = 'CHARACTERISTICS_PLAN:'
+  const isCharacteristicsRef =
+    param.referenceDomain?.startsWith(CHARACTERISTICS_PLAN_PREFIX) ?? false
+  const characteristicsTypeCode = isCharacteristicsRef
+    ? param.referenceDomain!.slice(CHARACTERISTICS_PLAN_PREFIX.length)
+    : null
+
   const isDictRef =
-    param.dataType === 'DICTIONARY_REF' ||
-    param.dataType === 'ENUM_REF' ||
-    param.dataType === 'REF_LIST'
+    !isCharacteristicsRef &&
+    (param.dataType === 'DICTIONARY_REF' ||
+      param.dataType === 'ENUM_REF' ||
+      param.dataType === 'REF_LIST')
+
+  // Единственный сейчас поддержанный ПВХ-домен — «Виды субконто (БУ)» (VidySubcontoBu). Хук
+  // специфичен к нему (см. use-subconto-types.ts); при появлении других ПВХ-доменов в
+  // параметрах отчётов — обобщить на generic-хук по characteristicsTypeCode.
+  const { subcontoTypes } = useSubcontoBuTypes(
+    isCharacteristicsRef && characteristicsTypeCode === SUBCONTO_BU_TYPE_CODE
+  )
 
   // Счёт берётся из единого плана счетов (default). referenceDomain="ACCOUNT_PLAN" —
   // это маркер домена, а НЕ typeCode плана; передавать его в API нельзя (иначе
@@ -100,7 +126,7 @@ export const ReportParamField = ({
   const refOptions = useMemo<SelectOption[]>(() => {
     if (isAccountRef) {
       return accounts
-        .filter((a) => !allowedAccountIds || allowedAccountIds.has(Number(a.id)))
+        .filter((a) => !allowedAccountIds || allowedAccountIds.has(a.id))
         .map((a) => ({
           id: a.id,
           code: a.code,
@@ -114,8 +140,23 @@ export const ReportParamField = ({
         label: e.displayName ?? e.nameRu ?? e.code ?? String(e.id),
       }))
     }
+    if (isCharacteristicsRef) {
+      return subcontoTypes.map((s) => ({
+        id: s.id,
+        code: s.code,
+        label: s.nameRu ? `${s.code} — ${s.nameRu}` : s.code,
+      }))
+    }
     return []
-  }, [isAccountRef, isDictRef, accounts, dictEntries, allowedAccountIds])
+  }, [
+    isAccountRef,
+    isDictRef,
+    accounts,
+    dictEntries,
+    allowedAccountIds,
+    isCharacteristicsRef,
+    subcontoTypes,
+  ])
 
   switch (param.dataType) {
     case 'DATE':
@@ -177,8 +218,8 @@ export const ReportParamField = ({
           // Значение — компактная СВОДКА одной строкой («Имя» или «Имя (+N)») с
           // многоточием, а не чипы: не «вылезает» за поле и не зажимает поиск. При
           // фокусе (наборе) сводка скрывается (см. sx) — поле поиска на всю ширину.
-          renderTags={(tagValue) => {
-            if (tagValue.length === 0) return null
+          renderValue={(tagValue) => {
+            if (!Array.isArray(tagValue) || tagValue.length === 0) return null
             return (
               <Box
                 component="span"

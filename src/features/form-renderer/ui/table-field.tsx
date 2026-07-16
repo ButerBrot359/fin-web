@@ -66,17 +66,21 @@ const getColumnWidth = (dataType: string): number => {
 
 export const TableField = ({ attribute, form, language }: TableFieldProps) => {
   const { t } = useTranslation()
-  const { columns, isLoading } = useTableColumns(attribute)
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   const {
     attributeMap,
+    domain,
     registerTableReplacer,
     unregisterTableReplacer,
     fieldFilters,
     visibilityMap,
     conditionalAppearance,
   } = useFormRendererContext()
+
+  // Метаданные колонок ТЧ грузим из типов домена родительской формы (ТЧ
+  // справочника — из dictionary_types, документа — из document_types).
+  const { columns, isLoading } = useTableColumns(attribute, domain)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   // Дата документа (шапка) — для «Даты ввода» строки ОС/НМА (см. useAccountAutofill).
   const documentDateFieldCode = useMemo(() => {

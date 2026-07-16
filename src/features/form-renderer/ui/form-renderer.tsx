@@ -29,6 +29,12 @@ interface FormRendererProps {
   attributes: DocumentAttribute[]
   form: UseFormReturn<Record<string, unknown>>
   typeCode: string
+  /**
+   * Домен формы (DICTIONARY / ACCOUNT_PLAN / ...). Нужен для резолва метаданных
+   * табличных частей из типов правильного домена. По умолчанию (не задан) —
+   * DOCUMENT (прежнее поведение документных форм).
+   */
+  domain?: string
   handleRef?: RefObject<FormRendererHandle | null>
   sharedTableReplacersRef?: RefObject<Map<string, (rows: Record<string, unknown>[]) => void>>
 }
@@ -38,6 +44,7 @@ export const FormRenderer = ({
   attributes,
   form,
   typeCode,
+  domain,
   handleRef,
   sharedTableReplacersRef,
 }: FormRendererProps) => {
@@ -126,6 +133,7 @@ export const FormRenderer = ({
     () => ({
       attributeMap: new Map(attributes.map((attr) => [attr.code, attr])),
       form,
+      domain,
       language: i18n.language,
       optionsMap,
       onFieldChange,
@@ -139,6 +147,7 @@ export const FormRenderer = ({
     [
       attributes,
       form,
+      domain,
       i18n.language,
       optionsMap,
       onFieldChange,

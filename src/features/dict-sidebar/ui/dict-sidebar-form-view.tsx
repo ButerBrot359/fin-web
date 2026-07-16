@@ -319,6 +319,7 @@ export const DictSidebarFormView = ({
               attributes={formAttributes}
               form={form}
               typeCode={panel.typeCode}
+              domain={panel.domain}
             />
             {/* Виды субконто счёта — отдельная read-only таблица (как в 1С):
                 Вид субконто · Только обороты · Суммовой · Валютный · Количественный. */}

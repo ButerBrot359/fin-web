@@ -31,6 +31,12 @@ import {
 } from '../../../lib/utils/master-detail'
 import { TableToolbar } from './table-toolbar'
 
+// Единая высота строки для master-detail пары (SCRUM-282 #3): в ячейках VERTICAL-групп
+// стопки редакторов разной высоты (checkbox+text vs date+date), без общей высоты
+// строки таблицы разъезжаются. height на <tr> работает как min-height.
+// Позже уедет в конфиг-сервис стилей.
+const ROW_HEIGHT = 72
+
 interface ComplexEditableTableProps {
   node: ViewNode
 }
@@ -233,7 +239,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                   hover
                   selected={selectedIndex === index}
                   onClick={() => handleRowClick(row.id, index)}
-                  sx={{ cursor: 'pointer' }}
+                  sx={{ cursor: 'pointer', height: ROW_HEIGHT }}
                 >
                   {showRowNumbers && (
                     <TableCell sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}>

@@ -189,10 +189,14 @@ export const ReportParamField = ({
                 component="span"
                 className="report-ms-summary"
                 sx={{
-                  // In-flow дитя строки инпута (minHeight 32, align-items:center из
-                  // темы) — центрируется по вертикали вместе с полем ввода, ровно как
-                  // текст одиночного поля «Организация» в МО9. flexShrink+ellipsis —
-                  // длинное имя ужимается, иконки справа остаются видны.
+                  // Позиция значения — как у date-полей: их текст сидит на
+                  // paddingTop:6 (sectionsContainer small, см. тему), а не по центру
+                  // бокса. Центрирование (align-items:center из темы) визуально
+                  // поднимало сводку выше текста «Периода», т.к. бокс автокомплита
+                  // ниже date-бокса. Поэтому НЕ центрируем, а прижимаем к верху с
+                  // тем же отступом 6px → одинаковый уровень независимо от высоты.
+                  alignSelf: 'flex-start',
+                  mt: '6px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   minWidth: 0,

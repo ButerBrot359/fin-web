@@ -63,6 +63,26 @@ export interface FieldFilter {
   domain?: string
   typeCode?: string
   attributeEquals?: Record<string, number | string>
+  /**
+   * Отбор по НАБОРУ значений (эталон КБП «Отбор.Ссылка»): пикер ограничивается
+   * только этими значениями. Ключ — поле справочника (обычно системное `id`),
+   * значение — набор допустимых id. Транслируется в Filter-DSL POST `/search`
+   * (`id IN […] AND parentId IS NOT NULL`), см. `attributeInToFilterRequest`.
+   * Пустой массив ⇒ ноль вариантов (fail-closed), не весь справочник.
+   */
+  attributeIn?: Record<string, (number | string)[]>
+  /** Сообщение fail-closed (напр. «Отбор видов НМА не настроен: …»). */
+  message?: string
+}
+
+/**
+ * Ошибка настройки метаданных формы (реквизит не найден): поля на форме нет,
+ * полный справочник подставлять НЕЛЬЗЯ. Прочие поля формы остаются доступны.
+ */
+export interface FormConfigError {
+  attributeCode1C: string
+  typeCode: string
+  message: string
 }
 
 /** Условие правила оформления: сравнение значения `attribute` строки с `value`. */
@@ -96,4 +116,6 @@ export interface FormConfig {
   layout: FormNode
   fieldFilters?: Record<string, FieldFilter>
   conditionalAppearance?: ConditionalAppearance[]
+  /** Ошибка настройки метаданных (реквизит не найден) — см. `FormConfigError`. */
+  configError?: FormConfigError
 }

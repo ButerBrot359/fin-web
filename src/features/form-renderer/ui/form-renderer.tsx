@@ -153,6 +153,13 @@ export const FormRenderer = ({
 
   return (
     <FormRendererContext value={contextValue}>
+      {/* Ошибка настройки метаданных (реквизит не найден): показываем сообщение,
+          НЕ подставляя полный справочник. Прочие поля формы остаются доступны. */}
+      {config.configError && (
+        <div className="mb-3 rounded-md bg-ui-02 px-3 py-2 text-body2 text-error-01">
+          {config.configError.message}
+        </div>
+      )}
       <NodeRenderer node={config.layout} />
     </FormRendererContext>
   )

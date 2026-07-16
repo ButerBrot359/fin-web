@@ -7,6 +7,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import { useTranslation } from 'react-i18next'
 
 import { apiService } from '@/shared/api/api'
+import type { FilterRequest } from '@/shared/lib/eav'
 import type { SelectOption } from '@/shared/types/select-option'
 import { resolveSelectValue } from '@/shared/lib/utils/resolve-select-value'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
@@ -38,6 +39,17 @@ interface DictFieldProps {
   options?: SelectOption[]
   searchUrl?: string
   searchParams?: Record<string, string>
+  /**
+   * Тело Filter-DSL для POST `searchUrl` (эталон КБП «Отбор.Ссылка»). Если
+   * задано — пикер шлёт POST с этим телом вместо GET с `searchParams`
+   * (набор допустимых значений уже задан отбором `attributeIn`).
+   */
+  searchBody?: FilterRequest | null
+  /**
+   * Fail-closed: набор допустимых значений пуст ⇒ показать 0 вариантов и НЕ
+   * слать запрос (не открывать весь справочник).
+   */
+  searchEmpty?: boolean
   loading?: boolean
   onValueChange?: () => void
   onShowAll?: (onSelect: (value: SelectOption) => void) => void
@@ -58,6 +70,8 @@ export const DictField = ({
   required,
   searchUrl,
   searchParams,
+  searchBody,
+  searchEmpty,
   loading: externalLoading,
   onValueChange,
   onShowAll,
@@ -96,18 +110,26 @@ export const DictField = ({
     }
   }, [inputValue, isServerSearch])
 
+  // Filter-DSL POST vs обычный GET: если задано `searchBody` (отбор `attributeIn`)
+  // — шлём POST с телом (набор допустимых значений), иначе GET с `searchParams`.
+  const isDslSearch = searchBody != null
   const { data: serverOptions = [], isFetching } = useQuery<
     AxiosResponse,
     unknown,
     SelectOption[]
   >({
-    queryKey: ['dictionary-search', searchUrl, debouncedSearch, searchParams],
+    queryKey: isDslSearch
+      ? ['dictionary-search-dsl', searchUrl, searchBody]
+      : ['dictionary-search', searchUrl, debouncedSearch, searchParams],
     queryFn: () =>
-      apiService.get({
-        url: searchUrl!,
-        params: { q: debouncedSearch, size: 30, ...searchParams },
-      }),
-    enabled: isServerSearch && opened,
+      isDslSearch
+        ? apiService.post({ url: searchUrl!, data: searchBody })
+        : apiService.get({
+            url: searchUrl!,
+            params: { q: debouncedSearch, size: 30, ...searchParams },
+          }),
+    // Fail-closed: при пустом наборе (`searchEmpty`) запрос не шлём — 0 вариантов.
+    enabled: isServerSearch && opened && !searchEmpty,
     select: selectOptions
       ? (response) => selectOptions(response)
       : (response) =>

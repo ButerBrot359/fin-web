@@ -44,6 +44,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const allowAdd = (node.props?.allowAdd as boolean | undefined) ?? true
   const allowDelete = (node.props?.allowDelete as boolean | undefined) ?? true
   const allowReorder = (node.props?.allowReorder as boolean | undefined) ?? true
+  const showRowNumbers = node.props?.showRowNumbers === true
 
   // Master-detail props
   const masterTable = node.props?.masterTable as string | undefined
@@ -188,8 +189,16 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
       <TableContainer component={Paper}>
         <Table size="small">
           <TableHead>
-            {table.getHeaderGroups().map((hg) => (
+            {table.getHeaderGroups().map((hg, hgIndex) => (
               <MuiTableRow key={hg.id}>
+                {showRowNumbers && hgIndex === 0 && (
+                  <TableCell
+                    rowSpan={table.getHeaderGroups().length}
+                    sx={{ width: 48, textAlign: 'center', fontWeight: 600 }}
+                  >
+                    {t('table.rowNumber')}
+                  </TableCell>
+                )}
                 {hg.headers.map((header) =>
                   header.isPlaceholder ? (
                     <TableCell key={header.id} colSpan={header.colSpan} />
@@ -208,7 +217,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           <TableBody>
             {visibleRows.length === 0 ? (
               <MuiTableRow>
-                <TableCell colSpan={leafColumnCount} align="center">
+                <TableCell
+                  colSpan={leafColumnCount + (showRowNumbers ? 1 : 0)}
+                  align="center"
+                >
                   <Typography variant="body2" color="text.secondary">
                     {t('table.empty')}
                   </Typography>
@@ -223,6 +235,13 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                   onClick={() => handleRowClick(row.id, index)}
                   sx={{ cursor: 'pointer' }}
                 >
+                  {showRowNumbers && (
+                    <TableCell sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {index + 1}
+                      </Typography>
+                    </TableCell>
+                  )}
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} sx={{ p: 0 }}>
                       {flexRender(
@@ -239,6 +258,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
             <TableFooter>
               {table.getFooterGroups().map((fg) => (
                 <MuiTableRow key={fg.id}>
+                  {showRowNumbers && <TableCell />}
                   {fg.headers.map((header) => {
                     const footerId = header.column.columnDef.footer
                     const footerText =

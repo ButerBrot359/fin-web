@@ -31,7 +31,7 @@ export interface UseTableSyncResult {
   rows: TableRow[]
   updateCell: (rowId: string, binding: string, value: unknown) => void
   commitCell: () => void
-  addRow: (columns: TableColumnDef[]) => void
+  addRow: (columns: TableColumnDef[], presetValues?: Record<string, unknown>) => void
   deleteRow: (index: number) => void
   moveRow: (from: number, to: number) => void
 }
@@ -204,8 +204,13 @@ export function useTableSync(
     sendEvent(localRowsRef.current)
   }
 
-  const addRow = (cols: TableColumnDef[]) => {
-    const newRow = buildEmptyRow(cols)
+  const addRow = (
+    cols: TableColumnDef[],
+    presetValues?: Record<string, unknown>,
+  ) => {
+    // presetValues — например, ключ связи master-detail (SCRUM-282 #4):
+    // скрытая readonly-колонка иначе остаётся пустой и строка не матчится фильтром
+    const newRow = { ...buildEmptyRow(cols), ...presetValues }
     const next = [...localRowsRef.current, newRow]
     setLocalRows(next)
     localRowsRef.current = next

@@ -29,3 +29,8 @@ form-configs-server/dist
 *.sw?
 
 .playwright-mcp
+# Личные инструкции Claude
+CLAUDE.local.md
+
+# Локальные слепки спек из Jira
+specs-local/

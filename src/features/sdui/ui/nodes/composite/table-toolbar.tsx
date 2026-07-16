@@ -10,6 +10,7 @@ interface TableToolbarProps {
   onMoveUp: () => void
   onMoveDown: () => void
   onRemove: () => void
+  canAdd?: boolean
   canMoveUp: boolean
   canMoveDown: boolean
   canRemove: boolean
@@ -23,6 +24,7 @@ export const TableToolbar = ({
   onMoveUp,
   onMoveDown,
   onRemove,
+  canAdd = true,
   canMoveUp,
   canMoveDown,
   canRemove,
@@ -35,7 +37,7 @@ export const TableToolbar = ({
   return (
     <div className="flex items-center gap-2">
       {allowAdd && (
-        <Button variant="primary" onClick={onAdd}>
+        <Button variant="primary" disabled={!canAdd} onClick={onAdd}>
           {t('table.add')}
         </Button>
       )}

@@ -20,7 +20,20 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
         flex: flex !== undefined ? flex : undefined,
       }}
     >
-      {node.children?.map((c) => <NodeRenderer key={c.id} node={c} />)}
+      {node.children?.map((c) => (
+        // Равное деление ширины по умолчанию (SCRUM-282 #1): без flex дети
+        // ужимаются до контента (таблицы «скомканы»). minWidth:0 обязателен,
+        // иначе таблица не даёт контейнеру сжиматься и появляется h-скролл формы.
+        <div
+          key={c.id}
+          style={{
+            flex: (c.props?.flex as number | string | undefined) ?? '1 1 0%',
+            minWidth: 0,
+          }}
+        >
+          <NodeRenderer node={c} />
+        </div>
+      ))}
     </div>
   )
 }

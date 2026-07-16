@@ -19,7 +19,9 @@ import {
   type ReportGroupItem,
 } from '@/features/report-settings'
 import {
+  DocumentMovementsReportView,
   ReportResultView,
+  isDocumentMovementsReportResult,
   isUnifiedRendererEnabled,
 } from '@/features/report-result-view'
 import { PageHeader } from '@/widgets/page-header'
@@ -655,6 +657,13 @@ const ReportPageContent = ({
       ? result
       : null
 
+  // Спец-результат «Движения документа» (DvizheniyaDokumenta): groups[] +
+  // documentEntryId вместо columns/rows — рендерим вкладками движений по
+  // регистрам (тот же компонент, что кнопка «Дт/Кт» формы документа).
+  const movementsResult = isDocumentMovementsReportResult(result)
+    ? result
+    : null
+
   // DIMENSION-колонки — пункты вкладки «Группировка». До формирования берём из
   // meta.columns (коды совпадают с колонками результата), чтобы разрезы были
   // видны сразу, как в 1С; после формирования — из результата.
@@ -1008,27 +1017,39 @@ const ReportPageContent = ({
                 </div>
               )}
 
+              {/* Спец-результат «Движения документа» (groups[]+documentEntryId):
+                  вкладки движений по регистрам, как кнопка «Дт/Кт» формы. */}
+              {!isRunning && !isRunError && movementsResult && (
+                <div className="report-print-area">
+                  <DocumentMovementsReportView result={movementsResult} />
+                </div>
+              )}
+
               {/* Нетабличный результат (спец-DTO без columns/rows — отчёт-бланк,
                   например «Инвентарная карточка ОС»): показываем серверный PDF
                   (/print) + неблокирующий список B0-сообщений (как окно сообщений
                   формы 1С). Если печать не реализована (501) — ReportPdfView сам
                   покажет фолбэк «отдельный экран». */}
-              {!isRunning && !isRunError && result && !tabularResult && (
-                <div className="report-print-area">
-                  <ReportPdfView
-                    code={code}
-                    body={appliedBody}
-                    hasCards={
-                      ((result as unknown as ReportBlankResultDto).cards
-                        ?.length ?? 0) > 0
-                    }
-                    validationMessages={
-                      (result as unknown as ReportBlankResultDto)
-                        .validationMessages
-                    }
-                  />
-                </div>
-              )}
+              {!isRunning &&
+                !isRunError &&
+                result &&
+                !tabularResult &&
+                !movementsResult && (
+                  <div className="report-print-area">
+                    <ReportPdfView
+                      code={code}
+                      body={appliedBody}
+                      hasCards={
+                        ((result as unknown as ReportBlankResultDto).cards
+                          ?.length ?? 0) > 0
+                      }
+                      validationMessages={
+                        (result as unknown as ReportBlankResultDto)
+                          .validationMessages
+                      }
+                    />
+                  </div>
+                )}
 
               {!isRunning &&
                 !isRunError &&

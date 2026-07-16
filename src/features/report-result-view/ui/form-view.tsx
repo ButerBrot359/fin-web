@@ -193,6 +193,9 @@ const SectionTable = ({
                       color: '#333',
                       fontWeight: cell.emphasis ? 700 : undefined,
                       fontStyle: cell.emphasis ? 'italic' : undefined,
+                      // Многострочные заголовки граф (напр. «Д»/«К» блока «Вторые
+                      // записи» ф438: «Д» над «К» в одной графе) — переносим по '\n'.
+                      whiteSpace: 'pre-line',
                     }}
                   >
                     {cell.title}

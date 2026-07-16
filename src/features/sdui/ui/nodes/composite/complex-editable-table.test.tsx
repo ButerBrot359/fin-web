@@ -13,7 +13,9 @@ vi.mock('react-i18next', () => ({
   initReactI18next: { type: 'backend', init: () => {} },
 }))
 
-const mockDispatch = vi.fn(() => Promise.resolve(true))
+const mockDispatch = vi.fn<(action: unknown) => Promise<boolean>>(() =>
+  Promise.resolve(true),
+)
 vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => mockDispatch,
 }))

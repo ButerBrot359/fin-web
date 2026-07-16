@@ -377,6 +377,7 @@ export const DictionaryEntryPage = () => {
             attributes={formAttributes}
             form={form}
             typeCode={moduleCode}
+            domain={domain}
           />
         )}
       </div>

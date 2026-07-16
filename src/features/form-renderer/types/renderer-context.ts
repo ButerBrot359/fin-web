@@ -17,6 +17,12 @@ export type TableReplacersRef = RefObject<
 export interface FormRendererContextValue {
   attributeMap: Map<string, DocumentAttribute>
   form: UseFormReturn<Record<string, unknown>>
+  /**
+   * Домен формы (DOCUMENT | DICTIONARY | ACCOUNT_PLAN | ...). Определяет, откуда
+   * брать метаданные табличных частей: ТЧ живёт в таблице типов СВОЕГО домена.
+   * `undefined` трактуется как DOCUMENT (прежнее поведение).
+   */
+  domain?: string
   language: string
   optionsMap: Record<string, SelectOption[]>
   onFieldChange: (fieldCode: string) => void

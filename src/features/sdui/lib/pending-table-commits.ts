@@ -2,7 +2,7 @@ const registry = new Map<symbol, () => Promise<void>>()
 
 // Предохранитель: если сервер не пришлёт canon для таблицы, flush не должен
 // блокировать save бесконечно (SCRUM-282 #5) — по таймауту считаем завершённым.
-const FLUSH_TIMEOUT_MS = 5000
+export const FLUSH_TIMEOUT_MS = 5000
 
 function withTimeout(promise: Promise<void>): Promise<void> {
   return new Promise<void>((resolve, reject) => {

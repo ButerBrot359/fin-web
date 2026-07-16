@@ -4,6 +4,7 @@ import {
   registerPendingFlush,
   unregisterPendingFlush,
   flushAllPendingTableCommits,
+  FLUSH_TIMEOUT_MS,
 } from './pending-table-commits'
 
 describe('flushAllPendingTableCommits', () => {
@@ -15,7 +16,7 @@ describe('flushAllPendingTableCommits', () => {
     vi.useFakeTimers()
     const token = registerPendingFlush(() => new Promise<void>(() => {}))
     const promise = flushAllPendingTableCommits()
-    await vi.advanceTimersByTimeAsync(5000)
+    await vi.advanceTimersByTimeAsync(FLUSH_TIMEOUT_MS)
     await expect(promise).resolves.toBeUndefined()
     unregisterPendingFlush(token)
   })

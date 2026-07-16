@@ -27,6 +27,10 @@ import {
   mergeSearchParams,
   selectionModeToSearchParams,
 } from '../lib/utils/field-filter-params'
+import {
+  attributeInIsEmpty,
+  attributeInToFilterRequest,
+} from '../lib/utils/attribute-in-filter'
 import { headerFieldPath, isFieldVisible } from '../lib/utils/field-path'
 import {
   getOrgScopeSourceFields,
@@ -136,7 +140,14 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
   // Динамическая видимость (formConfig.visibility): проверка после всех хуков.
   if (!isFieldVisible(visibilityMap, headerFieldPath(node.code))) return null
 
-  const { dataType, readonly: isReadOnly } = attribute
+  const { dataType, readonly: attrReadOnly } = attribute
+  // Динамический readOnly из дескриптора: ключ `"<код>.readOnly": true`
+  // (тот же контракт, что у SotrudnikiItemFormHandler) — блокирует поле и кнопку
+  // выбора (fail-closed, когда отбор не настроен). Значение — boolean, не
+  // FieldFilter, поэтому читаем из карты как unknown.
+  const filterReadOnly =
+    (fieldFilters as Record<string, unknown>)[`${node.code}.readOnly`] === true
+  const isReadOnly = attrReadOnly || filterReadOnly
 
   if (IGNORED_DATA_TYPES.has(dataType)) return null
 
@@ -232,10 +243,15 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
     const resolved = resolveAttributeDomain(attribute)
 
     if (resolved && REFERENCE_DOMAIN_KINDS.has(resolved.domain)) {
-      const searchUrl = getUniversalSearchUrl(
-        resolved.domain,
-        resolved.typeCode
-      )
+      // Отбор `attributeIn` (эталон КБП «Отбор.Ссылка», напр. ВидНМА): пикер
+      // ограничен НАБОРОМ id → Filter-DSL POST `/api/dictionaries/entries/
+      // {typeCode}/search`, а не GET с `af=`. Пустой набор ⇒ 0 вариантов.
+      const dslBody = attributeInToFilterRequest(fieldFilters[node.code])
+      const dslEmpty = attributeInIsEmpty(fieldFilters[node.code])
+      const isDsl = dslBody != null
+      const searchUrl = isDsl
+        ? `/api/dictionaries/entries/${resolved.typeCode}/search`
+        : getUniversalSearchUrl(resolved.domain, resolved.typeCode)
 
       const push = useDictSidebarStore.getState().push
 
@@ -291,9 +307,14 @@ export const FieldNode = ({ node }: FieldNodeProps) => {
           options={optionsMap[node.code] ?? []}
           searchUrl={searchUrl}
           disabled={disabled}
-          searchParams={searchParams}
-          onShowAll={handleShowAll}
-          onAdd={handleAdd}
+          // DSL-отбор: тело POST + признак пустого набора; `af=`-params не нужны.
+          searchParams={isDsl ? undefined : searchParams}
+          searchBody={dslBody}
+          searchEmpty={dslEmpty}
+          // readOnly (в т.ч. fail-closed) блокирует и выбор из справочника,
+          // и создание новой записи.
+          onShowAll={isReadOnly ? undefined : handleShowAll}
+          onAdd={isReadOnly ? undefined : handleAdd}
           onOpenEntry={handleOpenEntry}
         />
       )

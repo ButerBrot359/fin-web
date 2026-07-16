@@ -69,4 +69,25 @@ describe('useTableSync', () => {
       fullSnapshot: true,
     })
   })
+
+  it('addRow с presetValues проставляет значения поверх пустой строки', () => {
+    sessionState.rows = []
+    const columns = [
+      {
+        id: 'c1',
+        label: 'Вычет',
+        binding: 'VychetIPN',
+        cellWidget: 'TEXT',
+        dataType: 'STRING',
+        readonly: true,
+        props: {},
+      },
+    ]
+    const { result } = renderHook(() => useTableSync(node, columns))
+    act(() => {
+      result.current.addRow(columns, { VychetIPN: 'key-A' })
+    })
+    expect(result.current.rows).toHaveLength(1)
+    expect(result.current.rows[0].VychetIPN).toBe('key-A')
+  })
 })

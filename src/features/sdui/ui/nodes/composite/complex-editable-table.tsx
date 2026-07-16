@@ -76,16 +76,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     [node.children],
   )
 
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-
-  useEffect(() => {
-    setSelectedIndex((prev) => {
-      if (prev === null) return null
-      if (prev >= sync.rows.length)
-        return sync.rows.length > 0 ? sync.rows.length - 1 : null
-      return prev
-    })
-  }, [sync.rows.length])
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
 
   // ── Master-detail filtering ──
   // Реактивные подписки (SCRUM-282 #4): getValue давал разовый снимок,
@@ -105,6 +96,24 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     if (!isMasterDetail || !masterKey || !detailKey) return sync.rows
     return filterDetailRows(sync.rows, selectedMasterRow, masterKey, detailKey)
   }, [sync.rows, isMasterDetail, masterKey, detailKey, selectedMasterRow])
+
+  // Индекс выбранной строки в текущем видимом наборе (не в полном sync.rows —
+  // при активном master-detail фильтре это разные массивы, SCRUM-282 C1).
+  const selectedVisibleIndex =
+    selectedRowId != null
+      ? visibleRows.findIndex((r) => r.rowId === selectedRowId)
+      : -1
+
+  // Сброс выбора, если выбранная строка выпала из видимого набора — покрывает
+  // и смену master-строки, и удаление/фильтрацию строки (SCRUM-282 I2).
+  useEffect(() => {
+    if (
+      selectedRowId != null &&
+      !visibleRows.some((r) => r.rowId === selectedRowId)
+    ) {
+      setSelectedRowId(null)
+    }
+  }, [visibleRows, selectedRowId])
 
   // ── Footer ──
   const footerValues = node.binding
@@ -135,8 +144,8 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   })
 
   // Publish selected rowId to session for detail tables
-  const handleRowClick = (rowId: string, index: number) => {
-    setSelectedIndex(index)
+  const handleRowClick = (rowId: string) => {
+    setSelectedRowId(rowId)
     if (node.binding) {
       setFromServer(node.binding + '.__selectedRowId', rowId)
     }
@@ -152,22 +161,28 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     }
     sync.addRow(flatColumns)
   }
+  // Удаляем по rowId из ПОЛНОГО массива sync.rows (SCRUM-282 C1): selectedVisibleIndex
+  // указывает на позицию в отфильтрованном visibleRows и не годится для sync.deleteRow.
   const handleRemove = () => {
-    if (selectedIndex !== null) {
-      sync.deleteRow(selectedIndex)
-      setSelectedIndex(null)
-    }
+    if (selectedRowId === null) return
+    const globalIndex = sync.rows.findIndex((r) => r.rowId === selectedRowId)
+    if (globalIndex >= 0) sync.deleteRow(globalIndex)
+    setSelectedRowId(null)
   }
+  // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail в
+  // тулбаре) — там visibleRows === sync.rows, поэтому selectedVisibleIndex совпадает
+  // с глобальным индексом и move корректен.
   const handleMoveUp = () => {
-    if (selectedIndex !== null && selectedIndex > 0) {
-      sync.moveRow(selectedIndex, selectedIndex - 1)
-      setSelectedIndex(selectedIndex - 1)
+    if (selectedVisibleIndex > 0) {
+      sync.moveRow(selectedVisibleIndex, selectedVisibleIndex - 1)
     }
   }
   const handleMoveDown = () => {
-    if (selectedIndex !== null && selectedIndex < sync.rows.length - 1) {
-      sync.moveRow(selectedIndex, selectedIndex + 1)
-      setSelectedIndex(selectedIndex + 1)
+    if (
+      selectedVisibleIndex >= 0 &&
+      selectedVisibleIndex < visibleRows.length - 1
+    ) {
+      sync.moveRow(selectedVisibleIndex, selectedVisibleIndex + 1)
     }
   }
 
@@ -181,14 +196,16 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           onMoveUp={handleMoveUp}
           onMoveDown={handleMoveDown}
           onRemove={handleRemove}
-          canMoveUp={selectedIndex !== null && selectedIndex > 0}
+          canMoveUp={!isMasterDetail && selectedVisibleIndex > 0}
           canMoveDown={
-            selectedIndex !== null && selectedIndex < sync.rows.length - 1
+            !isMasterDetail &&
+            selectedVisibleIndex >= 0 &&
+            selectedVisibleIndex < visibleRows.length - 1
           }
-          canRemove={selectedIndex !== null}
+          canRemove={selectedRowId !== null}
           canAdd={!isMasterDetail || masterKeyValue !== undefined}
           allowAdd={allowAdd}
-          allowReorder={allowReorder}
+          allowReorder={allowReorder && !isMasterDetail}
           allowDelete={allowDelete}
         />
       </div>
@@ -237,8 +254,8 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                 <MuiTableRow
                   key={row.id}
                   hover
-                  selected={selectedIndex === index}
-                  onClick={() => handleRowClick(row.id, index)}
+                  selected={row.id === selectedRowId}
+                  onClick={() => handleRowClick(row.id)}
                   sx={{ cursor: 'pointer', height: ROW_HEIGHT }}
                 >
                   {showRowNumbers && (

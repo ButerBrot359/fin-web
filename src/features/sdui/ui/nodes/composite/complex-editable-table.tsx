@@ -135,7 +135,16 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     }
   }
 
-  const handleAdd = () => sync.addRow(flatColumns)
+  // Detail-таблица: новая строка сразу получает ключ связи выбранной master-строки;
+  // без выбранной master-строки добавление заблокировано (canAdd ниже) — как в 1С.
+  const handleAdd = () => {
+    if (isMasterDetail && detailKey) {
+      if (masterKeyValue === undefined) return
+      sync.addRow(flatColumns, { [detailKey]: masterKeyValue })
+      return
+    }
+    sync.addRow(flatColumns)
+  }
   const handleRemove = () => {
     if (selectedIndex !== null) {
       sync.deleteRow(selectedIndex)
@@ -170,6 +179,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
             selectedIndex !== null && selectedIndex < sync.rows.length - 1
           }
           canRemove={selectedIndex !== null}
+          canAdd={!isMasterDetail || masterKeyValue !== undefined}
           allowAdd={allowAdd}
           allowReorder={allowReorder}
           allowDelete={allowDelete}

@@ -185,9 +185,12 @@ export const ReportParamField = ({
                 className="report-ms-summary"
                 sx={{
                   // In-flow дитя строки инпута — центрируется по вертикали темой
-                  // (`inputRoot align-items:center`) в tall-боксе (44px), ровно как
-                  // значение дат и одиночного «Организация». flexShrink+ellipsis —
-                  // длинное имя ужимается, иконки справа остаются видны.
+                  // (`inputRoot align-items:center`) в tall-боксе (44px). Небольшой
+                  // сдвиг вниз (top:3px) — чтобы значение сидело чуть ниже центра,
+                  // ровно на уровне текста дат (визуально «красиво в инпуте»).
+                  // relative+top двигает точно на 3px и не влияет на раскладку.
+                  position: 'relative',
+                  top: '3px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   minWidth: 0,

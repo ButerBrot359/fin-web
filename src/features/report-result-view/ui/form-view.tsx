@@ -164,14 +164,23 @@ const SectionTable = ({
           <col
             key={c.code}
             style={{
+              // Ширина колонки: приоритет — `column.width` с бэка (в символах ×8px).
+              // Иначе — role-aware дефолт под 1С: №пп узкая; числовые (субсчета/
+              // Итого/суммы) компактные (не растягиваются, как было при auto);
+              // дата — умеренная; описательные (наименование/МОЛ) — широкие;
+              // DIMENSION — авто.
               width:
                 c.width != null
                   ? c.width * CHAR_PX
                   : i === 0
-                    ? 44
-                    : c.role === 'PERIOD' || c.role === 'ATTRIBUTE'
-                      ? 150
-                      : undefined,
+                    ? 40
+                    : c.role === 'MEASURE'
+                      ? 104
+                      : c.role === 'PERIOD'
+                        ? 96
+                        : c.role === 'ATTRIBUTE'
+                          ? 150
+                          : undefined,
             }}
           />
         ))}

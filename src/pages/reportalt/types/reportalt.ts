@@ -191,6 +191,11 @@ export interface ReportAltDefinitionDto {
   layout: ReportAltLayout
   moduleGroup?: string
   sortOrder?: number
+  /**
+   * Версия схемы отчёта (для `userSettings.schemaVersionRef`, F-S4).
+   * ПРЕДПОЛОЖЕНИЕ: наличие в meta.definition не зафиксировано контрактом.
+   */
+  schemaVersion?: number
 }
 
 /** Вариант отчёта (предустановленная структура). */
@@ -209,6 +214,51 @@ export interface ReportAltFilterFieldDto {
   referenceDomain?: string
   comparisons?: string[]
   defaultComparison?: string
+  /** Множественный выбор значений (по settings-design §4.2). */
+  multi?: boolean
+}
+
+/**
+ * Доступное пользователю поле отчёта (`meta.availableFields`, settings-design
+ * §4.2). Наполняется бэком только для отчётов с `supportsUserSettings=true`
+ * (F-S3); для span/FORM-отчётов `availableAsColumn` принудительно false (F-S2).
+ */
+export interface ReportAltAvailableFieldDto {
+  code: string
+  titleRu: string
+  titleKz?: string
+  /** Тип поля — выбор редактора значения и допустимых сравнений. */
+  dataType?: ReportAltParameterType
+  role?: ReportAltFieldRole
+  computed?: boolean
+  availableAsColumn?: boolean
+  availableAsFilter?: boolean
+  availableAsGroup?: boolean
+  availableAsOrder?: boolean
+}
+
+/** Вид предопределённой группировки: пресет (радио) или тумблер (чекбокс). */
+export type ReportAltGroupingOptionKind = 'PRESET' | 'TOGGLE'
+
+/** Предопределённая группировка (`meta.availableGroupings`, settings-design §4.3). */
+export interface ReportAltGroupingOptionDto {
+  code: string
+  titleRu: string
+  titleKz?: string
+  kind: ReportAltGroupingOptionKind
+}
+
+/**
+ * Флажок оформления из meta (settings-design §7, вкладка «Оформление»).
+ * ПРЕДПОЛОЖЕНИЕ контракта: узел meta не зафиксирован в settings-design §4.2 —
+ * при отсутствии фронт показывает встроенный флажок `highlightNegatives`.
+ */
+export interface ReportAltAppearanceFlagDto {
+  code: string
+  titleRu: string
+  titleKz?: string
+  /** Значение по умолчанию (из варианта). */
+  defaultValue?: boolean
 }
 
 /** Метаданные отчёта (`GET /api/reportalt/{code}/meta`). */
@@ -219,6 +269,66 @@ export interface ReportAltMetaDto {
   columns?: ReportAltColumnDto[]
   variants?: ReportAltVariantDto[]
   filters?: ReportAltFilterFieldDto[]
+  /** Что пользователю можно настраивать (пусто ⇒ панель настроек скрыта). */
+  availableFields?: ReportAltAvailableFieldDto[]
+  availableGroupings?: ReportAltGroupingOptionDto[]
+  appearanceFlags?: ReportAltAppearanceFlagDto[]
+}
+
+/** Маркер строки списка полей/сортировки: явное поле или «Авто» (1С SelectedItemAuto). */
+export type ReportAltSelectionKind = 'FIELD' | 'AUTO'
+
+/** Выбранная колонка user-настроек (settings-design §3.2, `ReportSelectedFieldDto`). */
+export interface ReportAltSelectedFieldDto {
+  kind: ReportAltSelectionKind
+  /** Код поля (отсутствует для AUTO). */
+  field?: string
+  /** Чекбокс вкл/выкл колонки. */
+  use: boolean
+}
+
+/** Строка user-отбора (settings-design §3.2, `ReportUserFilterDto`). */
+export interface ReportAltUserFilterDto {
+  field: string
+  comparison: string
+  /** Значение: скаляр либо список (IN_LIST); null для FILLED/NOT_FILLED. */
+  value: unknown
+  /** Чекбокс вкл/выкл строки — use=false не влияет на результат. */
+  use: boolean
+  /** Читаемая подпись строки (1С userSettingPresentation). */
+  presentation?: string
+}
+
+/** Строка user-сортировки (settings-design §3.2, `ReportUserOrderDto`). */
+export interface ReportAltUserOrderDto {
+  kind: ReportAltSelectionKind
+  field?: string
+  ascending: boolean
+}
+
+/** Выбор предопределённой группировки (settings-design §3.2, НЕ конструктор). */
+export interface ReportAltGroupingSelectionDto {
+  /** Выбранный пресет (радио); отсутствует = пресет варианта. */
+  presetCode?: string
+  /** Булевы тумблеры («PoSubschetam» → true). */
+  toggles?: Record<string, boolean>
+}
+
+/**
+ * Пользовательская дельта настроек (settings-design §3.1,
+ * `ReportAltUserSettings`). Все поля опциональны — отсутствие = наследовать из
+ * варианта. В MVP живёт только на клиенте (URL + localStorage, F-S1) и уходит
+ * inline в `POST /run`; серверного личного сохранения нет.
+ */
+export interface ReportAltUserSettingsDto {
+  /** Версия схемы, против которой построена дельта (F5/F-S4). */
+  schemaVersionRef?: number
+  selectedFields?: ReportAltSelectedFieldDto[]
+  filters?: ReportAltUserFilterDto[]
+  order?: ReportAltUserOrderDto[]
+  grouping?: ReportAltGroupingSelectionDto
+  appearanceFlags?: Record<string, boolean>
+  outputParams?: Record<string, unknown>
 }
 
 /** Элемент отбора в теле `/run` (плоский item; группы AND/OR — фаза 2). */
@@ -236,4 +346,6 @@ export interface RunReportAltBody {
   /** Пагинация LEDGER (F4): номер страницы (0-based). */
   page?: number
   pageSize?: number
+  /** Пользовательская дельта настроек (inline, сервер не персистит — F-S1). */
+  userSettings?: ReportAltUserSettingsDto
 }

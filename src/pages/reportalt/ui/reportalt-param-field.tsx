@@ -233,7 +233,49 @@ export const ReportAltParamField = ({
         />
       )
 
-    case 'STRING':
+    case 'STRING': {
+      // STRING с фиксированным списком (напр. язык формы МО YazykFormy:
+      // Ru/Kz) — выпадашка с подписями titleRu/titleKz из allowedValues.
+      if (param.allowedValues && param.allowedValues.length > 0) {
+        const options = param.allowedValues.map<SelectOption>((av) => ({
+          id: String(av.value),
+          code: String(av.value),
+          label: (isKz ? av.titleKz : av.titleRu) || av.titleRu,
+        }))
+        const selected =
+          typeof value === 'string' && value !== ''
+            ? (options.find((o) => o.id === value) ?? null)
+            : null
+        return (
+          <AutocompleteInput
+            value={selected}
+            options={options}
+            onChange={(o) => {
+              onChange(o ? String(o.id) : '')
+            }}
+            label={label}
+            required={param.required}
+            error={invalid}
+            size="small"
+            fullWidth
+          />
+        )
+      }
+      return (
+        <TextInput
+          value={typeof value === 'string' ? value : ''}
+          onChange={(e) => {
+            onChange(e.target.value)
+          }}
+          label={label}
+          required={param.required}
+          error={invalid}
+          size="small"
+          fullWidth
+        />
+      )
+    }
+
     default:
       return (
         <TextInput

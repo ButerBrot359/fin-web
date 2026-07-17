@@ -17,7 +17,12 @@ import { exportTableToXlsx } from '@/shared/lib/table-export'
 
 import { useReportAltMeta } from '../lib/hooks/use-reportalt-meta'
 import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
+import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
 import { buildReportAltExport } from '../lib/utils/build-reportalt-export'
+import {
+  SETTINGS_URL_KEY,
+  clearStoredSettings,
+} from '../lib/utils/user-settings'
 import {
   defaultParamValue,
   deserializeParam,
@@ -30,6 +35,7 @@ import {
   type ReportAltParamValue,
 } from '../lib/utils/params'
 import { ReportAltParamField } from './reportalt-param-field'
+import { ReportAltSettingsDrawer } from './settings/reportalt-settings-drawer'
 import { printReportAlt } from '../api/reportalt-api'
 import type { RunReportAltBody } from '../types/reportalt'
 
@@ -92,8 +98,22 @@ export const ReportAltPage = () => {
     setValues(next)
   }, [meta, searchParams])
 
+  // Пользовательские настройки (MVP — клиентские, F-S1): черновик панели,
+  // применённая дельта из URL/localStorage для тела /run.
+  const {
+    supportsSettings,
+    draft: settingsDraft,
+    setDraft: setSettingsDraft,
+    appliedUserSettings,
+    encodedDraft,
+    persistDraft,
+  } = useReportAltUserSettings(moduleCode, meta, searchParams)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
   // Applied-параметры — производные от URL: запрос уходит, когда в URL есть
-  // хотя бы один параметр и заполнены все обязательные.
+  // хотя бы один параметр и заполнены все обязательные. userSettings попадает
+  // в тело (и через JSON.stringify(body) — в query-key TanStack: другой хэш
+  // настроек ⇒ другой кэш).
   const appliedBody = useMemo<RunReportAltBody | null>(() => {
     if (!meta) return null
     const applied: Record<string, unknown> = {}
@@ -108,8 +128,13 @@ export const ReportAltPage = () => {
       .filter((p) => p.required)
       .every((p) => isFilled(p, applied[p.code] as ReportAltParamValue))
     if (!hasAny || !requiredMet) return null
-    return { parameters: normalizeBodyDates(applied, meta.parameters) }
-  }, [meta, searchParams])
+    return {
+      parameters: normalizeBodyDates(applied, meta.parameters),
+      ...(appliedUserSettings != null
+        ? { userSettings: appliedUserSettings }
+        : {}),
+    }
+  }, [meta, searchParams, appliedUserSettings])
 
   const isLedger = meta?.definition.layout === 'LEDGER'
 
@@ -149,19 +174,38 @@ export const ReportAltPage = () => {
     }
     setShowErrors(false)
     const serialized = serializeParams(values)
-    const sameAsApplied = meta?.parameters.every(
+    const sameParams = meta?.parameters.every(
       (p) => (searchParams.get(p.code) ?? '') === (serialized[p.code] ?? '')
     )
+    const sameSettings =
+      (searchParams.get(SETTINGS_URL_KEY) ?? '') === (encodedDraft ?? '')
+    // Дельта настроек — личный дефолт отчёта (localStorage) + URL (F-S1).
+    persistDraft()
     setSearchParams(
       () => {
         const next = new URLSearchParams()
         for (const [k, v] of Object.entries(serialized)) next.set(k, v)
+        if (encodedDraft != null) next.set(SETTINGS_URL_KEY, encodedDraft)
         return next
       },
       { replace: true }
     )
-    // Те же параметры уже применены → форсим refetch (иначе вернётся кэш).
-    if (sameAsApplied && appliedBody != null) void refetch()
+    // Те же параметры и настройки уже применены → форсим refetch (иначе кэш).
+    if (sameParams && sameSettings && appliedBody != null) void refetch()
+  }
+
+  /** «Стандартные настройки»: пустая дельта — очистить URL и личный дефолт. */
+  const handleResetSettings = () => {
+    setSettingsDraft(null)
+    clearStoredSettings(moduleCode)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete(SETTINGS_URL_KEY)
+        return next
+      },
+      { replace: true }
+    )
   }
 
   const handleClose = () => {
@@ -297,6 +341,18 @@ export const ReportAltPage = () => {
         <Button variant="contained" size="medium" onClick={handleSubmit}>
           {t('reportalt.generate')}
         </Button>
+        {/* Панель настроек — только для отчётов с наполненным meta (F-S3). */}
+        {supportsSettings && (
+          <Button
+            variant="outlined"
+            size="medium"
+            onClick={() => {
+              setSettingsOpen(true)
+            }}
+          >
+            {t('reportalt.settings.open')}
+          </Button>
+        )}
       </div>
 
       {/* Результат. */}
@@ -352,6 +408,23 @@ export const ReportAltPage = () => {
             {t('reportalt.notGenerated')}
           </Typography>
         )
+      )}
+
+      {supportsSettings && (
+        <ReportAltSettingsDrawer
+          open={settingsOpen}
+          onClose={() => {
+            setSettingsOpen(false)
+          }}
+          meta={meta}
+          draft={settingsDraft}
+          onDraftChange={setSettingsDraft}
+          onApply={() => {
+            setSettingsOpen(false)
+            handleSubmit()
+          }}
+          onReset={handleResetSettings}
+        />
       )}
     </div>
   )

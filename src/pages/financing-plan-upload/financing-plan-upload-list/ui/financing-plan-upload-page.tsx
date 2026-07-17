@@ -433,7 +433,6 @@ export const FinancingPlanUploadPage = () => {
               }}
               label={t('financingPlanUpload.sheetName')}
               placeholder={DEFAULT_SHEET_NAME}
-              size="small"
               fullWidth
             />
           </div>
@@ -450,7 +449,6 @@ export const FinancingPlanUploadPage = () => {
                 })
               }}
               label={t('financingPlanUpload.startRow')}
-              size="small"
               fullWidth
             />
           </div>
@@ -462,7 +460,6 @@ export const FinancingPlanUploadPage = () => {
                 patchForm({ columnOffset: raw === '' ? null : Number(raw) })
               }}
               label={t('financingPlanUpload.columnOffset')}
-              size="small"
               fullWidth
             />
           </div>

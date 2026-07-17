@@ -397,45 +397,47 @@ export const FinancingPlanUploadPage = () => {
       </Typography>
 
       <div className="flex flex-col gap-3">
-        {/* Имя файла + Имя листа в одной строке. */}
-        <div className="flex flex-wrap items-end gap-6">
-          <div className="flex flex-col gap-1">
-            <Typography variant="caption" className="text-ui-05">
-              {t('financingPlanUpload.fileName')}
-            </Typography>
-            <div className="flex items-center gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xls,.xlsx"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              <Button
-                variant="outlined"
-                onClick={() => fileInputRef.current?.click()}
-                sx={{ height: 40 }}
-              >
-                {t('financingPlanUpload.chooseFile')}
-              </Button>
-              {file && (
-                <Typography variant="body2" className="text-ui-06">
-                  {file.name}
-                </Typography>
-              )}
-            </div>
-          </div>
-          <div className="report-param-field w-56">
-            <TextInput
-              value={form.sheetName}
-              onChange={(e) => {
-                patchForm({ sheetName: e.target.value })
-              }}
-              label={t('financingPlanUpload.sheetName')}
-              placeholder={DEFAULT_SHEET_NAME}
-              size="small"
-              fullWidth
+        {/* «Имя файла» (подпись) сверху; кнопка выбора и поле «Имя листа» — в
+            одном ряду по ЦЕНТРУ, чтобы стоять ровно на одном уровне независимо
+            от отступов. У поля снят лишний 4px нижнего margin (`-mb-1`), тогда
+            центр инпута совпадает с центром кнопки (обе высотой 44). */}
+        <div className="flex flex-col gap-1">
+          <Typography variant="caption" className="text-ui-05">
+            {t('financingPlanUpload.fileName')}
+          </Typography>
+          <div className="flex flex-wrap items-center gap-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xls,.xlsx"
+              className="hidden"
+              onChange={handleFileChange}
             />
+            <Button
+              variant="outlined"
+              onClick={() => fileInputRef.current?.click()}
+              // Ширина как у «Начальной строки» (w-40 = 160px) и общий gap-4 —
+              // чтобы «Имя листа» встало строго над «Смещением колонок».
+              sx={{ height: 44, width: 160 }}
+            >
+              {t('financingPlanUpload.chooseFile')}
+            </Button>
+            <div className="report-param-field w-56 -mb-1">
+              <TextInput
+                value={form.sheetName}
+                onChange={(e) => {
+                  patchForm({ sheetName: e.target.value })
+                }}
+                label={t('financingPlanUpload.sheetName')}
+                placeholder={DEFAULT_SHEET_NAME}
+                fullWidth
+              />
+            </div>
+            {file && (
+              <Typography variant="body2" className="text-ui-06">
+                {file.name}
+              </Typography>
+            )}
           </div>
         </div>
 
@@ -450,11 +452,10 @@ export const FinancingPlanUploadPage = () => {
                 })
               }}
               label={t('financingPlanUpload.startRow')}
-              size="small"
               fullWidth
             />
           </div>
-          <div className="report-param-field w-40">
+          <div className="report-param-field w-56">
             <NumberInput
               value={form.columnOffset == null ? '' : String(form.columnOffset)}
               onChange={(e) => {
@@ -462,7 +463,6 @@ export const FinancingPlanUploadPage = () => {
                 patchForm({ columnOffset: raw === '' ? null : Number(raw) })
               }}
               label={t('financingPlanUpload.columnOffset')}
-              size="small"
               fullWidth
             />
           </div>

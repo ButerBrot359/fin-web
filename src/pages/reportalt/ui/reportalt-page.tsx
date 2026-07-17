@@ -288,7 +288,7 @@ export const ReportAltPage = () => {
             }
             return (
               <div key={param.code} className="flex flex-wrap gap-4">
-                <div className="w-44">
+                <div className="w-56">
                   <ReportAltParamField
                     param={{
                       ...param,
@@ -303,7 +303,7 @@ export const ReportAltPage = () => {
                     invalid={invalid && !period.from}
                   />
                 </div>
-                <div className="w-44">
+                <div className="w-56">
                   <ReportAltParamField
                     param={{
                       ...param,
@@ -324,7 +324,11 @@ export const ReportAltPage = () => {
           return (
             <div
               key={param.code}
-              className={param.dataType === 'BOOLEAN' ? '' : 'w-72'}
+              // Чекбоксы — в общем потоке строки, центрируем по высоте
+              // инпутов (48px = minHeight 44 + marginBottom 4 из темы).
+              className={
+                param.dataType === 'BOOLEAN' ? 'flex h-12 items-center' : 'w-72'
+              }
             >
               <ReportAltParamField
                 param={param}
@@ -338,7 +342,14 @@ export const ReportAltPage = () => {
           )
         })}
 
-        <Button variant="contained" size="medium" onClick={handleSubmit}>
+        {/* Высота 48 = высоте блока инпута (как в легаси osv-report-page):
+            кнопки стоят вровень с полями и не «прыгают» при переносе строки. */}
+        <Button
+          variant="contained"
+          size="medium"
+          sx={{ height: 48, flexShrink: 0 }}
+          onClick={handleSubmit}
+        >
           {t('reportalt.generate')}
         </Button>
         {/* Панель настроек — только для отчётов с наполненным meta (F-S3). */}
@@ -346,6 +357,7 @@ export const ReportAltPage = () => {
           <Button
             variant="outlined"
             size="medium"
+            sx={{ height: 48, flexShrink: 0 }}
             onClick={() => {
               setSettingsOpen(true)
             }}

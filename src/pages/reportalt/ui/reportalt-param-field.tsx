@@ -2,9 +2,11 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
+  Box,
   Checkbox,
   FormControlLabel,
   TextField,
+  Typography,
 } from '@mui/material'
 
 import { useAccountPlanList } from '@/entities/account-plan'
@@ -97,7 +99,6 @@ export const ReportAltParamField = ({
           dateOnly
           required={param.required}
           error={invalid}
-          size="small"
           fullWidth
         />
       )
@@ -113,9 +114,79 @@ export const ReportAltParamField = ({
         <Autocomplete
           multiple
           disableCloseOnSelect
-          size="small"
           forcePopupIcon
-          sx={{ width: 300 }}
+          // Ширину задаёт контейнер строки параметров (w-72) — поле не шире
+          // соседей и не наезжает на них (прежний фикс sx={{width:300}} вылезал
+          // за контейнер). Высота — обычный tall-инпут темы (minHeight 44,
+          // paddingTop 22) — как у дат и одиночных выпадашек.
+          fullWidth
+          sx={{
+            // Длинная сводка обрезается внутри поля, а не «вылезает» за край
+            // (тема задаёт inputRoot flexWrap:nowrap).
+            '& .MuiFilledInput-root': { overflow: 'hidden' },
+            '& .MuiAutocomplete-input': { minWidth: 24 },
+            // При наборе (фокусе) прячем сводку — поле поиска на всю ширину.
+            '& .MuiFilledInput-root.Mui-focused .reportalt-ms-summary': {
+              display: 'none',
+            },
+          }}
+          // Значение — компактная сводка «Имя (+N)» с многоточием (как в легаси
+          // report-param-field): чипы при nowrap-теме вылезали за границу поля
+          // и наезжали на соседний селект.
+          renderValue={(tagValue) => {
+            if (!Array.isArray(tagValue) || tagValue.length === 0) return null
+            return (
+              <Box
+                component="span"
+                className="reportalt-ms-summary"
+                sx={{
+                  // 22/6 — паддинги значения filled-инпута из темы: сводка
+                  // садится на уровень значений соседних полей.
+                  alignSelf: 'flex-start',
+                  pt: '22px',
+                  pb: '6px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  minWidth: 0,
+                  flexShrink: 1,
+                  overflow: 'hidden',
+                }}
+              >
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: 16,
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    color: '#222124',
+                    minWidth: 0,
+                  }}
+                >
+                  {tagValue[0].label}
+                </Typography>
+                {/* «+N» (сколько ещё выбрано) — всегда видно, не обрезается. */}
+                {tagValue.length > 1 && (
+                  <Typography
+                    component="span"
+                    sx={{
+                      ml: 0.5,
+                      fontSize: 16,
+                      fontWeight: 500,
+                      lineHeight: 1.4,
+                      color: '#666',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    +{tagValue.length - 1}
+                  </Typography>
+                )}
+              </Box>
+            )
+          }}
           options={refOptions}
           value={selected}
           onChange={(_e, next) => {
@@ -167,7 +238,6 @@ export const ReportAltParamField = ({
           label={label}
           required={param.required}
           error={invalid}
-          size="small"
           fullWidth
         />
       )
@@ -195,7 +265,6 @@ export const ReportAltParamField = ({
             label={label}
             required={param.required}
             error={invalid}
-            size="small"
             fullWidth
           />
         )
@@ -212,7 +281,6 @@ export const ReportAltParamField = ({
           label={label}
           required={param.required}
           error={invalid}
-          size="small"
           fullWidth
         />
       )
@@ -256,7 +324,6 @@ export const ReportAltParamField = ({
             label={label}
             required={param.required}
             error={invalid}
-            size="small"
             fullWidth
           />
         )
@@ -270,7 +337,6 @@ export const ReportAltParamField = ({
           label={label}
           required={param.required}
           error={invalid}
-          size="small"
           fullWidth
         />
       )
@@ -286,7 +352,6 @@ export const ReportAltParamField = ({
           label={label}
           required={param.required}
           error={invalid}
-          size="small"
           fullWidth
         />
       )

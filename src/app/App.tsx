@@ -104,6 +104,11 @@ const ReportPage = lazy(() =>
     default: m.ReportPage,
   }))
 )
+const ReportAltPage = lazy(() =>
+  import('@/pages/reportalt').then((m) => ({
+    default: m.ReportAltPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -214,6 +219,15 @@ const AppRoutes = () => {
             path="/modules/:pageCode/report/:moduleCode"
             element={<ReportPage />}
           />
+          {/*
+            Новый отчётный контур ReportAlt: пункт меню type="ReportAlt" →
+            сегмент "reportalt". Отчёт рендерится по коду через метаданные
+            `/api/reportalt/{code}/meta`.
+          */}
+          <Route
+            path="/modules/:pageCode/reportalt/:moduleCode"
+            element={<ReportAltPage />}
+          />
         </Routes>
       </Suspense>
     </ErrorBoundary>
@@ -234,7 +248,9 @@ function App() {
         searchParams: req.searchParams,
       })
     })
-    return () => setReferencePickerGateway(null)
+    return () => {
+      setReferencePickerGateway(null)
+    }
   }, [])
 
   return (

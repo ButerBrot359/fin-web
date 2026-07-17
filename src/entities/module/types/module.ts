@@ -4,6 +4,8 @@ export enum ModuleElementType {
   Document = 'Document',
   Dictionary = 'Dictionary',
   Report = 'Report',
+  /** Отчёт нового контура ReportAlt (`/api/reportalt/*`) — страница `/modules/{pageCode}/reportalt/{code}`. */
+  ReportAlt = 'ReportAlt',
   InformationRegister = 'InformationRegister',
   AccumulationRegister = 'AccumulationRegister',
   AccountingRegister = 'AccountingRegister',

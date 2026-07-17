@@ -414,7 +414,9 @@ export const FinancingPlanUploadPage = () => {
               <Button
                 variant="outlined"
                 onClick={() => fileInputRef.current?.click()}
-                sx={{ height: 40 }}
+                // Высота как у поля «Имя листа» (default filled ≈ 44px) — чтобы
+                // кнопка и поле стояли на одном уровне (ряд выровнен по низу).
+                sx={{ height: 44 }}
               >
                 {t('financingPlanUpload.chooseFile')}
               </Button>
@@ -452,7 +454,7 @@ export const FinancingPlanUploadPage = () => {
               fullWidth
             />
           </div>
-          <div className="report-param-field w-40">
+          <div className="report-param-field w-56">
             <NumberInput
               value={form.columnOffset == null ? '' : String(form.columnOffset)}
               onChange={(e) => {

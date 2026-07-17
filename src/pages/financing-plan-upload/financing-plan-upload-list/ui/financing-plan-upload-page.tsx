@@ -403,7 +403,10 @@ export const FinancingPlanUploadPage = () => {
             <Typography variant="caption" className="text-ui-05">
               {t('financingPlanUpload.fileName')}
             </Typography>
-            <div className="flex items-center gap-3">
+            {/* mb-1 = тот же 4px marginBottom, что тема даёт MuiFormControl у
+                поля «Имя листа» — чтобы под `items-end` низ кнопки совпал с низом
+                инпута поля (иначе поле визуально на 4px выше). */}
+            <div className="flex items-center gap-3 mb-1">
               <input
                 ref={fileInputRef}
                 type="file"

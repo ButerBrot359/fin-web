@@ -24,6 +24,7 @@ import {
   clearStoredSettings,
 } from '../lib/utils/user-settings'
 import {
+  LANG_PARAM_CODE,
   defaultParamValue,
   deserializeParam,
   isFilled,
@@ -76,6 +77,18 @@ export const ReportAltPage = () => {
       meta.definition.nameRu
     : t('reportalt.title')
   useTabMeta(reportName)
+
+  // Параметр «Язык формы» (YazykFormy) выводим не в строке параметров, а
+  // отдельным контролом в панели настроек справа (как «Язык печатной формы» в
+  // 1С). visibleParams — параметры верхней строки без языка.
+  const langParam = useMemo(
+    () => meta?.parameters.find((p) => p.code === LANG_PARAM_CODE) ?? null,
+    [meta]
+  )
+  const visibleParams = useMemo(
+    () => meta?.parameters.filter((p) => p.code !== LANG_PARAM_CODE) ?? [],
+    [meta]
+  )
 
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -228,8 +241,21 @@ export const ReportAltPage = () => {
   const [isPrinting, setIsPrinting] = useState(false)
   const handlePrintPdf = () => {
     if (!appliedBody || isPrinting) return
+    // Язык печати — выбранный «Язык формы» (YazykFormy): берём применённое
+    // значение (совпадает с языком экранного результата), затем черновик поля;
+    // если у отчёта нет параметра языка — фолбэк на язык приложения.
+    const pickedLang =
+      appliedBody.parameters[LANG_PARAM_CODE] ?? values[LANG_PARAM_CODE]
+    const printLanguage: 'Ru' | 'Kz' =
+      pickedLang === 'Kz'
+        ? 'Kz'
+        : pickedLang === 'Ru'
+          ? 'Ru'
+          : isKz
+            ? 'Kz'
+            : 'Ru'
     setIsPrinting(true)
-    void printReportAlt(moduleCode, appliedBody, isKz ? 'Kz' : 'Ru')
+    void printReportAlt(moduleCode, appliedBody, printLanguage)
       .then((res) => {
         window.open(URL.createObjectURL(res.data), '_blank')
       })
@@ -270,9 +296,10 @@ export const ReportAltPage = () => {
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={reportName} onClose={handleClose} />
 
-      {/* Динамическая форма параметров по meta.parameters. */}
+      {/* Динамическая форма параметров по meta.parameters (без «Язык формы» —
+          он живёт отдельным контролом в панели настроек справа). */}
       <div className="flex flex-wrap items-start gap-4">
-        {meta.parameters.map((param) => {
+        {visibleParams.map((param) => {
           const invalid =
             showErrors && param.required && !isFilled(param, values[param.code])
           // PERIOD раскрываем в пару полей «с … по …».
@@ -352,8 +379,9 @@ export const ReportAltPage = () => {
         >
           {t('reportalt.generate')}
         </Button>
-        {/* Панель настроек — только для отчётов с наполненным meta (F-S3). */}
-        {supportsSettings && (
+        {/* Панель настроек — для отчётов с наполненным meta (F-S3) ИЛИ когда
+            есть «Язык формы» (у ГСМ/МО прочих настроек нет, но язык нужен). */}
+        {(supportsSettings || langParam != null) && (
           <Button
             variant="outlined"
             size="medium"
@@ -422,7 +450,7 @@ export const ReportAltPage = () => {
         )
       )}
 
-      {supportsSettings && (
+      {(supportsSettings || langParam != null) && (
         <ReportAltSettingsDrawer
           open={settingsOpen}
           onClose={() => {
@@ -436,6 +464,15 @@ export const ReportAltPage = () => {
             handleSubmit()
           }}
           onReset={handleResetSettings}
+          langParam={langParam}
+          langValue={
+            typeof values[LANG_PARAM_CODE] === 'string'
+              ? values[LANG_PARAM_CODE]
+              : ''
+          }
+          onLangChange={(v) => {
+            setParamValue(LANG_PARAM_CODE, v)
+          }}
         />
       )}
     </div>

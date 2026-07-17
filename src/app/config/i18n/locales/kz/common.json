@@ -375,7 +375,9 @@
     "exportExcel": "Excel-ге жүктеу",
     "print": "Басып шығару",
     "printUnavailable": "Бұл есеп үшін басып шығару қолжетімсіз",
+    "formLanguage": "Форма тілі",
     "settings": {
+      "general": "Негізгі",
       "open": "Баптаулар",
       "title": "Есеп баптаулары",
       "apply": "Қолдану",

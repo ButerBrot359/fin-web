@@ -26,6 +26,14 @@ export interface PeriodValue {
 /** Значения формы параметров: ключ = `param.code`. */
 export type ParamValues = Record<string, ReportAltParamValue>
 
+/**
+ * Код параметра «Язык формы» (STRING+allowedValues [Ru,Kz]) — единый по всем
+ * отчётам ReportAlt (МО, ГлавнаяКнига, ВедомостьСписанияГСМ). Рендерится НЕ в
+ * строке параметров, а отдельным контролом «Язык формы» в панели настроек
+ * справа — как «Язык печатной формы» в 1С и вкладка «Основные» легаси-контура.
+ */
+export const LANG_PARAM_CODE = 'YazykFormy'
+
 export const isPeriod = (p: ReportAltParameterDto) => p.dataType === 'PERIOD'
 
 /**
@@ -117,6 +125,18 @@ export const defaultParamValue = (
     case 'PERIOD':
       return { from: '', to: '' }
     default:
+      // «Язык формы» (YazykFormy) должен всегда показывать выбранный язык
+      // (в 1С по умолчанию «Русский»), а не стартовать пустым и молча
+      // проваливаться в глобальный Accept-Language — глобальный переключатель
+      // языка приложения пока не переключает контент отчёта. Дефолт — первое
+      // значение из allowedValues (Ru).
+      if (
+        param.code === LANG_PARAM_CODE &&
+        param.allowedValues &&
+        param.allowedValues.length > 0
+      ) {
+        return param.allowedValues[0].value
+      }
       return ''
   }
 }

@@ -375,7 +375,9 @@
     "exportExcel": "Выгрузить в Excel",
     "print": "Печать",
     "printUnavailable": "Печать для этого отчёта недоступна",
+    "formLanguage": "Язык формы",
     "settings": {
+      "general": "Основные",
       "open": "Настройки",
       "title": "Настройки отчёта",
       "apply": "Применить",

@@ -13,11 +13,13 @@ import {
 import type {
   ReportAltAppearanceFlagDto,
   ReportAltMetaDto,
+  ReportAltParameterDto,
 } from '../../types/reportalt'
 import {
   defaultFieldRows,
   type ReportAltSettingsState,
 } from '../../lib/utils/user-settings'
+import { SettingsGeneralTab } from './settings-general-tab'
 import { SettingsFieldsTab } from './settings-fields-tab'
 import { SettingsFiltersTab } from './settings-filters-tab'
 import { SettingsOrderTab } from './settings-order-tab'
@@ -35,6 +37,13 @@ interface ReportAltSettingsDrawerProps {
   onApply: () => void
   /** «Стандартные настройки» — пустая дельта (сброс к варианту). */
   onReset: () => void
+  /**
+   * Параметр «Язык формы» (YazykFormy), если он есть у отчёта — рендерится
+   * первой вкладкой «Основные». Значение — параметр отчёта (не userSettings).
+   */
+  langParam?: ReportAltParameterDto | null
+  langValue?: string
+  onLangChange?: (value: string) => void
 }
 
 /**
@@ -51,6 +60,9 @@ export const ReportAltSettingsDrawer = ({
   onDraftChange,
   onApply,
   onReset,
+  langParam,
+  langValue,
+  onLangChange,
 }: ReportAltSettingsDrawerProps) => {
   const { t, i18n } = useTranslation()
   const isKz = i18n.language === 'kz'
@@ -85,6 +97,24 @@ export const ReportAltSettingsDrawer = ({
   }
 
   const tabs: { key: string; label: string; content: ReactNode }[] = []
+  // «Основные» — «Язык формы» (параметр YazykFormy), как секция «Язык печатной
+  // формы» в 1С. Показывается, даже если у отчёта нет прочих настроек.
+  if (langParam) {
+    tabs.push({
+      key: 'general',
+      label: t('reportalt.settings.general'),
+      content: (
+        <SettingsGeneralTab
+          langParam={langParam}
+          value={langValue ?? ''}
+          onChange={(v) => {
+            onLangChange?.(v)
+          }}
+          isKz={isKz}
+        />
+      ),
+    })
+  }
   if (columnFields.length > 0) {
     tabs.push({
       key: 'fields',

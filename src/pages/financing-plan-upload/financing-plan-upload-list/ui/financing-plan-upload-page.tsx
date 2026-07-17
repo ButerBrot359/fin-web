@@ -405,7 +405,7 @@ export const FinancingPlanUploadPage = () => {
           <Typography variant="caption" className="text-ui-05">
             {t('financingPlanUpload.fileName')}
           </Typography>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-4">
             <input
               ref={fileInputRef}
               type="file"
@@ -416,7 +416,9 @@ export const FinancingPlanUploadPage = () => {
             <Button
               variant="outlined"
               onClick={() => fileInputRef.current?.click()}
-              sx={{ height: 44 }}
+              // Ширина как у «Начальной строки» (w-40 = 160px) и общий gap-4 —
+              // чтобы «Имя листа» встало строго над «Смещением колонок».
+              sx={{ height: 44, width: 160 }}
             >
               {t('financingPlanUpload.chooseFile')}
             </Button>

@@ -397,49 +397,45 @@ export const FinancingPlanUploadPage = () => {
       </Typography>
 
       <div className="flex flex-col gap-3">
-        {/* Имя файла + Имя листа в одной строке. */}
-        <div className="flex flex-wrap items-end gap-6">
-          <div className="flex flex-col gap-1">
-            <Typography variant="caption" className="text-ui-05">
-              {t('financingPlanUpload.fileName')}
-            </Typography>
-            {/* mb-1 = тот же 4px marginBottom, что тема даёт MuiFormControl у
-                поля «Имя листа» — чтобы под `items-end` низ кнопки совпал с низом
-                инпута поля (иначе поле визуально на 4px выше). */}
-            <div className="flex items-center gap-3 mb-1">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xls,.xlsx"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              <Button
-                variant="outlined"
-                onClick={() => fileInputRef.current?.click()}
-                // Высота как у поля «Имя листа» (default filled ≈ 44px) — чтобы
-                // кнопка и поле стояли на одном уровне (ряд выровнен по низу).
-                sx={{ height: 44 }}
-              >
-                {t('financingPlanUpload.chooseFile')}
-              </Button>
-              {file && (
-                <Typography variant="body2" className="text-ui-06">
-                  {file.name}
-                </Typography>
-              )}
-            </div>
-          </div>
-          <div className="report-param-field w-56">
-            <TextInput
-              value={form.sheetName}
-              onChange={(e) => {
-                patchForm({ sheetName: e.target.value })
-              }}
-              label={t('financingPlanUpload.sheetName')}
-              placeholder={DEFAULT_SHEET_NAME}
-              fullWidth
+        {/* «Имя файла» (подпись) сверху; кнопка выбора и поле «Имя листа» — в
+            одном ряду по ЦЕНТРУ, чтобы стоять ровно на одном уровне независимо
+            от отступов. У поля снят лишний 4px нижнего margin (`-mb-1`), тогда
+            центр инпута совпадает с центром кнопки (обе высотой 44). */}
+        <div className="flex flex-col gap-1">
+          <Typography variant="caption" className="text-ui-05">
+            {t('financingPlanUpload.fileName')}
+          </Typography>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xls,.xlsx"
+              className="hidden"
+              onChange={handleFileChange}
             />
+            <Button
+              variant="outlined"
+              onClick={() => fileInputRef.current?.click()}
+              sx={{ height: 44 }}
+            >
+              {t('financingPlanUpload.chooseFile')}
+            </Button>
+            <div className="report-param-field w-56 -mb-1">
+              <TextInput
+                value={form.sheetName}
+                onChange={(e) => {
+                  patchForm({ sheetName: e.target.value })
+                }}
+                label={t('financingPlanUpload.sheetName')}
+                placeholder={DEFAULT_SHEET_NAME}
+                fullWidth
+              />
+            </div>
+            {file && (
+              <Typography variant="body2" className="text-ui-06">
+                {file.name}
+              </Typography>
+            )}
           </div>
         </div>
 

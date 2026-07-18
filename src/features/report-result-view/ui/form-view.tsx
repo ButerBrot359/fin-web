@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next'
 
 import type {
   ReportColumnDto,
+  ReportFieldRole,
   ReportFormDto,
   ReportFormSectionDto,
 } from '@/pages/reports/report-list/types/report'
 
 import {
+  formatMoney1C,
   isHighlightRow,
   isRightAligned,
   resolveReportLang,
@@ -23,6 +25,96 @@ const th = 'border border-[#808080] px-1.5 py-1 text-center align-middle'
 
 /** Ширина одного символа колонки (`width` приходит в символах, как в 1С). */
 const CHAR_PX = 8
+
+/** Колонка бланка, у которой `role`/`width` могут прийти пустыми (бэк форм-контура). */
+type LooseColumn = Omit<ReportColumnDto, 'role'> & {
+  role: ReportFieldRole | null
+}
+
+/** Код/титул колонки — порядковый номер (№ п/п): не деньги, узкая графа. */
+const ORDINAL_RE = /№|п\/п|nomerpp|(^|_)nomer|номер/i
+/** ISO-дата в ячейке (`yyyy-MM-dd…`) — колонку форматируем как дату. */
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}/
+
+/** Является ли значение числом (или числовой строкой). */
+const isNumericValue = (v: unknown): boolean =>
+  typeof v === 'number' ||
+  (typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v)))
+
+/** Непустые значения ячеек колонки по всем строкам секции. */
+const columnValues = (
+  section: ReportFormSectionDto,
+  code: string
+): unknown[] => {
+  const out: unknown[] = []
+  for (const row of section.rows) {
+    const v = row.cells[code]
+    if (v != null && v !== '') out.push(v)
+  }
+  return out
+}
+
+/**
+ * Бэк form-контура присылает колонки без `role`/`width` (только `align`,
+ * `groupTitle`…). Без роли рендерер не форматирует числа (сырое
+ * «9541679183.35») и не выравнивает деньги; без ширины 15–20 граф схлопываются
+ * в ~40px и цифры наезжают друг на друга. Достраиваем эффективные `role`/`width`
+ * по данным колонки: числовые → MEASURE (1С-деньги, пусто на нуле), даты →
+ * PERIOD, №п/п — как есть узкой графой; ширину числовых считаем по самому
+ * длинному значению (не обрезаемся и не растягиваем зря). Колонки, где бэк уже
+ * задал role и width, не трогаем.
+ */
+const deriveFormColumns = (section: ReportFormSectionDto): ReportColumnDto[] =>
+  section.columns.map((col) => {
+    const loose = col as LooseColumn
+    if (loose.role != null && loose.width != null) return col
+
+    const values = columnValues(section, col.code)
+    const isOrdinal = ORDINAL_RE.test(col.code) || ORDINAL_RE.test(col.titleRu)
+    const allNumeric = values.length > 0 && values.every(isNumericValue)
+    const allDate =
+      values.length > 0 &&
+      values.every((v) => typeof v === 'string' && ISO_DATE_RE.test(v))
+
+    const patch: Partial<ReportColumnDto> = {}
+
+    // Эффективная роль (когда бэк её не прислал): дата → PERIOD, число → MEASURE.
+    // Деньги отличаем от идентификаторов (код счёта «1010», №п/п) по `align`:
+    // 1С выравнивает суммы вправо, а коды/наименования — влево. Так код счёта
+    // (число-строка, но align=LEFT) не превращается в «1 010,00».
+    let role: ReportFieldRole | null = loose.role
+    if (role == null) {
+      if (allDate) role = 'PERIOD'
+      else if (allNumeric && !isOrdinal && col.align === 'RIGHT')
+        role = 'MEASURE'
+      if (role != null) patch.role = role
+      // Матрица накопительной ведомости 1С печатает нули пустыми клетками.
+      if (role === 'MEASURE') patch.blankOnZero = true
+    }
+
+    // Эффективная ширина (символы ≈ ×8px), если бэк её не задал.
+    if (loose.width == null) {
+      if (role === 'MEASURE') {
+        // По самому длинному 1С-числу колонки: не обрезаемся, не растягиваем зря.
+        const maxLen = values.reduce<number>((mx, v) => {
+          const n = typeof v === 'number' ? v : Number(v)
+          return Number.isNaN(n) ? mx : Math.max(mx, formatMoney1C(n).length)
+        }, 0)
+        patch.width = Math.min(22, Math.max(9, maxLen + 1))
+      } else if (role === 'PERIOD') patch.width = 11
+      else if (isOrdinal) patch.width = 5
+      else {
+        // Описательная (Счёт/Наименование/Документ) — по длине заголовка/значений.
+        const textLen = values.reduce<number>(
+          (mx, v) => Math.max(mx, String(v).length),
+          col.titleRu.length
+        )
+        patch.width = Math.min(26, Math.max(8, textLen + 2))
+      }
+    }
+
+    return Object.keys(patch).length > 0 ? { ...col, ...patch } : col
+  })
 
 /** Локализованный заголовок колонки. */
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
@@ -154,7 +246,7 @@ const SectionTable = ({
   section: ReportFormSectionDto
   isKz: boolean
 }) => {
-  const cols = section.columns
+  const cols = deriveFormColumns(section)
   const start = section.graphNumberStart ?? 1
   const headRows = buildHeadModel(cols, isKz)
   return (

@@ -26,6 +26,9 @@ interface SduiScreenProps {
   consumePendingAction?: (route: string) => string | null
   // Вызывается после успешного save-and-close: хост закрывает вкладку и навигирует
   onSavedAndClosed?: (route: string) => void
+  // closeAfter=true из behavior: закрыть вкладку БЕЗ навигации (навигацию делает
+  // серверный effect navigate). Не путать с onSavedAndClosed — SCRUM-283 §4.3.
+  onCloseAfter?: (route: string) => void
 }
 
 export const SduiScreen: FC<SduiScreenProps> = ({
@@ -35,6 +38,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   onDirtyChange,
   consumePendingAction,
   onSavedAndClosed,
+  onCloseAfter,
 }) => {
   const location = useLocation()
   const tree = useTreeStore((s) => s.root)
@@ -121,10 +125,15 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     const route = location.pathname
     const pending = consumePendingAction?.(route)
     if (pending === 'save-and-close') {
-      void dispatch({ type: 'COMMAND', command: 'save' }).then((ok) => {
-        if (!ok) return
-        onSavedAndClosed?.(route)
-      })
+      // Имя команды и её поведение — из серверного дескриптора, не хардкод (§4.5)
+      const desc = useTreeStore.getState().onDirtyClose
+      if (!desc?.command) return
+      void dispatch({ type: 'COMMAND', command: desc.command }, desc.behavior).then(
+        (ok) => {
+          if (!ok) return
+          onSavedAndClosed?.(route)
+        },
+      )
     }
   }, [location.pathname, dispatch, consumePendingAction, onSavedAndClosed])
 
@@ -150,10 +159,13 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       setRoot: useTreeStore.getState().setRoot,
       setSession: useTreeStore.getState().setSession,
       bumpRevision: useTreeStore.getState().bumpRevision,
+      // closeAfter=true в root-сессии закрывает рабочую вкладку (без навигации)
+      closeAfter: () => onCloseAfter?.(location.pathname),
+      setOnDirtyClose: useTreeStore.getState().setOnDirtyClose,
       applyTreePatches: useTreeStore.getState().applyPatches,
       clearAllErrors: useTreeStore.getState().clearAllErrors,
     }),
-    [tree, dirty],
+    [tree, dirty, onCloseAfter, location.pathname],
   )
 
   if (!tree) return <PageSkeleton />

@@ -1,7 +1,7 @@
 import { useState, type FC, type ReactNode } from 'react'
 import { Button, Menu, Tooltip } from '@mui/material'
 
-import type { NodeProps } from '../../../types/view'
+import type { ActionBehavior, NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import {
   needsSelectedRow,
@@ -18,6 +18,13 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
   const variantProp = node.props?.variant as string | undefined
   const iconName = node.props?.icon as string | undefined
   const tooltip = node.props?.tooltip as string | undefined
+
+  // behavior приходит по двум каналам (SCRUM-283 §2.5): статический action.behavior
+  // и рантайм-override props.behavior. props побеждает — симметрично props.command.
+  const clickBehavior =
+    node.actions?.find((a) => a.trigger === 'click')?.behavior ?? null
+  const behavior =
+    (node.props?.behavior as ActionBehavior | undefined) ?? clickBehavior
 
   const dispatch = useSduiDispatch()
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
@@ -55,15 +62,18 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
     if (command) {
       if (usesSelectedRow) {
         if (selectedRowId == null) return
-        void dispatch({
-          type: 'COMMAND',
-          command,
-          value: { id: selectedRowId },
-          sourceNodeId: node.id,
-        })
+        void dispatch(
+          {
+            type: 'COMMAND',
+            command,
+            value: { id: selectedRowId },
+            sourceNodeId: node.id,
+          },
+          behavior,
+        )
         return
       }
-      void dispatch({ type: 'COMMAND', command })
+      void dispatch({ type: 'COMMAND', command }, behavior)
     }
   }
 

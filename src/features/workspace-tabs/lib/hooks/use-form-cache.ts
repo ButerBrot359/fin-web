@@ -26,13 +26,19 @@ export function useFormCache({ tabId, form }: UseFormCacheOptions) {
   // Reactive isDirty from RHF — triggers re-render when dirty state changes.
   // Unlike form.watch() callback, this always has the correct isDirty value.
   const { isDirty } = useFormState({ control: form.control })
+  // Актуальный isDirty для cleanup-замыкания (unmount видит последнее значение).
+  const isDirtyRef = useRef(isDirty)
+  isDirtyRef.current = isDirty
 
   useEffect(() => {
     if (isRestoring(tabId)) return
     useFormCacheStore.getState().setDirty(tabId, isDirty)
   }, [isDirty, tabId])
 
-  // Always cache form values on unmount so StrictMode re-mount can restore.
+  // Снимок формы на unmount кэшируем ТОЛЬКО при несохранённых изменениях —
+  // чтобы сохранить правки при переключении вкладок, но при возврате к ЧИСТОМУ
+  // документу показывать свежие данные с сервера (актуальный статус и т.п.),
+  // а не устаревший снимок.
   useEffect(() => {
     return () => {
       if (isClosingRef.current) return
@@ -41,6 +47,12 @@ export function useFormCache({ tabId, form }: UseFormCacheOptions) {
         .getState()
         .tabs.some((t) => t.id === tabId)
       if (!tabStillExists) return
+
+      if (!isDirtyRef.current) {
+        // Чистый документ — не кэшируем и сбрасываем прежний снимок, если был.
+        useFormCacheStore.getState().clearCache(tabId)
+        return
+      }
 
       const currentForm = formRef.current
       useFormCacheStore

@@ -54,16 +54,19 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   useEffect(() => {
     const route = location.pathname
 
-    // Восстановление из кэша рабочей вкладки (если возвращаемся на уже открытый
-    // документ) — без повторного OPEN: серверная form-session ещё жива.
+    // Восстановление из кэша рабочей вкладки ТОЛЬКО при несохранённых изменениях
+    // (чтобы не потерять правки при переключении вкладок) — тогда без повторного
+    // OPEN, серверная form-session ещё жива. Чистый документ при возврате
+    // переоткрываем (OPEN), чтобы данные/статус были всегда актуальными.
     const cached = useSduiCacheStore.getState().get(route)
-    if (cached) {
+    if (cached && cached.dirty) {
       useTreeStore.getState().setRoot(cached.root)
       if (cached.formSessionId != null && cached.revision != null) {
         useTreeStore.getState().setSession(cached.formSessionId, cached.revision)
       }
       useViewStateStore.getState().replaceAll(cached.viewState)
     } else {
+      if (cached) useSduiCacheStore.getState().remove(route)
       void dispatch({ type: 'OPEN', layoutCode })
     }
 
@@ -71,7 +74,9 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       const persist = shouldPersistSession?.(route) ?? false
       const treeState = useTreeStore.getState()
 
-      if (persist && treeState.root) {
+      // Сохраняем сессию только при несохранённых изменениях: чистый документ на
+      // unmount закрываем, чтобы при возврате переоткрыть со свежими данными.
+      if (persist && treeState.root && useViewStateStore.getState().dirty) {
         useSduiCacheStore.getState().save(route, {
           root: treeState.root,
           formSessionId: treeState.formSessionId,

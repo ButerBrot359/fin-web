@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { unpostDocumentEntry } from '@/entities/document-entry'
 import { openMovementsForEntry } from '@/features/sdui'
+import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import { apiService } from '@/shared/api/api'
@@ -61,9 +62,7 @@ export const DocumentListToolbar = ({
   const unpostMutation = useMutation({
     mutationFn: (id: number) => unpostDocumentEntry(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['document-entries', moduleCode],
-      })
+      invalidateDocumentQueries(queryClient)
       showToast('success', t('documentListToolbar.unpostSuccess'))
     },
     onError: () => {

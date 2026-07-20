@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Dialog, TextField, Typography } from '@mui/material'
 
 import { createDictEntry } from '@/features/dict-sidebar/api/dict-sidebar-api'
+import { invalidateDictionaryQueries } from '@/shared/lib/query/invalidate-entities'
 import { Button } from '@/shared/ui/buttons'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
@@ -46,12 +47,7 @@ export const CreateGroupModal = ({
         attributes: {},
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['dictionary', 'entries', typeCode],
-      })
-      void queryClient.invalidateQueries({
-        queryKey: ['dictionary-search'],
-      })
+      invalidateDictionaryQueries(queryClient)
       showToast('success', t('dictSidebar.groupCreated'))
       form.reset()
       onClose()

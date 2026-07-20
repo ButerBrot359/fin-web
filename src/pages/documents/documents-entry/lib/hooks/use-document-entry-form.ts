@@ -59,6 +59,10 @@ export const useDocumentEntryForm = () => {
     queryFn: () => getDocumentEntry(entryId!),
     enabled: !isNew,
     select: (response) => response.data.data,
+    // Всегда актуальные данные при ОТКРЫТИИ документа (напр. статус исполнения):
+    // рефетч при каждом маунте, даже если запись в кэше. Активные правки не
+    // затираются — reset применяется только к чистой форме (см. эффект ниже).
+    refetchOnMount: 'always',
   })
 
   const form = useForm<Record<string, unknown>>({

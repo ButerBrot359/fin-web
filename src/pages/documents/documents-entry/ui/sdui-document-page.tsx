@@ -16,6 +16,7 @@ import {
 
 import { PageHeader } from '@/widgets/page-header'
 
+import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
 
 import { getDocumentListPath } from '../lib/utils/get-document-paths'
@@ -34,9 +35,10 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
 
   useEffect(() => {
     return () => {
-      // SDUI пишет мимо TanStack Query — при уходе со страницы сбрасываем
-      // кэш легаси-списков, чтобы список документов показал свежие данные (B5).
-      void queryClient.invalidateQueries({ queryKey: ['document-entries'] })
+      // SDUI пишет мимо TanStack Query — при уходе со страницы сбрасываем кэши
+      // списков документов и ссылочных пикеров, чтобы показать свежие данные
+      // (ключи — из use-eav-entries: ['document','entries',…]).
+      invalidateDocumentQueries(queryClient)
     }
   }, [queryClient])
 

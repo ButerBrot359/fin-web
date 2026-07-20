@@ -9,6 +9,7 @@ import {
 import type { CreateDocumentEntryPayload } from '@/entities/document-entry'
 import { useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { getApiErrorMessage } from '@/shared/lib/utils/get-api-error-message'
+import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type {
@@ -43,14 +44,9 @@ export const useDocumentEntryActions = ({
         ? createDocumentEntry(moduleCode, payload)
         : updateDocumentEntry(existingEntry!.id, payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['document-entries', moduleCode],
-      })
-      if (!isNew && existingEntry) {
-        void queryClient.invalidateQueries({
-          queryKey: ['document-entry', String(existingEntry.id)],
-        })
-      }
+      // Свежие списки документов + ссылочные пикеры сразу после сохранения
+      // (ключи списков — из use-eav-entries: ['document','entries',…]).
+      invalidateDocumentQueries(queryClient)
     },
   })
 

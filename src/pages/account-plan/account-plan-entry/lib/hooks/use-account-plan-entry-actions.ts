@@ -6,6 +6,7 @@ import {
   updateAccountPlanEntry,
   type AccountPlanEntryPayload,
 } from '@/entities/account-plan'
+import { invalidateReferencePickers } from '@/shared/lib/query/invalidate-entities'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 interface UseAccountPlanEntryActionsParams {
@@ -26,6 +27,8 @@ export const useAccountPlanEntryActions = ({
 
   const invalidateList = () => {
     void queryClient.invalidateQueries({ queryKey: ['account-plan', 'list'] })
+    // Счета появляются в ссылочных пикерах (домен ACCOUNT_PLAN) — обновляем и их.
+    invalidateReferencePickers(queryClient)
   }
 
   const createMutation = useMutation({

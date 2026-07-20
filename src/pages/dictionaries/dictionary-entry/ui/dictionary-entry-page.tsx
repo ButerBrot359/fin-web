@@ -39,6 +39,7 @@ import {
   type DictEntryCreatePayload,
 } from '@/features/dict-sidebar/api/dict-sidebar-api'
 import { buildFallbackConfig } from '@/pages/documents/documents-entry/lib/utils/build-fallback-config'
+import { invalidateDictionaryQueries } from '@/shared/lib/query/invalidate-entities'
 import { PageHeader } from '@/widgets/page-header'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
@@ -79,6 +80,8 @@ export const DictionaryEntryPage = () => {
     queryFn: ({ signal }) => fetchDictEntryById(domain, savedEntryId!, signal),
     enabled: !!savedEntryId,
     select: (res) => res.data.data,
+    // Актуальные данные записи при каждом открытии карточки справочника.
+    refetchOnMount: 'always',
   })
 
   const { data: copyFromData, isLoading: isLoadingCopy } = useQuery<
@@ -221,18 +224,9 @@ export const DictionaryEntryPage = () => {
   }
 
   const invalidateEntries = () => {
-    void queryClient.invalidateQueries({
-      queryKey: ['dict-entries', domain, moduleCode],
-    })
-    void queryClient.invalidateQueries({
-      queryKey: ['dict-entry', domain, savedEntryId],
-    })
-    void queryClient.invalidateQueries({
-      queryKey: ['dict-sidebar-entries', domain, moduleCode],
-    })
-    void queryClient.invalidateQueries({
-      queryKey: ['dictionary-search'],
-    })
+    // Свежие список справочника (страница), сайдбар и ссылочные пикеры сразу
+    // после сохранения (ключ списка — use-eav-entries: ['dictionary','entries',…]).
+    invalidateDictionaryQueries(queryClient)
   }
 
   const createMutation = useMutation<

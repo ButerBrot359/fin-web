@@ -14,6 +14,7 @@ import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import type { SelectOption } from '@/shared/types/select-option'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
+import { invalidateDictionaryQueries } from '@/shared/lib/query/invalidate-entities'
 
 import { buildFallbackConfig } from '@/pages/documents/documents-entry/lib/utils/build-fallback-config'
 import { moveTablesLast } from '../lib/utils/move-tables-last'
@@ -63,6 +64,8 @@ export const DictSidebarFormView = ({
       fetchDictEntryById(panel.domain, savedEntryId!, signal),
     enabled: !!savedEntryId,
     select: (res) => res.data.data,
+    // Актуальные данные записи при каждом открытии карточки в сайдбаре.
+    refetchOnMount: 'always',
   })
 
   const { data: copyFromData, isLoading: isLoadingCopy } = useQuery<
@@ -167,21 +170,9 @@ export const DictSidebarFormView = ({
   }
 
   const invalidateEntries = () => {
-    void queryClient.invalidateQueries({
-      queryKey: ['dict-sidebar-entries', panel.domain, panel.typeCode],
-    })
-    void queryClient.invalidateQueries({
-      queryKey: ['dict-sidebar-entry', panel.domain, savedEntryId],
-    })
-    void queryClient.invalidateQueries({
-      queryKey: ['dictionary-search'],
-    })
-    void queryClient.invalidateQueries({
-      queryKey: ['document-entries'],
-    })
-    void queryClient.invalidateQueries({
-      queryKey: ['document-entry'],
-    })
+    // Свежие сайдбар-список, страница-список справочника и ссылочные пикеры
+    // (в т.ч. пикеры документов) сразу после создания/изменения записи.
+    invalidateDictionaryQueries(queryClient)
   }
 
   const buildSelectOption = (entry: DictEntry): SelectOption => ({

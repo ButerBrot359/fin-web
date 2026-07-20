@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react'
 
-import type { ViewNode, ViewPatch } from '../types/view'
+import type { ViewNode, ViewNodeAction, ViewPatch } from '../types/view'
 import { useTreeStore } from './stores/tree-store'
 import { useViewStateStore } from './stores/view-state-store'
 
@@ -19,6 +19,10 @@ export interface SduiSessionValue {
   setRoot: (node: ViewNode) => void
   setSession: (id: string, rev: number) => void
   bumpRevision: (rev: number) => void
+  // Закрыть текущую сессию: вкладку (root) или панель (panel) — SCRUM-283
+  closeAfter?: () => void
+  // Сохранить дескриптор «закрыть грязную вкладку» с OPEN — SCRUM-283
+  setOnDirtyClose?: (desc: ViewNodeAction | null) => void
   applyTreePatches: (patches: ViewPatch[]) => void
   clearAllErrors: () => void
 }
@@ -53,6 +57,7 @@ export const useSduiSession = (): SduiSessionValue => {
     setRoot: useTreeStore.getState().setRoot,
     setSession: useTreeStore.getState().setSession,
     bumpRevision: useTreeStore.getState().bumpRevision,
+    setOnDirtyClose: useTreeStore.getState().setOnDirtyClose,
     applyTreePatches: useTreeStore.getState().applyPatches,
     clearAllErrors: useTreeStore.getState().clearAllErrors,
   }

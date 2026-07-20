@@ -57,11 +57,12 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
 
   const unsavedDialog = useUnsavedChangesDialog({
     onSave: () => {
-      void dispatch({ type: 'COMMAND', command: 'save' }).then((ok) => {
-        if (!ok) return
-        closeCurrentTab()
-        void navigate(listPath)
-      })
+      // Имя команды и поведение — из серверного дескриптора (SCRUM-283 §4.6).
+      // closeCurrentTab/navigate здесь НЕ нужны: closeAfter=true закроет вкладку,
+      // серверный effect navigate уведёт в список.
+      const desc = useTreeStore.getState().onDirtyClose
+      if (!desc?.command) return
+      void dispatch({ type: 'COMMAND', command: desc.command }, desc.behavior)
     },
     onDiscard: () => {
       closeCurrentTab()
@@ -88,6 +89,12 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
         useFormCacheStore.getState().setDirty(route, dirty),
       consumePendingAction: (route: string) =>
         useFormCacheStore.getState().consumePendingAction(route),
+      // closeAfter=true: закрыть только вкладку, без навигации (§4.3). Навигацию,
+      // если нужна, делает серверный effect navigate.
+      onCloseAfter: (route: string) => {
+        useFormCacheStore.getState().removeTab(route)
+        useWorkspaceTabsStore.getState().closeTab(route)
+      },
       onSavedAndClosed: (route: string) => {
         useFormCacheStore.getState().removeTab(route)
         useWorkspaceTabsStore.getState().closeTab(route)

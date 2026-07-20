@@ -57,6 +57,10 @@ const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
       bumpRevision: (rev) => {
         usePanelStore.getState().updateSession(panel.panelId, rev)
       },
+      // closeAfter=true в panel-сессии закрывает саму панель (SCRUM-283 §4.3)
+      closeAfter: () => {
+        usePanelStore.getState().remove(panel.panelId)
+      },
       applyTreePatches: (patches: ViewPatch[]) => {
         setTree((t) => applyPatches(t, patches))
       },

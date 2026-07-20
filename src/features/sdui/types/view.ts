@@ -10,10 +10,22 @@ export interface ViewNode {
   actions?: ViewNodeAction[]
 }
 
+// Метаданные поведения действия (SCRUM-283): бэк описывает, что делать
+// вокруг команды, чтобы фронт не анализировал её имя.
+export interface ActionBehavior {
+  // Перед отправкой команды слить несохранённые строки редактируемых ТЧ в state
+  flushPendingTables?: boolean
+  // После успешного ответа снять признак «есть изменения»
+  resetsDirty?: boolean
+  // После успеха закрыть вкладку/панель (навигация — только через effect navigate)
+  closeAfter?: boolean
+}
+
 export interface ViewNodeAction {
   trigger: string
   actionId: string
   command?: string
+  behavior?: ActionBehavior | null
 }
 
 export interface ViewAction {
@@ -47,6 +59,8 @@ export interface ViewResponse {
   patches?: ViewPatch[]
   statePatch?: Record<string, unknown>
   effects?: ViewEffect[]
+  // Дескриптор «закрыть грязную вкладку» — приходит только на OPEN (SCRUM-283)
+  onDirtyClose?: ViewNodeAction | null
 }
 
 export interface ViewPatch {

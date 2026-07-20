@@ -61,7 +61,57 @@ describe('ButtonNode: icon и tooltip', () => {
     render(<ButtonNode node={button({ label: 'Провести', command: 'post' })} />)
     const btn = screen.getByRole('button', { name: 'Провести' })
     fireEvent.click(btn)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'COMMAND', command: 'post' })
+    // behavior вторым аргументом; без actions/props.behavior → null
+    expect(dispatch).toHaveBeenCalledWith(
+      { type: 'COMMAND', command: 'post' },
+      null,
+    )
+  })
+
+  it('behavior из action.behavior прокидывается в dispatch (SCRUM-283)', () => {
+    const node = {
+      id: 'b1',
+      type: 'BUTTON',
+      props: { label: 'Провести', command: 'post' },
+      actions: [
+        {
+          trigger: 'click',
+          actionId: 'command',
+          behavior: { flushPendingTables: true, resetsDirty: true },
+        },
+      ],
+    } as unknown as ViewNode
+    render(<ButtonNode node={node} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Провести' }))
+    expect(dispatch).toHaveBeenCalledWith(
+      { type: 'COMMAND', command: 'post' },
+      { flushPendingTables: true, resetsDirty: true },
+    )
+  })
+
+  it('props.behavior побеждает action.behavior (рантайм-override §2.5)', () => {
+    const node = {
+      id: 'b1',
+      type: 'BUTTON',
+      props: {
+        label: 'Провести',
+        command: 'post',
+        behavior: { flushPendingTables: true, closeAfter: true },
+      },
+      actions: [
+        {
+          trigger: 'click',
+          actionId: 'command',
+          behavior: { flushPendingTables: false },
+        },
+      ],
+    } as unknown as ViewNode
+    render(<ButtonNode node={node} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Провести' }))
+    expect(dispatch).toHaveBeenCalledWith(
+      { type: 'COMMAND', command: 'post' },
+      { flushPendingTables: true, closeAfter: true },
+    )
   })
 
   it('неизвестная иконка: fallback на label, svg нет', () => {

@@ -4,7 +4,7 @@ import i18n from 'i18next'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-import type { ViewAction } from '../types/view'
+import type { ActionBehavior, ViewAction } from '../types/view'
 import { viewTransport, ViewConflictError } from '../api/view-transport'
 import { applyValuePatches } from './patch-applier'
 import { validatePatches } from './validation'
@@ -16,17 +16,26 @@ import { flushAllPendingTableCommits } from './pending-table-commits'
 import { relaySelectionToParent } from './relay-selection'
 import { openDialogAsPanel } from './open-dialog-panel'
 
-const SAVE_COMMANDS = ['save', 'saveAndClose', 'post', 'postAndClose']
-
 export function useSduiDispatch() {
   const location = useLocation()
   const navigate = useNavigate()
   const session = useSduiSession()
 
   const dispatch = useCallback(
-    async (action: ViewAction, isRetry = false): Promise<boolean> => {
+    async (
+      action: ViewAction,
+      behavior?: ActionBehavior | null,
+      isRetry = false,
+    ): Promise<boolean> => {
       const { formSessionId, revision } = session.getSession()
-      const { replaceAll, merge, setSession, setRoot, bumpRevision, applyTreePatches, clearAllErrors, setFromServer, resetDirty } = session
+      const { replaceAll, merge, setSession, setRoot, bumpRevision, applyTreePatches, clearAllErrors, setFromServer, resetDirty, closeAfter, setOnDirtyClose } = session
+
+      // Поведение действия приходит с бэка (SCRUM-283). Фолбэки асимметричны намеренно:
+      // забытый flush = молчаливая потеря правок ТЧ → безопасная сторона true;
+      // забытые resetsDirty/closeAfter безвредны (заметны) → false.
+      const shouldFlush = behavior?.flushPendingTables ?? true
+      const shouldReset = behavior?.resetsDirty ?? false
+      const shouldClose = behavior?.closeAfter ?? false
 
       const closeSession = async () => {
         if (formSessionId) {
@@ -58,7 +67,7 @@ export function useSduiDispatch() {
       }
 
       try {
-        if (action.type === 'COMMAND' && SAVE_COMMANDS.includes(action.command ?? '')) {
+        if (action.type === 'COMMAND' && shouldFlush) {
           try {
             await flushAllPendingTableCommits()
           } catch {
@@ -80,6 +89,7 @@ export function useSduiDispatch() {
         if (action.type === 'OPEN') {
           setSession(res.formSessionId, res.revision)
           if (res.tree) setRoot(res.tree)
+          setOnDirtyClose?.(res.onDirtyClose ?? null)
           replaceAll(res.state ?? {})
           // Apply handler.handleOpen patches (e.g. required/enabled/label defaults)
           const openPatches = validatePatches(res.patches)
@@ -96,16 +106,19 @@ export function useSduiDispatch() {
           applyTreePatches(patches)
           applyValuePatches(patches, setFromServer)
           merge(res.statePatch ?? {})
-          effectHandler.playAll(res.effects ?? [])
-          if (action.type === 'COMMAND' && SAVE_COMMANDS.includes(action.command ?? '')) {
-            resetDirty()
+          effectHandler.playAll(res.effects ?? [])       // navigate играет здесь…
+          if (action.type === 'COMMAND') {
+            if (shouldReset) resetDirty()
+            if (shouldClose) closeAfter?.()               // …закрытие — после эффектов
           }
         }
         return true
       } catch (error) {
         if (error instanceof ViewConflictError) {
           const retry =
-            !isRetry && action.type !== 'OPEN' ? () => dispatch(action, true) : null
+            !isRetry && action.type !== 'OPEN'
+              ? () => dispatch(action, behavior, true)
+              : null
           handleConflict(
             error.data,
             { setSession, replaceAll },

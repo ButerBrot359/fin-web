@@ -83,8 +83,11 @@ export const DocumentListToolbar = ({
   const handleCreate = async () => {
     if (!pageCode || !moduleCode) return
 
+    // Диалог выбора вида операции открываем ТОЛЬКО после того, как узнали, что виды
+    // операции реально есть. Раньше он открывался оптимистично (до ответа on-get-form),
+    // и для документов без видов операции (например, «Заявка на регистрацию ГП сделки»)
+    // окно мелькало и тут же закрывалось.
     setIsLoadingOperations(true)
-    setDialogOpen(true)
 
     try {
       const response = await apiService.get<
@@ -101,12 +104,11 @@ export const DocumentListToolbar = ({
 
       if (vidOperatsii && vidOperatsii.elements.length > 0) {
         setOperations(vidOperatsii.elements)
+        setDialogOpen(true)
       } else {
-        setDialogOpen(false)
         void navigate(`/modules/${pageCode}/document/${moduleCode}/new`)
       }
     } catch {
-      setDialogOpen(false)
       void navigate(`/modules/${pageCode}/document/${moduleCode}/new`)
     } finally {
       setIsLoadingOperations(false)

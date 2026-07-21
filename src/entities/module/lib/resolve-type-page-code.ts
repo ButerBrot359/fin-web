@@ -1,6 +1,6 @@
-import type { ModuleItems } from '@/entities/module'
+import type { ModuleItems } from '../types/module'
 
-/** Есть ли тип документа в структуре модуля: колонки → секции → элементы. */
+/** Есть ли тип (документа/справочника) в структуре модуля: колонки → секции → элементы. */
 export function moduleContainsType(
   items: ModuleItems,
   typeCode: string,
@@ -13,10 +13,10 @@ export function moduleContainsType(
 }
 
 /**
- * Первый модуль (в порядке сайдбара), содержащий тип документа (§3.6 SCRUM-268).
+ * Первый модуль (в порядке сайдбара), содержащий тип (документа/справочника) (§3.6 SCRUM-268).
  * Никакого хардкода тип→раздел: только метаданные модулей.
  */
-export function resolveDocumentPageCode(
+export function resolveTypePageCode(
   moduleCodes: string[],
   itemsByModuleCode: Record<string, ModuleItems | undefined>,
   typeCode: string,

@@ -1,10 +1,11 @@
 import { useQuery, useQueries } from '@tanstack/react-query'
 
-import { getModule, type ModuleItems } from '@/entities/module'
 import { apiService } from '@/shared/api/api'
 import type { ApiResponse } from '@/shared/types/api.types'
 
-import { resolveDocumentPageCode } from './resolve-document-page-code'
+import { getModule } from '../api/module'
+import type { ModuleItems } from '../types/module'
+import { resolveTypePageCode } from './resolve-type-page-code'
 
 interface ModuleListItem {
   code: string
@@ -19,11 +20,11 @@ interface ResolveResult {
 }
 
 /**
- * Резолвит раздел (pageCode) для типа документа: список модулей + перебор их
+ * Резолвит раздел (pageCode) для типа (документа/справочника): список модулей + перебор их
  * метаданных в порядке сайдбара. queryKey по-модульных запросов совпадает с
  * useModule — кэш общий, уже открытые разделы не перезапрашиваются.
  */
-export function useResolveDocumentPageCode(typeCode: string): ResolveResult {
+export function useResolveTypePageCode(typeCode: string): ResolveResult {
   const modulesQuery = useQuery({
     queryKey: ['settings', 'modules'],
     queryFn: () =>
@@ -59,6 +60,6 @@ export function useResolveDocumentPageCode(typeCode: string): ResolveResult {
 
   return {
     isResolving: false,
-    pageCode: resolveDocumentPageCode(moduleCodes, itemsByModuleCode, typeCode),
+    pageCode: resolveTypePageCode(moduleCodes, itemsByModuleCode, typeCode),
   }
 }

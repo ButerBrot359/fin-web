@@ -28,15 +28,15 @@ export const useTreeStore = create<TreeStoreState>((set, get) => ({
   onDirtyClose: null,
   layoutCode: null,
 
-  setRoot: (node) => set({ root: node }),
+  setRoot: (node) => { set({ root: node }); },
 
-  setOnDirtyClose: (desc) => set({ onDirtyClose: desc }),
+  setOnDirtyClose: (desc) => { set({ onDirtyClose: desc }); },
 
-  setLayoutCode: (code) => set({ layoutCode: code }),
+  setLayoutCode: (code) => { set({ layoutCode: code }); },
 
-  setSession: (id, rev) => set({ formSessionId: id, revision: rev }),
+  setSession: (id, rev) => { set({ formSessionId: id, revision: rev }); },
 
-  bumpRevision: (rev) => set({ revision: rev }),
+  bumpRevision: (rev) => { set({ revision: rev }); },
 
   applyPatches: (patches) => {
     const { root } = get()
@@ -51,5 +51,5 @@ export const useTreeStore = create<TreeStoreState>((set, get) => ({
   },
 
   reset: () =>
-    set({ root: null, formSessionId: null, revision: null, onDirtyClose: null, layoutCode: null }),
+    { set({ root: null, formSessionId: null, revision: null, onDirtyClose: null, layoutCode: null }); },
 }))

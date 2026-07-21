@@ -19,6 +19,6 @@ export function useSessionHeartbeat(formSessionId: string | null): void {
         if (!alive) clearInterval(id)
       })
     }, HEARTBEAT_INTERVAL_MS)
-    return () => clearInterval(id)
+    return () => { clearInterval(id); }
   }, [formSessionId])
 }

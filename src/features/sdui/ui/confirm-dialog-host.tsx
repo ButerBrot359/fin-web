@@ -11,15 +11,15 @@ export const ConfirmDialogHost = () => {
   const answer = useConfirmStore((s) => s.answer)
 
   return (
-    <Dialog open={open} onClose={() => answer(false)} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={() => { answer(false); }} maxWidth="xs" fullWidth>
       <DialogContent>
         <Typography>{message}</Typography>
       </DialogContent>
       <DialogActions>
-        <Button variant="outlined" onClick={() => answer(false)}>
+        <Button variant="outlined" onClick={() => { answer(false); }}>
           {t('sdui.confirm.cancel')}
         </Button>
-        <Button variant="contained" onClick={() => answer(true)}>
+        <Button variant="contained" onClick={() => { answer(true); }}>
           {t('sdui.confirm.ok')}
         </Button>
       </DialogActions>

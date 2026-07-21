@@ -16,7 +16,7 @@ export function formatSduiCellValue(value: unknown, dataType?: string): string {
     case 'DATE':
     case 'DATETIME': {
       const date = typeof value === 'string' ? parseISO(value) : null
-      if (!date || !isValid(date)) return String(value)
+      if (!date || !isValid(date)) return typeof value === 'string' ? value : ''
       const hasTime =
         dataType === 'DATETIME' &&
         (date.getHours() !== 0 || date.getMinutes() !== 0 || date.getSeconds() !== 0)
@@ -24,6 +24,8 @@ export function formatSduiCellValue(value: unknown, dataType?: string): string {
     }
 
     default:
-      return String(value)
+      // объекты разворачивает вызывающий код (accessorFn) — сюда доходят только примитивы
+      if (typeof value === 'object' || typeof value === 'function') return ''
+      return String(value as string | number | boolean)
   }
 }

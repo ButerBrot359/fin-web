@@ -10,6 +10,7 @@ import {
 } from '../../../lib/stores/ref-picker-selection-store'
 import { NodeRenderer } from '../../node-renderer'
 import { resolveButtonIcon } from './button-icons'
+import { resolveButtonPresentation } from './button-presentation'
 
 export const ButtonNode: FC<NodeProps> = ({ node }) => {
   const label = node.props?.label as string | undefined
@@ -34,8 +35,10 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
     usesSelectedRow ? refCommandField(command) : null,
   )
 
-  const isDropdown = variantProp === 'dropdown' && !!node.children?.length
-  const muiVariant = variantProp === 'primary' ? 'contained' : 'outlined'
+  const { muiVariant, isDropdown } = resolveButtonPresentation(
+    variantProp,
+    !!node.children?.length,
+  )
   const disabled = !enabled || (usesSelectedRow && selectedRowId == null)
 
   const icon = resolveButtonIcon(iconName)

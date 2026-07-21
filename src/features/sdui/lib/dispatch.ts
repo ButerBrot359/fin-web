@@ -64,6 +64,9 @@ export function useSduiDispatch() {
       })
 
       const reopen = async () => {
+        // isRetry: мы уже внутри повтора после восстановления — второй
+        // SESSION_NOT_FOUND подряд означает нестабильный бэк; не зацикливаемся.
+        if (isRetry) return
         // layoutCode обязателен для OPEN (§2.3 спеки SCRUM-244) — без него
         // переоткрытие уходило в цикл 409 → 400. Берём сохранённый с первого OPEN.
         const layoutCode = session.getLayoutCode?.() ?? undefined

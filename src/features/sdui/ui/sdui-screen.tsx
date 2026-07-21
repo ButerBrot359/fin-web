@@ -66,6 +66,10 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       if (cached.formSessionId != null && cached.revision != null) {
         useTreeStore.getState().setSession(cached.formSessionId, cached.revision)
       }
+      // layoutCode не хранится в кэше вкладки: источник правды — проп экрана.
+      // Без этого reopen после потери сессии на восстановленной вкладке
+      // снова ушёл бы без layoutCode (ревью Task 2 SCRUM-244).
+      useTreeStore.getState().setLayoutCode(layoutCode ?? null)
       useViewStateStore.getState().replaceAll(cached.viewState)
     } else {
       void dispatch({ type: 'OPEN', layoutCode })

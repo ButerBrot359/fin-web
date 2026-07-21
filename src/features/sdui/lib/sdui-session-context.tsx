@@ -22,6 +22,10 @@ export interface SduiSessionValue {
   // layoutCode последнего OPEN — нужен reopen'у после SESSION_NOT_FOUND (SCRUM-244 §4.2).
   // Хранится в session-context (не в module-scope): у панелей свои провайдеры,
   // модульная переменная перепутала бы параллельные сессии.
+  // Панели эти методы не реализуют (getLayoutCode/setLayoutCode остаются undefined
+  // в их session-value): их reopen при OPEN уходит без layoutCode и падает на
+  // бэке → ok=false → повтор исходного действия не срабатывает. Инвариант
+  // «не зациклиться» держится на этом естественном отказе, а не на явном guard'е.
   getLayoutCode?: () => string | null
   setLayoutCode?: (code: string | null) => void
   // Закрыть текущую сессию: вкладку (root) или панель (panel) — SCRUM-283

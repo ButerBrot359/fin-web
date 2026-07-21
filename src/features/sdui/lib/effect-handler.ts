@@ -14,6 +14,7 @@ export interface EffectHandlerDeps {
   closeSession: () => Promise<void>
   openDialog: (effect: ViewEffect) => void
   closeDialog: (effect: ViewEffect) => void
+  invalidateLists: () => void
 }
 
 export function createEffectHandler(deps: EffectHandlerDeps) {
@@ -37,6 +38,13 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
           (effect.level as ToastLevel) ?? 'info',
           effect.message ?? '',
         )
+        break
+
+      case 'refresh':
+        // Списки (LIST-ноды) перечитываются через TanStack Query. Payload
+        // эффекта игнорируем намеренно: адресация не подтверждена контрактом
+        // (вопрос Talgat'у в спеке v2) — инвалидация всех SDUI-списков безопасна.
+        deps.invalidateLists()
         break
 
       case 'download': {

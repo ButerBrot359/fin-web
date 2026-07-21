@@ -1,4 +1,6 @@
+import React from 'react'
 import { renderHook } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewResponse } from '../types/view'
@@ -48,8 +50,14 @@ const openResponse = {
 } as unknown as ViewResponse
 
 describe('useSduiDispatch: wire-route OPEN-запроса', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
   beforeEach(() => {
     vi.restoreAllMocks()
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: queryClient }, children)
   })
 
   // Пин WI-F (SCRUM-265): route обязан включать query string — бэк читает
@@ -59,7 +67,7 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
     router.search = '?basisId=42'
     const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
 
-    const { result } = renderHook(() => useSduiDispatch())
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     const ok = await result.current({ type: 'OPEN', layoutCode: 'X.ФормаОбъекта' })
 
     expect(ok).toBe(true)
@@ -74,7 +82,7 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
     router.search = ''
     const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
 
-    const { result } = renderHook(() => useSduiDispatch())
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current({ type: 'OPEN', layoutCode: 'X.ФормаОбъекта' })
 
     expect(post).toHaveBeenCalledWith(
@@ -95,14 +103,20 @@ const commandResponse = {
 // приходит с бэка, фронт не смотрит на имя. Флаг flush фолбэчит в true (защита
 // данных), resetsDirty/closeAfter — в false.
 describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
   beforeEach(() => {
     vi.clearAllMocks()
     router.search = ''
     vi.spyOn(viewTransport, 'post').mockResolvedValue(commandResponse)
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: queryClient }, children)
   })
 
   it('flush вызван при flushPendingTables: true', async () => {
-    const { result } = renderHook(() => useSduiDispatch())
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current(
       { type: 'COMMAND', command: 'save' },
       { flushPendingTables: true },
@@ -111,7 +125,7 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
   })
 
   it('flush НЕ вызван при flushPendingTables: false', async () => {
-    const { result } = renderHook(() => useSduiDispatch())
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current(
       { type: 'COMMAND', command: 'reread' },
       { flushPendingTables: false },
@@ -120,13 +134,13 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
   })
 
   it('flush вызван при behavior: undefined (безопасный фолбэк ?? true)', async () => {
-    const { result } = renderHook(() => useSduiDispatch())
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current({ type: 'COMMAND', command: 'save' })
     expect(flushAllPendingTableCommits).toHaveBeenCalledTimes(1)
   })
 
   it('resetsDirty: true → resetDirty вызван, closeAfter — нет', async () => {
-    const { result } = renderHook(() => useSduiDispatch())
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current(
       { type: 'COMMAND', command: 'save' },
       { flushPendingTables: true, resetsDirty: true, closeAfter: false },
@@ -136,7 +150,7 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
   })
 
   it('closeAfter: true → closeAfter вызван', async () => {
-    const { result } = renderHook(() => useSduiDispatch())
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current(
       { type: 'COMMAND', command: 'saveAndClose' },
       { flushPendingTables: true, resetsDirty: true, closeAfter: true },
@@ -145,7 +159,7 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
   })
 
   it('resetsDirty по умолчанию false: без флага dirty не сбрасывается', async () => {
-    const { result } = renderHook(() => useSduiDispatch())
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current({ type: 'COMMAND', command: 'copy' }, {})
     expect(sessionMock.resetDirty).not.toHaveBeenCalled()
   })

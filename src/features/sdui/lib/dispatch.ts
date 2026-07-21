@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import i18n from 'i18next'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -20,6 +21,7 @@ import { openDialogAsPanel } from './open-dialog-panel'
 export function useSduiDispatch() {
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const session = useSduiSession()
 
   const dispatch = useCallback(
@@ -60,6 +62,9 @@ export function useSduiDispatch() {
         closeDialog: (effect) => {
           if (effect.id) usePanelStore.getState().remove(effect.id)
           relaySelectionToParent(effect, (effects) => effectHandler.playAll(effects))
+        },
+        invalidateLists: () => {
+          void queryClient.invalidateQueries({ queryKey: ['sdui-list'] })
         },
       })
 
@@ -144,7 +149,7 @@ export function useSduiDispatch() {
         return false
       }
     },
-    [location.pathname, location.search, navigate, session],
+    [location.pathname, location.search, navigate, session, queryClient],
   )
 
   return dispatch

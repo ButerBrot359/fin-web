@@ -4,9 +4,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewResponse } from '../types/view'
-import { viewTransport } from '../api/view-transport'
+import { viewTransport, ViewHttpError } from '../api/view-transport'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { useSduiDispatch } from './dispatch'
+import { showToast } from '@/shared/ui/toast/show-toast'
 
 // Мутабельная локация: тесты подменяют search между рендерами
 const router = vi.hoisted(() => ({
@@ -41,6 +42,10 @@ vi.mock('./sdui-session-context', () => ({
 
 vi.mock('./pending-table-commits', () => ({
   flushAllPendingTableCommits: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/shared/ui/toast/show-toast', () => ({
+  showToast: vi.fn(),
 }))
 
 const openResponse = {
@@ -162,5 +167,46 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current({ type: 'COMMAND', command: 'copy' }, {})
     expect(sessionMock.resetDirty).not.toHaveBeenCalled()
+  })
+})
+
+// I-1 (ревью SCRUM-244): 404 на OPEN — штатный гейт раскатки, но тост должен
+// подавляться ТОЛЬКО когда хост реально обрабатывает фолбэк (opts.onOpenNotFound
+// передан). Без обработчика — прежнее поведение (тост), иначе документы без
+// фолбэка на легаси молча остаются на пустом скелетоне.
+describe('useSduiDispatch: 404 на OPEN (SCRUM-244 I-1)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    vi.spyOn(viewTransport, 'post').mockRejectedValue(new ViewHttpError('Not Found', 404))
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: queryClient }, children)
+  })
+
+  it('с opts.onOpenNotFound: колбэк вызван, showToast НЕ вызван', async () => {
+    const onOpenNotFound = vi.fn()
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const ok = await result.current(
+      { type: 'OPEN', layoutCode: 'X.ФормаОбъекта' },
+      null,
+      false,
+      { onOpenNotFound },
+    )
+
+    expect(ok).toBe(false)
+    expect(onOpenNotFound).toHaveBeenCalledTimes(1)
+    expect(showToast).not.toHaveBeenCalled()
+  })
+
+  it('без opts: showToast вызван (прежнее поведение документов без фолбэка)', async () => {
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const ok = await result.current({ type: 'OPEN', layoutCode: 'X.ФормаОбъекта' })
+
+    expect(ok).toBe(false)
+    expect(showToast).toHaveBeenCalledTimes(1)
   })
 })

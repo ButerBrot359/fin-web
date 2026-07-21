@@ -81,7 +81,11 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       useViewStateStore.getState().replaceAll(cached.viewState)
     } else {
       void dispatch({ type: 'OPEN', layoutCode }, null, false, {
-        onOpenNotFound: () => onOpenFailed?.(),
+        onOpenNotFound: onOpenFailed
+          ? () => {
+              onOpenFailed()
+            }
+          : undefined,
       })
     }
 

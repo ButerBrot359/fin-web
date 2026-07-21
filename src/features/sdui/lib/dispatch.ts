@@ -146,11 +146,14 @@ export function useSduiDispatch() {
         } else if (
           error instanceof ViewHttpError &&
           error.status === 404 &&
-          action.type === 'OPEN'
+          action.type === 'OPEN' &&
+          opts?.onOpenNotFound
         ) {
           // 404 на OPEN — штатный гейт раскатки (§2.3 SCRUM-244): тип ещё не
           // переведён на SDUI. Без тоста: хост покажет легаси-форму.
-          opts?.onOpenNotFound?.()
+          // Без обработчика (хост не поддерживает фолбэк) — уходим в общий
+          // else ниже и показываем тост, как раньше.
+          opts.onOpenNotFound()
         } else {
           const message = error instanceof Error ? error.message : i18n.t('sdui.requestError')
           showToast('error', message)

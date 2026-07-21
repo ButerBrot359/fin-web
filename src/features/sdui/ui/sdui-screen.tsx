@@ -30,6 +30,8 @@ interface SduiScreenProps {
   // closeAfter=true из behavior: закрыть вкладку БЕЗ навигации (навигацию делает
   // серверный effect navigate). Не путать с onSavedAndClosed — SCRUM-283 §4.3.
   onCloseAfter?: (route: string) => void
+  // OPEN не удался (напр. 404 — тип не переведён на SDUI): хост может показать легаси
+  onOpenFailed?: () => void
 }
 
 export const SduiScreen: FC<SduiScreenProps> = ({
@@ -40,6 +42,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   consumePendingAction,
   onSavedAndClosed,
   onCloseAfter,
+  onOpenFailed,
 }) => {
   const location = useLocation()
   const tree = useTreeStore((s) => s.root)
@@ -75,7 +78,9 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       useTreeStore.getState().setLayoutCode(layoutCode ?? null)
       useViewStateStore.getState().replaceAll(cached.viewState)
     } else {
-      void dispatch({ type: 'OPEN', layoutCode })
+      void dispatch({ type: 'OPEN', layoutCode }).then((ok) => {
+        if (!ok) onOpenFailed?.()
+      })
     }
 
     return () => {

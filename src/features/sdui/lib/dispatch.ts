@@ -6,7 +6,7 @@ import i18n from 'i18next'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { ActionBehavior, ViewAction } from '../types/view'
-import { viewTransport, ViewConflictError } from '../api/view-transport'
+import { viewTransport, ViewConflictError, ViewHttpError } from '../api/view-transport'
 import { applyValuePatches } from './patch-applier'
 import { validatePatches } from './validation'
 import { handleConflict } from './conflict-handler'
@@ -142,6 +142,13 @@ export function useSduiDispatch() {
             retry,
             reopen,
           )
+        } else if (
+          error instanceof ViewHttpError &&
+          error.status === 404 &&
+          action.type === 'OPEN'
+        ) {
+          // 404 на OPEN — штатный гейт раскатки (§2.3 SCRUM-244): тип ещё не
+          // переведён на SDUI. Без тоста: хост покажет легаси-форму.
         } else {
           const message = error instanceof Error ? error.message : i18n.t('sdui.requestError')
           showToast('error', message)

@@ -24,6 +24,15 @@ export class ViewConflictError extends Error {
   }
 }
 
+export class ViewHttpError extends Error {
+  constructor(
+    message: string,
+    public status: number | undefined,
+  ) {
+    super(message)
+  }
+}
+
 export const viewTransport = {
   post: async (req: ViewRequest): Promise<ViewResponse> => {
     try {
@@ -37,7 +46,10 @@ export const viewTransport = {
         throw new ViewConflictError(normalizeConflictBody(error.response.data))
       }
       if (axios.isAxiosError(error)) {
-        throw new Error(extractMessage(error.response?.data) ?? error.message)
+        throw new ViewHttpError(
+          extractMessage(error.response?.data) ?? error.message,
+          error.response?.status,
+        )
       }
       throw error
     }

@@ -2,6 +2,7 @@ import axios from 'axios'
 import i18n from 'i18next'
 
 import type { ViewRequest, ViewResponse, ConflictError } from '../types/view'
+import { normalizeConflictBody } from './normalize-conflict'
 import { resolveViewLanguage } from './view-language'
 
 const instance = axios.create({
@@ -33,7 +34,7 @@ export const viewTransport = {
       return res.data
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 409) {
-        throw new ViewConflictError(error.response.data as ConflictError)
+        throw new ViewConflictError(normalizeConflictBody(error.response.data))
       }
       if (axios.isAxiosError(error)) {
         throw new Error(extractMessage(error.response?.data) ?? error.message)

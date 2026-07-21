@@ -96,7 +96,9 @@ export interface NodeProps {
 }
 
 export interface ConflictError {
-  code: 'STALE_REVISION' | 'SESSION_NOT_FOUND'
+  // Открытый тип НАМЕРЕННО: закрытый union маскировал расхождение с проводом
+  // (код приходил в поле error и никогда не матчился) — SCRUM-244 §4.1
+  code: string
   formSessionId?: string
   currentRevision?: number
   snapshot?: { state: Record<string, unknown> }

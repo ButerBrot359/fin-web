@@ -29,6 +29,7 @@ export function useSduiDispatch() {
       action: ViewAction,
       behavior?: ActionBehavior | null,
       isRetry = false,
+      opts?: { onOpenNotFound?: () => void },
     ): Promise<boolean> => {
       const { formSessionId, revision } = session.getSession()
       const { replaceAll, merge, setSession, setRoot, bumpRevision, applyTreePatches, clearAllErrors, setFromServer, resetDirty, closeAfter, setOnDirtyClose } = session
@@ -149,6 +150,7 @@ export function useSduiDispatch() {
         ) {
           // 404 на OPEN — штатный гейт раскатки (§2.3 SCRUM-244): тип ещё не
           // переведён на SDUI. Без тоста: хост покажет легаси-форму.
+          opts?.onOpenNotFound?.()
         } else {
           const message = error instanceof Error ? error.message : i18n.t('sdui.requestError')
           showToast('error', message)

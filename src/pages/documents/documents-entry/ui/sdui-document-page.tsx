@@ -85,8 +85,9 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
       // пересоздание на каждый рендер вызвало бы лишние срабатывания.
       shouldPersistSession: (route: string) =>
         useWorkspaceTabsStore.getState().tabs.some((tab) => tab.id === route),
-      onDirtyChange: (route: string, dirty: boolean) =>
-        useFormCacheStore.getState().setDirty(route, dirty),
+      onDirtyChange: (route: string, dirty: boolean) => {
+        useFormCacheStore.getState().setDirty(route, dirty)
+      },
       consumePendingAction: (route: string) =>
         useFormCacheStore.getState().consumePendingAction(route),
       // closeAfter=true: закрыть только вкладку, без навигации (§4.3). Навигацию,

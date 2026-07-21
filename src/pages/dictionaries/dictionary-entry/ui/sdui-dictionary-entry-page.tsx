@@ -67,8 +67,9 @@ export const SduiDictionaryEntryPage: FC<SduiDictionaryEntryPageProps> = ({
     () => ({
       shouldPersistSession: (route: string) =>
         useWorkspaceTabsStore.getState().tabs.some((tab) => tab.id === route),
-      onDirtyChange: (route: string, dirty: boolean) =>
-        useFormCacheStore.getState().setDirty(route, dirty),
+      onDirtyChange: (route: string, dirty: boolean) => {
+        useFormCacheStore.getState().setDirty(route, dirty)
+      },
       consumePendingAction: (route: string) =>
         useFormCacheStore.getState().consumePendingAction(route),
       onCloseAfter: (route: string) => {

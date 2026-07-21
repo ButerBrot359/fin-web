@@ -132,7 +132,7 @@ export const LegacyDictionaryEntryPage = () => {
         form.reset(values)
       }
     } else if (isNew && copyFromData) {
-      const { Nomer: _, Kod: _k, ...restAttrs } = (copyFromData.attributes ?? {}) as Record<string, unknown>
+      const { Nomer: _, Kod: _k, ...restAttrs } = copyFromData.attributes ?? {}
       const values: Record<string, unknown> = { ...restAttrs }
       values.nameRu = copyFromData.nameRu
       values.nameKz = copyFromData.nameKz

@@ -33,7 +33,9 @@ export const DictionaryEntryPage = () => {
     return (
       <SduiDictionaryEntryPage
         moduleCode={moduleCode}
-        onOpenFailed={() => setSduiFailed(true)}
+        onOpenFailed={() => {
+          setSduiFailed(true)
+        }}
       />
     )
   }

@@ -159,6 +159,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       setRoot: useTreeStore.getState().setRoot,
       setSession: useTreeStore.getState().setSession,
       bumpRevision: useTreeStore.getState().bumpRevision,
+      getLayoutCode: () => useTreeStore.getState().layoutCode,
+      setLayoutCode: useTreeStore.getState().setLayoutCode,
       // closeAfter=true в root-сессии закрывает рабочую вкладку (без навигации)
       closeAfter: () => onCloseAfter?.(location.pathname),
       setOnDirtyClose: useTreeStore.getState().setOnDirtyClose,

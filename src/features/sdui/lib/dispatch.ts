@@ -10,6 +10,7 @@ import { applyValuePatches } from './patch-applier'
 import { validatePatches } from './validation'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
+import { isRetryableAfterReopen } from './reopen-retry-policy'
 import { useSduiSession } from './sdui-session-context'
 import { usePanelStore } from './stores/panel-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
@@ -63,7 +64,14 @@ export function useSduiDispatch() {
       })
 
       const reopen = async () => {
-        await dispatch({ type: 'OPEN' })
+        // layoutCode обязателен для OPEN (§2.3 спеки SCRUM-244) — без него
+        // переоткрытие уходило в цикл 409 → 400. Берём сохранённый с первого OPEN.
+        const layoutCode = session.getLayoutCode?.() ?? undefined
+        const ok = await dispatch({ type: 'OPEN', layoutCode })
+        // Повторяем исходное действие, чтобы клик не терялся (кроме команд записи)
+        if (ok && isRetryableAfterReopen(action, behavior)) {
+          void dispatch(action, behavior, true)
+        }
       }
 
       try {
@@ -88,6 +96,7 @@ export function useSduiDispatch() {
 
         if (action.type === 'OPEN') {
           setSession(res.formSessionId, res.revision)
+          session.setLayoutCode?.(action.layoutCode ?? null)
           if (res.tree) setRoot(res.tree)
           setOnDirtyClose?.(res.onDirtyClose ?? null)
           replaceAll(res.state ?? {})

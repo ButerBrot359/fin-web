@@ -9,11 +9,13 @@ interface TreeStoreState {
   revision: number | null
   // Дескриптор «закрыть грязную вкладку» с OPEN (SCRUM-283)
   onDirtyClose: ViewNodeAction | null
+  layoutCode: string | null
 
   setRoot: (node: ViewNode) => void
   setSession: (id: string, rev: number) => void
   bumpRevision: (rev: number) => void
   setOnDirtyClose: (desc: ViewNodeAction | null) => void
+  setLayoutCode: (code: string | null) => void
   applyPatches: (patches: ViewPatch[]) => void
   clearAllErrors: () => void
   reset: () => void
@@ -24,10 +26,13 @@ export const useTreeStore = create<TreeStoreState>((set, get) => ({
   formSessionId: null,
   revision: null,
   onDirtyClose: null,
+  layoutCode: null,
 
   setRoot: (node) => set({ root: node }),
 
   setOnDirtyClose: (desc) => set({ onDirtyClose: desc }),
+
+  setLayoutCode: (code) => set({ layoutCode: code }),
 
   setSession: (id, rev) => set({ formSessionId: id, revision: rev }),
 
@@ -46,5 +51,5 @@ export const useTreeStore = create<TreeStoreState>((set, get) => ({
   },
 
   reset: () =>
-    set({ root: null, formSessionId: null, revision: null, onDirtyClose: null }),
+    set({ root: null, formSessionId: null, revision: null, onDirtyClose: null, layoutCode: null }),
 }))

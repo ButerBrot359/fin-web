@@ -43,6 +43,19 @@ export const viewTransport = {
     }
   },
 
+  // Продление form-session долгоживущих форм (карточка справочника) — §2.2
+  // спеки SCRUM-244. true = сессия жива, false = 404 (нужно переоткрытие).
+  // Прочие ошибки (сеть, 5xx) не считаем смертью сессии — пинг продолжается.
+  heartbeat: async (sessionId: string): Promise<boolean> => {
+    try {
+      await instance.post(`/api/view/${sessionId}/heartbeat`)
+      return true
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) return false
+      return true
+    }
+  },
+
   closeBeacon: (sessionId: string): void => {
     const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) ?? ''
     navigator.sendBeacon(`${baseUrl}/api/view/${sessionId}`, '')

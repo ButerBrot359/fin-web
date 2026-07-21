@@ -10,6 +10,7 @@ import { useSduiCacheStore } from '../lib/stores/sdui-cache-store'
 import { usePanelStore } from '../lib/stores/panel-store'
 import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
+import { useSessionHeartbeat } from '../lib/hooks/use-session-heartbeat'
 import { SduiSessionProvider, type SduiSessionValue } from '../lib/sdui-session-context'
 import { reopenFormForLanguageChange } from '../lib/language-reopen'
 import { NodeRenderer } from './node-renderer'
@@ -45,6 +46,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   const reset = useTreeStore((s) => s.reset)
   const dispatch = useSduiDispatch()
   const dirty = useViewStateStore((s) => s.dirty)
+  const formSessionId = useTreeStore((s) => s.formSessionId)
+  useSessionHeartbeat(formSessionId)
 
   const title = (tree?.props?.title as string | undefined) ?? ''
   useEffect(() => {

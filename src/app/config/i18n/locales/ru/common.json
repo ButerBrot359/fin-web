@@ -463,7 +463,11 @@
       "type": "Тип",
       "unsupportedMember": "Тип не поддерживается (в разработке)"
     },
-    "downloadError": "Не удалось сформировать файл"
+    "downloadError": "Не удалось сформировать файл",
+    "confirm": {
+      "ok": "Да",
+      "cancel": "Нет"
+    }
   },
   "tarifikatsiya": {
     "workerSummary": "Итоги по работникам",

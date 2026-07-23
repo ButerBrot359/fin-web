@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState, type FC } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import {
+  useLocation,
+  useNavigate,
+  type NavigateFunction,
+} from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 
 import {
@@ -19,15 +23,26 @@ import { PageHeader } from '@/widgets/page-header'
 import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
 
-import { getDocumentListPath } from '../lib/utils/get-document-paths'
 import { useUnsavedChangesDialog } from '../lib/hooks/use-unsaved-changes-dialog'
 
 interface SduiDocumentPageProps {
   moduleCode: string
 }
 
+// После закрытия вкладки садимся на соседнюю вкладку рабочего стола (или дефолт,
+// если вкладок не осталось) — сервер маршрут не даёт, сосед выбирается на клиенте
+// (SCRUM-283 v2 §2.3). Вызывать ПОСЛЕ closeTab, чтобы текущая уже была убрана.
+function navigateToNeighborTab(navigate: NavigateFunction): void {
+  const { tabs } = useWorkspaceTabsStore.getState()
+  if (tabs.length > 0) {
+    const next = tabs[0]
+    void navigate(next.path + next.search)
+  } else {
+    void navigate('/')
+  }
+}
+
 export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
-  const { pageCode = '' } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useSduiDispatch()
@@ -50,8 +65,6 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
   const [tabTitle, setTabTitle] = useState('')
   useTabMeta(tabTitle)
 
-  const listPath = getDocumentListPath({ pageCode, moduleCode })
-
   const closeCurrentTab = () => {
     useFormCacheStore.getState().removeTab(location.pathname)
     useWorkspaceTabsStore.getState().closeTab(location.pathname)
@@ -60,15 +73,17 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
   const unsavedDialog = useUnsavedChangesDialog({
     onSave: () => {
       // Имя команды и поведение — из серверного дескриптора (SCRUM-283 §4.6).
-      // closeCurrentTab/navigate здесь НЕ нужны: closeAfter=true закроет вкладку,
-      // серверный effect navigate уведёт в список.
+      // closeCurrentTab/navigate здесь НЕ нужны: у дескриптора closeAfter=true —
+      // dispatch сам закроет вкладку и сядет на соседнюю через onCloseAfter (§4.3).
       const desc = useTreeStore.getState().onDirtyClose
       if (!desc?.command) return
       void dispatch({ type: 'COMMAND', command: desc.command }, desc.behavior)
     },
     onDiscard: () => {
+      // «Не сохранять»: команда не шлётся — закрываем вкладку и садимся на соседнюю
+      // сами, единообразно с onSave (SCRUM-283 v2 §2.3).
       closeCurrentTab()
-      void navigate(listPath)
+      navigateToNeighborTab(navigate)
     },
   })
 
@@ -77,7 +92,7 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
       unsavedDialog.open()
     } else {
       closeCurrentTab()
-      void navigate(listPath)
+      navigateToNeighborTab(navigate)
     }
   }
 
@@ -92,22 +107,13 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
       },
       consumePendingAction: (route: string) =>
         useFormCacheStore.getState().consumePendingAction(route),
-      // closeAfter=true: закрыть только вкладку, без навигации (§4.3). Навигацию,
-      // если нужна, делает серверный effect navigate.
-      onCloseAfter: (route: string) => {
+      // closeAfter=true: закрыть вкладку. didNavigate=false (save+closeAfter, без
+      // серверного navigate) → сесть на соседнюю; didNavigate=true (postAndClose
+      // увёл в список) → только закрыть, не перебивая серверный переход (SCRUM-283 v2).
+      onCloseAfter: (route: string, didNavigate?: boolean) => {
         useFormCacheStore.getState().removeTab(route)
         useWorkspaceTabsStore.getState().closeTab(route)
-      },
-      onSavedAndClosed: (route: string) => {
-        useFormCacheStore.getState().removeTab(route)
-        useWorkspaceTabsStore.getState().closeTab(route)
-        const { tabs } = useWorkspaceTabsStore.getState()
-        if (tabs.length > 0) {
-          const next = tabs[0]
-          void navigate(next.path + next.search)
-        } else {
-          void navigate('/')
-        }
+        if (!didNavigate) navigateToNeighborTab(navigate)
       },
     }),
     [navigate],

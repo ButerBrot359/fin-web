@@ -155,13 +155,31 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
     expect(sessionMock.closeAfter).not.toHaveBeenCalled()
   })
 
-  it('closeAfter: true → closeAfter вызван', async () => {
+  it('closeAfter: true, без navigate-эффекта → closeAfter(false) (SCRUM-283 v2)', async () => {
+    // commandResponse.effects = [] → сервер не навигировал → хост сядет на соседнюю
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current(
-      { type: 'COMMAND', command: 'saveAndClose' },
+      { type: 'COMMAND', command: 'save' },
       { flushPendingTables: true, resetsDirty: true, closeAfter: true },
     )
     expect(sessionMock.closeAfter).toHaveBeenCalledTimes(1)
+    expect(sessionMock.closeAfter).toHaveBeenCalledWith(false)
+  })
+
+  it('closeAfter: true + navigate-эффект → closeAfter(true), хост не навигирует (postAndClose)', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValue({
+      formSessionId: 'fs-1',
+      revision: 2,
+      patches: [],
+      statePatch: {},
+      effects: [{ type: 'navigate', route: '/documents/SchetKOplate' }],
+    } as unknown as ViewResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current(
+      { type: 'COMMAND', command: 'postAndClose' },
+      { flushPendingTables: true, resetsDirty: true, closeAfter: true },
+    )
+    expect(sessionMock.closeAfter).toHaveBeenCalledWith(true)
   })
 
   it('resetsDirty по умолчанию false: без флага dirty не сбрасывается', async () => {

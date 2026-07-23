@@ -27,9 +27,10 @@ interface SduiScreenProps {
   consumePendingAction?: (route: string) => string | null
   // Вызывается после успешного save-and-close: хост закрывает вкладку и навигирует
   onSavedAndClosed?: (route: string) => void
-  // closeAfter=true из behavior: закрыть вкладку БЕЗ навигации (навигацию делает
-  // серверный effect navigate). Не путать с onSavedAndClosed — SCRUM-283 §4.3.
-  onCloseAfter?: (route: string) => void
+  // closeAfter=true из behavior: закрыть вкладку. didNavigate=true → сервер уже
+  // увёл эффектом navigate (напр. postAndClose→список), хост навигацию не дублирует;
+  // didNavigate=false (save+closeAfter) → хост садится на соседнюю вкладку (SCRUM-283 v2).
+  onCloseAfter?: (route: string, didNavigate?: boolean) => void
   // Срабатывает только на 404 OPEN — штатный гейт раскатки (§2.3 SCRUM-244):
   // тип ещё не переведён на SDUI, хост может показать легаси-форму. Прочие
   // ошибки OPEN (сеть, 5xx) сюда не попадают — прежнее поведение (тост + скелетон).
@@ -187,7 +188,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       getLayoutCode: () => useTreeStore.getState().layoutCode,
       setLayoutCode: useTreeStore.getState().setLayoutCode,
       // closeAfter=true в root-сессии закрывает рабочую вкладку (без навигации)
-      closeAfter: () => onCloseAfter?.(location.pathname),
+      closeAfter: (didNavigate?: boolean) =>
+        onCloseAfter?.(location.pathname, didNavigate),
       setOnDirtyClose: useTreeStore.getState().setOnDirtyClose,
       applyTreePatches: useTreeStore.getState().applyPatches,
       clearAllErrors: useTreeStore.getState().clearAllErrors,

@@ -28,8 +28,9 @@ export interface SduiSessionValue {
   // «не зациклиться» держится на этом естественном отказе, а не на явном guard'е.
   getLayoutCode?: () => string | null
   setLayoutCode?: (code: string | null) => void
-  // Закрыть текущую сессию: вкладку (root) или панель (panel) — SCRUM-283
-  closeAfter?: () => void
+  // Закрыть текущую сессию: вкладку (root) или панель (panel) — SCRUM-283.
+  // didNavigate: сервер уже увёл эффектом navigate → хост не навигирует сам (v2).
+  closeAfter?: (didNavigate?: boolean) => void
   // Сохранить дескриптор «закрыть грязную вкладку» с OPEN — SCRUM-283
   setOnDirtyClose?: (desc: ViewNodeAction | null) => void
   applyTreePatches: (patches: ViewPatch[]) => void

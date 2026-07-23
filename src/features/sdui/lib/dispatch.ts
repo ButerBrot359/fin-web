@@ -135,7 +135,12 @@ export function useSduiDispatch() {
           effectHandler.playAll(res.effects ?? [])       // navigate играет здесь…
           if (action.type === 'COMMAND') {
             if (shouldReset) resetDirty()
-            if (shouldClose) closeAfter?.()               // …закрытие — после эффектов
+            // Уже ли сервер увёл (эффект navigate)? Хост по этому флагу решает,
+            // навигировать ли самому: закрытие вкладки (save+closeAfter, без
+            // серверного navigate) → сесть на соседнюю; postAndClose (navigate в
+            // список) → только закрыть, не перебивая серверный переход (SCRUM-283 v2).
+            const didNavigate = (res.effects ?? []).some((e) => e.type === 'navigate')
+            if (shouldClose) closeAfter?.(didNavigate)    // …закрытие — после эффектов
           }
         }
         return true

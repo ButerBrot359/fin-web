@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 
 import type { ViewNode } from '../../types/view'
-import { useSduiSession } from '../sdui-session-context'
+import { useSduiSession, useBindingValue } from '../sdui-session-context'
 import { useSduiDispatch } from '../dispatch'
 import {
   registerPendingFlush,
@@ -63,10 +63,13 @@ export function useTableSync(
   node: ViewNode,
   columns: TableColumnDef[],
 ): UseTableSyncResult {
-  const { getValue, setValue } = useSduiSession()
+  const { setValue } = useSduiSession()
   const dispatch = useSduiDispatch()
 
-  const canonRows = (getValue(node.binding) as TableRow[] | undefined) ?? EMPTY_ROWS
+  // Реактивная подписка на canon (как master-detail в SCRUM-282 #4): getValue давал
+  // разовый снимок — серверный setValue из COMMAND-ответа (например, «Заполнить (ПК)»)
+  // не ре-рендерил таблицу, строки молча терялись до следующего чужого рендера.
+  const canonRows = (useBindingValue(node.binding) as TableRow[] | undefined) ?? EMPTY_ROWS
   const [localRows, setLocalRows] = useState<TableRow[]>(canonRows)
 
   // Keep a ref in sync with localRows to avoid stale closures

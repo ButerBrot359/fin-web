@@ -92,13 +92,21 @@ export const DialogHost = () => {
 
         const content = panel.session ? (
           <PanelFormProvider panel={panel} />
-        ) : (
-          // Панель без сессии (childState): патчей не бывает, но биндинги
-          // должны читать значения из снимка viewState — без read-only
-          // сессии диалог рендерится пустым.
+        ) : panel.hasChildState ? (
+          // Панель без сессии, но с childState-снимком (движения, related-docs):
+          // патчей не бывает, биндинги читают значения из снимка viewState —
+          // без read-only сессии диалог рендерится пустым.
           <PanelStateProvider panel={panel}>
             <NodeRenderer node={panel.node} />
           </PanelStateProvider>
+        ) : (
+          // Панель без сессии И без childState (choice-drawer, ref.showAll):
+          // её кнопки (ref.create/ref.select/ref.copy) — команды РОДИТЕЛЬСКОЙ
+          // сессии, а ответные патчи (setValue поля) адресованы родительской
+          // форме. Голый NodeRenderer наследует SduiSessionProvider экрана;
+          // обёртка в read-only PanelStateProvider ломала бы и то и другое
+          // (409 SESSION_NOT_FOUND + проглоченные патчи). SCRUM-265 v1.
+          <NodeRenderer node={panel.node} />
         )
 
         if (panel.presentation === 'page') {

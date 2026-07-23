@@ -29,6 +29,7 @@ export function openDialogAsPanel(
     node: effect.node!,
     presentation: presentation as 'drawer' | 'modal' | 'page',
     viewState: effect.childState ?? {},
+    hasChildState: effect.childState != null,
     ...(inTab ? { openInWorkspaceTab: true, tabKey } : {}),
   }
   if (effect.sessionId) {

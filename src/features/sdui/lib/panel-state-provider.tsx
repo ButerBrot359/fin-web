@@ -5,6 +5,7 @@ import {
   type SduiSessionValue,
 } from './sdui-session-context'
 import type { PanelEntry } from './stores/panel-store'
+import { useTreeStore } from './stores/tree-store'
 
 const warnReadOnly = () => {
   console.warn('[sdui] panel tab is read-only, mutation ignored')
@@ -23,10 +24,21 @@ export const PanelStateProvider = ({
 }) => {
   const sessionValue: SduiSessionValue = {
     kind: 'panel',
-    getSession: () => ({
-      formSessionId: panel.session?.formSessionId ?? null,
-      revision: panel.session?.revision ?? null,
-    }),
+    // Команды из childState-панели (напр. переход к документу из related-docs)
+    // адресуются сессии формы-владельца: без fallback на root-стор dispatch
+    // ушёл бы с formSessionId=null и получил 409 SESSION_NOT_FOUND. Патчи ответа
+    // по-прежнему дропаются (warnReadOnly) — панель остаётся read-only, но
+    // эффекты (navigate, openDialog) играют штатно. SCRUM-265 v1 §4.4.
+    getSession: () => {
+      if (panel.session) {
+        return {
+          formSessionId: panel.session.formSessionId,
+          revision: panel.session.revision,
+        }
+      }
+      const s = useTreeStore.getState()
+      return { formSessionId: s.formSessionId, revision: s.revision }
+    },
     getValue: (binding) => (binding ? panel.viewState[binding] : undefined),
     setValue: warnReadOnly,
     setFromServer: warnReadOnly,

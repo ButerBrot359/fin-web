@@ -13,6 +13,10 @@ export interface PanelEntry {
     targetNodeId?: string
   }
   viewState: Record<string, unknown>
+  // Панель пришла с childState-снимком (self-contained, read-only: движения,
+  // related-docs). Без него панель без сессии (choice-drawer, ref.showAll)
+  // живёт в РОДИТЕЛЬСКОМ контексте экрана — см. dialog-host (SCRUM-265 v1).
+  hasChildState?: boolean
   // Панель показывается workspace-вкладкой (Блок D): DialogHost её пропускает,
   // живёт до закрытия вкладки (переживает reset() при размонтировании формы).
   openInWorkspaceTab?: boolean

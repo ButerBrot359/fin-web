@@ -14,6 +14,7 @@ import { createEffectHandler } from './effect-handler'
 import { isRetryableAfterReopen } from './reopen-retry-policy'
 import { useSduiSession } from './sdui-session-context'
 import { usePanelStore } from './stores/panel-store'
+import { useConfirmStore } from './stores/confirm-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { relaySelectionToParent } from './relay-selection'
 import { openDialogAsPanel } from './open-dialog-panel'
@@ -66,6 +67,13 @@ export function useSduiDispatch() {
         },
         invalidateLists: () => {
           void queryClient.invalidateQueries({ queryKey: ['sdui-list'] })
+        },
+        confirm: (command, message) => {
+          // SCRUM-244 v3 §1.2: по «Да» шлём COMMAND в ту же сессию (revision
+          // берётся штатно внутри dispatch), по «Нет» — no-op, ничего не шлём.
+          void useConfirmStore.getState().ask(message).then((ok) => {
+            if (ok) void dispatch({ type: 'COMMAND', command })
+          })
         },
       })
 

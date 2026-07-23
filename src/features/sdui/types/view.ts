@@ -83,6 +83,9 @@ export interface ViewEffect {
   level?: string
   message?: string
   url?: string
+  // Команда, которую фронт шлёт по «Да» в диалоге confirm (SCRUM-244 v3 §1.1).
+  // Непрозрачная строка: не парсить, не собирать — сервер валидирует её сам.
+  confirmCommand?: string
   sessionId?: string
   childRevision?: number
   childState?: Record<string, unknown>

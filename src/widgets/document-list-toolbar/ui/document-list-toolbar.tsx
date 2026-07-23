@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { unpostDocumentEntry } from '@/entities/document-entry'
+import { useDocumentType } from '@/entities/document-type'
 import { openMovementsForEntry } from '@/features/sdui'
 import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -56,6 +57,10 @@ export const DocumentListToolbar = ({
     moduleCode,
     selectedRowId ?? undefined
   )
+
+  // 1С: у формы списка исключены Create/Copy (например «Прием на работу (списком)»).
+  // Тип уже в suspense-кеше — страница списка грузит его тем же ключом (SCRUM-265 FE-4).
+  const { interactiveCreationForbidden } = useDocumentType(moduleCode)
 
   const queryClient = useQueryClient()
 
@@ -136,21 +141,25 @@ export const DocumentListToolbar = ({
     <>
       <div className="flex items-center justify-between pb-3">
         <div className="flex items-center gap-2">
-          <Button variant="primary" onClick={handleCreate}>
-            {t('actions.create')}
-          </Button>
+          {!interactiveCreationForbidden && (
+            <Button variant="primary" onClick={handleCreate}>
+              {t('actions.create')}
+            </Button>
+          )}
 
-          <Button
-            variant="secondary"
-            aria-label={t('actions.copy')}
-            disabled={selectedRowId == null}
-            startIcon={<CopyDocIcon className="h-5 w-5" />}
-            onClick={() =>
-              void navigate(
-                `/modules/${pageCode}/document/${moduleCode}/new?copyFrom=${String(selectedRowId)}`
-              )
-            }
-          />
+          {!interactiveCreationForbidden && (
+            <Button
+              variant="secondary"
+              aria-label={t('actions.copy')}
+              disabled={selectedRowId == null}
+              startIcon={<CopyDocIcon className="h-5 w-5" />}
+              onClick={() =>
+                void navigate(
+                  `/modules/${pageCode}/document/${moduleCode}/new?copyFrom=${String(selectedRowId)}`
+                )
+              }
+            />
+          )}
 
           <div className="flex items-center gap-2">
             <Button

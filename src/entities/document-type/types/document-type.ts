@@ -12,6 +12,9 @@ export interface DocumentType {
   isActive: boolean
   isTablePart: boolean
   newView: boolean
+  // 1С: форма списка исключает Create/Copy — интерактивное создание из списка
+  // запрещено (SCRUM-265 FE-4). Optional: старый бэк поля не шлёт → undefined = false.
+  interactiveCreationForbidden?: boolean
   attributes: DocumentAttribute[]
 }
 

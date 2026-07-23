@@ -10,6 +10,7 @@ import { useSduiCacheStore } from '../lib/stores/sdui-cache-store'
 import { usePanelStore } from '../lib/stores/panel-store'
 import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
+import { useSessionHeartbeat } from '../lib/hooks/use-session-heartbeat'
 import { SduiSessionProvider, type SduiSessionValue } from '../lib/sdui-session-context'
 import { reopenFormForLanguageChange } from '../lib/language-reopen'
 import { NodeRenderer } from './node-renderer'
@@ -29,6 +30,10 @@ interface SduiScreenProps {
   // closeAfter=true из behavior: закрыть вкладку БЕЗ навигации (навигацию делает
   // серверный effect navigate). Не путать с onSavedAndClosed — SCRUM-283 §4.3.
   onCloseAfter?: (route: string) => void
+  // Срабатывает только на 404 OPEN — штатный гейт раскатки (§2.3 SCRUM-244):
+  // тип ещё не переведён на SDUI, хост может показать легаси-форму. Прочие
+  // ошибки OPEN (сеть, 5xx) сюда не попадают — прежнее поведение (тост + скелетон).
+  onOpenFailed?: () => void
 }
 
 export const SduiScreen: FC<SduiScreenProps> = ({
@@ -39,12 +44,15 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   consumePendingAction,
   onSavedAndClosed,
   onCloseAfter,
+  onOpenFailed,
 }) => {
   const location = useLocation()
   const tree = useTreeStore((s) => s.root)
   const reset = useTreeStore((s) => s.reset)
   const dispatch = useSduiDispatch()
   const dirty = useViewStateStore((s) => s.dirty)
+  const formSessionId = useTreeStore((s) => s.formSessionId)
+  useSessionHeartbeat(formSessionId)
 
   const title = (tree?.props?.title as string | undefined) ?? ''
   useEffect(() => {
@@ -68,10 +76,22 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       if (cached.formSessionId != null && cached.revision != null) {
         useTreeStore.getState().setSession(cached.formSessionId, cached.revision)
       }
+      // layoutCode не хранится в кэше вкладки: источник правды — проп экрана.
+      // Без этого reopen после потери сессии на восстановленной вкладке
+      // снова ушёл бы без layoutCode (ревью Task 2 SCRUM-244).
+      useTreeStore.getState().setLayoutCode(layoutCode ?? null)
       useViewStateStore.getState().replaceAll(cached.viewState)
     } else {
+      // main: устаревший кэш вкладки снимаем перед переоткрытием;
+      // dev (SCRUM-244): 404 на OPEN → фолбэк на легаси через onOpenNotFound.
       if (cached) useSduiCacheStore.getState().remove(route)
-      void dispatch({ type: 'OPEN', layoutCode })
+      void dispatch({ type: 'OPEN', layoutCode }, null, false, {
+        onOpenNotFound: onOpenFailed
+          ? () => {
+              onOpenFailed()
+            }
+          : undefined,
+      })
     }
 
     return () => {
@@ -164,6 +184,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       setRoot: useTreeStore.getState().setRoot,
       setSession: useTreeStore.getState().setSession,
       bumpRevision: useTreeStore.getState().bumpRevision,
+      getLayoutCode: () => useTreeStore.getState().layoutCode,
+      setLayoutCode: useTreeStore.getState().setLayoutCode,
       // closeAfter=true в root-сессии закрывает рабочую вкладку (без навигации)
       closeAfter: () => onCloseAfter?.(location.pathname),
       setOnDirtyClose: useTreeStore.getState().setOnDirtyClose,

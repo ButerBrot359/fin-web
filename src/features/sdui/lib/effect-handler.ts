@@ -14,6 +14,10 @@ export interface EffectHandlerDeps {
   closeSession: () => Promise<void>
   openDialog: (effect: ViewEffect) => void
   closeDialog: (effect: ViewEffect) => void
+  invalidateLists: () => void
+  // Мост эффекта confirm (SCRUM-244 v3 §1.2): показать диалог с message и по
+  // «Да» отправить command в ту же сессию; по «Нет» — no-op. Реализация в dispatch.
+  confirm: (command: string, message: string) => void
 }
 
 export function createEffectHandler(deps: EffectHandlerDeps) {
@@ -37,6 +41,21 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
           (effect.level as ToastLevel) ?? 'info',
           effect.message ?? '',
         )
+        break
+
+      case 'refresh':
+        // Списки (LIST-ноды) перечитываются через TanStack Query. Payload
+        // эффекта игнорируем намеренно: адресации в контракте нет (SCRUM-244 v3
+        // §2 — поле id зарезервировано, но сервером не заполняется), инвалидация
+        // всех SDUI-списков — ровно то поведение, на которое эффект рассчитан.
+        deps.invalidateLists()
+        break
+
+      case 'confirm':
+        // SCRUM-244 v3 §1: message уже билингвально резолвлен сервером,
+        // confirmCommand передаём как есть. Провод (диалог + COMMAND по «Да») —
+        // в dispatch, здесь только вызываем мост.
+        deps.confirm(effect.confirmCommand ?? '', effect.message ?? '')
         break
 
       case 'download': {
@@ -71,7 +90,13 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
   }
 
   function playAll(effects: ViewEffect[]): void {
-    effects.forEach(play)
+    for (const effect of effects) {
+      play(effect)
+      // confirm эксклюзивен (SCRUM-244 v3 §1.3): сервер обязан слать его
+      // единственным, но обрываем массив на первом сами — двойная гарантия,
+      // что за модальным подтверждением не сыграет второй эффект.
+      if (effect.type === 'confirm') break
+    }
   }
 
   return { play, playAll }

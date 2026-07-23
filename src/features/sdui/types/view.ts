@@ -83,6 +83,9 @@ export interface ViewEffect {
   level?: string
   message?: string
   url?: string
+  // Команда, которую фронт шлёт по «Да» в диалоге confirm (SCRUM-244 v3 §1.1).
+  // Непрозрачная строка: не парсить, не собирать — сервер валидирует её сам.
+  confirmCommand?: string
   sessionId?: string
   childRevision?: number
   childState?: Record<string, unknown>
@@ -96,7 +99,9 @@ export interface NodeProps {
 }
 
 export interface ConflictError {
-  code: 'STALE_REVISION' | 'SESSION_NOT_FOUND'
+  // Открытый тип НАМЕРЕННО: закрытый union маскировал расхождение с проводом
+  // (код приходил в поле error и никогда не матчился) — SCRUM-244 §4.1
+  code: string
   formSessionId?: string
   currentRevision?: number
   snapshot?: { state: Record<string, unknown> }

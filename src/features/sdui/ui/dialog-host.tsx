@@ -11,6 +11,7 @@ import { applyPatches, clearErrors } from '../lib/patch-applier'
 import type { ViewNode, ViewPatch } from '../types/view'
 import { NodeRenderer } from './node-renderer'
 import { PanelStateProvider } from '../lib/panel-state-provider'
+import { ConfirmDialogHost } from './confirm-dialog-host'
 
 const PANEL_BG = '#F2F6FD'
 const BACKDROP_BG = 'rgba(34, 33, 36, 0.6)'
@@ -186,6 +187,7 @@ export const DialogHost = () => {
           </Dialog>
         )
       })}
+      <ConfirmDialogHost />
     </>
   )
 }

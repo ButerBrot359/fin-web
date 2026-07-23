@@ -40,6 +40,11 @@ const DocumentRedirect = lazy(() =>
     default: m.DocumentRedirect,
   }))
 )
+const DictionaryRedirect = lazy(() =>
+  import('@/pages/dictionaries/dictionary-redirect').then((m) => ({
+    default: m.DictionaryRedirect,
+  }))
+)
 const DictionaryPage = lazy(() =>
   import('@/pages/dictionaries/dictionary-list').then((m) => ({
     default: m.DictionaryPage,
@@ -148,6 +153,14 @@ const AppRoutes = () => {
           <Route
             path="/documents/:typeCode/new"
             element={<DocumentRedirect mode="new" />}
+          />
+          <Route
+            path="/dictionaries/:typeCode"
+            element={<DictionaryRedirect mode="list" />}
+          />
+          <Route
+            path="/dictionaries/:typeCode/:entryId"
+            element={<DictionaryRedirect mode="entry" />}
           />
           <Route
             path="/modules/:pageCode/dictionary/:moduleCode"

@@ -1,17 +1,20 @@
 import { useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import i18n from 'i18next'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { ActionBehavior, ViewAction } from '../types/view'
-import { viewTransport, ViewConflictError } from '../api/view-transport'
+import { viewTransport, ViewConflictError, ViewHttpError } from '../api/view-transport'
 import { applyValuePatches } from './patch-applier'
 import { validatePatches } from './validation'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
+import { isRetryableAfterReopen } from './reopen-retry-policy'
 import { useSduiSession } from './sdui-session-context'
 import { usePanelStore } from './stores/panel-store'
+import { useConfirmStore } from './stores/confirm-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { relaySelectionToParent } from './relay-selection'
 import { openDialogAsPanel } from './open-dialog-panel'
@@ -19,6 +22,7 @@ import { openDialogAsPanel } from './open-dialog-panel'
 export function useSduiDispatch() {
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const session = useSduiSession()
 
   const dispatch = useCallback(
@@ -26,6 +30,7 @@ export function useSduiDispatch() {
       action: ViewAction,
       behavior?: ActionBehavior | null,
       isRetry = false,
+      opts?: { onOpenNotFound?: () => void },
     ): Promise<boolean> => {
       const { formSessionId, revision } = session.getSession()
       const { replaceAll, merge, setSession, setRoot, bumpRevision, applyTreePatches, clearAllErrors, setFromServer, resetDirty, closeAfter, setOnDirtyClose } = session
@@ -60,10 +65,30 @@ export function useSduiDispatch() {
           if (effect.id) usePanelStore.getState().remove(effect.id)
           relaySelectionToParent(effect, (effects) => effectHandler.playAll(effects))
         },
+        invalidateLists: () => {
+          void queryClient.invalidateQueries({ queryKey: ['sdui-list'] })
+        },
+        confirm: (command, message) => {
+          // SCRUM-244 v3 §1.2: по «Да» шлём COMMAND в ту же сессию (revision
+          // берётся штатно внутри dispatch), по «Нет» — no-op, ничего не шлём.
+          void useConfirmStore.getState().ask(message).then((ok) => {
+            if (ok) void dispatch({ type: 'COMMAND', command })
+          })
+        },
       })
 
       const reopen = async () => {
-        await dispatch({ type: 'OPEN' })
+        // isRetry: мы уже внутри повтора после восстановления — второй
+        // SESSION_NOT_FOUND подряд означает нестабильный бэк; не зацикливаемся.
+        if (isRetry) return
+        // layoutCode обязателен для OPEN (§2.3 спеки SCRUM-244) — без него
+        // переоткрытие уходило в цикл 409 → 400. Берём сохранённый с первого OPEN.
+        const layoutCode = session.getLayoutCode?.() ?? undefined
+        const ok = await dispatch({ type: 'OPEN', layoutCode })
+        // Повторяем исходное действие, чтобы клик не терялся (кроме команд записи)
+        if (ok && isRetryableAfterReopen(action, behavior)) {
+          void dispatch(action, behavior, true)
+        }
       }
 
       try {
@@ -88,6 +113,7 @@ export function useSduiDispatch() {
 
         if (action.type === 'OPEN') {
           setSession(res.formSessionId, res.revision)
+          session.setLayoutCode?.(action.layoutCode ?? null)
           if (res.tree) setRoot(res.tree)
           setOnDirtyClose?.(res.onDirtyClose ?? null)
           replaceAll(res.state ?? {})
@@ -125,6 +151,17 @@ export function useSduiDispatch() {
             retry,
             reopen,
           )
+        } else if (
+          error instanceof ViewHttpError &&
+          error.status === 404 &&
+          action.type === 'OPEN' &&
+          opts?.onOpenNotFound
+        ) {
+          // 404 на OPEN — штатный гейт раскатки (§2.3 SCRUM-244): тип ещё не
+          // переведён на SDUI. Без тоста: хост покажет легаси-форму.
+          // Без обработчика (хост не поддерживает фолбэк) — уходим в общий
+          // else ниже и показываем тост, как раньше.
+          opts.onOpenNotFound()
         } else {
           const message = error instanceof Error ? error.message : i18n.t('sdui.requestError')
           showToast('error', message)
@@ -132,7 +169,7 @@ export function useSduiDispatch() {
         return false
       }
     },
-    [location.pathname, location.search, navigate, session],
+    [location.pathname, location.search, navigate, session, queryClient],
   )
 
   return dispatch

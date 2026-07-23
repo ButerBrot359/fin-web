@@ -2,6 +2,7 @@ import axios from 'axios'
 import i18n from 'i18next'
 
 import type { ViewRequest, ViewResponse, ConflictError } from '../types/view'
+import { normalizeConflictBody } from './normalize-conflict'
 import { resolveViewLanguage } from './view-language'
 
 const instance = axios.create({
@@ -23,6 +24,15 @@ export class ViewConflictError extends Error {
   }
 }
 
+export class ViewHttpError extends Error {
+  constructor(
+    message: string,
+    public status: number | undefined,
+  ) {
+    super(message)
+  }
+}
+
 export const viewTransport = {
   post: async (req: ViewRequest): Promise<ViewResponse> => {
     try {
@@ -33,12 +43,28 @@ export const viewTransport = {
       return res.data
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 409) {
-        throw new ViewConflictError(error.response.data as ConflictError)
+        throw new ViewConflictError(normalizeConflictBody(error.response.data))
       }
       if (axios.isAxiosError(error)) {
-        throw new Error(extractMessage(error.response?.data) ?? error.message)
+        throw new ViewHttpError(
+          extractMessage(error.response?.data) ?? error.message,
+          error.response?.status,
+        )
       }
       throw error
+    }
+  },
+
+  // Продление form-session долгоживущих форм (карточка справочника) — §2.2
+  // спеки SCRUM-244. true = сессия жива, false = 404 (нужно переоткрытие).
+  // Прочие ошибки (сеть, 5xx) не считаем смертью сессии — пинг продолжается.
+  heartbeat: async (sessionId: string): Promise<boolean> => {
+    try {
+      await instance.post(`/api/view/${sessionId}/heartbeat`)
+      return true
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) return false
+      return true
     }
   },
 

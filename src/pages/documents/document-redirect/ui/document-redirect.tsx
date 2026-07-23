@@ -1,8 +1,7 @@
 import { Navigate, useParams, useLocation } from 'react-router-dom'
 
+import { useResolveTypePageCode } from '@/entities/module'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
-
-import { useResolveDocumentPageCode } from '../lib/use-resolve-document-page-code'
 
 interface DocumentRedirectProps {
   mode: 'list' | 'new'
@@ -16,7 +15,7 @@ interface DocumentRedirectProps {
 export const DocumentRedirect = ({ mode }: DocumentRedirectProps) => {
   const { typeCode = '' } = useParams()
   const location = useLocation()
-  const { isResolving, pageCode } = useResolveDocumentPageCode(typeCode)
+  const { isResolving, pageCode } = useResolveTypePageCode(typeCode)
 
   if (isResolving) return <PageSkeleton />
 

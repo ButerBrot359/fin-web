@@ -13,6 +13,7 @@ import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
 import { fetchListPage } from '../../../api/reference-options'
 import { cn } from '@/shared/lib/utils/cn'
+import { formatSduiCellValue } from '../../../lib/format-cell'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -149,7 +150,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
             const obj = val as Record<string, unknown>
             return (obj.presentation ?? obj.displayName ?? obj.nameRu ?? obj.name ?? String(obj.id ?? '')) as string
           }
-          return val
+          return formatSduiCellValue(val, col.props?.dataType as string | undefined)
         },
         size: (col.props?.width as number) ?? 150,
         cell: (info: { getValue: () => unknown }) => (

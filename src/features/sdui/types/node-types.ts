@@ -19,6 +19,6 @@ export type PatchOp =
   | 'replaceNode' | 'insertNode' | 'removeNode' | 'moveNode'
   | 'setOptions'
 
-export type EffectType = 'navigate' | 'openDialog' | 'closeDialog' | 'notify' | 'download'
+export type EffectType = 'navigate' | 'openDialog' | 'closeDialog' | 'notify' | 'download' | 'refresh' | 'confirm'
 
 export type ActionType = 'OPEN' | 'EVENT' | 'COMMAND' | 'CLOSE'

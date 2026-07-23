@@ -19,6 +19,15 @@ export interface SduiSessionValue {
   setRoot: (node: ViewNode) => void
   setSession: (id: string, rev: number) => void
   bumpRevision: (rev: number) => void
+  // layoutCode последнего OPEN — нужен reopen'у после SESSION_NOT_FOUND (SCRUM-244 §4.2).
+  // Хранится в session-context (не в module-scope): у панелей свои провайдеры,
+  // модульная переменная перепутала бы параллельные сессии.
+  // Панели эти методы не реализуют (getLayoutCode/setLayoutCode остаются undefined
+  // в их session-value): их reopen при OPEN уходит без layoutCode и падает на
+  // бэке → ok=false → повтор исходного действия не срабатывает. Инвариант
+  // «не зациклиться» держится на этом естественном отказе, а не на явном guard'е.
+  getLayoutCode?: () => string | null
+  setLayoutCode?: (code: string | null) => void
   // Закрыть текущую сессию: вкладку (root) или панель (panel) — SCRUM-283
   closeAfter?: () => void
   // Сохранить дескриптор «закрыть грязную вкладку» с OPEN — SCRUM-283
@@ -57,6 +66,8 @@ export const useSduiSession = (): SduiSessionValue => {
     setRoot: useTreeStore.getState().setRoot,
     setSession: useTreeStore.getState().setSession,
     bumpRevision: useTreeStore.getState().bumpRevision,
+    getLayoutCode: () => useTreeStore.getState().layoutCode,
+    setLayoutCode: useTreeStore.getState().setLayoutCode,
     setOnDirtyClose: useTreeStore.getState().setOnDirtyClose,
     applyTreePatches: useTreeStore.getState().applyPatches,
     clearAllErrors: useTreeStore.getState().clearAllErrors,

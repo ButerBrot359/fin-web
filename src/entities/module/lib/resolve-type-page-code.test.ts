@@ -4,8 +4,8 @@ import { ModuleElementType, type ModuleItems } from '@/entities/module'
 
 import {
   moduleContainsType,
-  resolveDocumentPageCode,
-} from './resolve-document-page-code'
+  resolveTypePageCode,
+} from './resolve-type-page-code'
 
 const items = (...codes: string[]): ModuleItems => [
   // одна колонка с одной секцией
@@ -33,22 +33,22 @@ describe('moduleContainsType', () => {
   })
 })
 
-describe('resolveDocumentPageCode', () => {
+describe('resolveTypePageCode', () => {
   it('возвращает первый модуль (в порядке сайдбара), содержащий тип', () => {
     const byCode = {
       buh: items('Drugoe'),
       sales: items('SchetNaOplatu'),
       zup: items('SchetNaOplatu'),
     }
-    expect(resolveDocumentPageCode(['buh', 'sales', 'zup'], byCode, 'SchetNaOplatu')).toBe('sales')
+    expect(resolveTypePageCode(['buh', 'sales', 'zup'], byCode, 'SchetNaOplatu')).toBe('sales')
   })
 
   it('undefined, если тип не найден ни в одном модуле', () => {
-    expect(resolveDocumentPageCode(['buh'], { buh: items('Drugoe') }, 'Net')).toBeUndefined()
+    expect(resolveTypePageCode(['buh'], { buh: items('Drugoe') }, 'Net')).toBeUndefined()
   })
 
   it('модуль без загруженных items пропускается', () => {
     const byCode = { buh: undefined, sales: items('SchetNaOplatu') }
-    expect(resolveDocumentPageCode(['buh', 'sales'], byCode, 'SchetNaOplatu')).toBe('sales')
+    expect(resolveTypePageCode(['buh', 'sales'], byCode, 'SchetNaOplatu')).toBe('sales')
   })
 })

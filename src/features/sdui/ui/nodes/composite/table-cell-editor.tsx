@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import { Box, Checkbox } from '@mui/material'
+import { Box, Checkbox, MenuItem, Select } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material'
 
 import { TextInput, NumberInput, DateTimeInput } from '@/shared/ui/inputs'
@@ -18,6 +18,27 @@ interface TableCellEditorProps {
   onCommit: () => void
 }
 
+interface EnumOption {
+  value: string
+  label: string
+  id?: number
+  code?: string
+}
+
+/** Текущее значение enum-ячейки → строковый `value` опции для <Select>. */
+function resolveEnumValue(value: unknown, options: EnumOption[]): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'object') {
+    const v = value as { id?: unknown; code?: unknown }
+    const match = options.find(
+      (o) => (v.id != null && o.id === v.id) || (v.code != null && o.code === v.code),
+    )
+    return match?.value ?? ''
+  }
+  return ''
+}
+
 const cellSx: SxProps<Theme> = {
   mb: 0,
   position: 'static',
@@ -31,6 +52,12 @@ const cellSx: SxProps<Theme> = {
     padding: '4px 8px !important',
     fontSize: '14px !important',
   },
+}
+
+const enumCellSx: SxProps<Theme> = {
+  fontSize: '14px',
+  '&::before, &::after': { display: 'none' },
+  '& .MuiSelect-select': { padding: '4px 8px !important', minHeight: '28px', display: 'flex', alignItems: 'center' },
 }
 
 const dateCellSx: SxProps<Theme> = {
@@ -180,8 +207,38 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
       )
     }
 
+    case 'ENUM_FIELD': {
+      const options = (props?.options as EnumOption[] | undefined) ?? []
+      const current = resolveEnumValue(value, options)
+      return (
+        <Select
+          value={current}
+          onChange={(e) => {
+            const selected = e.target.value
+            const opt = options.find((o) => o.value === selected)
+            // Тот же контракт значения, что в enum-field-node.tsx
+            onChange(
+              opt
+                ? { id: opt.id ?? selected, code: opt.code ?? opt.value, presentation: opt.label }
+                : { id: selected, code: selected, presentation: selected },
+            )
+            onCommit()
+          }}
+          size="small"
+          fullWidth
+          variant="standard"
+          sx={enumCellSx}
+        >
+          {options.map((o) => (
+            <MenuItem key={o.value} value={o.value}>
+              {o.label}
+            </MenuItem>
+          ))}
+        </Select>
+      )
+    }
+
     case 'REFERENCE_FIELD':
-    case 'ENUM_FIELD':
       return (
         <ReferenceCellEditor
           colProps={props ?? {}}

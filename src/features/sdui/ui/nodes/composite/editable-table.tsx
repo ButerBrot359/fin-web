@@ -71,6 +71,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
             dataType={col.dataType}
             value={row.original[col.binding]}
             readonly={col.readonly}
+            props={col.props}
             onChange={(val) =>
               syncRef.current.updateCell(row.original.rowId, col.binding, val)
             }

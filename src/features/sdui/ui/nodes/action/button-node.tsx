@@ -17,12 +17,14 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
   const iconName = node.props?.icon as string | undefined
   const tooltip = node.props?.tooltip as string | undefined
 
+  // SCRUM-284 Δ4: click-действие — единый источник behavior и
+  // requiresSelectedRow/selectionField (бэк больше не кладёт их в props).
+  const clickAction = node.actions?.find((a) => a.trigger === 'click')
+
   // behavior приходит по двум каналам (SCRUM-283 §2.5): статический action.behavior
   // и рантайм-override props.behavior. props побеждает — симметрично props.command.
-  const clickBehavior =
-    node.actions?.find((a) => a.trigger === 'click')?.behavior ?? null
   const behavior =
-    (node.props?.behavior as ActionBehavior | undefined) ?? clickBehavior
+    (node.props?.behavior as ActionBehavior | undefined) ?? clickAction?.behavior ?? null
 
   const dispatch = useSduiDispatch()
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
@@ -32,12 +34,12 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
   const collapsedNodes = useOverflowCollapsed()
   const overflowNodes = node.id === 'btn.more' ? collapsedNodes : []
 
-  // A3 (SCRUM-285): активность кнопки пикера описывает бэк через props —
-  // фронт больше не парсит имя команды ref.<verb>:<field>.
-  const requiresSelectedRow = node.props?.requiresSelectedRow === true
-  const selectionKey = node.props?.selectionKey as string | undefined
+  // SCRUM-284 Δ4: активность кнопки пикера — явные поля на ViewNodeAction
+  // (click-действие), фронт имя команды не парсит.
+  const requiresSelectedRow = clickAction?.requiresSelectedRow === true
+  const selectionField = clickAction?.selectionField ?? undefined
   const selectedRowId = useRefPickerSelection(
-    requiresSelectedRow ? (selectionKey ?? null) : null
+    requiresSelectedRow ? (selectionField ?? null) : null
   )
 
   const { muiVariant, isDropdown } = resolveButtonPresentation(

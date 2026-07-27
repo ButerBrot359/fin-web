@@ -9,43 +9,35 @@ vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => vi.fn(),
 }))
 
-const button = (props: Record<string, unknown>): ViewNode =>
-  ({ id: 'b1', type: 'BUTTON', props }) as ViewNode
+// requiresSelectedRow/selectionField приходят на click-action (SCRUM-284 Δ4),
+// command берётся из props (props.command побеждает, SCRUM-283).
+const button = (
+  label: string,
+  action: Record<string, unknown>,
+): ViewNode =>
+  ({
+    id: 'b1',
+    type: 'BUTTON',
+    props: { label, command: 'noparse' },
+    actions: [{ trigger: 'click', actionId: 'command', ...action }],
+  }) as ViewNode
 
 const isDisabled = (name: string) =>
   screen.getByRole('button', { name }).hasAttribute('disabled')
 
-describe('ButtonNode: requiresSelectedRow из props (SCRUM-285 A3)', () => {
+describe('ButtonNode: requiresSelectedRow с action (SCRUM-284 Δ4)', () => {
   beforeEach(() => {
     useRefPickerSelectionStore.setState({ selection: {} })
   })
   afterEach(cleanup)
 
-  it('requiresSelectedRow:true → disabled без выбранной строки (не по имени команды)', () => {
-    render(
-      <ButtonNode
-        node={button({
-          label: 'Выбрать',
-          command: 'noparse',
-          requiresSelectedRow: true,
-          selectionKey: 'field.x',
-        })}
-      />,
-    )
+  it('action.requiresSelectedRow:true → disabled без выбранной строки', () => {
+    render(<ButtonNode node={button('Выбрать', { requiresSelectedRow: true, selectionField: 'field.x' })} />)
     expect(isDisabled('Выбрать')).toBe(true)
   })
 
-  it('становится активной после выбора строки по selectionKey', () => {
-    render(
-      <ButtonNode
-        node={button({
-          label: 'Выбрать',
-          command: 'noparse',
-          requiresSelectedRow: true,
-          selectionKey: 'field.x',
-        })}
-      />,
-    )
+  it('активна после выбора строки по selectionField с action', () => {
+    render(<ButtonNode node={button('Выбрать', { requiresSelectedRow: true, selectionField: 'field.x' })} />)
     expect(isDisabled('Выбрать')).toBe(true)
     act(() => {
       useRefPickerSelectionStore.getState().setSelection('field.x', 42)
@@ -53,12 +45,8 @@ describe('ButtonNode: requiresSelectedRow из props (SCRUM-285 A3)', () => {
     expect(isDisabled('Выбрать')).toBe(false)
   })
 
-  it('без requiresSelectedRow активна всегда («Создать»)', () => {
-    render(
-      <ButtonNode
-        node={button({ label: 'Создать', command: 'ref.create:field.x' })}
-      />,
-    )
+  it('requiresSelectedRow:null («Создать») → активна всегда', () => {
+    render(<ButtonNode node={button('Создать', { requiresSelectedRow: null, selectionField: null })} />)
     expect(isDisabled('Создать')).toBe(false)
   })
 })

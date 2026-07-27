@@ -54,9 +54,9 @@ describe('TreasuryExportPage — сохранение в папку (Chromium)',
     await screen.findByText('Док') // авто-preview отрисован
     fireEvent.click(screen.getByRole('button', { name: 'Выгрузить' }))
 
-    await waitFor(() =>
+    await waitFor(() => {
       expect(writeSpy).toHaveBeenCalledWith(dir, 'ЗаявкаГПС.xml', blob)
-    )
+    })
     expect(showToast).toHaveBeenCalledWith('success', 'Файл сохранён в выбранную папку')
   })
 
@@ -70,7 +70,9 @@ describe('TreasuryExportPage — сохранение в папку (Chromium)',
     await screen.findByText('Док')
     fireEvent.click(screen.getByRole('button', { name: 'Выгрузить' }))
 
-    await waitFor(() => expect(saveLib.pickDirectory).toHaveBeenCalled())
+    await waitFor(() => {
+      expect(saveLib.pickDirectory).toHaveBeenCalled()
+    })
     expect(fetchSpy).not.toHaveBeenCalled()
     expect(showToast).not.toHaveBeenCalledWith('error', expect.anything())
   })
@@ -84,10 +86,11 @@ describe('TreasuryExportPage — сохранение в папку (Chromium)',
     await screen.findByText('Док')
     fireEvent.click(screen.getByRole('button', { name: 'Выгрузить' }))
 
-    await waitFor(() =>
-      expect(window.location.assign).toHaveBeenCalledWith(
+    const assign = window.location.assign.bind(window.location)
+    await waitFor(() => {
+      expect(assign).toHaveBeenCalledWith(
         expect.stringContaining('/api/document-entries/T/42/treasury-export')
       )
-    )
+    })
   })
 })

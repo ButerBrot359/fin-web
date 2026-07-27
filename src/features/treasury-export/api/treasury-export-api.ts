@@ -30,6 +30,6 @@ export const fetchTreasuryExportBlob = (
   signal?: AbortSignal
 ) =>
   apiService.getFileBlob({
-    url: `/api/document-entries/${typeCode}/${id}/treasury-export`,
+    url: `/api/document-entries/${typeCode}/${String(id)}/treasury-export`,
     signal,
   })

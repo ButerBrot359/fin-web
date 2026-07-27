@@ -10,7 +10,12 @@ export function openDialogAsPanel(
   parentSessionId?: string,
 ): void {
   const props = effect.node?.props
-  const presentation = (props?.presentation as string) ?? 'modal'
+  const presentationRaw = props?.presentation as string | undefined
+  if (import.meta.env.DEV && !presentationRaw) {
+    // A7: openDialog обязан нести presentation; отсутствие — баг бэк-композера.
+    console.warn('[sdui] openDialog без presentation (A7)', effect.node?.id)
+  }
+  const presentation = presentationRaw ?? 'modal'
   const panelId = effect.node?.id ?? String(Date.now())
   const tabKey = props?.tabKey as string | undefined
   // page-панель с openInWorkspaceTab уходит в workspace-вкладку.

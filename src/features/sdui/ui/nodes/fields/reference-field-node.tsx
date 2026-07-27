@@ -35,7 +35,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
   const dispatch = useSduiDispatch()
 
-  const domain = (node.props?.domain as string | undefined) ?? 'DICTIONARY'
+  const domain = node.props?.domain as string | undefined
   const targetTypeCode = node.props?.targetTypeCode as string | undefined
   const filter = node.props?.filter as Record<string, unknown> | undefined
   const optionsSource = node.props?.optionsSource as { url: string; params?: Record<string, string> } | undefined
@@ -58,7 +58,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
       ? String(kontragentValue.id)
       : undefined
 
-  const domainPath = DOMAIN_PATH_MAP[domain] ?? 'dictionary-entries'
+  const domainPath = domain ? (DOMAIN_PATH_MAP[domain] ?? 'dictionary-entries') : 'dictionary-entries'
   // Двухветочный источник: приоритет optionsSource с бэка; legacy-фолбэк по domain+typeCode
   // (временный мост — см. отклонение D-2 в ревизии SDUI, раздел 9).
   const url = optionsSource
@@ -112,7 +112,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const openDictList = () => {
     openReferencePicker({
       mode: 'list',
-      domain,
+      domain: domain!,
       typeCode: targetTypeCode!,
       onSelect: applySelected,
       searchParams: filterSearchParams,
@@ -122,7 +122,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const openDictCreate = () => {
     openReferencePicker({
       mode: 'create',
-      domain,
+      domain: domain!,
       typeCode: targetTypeCode!,
       onSelect: applySelected,
       searchParams: filterSearchParams,
@@ -193,7 +193,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
                 e.preventDefault()
                 openReferencePicker({
                   mode: 'edit',
-                  domain,
+                  domain: domain!,
                   typeCode: targetTypeCode,
                   entryId: selectedOption.id,
                   onSelect: applySelected,

@@ -135,7 +135,7 @@ interface SimpleTableRow {
 }
 
 export const TableNode: FC<NodeProps> = ({ node }) => {
-  const editable = (node.props?.editable as boolean | undefined) ?? true
+  const editable = node.props?.editable === true
 
   if (editable) {
     // Route to complex table if COLUMN_GROUP children exist or master-detail props present

@@ -1,0 +1,157 @@
+{
+  "name": "VybytieTMZ",
+  "title": "Выбытие ТМЗ",
+  "layout": {
+    "type": "VStack",
+    "gap": 8,
+    "children": [
+      {
+        "type": "HStack",
+        "gap": 6,
+        "align": "stretch",
+        "children": [
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "VidOperatsii"
+              },
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "Nomer",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "Data",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "Organizatsiya"
+              },
+              {
+                "type": "Field",
+                "code": "PodrazdelenieOrganizatsii"
+              },
+              {
+                "type": "Field",
+                "code": "MOL"
+              },
+              {
+                "type": "Field",
+                "code": "Kontragent"
+              },
+              {
+                "type": "Field",
+                "code": "SummaDokumenta"
+              }
+            ]
+          },
+          {
+            "type": "VStack",
+            "flex": 1,
+            "gap": 3,
+            "children": [
+              {
+                "type": "Field",
+                "code": "DokumentOsnovanie"
+              },
+              {
+                "type": "Field",
+                "code": "SpisyvatOstatkiPoUkazannoyStoimosti"
+              },
+              {
+                "type": "Field",
+                "code": "UkazyvatKlassifikatsiyuRaskhodov"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Tabs",
+        "panes": [
+          {
+            "key": "tmz",
+            "label": "ТМЗ",
+            "children": [
+              {
+                "type": "Field",
+                "code": "TMZ"
+              }
+            ]
+          },
+          {
+            "key": "inventarizatsionnayaKomissiya",
+            "label": "Инвентаризационная комиссия",
+            "children": [
+              {
+                "type": "HStack",
+                "gap": 3,
+                "children": [
+                  {
+                    "type": "Field",
+                    "code": "NomerDokumentaInventarizatsii",
+                    "flex": 1
+                  },
+                  {
+                    "type": "Field",
+                    "code": "DataDokumentaInventarizatsii",
+                    "flex": 1
+                  }
+                ]
+              },
+              {
+                "type": "Field",
+                "code": "ZaklyuchenieKomissiiRus"
+              },
+              {
+                "type": "Field",
+                "code": "ZaklyuchenieKomissiiKaz"
+              }
+            ]
+          },
+          {
+            "key": "sostavKomissii",
+            "label": "Состав комиссии",
+            "children": [
+              {
+                "type": "Field",
+                "code": "SostavKomissii"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Separator"
+      },
+      {
+        "type": "HStack",
+        "gap": 3,
+        "children": [
+          {
+            "type": "Field",
+            "code": "Kommentariy",
+            "flex": 1
+          },
+          {
+            "type": "Field",
+            "code": "Otvetstvennyy",
+            "flex": 1
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -17,10 +17,7 @@ import { formatSduiCellValue } from '../../../lib/format-cell'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
-import {
-  refCommandField,
-  useRefPickerSelectionStore,
-} from '../../../lib/stores/ref-picker-selection-store'
+import { useRefPickerSelectionStore } from '../../../lib/stores/ref-picker-selection-store'
 
 interface ListSource {
   url: string
@@ -121,7 +118,8 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   }, [isLoading])
 
   // Publish highlighted row to shared store for sibling toolbar buttons (ref.copy / ref.select)
-  const selectField = refCommandField(selectAction?.command)
+  // A3, SCRUM-285: ключ группы выбора — из props, не из парсинга команды
+  const selectField = node.props?.selectionKey as string | undefined
   const setSelection = useRefPickerSelectionStore((s) => s.setSelection)
   const clearSelection = useRefPickerSelectionStore((s) => s.clearSelection)
   useEffect(() => {

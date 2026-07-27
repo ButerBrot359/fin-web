@@ -13,6 +13,12 @@ import { showToast } from '@/shared/ui/toast/show-toast'
 
 import { useTreasuryExportPreview } from '../lib/hooks/use-treasury-export-preview'
 import { treasuryExportDownloadUrl } from '../lib/download-url'
+import {
+  supportsDirectoryPicker,
+  pickDirectory,
+  writeBlobToDirectory,
+} from '../lib/save-to-directory'
+import { fetchTreasuryExportBlob } from '../api/treasury-export-api'
 import { TreasuryExportTable } from './treasury-export-table'
 import type {
   TreasuryExportItem,
@@ -51,21 +57,49 @@ export const TreasuryExportPage = () => {
 
   const item: TreasuryExportItem = { typeCode, id }
 
+  // Chromium: picker вызывается синхронно в клике (transient activation),
+  // сеть — уже после выбора папки. Валидацию берём из авто-preview (без
+  // повторного preview, чтобы не потерять user activation до showDirectoryPicker).
+  const exportToPickedFolder = async () => {
+    if (preview.data?.hasErrors) {
+      showToast('error', t('treasuryExport.hasErrorsToast'))
+      return
+    }
+    const fileName =
+      preview.data?.rows[0]?.fileName ?? `${typeCode}_${String(id)}.xml`
+    try {
+      const dir = await pickDirectory()
+      if (!dir) return // пользователь отменил диалог
+      const res = await fetchTreasuryExportBlob(typeCode, id)
+      await writeBlobToDirectory(dir, fileName, res.data)
+      showToast('success', t('treasuryExport.savedToFolder'))
+    } catch {
+      showToast('error', t('treasuryExport.saveFailed'))
+    }
+  }
+
   const handleExport = () => {
     if (!typeCode || Number.isNaN(id)) return
-    // Валидация перед скачиванием (v7 §2.1): при ошибках не навигируем.
-    preview.mutate([item], {
-      onSuccess: (data: TreasuryExportPreviewResponse) => {
-        if (data.hasErrors) {
-          showToast('error', t('treasuryExport.hasErrorsToast'))
-          return
-        }
-        window.location.assign(treasuryExportDownloadUrl(typeCode, id))
-      },
-      onError: () => {
-        showToast('error', t('treasuryExport.loadFailed'))
-      },
-    })
+
+    // FF/Safari или нет File System Access: текущее поведение —
+    // re-validate + браузерное скачивание (GET-навигация).
+    if (!supportsDirectoryPicker()) {
+      preview.mutate([item], {
+        onSuccess: (data: TreasuryExportPreviewResponse) => {
+          if (data.hasErrors) {
+            showToast('error', t('treasuryExport.hasErrorsToast'))
+            return
+          }
+          window.location.assign(treasuryExportDownloadUrl(typeCode, id))
+        },
+        onError: () => {
+          showToast('error', t('treasuryExport.loadFailed'))
+        },
+      })
+      return
+    }
+
+    void exportToPickedFolder()
   }
 
   const rows = preview.data?.rows ?? []

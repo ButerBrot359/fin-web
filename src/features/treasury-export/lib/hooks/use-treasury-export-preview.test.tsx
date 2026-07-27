@@ -44,7 +44,9 @@ describe('useTreasuryExportPreview', () => {
       { typeCode: 'ZayavkaNaRegistratsiyuGPSdelki', id: 42 },
     ])
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
     expect(result.current.data?.hasErrors).toBe(true)
     expect(result.current.data?.rows[0].fileName).toBe(
       'ЗаявкаГПСAAC00-00007.xml'

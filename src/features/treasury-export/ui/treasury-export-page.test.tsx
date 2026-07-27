@@ -7,7 +7,11 @@ import {
   fireEvent,
   cleanup,
 } from '@testing-library/react'
-import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom'
+import {
+  MemoryRouter,
+  RouterProvider,
+  createMemoryRouter,
+} from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 
@@ -17,7 +21,9 @@ import { TreasuryExportPage } from './treasury-export-page'
 import * as api from '../api/treasury-export-api'
 
 const renderPage = (search: string) => {
-  const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+  const qc = new QueryClient({
+    defaultOptions: { mutations: { retry: false } },
+  })
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[`/treasury-export${search}`]}>
@@ -49,10 +55,13 @@ const mockPreview = (hasErrors: boolean, errors: string[] = []) =>
     },
   } as never)
 
+let assignMock: ReturnType<typeof vi.fn>
+
 describe('TreasuryExportPage', () => {
   beforeEach(async () => {
     vi.restoreAllMocks()
-    vi.stubGlobal('location', { assign: vi.fn() } as unknown as Location)
+    assignMock = vi.fn()
+    vi.stubGlobal('location', { assign: assignMock } as unknown as Location)
     await i18n.changeLanguage('ru')
   })
 
@@ -75,7 +84,7 @@ describe('TreasuryExportPage', () => {
     await screen.findByText('Заявка AAC00-00007')
     fireEvent.click(screen.getByRole('button', { name: 'Выгрузить' }))
     await waitFor(() => {
-      expect(window.location.assign).toHaveBeenCalledWith(
+      expect(assignMock).toHaveBeenCalledWith(
         expect.stringContaining(
           '/api/document-entries/ZayavkaNaRegistratsiyuGPSdelki/42/treasury-export'
         )
@@ -93,7 +102,7 @@ describe('TreasuryExportPage', () => {
         screen.getAllByText(/Не указан номер счета банка контрагента!/).length
       ).toBeGreaterThan(0)
     })
-    expect(window.location.assign).not.toHaveBeenCalled()
+    expect(assignMock).not.toHaveBeenCalled()
   })
 
   it('смена документа в URL без перемонтирования страницы триггерит повторный auto-preview', async () => {
@@ -124,8 +133,8 @@ describe('TreasuryExportPage', () => {
       { typeCode: 'ZayavkaNaRegistratsiyuGPSdelki', id: 42 },
     ])
 
-    act(() => {
-      router.navigate(
+    await act(async () => {
+      await router.navigate(
         '/treasury-export?typeCode=ZayavkaNaRegistratsiyuGPSdelki&id=99'
       )
     })

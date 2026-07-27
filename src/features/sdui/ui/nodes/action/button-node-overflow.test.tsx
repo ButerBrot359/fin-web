@@ -48,7 +48,7 @@ describe('ButtonNode: overflow-секция в меню «Ещё» (SCRUM-265 FE
     render(
       <OverflowContext.Provider value={{ collapsedNodes: collapsed }}>
         <ButtonNode node={moreNode} />
-      </OverflowContext.Provider>,
+      </OverflowContext.Provider>
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Ещё' }))
@@ -81,7 +81,7 @@ describe('ButtonNode: overflow-секция в меню «Ещё» (SCRUM-265 FE
     render(
       <OverflowContext.Provider value={{ collapsedNodes: collapsed }}>
         <ButtonNode node={node} />
-      </OverflowContext.Provider>,
+      </OverflowContext.Provider>
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Другое' }))

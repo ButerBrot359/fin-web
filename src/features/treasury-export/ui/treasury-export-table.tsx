@@ -31,7 +31,7 @@ export const TreasuryExportTable = ({ rows }: Props) => {
       </TableHead>
       <TableBody>
         {rows.map((row) => (
-          <TableRow key={`${row.typeCode}-${row.documentId}`}>
+          <TableRow key={`${row.typeCode}-${String(row.documentId)}`}>
             <TableCell>{row.n}</TableCell>
             <TableCell>
               <Typography variant="body2">{row.presentation}</Typography>

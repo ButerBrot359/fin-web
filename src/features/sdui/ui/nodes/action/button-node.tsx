@@ -38,12 +38,12 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
 
   const usesSelectedRow = needsSelectedRow(command)
   const selectedRowId = useRefPickerSelection(
-    usesSelectedRow ? refCommandField(command) : null,
+    usesSelectedRow ? refCommandField(command) : null
   )
 
   const { muiVariant, isDropdown } = resolveButtonPresentation(
     variantProp,
-    !!node.children?.length,
+    !!node.children?.length
   )
   const disabled = !enabled || (usesSelectedRow && selectedRowId == null)
 
@@ -78,7 +78,7 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
             value: { id: selectedRowId },
             sourceNodeId: node.id,
           },
-          behavior,
+          behavior
         )
         return
       }
@@ -112,7 +112,9 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
         <Menu
           anchorEl={menuAnchor}
           open={Boolean(menuAnchor)}
-          onClose={() => { setMenuAnchor(null); }}
+          onClose={() => {
+            setMenuAnchor(null)
+          }}
         >
           {/* FE-5: свёрнутые по ширине кнопки — верхней секцией перед штатными пунктами. */}
           {overflowNodes.map((c) => (

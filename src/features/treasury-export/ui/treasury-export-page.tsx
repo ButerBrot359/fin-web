@@ -43,7 +43,7 @@ export const TreasuryExportPage = () => {
   const lastPreviewKey = useRef<string>('')
   useEffect(() => {
     if (!typeCode || Number.isNaN(id)) return
-    const key = `${typeCode}:${id}`
+    const key = `${typeCode}:${String(id)}`
     if (lastPreviewKey.current === key) return
     lastPreviewKey.current = key
     previewMutate([{ typeCode, id }])

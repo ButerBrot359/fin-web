@@ -27,7 +27,7 @@ export const ToolbarNode: FC<NodeProps> = ({ node }) => {
       if (Math.abs(available - lastWidth.current) < HYSTERESIS_PX) return
       lastWidth.current = available
 
-      const items: OverflowItem[] = children.map((c) => ({
+      const items: OverflowItem[] = (node.children ?? []).map((c) => ({
         id: c.id,
         width: childRefs.current.get(c.id)?.offsetWidth ?? 0,
         pinned: PINNED_IDS.has(c.id),
@@ -42,7 +42,7 @@ export const ToolbarNode: FC<NodeProps> = ({ node }) => {
     return () => {
       observer.disconnect()
     }
-  }, [children])
+  }, [node.children])
 
   const collapsedSet = new Set(collapsedIds)
   const collapsedNodes: ViewNode[] = children.filter((c) =>

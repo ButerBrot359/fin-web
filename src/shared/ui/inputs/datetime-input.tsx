@@ -3,6 +3,7 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
 import { parseISO, isValid } from 'date-fns'
 
 import { CalendarSidebar, CalendarNavProvider } from './calendar-layout'
+import { serializeDateInput } from './serialize-date-input'
 
 export interface DateTimeInputProps {
   value?: string
@@ -40,11 +41,8 @@ export const DateTimeInput = ({
   const validDate = dateValue && isValid(dateValue) ? dateValue : null
 
   const handleChange = (newValue: Date | null) => {
-    if (newValue && isValid(newValue)) {
-      onChange(newValue.toISOString())
-    } else {
-      onChange('')
-    }
+    // DATE-поля (dateOnly) уходят как локальный yyyy-MM-dd, datetime — как ISO Z.
+    onChange(serializeDateInput(newValue, dateOnly))
   }
 
   const slotProps = {

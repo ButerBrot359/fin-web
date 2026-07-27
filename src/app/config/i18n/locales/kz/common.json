@@ -574,5 +574,22 @@
     "monthlyPayroll": "Айлық ЕТҚ",
     "additionalPayroll": "Қосымша ЕТҚ",
     "totalPayroll": "Барлығы ЕТҚ"
+  },
+  "treasuryExport": {
+    "title": "Құжаттарды қазынашылыққа жүктеу",
+    "colN": "N",
+    "colDocument": "Құжат",
+    "colAmount": "Құжат сомасы",
+    "colErrors": "Қателер",
+    "colFileName": "Файл атауы",
+    "export": "Жүктеу",
+    "cancel": "Болдырмау",
+    "includeMxFields": "MX форматының өрістерін қосу",
+    "mxFieldsSoon": "MX форматы — әзірленуде",
+    "filesDownloadedByBrowser": "Файлдар браузермен жүктеледі",
+    "errorDetailsTitle": "Тексеру қателерінің толық мәтіні",
+    "noErrors": "Қателер жоқ",
+    "hasErrorsToast": "Қателер табылды — жүктеу орындалмады",
+    "loadFailed": "Құжаттарды тексеру мүмкін болмады"
   }
 }

@@ -114,6 +114,11 @@ const ReportAltPage = lazy(() =>
     default: m.ReportAltPage,
   }))
 )
+const TreasuryExportPage = lazy(() =>
+  import('@/features/treasury-export').then((m) => ({
+    default: m.TreasuryExportPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -123,6 +128,11 @@ const AppRoutes = () => {
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
           <Route path="/" element={<MainPage />} />
+          {/*
+            Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект
+            navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.
+          */}
+          <Route path="/treasury-export" element={<TreasuryExportPage />} />
           <Route path="/modules/:pageCode" element={<ModulePage />} />
           <Route
             path="/modules/:pageCode/document/:moduleCode"

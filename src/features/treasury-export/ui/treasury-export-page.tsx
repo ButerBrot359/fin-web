@@ -73,7 +73,8 @@ export const TreasuryExportPage = () => {
       const res = await fetchTreasuryExportBlob(typeCode, id)
       await writeBlobToDirectory(dir, fileName, res.data)
       showToast('success', t('treasuryExport.savedToFolder'))
-    } catch {
+    } catch (e) {
+      console.error('[treasury-export] сохранение в папку не удалось', e)
       showToast('error', t('treasuryExport.saveFailed'))
     }
   }
@@ -131,9 +132,11 @@ export const TreasuryExportPage = () => {
         </span>
       </Tooltip>
 
-      <Typography variant="caption" color="text.secondary">
-        {t('treasuryExport.filesDownloadedByBrowser')}
-      </Typography>
+      {!supportsDirectoryPicker() && (
+        <Typography variant="caption" color="text.secondary">
+          {t('treasuryExport.filesDownloadedByBrowser')}
+        </Typography>
+      )}
 
       <TreasuryExportTable rows={rows} />
 

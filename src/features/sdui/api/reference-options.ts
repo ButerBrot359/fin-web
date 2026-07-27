@@ -4,13 +4,11 @@ import type { SelectOption } from '@/shared/types/select-option'
 interface EntryItem {
   id: number
   presentation?: string
-  name?: string
   [key: string]: unknown
 }
 
 interface EntriesResponse {
   content?: EntryItem[]
-  items?: EntryItem[]
 }
 
 export async function fetchReferenceOptions(args: {
@@ -22,11 +20,11 @@ export async function fetchReferenceOptions(args: {
     url: args.url,
     params: { ...args.params, search: args.search, page: 0, size: 20 },
   })
-  const items = res.data.content ?? res.data.items ?? []
+  const items = res.data.content ?? []
   return items.map((item) => ({
     id: item.id,
     code: String(item.id),
-    label: item.presentation ?? item.name ?? String(item.id),
+    label: item.presentation ?? String(item.id),
   }))
 }
 

@@ -146,7 +146,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
           const val = resolveBinding(row, binding)
           if (val && typeof val === 'object') {
             const obj = val as Record<string, unknown>
-            return (obj.presentation ?? obj.displayName ?? obj.nameRu ?? obj.name ?? String(obj.id ?? '')) as string
+            return (obj.presentation ?? String(obj.id ?? '')) as string
           }
           return formatSduiCellValue(val, col.props?.dataType as string | undefined)
         },

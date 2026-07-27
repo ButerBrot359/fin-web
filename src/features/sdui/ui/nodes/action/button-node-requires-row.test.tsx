@@ -12,8 +12,8 @@ vi.mock('../../../lib/dispatch', () => ({
 const button = (props: Record<string, unknown>): ViewNode =>
   ({ id: 'b1', type: 'BUTTON', props }) as ViewNode
 
-const btn = (name: string) =>
-  screen.getByRole('button', { name }) as HTMLButtonElement
+const isDisabled = (name: string) =>
+  screen.getByRole('button', { name }).hasAttribute('disabled')
 
 describe('ButtonNode: requiresSelectedRow из props (SCRUM-285 A3)', () => {
   beforeEach(() => {
@@ -32,7 +32,7 @@ describe('ButtonNode: requiresSelectedRow из props (SCRUM-285 A3)', () => {
         })}
       />,
     )
-    expect(btn('Выбрать').disabled).toBe(true)
+    expect(isDisabled('Выбрать')).toBe(true)
   })
 
   it('становится активной после выбора строки по selectionKey', () => {
@@ -46,11 +46,11 @@ describe('ButtonNode: requiresSelectedRow из props (SCRUM-285 A3)', () => {
         })}
       />,
     )
-    expect(btn('Выбрать').disabled).toBe(true)
+    expect(isDisabled('Выбрать')).toBe(true)
     act(() => {
       useRefPickerSelectionStore.getState().setSelection('field.x', 42)
     })
-    expect(btn('Выбрать').disabled).toBe(false)
+    expect(isDisabled('Выбрать')).toBe(false)
   })
 
   it('без requiresSelectedRow активна всегда («Создать»)', () => {
@@ -59,6 +59,6 @@ describe('ButtonNode: requiresSelectedRow из props (SCRUM-285 A3)', () => {
         node={button({ label: 'Создать', command: 'ref.create:field.x' })}
       />,
     )
-    expect(btn('Создать').disabled).toBe(false)
+    expect(isDisabled('Создать')).toBe(false)
   })
 })

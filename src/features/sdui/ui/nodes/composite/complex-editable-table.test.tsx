@@ -73,6 +73,9 @@ const detailNode: ViewNode = {
     masterTable: 'VychetyIPN',
     masterKey: 'VychetIPN',
     detailKey: 'VychetIPN',
+    allowAdd: true,
+    allowDelete: true,
+    allowReorder: true,
   },
   children: [
     { id: 'col-vychet', type: 'TABLE_COLUMN', binding: 'VychetIPN', props: { label: 'Вычет' } },

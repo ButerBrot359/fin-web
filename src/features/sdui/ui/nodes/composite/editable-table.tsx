@@ -33,9 +33,9 @@ interface EditableTableProps {
 
 export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const { t } = useTranslation()
-  const allowAdd = (node.props?.allowAdd as boolean | undefined) ?? true
-  const allowDelete = (node.props?.allowDelete as boolean | undefined) ?? true
-  const allowReorder = (node.props?.allowReorder as boolean | undefined) ?? true
+  const allowAdd = node.props?.allowAdd === true
+  const allowDelete = node.props?.allowDelete === true
+  const allowReorder = node.props?.allowReorder === true
   const showRowNumbers = node.props?.showRowNumbers === true
 
   const sync = useTableSync(node, columns)

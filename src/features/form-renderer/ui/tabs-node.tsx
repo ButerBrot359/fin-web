@@ -89,7 +89,13 @@ export const TabsNode = ({ node }: TabsNodeProps) => {
       {node.panes.map((pane) => (
         <div
           key={pane.key}
-          className={cn('pt-4', activeKey !== pane.key && 'hidden')}
+          // Содержимое ТЧ — в рамке-панели, примыкающей к линии вкладок (как в
+          // 1С: активная вкладка «сливается» с этим боксом). Верх панели = нижняя
+          // граница ряда вкладок (border-b выше), поэтому здесь border-t-0.
+          className={cn(
+            'rounded-b border border-t-0 border-ui-03 bg-ui-01 p-3',
+            activeKey !== pane.key && 'hidden'
+          )}
         >
           {pane.children.map((child, index) => (
             <NodeRenderer key={index} node={child} />

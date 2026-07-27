@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import {
   useFieldArray,
   type UseFormReturn,
@@ -39,6 +39,7 @@ import {
 import { TableCellRenderer } from './table-cell-renderer'
 import { TableFieldToolbar } from './table-field-toolbar'
 import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
+import { useVirtualTableRows } from '../lib/hooks/use-virtual-table-rows'
 
 interface TableFieldProps {
   attribute: DocumentAttribute
@@ -115,7 +116,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
   const orgSourceSignature = orgSourceFields
     .map(
       (code, i) =>
-        `${code}:${(orgSourceValues[i] as { id?: unknown } | null | undefined)?.id ?? ''}`
+        `${code}:${String((orgSourceValues[i] as { id?: string | number } | null | undefined)?.id ?? '')}`
     )
     .join(',')
 
@@ -150,7 +151,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     const prefix = `${attribute.code}.`
     const subscription = form.watch((_values, { name }) => {
       // Реагируем только на изменение Количества/Цены в строке ЭТОЙ ТЧ.
-      if (!name || !name.startsWith(prefix)) return
+      if (!name?.startsWith(prefix)) return
       const rest = name.slice(prefix.length)
       const dot = rest.indexOf('.')
       if (dot < 0) return
@@ -158,14 +159,17 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
       const colCode = rest.slice(dot + 1)
       if (colCode !== qty && colCode !== price) return
 
+      // RHF типизирует значение по динамическому пути как void — приводим сигнатуру
+      // чтения, чтобы результат можно было передать дальше как значение.
+      const getDynamic = form.getValues as unknown as (path: string) => unknown
       const rowPath = `${attribute.code}.${rowIndex}`
       const newSum = computeRowSum(
-        form.getValues(`${rowPath}.${qty}`),
-        form.getValues(`${rowPath}.${price}`)
+        getDynamic(`${rowPath}.${qty}`),
+        getDynamic(`${rowPath}.${price}`)
       )
       // setValue(sum) снова триггерит watch, но colCode=sum ≠ qty/price — без цикла.
       // `as never`: RHF выводит тип значения по динамическому пути как undefined.
-      if (Number(form.getValues(`${rowPath}.${sum}`)) !== newSum) {
+      if (Number(getDynamic(`${rowPath}.${sum}`)) !== newSum) {
         form.setValue(`${rowPath}.${sum}`, newSum as never, {
           shouldDirty: true,
         })
@@ -196,7 +200,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     const triggers = new Set([uchetCol, faktCol, stoimUchetCol, stoimFaktCol])
     const prefix = `${attribute.code}.`
     const subscription = form.watch((_values, { name }) => {
-      if (!name || !name.startsWith(prefix)) return
+      if (!name?.startsWith(prefix)) return
       const rest = name.slice(prefix.length)
       const dot = rest.indexOf('.')
       if (dot < 0) return
@@ -204,19 +208,24 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
       const colCode = rest.slice(dot + 1)
       if (!triggers.has(colCode)) return
 
+      // RHF типизирует значение по динамическому пути как void — приводим сигнатуру
+      // чтения, чтобы результат можно было передать дальше как значение.
+      const getDynamic = form.getValues as unknown as (path: string) => unknown
       const rowPath = `${attribute.code}.${rowIndex}`
       const { kol, stoim } = computeInventory(
-        form.getValues(`${rowPath}.${uchetCol}`),
-        form.getValues(`${rowPath}.${faktCol}`),
-        form.getValues(`${rowPath}.${stoimUchetCol}`),
-        form.getValues(`${rowPath}.${stoimFaktCol}`)
+        getDynamic(`${rowPath}.${uchetCol}`),
+        getDynamic(`${rowPath}.${faktCol}`),
+        getDynamic(`${rowPath}.${stoimUchetCol}`),
+        getDynamic(`${rowPath}.${stoimFaktCol}`)
       )
       // setValue результатов снова триггерит watch, но их колонки не в triggers —
       // цикла нет. `as never`: RHF выводит тип значения по динамическому пути как undefined.
-      if (Number(form.getValues(`${rowPath}.${kolCol}`)) !== kol) {
-        form.setValue(`${rowPath}.${kolCol}`, kol as never, { shouldDirty: true })
+      if (Number(getDynamic(`${rowPath}.${kolCol}`)) !== kol) {
+        form.setValue(`${rowPath}.${kolCol}`, kol as never, {
+          shouldDirty: true,
+        })
       }
-      if (Number(form.getValues(`${rowPath}.${stoimResultCol}`)) !== stoim) {
+      if (Number(getDynamic(`${rowPath}.${stoimResultCol}`)) !== stoim) {
         form.setValue(`${rowPath}.${stoimResultCol}`, stoim as never, {
           shouldDirty: true,
         })
@@ -354,6 +363,35 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     onColumnSizingChange,
   })
 
+  const { rows } = table.getRowModel()
+
+  // Виртуализация строк ТЧ: в DOM живёт только видимое окно строк. На ~1200
+  // строк это разница между ~21 600 смонтированными ячейками (каждая со своей
+  // подпиской useWatch) и парой сотен — отсюда тормоза ввода и открытия формы.
+  const {
+    isVirtualized,
+    virtualItems,
+    paddingTop,
+    paddingBottom,
+    setContainerRef,
+    setBodyRef,
+    measureRow,
+  } = useVirtualTableRows(rows.length)
+
+  // Обёртка ТЧ одновременно хранит горизонтальную прокрутку и служит точкой
+  // отсчёта для поиска скролл-предка — совмещаем оба ref-колбэка.
+  const setTableContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setScrollRef(node)
+      setContainerRef(node)
+    },
+    [setScrollRef, setContainerRef]
+  )
+
+  const renderedRows = virtualItems
+    ? virtualItems.map((item) => rows[item.index])
+    : rows
+
   const handleAdd = () => {
     append(buildEmptyRow(columns))
     setSelectedIndex(fields.length)
@@ -406,7 +444,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
         </div>
       ) : (
         <div
-          ref={setScrollRef}
+          ref={setTableContainerRef}
           onScroll={onTableScroll}
           className="overflow-x-auto pb-3"
         >
@@ -440,7 +478,9 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
                           aria-orientation="vertical"
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                          }}
                           className={`absolute right-0 top-0 h-full w-1.5 cursor-col-resize touch-none select-none hover:bg-accent-02 ${
                             header.column.getIsResizing() ? 'bg-accent-02' : ''
                           }`}
@@ -451,10 +491,21 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
                 </tr>
               ))}
             </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
+            <tbody ref={setBodyRef}>
+              {/* Распорки вместо неотрисованных строк: высота таблицы (и всей
+                  страницы) не зависит от того, какое окно строк сейчас в DOM. */}
+              {paddingTop > 0 && (
+                <tr aria-hidden="true">
+                  <td style={{ height: paddingTop }} />
+                </tr>
+              )}
+              {renderedRows.map((row) => (
                 <tr
                   key={row.id}
+                  // data-index + ref — замер реальной высоты строки: она может
+                  // подрасти, когда ячейка переходит в режим редактирования.
+                  data-index={isVirtualized ? row.index : undefined}
+                  ref={measureRow}
                   className={`border-b border-ui-03 last:border-b-0 cursor-pointer ${
                     selectedIndex === row.index ? 'bg-ui-07' : ''
                   }`}
@@ -476,6 +527,11 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
                   ))}
                 </tr>
               ))}
+              {paddingBottom > 0 && (
+                <tr aria-hidden="true">
+                  <td style={{ height: paddingBottom }} />
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

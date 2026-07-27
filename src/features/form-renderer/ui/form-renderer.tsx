@@ -36,7 +36,9 @@ interface FormRendererProps {
    */
   domain?: string
   handleRef?: RefObject<FormRendererHandle | null>
-  sharedTableReplacersRef?: RefObject<Map<string, (rows: Record<string, unknown>[]) => void>>
+  sharedTableReplacersRef?: RefObject<
+    Map<string, (rows: Record<string, unknown>[]) => void>
+  >
 }
 
 export const FormRenderer = ({
@@ -98,8 +100,9 @@ export const FormRenderer = ({
     tableReplacersRef,
     onVisibility: setVisibilityMap,
     onConditionalAppearance: setDynamicAppearance,
-    onFieldFilters: (filters) =>
-      setDynamicFieldFilters((prev) => ({ ...prev, ...filters })),
+    onFieldFilters: (filters) => {
+      setDynamicFieldFilters((prev) => ({ ...prev, ...filters }))
+    },
   })
 
   const clearAllTables = useCallback(() => {
@@ -123,15 +126,23 @@ export const FormRenderer = ({
     () =>
       dynamicFieldFilters
         ? { ...config.fieldFilters, ...dynamicFieldFilters }
-        : config.fieldFilters ?? EMPTY_FIELD_FILTERS,
+        : (config.fieldFilters ?? EMPTY_FIELD_FILTERS),
     [config.fieldFilters, dynamicFieldFilters]
   )
   const conditionalAppearance =
     dynamicAppearance ?? config.conditionalAppearance ?? EMPTY_APPEARANCE
 
+  // Карта реквизитов пересобирается только со сменой самих реквизитов, а не на
+  // каждое обновление contextValue (видимость, оформление, фильтры): её
+  // идентичность — зависимость мемо внутри табличных частей.
+  const attributeMap = useMemo(
+    () => new Map(attributes.map((attr) => [attr.code, attr])),
+    [attributes]
+  )
+
   const contextValue = useMemo(
     () => ({
-      attributeMap: new Map(attributes.map((attr) => [attr.code, attr])),
+      attributeMap,
       form,
       domain,
       language: i18n.language,
@@ -145,7 +156,7 @@ export const FormRenderer = ({
       unregisterTableReplacer,
     }),
     [
-      attributes,
+      attributeMap,
       form,
       domain,
       i18n.language,

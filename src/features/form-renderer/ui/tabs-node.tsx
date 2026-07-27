@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import type { TabsNode as TabsNodeType } from '@/entities/form-config'
@@ -30,6 +31,25 @@ export const TabsNode = ({ node }: TabsNodeProps) => {
       ? stored
       : defaultKey
 
+  // ЛЕНИВОЕ МОНТИРОВАНИЕ. Раньше монтировались ВСЕ панели, а неактивные просто
+  // прятались классом `hidden`: в документе с тремя табличными частями (ОС, НМА,
+  // БиблиотечныйФонд) все три жили в DOM со своими подписками, хотя пользователь
+  // обычно работает только с одной. Теперь панель попадает в дерево при первой
+  // активации и дальше остаётся смонтированной (скрытой) — так не теряется её
+  // собственное состояние (прокрутка, выделение, открытые пикеры).
+  //
+  // Значения полей от этого не зависят: они живут в react-hook-form, а
+  // `shouldUnregister` в проекте не включён — значения переживают размонтирование
+  // поля и попадают в payload сохранения независимо от того, открывал ли
+  // пользователь вкладку.
+  const [openedKeys, setOpenedKeys] = useState<ReadonlySet<string>>(
+    () => new Set([activeKey])
+  )
+
+  // Активная панель рендерится ВСЕГДА: если вкладка стала активной не по клику
+  // (восстановление из стора, смена конфига), она всё равно окажется в дереве.
+  const isMounted = (key: string) => key === activeKey || openedKeys.has(key)
+
   return (
     <div>
       <div className="flex gap-1 border-b border-ui-03">
@@ -39,6 +59,9 @@ export const TabsNode = ({ node }: TabsNodeProps) => {
             type="button"
             onClick={() => {
               setActive(storeKey, pane.key)
+              setOpenedKeys((prev) =>
+                prev.has(pane.key) ? prev : new Set(prev).add(pane.key)
+              )
             }}
             className={cn(
               'rounded-t-md px-4 py-2 text-[14px] font-medium transition-colors',
@@ -52,16 +75,18 @@ export const TabsNode = ({ node }: TabsNodeProps) => {
         ))}
       </div>
 
-      {node.panes.map((pane) => (
-        <div
-          key={pane.key}
-          className={cn('pt-4', activeKey !== pane.key && 'hidden')}
-        >
-          {pane.children.map((child, index) => (
-            <NodeRenderer key={index} node={child} />
-          ))}
-        </div>
-      ))}
+      {node.panes.map((pane) =>
+        isMounted(pane.key) ? (
+          <div
+            key={pane.key}
+            className={cn('pt-4', activeKey !== pane.key && 'hidden')}
+          >
+            {pane.children.map((child, index) => (
+              <NodeRenderer key={index} node={child} />
+            ))}
+          </div>
+        ) : null
+      )}
     </div>
   )
 }

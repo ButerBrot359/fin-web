@@ -52,7 +52,13 @@ export const useFieldOptions = ({
     [attributes, dependencyMap]
   )
 
-  const dictionaryQueries = useQueries({
+  // `combine` обязателен: без него useQueries отдаёт НОВЫЙ массив результатов на
+  // каждый рендер, из-за чего пересчитывался optionsMap, следом — contextValue
+  // формы, и перерисовывалось всё дерево (включая табличные части). С combine
+  // react-query сравнивает результат структурно и держит ссылку стабильной, пока
+  // не изменились сами данные, а заодно не будит компонент на служебных
+  // обновлениях статусов (isFetching и т.п.).
+  const dictionaryContents = useQueries({
     queries: referenceAttributes.map((attr) => {
       const resolved = resolveAttributeDomain(attr)!
       return {
@@ -69,14 +75,14 @@ export const useFieldOptions = ({
         staleTime: 5 * 60 * 1000,
       }
     }),
+    combine: (results) => results.map((result) => result.data?.data.content),
   })
 
   const optionsMap = useMemo(() => {
     const map: Record<string, SelectOption[]> = {}
 
     referenceAttributes.forEach((attr, index) => {
-      const query = dictionaryQueries[index]
-      const content = query.data?.data.content
+      const content = dictionaryContents[index]
       if (content) {
         map[attr.code] = content.map((entry) =>
           toSelectOption(entry, i18n.language)
@@ -85,7 +91,7 @@ export const useFieldOptions = ({
     })
 
     return map
-  }, [referenceAttributes, dictionaryQueries, i18n.language])
+  }, [referenceAttributes, dictionaryContents, i18n.language])
 
   return { optionsMap }
 }

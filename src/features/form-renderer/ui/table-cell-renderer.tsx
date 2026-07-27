@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import { Controller, type Control, useWatch } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { Box, Checkbox, IconButton } from '@mui/material'
@@ -574,7 +574,7 @@ const SubkontoObjectCell = ({
     )
   }
 
-  if (narrowed && narrowed.domainKind === 'ENUMS') {
+  if (narrowed?.domainKind === 'ENUMS') {
     const enumColumn = {
       ...column,
       allowedTypes: [{ domainKind: 'ENUMS', typeCode: narrowed.typeCode }],
@@ -737,7 +737,7 @@ const CellInput = ({
   }
 }
 
-export const TableCellRenderer = ({
+const TableCell = ({
   name,
   column,
   control,
@@ -830,3 +830,17 @@ export const TableCellRenderer = ({
     </div>
   )
 }
+
+/**
+ * Ячейка ТЧ мемоизирована поверхностным сравнением пропсов, и это корректно
+ * именно потому, что своё ЗНАЧЕНИЕ она читает не из пропсов, а подпиской
+ * `useWatch(control, name)`: правка ячейки перерисовывает её саму, а перерисовка
+ * таблицы (выделение строки, скролл, добавление строки) ячейки больше не трогает.
+ *
+ * Все пропсы стабильны по ссылке между рендерами `TableField`: `column`,
+ * `serverFilterParams` и `appearanceRules` захвачены в мемоизированном
+ * `tableColumns`, `control` живёт с формой, `name`/`language`/`accountColumnCode` —
+ * примитивы. Меняются они только вместе с метаданными колонок — тогда сравнение
+ * честно пропускает перерисовку.
+ */
+export const TableCellRenderer = memo(TableCell)

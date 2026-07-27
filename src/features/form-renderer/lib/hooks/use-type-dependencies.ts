@@ -49,7 +49,10 @@ export const useTypeDependencies = ({
     return Array.from(seen.values())
   }, [dictAttributes])
 
-  const typeQueries = useQueries({
+  // `combine` — по той же причине, что и в useFieldOptions: без него useQueries
+  // отдаёт новый массив на каждый рендер, dependencyMap пересоздаётся, и весь
+  // contextValue формы меняет идентичность впустую.
+  const dependsOnLists = useQueries({
     queries: uniqueTypes.map((attr) => {
       const resolved = resolveAttributeDomain(attr)!
       const url = getUniversalTypeUrl(resolved.domain, resolved.typeCode)
@@ -60,14 +63,15 @@ export const useTypeDependencies = ({
         staleTime: 10 * 60 * 1000,
       }
     }),
+    combine: (results) =>
+      results.map((result) => result.data?.data.data.dependsOn),
   })
 
   const dependencyMap = useMemo(() => {
     const map = new Map<string, FieldDependency>()
 
     uniqueTypes.forEach((attr, index) => {
-      const query = typeQueries[index]
-      const dependsOn = query.data?.data.data.dependsOn
+      const dependsOn = dependsOnLists[index]
       if (!dependsOn?.length) return
 
       const resolved = resolveAttributeDomain(attr)
@@ -92,7 +96,7 @@ export const useTypeDependencies = ({
     })
 
     return map
-  }, [uniqueTypes, dictAttributes, typeQueries])
+  }, [uniqueTypes, dictAttributes, dependsOnLists])
 
   return { dependencyMap }
 }

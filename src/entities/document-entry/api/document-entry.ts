@@ -1,4 +1,4 @@
-import { apiService } from '@/shared/api/api'
+import { apiService, LONG_OPERATION_TIMEOUT_MS } from '@/shared/api/api'
 import type {
   CreateDocumentEntryPayload,
   DocumentEntriesResponseData,
@@ -30,6 +30,9 @@ export const getDocumentEntry = (id: string) =>
     url: `/api/document-entries/id/${id}`,
   })
 
+// Запись/проведение — самая долгая операция контура: бэкенд в одной транзакции
+// пересоздаёт все строки ТЧ и пишет проводки (документы на ~1200 строк идут
+// минутами). Обычный таймаут оборвал бы запрос, пока сервер ещё считает.
 export const createDocumentEntry = (
   typeCode: string,
   payload: CreateDocumentEntryPayload
@@ -37,6 +40,7 @@ export const createDocumentEntry = (
   apiService.post<DocumentEntryResponseData>({
     url: `/api/document-entries/${typeCode}`,
     data: payload,
+    timeout: LONG_OPERATION_TIMEOUT_MS,
   })
 
 export const updateDocumentEntry = (
@@ -46,6 +50,7 @@ export const updateDocumentEntry = (
   apiService.put<DocumentEntryResponseData>({
     url: `/api/document-entries/id/${String(id)}`,
     data: payload,
+    timeout: LONG_OPERATION_TIMEOUT_MS,
   })
 
 export const getPrintCommands = (typeCode: string) =>

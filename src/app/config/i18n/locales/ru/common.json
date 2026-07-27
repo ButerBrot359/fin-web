@@ -574,5 +574,22 @@
     "monthlyPayroll": "Месячный ФОТ",
     "additionalPayroll": "Дополнительный ФОТ",
     "totalPayroll": "Итого ФОТ"
+  },
+  "treasuryExport": {
+    "title": "Выгрузка документов в казначейство",
+    "colN": "N",
+    "colDocument": "Документ",
+    "colAmount": "Сумма документа",
+    "colErrors": "Ошибки",
+    "colFileName": "Имя файла",
+    "export": "Выгрузить",
+    "cancel": "Отмена",
+    "includeMxFields": "Включать поля формата MX",
+    "mxFieldsSoon": "МХ-формат — в разработке",
+    "filesDownloadedByBrowser": "Файлы будут скачаны браузером",
+    "errorDetailsTitle": "Подробный текст ошибок проверки",
+    "noErrors": "Ошибок нет",
+    "hasErrorsToast": "Обнаружены ошибки — выгрузка не выполнена",
+    "loadFailed": "Не удалось проверить документы"
   }
 }

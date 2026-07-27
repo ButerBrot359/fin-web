@@ -1,8 +1,9 @@
 import { useState, type FC, type ReactNode } from 'react'
-import { Button, Menu, Tooltip } from '@mui/material'
+import { Button, Divider, Menu, Tooltip } from '@mui/material'
 
 import type { ActionBehavior, NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import { useOverflowCollapsed } from '../../../lib/overflow/overflow-context'
 import {
   needsSelectedRow,
   refCommandField,
@@ -29,6 +30,11 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
 
   const dispatch = useSduiDispatch()
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
+
+  // FE-5: свёрнутые по ширине кнопки командной панели читаются только
+  // кнопкой «Ещё» — остальные кнопки контекст игнорируют (default пустой).
+  const collapsedNodes = useOverflowCollapsed()
+  const overflowNodes = node.id === 'btn.more' ? collapsedNodes : []
 
   const usesSelectedRow = needsSelectedRow(command)
   const selectedRowId = useRefPickerSelection(
@@ -108,7 +114,14 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
           open={Boolean(menuAnchor)}
           onClose={() => { setMenuAnchor(null); }}
         >
-          {node.children?.map((c) => <NodeRenderer key={c.id} node={c} />)}
+          {/* FE-5: свёрнутые по ширине кнопки — верхней секцией перед штатными пунктами. */}
+          {overflowNodes.map((c) => (
+            <NodeRenderer key={c.id} node={c} />
+          ))}
+          {overflowNodes.length > 0 && <Divider />}
+          {node.children?.map((c) => (
+            <NodeRenderer key={c.id} node={c} />
+          ))}
         </Menu>
       )}
     </>

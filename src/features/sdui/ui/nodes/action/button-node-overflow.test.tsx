@@ -10,8 +10,6 @@ vi.mock('../../../lib/dispatch', () => ({
 }))
 
 vi.mock('../../../lib/stores/ref-picker-selection-store', () => ({
-  needsSelectedRow: () => false,
-  refCommandField: () => null,
   useRefPickerSelection: () => null,
 }))
 

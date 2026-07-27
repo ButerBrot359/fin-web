@@ -20,21 +20,6 @@ export const useRefPickerSelectionStore = create<RefPickerSelectionState>(
   }),
 )
 
-/** Extract `<field>` from `ref.<verb>:<field>` (everything after the first `:`). */
-export function refCommandField(command?: string): string | null {
-  if (!command) return null
-  const idx = command.indexOf(':')
-  return idx >= 0 ? command.slice(idx + 1) : null
-}
-
-/** Commands that operate on the picker LIST's highlighted row. */
-export function needsSelectedRow(command: string | undefined): boolean {
-  return (
-    command?.startsWith('ref.select:') === true ||
-    command?.startsWith('ref.copy:') === true
-  )
-}
-
 /** Selector hook: returns the highlighted row id for a given field, or null. */
 export function useRefPickerSelection(field: string | null): number | null {
   return useRefPickerSelectionStore((s) =>

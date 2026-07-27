@@ -31,12 +31,12 @@ function applyRelayResponse(
 }
 
 // Выбор в дочерней панели (реф-пикер) ретранслируется в родительскую сессию
-// командой ref.select. Родитель — либо панель в стеке, либо корневая форма.
+// готовой командой applyToParentCommand. Родитель — либо панель в стеке, либо корневая форма.
 export function relaySelectionToParent(
   effect: ViewEffect,
   playEffects: (effects: ViewEffect[]) => void,
 ): void {
-  if (!effect.applyToParentSessionId || !effect.applyToParentTargetNodeId || !effect.applyToParentValue) {
+  if (!effect.applyToParentSessionId || !effect.applyToParentCommand || !effect.applyToParentValue) {
     return
   }
   const panels = usePanelStore.getState()
@@ -47,7 +47,7 @@ export function relaySelectionToParent(
 
   const action = {
     type: 'COMMAND' as const,
-    command: `ref.select:${effect.applyToParentTargetNodeId}`,
+    command: effect.applyToParentCommand,
     value: effect.applyToParentValue,
   }
 

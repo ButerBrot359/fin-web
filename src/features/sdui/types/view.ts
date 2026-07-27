@@ -91,6 +91,7 @@ export interface ViewEffect {
   childState?: Record<string, unknown>
   applyToParentSessionId?: string
   applyToParentTargetNodeId?: string
+  applyToParentCommand?: string
   applyToParentValue?: unknown
 }
 

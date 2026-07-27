@@ -80,15 +80,15 @@ describe('TreasuryExportPage — сохранение в папку (Chromium)',
   it('нет API → фолбэк на location.assign', async () => {
     mockPreview(false)
     vi.spyOn(saveLib, 'supportsDirectoryPicker').mockReturnValue(false)
-    vi.stubGlobal('location', { assign: vi.fn() } as unknown as Location)
+    const assignSpy = vi.fn()
+    vi.stubGlobal('location', { assign: assignSpy } as unknown as Location)
 
     renderPage()
     await screen.findByText('Док')
     fireEvent.click(screen.getByRole('button', { name: 'Выгрузить' }))
 
-    const assign = window.location.assign.bind(window.location)
     await waitFor(() => {
-      expect(assign).toHaveBeenCalledWith(
+      expect(assignSpy).toHaveBeenCalledWith(
         expect.stringContaining('/api/document-entries/T/42/treasury-export')
       )
     })

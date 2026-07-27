@@ -4,11 +4,7 @@ import { Button, Divider, Menu, Tooltip } from '@mui/material'
 import type { ActionBehavior, NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useOverflowCollapsed } from '../../../lib/overflow/overflow-context'
-import {
-  needsSelectedRow,
-  refCommandField,
-  useRefPickerSelection,
-} from '../../../lib/stores/ref-picker-selection-store'
+import { useRefPickerSelection } from '../../../lib/stores/ref-picker-selection-store'
 import { NodeRenderer } from '../../node-renderer'
 import { resolveButtonIcon } from './button-icons'
 import { resolveButtonPresentation } from './button-presentation'
@@ -36,16 +32,19 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
   const collapsedNodes = useOverflowCollapsed()
   const overflowNodes = node.id === 'btn.more' ? collapsedNodes : []
 
-  const usesSelectedRow = needsSelectedRow(command)
+  // A3 (SCRUM-285): активность кнопки пикера описывает бэк через props —
+  // фронт больше не парсит имя команды ref.<verb>:<field>.
+  const requiresSelectedRow = node.props?.requiresSelectedRow === true
+  const selectionKey = node.props?.selectionKey as string | undefined
   const selectedRowId = useRefPickerSelection(
-    usesSelectedRow ? refCommandField(command) : null
+    requiresSelectedRow ? (selectionKey ?? null) : null
   )
 
   const { muiVariant, isDropdown } = resolveButtonPresentation(
     variantProp,
     !!node.children?.length
   )
-  const disabled = !enabled || (usesSelectedRow && selectedRowId == null)
+  const disabled = !enabled || (requiresSelectedRow && selectedRowId == null)
 
   const icon = resolveButtonIcon(iconName)
   const isIconOnly = !!icon && !label
@@ -69,7 +68,7 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
       return
     }
     if (command) {
-      if (usesSelectedRow) {
+      if (requiresSelectedRow) {
         if (selectedRowId == null) return
         void dispatch(
           {

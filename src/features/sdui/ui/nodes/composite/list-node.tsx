@@ -118,8 +118,8 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   }, [isLoading])
 
   // Publish highlighted row to shared store for sibling toolbar buttons (ref.copy / ref.select)
-  // A3, SCRUM-285: ключ группы выбора — из props, не из парсинга команды
-  const selectField = node.props?.selectionKey as string | undefined
+  // SCRUM-284 Δ4: ключ группы выбора — с selectAction, не из props
+  const selectField = selectAction?.selectionField ?? undefined
   const setSelection = useRefPickerSelectionStore((s) => s.setSelection)
   const clearSelection = useRefPickerSelectionStore((s) => s.clearSelection)
   useEffect(() => {

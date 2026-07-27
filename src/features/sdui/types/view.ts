@@ -26,6 +26,8 @@ export interface ViewNodeAction {
   actionId: string
   command?: string
   behavior?: ActionBehavior | null
+  requiresSelectedRow?: boolean | null // SCRUM-284 Δ4
+  selectionField?: string | null // SCRUM-284 Δ4
 }
 
 export interface ViewAction {
@@ -91,6 +93,7 @@ export interface ViewEffect {
   childState?: Record<string, unknown>
   applyToParentSessionId?: string
   applyToParentTargetNodeId?: string
+  applyToParentCommand?: string
   applyToParentValue?: unknown
 }
 

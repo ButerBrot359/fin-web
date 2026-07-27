@@ -19,3 +19,17 @@ export const previewTreasuryExport = (
     data: { items },
     signal,
   })
+
+/**
+ * Байты XML одиночного документа (для записи в выбранную папку, Chromium).
+ * GET одиночного эндпоинта как blob; имя файла берём из preview (row.fileName).
+ */
+export const fetchTreasuryExportBlob = (
+  typeCode: string,
+  id: number,
+  signal?: AbortSignal
+) =>
+  apiService.getFileBlob({
+    url: `/api/document-entries/${typeCode}/${String(id)}/treasury-export`,
+    signal,
+  })

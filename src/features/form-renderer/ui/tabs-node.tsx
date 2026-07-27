@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useWatch } from 'react-hook-form'
 
@@ -54,13 +55,30 @@ export const TabsNode = ({ node }: TabsNodeProps) => {
   const watched = useWatch({
     control: form.control,
     name: paneFieldCodes.map((code) => code ?? NO_FIELD),
-  }) as unknown[]
+  })
+
+  // ЛЕНИВОЕ МОНТИРОВАНИЕ. Раньше монтировались ВСЕ панели, а неактивные просто
+  // прятались классом `hidden`: в документе с тремя табличными частями (ОС, НМА,
+  // БиблиотечныйФонд) все три жили в DOM со своими подписками, хотя пользователь
+  // обычно работает только с одной. Теперь панель попадает в дерево при первой
+  // активации и дальше остаётся смонтированной (скрытой) — так не теряется её
+  // собственное состояние (прокрутка, выделение, открытые пикеры).
+  //
+  // Значения полей от этого не зависят: они живут в react-hook-form, а
+  // `shouldUnregister` в проекте не включён.
+  const [openedKeys, setOpenedKeys] = useState<ReadonlySet<string>>(
+    () => new Set([activeKey])
+  )
+
+  // Активная панель рендерится ВСЕГДА: если вкладка стала активной не по клику
+  // (восстановление из стора, смена конфига), она всё равно окажется в дереве.
+  const isMounted = (key: string) => key === activeKey || openedKeys.has(key)
 
   return (
     <div>
       <div className="flex items-end border-b border-ui-03">
         {node.panes.map((pane, index) => {
-          const value = watched?.[index]
+          const value = watched[index]
           const count = Array.isArray(value) ? value.length : null
           const isActive = activeKey === pane.key
           return (
@@ -69,6 +87,9 @@ export const TabsNode = ({ node }: TabsNodeProps) => {
               type="button"
               onClick={() => {
                 setActive(storeKey, pane.key)
+                setOpenedKeys((prev) =>
+                  prev.has(pane.key) ? prev : new Set(prev).add(pane.key)
+                )
               }}
               className={cn(
                 'relative -mb-px cursor-pointer select-none whitespace-nowrap rounded-t border border-b-0 px-4 py-1.5 text-[13px] transition-colors',
@@ -86,22 +107,24 @@ export const TabsNode = ({ node }: TabsNodeProps) => {
         })}
       </div>
 
-      {node.panes.map((pane) => (
-        <div
-          key={pane.key}
-          // Содержимое ТЧ — в рамке-панели, примыкающей к линии вкладок (как в
-          // 1С: активная вкладка «сливается» с этим боксом). Верх панели = нижняя
-          // граница ряда вкладок (border-b выше), поэтому здесь border-t-0.
-          className={cn(
-            'rounded-b border border-t-0 border-ui-03 bg-ui-01 p-3',
-            activeKey !== pane.key && 'hidden'
-          )}
-        >
-          {pane.children.map((child, index) => (
-            <NodeRenderer key={index} node={child} />
-          ))}
-        </div>
-      ))}
+      {node.panes.map((pane) =>
+        isMounted(pane.key) ? (
+          <div
+            key={pane.key}
+            // Содержимое ТЧ — в рамке-панели, примыкающей к линии вкладок (как в
+            // 1С: активная вкладка «сливается» с этим боксом). Верх панели = нижняя
+            // граница ряда вкладок (border-b выше), поэтому здесь border-t-0.
+            className={cn(
+              'rounded-b border border-t-0 border-ui-03 bg-ui-01 p-3',
+              activeKey !== pane.key && 'hidden'
+            )}
+          >
+            {pane.children.map((child, index) => (
+              <NodeRenderer key={index} node={child} />
+            ))}
+          </div>
+        ) : null
+      )}
     </div>
   )
 }

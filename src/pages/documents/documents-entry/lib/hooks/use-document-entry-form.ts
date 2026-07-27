@@ -62,6 +62,16 @@ export const useDocumentEntryForm = () => {
     // Всегда актуальные данные при ОТКРЫТИИ документа (напр. статус исполнения):
     // рефетч при каждом маунте, даже если запись в кэше. Активные правки не
     // затираются — reset применяется только к чистой форме (см. эффект ниже).
+    //
+    // НАМЕРЕННО ОСТАВЛЕНО 'always'. После сохранения карточка больше не
+    // инвалидируется (см. use-document-entry-actions: там сознательно убран
+    // повторный тяжёлый GET сразу после PUT), поэтому в кэше по этому ключу
+    // какое-то время лежит ДОсохраненный DTO. Единственное, что гарантирует
+    // свежесть при повторном открытии документа, — этот рефетч на маунте;
+    // смягчение до `true`+staleTime открыло бы окно, в котором пользователь
+    // видит устаревшую карточку. Стоимость же ограничена: перерисовка формы
+    // сразу после записи больше не происходит, лишний GET остаётся только на
+    // реальном открытии/возврате к документу.
     refetchOnMount: 'always',
   })
 
@@ -115,7 +125,17 @@ export const useDocumentEntryForm = () => {
     } else if (!form.formState.isDirty && !restoredRef.current) {
       form.reset(defaults)
     }
-  }, [isNew, existingEntry, newEntryData, copyFromData, vidOperatsii, copyFrom, basisId, form, pathname])
+  }, [
+    isNew,
+    existingEntry,
+    newEntryData,
+    copyFromData,
+    vidOperatsii,
+    copyFrom,
+    basisId,
+    form,
+    pathname,
+  ])
 
   return {
     form,

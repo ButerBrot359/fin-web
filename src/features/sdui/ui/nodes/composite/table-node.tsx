@@ -1,8 +1,6 @@
 import type { FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Button,
-  IconButton,
   Paper,
   Table,
   TableBody,
@@ -12,12 +10,9 @@ import {
   TableRow,
   Typography,
 } from '@mui/material'
-import AddIcon from '@mui/icons-material/Add'
-import DeleteIcon from '@mui/icons-material/Delete'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiSession } from '../../../lib/sdui-session-context'
-import { useSduiDispatch } from '../../../lib/dispatch'
 import { nodeToTableColumnDef } from '../../../lib/utils/build-column-defs'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import type { TableColumnDef } from '../../../lib/hooks/use-table-sync'
@@ -167,32 +162,18 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
 const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
   const label = node.props?.label as string | undefined
-  const allowAdd = node.props?.allowAdd as boolean | undefined
-  const allowDelete = node.props?.allowDelete as boolean | undefined
   const showRowNumbers = node.props?.showRowNumbers === true
 
   const { getValue } = useSduiSession()
   const rows =
     (getValue(node.binding) as SimpleTableRow[] | undefined) ?? []
-  const dispatch = useSduiDispatch()
 
   const columns = extractReadOnlyColumns(node.children)
   const headerModel = buildHeaderModel(node.children)
 
-  const handleAdd = () => {
-    void dispatch({ type: 'COMMAND', command: `addRow:${node.binding}` })
-  }
-
-  const handleDelete = (rowId: string) => {
-    void dispatch({
-      type: 'COMMAND',
-      command: `deleteRow:${node.binding}:${rowId}`,
-    })
-  }
-
   return (
     <div>
-      {(label || allowAdd) && (
+      {label && (
         <div
           style={{
             display: 'flex',
@@ -201,21 +182,9 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
             gap: 8,
           }}
         >
-          {label && (
-            <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
-              {label}
-            </Typography>
-          )}
-          {allowAdd && (
-            <Button
-              size="small"
-              startIcon={<AddIcon />}
-              onClick={handleAdd}
-              variant="outlined"
-            >
-              {t('table.add')}
-            </Button>
-          )}
+          <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
+            {label}
+          </Typography>
         </div>
       )}
       <TableContainer component={Paper}>
@@ -241,12 +210,6 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                   {cell.label}
                 </TableCell>
               ))}
-              {allowDelete && (
-                <TableCell
-                  padding="checkbox"
-                  rowSpan={headerModel.hasGroups ? 2 : undefined}
-                />
-              )}
             </TableRow>
             {headerModel.hasGroups && (
               <TableRow>
@@ -260,7 +223,7 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + (allowDelete ? 1 : 0) + (showRowNumbers ? 1 : 0)}
+                  colSpan={columns.length + (showRowNumbers ? 1 : 0)}
                   align="center"
                 >
                   <Typography variant="body2" color="text.secondary">
@@ -281,16 +244,6 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                         : ''}
                     </TableCell>
                   ))}
-                  {allowDelete && (
-                    <TableCell padding="checkbox">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDelete(row.rowId)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  )}
                 </TableRow>
               ))
             )}

@@ -21,7 +21,7 @@ vi.mock('./patch-applier', () => ({ applyValuePatches: vi.fn() }))
 vi.mock('./validation', () => ({ validatePatches: (p: unknown) => p ?? [] }))
 vi.mock('@/shared/ui/toast/show-toast', () => ({ showToast: vi.fn() }))
 
-const noop = () => {}
+const noop = vi.fn()
 
 describe('relaySelectionToParent (SCRUM-284 Δ3)', () => {
   beforeEach(() => vi.clearAllMocks())

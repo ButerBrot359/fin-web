@@ -36,13 +36,16 @@ export const TreasuryExportPage = () => {
   const preview = useTreasuryExportPreview()
   const previewMutate = preview.mutate
 
-  // Авто-preview при маунте — таблица заполняется сразу, без ожидания
-  // «Выгрузить». Один прогон на валидные параметры.
-  const didAutoPreview = useRef(false)
+  // Авто-preview при маунте и при смене документа (typeCode/id) без
+  // перемонтирования страницы — роут /treasury-export кейзится по pathname
+  // без search, поэтому переход между документами меняет только params.
+  // Дедуп по ключу защищает от повторного прогона (в т.ч. StrictMode).
+  const lastPreviewKey = useRef<string>('')
   useEffect(() => {
-    if (didAutoPreview.current) return
     if (!typeCode || Number.isNaN(id)) return
-    didAutoPreview.current = true
+    const key = `${typeCode}:${id}`
+    if (lastPreviewKey.current === key) return
+    lastPreviewKey.current = key
     previewMutate([{ typeCode, id }])
   }, [typeCode, id, previewMutate])
 

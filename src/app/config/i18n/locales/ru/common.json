@@ -585,7 +585,7 @@
     "export": "Выгрузить",
     "cancel": "Отмена",
     "includeMxFields": "Включать поля формата MX",
-    "mxFieldsSoon": "МХ-формат — в разработке",
+    "mxFieldsSoon": "MX-формат — в разработке",
     "filesDownloadedByBrowser": "Файлы будут скачаны браузером",
     "errorDetailsTitle": "Подробный текст ошибок проверки",
     "noErrors": "Ошибок нет",

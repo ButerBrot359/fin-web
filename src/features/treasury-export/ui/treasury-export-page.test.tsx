@@ -1,3 +1,4 @@
+import { act } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   render,
@@ -6,7 +7,7 @@ import {
   fireEvent,
   cleanup,
 } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 
@@ -93,5 +94,46 @@ describe('TreasuryExportPage', () => {
       ).toBeGreaterThan(0)
     })
     expect(window.location.assign).not.toHaveBeenCalled()
+  })
+
+  it('смена документа в URL без перемонтирования страницы триггерит повторный auto-preview', async () => {
+    mockPreview(false)
+    const qc = new QueryClient({
+      defaultOptions: { mutations: { retry: false } },
+    })
+    // Роут /treasury-export кейзится по pathname без search (App.tsx),
+    // поэтому переход между документами не перемонтирует страницу —
+    // моделируем это через один и тот же <Route element>, меняя только search.
+    const router = createMemoryRouter(
+      [{ path: '/treasury-export', element: <TreasuryExportPage /> }],
+      {
+        initialEntries: [
+          '/treasury-export?typeCode=ZayavkaNaRegistratsiyuGPSdelki&id=42',
+        ],
+      }
+    )
+    render(
+      <QueryClientProvider client={qc}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    )
+
+    await screen.findByText('Заявка AAC00-00007')
+    expect(api.previewTreasuryExport).toHaveBeenCalledTimes(1)
+    expect(api.previewTreasuryExport).toHaveBeenLastCalledWith([
+      { typeCode: 'ZayavkaNaRegistratsiyuGPSdelki', id: 42 },
+    ])
+
+    act(() => {
+      router.navigate(
+        '/treasury-export?typeCode=ZayavkaNaRegistratsiyuGPSdelki&id=99'
+      )
+    })
+
+    await waitFor(() => {
+      expect(api.previewTreasuryExport).toHaveBeenLastCalledWith([
+        { typeCode: 'ZayavkaNaRegistratsiyuGPSdelki', id: 99 },
+      ])
+    })
   })
 })

@@ -3,6 +3,7 @@ import { TextField } from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
+import { useChangeOnBlur } from '../../../lib/hooks/use-change-on-blur'
 
 export const TextAreaNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
@@ -10,6 +11,7 @@ export const TextAreaNode: FC<NodeProps> = ({ node }) => {
   const maxLength = node.props?.maxLength as number | undefined
   const rows = (node.props?.rows as number | undefined) ?? 3
   const value = (f.value as string | undefined) ?? ''
+  const changeOnBlur = useChangeOnBlur(f, value)
 
   if (!f.visible) return null
 
@@ -24,8 +26,11 @@ export const TextAreaNode: FC<NodeProps> = ({ node }) => {
       disabled={!f.enabled}
       multiline
       rows={rows}
-      onChange={(e) => f.setValue(e.target.value)}
-      onBlur={() => f.fireServerEvent('change', value)}
+      onChange={(e) => {
+        f.setValue(e.target.value)
+      }}
+      onFocus={changeOnBlur.onFocus}
+      onBlur={changeOnBlur.onBlur}
       sx={{ flex: f.flex !== undefined ? f.flex : undefined }}
       slotProps={{
         input: { readOnly: f.readonly },

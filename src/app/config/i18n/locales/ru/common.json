@@ -567,6 +567,14 @@
     "confirm": {
       "ok": "Да",
       "cancel": "Нет"
+    },
+    "calendar": {
+      "applyImmediately": "Изменения применяются сразу",
+      "legend": {
+        "working": "Рабочий",
+        "nonWorking": "Нерабочий",
+        "manual": "Изменён вручную"
+      }
     }
   },
   "tarifikatsiya": {

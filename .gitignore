@@ -34,3 +34,6 @@ CLAUDE.local.md
 
 # Локальные слепки спек из Jira
 specs-local/
+
+# SDD scratch workspace
+.superpowers/

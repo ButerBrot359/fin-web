@@ -567,6 +567,14 @@
     "confirm": {
       "ok": "Иә",
       "cancel": "Жоқ"
+    },
+    "calendar": {
+      "applyImmediately": "Өзгерістер бірден қолданылады",
+      "legend": {
+        "working": "Жұмыс күні",
+        "nonWorking": "Жұмыс емес",
+        "manual": "Қолмен өзгертілген"
+      }
     }
   },
   "tarifikatsiya": {

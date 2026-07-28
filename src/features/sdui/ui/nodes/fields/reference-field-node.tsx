@@ -5,18 +5,13 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
+import { useResolvedOptionsParams } from '../../../lib/hooks/use-resolved-options-params'
 import { useSduiDispatch } from '../../../lib/dispatch'
-import { useBindingValue } from '../../../lib/sdui-session-context'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
+import type { OptionsParamValue } from '../../../lib/utils/resolve-options-params'
 import { fetchReferenceOptions } from '../../../api/reference-options'
 import { openReferencePicker } from '../../../lib/reference-picker-gateway'
-
-const DOMAIN_PATH_MAP: Record<string, string> = {
-  DICTIONARY: 'dictionary-entries',
-  DOCUMENT: 'document-entries',
-  ACCOUNT_PLAN: 'account-plan',
-}
 
 interface ReferenceValue {
   id: number
@@ -38,43 +33,21 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const domain = node.props?.domain as string | undefined
   const targetTypeCode = node.props?.targetTypeCode as string | undefined
   const filter = node.props?.filter as Record<string, unknown> | undefined
-  const optionsSource = node.props?.optionsSource as { url: string; params?: Record<string, string> } | undefined
+  const optionsSource = node.props?.optionsSource as
+    | { url: string; params?: Record<string, OptionsParamValue> }
+    | undefined
 
   const rawValue = f.value as ReferenceValue | null | undefined
 
   const [inputValue, setInputValue] = useState('')
 
-  // Generic-фолбэк «Договор контрагента» → владелец = Контрагент документа.
-  // Бэк-композер для документов без своего ViewFormHandler отдаёт пустой фильтр,
-  // поэтому синтезируем его на фронте из живого значения поля «Контрагент».
-  // Плоский параметр Vladelets принимается и /entries (дропдаун), и /paged
-  // (пикер «Показать все»). Реактивно: меняется вслед за сменой контрагента.
-  const kontragentValue = useBindingValue('Kontragent') as
-    | { id?: number | string }
-    | null
-    | undefined
-  const dogovorVladeletsId =
-    targetTypeCode === 'DogovoryKontragentov' && kontragentValue?.id != null
-      ? String(kontragentValue.id)
-      : undefined
-
-  const domainPath = domain ? (DOMAIN_PATH_MAP[domain] ?? 'dictionary-entries') : 'dictionary-entries'
-  // Двухветочный источник: приоритет optionsSource с бэка; legacy-фолбэк по domain+typeCode
-  // (временный мост — см. отклонение D-2 в ревизии SDUI, раздел 9).
-  const url = optionsSource
-    ? optionsSource.url
-    : targetTypeCode
-      ? `/api/${domainPath}/${targetTypeCode}/entries`
-      : null
-  const baseParams = optionsSource ? optionsSource.params : filter
-  const params = dogovorVladeletsId
-    ? { ...(baseParams ?? {}), Vladelets: dogovorVladeletsId }
-    : baseParams
-
-  const resetKey = JSON.stringify({
-    p: optionsSource?.params ?? filter ?? null,
-    v: dogovorVladeletsId ?? null,
-  })
+  // Полностью backend-driven источник данных: url и params приходят с бэка.
+  // Фронт не строит URL из domain и не знает бизнес-смысла params.
+  // Декларативные зависимости { fromBinding } резолвятся механически из стейта
+  // формы (SCRUM-286). Реактивность дропдаупа — через resetKey.
+  const url = optionsSource?.url ?? null
+  const params = useResolvedOptionsParams(optionsSource?.params)
+  const resetKey = JSON.stringify(params)
 
   const { options, loading, load, loadDebounced, resetOptions } = useReferenceOptions(
     (search?: string) =>
@@ -97,17 +70,11 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
 
   const canBrowse = !!targetTypeCode && !f.readonly && f.enabled
 
-  const filterSearchParams =
-    filter || dogovorVladeletsId
-      ? {
-          ...(filter
-            ? Object.fromEntries(
-                Object.entries(filter).map(([k, v]) => [k, String(v)]),
-              )
-            : {}),
-          ...(dogovorVladeletsId ? { Vladelets: dogovorVladeletsId } : {}),
-        }
-      : undefined
+  // Легаси-пикер («Показать все»/создать) получает готовый конкретный фильтр
+  // из node.props.filter (бэк кладёт туда {Vladelets: id}); фронт не синтезирует.
+  const filterSearchParams = filter
+    ? Object.fromEntries(Object.entries(filter).map(([k, v]) => [k, String(v)]))
+    : undefined
 
   const openDictList = () => {
     openReferencePicker({

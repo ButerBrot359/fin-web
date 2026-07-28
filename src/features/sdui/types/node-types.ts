@@ -9,8 +9,8 @@ export type NodeType =
   // Fields (8)
   | 'TEXT_FIELD' | 'TEXT_AREA' | 'NUMBER_FIELD' | 'DATE_FIELD'
   | 'DATETIME_FIELD' | 'CHECKBOX_FIELD' | 'ENUM_FIELD' | 'REFERENCE_FIELD'
-  // Composite (5)
-  | 'TABLE' | 'TABLE_COLUMN' | 'COLUMN_GROUP' | 'OBJECT_FIELD' | 'LIST'
+  // Composite (6)
+  | 'TABLE' | 'TABLE_COLUMN' | 'COLUMN_GROUP' | 'OBJECT_FIELD' | 'LIST' | 'CALENDAR'
   // Action (3)
   | 'BUTTON' | 'MENU_ITEM' | 'LINK'
 

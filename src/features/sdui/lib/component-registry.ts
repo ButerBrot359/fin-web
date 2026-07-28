@@ -38,6 +38,7 @@ import { TableColumnNode } from '../ui/nodes/composite/table-column-node'
 import { ColumnGroupNode } from '../ui/nodes/composite/column-group-node'
 import { ObjectFieldNode } from '../ui/nodes/composite/object-field-node'
 import { ListNode } from '../ui/nodes/composite/list-node'
+import { CalendarNode } from '../ui/nodes/calendar/calendar-node'
 // Action
 import { ButtonNode } from '../ui/nodes/action/button-node'
 import { MenuItemNode } from '../ui/nodes/action/menu-item-node'
@@ -75,6 +76,7 @@ const registry: Record<string, FC<NodeProps>> = {
   COLUMN_GROUP: ColumnGroupNode,
   OBJECT_FIELD: ObjectFieldNode,
   LIST: ListNode,
+  CALENDAR: CalendarNode,
   BUTTON: ButtonNode,
   MENU_ITEM: MenuItemNode,
   LINK: LinkNode,

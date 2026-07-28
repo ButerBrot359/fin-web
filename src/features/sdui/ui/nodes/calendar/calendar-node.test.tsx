@@ -15,13 +15,25 @@ vi.mock('./calendar-legend', () => ({ CalendarLegend: () => null }))
 // YearSelector-стаб: кнопка, дёргающая onChange(2026)
 vi.mock('./year-selector', () => ({
   YearSelector: ({ onChange }: { onChange: (y: number) => void }) => (
-    <button onClick={() => onChange(2026)}>year</button>
+    <button
+      onClick={() => {
+        onChange(2026)
+      }}
+    >
+      year
+    </button>
   ),
 }))
 // MonthGrid-стаб: одна кнопка на месяц, дёргает onToggle фикс-датой
 vi.mock('./month-grid', () => ({
   MonthGrid: ({ month, onToggle }: { month: number; onToggle: (d: string) => void }) => (
-    <button onClick={() => onToggle(`2025-0${month + 1}-01`)}>m{month}</button>
+    <button
+      onClick={() => {
+        onToggle(`2025-0${String(month + 1)}-01`)
+      }}
+    >
+      m{month}
+    </button>
   ),
 }))
 

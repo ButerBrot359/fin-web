@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ViewNode } from '../../../types/view'
 
 const { dispatch, showToast } = vi.hoisted(() => ({
-  dispatch: vi.fn(),
+  dispatch: vi.fn().mockResolvedValue(true),
   showToast: vi.fn(),
 }))
 
@@ -52,12 +52,24 @@ describe('CalendarNode', () => {
     })
   })
 
-  it('первый тоггл показывает toast один раз, второй — нет', () => {
+  it('первый тоггл показывает toast один раз, второй — нет', async () => {
     render(<CalendarNode node={node(baseProps)} />)
     fireEvent.click(screen.getByText('m0'))
-    fireEvent.click(screen.getByText('m1'))
+    await dispatch.mock.results[0].value
     expect(showToast).toHaveBeenCalledTimes(1)
     expect(showToast).toHaveBeenCalledWith('info', 'sdui.calendar.applyImmediately')
+
+    fireEvent.click(screen.getByText('m1'))
+    await dispatch.mock.results[1].value
+    expect(showToast).toHaveBeenCalledTimes(1)
+  })
+
+  it('отклонённый тоггл не показывает toast', async () => {
+    dispatch.mockResolvedValueOnce(false)
+    render(<CalendarNode node={node(baseProps)} />)
+    fireEvent.click(screen.getByText('m0'))
+    await dispatch.mock.results[0].value
+    expect(showToast).not.toHaveBeenCalled()
   })
 
   it('смена года шлёт COMMAND kalendari.god.change', () => {

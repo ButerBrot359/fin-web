@@ -35,14 +35,14 @@ export const CalendarNode: FC<NodeProps> = ({ node }) => {
   const dayAriaLabel = (y: number, m: number, d: number) =>
     format(new Date(y, m, d), 'd MMMM yyyy', { locale: ru })
 
-  const handleToggle = (data: string) => {
-    void dispatch({
+  const handleToggle = async (data: string) => {
+    const ok = await dispatch({
       type: 'COMMAND',
       command: 'kalendari.den.toggle',
       value: data,
       sourceNodeId: node.id,
     })
-    if (!noticeShown.current) {
+    if (ok && !noticeShown.current) {
       noticeShown.current = true
       showToast('info', t('sdui.calendar.applyImmediately'))
     }

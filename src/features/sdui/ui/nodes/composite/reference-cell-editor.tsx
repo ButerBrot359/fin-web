@@ -7,14 +7,10 @@ import type { SelectOption } from '@/shared/types/select-option'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
 import { fetchReferenceOptions } from '../../../api/reference-options'
 import { renderCellValue } from '../../../lib/utils/cell-value'
-
-// Тот же legacy-фолбэк, что в ReferenceFieldNode (двухветочный источник,
-// отклонение D-2 ревизии SDUI): приоритет optionsSource с бэка.
-const DOMAIN_PATH_MAP: Record<string, string> = {
-  DICTIONARY: 'dictionary-entries',
-  DOCUMENT: 'document-entries',
-  ACCOUNT_PLAN: 'account-plan',
-}
+import {
+  resolveOptionsParams,
+  type OptionsParamValue,
+} from '../../../lib/utils/resolve-options-params'
 
 interface ReferenceCellEditorProps {
   colProps: Record<string, unknown>
@@ -66,19 +62,17 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   onCommit,
 }) => {
   const optionsSource = colProps.optionsSource as
-    | { url: string; params?: Record<string, string> }
+    | { url: string; params?: Record<string, OptionsParamValue> }
     | undefined
-  const domain = (colProps.domain as string | undefined) ?? 'DICTIONARY'
-  const targetTypeCode = colProps.targetTypeCode as string | undefined
 
-  const domainPath = DOMAIN_PATH_MAP[domain] ?? 'dictionary-entries'
-  const url = optionsSource
-    ? optionsSource.url
-    : targetTypeCode
-      ? `/api/${domainPath}/${targetTypeCode}/entries`
-      : null
+  // Backend-driven источник: url приходит с бэка, фронт его не конструирует
+  // (SCRUM-286). Ячейка ТЧ не читает стейт формы — { fromBinding } тут не
+  // ожидается, но защитно резолвим (getValue → undefined), чтобы случайный
+  // объект-параметр не улетел строкой [object Object].
+  const url = optionsSource?.url ?? null
+  const params = resolveOptionsParams(optionsSource?.params, () => undefined)
 
-  const resetKey = JSON.stringify(optionsSource?.params ?? null)
+  const resetKey = JSON.stringify(params)
 
   const [inputValue, setInputValue] = useState('')
 
@@ -86,7 +80,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
     useReferenceOptions(
       (search?: string) =>
         url
-          ? fetchReferenceOptions({ url, params: optionsSource?.params, search })
+          ? fetchReferenceOptions({ url, params, search })
           : Promise.resolve([]),
       resetKey,
     )

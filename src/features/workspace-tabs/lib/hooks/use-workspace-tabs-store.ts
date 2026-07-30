@@ -7,6 +7,16 @@ import type { WorkspaceTab, TabPageType } from '../../types/workspace-tab'
 interface WorkspaceTabsStore {
   tabs: WorkspaceTab[]
   activeTabId: string | null
+  // Одноразовый флаг «следующий маршрутный переход открывает НОВУЮ вкладку»
+  // (эффект navigate с openInNewTab). Взводится до navigate, гасится
+  // синхронизатором, когда переход дошёл до маршрута с известным pageType:
+  // между ними может быть промежуточный редирект (/documents/:type/new →
+  // /modules/:pageCode/document/:type/new), который иначе переписал бы путь
+  // активной вкладки вместо создания новой.
+  forceNewTab: boolean
+
+  armNewTab: () => void
+  consumeNewTab: () => void
 
   activateOrCreate: (
     path: string,
@@ -33,6 +43,15 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
     (set, get) => ({
       tabs: [],
       activeTabId: null,
+      forceNewTab: false,
+
+      armNewTab: () => {
+        set({ forceNewTab: true })
+      },
+
+      consumeNewTab: () => {
+        set({ forceNewTab: false })
+      },
 
       activateOrCreate: (path, search, pageType) => {
         if (path === '/') return null

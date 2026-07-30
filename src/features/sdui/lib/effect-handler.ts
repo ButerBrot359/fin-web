@@ -18,12 +18,24 @@ export interface EffectHandlerDeps {
   // Мост эффекта confirm (SCRUM-244 v3 §1.2): показать диалог с message и по
   // «Да» отправить command в ту же сессию; по «Нет» — no-op. Реализация в dispatch.
   confirm: (command: string, message: string) => void
+  // navigate с openInNewTab: маршрут открывается ОТДЕЛЬНОЙ рабочей вкладкой,
+  // вкладка-источник остаётся жить. Реализация в dispatch.
+  openRouteInNewTab: (route: string) => void
 }
 
 export function createEffectHandler(deps: EffectHandlerDeps) {
   function play(effect: ViewEffect): void {
     switch (effect.type) {
       case 'navigate':
+        // Единственный переключатель — флаг бэка. Состав маршрута (basisId,
+        // dictBasisId, copyFrom) и имя команды фронт не разбирает: решение
+        // «новой вкладкой или нет» принимает сервер, фронт исполняет.
+        if (effect.openInNewTab) {
+          // Сессию источника НЕ закрываем: его вкладка остаётся открытой, а её
+          // кэш (sdui-cache-store) держит formSessionId с несохранёнными правками.
+          deps.openRouteInNewTab(effect.route!)
+          break
+        }
         void deps.closeSession()
         deps.navigate(effect.route!)
         break

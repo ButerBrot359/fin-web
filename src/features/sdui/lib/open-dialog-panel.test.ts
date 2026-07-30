@@ -27,7 +27,10 @@ describe('openDialogAsPanel', () => {
   beforeEach(() => {
     usePanelStore.setState({ panels: [] })
     openPanelTabMock.mockClear()
-    setWorkspaceTabGateway({ openPanelTab: openPanelTabMock })
+    setWorkspaceTabGateway({
+      openPanelTab: openPanelTabMock,
+      armNewTab: vi.fn(),
+    })
   })
 
   afterEach(() => {

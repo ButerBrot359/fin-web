@@ -10,8 +10,44 @@ function makeDeps(): EffectHandlerDeps {
     closeDialog: vi.fn(),
     invalidateLists: vi.fn(),
     confirm: vi.fn(),
+    openRouteInNewTab: vi.fn(),
   }
 }
+
+describe('effect navigate — openInNewTab', () => {
+  it('с флагом открывает маршрут отдельной вкладкой и не закрывает сессию источника', () => {
+    const deps = makeDeps()
+    createEffectHandler(deps).play({
+      type: 'navigate',
+      route: '/documents/SchetKOplate/new?basisId=27856789',
+      openInNewTab: true,
+    })
+    expect(deps.openRouteInNewTab).toHaveBeenCalledWith(
+      '/documents/SchetKOplate/new?basisId=27856789',
+    )
+    expect(deps.navigate).not.toHaveBeenCalled()
+    expect(deps.closeSession).not.toHaveBeenCalled()
+  })
+
+  it('без флага — прежнее поведение: переход в текущей вкладке + закрытие сессии', () => {
+    const deps = makeDeps()
+    createEffectHandler(deps).play({
+      type: 'navigate',
+      route: '/modules/gp/document/ZayavkaGP',
+      openInNewTab: false,
+    })
+    expect(deps.navigate).toHaveBeenCalledWith('/modules/gp/document/ZayavkaGP')
+    expect(deps.closeSession).toHaveBeenCalledTimes(1)
+    expect(deps.openRouteInNewTab).not.toHaveBeenCalled()
+  })
+
+  it('поля нет вовсе (старый бэк) — прежнее поведение', () => {
+    const deps = makeDeps()
+    createEffectHandler(deps).play({ type: 'navigate', route: '/modules/gp' })
+    expect(deps.navigate).toHaveBeenCalledWith('/modules/gp')
+    expect(deps.openRouteInNewTab).not.toHaveBeenCalled()
+  })
+})
 
 describe('effect refresh', () => {
   it('вызывает инвалидацию списков', () => {

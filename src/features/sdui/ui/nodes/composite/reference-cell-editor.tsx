@@ -6,6 +6,7 @@ import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
 import { fetchReferenceOptions } from '../../../api/reference-options'
+import { openReferencePicker } from '../../../lib/reference-picker-gateway'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import {
   resolveOptionsParams,
@@ -17,6 +18,33 @@ interface ReferenceCellEditorProps {
   value: unknown
   onChange: (value: unknown) => void
   onCommit: () => void
+}
+
+/**
+ * Ссылочные props узла `TABLE_COLUMN` — ровно тот контракт, что описан в спеке
+ * SCRUM-314 §2. Заведён отдельным типом намеренно: сегодня одни и те же имена
+ * читают три места (`reference-field-node.tsx`, `object-cell-editor.tsx` и это),
+ * каждое своим `as`-выражением, — и разъезд с бэком остался бы незамеченным до
+ * рантайма. `colProps` разбираем один раз, дальше работаем с типом.
+ */
+interface ReferenceCellProps {
+  /** Раздел ссылки: DICTIONARY, CALCULATION_PLAN, DOCUMENT, регистры… */
+  domain?: string
+  /** Код целевого типа. Пуст → цель неизвестна (инвариант A4). */
+  targetTypeCode?: string
+  /** Показывать «Показать все» — открыть полный список выбора. */
+  allowShowAll?: boolean
+  /** Показывать «Добавить» — создать новый элемент целевого типа. */
+  allowCreate?: boolean
+  /** Готовый конкретный фильтр от бэка; фронт его не синтезирует. */
+  filter?: Record<string, unknown>
+  optionsSource?: { url: string; params?: Record<string, OptionsParamValue> }
+}
+
+function readReferenceCellProps(
+  colProps: Record<string, unknown>
+): ReferenceCellProps {
+  return colProps as ReferenceCellProps
 }
 
 // Компактная стилизация под ячейку ТЧ — по образцу cellSx/dateCellSx
@@ -61,9 +89,17 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   onChange,
   onCommit,
 }) => {
-  const optionsSource = colProps.optionsSource as
-    | { url: string; params?: Record<string, OptionsParamValue> }
-    | undefined
+  // Аффордансы пикера — тот же серверный контракт, что у REFERENCE_FIELD шапки
+  // (reference-field-node.tsx). Ветки node.actions здесь нет: у TABLE_COLUMN
+  // серверных команд showAll/create не бывает, только props.
+  const {
+    domain,
+    targetTypeCode,
+    allowShowAll,
+    allowCreate,
+    filter,
+    optionsSource,
+  } = readReferenceCellProps(colProps)
 
   // Backend-driven источник: url приходит с бэка, фронт его не конструирует
   // (SCRUM-286). Ячейка ТЧ не читает стейт формы — { fromBinding } тут не
@@ -82,7 +118,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
         url
           ? fetchReferenceOptions({ url, params, search })
           : Promise.resolve([]),
-      resetKey,
+      resetKey
     )
 
   // ENUM-колонка без optionsSource и без фолбэка (нет targetTypeCode):
@@ -106,6 +142,35 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
     onCommit()
   }
 
+  // Легаси-пикер получает готовый конкретный фильтр из props.filter (бэк кладёт
+  // туда, например, {Vladelets: id}) — фронт его не синтезирует.
+  const searchParams = filter
+    ? Object.fromEntries(Object.entries(filter).map(([k, v]) => [k, String(v)]))
+    : undefined
+
+  // Инвариант A4: без targetTypeCode бэк осознанно не кладёт ни optionsSource,
+  // ни allow* — цель ссылки неизвестна, пикер открывать не по чему. Гейт
+  // выражен наличием функции, а не булевым флагом: так domain/typeCode сужены
+  // по построению и не нужны non-null-assertion'ы на месте вызова.
+  const openPicker =
+    domain && targetTypeCode
+      ? (mode: 'list' | 'create') => {
+          openReferencePicker({
+            mode,
+            domain,
+            typeCode: targetTypeCode,
+            onSelect: applySelected,
+            searchParams,
+          })
+        }
+      : null
+
+  // «Добавить» — только для настоящих справочников. dataType=DICTIONARY означает
+  // «ссылка вообще», реальный домен лежит в props.domain: у «Вида начисления»
+  // это CALCULATION_PLAN, и создание элемента справочника там не сработает.
+  // Бэк тот же гейт заводит у себя, здесь — вторая дешёвая защита (спека §2).
+  const canCreate = openPicker !== null && domain === 'DICTIONARY'
+
   return (
     <Box sx={wrapperSx}>
       <AutocompleteInput
@@ -123,6 +188,20 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
           if (options.length === 0) load()
         }}
         onChange={applySelected}
+        onShowAll={
+          openPicker && (allowShowAll ?? true)
+            ? () => {
+                openPicker('list')
+              }
+            : undefined
+        }
+        onAdd={
+          openPicker && canCreate && (allowCreate ?? true)
+            ? () => {
+                openPicker('create')
+              }
+            : undefined
+        }
       />
     </Box>
   )

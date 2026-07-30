@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { openPanelTab, usePanelStore } from '@/features/sdui'
+import { armNewTab, openPanelTab, usePanelStore } from '@/features/sdui'
 import {
   notifyPanelTabClose,
   useWorkspaceTabsStore,
@@ -32,6 +32,18 @@ describe('useWorkspaceTabGatewayBinding', () => {
       pageType: 'sdui-panel',
       panelId: 'p1',
     })
+    unmount()
+  })
+
+  it('связывает armNewTab SDUI с флагом стора вкладок', () => {
+    const { unmount } = renderHook(() => {
+      useWorkspaceTabGatewayBinding()
+    })
+
+    expect(armNewTab()).toBe(true)
+    expect(useWorkspaceTabsStore.getState().forceNewTab).toBe(true)
+
+    useWorkspaceTabsStore.getState().consumeNewTab()
     unmount()
   })
 

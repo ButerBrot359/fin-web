@@ -18,6 +18,9 @@ export function useWorkspaceTabGatewayBinding(): void {
           .getState()
           .activateOrCreatePanel(tabKey, title, panelId)
       },
+      armNewTab: () => {
+        useWorkspaceTabsStore.getState().armNewTab()
+      },
     })
     const unsubscribe = onPanelTabClose((panelId) => {
       usePanelStore.getState().remove(panelId)

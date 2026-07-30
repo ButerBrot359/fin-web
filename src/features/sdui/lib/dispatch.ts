@@ -16,6 +16,7 @@ import { useSduiSession } from './sdui-session-context'
 import { usePanelStore } from './stores/panel-store'
 import { useConfirmStore } from './stores/confirm-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
+import { armNewTab } from './workspace-tab-gateway'
 import { relaySelectionToParent } from './relay-selection'
 import { openDialogAsPanel } from './open-dialog-panel'
 
@@ -58,6 +59,13 @@ export function useSduiDispatch() {
       const effectHandler = createEffectHandler({
         navigate,
         closeSession,
+        openRouteInNewTab: (route) => {
+          // Взводим флаг ДО перехода: между navigate и целевым маршрутом может
+          // быть редирект (/documents/:type/new → /modules/…), и синхронизатор
+          // вкладок должен создать новую вкладку, а не переписать активную.
+          armNewTab()
+          void navigate(route)
+        },
         openDialog: (effect) => {
           openDialogAsPanel(effect, session.getSession().formSessionId ?? undefined)
         },

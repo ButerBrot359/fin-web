@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { ViewNode } from '../../../types/view'
 import { useTableSync, type TableRow } from '../../../lib/hooks/use-table-sync'
+import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useSduiSession, useBindingValue } from '../../../lib/sdui-session-context'
 import {
   buildColumnDefs,
@@ -57,6 +58,14 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const masterKey = node.props?.masterKey as string | undefined
   const detailKey = node.props?.detailKey as string | undefined
   const isMasterDetail = Boolean(masterTable && masterKey && detailKey)
+
+  // У detail-ТЧ `allowAdd` — это СОСТОЯНИЕ ПРАВИЛА (бэк гоняет его патчами по
+  // составу master: график вычета вводится только «по периодическим платежам»),
+  // а не структурный запрет. Кнопку поэтому не прячем — как в эталоне 1С: она
+  // остаётся активной, а на клик сервер снимает строку и объясняет причину своим
+  // notify. Правило авторитетно на сервере, активная кнопка данные не портит
+  // (frontend-spec-table-row-activate §3.4/§6).
+  const showAdd = allowAdd || isMasterDetail
 
   // Memoize columns by node.children — critical for preserving input focus
   const flatColumns = useMemo(
@@ -143,12 +152,17 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     getRowId: (row) => row.rowId,
   })
 
+  // Серверная реакция на активацию строки — тот же момент, что и публикация
+  // выбора для master-detail фильтра; фильтр остаётся клиентским.
+  const activateRow = useRowActivate(node)
+
   // Publish selected rowId to session for detail tables
   const handleRowClick = (rowId: string) => {
     setSelectedRowId(rowId)
     if (node.binding) {
       setFromServer(node.binding + '.__selectedRowId', rowId)
     }
+    activateRow(rowId)
   }
 
   // Detail-таблица: новая строка сразу получает ключ связи выбранной master-строки;
@@ -204,7 +218,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           }
           canRemove={selectedRowId !== null}
           canAdd={!isMasterDetail || masterKeyValue !== undefined}
-          allowAdd={allowAdd}
+          allowAdd={showAdd}
           allowReorder={allowReorder && !isMasterDetail}
           allowDelete={allowDelete}
         />

@@ -23,6 +23,7 @@ import {
   type TableColumnDef,
   type TableRow,
 } from '../../../lib/hooks/use-table-sync'
+import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { TableCellEditor } from './table-cell-editor'
 import { TableToolbar } from './table-toolbar'
 
@@ -45,6 +46,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const syncRef = useRef(sync)
   syncRef.current = sync
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  // Активация строки уходит на сервер только если бэк прислал action
+  // с trigger='activate' у этой ТЧ (props.rowActivate)
+  const activateRow = useRowActivate(node)
 
   useEffect(() => {
     setSelectedIndex((prev) => {
@@ -163,7 +167,10 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                   key={row.id}
                   hover
                   selected={selectedIndex === index}
-                  onClick={() => setSelectedIndex(index)}
+                  onClick={() => {
+                    setSelectedIndex(index)
+                    activateRow(row.id)
+                  }}
                   sx={{ cursor: 'pointer' }}
                 >
                   {showRowNumbers && (

@@ -12,21 +12,29 @@ describe('flushAllPendingTableCommits', () => {
     vi.useRealTimers()
   })
 
-  it('резолвится по таймауту, если flush завис навсегда', async () => {
+  // SCRUM-314 §6: раньше зависший flush по таймауту РЕЗОЛВИЛСЯ — save уходил по
+  // старому состоянию, введённое пользователем молча пропадало. Теперь отказ
+  // видимый: dispatch ловит reject и показывает тост, save не выполняется.
+  it('реджектится по таймауту, если flush завис навсегда', async () => {
     vi.useFakeTimers()
-    const token = registerPendingFlush(() => new Promise<void>(() => {}))
-    const promise = flushAllPendingTableCommits()
+    const token = registerPendingFlush(() => new Promise<void>(() => undefined))
+    // Обработчик отказа навешиваем ДО прокрутки таймеров: иначе reject
+    // происходит раньше, чем на промис кто-то подписался, и Node сообщает об
+    // необработанном отклонении — vitest считает это ошибкой прогона.
+    const rejects = expect(flushAllPendingTableCommits()).rejects.toThrow(
+      'table flush timed out'
+    )
     await vi.advanceTimersByTimeAsync(FLUSH_TIMEOUT_MS)
-    await expect(promise).resolves.toBeUndefined()
+    await rejects
     unregisterPendingFlush(token)
   })
 
   it('пробрасывает reject от flush (ошибка сети) раньше таймаута', async () => {
     const token = registerPendingFlush(() =>
-      Promise.reject(new Error('table commit failed')),
+      Promise.reject(new Error('table commit failed'))
     )
     await expect(flushAllPendingTableCommits()).rejects.toThrow(
-      'table commit failed',
+      'table commit failed'
     )
     unregisterPendingFlush(token)
   })

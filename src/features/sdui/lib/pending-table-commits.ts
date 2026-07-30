@@ -1,12 +1,20 @@
 const registry = new Map<symbol, () => Promise<void>>()
 
-// Предохранитель: если сервер не пришлёт canon для таблицы, flush не должен
-// блокировать save бесконечно (SCRUM-282 #5) — по таймауту считаем завершённым.
+// Предохранитель: flush не должен блокировать save бесконечно (SCRUM-282 #5).
+//
+// По таймауту РЕДЖЕКТИМ, а не резолвим (SCRUM-314 §6). Резолв означал «считаем
+// правки отправленными» — то есть ровно ту тихую потерю данных, из-за которой
+// заведена задача: save уходил по старому состоянию, пользователь видел, что
+// введённое исчезло, и ни ошибки, ни объяснения не получал. Реджект ловит
+// dispatch и показывает тост `sdui.tableFlushFailed`, а save не выполняется:
+// видимый отказ лучше молчаливой пропажи введённого.
 export const FLUSH_TIMEOUT_MS = 5000
 
 function withTimeout(promise: Promise<void>): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(resolve, FLUSH_TIMEOUT_MS)
+    const timer = setTimeout(() => {
+      reject(new Error('table flush timed out'))
+    }, FLUSH_TIMEOUT_MS)
     promise.then(
       () => {
         clearTimeout(timer)
@@ -15,7 +23,7 @@ function withTimeout(promise: Promise<void>): Promise<void> {
       (err: unknown) => {
         clearTimeout(timer)
         reject(err instanceof Error ? err : new Error(String(err)))
-      },
+      }
     )
   })
 }

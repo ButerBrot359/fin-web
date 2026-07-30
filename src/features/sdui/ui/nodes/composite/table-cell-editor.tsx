@@ -8,6 +8,7 @@ import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import { ReferenceCellEditor } from './reference-cell-editor'
 import { DateCellEditor } from './date-cell-editor'
+import { ObjectCellEditor } from './object-cell-editor'
 
 interface TableCellEditorProps {
   cellWidget: string
@@ -271,6 +272,19 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
     case 'REFERENCE_FIELD':
       return (
         <ReferenceCellEditor
+          colProps={props ?? {}}
+          value={value}
+          onChange={onChange}
+          onCommit={onCommit}
+        />
+      )
+
+    // Составной (OBJECT) тип: селектор члена + пикер значения. Без этой ветки
+    // ячейка падала в `default:` и была нередактируемой — жалоба аналитика
+    // «„Значение“ в доп.реквизитах не активно» (SCRUM-279).
+    case 'OBJECT_FIELD':
+      return (
+        <ObjectCellEditor
           colProps={props ?? {}}
           value={value}
           onChange={onChange}

@@ -24,11 +24,17 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
         // Равное деление ширины по умолчанию (SCRUM-282 #1): без flex дети
         // ужимаются до контента (таблицы «скомканы»). minWidth:0 обязателен,
         // иначе таблица не даёт контейнеру сжиматься и появляется h-скролл формы.
+        // Колонка — flex-контейнер: сама обёртка растянута до высоты самой
+        // высокой соседки (align-items:stretch), и ребёнок со своим flexGrow
+        // добирает эту высоту. Без этого master-detail пара таблиц заканчивается
+        // на разных линиях — у каждой Paper высота по своему содержимому.
         <div
           key={c.id}
           style={{
             flex: (c.props?.flex as number | string | undefined) ?? '1 1 0%',
             minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           <NodeRenderer node={c} />

@@ -207,7 +207,18 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const leafColumnCount = flatColumns.length || 1
 
   return (
-    <div>
+    // Тянемся на всю высоту колонки HSTACK, чтобы master и detail заканчивались
+    // на одной линии: высоту задаёт та таблица, где строк больше, вторая
+    // добирает пустым местом внизу — как в эталоне 1С. Вне HSTACK родитель не
+    // flex, flexGrow игнорируется и высота остаётся по содержимому.
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flexGrow: 1,
+        minHeight: 0,
+      }}
+    >
       <div style={{ marginBottom: 8 }}>
         <TableToolbar
           onAdd={handleAdd}
@@ -227,7 +238,9 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           allowDelete={allowDelete}
         />
       </div>
-      <TableContainer component={Paper}>
+      {/* basis auto, а не 0: контейнер растёт до высоты колонки, но никогда не
+          становится ниже собственного содержимого, если растягивать нечего. */}
+      <TableContainer component={Paper} sx={{ flex: '1 1 auto' }}>
         <Table size="small">
           <TableHead>
             {table.getHeaderGroups().map((hg, hgIndex) => (

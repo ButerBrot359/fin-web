@@ -70,9 +70,30 @@ export function buildColumnDefs(
           (child) => child.props?.visible !== false,
         )
 
+        // Шапка VERTICAL-группы: подписи под-колонок СТОПКОЙ, по одной над своим
+        // редактором — как в эталоне 1С («Предоставлять вычет» ↑ / «Основание» ↓),
+        // а не единый заголовок группы. Тот же `flex flex-col gap-1`, что и ячейка,
+        // чтобы подписи вставали напротив строк значений
+        // (frontend-spec-ipn-vertical-group-header.md §1).
+        // Fallback на groupLabel — если все под-колонки скрыты или без подписей:
+        // пустая шапка читалась бы как сломанная колонка.
+        const subLabels = visibleChildren
+          .map((child) => nodeToTableColumnDef(child))
+          .filter((col) => col.label !== '')
+
         const colDef: ColumnDef<TableRow> = {
           id: groupId,
-          header: groupLabel,
+          header:
+            subLabels.length > 0
+              ? () =>
+                  createElement(
+                    'div',
+                    { className: 'flex flex-col gap-1' },
+                    ...subLabels.map((col) =>
+                      createElement('span', { key: col.id }, col.label),
+                    ),
+                  )
+              : groupLabel,
           cell: (info: CellContext<TableRow, unknown>) =>
             createElement(
               'div',

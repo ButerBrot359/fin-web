@@ -24,6 +24,7 @@ import { useSduiSession, useBindingValue } from '../../../lib/sdui-session-conte
 import {
   buildColumnDefs,
   extractAllLeafColumns,
+  VERTICAL_SUB_ROW_HEIGHT,
 } from '../../../lib/utils/build-column-defs'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import {
@@ -35,8 +36,10 @@ import { TableToolbar } from './table-toolbar'
 // Единая высота строки для master-detail пары (SCRUM-282 #3): в ячейках VERTICAL-групп
 // стопки редакторов разной высоты (checkbox+text vs date+date), без общей высоты
 // строки таблицы разъезжаются. height на <tr> работает как min-height.
+// Считается из сетки под-строк VERTICAL-группы (две под-строки), иначе строка и
+// стопка редакторов разъедутся при правке одной из двух величин.
 // Позже уедет в конфиг-сервис стилей.
-const ROW_HEIGHT = 72
+const ROW_HEIGHT = 2 * VERTICAL_SUB_ROW_HEIGHT
 
 interface ComplexEditableTableProps {
   node: ViewNode
@@ -240,7 +243,18 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                   header.isPlaceholder ? (
                     <TableCell key={header.id} colSpan={header.colSpan} />
                   ) : (
-                    <TableCell key={header.id} colSpan={header.colSpan}>
+                    <TableCell
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      // VERTICAL-группа сама держит сетку под-строк и рисует
+                      // разделитель во всю ширину — свой padding ячейки сдвинул бы
+                      // подписи вниз относительно редакторов и обрезал линию.
+                      sx={
+                        header.column.columnDef.meta?.verticalGroup
+                          ? { p: 0 }
+                          : undefined
+                      }
+                    >
                       {flexRender(
                         header.column.columnDef.header,
                         header.getContext(),

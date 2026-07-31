@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { ViewNode } from '../../types/view'
 import type { UseTableSyncResult } from '../hooks/use-table-sync'
-import { buildColumnDefs, nodeToTableColumnDef } from './build-column-defs'
+import {
+  buildColumnDefs,
+  nodeToTableColumnDef,
+  VERTICAL_SUB_ROW_HEIGHT,
+} from './build-column-defs'
 
 describe('nodeToTableColumnDef', () => {
   it('приоритет binding: node.binding > props.binding > node.id', () => {
@@ -37,17 +41,19 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     }) as ViewNode
 
   /**
-   * Подписи, которые шапка реально отрисует (children корневого div).
+   * Под-строки, которые шапка реально отрисует (children корневого div).
    * Единственного ребёнка createElement кладёт в props.children НЕ массивом —
    * нормализуем, иначе кейс с одной видимой под-колонкой падал бы на .map.
    */
-  const renderedLabels = (header: unknown): string[] => {
+  const subRows = (header: unknown): ReactElement[] => {
     const element = (header as () => ReactElement)()
     const children = (element.props as { children: ReactElement | ReactElement[] })
       .children
-    const list = Array.isArray(children) ? children : [children]
-    return list.map((c) => (c.props as { children: string }).children)
+    return Array.isArray(children) ? children : [children]
   }
+
+  const renderedLabels = (header: unknown): string[] =>
+    subRows(header).map((row) => (row.props as { children: string }).children)
 
   it('рендерит подписи видимых под-колонок стопкой вместо label группы', () => {
     const defs = buildColumnDefs(
@@ -101,6 +107,44 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     )
 
     expect(renderedLabels(defs[0].header)).toEqual(['Предоставлять вычет'])
+  })
+
+  it('под-строки одной высоты, разделитель — между ними, а не сверху первой', () => {
+    const defs = buildColumnDefs(
+      [
+        verticalGroup([
+          {
+            id: 'col.nachalo',
+            type: 'TABLE_COLUMN',
+            binding: 'PeriodDeystviyaNachalo',
+            props: { label: 'Дата начала' },
+          } as ViewNode,
+          {
+            id: 'col.konets',
+            type: 'TABLE_COLUMN',
+            binding: 'PeriodDeystviyaKonets',
+            props: { label: 'Дата окончания' },
+          } as ViewNode,
+        ]),
+      ],
+      syncRef,
+    )
+
+    const rows = subRows(defs[0].header)
+    // Одинаковая высота под-строк в шапке и в ячейке — за счёт неё i-я подпись
+    // встаёт над i-м редактором (сетка общая, VERTICAL_SUB_ROW_HEIGHT).
+    for (const row of rows) {
+      expect((row.props as { style: { height: number } }).style.height).toBe(
+        VERTICAL_SUB_ROW_HEIGHT,
+      )
+    }
+    // Линия-разделитель как в 1С: только у второй под-строки, иначе получилась бы
+    // лишняя черта под шапкой таблицы.
+    const classNames = rows.map(
+      (row) => (row.props as { className?: string }).className,
+    )
+    expect(classNames[0]).toBeUndefined()
+    expect(classNames[1]).toContain('border-t')
   })
 
   it('без подписей у под-колонок остаётся label группы — шапка не пустеет', () => {

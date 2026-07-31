@@ -40,6 +40,8 @@ vi.mock('../../../lib/sdui-session-context', () => ({
 
 // Не тянем реальные виджеты ячеек — упрощённые ColumnDef по accessorKey/header.
 vi.mock('../../../lib/utils/build-column-defs', () => ({
+  // Реальное значение: из него компонент считает высоту строки (2 × под-строка).
+  VERTICAL_SUB_ROW_HEIGHT: 36,
   buildColumnDefs: (children: ViewNode[] | undefined) =>
     (children ?? [])
       .filter((c) => c.type === 'TABLE_COLUMN')

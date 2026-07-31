@@ -25,6 +25,7 @@ import {
   buildColumnDefs,
   extractAllLeafColumns,
   VERTICAL_SUB_ROW_HEIGHT,
+  type SduiColumnMetaExtra,
 } from '../../../lib/utils/build-column-defs'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import {
@@ -239,29 +240,29 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     {t('table.rowNumber')}
                   </TableCell>
                 )}
-                {hg.headers.map((header) =>
-                  header.isPlaceholder ? (
-                    <TableCell key={header.id} colSpan={header.colSpan} />
-                  ) : (
+                {hg.headers.map((header) => {
+                  if (header.isPlaceholder) {
+                    return <TableCell key={header.id} colSpan={header.colSpan} />
+                  }
+                  // VERTICAL-группа сама держит сетку под-строк и рисует
+                  // разделитель во всю ширину — свой padding ячейки сдвинул бы
+                  // подписи вниз относительно редакторов и обрезал линию.
+                  const extra = header.column.columnDef.meta as
+                    | SduiColumnMetaExtra
+                    | undefined
+                  return (
                     <TableCell
                       key={header.id}
                       colSpan={header.colSpan}
-                      // VERTICAL-группа сама держит сетку под-строк и рисует
-                      // разделитель во всю ширину — свой padding ячейки сдвинул бы
-                      // подписи вниз относительно редакторов и обрезал линию.
-                      sx={
-                        header.column.columnDef.meta?.verticalGroup
-                          ? { p: 0 }
-                          : undefined
-                      }
+                      sx={extra?.verticalGroup ? { p: 0 } : undefined}
                     >
                       {flexRender(
                         header.column.columnDef.header,
                         header.getContext(),
                       )}
                     </TableCell>
-                  ),
-                )}
+                  )
+                })}
               </MuiTableRow>
             ))}
           </TableHead>

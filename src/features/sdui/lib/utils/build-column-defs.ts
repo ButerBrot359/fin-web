@@ -1,5 +1,5 @@
 import { type ReactNode, type RefObject, createElement } from 'react'
-import type { ColumnDef, CellContext, RowData } from '@tanstack/react-table'
+import type { ColumnDef, CellContext } from '@tanstack/react-table'
 
 import type { ViewNode } from '../../types/view'
 import type {
@@ -9,16 +9,23 @@ import type {
 } from '../hooks/use-table-sync'
 import { TableCellEditor } from '../../ui/nodes/composite/table-cell-editor'
 
-declare module '@tanstack/react-table' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends RowData, TValue> {
-    /**
-     * Колонка — VERTICAL-группа: её шапка сама держит сетку под-строк, поэтому
-     * рендерер снимает с ячейки шапки собственные отступы (иначе подписи уезжают
-     * вниз относительно редакторов на ту же величину padding'а).
-     */
-    verticalGroup?: boolean
-  }
+/**
+ * Кастомные поля в `ColumnDef.meta`. Читаются приведением типа на месте
+ * использования — как `EavColumnMetaExtra` в `widgets/eav-entity-table`.
+ * <p>
+ * Модульную аугментацию `ColumnMeta` сюда заводить НЕЛЬЗЯ: интерфейс в
+ * @tanstack/react-table пустой, и все существующие `meta: { metaCode: ... }`
+ * проходят только благодаря этому — первое же объявленное свойство включает
+ * excess-property-check и роняет сборку в чужих файлах (списки документов,
+ * регистра бухгалтерии).
+ */
+export interface SduiColumnMetaExtra {
+  /**
+   * Колонка — VERTICAL-группа: её шапка сама держит сетку под-строк, поэтому
+   * рендерер снимает с ячейки шапки собственные отступы (иначе подписи уезжают
+   * вниз относительно редакторов на ту же величину padding'а).
+   */
+  verticalGroup?: boolean
 }
 
 /**

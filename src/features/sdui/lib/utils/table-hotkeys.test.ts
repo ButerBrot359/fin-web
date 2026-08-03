@@ -65,17 +65,21 @@ describe('createTableHotkeysHandler (SCRUM-302)', () => {
   it('Ctrl+Shift+стрелки двигают строку (и в инпуте тоже)', () => {
     const h = makeHandlers()
     const onKeyDown = createTableHotkeysHandler(h)
-    onKeyDown(
-      keyEvent({
-        key: 'ArrowUp',
-        ctrlKey: true,
-        shiftKey: true,
-        targetTag: 'input',
-      })
-    )
-    onKeyDown(keyEvent({ key: 'ArrowDown', ctrlKey: true, shiftKey: true }))
+    const eUp = keyEvent({
+      key: 'ArrowUp',
+      ctrlKey: true,
+      shiftKey: true,
+      targetTag: 'input',
+    })
+    const eDown = keyEvent({ key: 'ArrowDown', ctrlKey: true, shiftKey: true })
+    onKeyDown(eUp)
+    onKeyDown(eDown)
     expect(h.onMoveUp).toHaveBeenCalled()
     expect(h.onMoveDown).toHaveBeenCalled()
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(eUp.preventDefault).toHaveBeenCalled()
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(eDown.preventDefault).toHaveBeenCalled()
   })
 
   it('Ctrl+F, Cmd+F и Ctrl+Alt+F фокусируют поиск с preventDefault', () => {
@@ -95,8 +99,18 @@ describe('createTableHotkeysHandler (SCRUM-302)', () => {
   it('Ctrl+Q сбрасывает поиск', () => {
     const h = makeHandlers()
     const onKeyDown = createTableHotkeysHandler(h)
-    onKeyDown(keyEvent({ key: 'q', ctrlKey: true }))
+    const e = keyEvent({ key: 'q', ctrlKey: true })
+    onKeyDown(e)
     expect(h.onClearSearch).toHaveBeenCalled()
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).toHaveBeenCalled()
+  })
+
+  it('Cmd+Q НЕ сбрасывает поиск (только Ctrl+Q)', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+    onKeyDown(keyEvent({ key: 'q', metaKey: true, ctrlKey: false }))
+    expect(h.onClearSearch).not.toHaveBeenCalled()
   })
 
   it('обычные клавиши не трогают ничего', () => {

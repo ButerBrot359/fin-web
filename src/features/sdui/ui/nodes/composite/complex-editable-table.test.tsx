@@ -138,7 +138,9 @@ describe('ComplexEditableTable — master-detail (SCRUM-282)', () => {
   it('блокирует «Добавить» без выбранной master-строки и разблокирует при выборе', () => {
     const { rerender } = render(<ComplexEditableTable node={detailNode} />)
 
-    const addButton = screen.getByRole('button', { name: 'table.add' })
+    const addButton = screen.getByRole<HTMLButtonElement>('button', {
+      name: 'table.add',
+    })
     expect(addButton.disabled).toBe(true)
 
     state['VychetyIPN.__selectedRowId'] = 'm1'

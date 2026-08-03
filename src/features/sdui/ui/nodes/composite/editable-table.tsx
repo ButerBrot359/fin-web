@@ -108,6 +108,8 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const handleCopy = () => {
     if (selectedIndex === null) return
     const src = sync.rows[selectedIndex]
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!src) return
     const { rowId: _rowId, ...values } = src
     sync.addRow(columns, values)
   }

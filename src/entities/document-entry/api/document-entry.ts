@@ -38,7 +38,10 @@ export const createDocumentEntry = (
   payload: CreateDocumentEntryPayload
 ) =>
   apiService.post<DocumentEntryResponseData>({
-    url: `/api/document-entries/${typeCode}`,
+    // lightResponse=true — ответ без развёрнутых табличных частей. Из ответа читается только
+    // id (см. use-document-entry-actions), а сервер иначе заново собирает и сериализует весь
+    // документ: для 10 000 строк это десятки мегабайт на каждое сохранение и проведение.
+    url: `/api/document-entries/${typeCode}?lightResponse=true`,
     data: payload,
     timeout: LONG_OPERATION_TIMEOUT_MS,
   })
@@ -48,7 +51,8 @@ export const updateDocumentEntry = (
   payload: CreateDocumentEntryPayload
 ) =>
   apiService.put<DocumentEntryResponseData>({
-    url: `/api/document-entries/id/${String(id)}`,
+    // См. комментарий в createDocumentEntry — из ответа нужен только id.
+    url: `/api/document-entries/id/${String(id)}?lightResponse=true`,
     data: payload,
     timeout: LONG_OPERATION_TIMEOUT_MS,
   })

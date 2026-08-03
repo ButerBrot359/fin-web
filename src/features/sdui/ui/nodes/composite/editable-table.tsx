@@ -24,6 +24,7 @@ import {
   type TableRow,
 } from '../../../lib/hooks/use-table-sync'
 import { useTableSearch } from '../../../lib/hooks/use-table-search'
+import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { TableCellEditor } from './table-cell-editor'
 import { isSearchHit, SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
@@ -59,12 +60,16 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
 
   // Скролл к текущему совпадению поиска (§6.5: поиск не фильтрует строки).
-  useEffect(() => {
-    if (!search.current) return
-    containerRef.current
-      ?.querySelector('[data-search-hit="true"]')
-      ?.scrollIntoView({ block: 'nearest' })
-  }, [search.current?.rowId, search.current?.columnId])
+  useEffect(
+    () => {
+      if (!search.current) return
+      containerRef.current
+        ?.querySelector('[data-search-hit="true"]')
+        ?.scrollIntoView({ block: 'nearest' })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [search.current?.rowId, search.current?.columnId]
+  )
 
   useEffect(() => {
     setSelectedIndex((prev) => {
@@ -142,8 +147,18 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     }
   }
 
+  const handleKeyDown = createTableHotkeysHandler({
+    onAdd: handleAdd,
+    onCopy: handleCopy,
+    onRemove: handleRemove,
+    onMoveUp: handleMoveUp,
+    onMoveDown: handleMoveDown,
+    onFocusSearch: search.focusInput,
+    onClearSearch: search.clear,
+  })
+
   return (
-    <div>
+    <div tabIndex={-1} style={{ outline: 'none' }} onKeyDown={handleKeyDown}>
       <div style={{ marginBottom: 8 }}>
         <TableToolbar
           onAdd={handleAdd}

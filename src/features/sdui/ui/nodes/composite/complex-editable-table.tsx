@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next'
 import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import { useTableSync, type TableRow } from '../../../lib/hooks/use-table-sync'
 import { useTableSearch } from '../../../lib/hooks/use-table-search'
+import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import {
   useSduiSession,
   useBindingValue,
@@ -215,17 +216,31 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null)
 
   // Скролл к текущему совпадению поиска (§6.5: поиск не фильтрует строки).
-  useEffect(() => {
-    if (!search.current) return
-    containerRef.current
-      ?.querySelector('[data-search-hit="true"]')
-      ?.scrollIntoView({ block: 'nearest' })
-  }, [search.current?.rowId, search.current?.columnId])
+  useEffect(
+    () => {
+      if (!search.current) return
+      containerRef.current
+        ?.querySelector('[data-search-hit="true"]')
+        ?.scrollIntoView({ block: 'nearest' })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [search.current?.rowId, search.current?.columnId]
+  )
 
   const leafColumnCount = flatColumns.length || 1
 
+  const handleKeyDown = createTableHotkeysHandler({
+    onAdd: handleAdd,
+    onCopy: handleCopy,
+    onRemove: handleRemove,
+    onMoveUp: handleMoveUp,
+    onMoveDown: handleMoveDown,
+    onFocusSearch: search.focusInput,
+    onClearSearch: search.clear,
+  })
+
   return (
-    <div>
+    <div tabIndex={-1} style={{ outline: 'none' }} onKeyDown={handleKeyDown}>
       <div style={{ marginBottom: 8 }}>
         <TableToolbar
           onAdd={handleAdd}

@@ -175,7 +175,15 @@
     "exportExcel": "Выгрузить в Excel",
     "exportEmpty": "Нет данных для выгрузки",
     "exportError": "Не удалось выгрузить в Excel",
-    "rowNumber": "N"
+    "rowNumber": "N",
+    "more": "Ещё",
+    "copyRow": "Скопировать",
+    "deleteRow": "Удалить",
+    "moveUp": "Переместить вверх",
+    "moveDown": "Переместить вниз",
+    "find": "Найти",
+    "cancelSearch": "Отменить поиск",
+    "searchPlaceholder": "Поиск"
   },
   "informationRegister": {
     "period": "Период",

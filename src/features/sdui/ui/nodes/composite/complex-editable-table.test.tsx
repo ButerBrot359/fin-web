@@ -9,12 +9,16 @@ import { ComplexEditableTable } from './complex-editable-table'
 // master-detail фильтре.
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k: string) => k }),
+  useTranslation: () => ({
+    t: (k: string) => k,
+    i18n: { language: 'en' },
+  }),
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   initReactI18next: { type: 'backend', init: () => {} },
 }))
 
 const mockDispatch = vi.fn<(action: unknown) => Promise<boolean>>(() =>
-  Promise.resolve(true),
+  Promise.resolve(true)
 )
 vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => mockDispatch,
@@ -45,8 +49,8 @@ vi.mock('../../../lib/utils/build-column-defs', () => ({
       .filter((c) => c.type === 'TABLE_COLUMN')
       .map((c) => ({
         id: c.id,
-        accessorKey: c.binding as string,
-        header: (c.props?.label as string) ?? c.id,
+        accessorKey: c.binding!,
+        header: c.props?.label ?? c.id,
       })),
   extractAllLeafColumns: () => [
     {
@@ -78,8 +82,18 @@ const detailNode: ViewNode = {
     allowReorder: true,
   },
   children: [
-    { id: 'col-vychet', type: 'TABLE_COLUMN', binding: 'VychetIPN', props: { label: 'Вычет' } },
-    { id: 'col-label', type: 'TABLE_COLUMN', binding: 'label', props: { label: 'Строка' } },
+    {
+      id: 'col-vychet',
+      type: 'TABLE_COLUMN',
+      binding: 'VychetIPN',
+      props: { label: 'Вычет' },
+    },
+    {
+      id: 'col-label',
+      type: 'TABLE_COLUMN',
+      binding: 'label',
+      props: { label: 'Строка' },
+    },
   ],
 } as ViewNode
 
@@ -96,11 +110,12 @@ const detailRows = [
 
 beforeEach(() => {
   cleanup()
+  // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
   for (const key of Object.keys(state)) delete state[key]
   mockDispatch.mockClear()
   mockDispatch.mockImplementation(() => Promise.resolve(true))
-  state['VychetyIPN'] = masterRows
-  state['VychetyRows'] = detailRows
+  state.VychetyIPN = masterRows
+  state.VychetyRows = detailRows
 })
 
 describe('ComplexEditableTable — master-detail (SCRUM-282)', () => {
@@ -123,10 +138,9 @@ describe('ComplexEditableTable — master-detail (SCRUM-282)', () => {
   it('блокирует «Добавить» без выбранной master-строки и разблокирует при выборе', () => {
     const { rerender } = render(<ComplexEditableTable node={detailNode} />)
 
-    const addButton = screen.getByRole(
-      'button',
-      { name: 'table.add' },
-    ) as HTMLButtonElement
+    const addButton = screen.getByRole<HTMLButtonElement>('button', {
+      name: 'table.add',
+    })
     expect(addButton.disabled).toBe(true)
 
     state['VychetyIPN.__selectedRowId'] = 'm1'
@@ -142,12 +156,10 @@ describe('ComplexEditableTable — master-detail (SCRUM-282)', () => {
     // Единственная видимая строка при выборе master B — dB1.
     fireEvent.click(screen.getByText('Row dB1'))
 
-    const deleteButton = screen
-      .getByTestId('DeleteOutlineIcon')
-      .closest('button') as HTMLButtonElement
-    expect(deleteButton).not.toBeNull()
-    expect(deleteButton.disabled).toBe(false)
-    fireEvent.click(deleteButton)
+    fireEvent.click(screen.getByRole('button', { name: 'table.more' }))
+    const deleteItem = screen.getByText('table.deleteRow')
+    expect(deleteItem.closest('li')?.getAttribute('aria-disabled')).toBeNull()
+    fireEvent.click(deleteItem)
 
     expect(mockDispatch).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -158,12 +170,67 @@ describe('ComplexEditableTable — master-detail (SCRUM-282)', () => {
           expect.objectContaining({ rowId: 'dA1' }),
           expect.objectContaining({ rowId: 'dA2' }),
         ]),
-      }),
+      })
     )
     const lastCall = mockDispatch.mock.calls.at(-1)?.[0] as {
-      value: Array<{ rowId: string }>
+      value: { rowId: string }[]
     }
     expect(lastCall.value.some((r) => r.rowId === 'dB1')).toBe(false)
     expect(lastCall.value).toHaveLength(2)
+  })
+})
+
+describe('ComplexEditableTable: tableCommands (SCRUM-302)', () => {
+  it('рендерит доменную кнопку из props.tableCommands', () => {
+    const nodeWithCommands = {
+      ...detailNode,
+      props: {
+        ...detailNode.props,
+        tableCommands: [
+          {
+            command: 'table.podbor:VychetyIPN',
+            label: 'Подбор',
+            enabled: true,
+            behavior: { flushPendingTables: false },
+            inMoreMenu: true,
+          },
+        ],
+      },
+    } as ViewNode
+    render(<ComplexEditableTable node={nodeWithCommands} />)
+    expect(screen.getByRole('button', { name: 'Подбор' })).toBeTruthy()
+  })
+})
+
+describe('ComplexEditableTable: копирование строки (SCRUM-302)', () => {
+  it('«Скопировать» добавляет строку со значениями выбранной, без rowId', () => {
+    state['VychetyIPN.__selectedRowId'] = 'm1'
+    render(<ComplexEditableTable node={detailNode} />)
+    // выбрать строку dA1
+    fireEvent.click(screen.getByText('Row dA1'))
+    fireEvent.click(screen.getByRole('button', { name: 'table.more' }))
+    fireEvent.click(screen.getByText('table.copyRow'))
+    // addRow шлёт EVENT полным снимком: последняя строка — копия dA1
+    const call = mockDispatch.mock.calls.at(-1)?.[0] as {
+      type: string
+      value: { rowId: string; label?: unknown }[]
+    }
+    expect(call.type).toBe('EVENT')
+    const added = call.value.at(-1)
+    expect(added?.label).toBe('Row dA1')
+    expect(added?.rowId).not.toBe('dA1')
+  })
+})
+
+describe('ComplexEditableTable: поиск (SCRUM-302)', () => {
+  it('поиск подсвечивает, но НЕ фильтрует строки', () => {
+    state['VychetyIPN.__selectedRowId'] = 'm1'
+    render(<ComplexEditableTable node={detailNode} />)
+    fireEvent.change(screen.getByPlaceholderText('table.searchPlaceholder'), {
+      target: { value: 'dA2' },
+    })
+    // обе видимые строки на месте — включая несовпадающую
+    expect(screen.getByText('Row dA1')).toBeTruthy()
+    expect(screen.getByText('Row dA2')).toBeTruthy()
   })
 })

@@ -30,6 +30,20 @@ export interface ViewNodeAction {
   selectionField?: string | null // SCRUM-284 Δ4
 }
 
+// SCRUM-302: дескриптор доменной кнопки командной панели ТЧ (props.tableCommands
+// TABLE-узла). command — непрозрачная строка, фронт её не разбирает; behavior —
+// единственный источник поведения (никаких списков мутирующих команд).
+export interface TableCommandDescriptor {
+  command: string
+  label: string
+  labelKz?: string | null
+  enabled: boolean
+  disabledReason?: string | null
+  behavior: ActionBehavior
+  column?: string | null // служебное поле бэка, фронт не использует
+  inMoreMenu?: boolean // true ⇒ продублировать пункт в меню «Ещё»
+}
+
 export interface ViewAction {
   type: ActionType
   sourceNodeId?: string

@@ -17,9 +17,17 @@ import {
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
-import type { ViewNode } from '../../../types/view'
+import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import { useTableSync, type TableRow } from '../../../lib/hooks/use-table-sync'
-import { useSduiSession, useBindingValue } from '../../../lib/sdui-session-context'
+import {
+  useTableSearch,
+  isSearchHit,
+} from '../../../lib/hooks/use-table-search'
+import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
+import {
+  useSduiSession,
+  useBindingValue,
+} from '../../../lib/sdui-session-context'
 import {
   buildColumnDefs,
   extractAllLeafColumns,
@@ -29,6 +37,7 @@ import {
   findSelectedMasterRow,
   filterDetailRows,
 } from '../../../lib/utils/master-detail'
+import { SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
 
 // Единая высота строки для master-detail пары (SCRUM-282 #3): в ячейках VERTICAL-групп
@@ -52,6 +61,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const allowReorder = node.props?.allowReorder === true
   const showRowNumbers = node.props?.showRowNumbers === true
 
+  const tableCommands = node.props?.tableCommands as
+    | TableCommandDescriptor[]
+    | undefined
+
   // Master-detail props
   const masterTable = node.props?.masterTable as string | undefined
   const masterKey = node.props?.masterKey as string | undefined
@@ -61,8 +74,8 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // Memoize columns by node.children — critical for preserving input focus
   const flatColumns = useMemo(
     () => extractAllLeafColumns(node.children),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [node.children],
+
+    [node.children]
   )
 
   const sync = useTableSync(node, flatColumns)
@@ -72,8 +85,8 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
 
   const tableColumns = useMemo(
     () => buildColumnDefs(node.children, syncRef),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [node.children],
+
+    [node.children]
   )
 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
@@ -82,13 +95,16 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // Реактивные подписки (SCRUM-282 #4): getValue давал разовый снимок,
   // detail не ре-рендерился при выборе master-строки.
   const selectedMasterRowId = useBindingValue(
-    isMasterDetail && masterTable ? masterTable + '.__selectedRowId' : undefined,
+    isMasterDetail && masterTable ? masterTable + '.__selectedRowId' : undefined
   ) as string | undefined
   const masterRows = useBindingValue(
-    isMasterDetail && masterTable ? masterTable : undefined,
+    isMasterDetail && masterTable ? masterTable : undefined
   ) as TableRow[] | undefined
 
-  const selectedMasterRow = findSelectedMasterRow(masterRows, selectedMasterRowId)
+  const selectedMasterRow = findSelectedMasterRow(
+    masterRows,
+    selectedMasterRowId
+  )
   const masterKeyValue =
     selectedMasterRow && masterKey ? selectedMasterRow[masterKey] : undefined
 
@@ -117,23 +133,23 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
 
   // ── Footer ──
   const footerValues = node.binding
-    ? (getValue(node.binding + '.footer') as Record<string, unknown> | undefined)
+    ? (getValue(node.binding + '.footer') as
+        | Record<string, unknown>
+        | undefined)
     : undefined
 
   const hasFooter = Boolean(
     footerValues &&
-      tableColumns.some((col) => {
-        // Check if any leaf column (recursively) has a footer defined
-        const hasFooterDef = (
-          c: (typeof tableColumns)[number],
-        ): boolean => {
-          if ('columns' in c && Array.isArray(c.columns)) {
-            return c.columns.some(hasFooterDef)
-          }
-          return Boolean(c.footer)
+    tableColumns.some((col) => {
+      // Check if any leaf column (recursively) has a footer defined
+      const hasFooterDef = (c: (typeof tableColumns)[number]): boolean => {
+        if ('columns' in c && Array.isArray(c.columns)) {
+          return c.columns.some(hasFooterDef)
         }
-        return hasFooterDef(col)
-      }),
+        return Boolean(c.footer)
+      }
+      return hasFooterDef(col)
+    })
   )
 
   const table = useReactTable({
@@ -169,6 +185,16 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     if (globalIndex >= 0) sync.deleteRow(globalIndex)
     setSelectedRowId(null)
   }
+  // Копия строки: существующий addRow с пресетами из выбранной строки (без rowId —
+  // buildEmptyRow сгенерирует новый tmp-id). Ссылочные ячейки {id, presentation}
+  // копируются как есть.
+  const handleCopy = () => {
+    if (selectedRowId === null) return
+    const src = sync.rows.find((r) => r.rowId === selectedRowId)
+    if (!src) return
+    const { rowId: _rowId, ...values } = src
+    sync.addRow(flatColumns, values)
+  }
   // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail в
   // тулбаре) — там visibleRows === sync.rows, поэтому selectedVisibleIndex совпадает
   // с глобальным индексом и move корректен.
@@ -186,16 +212,45 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     }
   }
 
+  const search = useTableSearch(
+    visibleRows,
+    flatColumns.map((c) => ({ id: c.id, binding: c.binding }))
+  )
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  // Скролл к текущему совпадению поиска (§6.5: поиск не фильтрует строки).
+  useEffect(
+    () => {
+      if (!search.current) return
+      containerRef.current
+        ?.querySelector('[data-search-hit="true"]')
+        ?.scrollIntoView({ block: 'nearest' })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [search.current?.rowId, search.current?.columnId]
+  )
+
   const leafColumnCount = flatColumns.length || 1
 
+  const handleKeyDown = createTableHotkeysHandler({
+    onAdd: handleAdd,
+    onCopy: handleCopy,
+    onRemove: handleRemove,
+    onMoveUp: handleMoveUp,
+    onMoveDown: handleMoveDown,
+    onFocusSearch: search.focusInput,
+    onClearSearch: search.clear,
+  })
+
   return (
-    <div>
+    <div tabIndex={-1} style={{ outline: 'none' }} onKeyDown={handleKeyDown}>
       <div style={{ marginBottom: 8 }}>
         <TableToolbar
           onAdd={handleAdd}
           onMoveUp={handleMoveUp}
           onMoveDown={handleMoveDown}
           onRemove={handleRemove}
+          onCopy={handleCopy}
           canMoveUp={!isMasterDetail && selectedVisibleIndex > 0}
           canMoveDown={
             !isMasterDetail &&
@@ -203,13 +258,16 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
             selectedVisibleIndex < visibleRows.length - 1
           }
           canRemove={selectedRowId !== null}
+          canCopy={selectedRowId !== null}
           canAdd={!isMasterDetail || masterKeyValue !== undefined}
           allowAdd={allowAdd}
           allowReorder={allowReorder && !isMasterDetail}
           allowDelete={allowDelete}
+          commands={tableCommands}
+          search={search}
         />
       </div>
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} ref={containerRef}>
         <Table size="small">
           <TableHead>
             {table.getHeaderGroups().map((hg, hgIndex) => (
@@ -229,10 +287,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     <TableCell key={header.id} colSpan={header.colSpan}>
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext(),
+                        header.getContext()
                       )}
                     </TableCell>
-                  ),
+                  )
                 )}
               </MuiTableRow>
             ))}
@@ -255,23 +313,34 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                   key={row.id}
                   hover
                   selected={row.id === selectedRowId}
-                  onClick={() => handleRowClick(row.id)}
+                  onClick={() => {
+                    handleRowClick(row.id)
+                  }}
                   sx={{ cursor: 'pointer', height: ROW_HEIGHT }}
                 >
                   {showRowNumbers && (
-                    <TableCell sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}>
+                    <TableCell
+                      sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}
+                    >
                       <Typography variant="body2" color="text.secondary">
                         {index + 1}
                       </Typography>
                     </TableCell>
                   )}
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} sx={{ p: 0 }}>
+                    <SearchHitCell
+                      key={cell.id}
+                      isHit={isSearchHit(
+                        search.current,
+                        row.original.rowId,
+                        cell.column.id
+                      )}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext(),
+                        cell.getContext()
                       )}
-                    </TableCell>
+                    </SearchHitCell>
                   ))}
                 </MuiTableRow>
               ))
@@ -285,7 +354,8 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                   {fg.headers.map((header) => {
                     const footerId = header.column.columnDef.footer
                     const footerText =
-                      typeof footerId === 'string' && footerValues[footerId] !== undefined
+                      typeof footerId === 'string' &&
+                      footerValues[footerId] !== undefined
                         ? renderCellValue(footerValues[footerId])
                         : ''
                     return (

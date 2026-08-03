@@ -17,13 +17,19 @@ import {
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
-import type { ViewNode } from '../../../types/view'
+import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import {
   useTableSync,
   type TableColumnDef,
   type TableRow,
 } from '../../../lib/hooks/use-table-sync'
+import {
+  useTableSearch,
+  isSearchHit,
+} from '../../../lib/hooks/use-table-search'
+import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { TableCellEditor } from './table-cell-editor'
+import { SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
 
 interface EditableTableProps {
@@ -38,6 +44,10 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const allowReorder = node.props?.allowReorder === true
   const showRowNumbers = node.props?.showRowNumbers === true
 
+  const tableCommands = node.props?.tableCommands as
+    | TableCommandDescriptor[]
+    | undefined
+
   const sync = useTableSync(node, columns)
   // Стабильная ссылка на актуальный sync для мемоизированных cell-колбэков:
   // без неё useMemo(tableColumns) захватил бы устаревший sync. Методы sync
@@ -46,10 +56,29 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   syncRef.current = sync
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
+  const search = useTableSearch(
+    sync.rows,
+    columns.map((c) => ({ id: c.id, binding: c.binding }))
+  )
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  // Скролл к текущему совпадению поиска (§6.5: поиск не фильтрует строки).
+  useEffect(
+    () => {
+      if (!search.current) return
+      containerRef.current
+        ?.querySelector('[data-search-hit="true"]')
+        ?.scrollIntoView({ block: 'nearest' })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [search.current?.rowId, search.current?.columnId]
+  )
+
   useEffect(() => {
     setSelectedIndex((prev) => {
       if (prev === null) return null
-      if (prev >= sync.rows.length) return sync.rows.length > 0 ? sync.rows.length - 1 : null
+      if (prev >= sync.rows.length)
+        return sync.rows.length > 0 ? sync.rows.length - 1 : null
       return prev
     })
   }, [sync.rows.length])
@@ -72,14 +101,16 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
             value={row.original[col.binding]}
             readonly={col.readonly}
             props={col.props}
-            onChange={(val) =>
+            onChange={(val) => {
               syncRef.current.updateCell(row.original.rowId, col.binding, val)
-            }
-            onCommit={() => syncRef.current.commitCell()}
+            }}
+            onCommit={() => {
+              syncRef.current.commitCell()
+            }}
           />
         ),
       })),
-    [columns],
+    [columns]
   )
 
   const table = useReactTable({
@@ -89,12 +120,22 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     getRowId: (row) => row.rowId,
   })
 
-  const handleAdd = () => sync.addRow(columns)
+  const handleAdd = () => {
+    sync.addRow(columns)
+  }
   const handleRemove = () => {
     if (selectedIndex !== null) {
       sync.deleteRow(selectedIndex)
       setSelectedIndex(null)
     }
+  }
+  const handleCopy = () => {
+    if (selectedIndex === null) return
+    const src = sync.rows[selectedIndex]
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!src) return
+    const { rowId: _rowId, ...values } = src
+    sync.addRow(columns, values)
   }
   const handleMoveUp = () => {
     if (selectedIndex !== null && selectedIndex > 0) {
@@ -109,31 +150,47 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     }
   }
 
+  const handleKeyDown = createTableHotkeysHandler({
+    onAdd: handleAdd,
+    onCopy: handleCopy,
+    onRemove: handleRemove,
+    onMoveUp: handleMoveUp,
+    onMoveDown: handleMoveDown,
+    onFocusSearch: search.focusInput,
+    onClearSearch: search.clear,
+  })
+
   return (
-    <div>
+    <div tabIndex={-1} style={{ outline: 'none' }} onKeyDown={handleKeyDown}>
       <div style={{ marginBottom: 8 }}>
         <TableToolbar
           onAdd={handleAdd}
           onMoveUp={handleMoveUp}
           onMoveDown={handleMoveDown}
           onRemove={handleRemove}
+          onCopy={handleCopy}
           canMoveUp={selectedIndex !== null && selectedIndex > 0}
           canMoveDown={
             selectedIndex !== null && selectedIndex < sync.rows.length - 1
           }
           canRemove={selectedIndex !== null}
+          canCopy={selectedIndex !== null}
           allowAdd={allowAdd}
           allowReorder={allowReorder}
           allowDelete={allowDelete}
+          commands={tableCommands}
+          search={search}
         />
       </div>
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} ref={containerRef}>
         <Table size="small">
           <TableHead>
             {table.getHeaderGroups().map((hg) => (
               <MuiTableRow key={hg.id}>
                 {showRowNumbers && (
-                  <TableCell sx={{ width: 48, textAlign: 'center', fontWeight: 600 }}>
+                  <TableCell
+                    sx={{ width: 48, textAlign: 'center', fontWeight: 600 }}
+                  >
                     {t('table.rowNumber')}
                   </TableCell>
                 )}
@@ -141,7 +198,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                   <TableCell key={header.id}>
                     {flexRender(
                       header.column.columnDef.header,
-                      header.getContext(),
+                      header.getContext()
                     )}
                   </TableCell>
                 ))}
@@ -151,7 +208,10 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           <TableBody>
             {table.getRowModel().rows.length === 0 ? (
               <MuiTableRow>
-                <TableCell colSpan={columns.length + (showRowNumbers ? 1 : 0)} align="center">
+                <TableCell
+                  colSpan={columns.length + (showRowNumbers ? 1 : 0)}
+                  align="center"
+                >
                   <Typography variant="body2" color="text.secondary">
                     {t('table.empty')}
                   </Typography>
@@ -163,23 +223,34 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                   key={row.id}
                   hover
                   selected={selectedIndex === index}
-                  onClick={() => setSelectedIndex(index)}
+                  onClick={() => {
+                    setSelectedIndex(index)
+                  }}
                   sx={{ cursor: 'pointer' }}
                 >
                   {showRowNumbers && (
-                    <TableCell sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}>
+                    <TableCell
+                      sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}
+                    >
                       <Typography variant="body2" color="text.secondary">
                         {index + 1}
                       </Typography>
                     </TableCell>
                   )}
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} sx={{ p: 0 }}>
+                    <SearchHitCell
+                      key={cell.id}
+                      isHit={isSearchHit(
+                        search.current,
+                        row.original.rowId,
+                        cell.column.id
+                      )}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext(),
+                        cell.getContext()
                       )}
-                    </TableCell>
+                    </SearchHitCell>
                   ))}
                 </MuiTableRow>
               ))

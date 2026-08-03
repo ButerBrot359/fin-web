@@ -179,6 +179,16 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     if (globalIndex >= 0) sync.deleteRow(globalIndex)
     setSelectedRowId(null)
   }
+  // Копия строки: существующий addRow с пресетами из выбранной строки (без rowId —
+  // buildEmptyRow сгенерирует новый tmp-id). Ссылочные ячейки {id, presentation}
+  // копируются как есть.
+  const handleCopy = () => {
+    if (selectedRowId === null) return
+    const src = sync.rows.find((r) => r.rowId === selectedRowId)
+    if (!src) return
+    const { rowId: _rowId, ...values } = src
+    sync.addRow(flatColumns, values)
+  }
   // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail в
   // тулбаре) — там visibleRows === sync.rows, поэтому selectedVisibleIndex совпадает
   // с глобальным индексом и move корректен.
@@ -206,6 +216,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           onMoveUp={handleMoveUp}
           onMoveDown={handleMoveDown}
           onRemove={handleRemove}
+          onCopy={handleCopy}
           canMoveUp={!isMasterDetail && selectedVisibleIndex > 0}
           canMoveDown={
             !isMasterDetail &&
@@ -213,6 +224,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
             selectedVisibleIndex < visibleRows.length - 1
           }
           canRemove={selectedRowId !== null}
+          canCopy={selectedRowId !== null}
           canAdd={!isMasterDetail || masterKeyValue !== undefined}
           allowAdd={allowAdd}
           allowReorder={allowReorder && !isMasterDetail}

@@ -105,6 +105,12 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
       setSelectedIndex(null)
     }
   }
+  const handleCopy = () => {
+    if (selectedIndex === null) return
+    const src = sync.rows[selectedIndex]
+    const { rowId: _rowId, ...values } = src
+    sync.addRow(columns, values)
+  }
   const handleMoveUp = () => {
     if (selectedIndex !== null && selectedIndex > 0) {
       sync.moveRow(selectedIndex, selectedIndex - 1)
@@ -126,11 +132,13 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           onMoveUp={handleMoveUp}
           onMoveDown={handleMoveDown}
           onRemove={handleRemove}
+          onCopy={handleCopy}
           canMoveUp={selectedIndex !== null && selectedIndex > 0}
           canMoveDown={
             selectedIndex !== null && selectedIndex < sync.rows.length - 1
           }
           canRemove={selectedIndex !== null}
+          canCopy={selectedIndex !== null}
           allowAdd={allowAdd}
           allowReorder={allowReorder}
           allowDelete={allowDelete}

@@ -199,3 +199,23 @@ describe('ComplexEditableTable: tableCommands (SCRUM-302)', () => {
     expect(screen.getByRole('button', { name: 'Подбор' })).toBeTruthy()
   })
 })
+
+describe('ComplexEditableTable: копирование строки (SCRUM-302)', () => {
+  it('«Скопировать» добавляет строку со значениями выбранной, без rowId', () => {
+    state['VychetyIPN.__selectedRowId'] = 'm1'
+    render(<ComplexEditableTable node={detailNode} />)
+    // выбрать строку dA1
+    fireEvent.click(screen.getByText('Row dA1'))
+    fireEvent.click(screen.getByRole('button', { name: 'table.more' }))
+    fireEvent.click(screen.getByText('table.copyRow'))
+    // addRow шлёт EVENT полным снимком: последняя строка — копия dA1
+    const call = mockDispatch.mock.calls.at(-1)?.[0] as {
+      type: string
+      value: { rowId: string; label?: unknown }[]
+    }
+    expect(call.type).toBe('EVENT')
+    const added = call.value.at(-1)
+    expect(added?.label).toBe('Row dA1')
+    expect(added?.rowId).not.toBe('dA1')
+  })
+})

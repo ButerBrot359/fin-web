@@ -1,5 +1,5 @@
+import { useState, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { Tooltip } from '@mui/material'
@@ -8,13 +8,16 @@ import { Button } from '@/shared/ui/buttons'
 
 import type { TableCommandDescriptor } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import { TableMoreMenu } from './table-more-menu'
 
 interface TableToolbarProps {
   onAdd: () => void
   onMoveUp: () => void
   onMoveDown: () => void
   onRemove: () => void
+  onCopy?: () => void
   canAdd?: boolean
+  canCopy?: boolean
   canMoveUp: boolean
   canMoveDown: boolean
   canRemove: boolean
@@ -29,7 +32,9 @@ export const TableToolbar = ({
   onMoveUp,
   onMoveDown,
   onRemove,
+  onCopy = () => undefined,
   canAdd = true,
+  canCopy = false,
   canMoveUp,
   canMoveDown,
   canRemove,
@@ -40,6 +45,7 @@ export const TableToolbar = ({
 }: TableToolbarProps) => {
   const { t, i18n } = useTranslation()
   const dispatch = useSduiDispatch()
+  const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null)
 
   const commandLabel = (cmd: TableCommandDescriptor) =>
     i18n.language.startsWith('kz') ? (cmd.labelKz ?? cmd.label) : cmd.label
@@ -54,14 +60,6 @@ export const TableToolbar = ({
         <Button variant="primary" disabled={!canAdd} onClick={onAdd}>
           {t('table.add')}
         </Button>
-      )}
-      {allowDelete && (
-        <Button
-          variant="secondary"
-          disabled={!canRemove}
-          onClick={onRemove}
-          startIcon={<DeleteOutlineIcon sx={{ fontSize: 20 }} />}
-        />
       )}
       {allowReorder && (
         <>
@@ -102,6 +100,38 @@ export const TableToolbar = ({
           </span>
         )
       })}
+      <div className="flex-1" />
+      <Button
+        variant="secondary"
+        onClick={(e: MouseEvent<HTMLButtonElement>) => {
+          setMoreAnchor(e.currentTarget)
+        }}
+        endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 20 }} />}
+      >
+        {t('table.more')}
+      </Button>
+      <TableMoreMenu
+        anchorEl={moreAnchor}
+        onClose={() => {
+          setMoreAnchor(null)
+        }}
+        allowAdd={allowAdd}
+        allowDelete={allowDelete}
+        allowReorder={allowReorder}
+        canAdd={canAdd}
+        canCopy={canCopy}
+        canRemove={canRemove}
+        canMoveUp={canMoveUp}
+        canMoveDown={canMoveDown}
+        onAdd={onAdd}
+        onCopy={onCopy}
+        onRemove={onRemove}
+        onMoveUp={onMoveUp}
+        onMoveDown={onMoveDown}
+        commands={commands}
+        commandLabel={commandLabel}
+        onCommand={runCommand}
+      />
     </div>
   )
 }

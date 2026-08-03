@@ -175,7 +175,12 @@
     "exportExcel": "Excel-ге жүктеп алу",
     "exportEmpty": "Жүктеп алуға деректер жоқ",
     "exportError": "Excel-ге жүктеп алу мүмкін болмады",
-    "rowNumber": "N"
+    "rowNumber": "N",
+    "more": "Тағы",
+    "copyRow": "Көшіру",
+    "deleteRow": "Жою",
+    "moveUp": "Жоғары жылжыту",
+    "moveDown": "Төмен жылжыту"
   },
   "informationRegister": {
     "period": "Кезең",

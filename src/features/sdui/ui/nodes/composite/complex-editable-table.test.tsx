@@ -154,12 +154,10 @@ describe('ComplexEditableTable — master-detail (SCRUM-282)', () => {
     // Единственная видимая строка при выборе master B — dB1.
     fireEvent.click(screen.getByText('Row dB1'))
 
-    const deleteButton = screen
-      .getByTestId('DeleteOutlineIcon')
-      .closest('button')!
-    expect(deleteButton).not.toBeNull()
-    expect(deleteButton.disabled).toBe(false)
-    fireEvent.click(deleteButton)
+    fireEvent.click(screen.getByRole('button', { name: 'table.more' }))
+    const deleteItem = screen.getByText('table.deleteRow')
+    expect(deleteItem.closest('li')?.getAttribute('aria-disabled')).toBeNull()
+    fireEvent.click(deleteItem)
 
     expect(mockDispatch).toHaveBeenCalledWith(
       expect.objectContaining({

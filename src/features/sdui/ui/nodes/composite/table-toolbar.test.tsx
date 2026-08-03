@@ -88,4 +88,31 @@ describe('TableToolbar: доменные кнопки из tableCommands (SCRUM-
     render(<TableToolbar {...baseProps} />)
     expect(screen.getByRole('button', { name: 'table.add' })).toBeTruthy()
   })
+
+  it('«Удалить» в ряду отсутствует, «Ещё» присутствует всегда', () => {
+    render(<TableToolbar {...baseProps} />)
+    // иконочной кнопки удаления больше нет: между «Добавить» и «Ещё» только ↑/↓
+    expect(screen.getByRole('button', { name: 'table.more' })).toBeTruthy()
+  })
+
+  it('пункт удаления в «Ещё» зовёт onRemove', () => {
+    const onRemove = vi.fn()
+    render(<TableToolbar {...baseProps} onRemove={onRemove} canRemove={true} />)
+    fireEvent.click(screen.getByRole('button', { name: 'table.more' }))
+    fireEvent.click(screen.getByText('table.deleteRow'))
+    expect(onRemove).toHaveBeenCalled()
+  })
+
+  it('доменная кнопка с inMoreMenu продублирована в «Ещё» и зовёт тот же dispatch', () => {
+    render(<TableToolbar {...baseProps} commands={[podbor]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'table.more' }))
+    const items = screen.getAllByText('Подбор')
+    // одна в ряду, одна в меню
+    expect(items.length).toBe(2)
+    fireEvent.click(items[1])
+    expect(mockDispatch).toHaveBeenCalledWith(
+      { type: 'COMMAND', command: 'table.podbor:VychetyIPN' },
+      { flushPendingTables: false, resetsDirty: false, closeAfter: false }
+    )
+  })
 })

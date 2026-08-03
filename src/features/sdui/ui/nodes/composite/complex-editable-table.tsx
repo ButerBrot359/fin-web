@@ -17,9 +17,12 @@ import {
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
-import type { ViewNode } from '../../../types/view'
+import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import { useTableSync, type TableRow } from '../../../lib/hooks/use-table-sync'
-import { useSduiSession, useBindingValue } from '../../../lib/sdui-session-context'
+import {
+  useSduiSession,
+  useBindingValue,
+} from '../../../lib/sdui-session-context'
 import {
   buildColumnDefs,
   extractAllLeafColumns,
@@ -52,6 +55,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const allowReorder = node.props?.allowReorder === true
   const showRowNumbers = node.props?.showRowNumbers === true
 
+  const tableCommands = node.props?.tableCommands as
+    | TableCommandDescriptor[]
+    | undefined
+
   // Master-detail props
   const masterTable = node.props?.masterTable as string | undefined
   const masterKey = node.props?.masterKey as string | undefined
@@ -61,8 +68,8 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // Memoize columns by node.children — critical for preserving input focus
   const flatColumns = useMemo(
     () => extractAllLeafColumns(node.children),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [node.children],
+
+    [node.children]
   )
 
   const sync = useTableSync(node, flatColumns)
@@ -72,8 +79,8 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
 
   const tableColumns = useMemo(
     () => buildColumnDefs(node.children, syncRef),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [node.children],
+
+    [node.children]
   )
 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
@@ -82,13 +89,16 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // Реактивные подписки (SCRUM-282 #4): getValue давал разовый снимок,
   // detail не ре-рендерился при выборе master-строки.
   const selectedMasterRowId = useBindingValue(
-    isMasterDetail && masterTable ? masterTable + '.__selectedRowId' : undefined,
+    isMasterDetail && masterTable ? masterTable + '.__selectedRowId' : undefined
   ) as string | undefined
   const masterRows = useBindingValue(
-    isMasterDetail && masterTable ? masterTable : undefined,
+    isMasterDetail && masterTable ? masterTable : undefined
   ) as TableRow[] | undefined
 
-  const selectedMasterRow = findSelectedMasterRow(masterRows, selectedMasterRowId)
+  const selectedMasterRow = findSelectedMasterRow(
+    masterRows,
+    selectedMasterRowId
+  )
   const masterKeyValue =
     selectedMasterRow && masterKey ? selectedMasterRow[masterKey] : undefined
 
@@ -117,23 +127,23 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
 
   // ── Footer ──
   const footerValues = node.binding
-    ? (getValue(node.binding + '.footer') as Record<string, unknown> | undefined)
+    ? (getValue(node.binding + '.footer') as
+        | Record<string, unknown>
+        | undefined)
     : undefined
 
   const hasFooter = Boolean(
     footerValues &&
-      tableColumns.some((col) => {
-        // Check if any leaf column (recursively) has a footer defined
-        const hasFooterDef = (
-          c: (typeof tableColumns)[number],
-        ): boolean => {
-          if ('columns' in c && Array.isArray(c.columns)) {
-            return c.columns.some(hasFooterDef)
-          }
-          return Boolean(c.footer)
+    tableColumns.some((col) => {
+      // Check if any leaf column (recursively) has a footer defined
+      const hasFooterDef = (c: (typeof tableColumns)[number]): boolean => {
+        if ('columns' in c && Array.isArray(c.columns)) {
+          return c.columns.some(hasFooterDef)
         }
-        return hasFooterDef(col)
-      }),
+        return Boolean(c.footer)
+      }
+      return hasFooterDef(col)
+    })
   )
 
   const table = useReactTable({
@@ -207,6 +217,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           allowAdd={allowAdd}
           allowReorder={allowReorder && !isMasterDetail}
           allowDelete={allowDelete}
+          commands={tableCommands}
         />
       </div>
       <TableContainer component={Paper}>
@@ -229,10 +240,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     <TableCell key={header.id} colSpan={header.colSpan}>
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext(),
+                        header.getContext()
                       )}
                     </TableCell>
-                  ),
+                  )
                 )}
               </MuiTableRow>
             ))}
@@ -255,11 +266,15 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                   key={row.id}
                   hover
                   selected={row.id === selectedRowId}
-                  onClick={() => handleRowClick(row.id)}
+                  onClick={() => {
+                    handleRowClick(row.id)
+                  }}
                   sx={{ cursor: 'pointer', height: ROW_HEIGHT }}
                 >
                   {showRowNumbers && (
-                    <TableCell sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}>
+                    <TableCell
+                      sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}
+                    >
                       <Typography variant="body2" color="text.secondary">
                         {index + 1}
                       </Typography>
@@ -269,7 +284,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     <TableCell key={cell.id} sx={{ p: 0 }}>
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext(),
+                        cell.getContext()
                       )}
                     </TableCell>
                   ))}
@@ -285,7 +300,8 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                   {fg.headers.map((header) => {
                     const footerId = header.column.columnDef.footer
                     const footerText =
-                      typeof footerId === 'string' && footerValues[footerId] !== undefined
+                      typeof footerId === 'string' &&
+                      footerValues[footerId] !== undefined
                         ? renderCellValue(footerValues[footerId])
                         : ''
                     return (

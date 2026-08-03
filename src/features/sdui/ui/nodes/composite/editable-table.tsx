@@ -23,10 +23,13 @@ import {
   type TableColumnDef,
   type TableRow,
 } from '../../../lib/hooks/use-table-sync'
-import { useTableSearch } from '../../../lib/hooks/use-table-search'
+import {
+  useTableSearch,
+  isSearchHit,
+} from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { TableCellEditor } from './table-cell-editor'
-import { isSearchHit, SearchHitCell } from './table-search-cell'
+import { SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
 
 interface EditableTableProps {

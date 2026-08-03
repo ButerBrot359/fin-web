@@ -105,6 +105,7 @@ describe('TableToolbar: доменные кнопки из tableCommands (SCRUM-
     render(<TableToolbar {...baseProps} />)
     // иконочной кнопки удаления больше нет: между «Добавить» и «Ещё» только ↑/↓
     expect(screen.getByRole('button', { name: 'table.more' })).toBeTruthy()
+    expect(screen.queryByTestId('DeleteOutlineIcon')).toBeNull()
   })
 
   it('пункт удаления в «Ещё» зовёт onRemove', () => {
@@ -126,5 +127,37 @@ describe('TableToolbar: доменные кнопки из tableCommands (SCRUM-
       { type: 'COMMAND', command: 'table.podbor:VychetyIPN' },
       { flushPendingTables: false, resetsDirty: false, closeAfter: false }
     )
+  })
+
+  it('Escape в поиске при непустом query чистит и не даёт форме (напр. MUI Dialog) закрыться', () => {
+    const clear = vi.fn()
+    const outerKeyDown = vi.fn()
+    const search = { ...stubSearch, query: 'test', clear }
+    render(
+      <div onKeyDown={outerKeyDown}>
+        <TableToolbar {...baseProps} search={search} />
+      </div>
+    )
+    fireEvent.keyDown(screen.getByPlaceholderText('table.searchPlaceholder'), {
+      key: 'Escape',
+    })
+    expect(clear).toHaveBeenCalled()
+    expect(outerKeyDown).not.toHaveBeenCalled()
+  })
+
+  it('Escape в поиске при пустом query не перехватывается — всплывает наружу', () => {
+    const clear = vi.fn()
+    const outerKeyDown = vi.fn()
+    const search = { ...stubSearch, query: '', clear }
+    render(
+      <div onKeyDown={outerKeyDown}>
+        <TableToolbar {...baseProps} search={search} />
+      </div>
+    )
+    fireEvent.keyDown(screen.getByPlaceholderText('table.searchPlaceholder'), {
+      key: 'Escape',
+    })
+    expect(clear).not.toHaveBeenCalled()
+    expect(outerKeyDown).toHaveBeenCalled()
   })
 })

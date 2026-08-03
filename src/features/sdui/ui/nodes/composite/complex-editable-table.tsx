@@ -19,7 +19,10 @@ import { useTranslation } from 'react-i18next'
 
 import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import { useTableSync, type TableRow } from '../../../lib/hooks/use-table-sync'
-import { useTableSearch } from '../../../lib/hooks/use-table-search'
+import {
+  useTableSearch,
+  isSearchHit,
+} from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import {
   useSduiSession,
@@ -34,7 +37,7 @@ import {
   findSelectedMasterRow,
   filterDetailRows,
 } from '../../../lib/utils/master-detail'
-import { isSearchHit, SearchHitCell } from './table-search-cell'
+import { SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
 
 // Единая высота строки для master-detail пары (SCRUM-282 #3): в ячейках VERTICAL-групп

@@ -115,7 +115,13 @@ export const TableToolbar = ({
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') search.next()
-          if (e.key === 'Escape') search.clear()
+          if (e.key === 'Escape' && search.query) {
+            // Первый Esc чистит поиск и не даёт всплыть выше — иначе форма в
+            // MUI Dialog закроется по тому же Escape, потеряв ввод. Пустой
+            // query не перехватываем: второй Esc закрывает диалог как обычно.
+            search.clear()
+            e.stopPropagation()
+          }
         }}
         sx={{ width: 200 }}
         slotProps={{

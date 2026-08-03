@@ -12,6 +12,18 @@ export interface TableSearchMatch {
   columnId: string
 }
 
+// Проверка «эта ячейка — текущее совпадение поиска». Живёт здесь (а не в
+// компонентном table-search-cell.tsx), чтобы не ловить react-refresh warning
+// за экспорт функции рядом с компонентом.
+export function isSearchHit(
+  match: TableSearchMatch | null,
+  rowId: string,
+  columnId: string
+): boolean {
+  if (!match) return false
+  return match.rowId === rowId && match.columnId === columnId
+}
+
 export interface TableSearchApi {
   query: string
   setQuery: (q: string) => void
@@ -79,7 +91,7 @@ export function useTableSearch(
     matches,
     current,
     next: () => {
-      setIndex((i) => i + 1)
+      setIndex((i) => (i + 1) % Math.max(matches.length, 1))
     },
     clear: () => {
       setQueryState('')

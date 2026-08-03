@@ -107,7 +107,7 @@ click-action узла и селекшен-ключ не выводит из им
 |---|---|
 | `ui/nodes/composite/table-more-menu.tsx` | MUI `Menu`/`MenuItem`: стандартный блок, разделитель, доменные пункты (`inMoreMenu: true`). Хоткеи — серым справа |
 | `lib/hooks/use-table-search.ts` | Состояние поиска: `query`, совпадения `(rowIndex, columnId)`, текущее, `next()` |
-| `lib/hooks/use-table-hotkeys.ts` | `onKeyDown`-обработчик контейнера таблицы |
+| `lib/utils/table-hotkeys.ts` | фабрика `onKeyDown`-обработчика контейнера таблицы (чистая функция, не хук) |
 
 `TableToolbar` — единственная точка сборки (ряд + поиск + «Ещё»), вызывающие
 таблицы прокидывают дескрипторы и колбэки.

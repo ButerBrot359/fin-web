@@ -1,4 +1,4 @@
-import { type RefObject, createElement } from 'react'
+import { type ReactNode, type RefObject, createElement } from 'react'
 import type { ColumnDef, CellContext } from '@tanstack/react-table'
 
 import type { ViewNode } from '../../types/view'
@@ -8,6 +8,70 @@ import type {
   UseTableSyncResult,
 } from '../hooks/use-table-sync'
 import { TableCellEditor } from '../../ui/nodes/composite/table-cell-editor'
+
+/**
+ * Кастомные поля в `ColumnDef.meta`. Читаются приведением типа на месте
+ * использования — как `EavColumnMetaExtra` в `widgets/eav-entity-table`.
+ * <p>
+ * Модульную аугментацию `ColumnMeta` сюда заводить НЕЛЬЗЯ: интерфейс в
+ * @tanstack/react-table пустой, и все существующие `meta: { metaCode: ... }`
+ * проходят только благодаря этому — первое же объявленное свойство включает
+ * excess-property-check и роняет сборку в чужих файлах (списки документов,
+ * регистра бухгалтерии).
+ */
+export interface SduiColumnMetaExtra {
+  /**
+   * Колонка — VERTICAL-группа: её шапка сама держит сетку под-строк, поэтому
+   * рендерер снимает с ячейки шапки собственные отступы (иначе подписи уезжают
+   * вниз относительно редакторов на ту же величину padding'а).
+   */
+  verticalGroup?: boolean
+}
+
+/**
+ * Высота одной под-строки VERTICAL-группы. Единая сетка для шапки и ячейки:
+ * i-я подпись стоит ровно над i-м редактором (эталон 1С — две «под-строки» в
+ * одной колонке). Пара с ROW_HEIGHT в `complex-editable-table.tsx`, который
+ * считает высоту строки как 2 × это значение.
+ */
+export const VERTICAL_SUB_ROW_HEIGHT = 36
+
+/**
+ * Стопка под-строк VERTICAL-группы: фиксированная высота каждой + разделитель
+ * между ними (как линия сетки в 1С). `display:grid` + `alignContent:center`
+ * центрирует содержимое по вертикали, не отбирая у него ширину — редакторы
+ * остаются во всю ячейку, как при прежнем `flex flex-col`.
+ *
+ * @param paddingX горизонтальный отступ под-строки: 16px в шапке (совпасть с
+ *                 остальными заголовками MUI), 0 в ячейке (у редакторов свой)
+ */
+function verticalSubRows(
+  items: { key: string; content: ReactNode }[],
+  paddingX: number,
+): ReactNode {
+  return createElement(
+    'div',
+    { className: 'flex flex-col' },
+    ...items.map((item, index) =>
+      createElement(
+        'div',
+        {
+          key: item.key,
+          className: index > 0 ? 'border-t border-ui-03' : undefined,
+          style: {
+            height: VERTICAL_SUB_ROW_HEIGHT,
+            display: 'grid',
+            alignContent: 'center',
+            paddingLeft: paddingX,
+            paddingRight: paddingX,
+            boxSizing: 'border-box' as const,
+          },
+        },
+        item.content,
+      ),
+    ),
+  )
+}
 
 /**
  * Recursively builds TanStack Table column definitions from SDUI ViewNode children.
@@ -70,31 +134,51 @@ export function buildColumnDefs(
           (child) => child.props?.visible !== false,
         )
 
+        // Шапка VERTICAL-группы: подписи под-колонок СТОПКОЙ, по одной над своим
+        // редактором — как в эталоне 1С («Предоставлять вычет» ↑ / «Основание» ↓),
+        // а не единый заголовок группы. Шапка и ячейка строятся ОДНИМ
+        // verticalSubRows — отсюда и совпадение сетки, и общий разделитель
+        // (frontend-spec-ipn-vertical-group-header.md §1).
+        // Fallback на groupLabel — если все под-колонки скрыты или без подписей:
+        // пустая шапка читалась бы как сломанная колонка.
+        const subLabels = visibleChildren
+          .map((child) => nodeToTableColumnDef(child))
+          .filter((col) => col.label !== '')
+
         const colDef: ColumnDef<TableRow> = {
           id: groupId,
-          header: groupLabel,
+          meta: { verticalGroup: true },
+          header:
+            subLabels.length > 0
+              ? () =>
+                  verticalSubRows(
+                    subLabels.map((col) => ({ key: col.id, content: col.label })),
+                    16,
+                  )
+              : groupLabel,
           cell: (info: CellContext<TableRow, unknown>) =>
-            createElement(
-              'div',
-              { className: 'flex flex-col gap-1' },
-              ...visibleChildren.map((child) => {
+            verticalSubRows(
+              visibleChildren.map((child) => {
                 const childCol = nodeToTableColumnDef(child)
-                return createElement(TableCellEditor, {
+                return {
                   key: childCol.id,
-                  cellWidget: childCol.cellWidget,
-                  dataType: childCol.dataType,
-                  value: info.row.original[childCol.binding],
-                  readonly: childCol.readonly,
-                  props: childCol.props,
-                  onChange: (val: unknown) =>
-                    syncRef.current?.updateCell(
-                      info.row.original.rowId,
-                      childCol.binding,
-                      val,
-                    ),
-                  onCommit: () => syncRef.current?.commitCell(),
-                })
+                  content: createElement(TableCellEditor, {
+                    cellWidget: childCol.cellWidget,
+                    dataType: childCol.dataType,
+                    value: info.row.original[childCol.binding],
+                    readonly: childCol.readonly,
+                    props: childCol.props,
+                    onChange: (val: unknown) =>
+                      syncRef.current?.updateCell(
+                        info.row.original.rowId,
+                        childCol.binding,
+                        val,
+                      ),
+                    onCommit: () => syncRef.current?.commitCell(),
+                  }),
+                }
               }),
+              0,
             ),
         }
         result.push(colDef)

@@ -569,7 +569,16 @@
     "error": "Ошибка",
     "objectField": {
       "type": "Тип",
-      "unsupportedMember": "Тип не поддерживается (в разработке)"
+      "unsupportedMember": "Тип не поддерживается (в разработке)",
+      "primitive": {
+        "STRING": "Строка",
+        "TEXT": "Строка",
+        "INTEGER": "Число",
+        "DECIMAL": "Число",
+        "BOOLEAN": "Булево",
+        "DATE": "Дата",
+        "DATETIME": "Дата"
+      }
     },
     "downloadError": "Не удалось сформировать файл",
     "confirm": {

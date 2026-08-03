@@ -1,12 +1,14 @@
 import type { FC } from 'react'
-import { Box, Checkbox, MenuItem, Select } from '@mui/material'
+import { Checkbox, MenuItem, Select } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material'
 
-import { TextInput, NumberInput, DateTimeInput } from '@/shared/ui/inputs'
+import { TextInput, NumberInput } from '@/shared/ui/inputs'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import { ReferenceCellEditor } from './reference-cell-editor'
+import { DateCellEditor } from './date-cell-editor'
+import { ObjectCellEditor } from './object-cell-editor'
 
 interface TableCellEditorProps {
   cellWidget: string
@@ -32,7 +34,8 @@ function resolveEnumValue(value: unknown, options: EnumOption[]): string {
   if (typeof value === 'object') {
     const v = value as { id?: unknown; code?: unknown }
     const match = options.find(
-      (o) => (v.id != null && o.id === v.id) || (v.code != null && o.code === v.code),
+      (o) =>
+        (v.id != null && o.id === v.id) || (v.code != null && o.code === v.code)
     )
     return match?.value ?? ''
   }
@@ -57,7 +60,12 @@ const cellSx: SxProps<Theme> = {
 const enumCellSx: SxProps<Theme> = {
   fontSize: '14px',
   '&::before, &::after': { display: 'none' },
-  '& .MuiSelect-select': { padding: '4px 8px !important', minHeight: '28px', display: 'flex', alignItems: 'center' },
+  '& .MuiSelect-select': {
+    padding: '4px 8px !important',
+    minHeight: '28px',
+    display: 'flex',
+    alignItems: 'center',
+  },
 }
 
 const dateCellSx: SxProps<Theme> = {
@@ -95,6 +103,24 @@ const dateCellSx: SxProps<Theme> = {
   '& .MuiInputAdornment-root .MuiSvgIcon-root': { fontSize: 16 },
 }
 
+/**
+ * `unknown` → строка для показа. Явный разбор примитивов вместо `String(value)`:
+ * на объекте `String()` дал бы «[object Object]» (правило no-base-to-string), а
+ * ссылочные значения `{id, presentation}` умеет разворачивать renderCellValue.
+ */
+function toDisplayString(value: unknown): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  if (
+    typeof value === 'number' ||
+    typeof value === 'bigint' ||
+    typeof value === 'boolean'
+  ) {
+    return String(value)
+  }
+  return renderCellValue(value)
+}
+
 function formatReadonlyValue(value: unknown, dataType: string): string {
   if (value == null || value === '') return ''
   // Ссылочные/enum значения {id, presentation} — показываем presentation
@@ -104,16 +130,19 @@ function formatReadonlyValue(value: unknown, dataType: string): string {
   switch (dataType) {
     case 'STRING':
     case 'TEXT':
-      return String(value)
+      return toDisplayString(value)
     case 'INTEGER':
     case 'DECIMAL':
-      return formatWithSpaces(String(value))
+      return formatWithSpaces(toDisplayString(value))
     case 'DATE':
       return typeof value === 'string' ? formatDate(value) : ''
     case 'DATETIME':
       return typeof value === 'string' ? formatDateTime(value) : ''
     case 'BOOLEAN':
-      return value ? '✓' : ''
+      // Явное сравнение, а не проверка на «истинность» unknown: у BOOLEAN-колонки
+      // на проводе приезжает boolean (или его строковая форма), а для unknown
+      // no-unnecessary-condition считает любое значение истинным.
+      return value === true || value === 'true' ? '✓' : ''
     default:
       return renderCellValue(value)
   }
@@ -138,11 +167,13 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
 
   switch (cellWidget) {
     case 'TEXT_FIELD': {
-      const strValue = value == null ? '' : String(value)
+      const strValue = toDisplayString(value)
       return (
         <TextInput
           value={strValue}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value)
+          }}
           onBlur={onCommit}
           onKeyDown={(e) => {
             if (e.key === 'Enter') onCommit()
@@ -154,8 +185,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
     }
 
     case 'NUMBER_FIELD': {
-      const strValue =
-        value === null || value === undefined ? '' : String(value)
+      const strValue = toDisplayString(value)
       return (
         <NumberInput
           value={strValue}
@@ -176,22 +206,19 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
     }
 
     case 'DATE_FIELD':
-    case 'DATETIME_FIELD': {
-      const strValue = typeof value === 'string' ? value : ''
+    case 'DATETIME_FIELD':
+      // Коммит НЕ на onChange: пикер стреляет на каждый сегмент даты, и коммит
+      // посреди набора перемонтировал ячейку — терялись цифры года (SCRUM-279 D6).
+      // Подробный разбор и ловушки фокуса — в date-cell-editor.tsx.
       return (
-        <Box sx={dateCellSx}>
-          <DateTimeInput
-            value={strValue}
-            dateOnly={cellWidget === 'DATE_FIELD'}
-            onChange={(v) => {
-              onChange(v)
-              onCommit()
-            }}
-            size="small"
-          />
-        </Box>
+        <DateCellEditor
+          value={value}
+          dateOnly={cellWidget === 'DATE_FIELD'}
+          sx={dateCellSx}
+          onChange={onChange}
+          onCommit={onCommit}
+        />
       )
-    }
 
     case 'CHECKBOX_FIELD': {
       return (
@@ -219,8 +246,12 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             // Тот же контракт значения, что в enum-field-node.tsx
             onChange(
               opt
-                ? { id: opt.id ?? selected, code: opt.code ?? opt.value, presentation: opt.label }
-                : { id: selected, code: selected, presentation: selected },
+                ? {
+                    id: opt.id ?? selected,
+                    code: opt.code ?? opt.value,
+                    presentation: opt.label,
+                  }
+                : { id: selected, code: selected, presentation: selected }
             )
             onCommit()
           }}
@@ -241,6 +272,19 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
     case 'REFERENCE_FIELD':
       return (
         <ReferenceCellEditor
+          colProps={props ?? {}}
+          value={value}
+          onChange={onChange}
+          onCommit={onCommit}
+        />
+      )
+
+    // Составной (OBJECT) тип: селектор члена + пикер значения. Без этой ветки
+    // ячейка падала в `default:` и была нередактируемой — жалоба аналитика
+    // «„Значение“ в доп.реквизитах не активно» (SCRUM-279).
+    case 'OBJECT_FIELD':
+      return (
+        <ObjectCellEditor
           colProps={props ?? {}}
           value={value}
           onChange={onChange}

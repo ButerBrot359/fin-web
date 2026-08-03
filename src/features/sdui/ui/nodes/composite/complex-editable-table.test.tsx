@@ -44,6 +44,8 @@ vi.mock('../../../lib/sdui-session-context', () => ({
 
 // Не тянем реальные виджеты ячеек — упрощённые ColumnDef по accessorKey/header.
 vi.mock('../../../lib/utils/build-column-defs', () => ({
+  // Реальное значение: из него компонент считает высоту строки (2 × под-строка).
+  VERTICAL_SUB_ROW_HEIGHT: 36,
   buildColumnDefs: (children: ViewNode[] | undefined) =>
     (children ?? [])
       .filter((c) => c.type === 'TABLE_COLUMN')
@@ -107,6 +109,38 @@ const detailRows = [
   { rowId: 'dA2', VychetIPN: 'A', label: 'Row dA2' },
   { rowId: 'dB1', VychetIPN: 'B', label: 'Row dB1' },
 ]
+
+// Master-таблица с серверной реакцией на активацию строки (table.rowActivate):
+// бэк точечно добавил второй action у ТЧ с props.rowActivate === true.
+const activateBehavior = {
+  flushPendingTables: false,
+  resetsDirty: false,
+  closeAfter: false,
+}
+
+const masterNode: ViewNode = {
+  id: 'table.vychetyIPN',
+  type: 'TABLE',
+  binding: 'VychetyIPN',
+  props: { editable: true, allowAdd: true, rowActivate: true },
+  actions: [
+    { trigger: 'change', actionId: 'fieldEvent' },
+    {
+      trigger: 'activate',
+      actionId: 'command',
+      command: 'table.rowActivate:VychetyIPN',
+      behavior: activateBehavior,
+    },
+  ],
+  children: [
+    { id: 'col-vychet', type: 'TABLE_COLUMN', binding: 'VychetIPN', props: { label: 'Вычет' } },
+  ],
+} as ViewNode
+
+const commandCalls = () =>
+  mockDispatch.mock.calls.filter(
+    (call) => (call[0] as { type: string }).type === 'COMMAND',
+  )
 
 beforeEach(() => {
   cleanup()
@@ -232,5 +266,95 @@ describe('ComplexEditableTable: поиск (SCRUM-302)', () => {
     // обе видимые строки на месте — включая несовпадающую
     expect(screen.getByText('Row dA1')).toBeTruthy()
     expect(screen.getByText('Row dA2')).toBeTruthy()
+  })
+})
+
+describe('ComplexEditableTable — активация строки (table.rowActivate)', () => {
+  it('клик по строке шлёт готовую команду бэка с rowId и немутирующим behavior', () => {
+    render(<ComplexEditableTable node={masterNode} />)
+
+    fireEvent.click(screen.getByText('B'))
+
+    expect(commandCalls()).toHaveLength(1)
+    expect(commandCalls()[0]).toEqual([
+      {
+        type: 'COMMAND',
+        command: 'table.rowActivate:VychetyIPN',
+        value: { rowId: 'm2' },
+      },
+      activateBehavior,
+    ])
+  })
+
+  it('клик по строке по-прежнему публикует выбор для master-detail фильтра', () => {
+    render(<ComplexEditableTable node={masterNode} />)
+
+    fireEvent.click(screen.getByText('B'))
+
+    expect(state['VychetyIPN.__selectedRowId']).toBe('m2')
+  })
+
+  it('повторный клик по активной строке нового запроса не даёт', () => {
+    render(<ComplexEditableTable node={masterNode} />)
+
+    fireEvent.click(screen.getByText('A'))
+    fireEvent.click(screen.getByText('A'))
+
+    expect(commandCalls()).toHaveLength(1)
+  })
+
+  it('без action activate клик по строке на сервер не ходит', () => {
+    state['VychetyIPN.__selectedRowId'] = 'm1'
+    render(<ComplexEditableTable node={detailNode} />)
+
+    fireEvent.click(screen.getByText('Row dA1'))
+
+    expect(commandCalls()).toHaveLength(0)
+  })
+
+  it('setProp allowAdd=false перерисовывает тулбар, а не читается один раз при монтировании', () => {
+    const { rerender } = render(<ComplexEditableTable node={masterNode} />)
+    expect(screen.queryByRole('button', { name: 'table.add' })).not.toBeNull()
+
+    // Ровно то, что делает applyTreePatches: новый объект узла с новыми props
+    const patched = {
+      ...masterNode,
+      props: { ...masterNode.props, allowAdd: false },
+    } as ViewNode
+    rerender(<ComplexEditableTable node={patched} />)
+
+    expect(screen.queryByRole('button', { name: 'table.add' })).toBeNull()
+  })
+})
+
+describe('ComplexEditableTable — «Добавить» у detail-ТЧ при запрете правилом', () => {
+  // Эталон 1С: кнопка остаётся активной, а причину объясняет сервер (снимает
+  // строку + notify). Правило — доменное знание сервера, клиент его не считает.
+  const deniedNode = {
+    ...detailNode,
+    props: { ...detailNode.props, allowAdd: false },
+  } as ViewNode
+
+  it('allowAdd=false у detail-ТЧ не прячет и не гасит кнопку', () => {
+    state['VychetyIPN.__selectedRowId'] = 'm1'
+    render(<ComplexEditableTable node={deniedNode} />)
+
+    const addButton = screen.getByRole('button', { name: 'table.add' })
+    expect(addButton.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('клик по «Добавить» уходит на сервер — ответом придёт notify с причиной', () => {
+    state['VychetyIPN.__selectedRowId'] = 'm1'
+    render(<ComplexEditableTable node={deniedNode} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'table.add' }))
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'EVENT',
+        sourceNodeId: 'detailTbl',
+        fullSnapshot: true,
+      }),
+    )
   })
 })

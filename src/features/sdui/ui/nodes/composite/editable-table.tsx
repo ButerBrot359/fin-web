@@ -28,6 +28,7 @@ import {
   isSearchHit,
 } from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
+import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { TableCellEditor } from './table-cell-editor'
 import { SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
@@ -55,6 +56,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const syncRef = useRef(sync)
   syncRef.current = sync
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  // Активация строки уходит на сервер только если бэк прислал action
+  // с trigger='activate' у этой ТЧ (props.rowActivate)
+  const activateRow = useRowActivate(node)
 
   const search = useTableSearch(
     sync.rows,
@@ -225,6 +229,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                   selected={selectedIndex === index}
                   onClick={() => {
                     setSelectedIndex(index)
+                    activateRow(row.id)
                   }}
                   sx={{ cursor: 'pointer' }}
                 >

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { render, screen, cleanup } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
 import type { TFunction } from 'i18next'
 
 import type { DocumentAttribute } from '@/entities/document-type'
@@ -27,6 +27,11 @@ const renderCell = (node: ReactNode) => {
 }
 
 describe('dict-columns — счета показываются кодом (КБП-ПОК-ВИДВНА, «Показать все»)', () => {
+  // В проекте нет глобального cleanup (vitest.config без setupFiles), поэтому
+  // рендеры копятся в одном документе: оба теста показывают «2350», и второй
+  // getByText находил два узла вместо одного.
+  afterEach(cleanup)
+
   it('buildDictColumns: ссылка на счёт → code, прочая ссылка → имя', () => {
     const attrs = [
       {

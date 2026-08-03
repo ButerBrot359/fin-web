@@ -569,7 +569,16 @@
     "error": "Қате",
     "objectField": {
       "type": "Түрі",
-      "unsupportedMember": "Түрі қолдау көрсетілмейді (әзірленуде)"
+      "unsupportedMember": "Түрі қолдау көрсетілмейді (әзірленуде)",
+      "primitive": {
+        "STRING": "Жол",
+        "TEXT": "Жол",
+        "INTEGER": "Сан",
+        "DECIMAL": "Сан",
+        "BOOLEAN": "Логикалық",
+        "DATE": "Күні",
+        "DATETIME": "Күні"
+      }
     },
     "downloadError": "Файлды қалыптастыру мүмкін болмады",
     "confirm": {

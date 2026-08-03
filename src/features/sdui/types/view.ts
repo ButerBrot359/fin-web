@@ -94,6 +94,10 @@ export interface ViewPatch {
 export interface ViewEffect {
   type: EffectType
   route?: string
+  // navigate: открыть маршрут ОТДЕЛЬНОЙ рабочей вкладкой, не трогая текущую
+  // («Создать на основании» в эталоне 1С открывает новое окно). Решение принимает
+  // бэк: фронт не разбирает состав маршрута и не знает список команд.
+  openInNewTab?: boolean
   node?: ViewNode
   id?: string
   level?: string

@@ -5,6 +5,9 @@ import {
   findAllowedType,
   resolveSelectedTypeCode,
   buildObjectValue,
+  memberKey,
+  findMemberByKey,
+  resolveSelectedMemberKey,
   type AllowedType,
 } from './object-field-logic'
 
@@ -27,8 +30,14 @@ describe('sortAllowedTypes', () => {
   it('сортирует по position, не мутируя вход', () => {
     const input = [orgs, contractors]
     const sorted = sortAllowedTypes(input)
-    expect(sorted.map((t) => t.targetTypeCode)).toEqual(['Kontragenty', 'Organizacii'])
-    expect(input.map((t) => t.targetTypeCode)).toEqual(['Organizacii', 'Kontragenty'])
+    expect(sorted.map((t) => t.targetTypeCode)).toEqual([
+      'Kontragenty',
+      'Organizacii',
+    ])
+    expect(input.map((t) => t.targetTypeCode)).toEqual([
+      'Organizacii',
+      'Kontragenty',
+    ])
   })
 })
 
@@ -46,8 +55,14 @@ describe('resolveSelectedTypeCode', () => {
   const types = [contractors, orgs] // уже отсортированы: Kontragenty первый
 
   it('приоритет 1: targetTypeCode из значения (round-trip, различает same-domain членов)', () => {
-    const value = { id: 5, presentation: 'ТОО Ромашка', targetTypeCode: 'Organizacii' }
-    expect(resolveSelectedTypeCode(types, value, 'Kontragenty')).toBe('Organizacii')
+    const value = {
+      id: 5,
+      presentation: 'ТОО Ромашка',
+      targetTypeCode: 'Organizacii',
+    }
+    expect(resolveSelectedTypeCode(types, value, 'Kontragenty')).toBe(
+      'Organizacii'
+    )
   })
 
   it('targetTypeCode значения не входит в allowedTypes → игнорируется', () => {
@@ -56,7 +71,9 @@ describe('resolveSelectedTypeCode', () => {
   })
 
   it('приоритет 2: ручной выбор пользователя при пустом значении', () => {
-    expect(resolveSelectedTypeCode(types, null, 'Organizacii')).toBe('Organizacii')
+    expect(resolveSelectedTypeCode(types, null, 'Organizacii')).toBe(
+      'Organizacii'
+    )
   })
 
   it('приоритет 3: первый член по position', () => {
@@ -76,6 +93,131 @@ describe('buildObjectValue', () => {
       presentation: 'ТОО Ромашка',
       type: 'DICTIONARY',
       targetTypeCode: 'Organizacii',
+    })
+  })
+})
+
+// ── Примитивные члены составного типа: SCRUM-279 ──
+// Фикстура — НЕ выдумана: это ровно те 7 членов, которые бэк отдаёт для колонки
+// «Значение» табличной части «Дополнительные реквизиты» карточки физлица
+// (props.allowedTypes узла dict.field.DopolnitelnyeRekvizity.col.Znachenie,
+// снято с localhost:8081 30.07). Четыре члена из семи — примитивы: у них нет ни
+// targetTypeCode, ни presentation.
+describe('члены без targetTypeCode (примитивы)', () => {
+  const dopRekvizityMembers: AllowedType[] = [
+    {
+      position: 1,
+      domainKind: 'DICTIONARY',
+      targetTypeCode: 'ZnacheniyaSvoystvObektovIerarkhiya',
+      presentation: 'Дополнительные значения (иерархия)',
+      optionsSource: {
+        url: '/api/dictionary-entries/ZnacheniyaSvoystvObektovIerarkhiya/entries',
+      },
+    },
+    { position: 2, domainKind: 'BOOLEAN' } as AllowedType,
+    {
+      position: 3,
+      domainKind: 'DICTIONARY',
+      targetTypeCode: 'ZnacheniyaSvoystvObektov',
+      presentation: 'Дополнительные значения',
+      optionsSource: {
+        url: '/api/dictionary-entries/ZnacheniyaSvoystvObektov/entries',
+      },
+    },
+    { position: 4, domainKind: 'STRING' } as AllowedType,
+    { position: 5, domainKind: 'DATETIME' } as AllowedType,
+    { position: 6, domainKind: 'DECIMAL' } as AllowedType,
+    {
+      position: 7,
+      domainKind: 'DICTIONARY',
+      targetTypeCode: 'Polzovateli',
+      presentation: 'Пользователи',
+      optionsSource: { url: '/api/dictionary-entries/Polzovateli/entries' },
+    },
+  ]
+
+  describe('memberKey', () => {
+    it('ссылочный член опознаётся по targetTypeCode', () => {
+      expect(memberKey(orgs)).toBe('Organizacii')
+    })
+
+    it('примитивный член — по domainKind и position', () => {
+      expect(memberKey(dopRekvizityMembers[3])).toBe('STRING#4')
+    })
+
+    it('ключи ВСЕХ семи членов уникальны — иначе пункты списка неразличимы', () => {
+      const keys = dopRekvizityMembers.map(memberKey)
+      expect(new Set(keys).size).toBe(7)
+    })
+
+    it('два примитива одного домена различаются позицией', () => {
+      const a: AllowedType = {
+        position: 4,
+        domainKind: 'STRING',
+      } as AllowedType
+      const b: AllowedType = {
+        position: 9,
+        domainKind: 'STRING',
+      } as AllowedType
+      expect(memberKey(a)).not.toBe(memberKey(b))
+    })
+  })
+
+  describe('findMemberByKey', () => {
+    it('находит примитивный член по составному ключу', () => {
+      expect(findMemberByKey(dopRekvizityMembers, 'DECIMAL#6')).toBe(
+        dopRekvizityMembers[5]
+      )
+    })
+
+    it('находит ссылочный член по targetTypeCode', () => {
+      expect(findMemberByKey(dopRekvizityMembers, 'Polzovateli')).toBe(
+        dopRekvizityMembers[6]
+      )
+    })
+
+    it('undefined на пустой ключ и на несуществующий', () => {
+      expect(findMemberByKey(dopRekvizityMembers, undefined)).toBeUndefined()
+      expect(findMemberByKey(dopRekvizityMembers, 'STRING#99')).toBeUndefined()
+    })
+  })
+
+  describe('resolveSelectedMemberKey', () => {
+    it('приоритет 1: тип из значения важнее ручного выбора', () => {
+      const value = {
+        id: 5,
+        presentation: 'Высшее',
+        targetTypeCode: 'ZnacheniyaSvoystvObektov',
+      }
+      expect(
+        resolveSelectedMemberKey(dopRekvizityMembers, value, 'STRING#4')
+      ).toBe('ZnacheniyaSvoystvObektov')
+    })
+
+    it('приоритет 2: ручной выбор примитивного члена сохраняется (старый резолв по targetTypeCode его терял)', () => {
+      expect(
+        resolveSelectedMemberKey(dopRekvizityMembers, null, 'STRING#4')
+      ).toBe('STRING#4')
+      // Контраст: резолв по targetTypeCode на том же вводе откатывался к первому члену
+      expect(
+        resolveSelectedTypeCode(dopRekvizityMembers, null, 'STRING#4')
+      ).toBe('ZnacheniyaSvoystvObektovIerarkhiya')
+    })
+
+    it('приоритет 3: первый член по position', () => {
+      expect(
+        resolveSelectedMemberKey(dopRekvizityMembers, null, undefined)
+      ).toBe('ZnacheniyaSvoystvObektovIerarkhiya')
+    })
+
+    it('несуществующий ручной ключ игнорируется', () => {
+      expect(
+        resolveSelectedMemberKey(dopRekvizityMembers, null, 'NETAKOGO#1')
+      ).toBe('ZnacheniyaSvoystvObektovIerarkhiya')
+    })
+
+    it('пустой allowedTypes → undefined', () => {
+      expect(resolveSelectedMemberKey([], null, undefined)).toBeUndefined()
     })
   })
 })

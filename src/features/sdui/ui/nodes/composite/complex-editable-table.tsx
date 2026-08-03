@@ -24,6 +24,7 @@ import {
   isSearchHit,
 } from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
+import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import {
   useSduiSession,
   useBindingValue,
@@ -31,6 +32,8 @@ import {
 import {
   buildColumnDefs,
   extractAllLeafColumns,
+  VERTICAL_SUB_ROW_HEIGHT,
+  type SduiColumnMetaExtra,
 } from '../../../lib/utils/build-column-defs'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import {
@@ -43,8 +46,10 @@ import { TableToolbar } from './table-toolbar'
 // Единая высота строки для master-detail пары (SCRUM-282 #3): в ячейках VERTICAL-групп
 // стопки редакторов разной высоты (checkbox+text vs date+date), без общей высоты
 // строки таблицы разъезжаются. height на <tr> работает как min-height.
+// Считается из сетки под-строк VERTICAL-группы (две под-строки), иначе строка и
+// стопка редакторов разъедутся при правке одной из двух величин.
 // Позже уедет в конфиг-сервис стилей.
-const ROW_HEIGHT = 72
+const ROW_HEIGHT = 2 * VERTICAL_SUB_ROW_HEIGHT
 
 interface ComplexEditableTableProps {
   node: ViewNode
@@ -70,6 +75,14 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const masterKey = node.props?.masterKey as string | undefined
   const detailKey = node.props?.detailKey as string | undefined
   const isMasterDetail = Boolean(masterTable && masterKey && detailKey)
+
+  // У detail-ТЧ `allowAdd` — это СОСТОЯНИЕ ПРАВИЛА (бэк гоняет его патчами по
+  // составу master: график вычета вводится только «по периодическим платежам»),
+  // а не структурный запрет. Кнопку поэтому не прячем — как в эталоне 1С: она
+  // остаётся активной, а на клик сервер снимает строку и объясняет причину своим
+  // notify. Правило авторитетно на сервере, активная кнопка данные не портит
+  // (frontend-spec-table-row-activate §3.4/§6).
+  const showAdd = allowAdd || isMasterDetail
 
   // Memoize columns by node.children — critical for preserving input focus
   const flatColumns = useMemo(
@@ -159,12 +172,17 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     getRowId: (row) => row.rowId,
   })
 
+  // Серверная реакция на активацию строки — тот же момент, что и публикация
+  // выбора для master-detail фильтра; фильтр остаётся клиентским.
+  const activateRow = useRowActivate(node)
+
   // Publish selected rowId to session for detail tables
   const handleRowClick = (rowId: string) => {
     setSelectedRowId(rowId)
     if (node.binding) {
       setFromServer(node.binding + '.__selectedRowId', rowId)
     }
+    activateRow(rowId)
   }
 
   // Detail-таблица: новая строка сразу получает ключ связи выбранной master-строки;
@@ -243,7 +261,22 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   })
 
   return (
-    <div tabIndex={-1} style={{ outline: 'none' }} onKeyDown={handleKeyDown}>
+    // Тянемся на всю высоту колонки HSTACK, чтобы master и detail заканчивались
+    // на одной линии: высоту задаёт та таблица, где строк больше, вторая
+    // добирает пустым местом внизу — как в эталоне 1С. Вне HSTACK родитель не
+    // flex, flexGrow игнорируется и высота остаётся по содержимому.
+    // tabIndex/onKeyDown — хоткеи командной панели ТЧ (SCRUM-302).
+    <div
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
+      style={{
+        outline: 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        flexGrow: 1,
+        minHeight: 0,
+      }}
+    >
       <div style={{ marginBottom: 8 }}>
         <TableToolbar
           onAdd={handleAdd}
@@ -260,14 +293,20 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           canRemove={selectedRowId !== null}
           canCopy={selectedRowId !== null}
           canAdd={!isMasterDetail || masterKeyValue !== undefined}
-          allowAdd={allowAdd}
+          allowAdd={showAdd}
           allowReorder={allowReorder && !isMasterDetail}
           allowDelete={allowDelete}
           commands={tableCommands}
           search={search}
         />
       </div>
-      <TableContainer component={Paper} ref={containerRef}>
+      {/* basis auto, а не 0: контейнер растёт до высоты колонки, но никогда не
+          становится ниже собственного содержимого, если растягивать нечего. */}
+      <TableContainer
+        component={Paper}
+        ref={containerRef}
+        sx={{ flex: '1 1 auto' }}
+      >
         <Table size="small">
           <TableHead>
             {table.getHeaderGroups().map((hg, hgIndex) => (
@@ -280,18 +319,29 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     {t('table.rowNumber')}
                   </TableCell>
                 )}
-                {hg.headers.map((header) =>
-                  header.isPlaceholder ? (
-                    <TableCell key={header.id} colSpan={header.colSpan} />
-                  ) : (
-                    <TableCell key={header.id} colSpan={header.colSpan}>
+                {hg.headers.map((header) => {
+                  if (header.isPlaceholder) {
+                    return <TableCell key={header.id} colSpan={header.colSpan} />
+                  }
+                  // VERTICAL-группа сама держит сетку под-строк и рисует
+                  // разделитель во всю ширину — свой padding ячейки сдвинул бы
+                  // подписи вниз относительно редакторов и обрезал линию.
+                  const extra = header.column.columnDef.meta as
+                    | SduiColumnMetaExtra
+                    | undefined
+                  return (
+                    <TableCell
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      sx={extra?.verticalGroup ? { p: 0 } : undefined}
+                    >
                       {flexRender(
                         header.column.columnDef.header,
                         header.getContext()
                       )}
                     </TableCell>
                   )
-                )}
+                })}
               </MuiTableRow>
             ))}
           </TableHead>

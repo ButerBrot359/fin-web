@@ -6,6 +6,10 @@ export interface OpenPanelTabParams {
 
 export interface WorkspaceTabGatewayImpl {
   openPanelTab: (params: OpenPanelTabParams) => void
+  // Пометить следующий маршрутный переход как «в новую вкладку» (эффект navigate
+  // с openInNewTab). Сам переход делает вызывающая сторона своим router-navigate:
+  // SDUI не знает ни про стор вкладок, ни про промежуточные редиректы маршрута.
+  armNewTab: () => void
 }
 
 let gateway: WorkspaceTabGatewayImpl | null = null
@@ -24,5 +28,16 @@ export function openPanelTab(params: OpenPanelTabParams): boolean {
     return false
   }
   gateway.openPanelTab(params)
+  return true
+}
+
+// false — impl не зарегистрирован: переход всё равно состоится, но в текущей
+// вкладке (прежнее поведение), функциональность не теряется.
+export function armNewTab(): boolean {
+  if (!gateway) {
+    console.warn('[sdui] workspace-tab gateway is not bound, navigating in current tab')
+    return false
+  }
+  gateway.armNewTab()
   return true
 }

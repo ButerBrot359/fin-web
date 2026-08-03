@@ -33,6 +33,7 @@ import {
   findSelectedMasterRow,
   filterDetailRows,
 } from '../../../lib/utils/master-detail'
+import { isSearchHit, SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
 
 // Единая высота строки для master-detail пары (SCRUM-282 #3): в ячейках VERTICAL-групп
@@ -308,27 +309,21 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                       </Typography>
                     </TableCell>
                   )}
-                  {row.getVisibleCells().map((cell) => {
-                    const currentMatch = search.current
-                    const isHit =
-                      currentMatch?.rowId === row.original.rowId &&
-                      currentMatch.columnId === cell.column.id
-                    return (
-                      <TableCell
-                        key={cell.id}
-                        data-search-hit={isHit || undefined}
-                        sx={{
-                          p: 0,
-                          bgcolor: isHit ? 'action.focus' : undefined,
-                        }}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    )
-                  })}
+                  {row.getVisibleCells().map((cell) => (
+                    <SearchHitCell
+                      key={cell.id}
+                      isHit={isSearchHit(
+                        search.current,
+                        row.original.rowId,
+                        cell.column.id
+                      )}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </SearchHitCell>
+                  ))}
                 </MuiTableRow>
               ))
             )}

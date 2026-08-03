@@ -25,6 +25,7 @@ import {
 } from '../../../lib/hooks/use-table-sync'
 import { useTableSearch } from '../../../lib/hooks/use-table-search'
 import { TableCellEditor } from './table-cell-editor'
+import { isSearchHit, SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
 
 interface EditableTableProps {
@@ -218,27 +219,21 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                       </Typography>
                     </TableCell>
                   )}
-                  {row.getVisibleCells().map((cell) => {
-                    const currentMatch = search.current
-                    const isHit =
-                      currentMatch?.rowId === row.original.rowId &&
-                      currentMatch.columnId === cell.column.id
-                    return (
-                      <TableCell
-                        key={cell.id}
-                        data-search-hit={isHit || undefined}
-                        sx={{
-                          p: 0,
-                          bgcolor: isHit ? 'action.focus' : undefined,
-                        }}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    )
-                  })}
+                  {row.getVisibleCells().map((cell) => (
+                    <SearchHitCell
+                      key={cell.id}
+                      isHit={isSearchHit(
+                        search.current,
+                        row.original.rowId,
+                        cell.column.id
+                      )}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </SearchHitCell>
+                  ))}
                 </MuiTableRow>
               ))
             )}

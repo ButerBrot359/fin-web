@@ -219,3 +219,16 @@ describe('ComplexEditableTable: копирование строки (SCRUM-302)'
     expect(added?.rowId).not.toBe('dA1')
   })
 })
+
+describe('ComplexEditableTable: поиск (SCRUM-302)', () => {
+  it('поиск подсвечивает, но НЕ фильтрует строки', () => {
+    state['VychetyIPN.__selectedRowId'] = 'm1'
+    render(<ComplexEditableTable node={detailNode} />)
+    fireEvent.change(screen.getByPlaceholderText('table.searchPlaceholder'), {
+      target: { value: 'dA2' },
+    })
+    // обе видимые строки на месте — включая несовпадающую
+    expect(screen.getByText('Row dA1')).toBeTruthy()
+    expect(screen.getByText('Row dA2')).toBeTruthy()
+  })
+})

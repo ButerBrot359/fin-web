@@ -180,7 +180,10 @@
     "copyRow": "Көшіру",
     "deleteRow": "Жою",
     "moveUp": "Жоғары жылжыту",
-    "moveDown": "Төмен жылжыту"
+    "moveDown": "Төмен жылжыту",
+    "find": "Табу",
+    "cancelSearch": "Іздеуді болдырмау",
+    "searchPlaceholder": "Іздеу"
   },
   "informationRegister": {
     "period": "Кезең",

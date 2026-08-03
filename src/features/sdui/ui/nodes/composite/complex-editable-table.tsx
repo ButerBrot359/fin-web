@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import { useTableSync, type TableRow } from '../../../lib/hooks/use-table-sync'
+import { useTableSearch } from '../../../lib/hooks/use-table-search'
 import {
   useSduiSession,
   useBindingValue,
@@ -206,6 +207,20 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     }
   }
 
+  const search = useTableSearch(
+    visibleRows,
+    flatColumns.map((c) => ({ id: c.id, binding: c.binding }))
+  )
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  // Скролл к текущему совпадению поиска (§6.5: поиск не фильтрует строки).
+  useEffect(() => {
+    if (!search.current) return
+    containerRef.current
+      ?.querySelector('[data-search-hit="true"]')
+      ?.scrollIntoView({ block: 'nearest' })
+  }, [search.current?.rowId, search.current?.columnId])
+
   const leafColumnCount = flatColumns.length || 1
 
   return (
@@ -230,9 +245,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           allowReorder={allowReorder && !isMasterDetail}
           allowDelete={allowDelete}
           commands={tableCommands}
+          search={search}
         />
       </div>
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} ref={containerRef}>
         <Table size="small">
           <TableHead>
             {table.getHeaderGroups().map((hg, hgIndex) => (
@@ -292,14 +308,27 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                       </Typography>
                     </TableCell>
                   )}
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} sx={{ p: 0 }}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const currentMatch = search.current
+                    const isHit =
+                      currentMatch?.rowId === row.original.rowId &&
+                      currentMatch.columnId === cell.column.id
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        data-search-hit={isHit || undefined}
+                        sx={{
+                          p: 0,
+                          bgcolor: isHit ? 'action.focus' : undefined,
+                        }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    )
+                  })}
                 </MuiTableRow>
               ))
             )}

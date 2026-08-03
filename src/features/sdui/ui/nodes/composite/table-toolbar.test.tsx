@@ -18,6 +18,17 @@ vi.mock('../../../lib/dispatch', () => ({
 
 const noop = () => undefined
 
+const stubSearch = {
+  query: '',
+  setQuery: noop,
+  matches: [],
+  current: null,
+  next: noop,
+  clear: noop,
+  inputRef: { current: null },
+  focusInput: noop,
+}
+
 const baseProps = {
   onAdd: noop,
   onMoveUp: noop,
@@ -26,6 +37,7 @@ const baseProps = {
   canMoveUp: false,
   canMoveDown: false,
   canRemove: false,
+  search: stubSearch,
 }
 
 const podbor: TableCommandDescriptor = {

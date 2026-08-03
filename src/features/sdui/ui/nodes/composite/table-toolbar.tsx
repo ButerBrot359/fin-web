@@ -2,12 +2,14 @@ import { useState, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import { Tooltip } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+import { IconButton, InputAdornment, TextField, Tooltip } from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons'
 
 import type { TableCommandDescriptor } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import type { TableSearchApi } from '../../../lib/hooks/use-table-search'
 import { TableMoreMenu } from './table-more-menu'
 
 interface TableToolbarProps {
@@ -25,6 +27,7 @@ interface TableToolbarProps {
   allowReorder?: boolean
   allowDelete?: boolean
   commands?: TableCommandDescriptor[]
+  search: TableSearchApi
 }
 
 export const TableToolbar = ({
@@ -42,6 +45,7 @@ export const TableToolbar = ({
   allowReorder = true,
   allowDelete = true,
   commands = [],
+  search,
 }: TableToolbarProps) => {
   const { t, i18n } = useTranslation()
   const dispatch = useSduiDispatch()
@@ -101,6 +105,31 @@ export const TableToolbar = ({
         )
       })}
       <div className="flex-1" />
+      <TextField
+        size="small"
+        placeholder={t('table.searchPlaceholder')}
+        value={search.query}
+        inputRef={search.inputRef}
+        onChange={(e) => {
+          search.setQuery(e.target.value)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') search.next()
+          if (e.key === 'Escape') search.clear()
+        }}
+        sx={{ width: 200 }}
+        slotProps={{
+          input: {
+            endAdornment: search.query ? (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={search.clear}>
+                  <CloseIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </InputAdornment>
+            ) : undefined,
+          },
+        }}
+      />
       <Button
         variant="secondary"
         onClick={(e: MouseEvent<HTMLButtonElement>) => {
@@ -128,6 +157,9 @@ export const TableToolbar = ({
         onRemove={onRemove}
         onMoveUp={onMoveUp}
         onMoveDown={onMoveDown}
+        hasQuery={Boolean(search.query)}
+        onFind={search.focusInput}
+        onClearSearch={search.clear}
         commands={commands}
         commandLabel={commandLabel}
         onCommand={runCommand}

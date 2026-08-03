@@ -15,6 +15,8 @@ const HOTKEYS = {
   add: 'Ins',
   copy: 'F9',
   remove: 'Del',
+  find: 'Ctrl+Alt+F',
+  cancelSearch: 'Ctrl+Q',
   moveUp: 'Ctrl+Shift+↑',
   moveDown: 'Ctrl+Shift+↓',
 }
@@ -35,6 +37,9 @@ export interface TableMoreMenuProps {
   onRemove: () => void
   onMoveUp: () => void
   onMoveDown: () => void
+  hasQuery: boolean
+  onFind: () => void
+  onClearSearch: () => void
   commands: TableCommandDescriptor[]
   commandLabel: (cmd: TableCommandDescriptor) => string
   onCommand: (cmd: TableCommandDescriptor) => void
@@ -56,6 +61,9 @@ export const TableMoreMenu = ({
   onRemove,
   onMoveUp,
   onMoveDown,
+  hasQuery,
+  onFind,
+  onClearSearch,
   commands,
   commandLabel,
   onCommand,
@@ -103,6 +111,14 @@ export const TableMoreMenu = ({
         HOTKEYS.remove,
         !allowDelete || !canRemove,
         onRemove
+      )}
+      {item('find', t('table.find'), HOTKEYS.find, false, onFind)}
+      {item(
+        'cancelSearch',
+        t('table.cancelSearch'),
+        HOTKEYS.cancelSearch,
+        !hasQuery,
+        onClearSearch
       )}
       {item(
         'moveUp',

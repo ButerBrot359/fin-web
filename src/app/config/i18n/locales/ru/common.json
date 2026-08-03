@@ -180,7 +180,10 @@
     "copyRow": "Скопировать",
     "deleteRow": "Удалить",
     "moveUp": "Переместить вверх",
-    "moveDown": "Переместить вниз"
+    "moveDown": "Переместить вниз",
+    "find": "Найти",
+    "cancelSearch": "Отменить поиск",
+    "searchPlaceholder": "Поиск"
   },
   "informationRegister": {
     "period": "Период",

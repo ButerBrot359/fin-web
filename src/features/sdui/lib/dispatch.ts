@@ -121,8 +121,10 @@ export function useSduiDispatch() {
         // isRetry: мы уже внутри повтора после восстановления — второй
         // SESSION_NOT_FOUND подряд означает нестабильный бэк; не зацикливаемся.
         if (isRetry) return
-        // layoutCode обязателен для OPEN (§2.3 спеки SCRUM-244) — без него
-        // переоткрытие уходило в цикл 409 → 400. Берём сохранённый с первого OPEN.
+        // SCRUM-290: OPEN стал route-only. getLayoutCode() обычно null →
+        // reopen уходит по route (маршрут между OPEN и reopen не меняется,
+        // резолвится в тот же экран). Сохранённый layoutCode берём, если он
+        // всё же есть (переходный период страниц, ещё шлющих layoutCode).
         const layoutCode = session.getLayoutCode?.() ?? undefined
         const ok = await dispatchAction({ type: 'OPEN', layoutCode })
         // Повторяем исходное действие, чтобы клик не терялся (кроме команд записи)

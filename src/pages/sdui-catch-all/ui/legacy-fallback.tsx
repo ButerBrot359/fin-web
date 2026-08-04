@@ -13,6 +13,7 @@ export const LegacyFallback: FC<{ kind: string | null }> = ({ kind }) => {
   return (
     <Routes>
       <Route path={entry.path} element={entry.element} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

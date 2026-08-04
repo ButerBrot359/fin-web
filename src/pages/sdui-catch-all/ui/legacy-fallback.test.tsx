@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { Suspense } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LegacyFallback } from './legacy-fallback'
 
 // Легаси-страницы ленивые/тяжёлые — мокаем таблицу
@@ -16,6 +16,8 @@ vi.mock('../lib/kind-to-legacy', () => ({
 }))
 
 describe('LegacyFallback', () => {
+  afterEach(cleanup)
+
   it('монтирует легаси-страницу по kind на совпадающем URL', () => {
     render(
       <MemoryRouter initialEntries={['/modules/kazna/document/RKO']}>
@@ -37,6 +39,17 @@ describe('LegacyFallback', () => {
     // Регекс сужен до `.title`: заголовок и описание NotFound делят
     // подстроку "notFound" в ключах (`sdui.notFound.title` / `.description`),
     // из-за чего исходный /notFound|.../ матчил оба узла (см. отчёт).
+    expect(screen.getByText(/notFound\.title|не найдена/i)).toBeTruthy()
+  })
+
+  it('entry есть, но URL не совпадает с entry.path → NotFound вместо пустоты', () => {
+    render(
+      <MemoryRouter initialEntries={['/other/url']}>
+        <Suspense fallback={null}>
+          <LegacyFallback kind="DOCUMENT_LIST" />
+        </Suspense>
+      </MemoryRouter>
+    )
     expect(screen.getByText(/notFound\.title|не найдена/i)).toBeTruthy()
   })
 })

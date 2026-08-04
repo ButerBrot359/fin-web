@@ -3,6 +3,7 @@ import i18n from 'i18next'
 
 import type { ViewRequest, ViewResponse, ConflictError } from '../types/view'
 import { normalizeConflictBody } from './normalize-conflict'
+import { parseViewError } from './parse-view-error'
 import { resolveViewLanguage } from './view-language'
 
 const instance = axios.create({
@@ -10,13 +11,6 @@ const instance = axios.create({
   headers: { 'Content-Type': 'application/json' },
   timeout: 30000,
 })
-
-function extractMessage(data: unknown): string | undefined {
-  if (data && typeof data === 'object' && 'message' in data && typeof (data as Record<string, unknown>).message === 'string') {
-    return (data as Record<string, string>).message
-  }
-  return undefined
-}
 
 export class ViewConflictError extends Error {
   constructor(public data: ConflictError) {
@@ -28,6 +22,8 @@ export class ViewHttpError extends Error {
   constructor(
     message: string,
     public status: number | undefined,
+    public code?: string,
+    public kind?: string
   ) {
     super(message)
   }
@@ -46,9 +42,12 @@ export const viewTransport = {
         throw new ViewConflictError(normalizeConflictBody(error.response.data))
       }
       if (axios.isAxiosError(error)) {
+        const meta = parseViewError(error.response?.data)
         throw new ViewHttpError(
-          extractMessage(error.response?.data) ?? error.message,
+          meta.message ?? error.message,
           error.response?.status,
+          meta.code,
+          meta.kind
         )
       }
       throw error
@@ -63,13 +62,14 @@ export const viewTransport = {
       await instance.post(`/api/view/${sessionId}/heartbeat`)
       return true
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 404) return false
+      if (axios.isAxiosError(error) && error.response?.status === 404)
+        return false
       return true
     }
   },
 
   closeBeacon: (sessionId: string): void => {
-    const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) ?? ''
+    const baseUrl = import.meta.env.VITE_API_BASE_URL
     navigator.sendBeacon(`${baseUrl}/api/view/${sessionId}`, '')
   },
 }

@@ -39,7 +39,10 @@ export function useSduiDispatch() {
       action: ViewAction,
       behavior?: ActionBehavior | null,
       isRetry = false,
-      opts?: { onOpenNotFound?: () => void }
+      opts?: {
+        onOpenNotFound?: (info?: { kind?: string }) => void
+        onRouteUnknown?: () => void
+      }
     ): Promise<boolean> {
       const { formSessionId, revision } = session.getSession()
       const {
@@ -189,17 +192,27 @@ export function useSduiDispatch() {
               ? () => dispatchAction(action, behavior, true)
               : null
           handleConflict(error.data, { setSession, replaceAll }, retry, reopen)
-        } else if (
-          error instanceof ViewHttpError &&
-          error.status === 404 &&
-          action.type === 'OPEN' &&
-          opts?.onOpenNotFound
-        ) {
-          // 404 на OPEN — штатный гейт раскатки (§2.3 SCRUM-244): тип ещё не
-          // переведён на SDUI. Без тоста: хост покажет легаси-форму.
-          // Без обработчика (хост не поддерживает фолбэк) — уходим в общий
-          // else ниже и показываем тост, как раньше.
-          opts.onOpenNotFound()
+        } else if (error instanceof ViewHttpError && action.type === 'OPEN') {
+          // Единый гейт раскатки под catch-all (§2 бэк-спеки SCRUM-290):
+          // ROUTE_UNKNOWN → «не найдено»; SCREEN_NOT_SDUI / унаследованный
+          // 404 → легаси-фолбэк. Без подходящего колбэка — общий тост, как раньше.
+          if (
+            error.status === 404 &&
+            error.code === 'ROUTE_UNKNOWN' &&
+            opts?.onRouteUnknown
+          ) {
+            opts.onRouteUnknown()
+          } else if (
+            error.status === 422 &&
+            error.code === 'SCREEN_NOT_SDUI' &&
+            opts?.onOpenNotFound
+          ) {
+            opts.onOpenNotFound({ kind: error.kind })
+          } else if (error.status === 404 && opts?.onOpenNotFound) {
+            opts.onOpenNotFound(undefined)
+          } else {
+            showToast('error', error.message || i18n.t('sdui.requestError'))
+          }
         } else {
           const message =
             error instanceof Error ? error.message : i18n.t('sdui.requestError')

@@ -381,3 +381,64 @@ describe('useSduiDispatch: 404 на OPEN (SCRUM-244 I-1)', () => {
     expect(showToast).toHaveBeenCalledTimes(1)
   })
 })
+
+// Гейт ошибок OPEN на 3 ветки (SCRUM-290 §2 бэк-спеки): ROUTE_UNKNOWN →
+// onRouteUnknown; SCREEN_NOT_SDUI → onOpenNotFound({kind}); унаследованный
+// 404 NOT_FOUND → onOpenNotFound() без kind. Без подходящего колбэка — тост.
+describe('useSduiDispatch: гейт ошибок OPEN на 3 ветки (SCRUM-290)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  it('OPEN 422 SCREEN_NOT_SDUI → onOpenNotFound({kind}), без тоста', async () => {
+    vi.spyOn(viewTransport, 'post').mockRejectedValue(
+      new ViewHttpError('nope', 422, 'SCREEN_NOT_SDUI', 'DOCUMENT_LIST')
+    )
+    const onOpenNotFound = vi.fn()
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const ok = await result.current({ type: 'OPEN' }, null, false, {
+      onOpenNotFound,
+    })
+
+    expect(ok).toBe(false)
+    expect(onOpenNotFound).toHaveBeenCalledWith({ kind: 'DOCUMENT_LIST' })
+    expect(showToast).not.toHaveBeenCalled()
+  })
+
+  it('OPEN 404 ROUTE_UNKNOWN → onRouteUnknown, без тоста', async () => {
+    vi.spyOn(viewTransport, 'post').mockRejectedValue(
+      new ViewHttpError('nope', 404, 'ROUTE_UNKNOWN')
+    )
+    const onRouteUnknown = vi.fn()
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const ok = await result.current({ type: 'OPEN' }, null, false, {
+      onRouteUnknown,
+    })
+
+    expect(ok).toBe(false)
+    expect(onRouteUnknown).toHaveBeenCalledTimes(1)
+    expect(showToast).not.toHaveBeenCalled()
+  })
+
+  it('OPEN 404 NOT_FOUND → onOpenNotFound() без kind (унаследованный тракт)', async () => {
+    vi.spyOn(viewTransport, 'post').mockRejectedValue(
+      new ViewHttpError('nope', 404, 'NOT_FOUND')
+    )
+    const onOpenNotFound = vi.fn()
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'OPEN' }, null, false, { onOpenNotFound })
+
+    expect(onOpenNotFound).toHaveBeenCalledWith(undefined)
+  })
+})

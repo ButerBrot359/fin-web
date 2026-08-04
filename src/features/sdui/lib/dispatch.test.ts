@@ -89,7 +89,7 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     const ok = await result.current({
       type: 'OPEN',
-      layoutCode: 'X.ФормаОбъекта',
+      layoutCode: 'X.Layout',
     })
 
     expect(ok).toBe(true)
@@ -105,7 +105,7 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
     const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
 
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
-    await result.current({ type: 'OPEN', layoutCode: 'X.ФормаОбъекта' })
+    await result.current({ type: 'OPEN', layoutCode: 'X.Layout' })
 
     expect(post).toHaveBeenCalledWith(
       expect.objectContaining({ route: '/documents/SchetKOplate/new' })
@@ -130,10 +130,10 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
     const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
 
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
-    await result.current({ type: 'OPEN', layoutCode: 'X.ФормаОбъекта' })
+    await result.current({ type: 'OPEN', layoutCode: 'X.Layout' })
 
     expect(post.mock.calls[0][0]).toEqual(
-      expect.objectContaining({ layoutCode: 'X.ФормаОбъекта' })
+      expect.objectContaining({ layoutCode: 'X.Layout' })
     )
   })
 
@@ -359,7 +359,7 @@ describe('useSduiDispatch: 404 на OPEN (SCRUM-244 I-1)', () => {
     const onOpenNotFound = vi.fn()
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     const ok = await result.current(
-      { type: 'OPEN', layoutCode: 'X.ФормаОбъекта' },
+      { type: 'OPEN', layoutCode: 'X.Layout' },
       null,
       false,
       { onOpenNotFound }
@@ -374,7 +374,7 @@ describe('useSduiDispatch: 404 на OPEN (SCRUM-244 I-1)', () => {
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     const ok = await result.current({
       type: 'OPEN',
-      layoutCode: 'X.ФормаОбъекта',
+      layoutCode: 'X.Layout',
     })
 
     expect(ok).toBe(false)

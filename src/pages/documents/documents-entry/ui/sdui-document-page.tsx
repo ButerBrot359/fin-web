@@ -42,7 +42,9 @@ function navigateToNeighborTab(navigate: NavigateFunction): void {
   }
 }
 
-export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
+export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({
+  moduleCode: _moduleCode,
+}) => {
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useSduiDispatch()
@@ -116,13 +118,13 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({ moduleCode }) => {
         if (!didNavigate) navigateToNeighborTab(navigate)
       },
     }),
-    [navigate],
+    [navigate]
   )
 
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={pageTitle} onClose={handleClose} />
-      <SduiScreen layoutCode={`${moduleCode}.ФормаОбъекта`} {...tabsApi} onTitleChange={setTabTitle} />
+      <SduiScreen {...tabsApi} onTitleChange={setTabTitle} />
       <UnsavedChangesDialog
         open={unsavedDialog.isOpen}
         onSave={unsavedDialog.handleSave}

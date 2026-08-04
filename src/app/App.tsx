@@ -165,6 +165,10 @@ const AppRoutes = () => {
             element={<DocumentRedirect mode="new" />}
           />
           <Route
+            path="/documents/:typeCode/:entryId"
+            element={<DocumentRedirect mode="entry" />}
+          />
+          <Route
             path="/dictionaries/:typeCode"
             element={<DictionaryRedirect mode="list" />}
           />

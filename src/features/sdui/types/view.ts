@@ -67,6 +67,14 @@ export interface ViewRequest {
   language?: string
 }
 
+// Метаданные вкладки — приходят ТОЛЬКО на OPEN, могут быть null
+// (оболочка `/` и все EVENT/COMMAND). §4.4/§5.6 бэк-спеки SCRUM-290.
+export interface ViewTabMeta {
+  kind: string
+  icon?: string
+  closable?: boolean
+}
+
 export interface ViewResponse {
   formSessionId: string
   revision: number
@@ -77,6 +85,7 @@ export interface ViewResponse {
   effects?: ViewEffect[]
   // Дескриптор «закрыть грязную вкладку» — приходит только на OPEN (SCRUM-283)
   onDirtyClose?: ViewNodeAction | null
+  tab?: ViewTabMeta | null
 }
 
 export interface ViewPatch {

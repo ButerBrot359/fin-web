@@ -3,6 +3,7 @@ import { Button, Divider, Menu, Tooltip } from '@mui/material'
 
 import type { ActionBehavior, NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import { handleRelatedCommand } from '../../../lib/open-related-docs'
 import { useOverflowCollapsed } from '../../../lib/overflow/overflow-context'
 import { useRefPickerSelection } from '../../../lib/stores/ref-picker-selection-store'
 import { NodeRenderer } from '../../node-renderer'
@@ -24,7 +25,9 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
   // behavior приходит по двум каналам (SCRUM-283 §2.5): статический action.behavior
   // и рантайм-override props.behavior. props побеждает — симметрично props.command.
   const behavior =
-    (node.props?.behavior as ActionBehavior | undefined) ?? clickAction?.behavior ?? null
+    (node.props?.behavior as ActionBehavior | undefined) ??
+    clickAction?.behavior ??
+    null
 
   const dispatch = useSduiDispatch()
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
@@ -70,6 +73,10 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
       return
     }
     if (command) {
+      // SCRUM-301: команды панели связанных документов — фронтовый транспорт,
+      // COMMAND в /api/view не уходит (у панели нет form-сессии)
+      if (handleRelatedCommand(command, node.props)) return
+
       if (requiresSelectedRow) {
         if (selectedRowId == null) return
         void dispatch(

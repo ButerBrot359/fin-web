@@ -19,6 +19,7 @@ import type { TableColumnDef } from '../../../lib/hooks/use-table-sync'
 import { EditableTable } from './editable-table'
 import { ComplexEditableTable } from './complex-editable-table'
 import { AccountingPostingsBlock } from './accounting-postings-block'
+import { SubordinationTree } from './subordination-tree'
 
 interface ReadOnlyColumnDef {
   id: string
@@ -30,12 +31,13 @@ interface ReadOnlyColumnDef {
 /** Рекурсивно собирает листовые TABLE_COLUMN (включая вложенные в COLUMN_GROUP) в порядке документа. */
 function collectLeafColumns(node: ViewNode): ViewNode[] {
   if (node.type === 'TABLE_COLUMN') return [node]
-  if (node.type === 'COLUMN_GROUP') return (node.children ?? []).flatMap(collectLeafColumns)
+  if (node.type === 'COLUMN_GROUP')
+    return (node.children ?? []).flatMap(collectLeafColumns)
   return []
 }
 
 export function extractReadOnlyColumns(
-  children: ViewNode[] | undefined,
+  children: ViewNode[] | undefined
 ): ReadOnlyColumnDef[] {
   if (!children) return []
   return children.flatMap(collectLeafColumns).map((c) => {
@@ -70,7 +72,9 @@ interface HeaderModel {
  * Без групп colSpan/rowSpan не проставляются — DOM идентичен прежнему рендеру.
  * Пустые COLUMN_GROUP пропускаются (colSpan: 0 невалиден).
  */
-export function buildHeaderModel(children: ViewNode[] | undefined): HeaderModel {
+export function buildHeaderModel(
+  children: ViewNode[] | undefined
+): HeaderModel {
   const nodes = children ?? []
 
   // First pass: check if there are any non-empty groups
@@ -116,7 +120,7 @@ export function buildHeaderModel(children: ViewNode[] | undefined): HeaderModel 
 }
 
 function extractEditableColumns(
-  children: ViewNode[] | undefined,
+  children: ViewNode[] | undefined
 ): TableColumnDef[] {
   if (!children) return []
   return children
@@ -135,14 +139,20 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
   if (editable) {
     // Route to complex table if COLUMN_GROUP children exist or master-detail props present
     const hasGroups = node.children?.some((c) => c.type === 'COLUMN_GROUP')
-    const hasMasterDetail = !!(node.props?.masterTable && node.props?.masterKey && node.props?.detailKey)
-    const hasFooter = node.children?.some(
-      (c) => c.type === 'TABLE_COLUMN' && c.props?.footer === true,
-    ) || node.children?.some(
-      (c) => c.type === 'COLUMN_GROUP' && c.children?.some(
-        (cc) => cc.props?.footer === true,
-      ),
+    const hasMasterDetail = !!(
+      node.props?.masterTable &&
+      node.props.masterKey &&
+      node.props.detailKey
     )
+    const hasFooter =
+      node.children?.some(
+        (c) => c.type === 'TABLE_COLUMN' && c.props?.footer === true
+      ) ||
+      node.children?.some(
+        (c) =>
+          c.type === 'COLUMN_GROUP' &&
+          c.children?.some((cc) => cc.props?.footer === true)
+      )
 
     if (hasGroups || hasMasterDetail || hasFooter) {
       return <ComplexEditableTable node={node} />
@@ -152,7 +162,11 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
     return <EditableTable node={node} columns={columns} />
   }
 
-  // Read-only path: бухрегистр — 1С-блок, остальные — прежняя таблица
+  // Read-only path: дерево связанных документов → отдельный рендер (SCRUM-301),
+  // бухрегистр — 1С-блок, остальные — прежняя таблица
+  if (node.props?.rowMode === 'TREE') {
+    return <SubordinationTree node={node} />
+  }
   if (node.props?.regKind === 'ACCOUNTING') {
     return <AccountingPostingsBlock node={node} />
   }
@@ -165,8 +179,7 @@ const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
   const showRowNumbers = node.props?.showRowNumbers === true
 
   const { getValue } = useSduiSession()
-  const rows =
-    (getValue(node.binding) as SimpleTableRow[] | undefined) ?? []
+  const rows = (getValue(node.binding) as SimpleTableRow[] | undefined) ?? []
 
   const columns = extractReadOnlyColumns(node.children)
   const headerModel = buildHeaderModel(node.children)

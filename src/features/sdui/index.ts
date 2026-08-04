@@ -8,6 +8,7 @@ export type {
   ViewRequest,
   ViewResponse,
   NodeProps,
+  ViewTabMeta,
 } from './types/view'
 export type { NodeType } from './types/node-types'
 export {

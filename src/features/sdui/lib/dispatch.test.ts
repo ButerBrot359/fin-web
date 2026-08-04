@@ -4,7 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewResponse } from '../types/view'
-import { viewTransport, ViewHttpError } from '../api/view-transport'
+import {
+  viewTransport,
+  ViewHttpError,
+  ViewConflictError,
+} from '../api/view-transport'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { useSduiDispatch } from './dispatch'
 import { useConfirmStore } from './stores/confirm-store'
@@ -18,7 +22,10 @@ const router = vi.hoisted(() => ({
 
 // Мутабельная сессия: тесты читают spies (resetDirty/closeAfter) после dispatch
 const sessionMock = vi.hoisted(() => ({
-  getSession: () => ({ formSessionId: null as string | null, revision: null as number | null }),
+  getSession: () => ({
+    formSessionId: null as string | null,
+    revision: null as number | null,
+  }),
   replaceAll: vi.fn(),
   merge: vi.fn(),
   setSession: vi.fn(),
@@ -30,6 +37,8 @@ const sessionMock = vi.hoisted(() => ({
   resetDirty: vi.fn(),
   closeAfter: vi.fn(),
   setOnDirtyClose: vi.fn(),
+  getLayoutCode: (): string | null => null,
+  setLayoutCode: vi.fn(),
 }))
 
 vi.mock('react-router-dom', () => ({
@@ -63,7 +72,11 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
     vi.restoreAllMocks()
     queryClient = new QueryClient()
     wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(QueryClientProvider, { client: queryClient }, children)
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
   })
 
   // Пин WI-F (SCRUM-265): route обязан включать query string — бэк читает
@@ -74,13 +87,16 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
     const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
 
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
-    const ok = await result.current({ type: 'OPEN', layoutCode: 'X.ФормаОбъекта' })
+    const ok = await result.current({
+      type: 'OPEN',
+      layoutCode: 'X.Layout',
+    })
 
     expect(ok).toBe(true)
     expect(post).toHaveBeenCalledWith(
       expect.objectContaining({
         route: '/documents/SchetKOplate/new?basisId=42',
-      }),
+      })
     )
   })
 
@@ -89,11 +105,64 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
     const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
 
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
-    await result.current({ type: 'OPEN', layoutCode: 'X.ФормаОбъекта' })
+    await result.current({ type: 'OPEN', layoutCode: 'X.Layout' })
 
     expect(post).toHaveBeenCalledWith(
-      expect.objectContaining({ route: '/documents/SchetKOplate/new' }),
+      expect.objectContaining({ route: '/documents/SchetKOplate/new' })
     )
+  })
+
+  it('OPEN без layoutCode: ключ layoutCode отсутствует в запросе', async () => {
+    router.search = ''
+    const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'OPEN' })
+
+    const arg = post.mock.calls[0][0]
+    expect('layoutCode' in arg).toBe(false)
+    expect(arg).toEqual(
+      expect.objectContaining({ route: '/documents/SchetKOplate/new' })
+    )
+  })
+
+  it('OPEN c layoutCode: ключ передаётся как есть', async () => {
+    const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'OPEN', layoutCode: 'X.Layout' })
+
+    expect(post.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ layoutCode: 'X.Layout' })
+    )
+  })
+
+  it('OPEN прокидывает res.tab в onOpenTab', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValue({
+      ...openResponse,
+      tab: { kind: 'MODULE' },
+    } as never)
+    const onOpenTab = vi.fn()
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'OPEN' }, null, false, { onOpenTab })
+    expect(onOpenTab).toHaveBeenCalledWith({ kind: 'MODULE' })
+  })
+
+  it('reopen после SESSION_NOT_FOUND без layoutCode шлёт route-only OPEN', async () => {
+    sessionMock.getLayoutCode = () => null
+    sessionMock.setLayoutCode = vi.fn()
+    const post = vi
+      .spyOn(viewTransport, 'post')
+      .mockRejectedValueOnce(
+        new ViewConflictError({ code: 'SESSION_NOT_FOUND' })
+      )
+      .mockResolvedValue(openResponse)
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'EVENT', sourceNodeId: 'n', trigger: 'blur' })
+
+    const reopenArg = post.mock.calls.at(-1)?.[0]
+    expect('layoutCode' in (reopenArg ?? {})).toBe(false)
   })
 })
 
@@ -118,14 +187,18 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
     vi.spyOn(viewTransport, 'post').mockResolvedValue(commandResponse)
     queryClient = new QueryClient()
     wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(QueryClientProvider, { client: queryClient }, children)
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
   })
 
   it('flush вызван при flushPendingTables: true', async () => {
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current(
       { type: 'COMMAND', command: 'save' },
-      { flushPendingTables: true },
+      { flushPendingTables: true }
     )
     expect(flushAllPendingTableCommits).toHaveBeenCalledTimes(1)
   })
@@ -134,7 +207,7 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current(
       { type: 'COMMAND', command: 'reread' },
-      { flushPendingTables: false },
+      { flushPendingTables: false }
     )
     expect(flushAllPendingTableCommits).not.toHaveBeenCalled()
   })
@@ -149,7 +222,7 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current(
       { type: 'COMMAND', command: 'save' },
-      { flushPendingTables: true, resetsDirty: true, closeAfter: false },
+      { flushPendingTables: true, resetsDirty: true, closeAfter: false }
     )
     expect(sessionMock.resetDirty).toHaveBeenCalledTimes(1)
     expect(sessionMock.closeAfter).not.toHaveBeenCalled()
@@ -160,7 +233,7 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current(
       { type: 'COMMAND', command: 'save' },
-      { flushPendingTables: true, resetsDirty: true, closeAfter: true },
+      { flushPendingTables: true, resetsDirty: true, closeAfter: true }
     )
     expect(sessionMock.closeAfter).toHaveBeenCalledTimes(1)
     expect(sessionMock.closeAfter).toHaveBeenCalledWith(false)
@@ -177,7 +250,7 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current(
       { type: 'COMMAND', command: 'postAndClose' },
-      { flushPendingTables: true, resetsDirty: true, closeAfter: true },
+      { flushPendingTables: true, resetsDirty: true, closeAfter: true }
     )
     expect(sessionMock.closeAfter).toHaveBeenCalledWith(true)
   })
@@ -204,7 +277,8 @@ describe('useSduiDispatch: эффект confirm (SCRUM-244 v3)', () => {
       {
         type: 'confirm',
         message: 'Данные будут записаны.',
-        confirmCommand: 'nav.saveAndOpen:INFORMATION_REGISTER:VoinskiyUchet:FizicheskoeLitso',
+        confirmCommand:
+          'nav.saveAndOpen:INFORMATION_REGISTER:VoinskiyUchet:FizicheskoeLitso',
       },
     ],
   } as unknown as ViewResponse
@@ -214,7 +288,11 @@ describe('useSduiDispatch: эффект confirm (SCRUM-244 v3)', () => {
     router.search = ''
     queryClient = new QueryClient()
     wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(QueryClientProvider, { client: queryClient }, children)
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
   })
 
   it('confirm-эффект открывает диалог с message с сервера', async () => {
@@ -243,14 +321,17 @@ describe('useSduiDispatch: эффект confirm (SCRUM-244 v3)', () => {
       expect.objectContaining({
         action: {
           type: 'COMMAND',
-          command: 'nav.saveAndOpen:INFORMATION_REGISTER:VoinskiyUchet:FizicheskoeLitso',
+          command:
+            'nav.saveAndOpen:INFORMATION_REGISTER:VoinskiyUchet:FizicheskoeLitso',
         },
-      }),
+      })
     )
   })
 
   it('по «Нет» — ни одного запроса сверх исходного (no-op)', async () => {
-    const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(confirmResponse)
+    const post = vi
+      .spyOn(viewTransport, 'post')
+      .mockResolvedValue(confirmResponse)
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current({ type: 'COMMAND', command: 'nav.open:X' })
 
@@ -273,20 +354,26 @@ describe('useSduiDispatch: 404 на OPEN (SCRUM-244 I-1)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     router.search = ''
-    vi.spyOn(viewTransport, 'post').mockRejectedValue(new ViewHttpError('Not Found', 404))
+    vi.spyOn(viewTransport, 'post').mockRejectedValue(
+      new ViewHttpError('Not Found', 404)
+    )
     queryClient = new QueryClient()
     wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(QueryClientProvider, { client: queryClient }, children)
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
   })
 
   it('с opts.onOpenNotFound: колбэк вызван, showToast НЕ вызван', async () => {
     const onOpenNotFound = vi.fn()
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     const ok = await result.current(
-      { type: 'OPEN', layoutCode: 'X.ФормаОбъекта' },
+      { type: 'OPEN', layoutCode: 'X.Layout' },
       null,
       false,
-      { onOpenNotFound },
+      { onOpenNotFound }
     )
 
     expect(ok).toBe(false)
@@ -296,9 +383,73 @@ describe('useSduiDispatch: 404 на OPEN (SCRUM-244 I-1)', () => {
 
   it('без opts: showToast вызван (прежнее поведение документов без фолбэка)', async () => {
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
-    const ok = await result.current({ type: 'OPEN', layoutCode: 'X.ФормаОбъекта' })
+    const ok = await result.current({
+      type: 'OPEN',
+      layoutCode: 'X.Layout',
+    })
 
     expect(ok).toBe(false)
     expect(showToast).toHaveBeenCalledTimes(1)
+  })
+})
+
+// Гейт ошибок OPEN на 3 ветки (SCRUM-290 §2 бэк-спеки): ROUTE_UNKNOWN →
+// onRouteUnknown; SCREEN_NOT_SDUI → onOpenNotFound({kind}); унаследованный
+// 404 NOT_FOUND → onOpenNotFound() без kind. Без подходящего колбэка — тост.
+describe('useSduiDispatch: гейт ошибок OPEN на 3 ветки (SCRUM-290)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  it('OPEN 422 SCREEN_NOT_SDUI → onOpenNotFound({kind}), без тоста', async () => {
+    vi.spyOn(viewTransport, 'post').mockRejectedValue(
+      new ViewHttpError('nope', 422, 'SCREEN_NOT_SDUI', 'DOCUMENT_LIST')
+    )
+    const onOpenNotFound = vi.fn()
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const ok = await result.current({ type: 'OPEN' }, null, false, {
+      onOpenNotFound,
+    })
+
+    expect(ok).toBe(false)
+    expect(onOpenNotFound).toHaveBeenCalledWith({ kind: 'DOCUMENT_LIST' })
+    expect(showToast).not.toHaveBeenCalled()
+  })
+
+  it('OPEN 404 ROUTE_UNKNOWN → onRouteUnknown, без тоста', async () => {
+    vi.spyOn(viewTransport, 'post').mockRejectedValue(
+      new ViewHttpError('nope', 404, 'ROUTE_UNKNOWN')
+    )
+    const onRouteUnknown = vi.fn()
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const ok = await result.current({ type: 'OPEN' }, null, false, {
+      onRouteUnknown,
+    })
+
+    expect(ok).toBe(false)
+    expect(onRouteUnknown).toHaveBeenCalledTimes(1)
+    expect(showToast).not.toHaveBeenCalled()
+  })
+
+  it('OPEN 404 NOT_FOUND → onOpenNotFound() без kind (унаследованный тракт)', async () => {
+    vi.spyOn(viewTransport, 'post').mockRejectedValue(
+      new ViewHttpError('nope', 404, 'NOT_FOUND')
+    )
+    const onOpenNotFound = vi.fn()
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'OPEN' }, null, false, { onOpenNotFound })
+
+    expect(onOpenNotFound).toHaveBeenCalledWith(undefined)
   })
 })

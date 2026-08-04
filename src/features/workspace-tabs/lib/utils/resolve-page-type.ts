@@ -1,5 +1,9 @@
 import type { TabPageType } from '../../types/workspace-tab'
 
+// SCRUM-290 §4.5: снятие регексов document-entry/dictionary-entry/module
+// отложено — они обслуживают легаси-вкладки (newView-меньшинство мигрировано,
+// ModulePage не SDUI). Переезд типа SDUI-вкладок на response.tab.kind — после
+// shell-миграции (задача 7). Инфраструктура (mapKindToPageType/onTab) готова.
 const patterns: [RegExp, TabPageType][] = [
   [
     /^\/modules\/[^/]+\/document\/[^/]+\/[^/]+\/movements$/,

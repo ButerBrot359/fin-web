@@ -1,9 +1,23 @@
 import { useMemo, useState, type FC } from 'react'
-import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { SduiScreen, useViewStateStore, useTreeStore, useSduiDispatch } from '@/features/sdui'
-import { useWorkspaceTabsStore, useFormCacheStore, useTabMeta } from '@/features/workspace-tabs'
+import {
+  SduiScreen,
+  useViewStateStore,
+  useTreeStore,
+  useSduiDispatch,
+} from '@/features/sdui'
+import {
+  useWorkspaceTabsStore,
+  useFormCacheStore,
+  useTabMeta,
+} from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
 
@@ -28,7 +42,8 @@ export const SduiDictionaryEntryPage: FC<SduiDictionaryEntryPageProps> = ({
   const queryClient = useQueryClient()
 
   const dirty = useViewStateStore((s) => s.dirty)
-  const baseTitle = (useTreeStore((s) => s.root?.props?.title) as string | undefined) ?? ''
+  const baseTitle =
+    (useTreeStore((s) => s.root?.props?.title) as string | undefined) ?? ''
   const pageTitle = dirty ? `${baseTitle} *` : baseTitle
 
   const [tabTitle, setTabTitle] = useState('')
@@ -82,7 +97,7 @@ export const SduiDictionaryEntryPage: FC<SduiDictionaryEntryPageProps> = ({
         void navigate(listPath)
       },
     }),
-    [navigate, listPath],
+    [navigate, listPath]
   )
 
   // При уходе SDUI-кэш списков может устареть для легаси-списка справочника
@@ -94,17 +109,13 @@ export const SduiDictionaryEntryPage: FC<SduiDictionaryEntryPageProps> = ({
         onOpenFailed()
       },
     }),
-    [tabsApi, queryClient, onOpenFailed],
+    [tabsApi, queryClient, onOpenFailed]
   )
 
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={pageTitle} onClose={handleClose} />
-      <SduiScreen
-        layoutCode={`dict.${moduleCode}.OBJECT_FORM`}
-        {...screenApi}
-        onTitleChange={setTabTitle}
-      />
+      <SduiScreen {...screenApi} onTitleChange={setTabTitle} />
       <UnsavedChangesDialog
         open={unsavedDialog.isOpen}
         onSave={unsavedDialog.handleSave}

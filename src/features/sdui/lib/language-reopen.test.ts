@@ -5,7 +5,12 @@ import { useSduiCacheStore } from './stores/sdui-cache-store'
 import { useTreeStore } from './stores/tree-store'
 import { reopenFormForLanguageChange } from './language-reopen'
 
-const node = { id: 'root', type: 'VSTACK', props: {}, children: [] } as unknown as ViewNode
+const node = {
+  id: 'root',
+  type: 'VSTACK',
+  props: {},
+  children: [],
+} as unknown as ViewNode
 
 describe('reopenFormForLanguageChange', () => {
   beforeEach(() => {
@@ -25,21 +30,21 @@ describe('reopenFormForLanguageChange', () => {
 
     const actions: ViewAction[] = []
     const treeAtOpen: unknown[] = []
-    const dispatch = vi.fn(async (action: ViewAction) => {
+    const dispatch = vi.fn((action: ViewAction) => {
       actions.push(action)
       if (action.type === 'OPEN') treeAtOpen.push(useTreeStore.getState().root)
-      return true
+      return Promise.resolve(true)
     })
 
     await reopenFormForLanguageChange({
       dispatch,
       route: '/doc/1',
-      layoutCode: 'X.ФормаОбъекта',
+      layoutCode: 'X.Layout',
     })
 
     expect(actions).toEqual([
       { type: 'CLOSE' },
-      { type: 'OPEN', layoutCode: 'X.ФормаОбъекта' },
+      { type: 'OPEN', layoutCode: 'X.Layout' },
     ])
     // К моменту OPEN дерево сброшено (скелетон), кэш route очищен
     expect(treeAtOpen).toEqual([null])

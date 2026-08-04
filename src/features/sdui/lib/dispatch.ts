@@ -5,8 +5,12 @@ import i18n from 'i18next'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-import type { ActionBehavior, ViewAction } from '../types/view'
-import { viewTransport, ViewConflictError, ViewHttpError } from '../api/view-transport'
+import type { ActionBehavior, ViewAction, ViewTabMeta } from '../types/view'
+import {
+  viewTransport,
+  ViewConflictError,
+  ViewHttpError,
+} from '../api/view-transport'
 import { applyValuePatches } from './patch-applier'
 import { validatePatches } from './validation'
 import { handleConflict } from './conflict-handler'
@@ -27,14 +31,34 @@ export function useSduiDispatch() {
   const session = useSduiSession()
 
   const dispatch = useCallback(
-    async (
+    // Именованное функциональное выражение: рекурсивные самовызовы (confirm/
+    // reopen/retry ниже) ссылаются на dispatchAction — привязку имени внутри
+    // собственной области видимости, а не на внешний dispatch (TDZ на этапе
+    // сборки useCallback до присваивания константе).
+    async function dispatchAction(
       action: ViewAction,
       behavior?: ActionBehavior | null,
       isRetry = false,
-      opts?: { onOpenNotFound?: () => void },
-    ): Promise<boolean> => {
+      opts?: {
+        onOpenNotFound?: (info?: { kind?: string }) => void
+        onRouteUnknown?: () => void
+        onOpenTab?: (tab: ViewTabMeta | null) => void
+      }
+    ): Promise<boolean> {
       const { formSessionId, revision } = session.getSession()
-      const { replaceAll, merge, setSession, setRoot, bumpRevision, applyTreePatches, clearAllErrors, setFromServer, resetDirty, closeAfter, setOnDirtyClose } = session
+      const {
+        replaceAll,
+        merge,
+        setSession,
+        setRoot,
+        bumpRevision,
+        applyTreePatches,
+        clearAllErrors,
+        setFromServer,
+        resetDirty,
+        closeAfter,
+        setOnDirtyClose,
+      } = session
 
       // Поведение действия приходит с бэка (SCRUM-283). Фолбэки асимметричны намеренно:
       // забытый flush = молчаливая потеря правок ТЧ → безопасная сторона true;
@@ -67,11 +91,16 @@ export function useSduiDispatch() {
           void navigate(route)
         },
         openDialog: (effect) => {
-          openDialogAsPanel(effect, session.getSession().formSessionId ?? undefined)
+          openDialogAsPanel(
+            effect,
+            session.getSession().formSessionId ?? undefined
+          )
         },
         closeDialog: (effect) => {
           if (effect.id) usePanelStore.getState().remove(effect.id)
-          relaySelectionToParent(effect, (effects) => effectHandler.playAll(effects))
+          relaySelectionToParent(effect, (effects) => {
+            effectHandler.playAll(effects)
+          })
         },
         invalidateLists: () => {
           void queryClient.invalidateQueries({ queryKey: ['sdui-list'] })
@@ -79,9 +108,12 @@ export function useSduiDispatch() {
         confirm: (command, message) => {
           // SCRUM-244 v3 §1.2: по «Да» шлём COMMAND в ту же сессию (revision
           // берётся штатно внутри dispatch), по «Нет» — no-op, ничего не шлём.
-          void useConfirmStore.getState().ask(message).then((ok) => {
-            if (ok) void dispatch({ type: 'COMMAND', command })
-          })
+          void useConfirmStore
+            .getState()
+            .ask(message)
+            .then((ok) => {
+              if (ok) void dispatchAction({ type: 'COMMAND', command })
+            })
         },
       })
 
@@ -89,13 +121,15 @@ export function useSduiDispatch() {
         // isRetry: мы уже внутри повтора после восстановления — второй
         // SESSION_NOT_FOUND подряд означает нестабильный бэк; не зацикливаемся.
         if (isRetry) return
-        // layoutCode обязателен для OPEN (§2.3 спеки SCRUM-244) — без него
-        // переоткрытие уходило в цикл 409 → 400. Берём сохранённый с первого OPEN.
+        // SCRUM-290: OPEN стал route-only. getLayoutCode() обычно null →
+        // reopen уходит по route (маршрут между OPEN и reopen не меняется,
+        // резолвится в тот же экран). Сохранённый layoutCode берём, если он
+        // всё же есть (переходный период страниц, ещё шлющих layoutCode).
         const layoutCode = session.getLayoutCode?.() ?? undefined
-        const ok = await dispatch({ type: 'OPEN', layoutCode })
+        const ok = await dispatchAction({ type: 'OPEN', layoutCode })
         // Повторяем исходное действие, чтобы клик не терялся (кроме команд записи)
         if (ok && isRetryableAfterReopen(action, behavior)) {
-          void dispatch(action, behavior, true)
+          void dispatchAction(action, behavior, true)
         }
       }
 
@@ -112,9 +146,9 @@ export function useSduiDispatch() {
         const res = await viewTransport.post({
           formSessionId: action.type === 'OPEN' ? null : formSessionId,
           revision: action.type === 'OPEN' ? null : revision,
-          layoutCode: action.type === 'OPEN'
-            ? (action.layoutCode ?? null)
-            : undefined,
+          ...(action.type === 'OPEN' && action.layoutCode
+            ? { layoutCode: action.layoutCode }
+            : {}),
           route: location.pathname + location.search,
           action,
         })
@@ -124,6 +158,7 @@ export function useSduiDispatch() {
           session.setLayoutCode?.(action.layoutCode ?? null)
           if (res.tree) setRoot(res.tree)
           setOnDirtyClose?.(res.onDirtyClose ?? null)
+          opts?.onOpenTab?.(res.tab ?? null)
           replaceAll(res.state ?? {})
           // Apply handler.handleOpen patches (e.g. required/enabled/label defaults)
           const openPatches = validatePatches(res.patches)
@@ -140,15 +175,17 @@ export function useSduiDispatch() {
           applyTreePatches(patches)
           applyValuePatches(patches, setFromServer)
           merge(res.statePatch ?? {})
-          effectHandler.playAll(res.effects ?? [])       // navigate играет здесь…
+          effectHandler.playAll(res.effects ?? []) // navigate играет здесь…
           if (action.type === 'COMMAND') {
             if (shouldReset) resetDirty()
             // Уже ли сервер увёл (эффект navigate)? Хост по этому флагу решает,
             // навигировать ли самому: закрытие вкладки (save+closeAfter, без
             // серверного navigate) → сесть на соседнюю; postAndClose (navigate в
             // список) → только закрыть, не перебивая серверный переход (SCRUM-283 v2).
-            const didNavigate = (res.effects ?? []).some((e) => e.type === 'navigate')
-            if (shouldClose) closeAfter?.(didNavigate)    // …закрытие — после эффектов
+            const didNavigate = (res.effects ?? []).some(
+              (e) => e.type === 'navigate'
+            )
+            if (shouldClose) closeAfter?.(didNavigate) // …закрытие — после эффектов
           }
         }
         return true
@@ -156,33 +193,39 @@ export function useSduiDispatch() {
         if (error instanceof ViewConflictError) {
           const retry =
             !isRetry && action.type !== 'OPEN'
-              ? () => dispatch(action, behavior, true)
+              ? () => dispatchAction(action, behavior, true)
               : null
-          handleConflict(
-            error.data,
-            { setSession, replaceAll },
-            retry,
-            reopen,
-          )
-        } else if (
-          error instanceof ViewHttpError &&
-          error.status === 404 &&
-          action.type === 'OPEN' &&
-          opts?.onOpenNotFound
-        ) {
-          // 404 на OPEN — штатный гейт раскатки (§2.3 SCRUM-244): тип ещё не
-          // переведён на SDUI. Без тоста: хост покажет легаси-форму.
-          // Без обработчика (хост не поддерживает фолбэк) — уходим в общий
-          // else ниже и показываем тост, как раньше.
-          opts.onOpenNotFound()
+          handleConflict(error.data, { setSession, replaceAll }, retry, reopen)
+        } else if (error instanceof ViewHttpError && action.type === 'OPEN') {
+          // Единый гейт раскатки под catch-all (§2 бэк-спеки SCRUM-290):
+          // ROUTE_UNKNOWN → «не найдено»; SCREEN_NOT_SDUI / унаследованный
+          // 404 → легаси-фолбэк. Без подходящего колбэка — общий тост, как раньше.
+          if (
+            error.status === 404 &&
+            error.code === 'ROUTE_UNKNOWN' &&
+            opts?.onRouteUnknown
+          ) {
+            opts.onRouteUnknown()
+          } else if (
+            error.status === 422 &&
+            error.code === 'SCREEN_NOT_SDUI' &&
+            opts?.onOpenNotFound
+          ) {
+            opts.onOpenNotFound({ kind: error.kind })
+          } else if (error.status === 404 && opts?.onOpenNotFound) {
+            opts.onOpenNotFound(undefined)
+          } else {
+            showToast('error', error.message || i18n.t('sdui.requestError'))
+          }
         } else {
-          const message = error instanceof Error ? error.message : i18n.t('sdui.requestError')
+          const message =
+            error instanceof Error ? error.message : i18n.t('sdui.requestError')
           showToast('error', message)
         }
         return false
       }
     },
-    [location.pathname, location.search, navigate, session, queryClient],
+    [location.pathname, location.search, navigate, session, queryClient]
   )
 
   return dispatch

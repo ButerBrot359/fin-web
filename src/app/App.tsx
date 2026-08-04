@@ -119,6 +119,11 @@ const TreasuryExportPage = lazy(() =>
     default: m.TreasuryExportPage,
   }))
 )
+const SduiCatchAllPage = lazy(() =>
+  import('@/pages/sdui-catch-all').then((m) => ({
+    default: m.SduiCatchAllPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -255,6 +260,7 @@ const AppRoutes = () => {
             path="/modules/:pageCode/reportalt/:moduleCode"
             element={<ReportAltPage />}
           />
+          <Route path="*" element={<SduiCatchAllPage />} />
         </Routes>
       </Suspense>
     </ErrorBoundary>

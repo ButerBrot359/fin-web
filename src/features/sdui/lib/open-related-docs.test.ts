@@ -130,4 +130,40 @@ describe('handleRelatedCommand', () => {
       'a1'
     )
   })
+
+  it('related.refresh: reject у fetchRelatedDocsView — тост об ошибке, без unhandled rejection', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('timeout'))
+    expect(handleRelatedCommand('related.refresh', ctxProps)).toBe(true)
+    await flush()
+    expect(showToast).toHaveBeenCalledWith(
+      'error',
+      'sdui.relatedDocs.requestError'
+    )
+  })
+
+  it('related.setRoot: reject у fetchRelatedDocsView — тост об ошибке', async () => {
+    useRelatedDocsStore
+      .getState()
+      .select('a1', { rowId: 'r5', isDeletionMarked: false })
+    mockFetch.mockRejectedValueOnce(new Error('504'))
+    handleRelatedCommand('related.setRoot', ctxProps)
+    await flush()
+    expect(showToast).toHaveBeenCalledWith(
+      'error',
+      'sdui.relatedDocs.requestError'
+    )
+  })
+
+  it('related.post: reject у postRelatedDocsAction — тост об ошибке', async () => {
+    useRelatedDocsStore
+      .getState()
+      .select('a1', { rowId: 'r5', isDeletionMarked: false })
+    mockPost.mockRejectedValueOnce(new Error('504'))
+    handleRelatedCommand('related.post', ctxProps)
+    await flush()
+    expect(showToast).toHaveBeenCalledWith(
+      'error',
+      'sdui.relatedDocs.requestError'
+    )
+  })
 })

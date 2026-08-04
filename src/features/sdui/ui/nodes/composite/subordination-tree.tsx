@@ -1,4 +1,4 @@
-import type { FC } from 'react'
+import { useEffect, type FC } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Paper,
@@ -23,6 +23,10 @@ import { useRelatedDocsStore } from '../../../lib/stores/related-docs-store'
 const INDENT_STEP_PX = 24
 const BASE_PADDING_PX = 8
 
+// Стабильная ссылка для пустого списка строк — иначе `?? []` создавал бы
+// новый массив на каждый рендер и дёргал useEffect-реконсиляцию зря.
+const EMPTY_ROWS: RelatedTreeRow[] = []
+
 // Приоритет: пометка на удаление → проведён → черновик (бэк-спека §4.1)
 const StatusIcon: FC<{ row: RelatedTreeRow }> = ({ row }) => {
   if (row._isDeletionMarked)
@@ -36,11 +40,33 @@ const StatusIcon: FC<{ row: RelatedTreeRow }> = ({ row }) => {
 // тулбара), двойной — проваливание в документ; маркеры обрыва инертны.
 export const SubordinationTree: FC<NodeProps> = ({ node }) => {
   const navigate = useNavigate()
-  const anchorId = (node.props?.anchorId as string | undefined) ?? ''
+  const anchorIdProp = node.props?.anchorId as string | undefined
+  const anchorId = anchorIdProp ?? ''
   const { getValue } = useSduiSession()
-  const rows = (getValue(node.binding) as RelatedTreeRow[] | undefined) ?? []
+  const rows =
+    (getValue(node.binding) as RelatedTreeRow[] | undefined) ?? EMPTY_ROWS
   const selected = useRelatedDocsStore((s) => s.selected[anchorId])
   const select = useRelatedDocsStore((s) => s.select)
+
+  if (import.meta.env.DEV && !anchorIdProp) {
+    console.warn('[sdui] SubordinationTree без anchorId в props')
+  }
+
+  // Реконсиляция выделения после перестроения дерева (фикс финального ревью
+  // SCRUM-301, Important 1): снимок в сторе может отстать от нового rows —
+  // строка могла пропасть или сменить isDeletionMarked на сервере.
+  useEffect(() => {
+    if (!selected) return
+    const match = rows.find((row) => row.rowId === selected.rowId)
+    if (!match) {
+      select(anchorId, null)
+    } else if (match._isDeletionMarked !== selected.isDeletionMarked) {
+      select(anchorId, {
+        rowId: match.rowId,
+        isDeletionMarked: match._isDeletionMarked,
+      })
+    }
+  }, [rows, selected, anchorId, select])
 
   const handleClick = (row: RelatedTreeRow) => {
     if (row._isTruncated === true) return
@@ -69,6 +95,7 @@ export const SubordinationTree: FC<NodeProps> = ({ node }) => {
               hover={row._isTruncated !== true}
               selected={selected?.rowId === row.rowId}
               title={row._status}
+              aria-label={row._status}
               onClick={() => {
                 handleClick(row)
               }}

@@ -153,4 +153,38 @@ describe('SubordinationTree', () => {
     render(<TableNode node={treeNode} />)
     expect(screen.getByTitle('Проведён')).toBeTruthy()
   })
+
+  it('после перестроения дерева выделенная строка сверяется: isDeletionMarked обновляется из новых rows', () => {
+    state['related.tree'] = [row({ rowId: 'r1', _isDeletionMarked: false })]
+    const { rerender } = render(<TableNode node={treeNode} />)
+    fireEvent.click(screen.getByText('Документ'))
+    expect(useRelatedDocsStore.getState().selected.a1).toEqual({
+      rowId: 'r1',
+      isDeletionMarked: false,
+    })
+
+    // Дерево перестроилось после действия — та же строка теперь помечена на сервере
+    state['related.tree'] = [row({ rowId: 'r1', _isDeletionMarked: true })]
+    rerender(<TableNode node={treeNode} />)
+
+    expect(useRelatedDocsStore.getState().selected.a1).toEqual({
+      rowId: 'r1',
+      isDeletionMarked: true,
+    })
+  })
+
+  it('после перестроения дерева выделение снимается, если строка пропала из rows', () => {
+    state['related.tree'] = [row({ rowId: 'r1' })]
+    const { rerender } = render(<TableNode node={treeNode} />)
+    fireEvent.click(screen.getByText('Документ'))
+    expect(useRelatedDocsStore.getState().selected.a1).toEqual({
+      rowId: 'r1',
+      isDeletionMarked: false,
+    })
+
+    state['related.tree'] = [row({ rowId: 'r2', _presentation: 'Другой' })]
+    rerender(<TableNode node={treeNode} />)
+
+    expect(useRelatedDocsStore.getState().selected.a1).toBeUndefined()
+  })
 })

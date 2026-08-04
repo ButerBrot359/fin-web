@@ -53,7 +53,15 @@ const ACTION_BY_COMMAND: Record<string, RelatedDocsAction> = {
 const isRelatedCommand = (command: string): boolean =>
   command === 'related.refresh' ||
   command === 'related.setRoot' ||
-  command in ACTION_BY_COMMAND
+  Object.hasOwn(ACTION_BY_COMMAND, command)
+
+// Единая точка для транспортных ошибок (таймаут/504 и пр.) на fire-and-forget
+// вызовах ниже — без неё unhandled rejection тонет молча (Important 2).
+function fireAndReport(promise: Promise<void>): void {
+  void promise.catch(() => {
+    showToast('error', i18n.t('sdui.relatedDocs.requestError'))
+  })
+}
 
 // Нет выделенной строки ⇒ notify, запрос не отправлять (бэк-спека §4.4).
 // Маркеры обрыва в стор не попадают — их отсекает SubordinationTree.
@@ -78,7 +86,13 @@ async function runAction(
     const message = sel.isDeletionMarked
       ? ctx.confirmMessageUnset
       : ctx.confirmMessageSet
-    if (message && !(await useConfirmStore.getState().ask(message))) return
+    if (message) {
+      if (!(await useConfirmStore.getState().ask(message))) return
+    } else if (import.meta.env.DEV) {
+      console.warn(
+        '[sdui] toggle-deletion-mark без текста подтверждения — confirm пропущен'
+      )
+    }
   }
   applyEffects(
     await postRelatedDocsAction(action, sel.rowId, ctx.rootId, ctx.anchorId)
@@ -112,14 +126,16 @@ export function handleRelatedCommand(
     confirmMessageUnset: props?.confirmMessageUnset as string | undefined,
   }
   if (command === 'related.refresh') {
-    void openRelatedDocsForEntry(ctx.rootId, ctx.anchorId)
+    fireAndReport(openRelatedDocsForEntry(ctx.rootId, ctx.anchorId))
     return true
   }
   if (command === 'related.setRoot') {
     const sel = getSelection(ctx.anchorId)
-    if (sel) void openRelatedDocsForEntry(sel.rowId, ctx.anchorId)
+    if (sel) fireAndReport(openRelatedDocsForEntry(sel.rowId, ctx.anchorId))
     return true
   }
-  void runAction(ACTION_BY_COMMAND[command], ctx)
+  if (Object.hasOwn(ACTION_BY_COMMAND, command)) {
+    fireAndReport(runAction(ACTION_BY_COMMAND[command], ctx))
+  }
   return true
 }

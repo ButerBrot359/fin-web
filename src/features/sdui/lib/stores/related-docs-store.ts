@@ -18,7 +18,16 @@ interface RelatedDocsStore {
 export const useRelatedDocsStore = create<RelatedDocsStore>((set) => ({
   selected: {},
   select: (anchorId, row) => {
-    set((s) => ({ selected: { ...s.selected, [anchorId]: row ?? undefined } }))
+    set((s) => {
+      const next = { ...s.selected }
+      if (row) {
+        next[anchorId] = row
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- ключ по anchorId, не пользовательский ввод
+        delete next[anchorId]
+      }
+      return { selected: next }
+    })
   },
   reset: () => {
     set({ selected: {} })

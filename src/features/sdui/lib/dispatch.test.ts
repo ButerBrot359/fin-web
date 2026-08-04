@@ -137,6 +137,17 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
     )
   })
 
+  it('OPEN прокидывает res.tab в onOpenTab', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValue({
+      ...openResponse,
+      tab: { kind: 'MODULE' },
+    } as never)
+    const onOpenTab = vi.fn()
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'OPEN' }, null, false, { onOpenTab })
+    expect(onOpenTab).toHaveBeenCalledWith({ kind: 'MODULE' })
+  })
+
   it('reopen после SESSION_NOT_FOUND без layoutCode шлёт route-only OPEN', async () => {
     sessionMock.getLayoutCode = () => null
     sessionMock.setLayoutCode = vi.fn()

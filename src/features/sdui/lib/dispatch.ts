@@ -5,7 +5,7 @@ import i18n from 'i18next'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-import type { ActionBehavior, ViewAction } from '../types/view'
+import type { ActionBehavior, ViewAction, ViewTabMeta } from '../types/view'
 import {
   viewTransport,
   ViewConflictError,
@@ -42,6 +42,7 @@ export function useSduiDispatch() {
       opts?: {
         onOpenNotFound?: (info?: { kind?: string }) => void
         onRouteUnknown?: () => void
+        onOpenTab?: (tab: ViewTabMeta | null) => void
       }
     ): Promise<boolean> {
       const { formSessionId, revision } = session.getSession()
@@ -155,6 +156,7 @@ export function useSduiDispatch() {
           session.setLayoutCode?.(action.layoutCode ?? null)
           if (res.tree) setRoot(res.tree)
           setOnDirtyClose?.(res.onDirtyClose ?? null)
+          opts?.onOpenTab?.(res.tab ?? null)
           replaceAll(res.state ?? {})
           // Apply handler.handleOpen patches (e.g. required/enabled/label defaults)
           const openPatches = validatePatches(res.patches)

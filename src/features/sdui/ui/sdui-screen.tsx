@@ -11,13 +11,16 @@ import { usePanelStore } from '../lib/stores/panel-store'
 import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
 import { useSessionHeartbeat } from '../lib/hooks/use-session-heartbeat'
-import { SduiSessionProvider, type SduiSessionValue } from '../lib/sdui-session-context'
+import {
+  SduiSessionProvider,
+  type SduiSessionValue,
+} from '../lib/sdui-session-context'
 import { reopenFormForLanguageChange } from '../lib/language-reopen'
+import type { ViewTabMeta } from '../types/view'
 import { NodeRenderer } from './node-renderer'
 import { DialogHost } from './dialog-host'
 
 interface SduiScreenProps {
-  layoutCode?: string
   // Хост решает, сохранять ли сессию в кэш при размонтировании (вкладка ещё открыта)
   shouldPersistSession?: (route: string) => boolean
   // Колбэки для интеграции с вкладками; SDUI сам их не реализует
@@ -31,14 +34,19 @@ interface SduiScreenProps {
   // увёл эффектом navigate (напр. postAndClose→список), хост навигацию не дублирует;
   // didNavigate=false (save+closeAfter) → хост садится на соседнюю вкладку (SCRUM-283 v2).
   onCloseAfter?: (route: string, didNavigate?: boolean) => void
-  // Срабатывает только на 404 OPEN — штатный гейт раскатки (§2.3 SCRUM-244):
-  // тип ещё не переведён на SDUI, хост может показать легаси-форму. Прочие
+  // Срабатывает на 404/422 OPEN — штатный гейт раскатки (§2 бэк-спеки
+  // SCRUM-290): тип ещё не переведён на SDUI (SCREEN_NOT_SDUI → info.kind)
+  // либо унаследованный 404. Хост может показать легаси-форму. Прочие
   // ошибки OPEN (сеть, 5xx) сюда не попадают — прежнее поведение (тост + скелетон).
-  onOpenFailed?: () => void
+  onOpenFailed?: (info?: { kind?: string }) => void
+  // Маршрут не найден бэком (404 ROUTE_UNKNOWN) — экран NotFound на стороне хоста
+  onRouteUnknown?: () => void
+  // Метаданные вкладки с последнего OPEN (kind/icon/closable) — хост
+  // использует для синхронизации рабочих вкладок
+  onTab?: (tab: ViewTabMeta | null) => void
 }
 
 export const SduiScreen: FC<SduiScreenProps> = ({
-  layoutCode,
   shouldPersistSession,
   onTitleChange,
   onDirtyChange,
@@ -46,6 +54,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   onSavedAndClosed,
   onCloseAfter,
   onOpenFailed,
+  onRouteUnknown,
+  onTab,
 }) => {
   const location = useLocation()
   const tree = useTreeStore((s) => s.root)
@@ -72,26 +82,26 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     // OPEN, серверная form-session ещё жива. Чистый документ при возврате
     // переоткрываем (OPEN), чтобы данные/статус были всегда актуальными.
     const cached = useSduiCacheStore.getState().get(route)
-    if (cached && cached.dirty) {
+    if (cached?.dirty) {
       useTreeStore.getState().setRoot(cached.root)
       if (cached.formSessionId != null && cached.revision != null) {
-        useTreeStore.getState().setSession(cached.formSessionId, cached.revision)
+        useTreeStore
+          .getState()
+          .setSession(cached.formSessionId, cached.revision)
       }
-      // layoutCode не хранится в кэше вкладки: источник правды — проп экрана.
-      // Без этого reopen после потери сессии на восстановленной вкладке
-      // снова ушёл бы без layoutCode (ревью Task 2 SCRUM-244).
-      useTreeStore.getState().setLayoutCode(layoutCode ?? null)
+      // Экран всегда route-only (SCRUM-290): layoutCode больше не хранится
+      // ни в кэше вкладки, ни в пропах — сброшен, реопен идёт по маршруту.
+      useTreeStore.getState().setLayoutCode(null)
       useViewStateStore.getState().replaceAll(cached.viewState)
     } else {
       // main: устаревший кэш вкладки снимаем перед переоткрытием;
-      // dev (SCRUM-244): 404 на OPEN → фолбэк на легаси через onOpenNotFound.
+      // dev (SCRUM-244/290): 404/422 на OPEN → фолбэк на легаси через onOpenNotFound;
+      // 404 ROUTE_UNKNOWN → onRouteUnknown (экран NotFound).
       if (cached) useSduiCacheStore.getState().remove(route)
-      void dispatch({ type: 'OPEN', layoutCode }, null, false, {
-        onOpenNotFound: onOpenFailed
-          ? () => {
-              onOpenFailed()
-            }
-          : undefined,
+      void dispatch({ type: 'OPEN' }, null, false, {
+        onOpenNotFound: onOpenFailed,
+        onRouteUnknown,
+        onOpenTab: (tab) => onTab?.(tab),
       })
     }
 
@@ -128,7 +138,9 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       if (sid) viewTransport.closeBeacon(sid)
     }
     window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
+    return () => {
+      window.removeEventListener('beforeunload', handler)
+    }
   }, [])
 
   // Смена языка: язык фиксируется в form-session на OPEN, поэтому нужен
@@ -140,12 +152,13 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       void reopenFormForLanguageChange({
         dispatch,
         route: location.pathname,
-        layoutCode,
       })
     }
     i18n.on('languageChanged', handler)
-    return () => i18n.off('languageChanged', handler)
-  }, [location.pathname, layoutCode, dispatch])
+    return () => {
+      i18n.off('languageChanged', handler)
+    }
+  }, [location.pathname, dispatch])
 
   useEffect(() => {
     const route = location.pathname
@@ -154,12 +167,13 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       // Имя команды и её поведение — из серверного дескриптора, не хардкод (§4.5)
       const desc = useTreeStore.getState().onDirtyClose
       if (!desc?.command) return
-      void dispatch({ type: 'COMMAND', command: desc.command }, desc.behavior).then(
-        (ok) => {
-          if (!ok) return
-          onSavedAndClosed?.(route)
-        },
-      )
+      void dispatch(
+        { type: 'COMMAND', command: desc.command },
+        desc.behavior
+      ).then((ok) => {
+        if (!ok) return
+        onSavedAndClosed?.(route)
+      })
     }
   }, [location.pathname, dispatch, consumePendingAction, onSavedAndClosed])
 
@@ -194,7 +208,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       applyTreePatches: useTreeStore.getState().applyPatches,
       clearAllErrors: useTreeStore.getState().clearAllErrors,
     }),
-    [tree, dirty, onCloseAfter, location.pathname],
+    [tree, dirty, onCloseAfter, location.pathname]
   )
 
   if (!tree) return <PageSkeleton />

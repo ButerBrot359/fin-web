@@ -4,7 +4,9 @@ import {
   Paper,
   TextField,
   Tooltip,
+  type SxProps,
   type TextFieldProps,
+  type Theme,
 } from '@mui/material'
 import type { AutocompleteRenderInputParams } from '@mui/material/Autocomplete'
 import { useTranslation } from 'react-i18next'
@@ -138,7 +140,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
     })
   }, [hasFooter, onShowAll, onAdd, t])
 
-  const sx = [
+  const sx: SxProps<Theme> = [
     ...(disabled
       ? [
           {

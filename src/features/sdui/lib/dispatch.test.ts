@@ -41,9 +41,16 @@ const sessionMock = vi.hoisted(() => ({
   setLayoutCode: vi.fn(),
 }))
 
+// Spy на setSearchParams — читается тестом replaceUrl (SCRUM-291 §7)
+const setSearchParamsMock = vi.hoisted(() => vi.fn())
+
 vi.mock('react-router-dom', () => ({
   useLocation: () => ({ pathname: router.pathname, search: router.search }),
   useNavigate: () => vi.fn(),
+  useSearchParams: () => [
+    new URLSearchParams(router.search),
+    setSearchParamsMock,
+  ],
 }))
 
 vi.mock('./sdui-session-context', () => ({
@@ -259,6 +266,46 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current({ type: 'COMMAND', command: 'copy' }, {})
     expect(sessionMock.resetDirty).not.toHaveBeenCalled()
+  })
+})
+
+// Провод эффекта replaceUrl (SCRUM-291 §7 персист): dispatch инъектирует
+// replaceUrl-мост в effect-handler → должен дойти до setSearchParams(search,
+// {replace:true}) с ТОЛЬКО query-частью route (без pathname).
+describe('useSduiDispatch: эффект replaceUrl (SCRUM-291 §7)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  it('вызывает setSearchParams только с query-частью route, с replace:true', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValue({
+      formSessionId: 'fs-1',
+      revision: 2,
+      patches: [],
+      statePatch: {},
+      effects: [
+        {
+          type: 'replaceUrl',
+          route: '/modules/gp/document/ZayavkaGP?ls=f1.eyJz',
+        },
+      ],
+    } as unknown as ViewResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'COMMAND', command: 'list.applySort' })
+    expect(setSearchParamsMock).toHaveBeenCalledWith('ls=f1.eyJz', {
+      replace: true,
+    })
   })
 })
 

@@ -11,6 +11,7 @@ function makeDeps(): EffectHandlerDeps {
     invalidateLists: vi.fn(),
     confirm: vi.fn(),
     openRouteInNewTab: vi.fn(),
+    replaceUrl: vi.fn(),
   }
 }
 
@@ -23,7 +24,7 @@ describe('effect navigate — openInNewTab', () => {
       openInNewTab: true,
     })
     expect(deps.openRouteInNewTab).toHaveBeenCalledWith(
-      '/documents/SchetKOplate/new?basisId=27856789',
+      '/documents/SchetKOplate/new?basisId=27856789'
     )
     expect(deps.navigate).not.toHaveBeenCalled()
     expect(deps.closeSession).not.toHaveBeenCalled()
@@ -49,6 +50,29 @@ describe('effect navigate — openInNewTab', () => {
   })
 })
 
+describe('effect replaceUrl (SCRUM-291 §7 персист)', () => {
+  it('вызывает инъектированный replaceUrl с route из эффекта', () => {
+    const deps = makeDeps()
+    createEffectHandler(deps).play({
+      type: 'replaceUrl',
+      route: '/modules/gp/document/ZayavkaGP?ls=f1.eyJz',
+    })
+    expect(deps.replaceUrl).toHaveBeenCalledWith(
+      '/modules/gp/document/ZayavkaGP?ls=f1.eyJz'
+    )
+  })
+
+  it('не закрывает сессию и не навигирует (в отличие от navigate)', () => {
+    const deps = makeDeps()
+    createEffectHandler(deps).play({
+      type: 'replaceUrl',
+      route: '/modules/gp/document/ZayavkaGP?ls=f1.eyJz',
+    })
+    expect(deps.navigate).not.toHaveBeenCalled()
+    expect(deps.closeSession).not.toHaveBeenCalled()
+  })
+})
+
 describe('effect refresh', () => {
   it('вызывает инвалидацию списков', () => {
     const deps = makeDeps()
@@ -71,11 +95,12 @@ describe('effect confirm (SCRUM-244 v3 §1)', () => {
     createEffectHandler(deps).play({
       type: 'confirm',
       message: 'Данные будут записаны.',
-      confirmCommand: 'nav.saveAndOpen:INFORMATION_REGISTER:VoinskiyUchet:FizicheskoeLitso',
+      confirmCommand:
+        'nav.saveAndOpen:INFORMATION_REGISTER:VoinskiyUchet:FizicheskoeLitso',
     })
     expect(deps.confirm).toHaveBeenCalledWith(
       'nav.saveAndOpen:INFORMATION_REGISTER:VoinskiyUchet:FizicheskoeLitso',
-      'Данные будут записаны.',
+      'Данные будут записаны.'
     )
   })
 

@@ -1,4 +1,10 @@
-import { render, cleanup, screen, fireEvent } from '@testing-library/react'
+import {
+  render,
+  cleanup,
+  screen,
+  fireEvent,
+  within,
+} from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockedFunction } from 'vitest'
 
@@ -6,7 +12,11 @@ vi.mock('@/shared/assets/icons/search.svg', () => ({ default: () => null }))
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }))
-vi.mock('../../../lib/dispatch', () => ({ useSduiDispatch: () => vi.fn() }))
+
+const { dispatchMock } = vi.hoisted(() => ({ dispatchMock: vi.fn() }))
+vi.mock('../../../lib/dispatch', () => ({
+  useSduiDispatch: () => dispatchMock,
+}))
 
 const { setSelectionMock, clearSelectionMock } = vi.hoisted(() => ({
   setSelectionMock: vi.fn(),
@@ -109,6 +119,7 @@ describe('ListNode — транспорт', () => {
     })
     setSelectionMock.mockReset()
     clearSelectionMock.mockReset()
+    dispatchMock.mockReset()
   })
 
   it('queryKey содержит method и body из source', () => {
@@ -197,6 +208,7 @@ describe('ListNode — M5: сброс выделения при смене sourc
     vi.mocked(fetchListPage).mockResolvedValue(pageWithRow(1))
     setSelectionMock.mockReset()
     clearSelectionMock.mockReset()
+    dispatchMock.mockReset()
   })
 
   it('клик по строке выделяет её и публикует id в selection-стор', () => {
@@ -280,5 +292,128 @@ describe('ListNode — M5: сброс выделения при смене sourc
 
     expect(isRowSelected(container)).toBe(true)
     expect(setSelectionMock).not.toHaveBeenCalledWith('listSelect', null)
+  })
+})
+
+describe('ListNode — 2b: сортировка кликом по заголовку', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  // TypeCode для list.applySort:{TypeCode} берётся из command активации строки
+  // (list.rowOpen:{TypeCode}) — суффикс ПОСЛЕ ПЕРВОГО двоеточия.
+  const sortableNode = (sortState?: { column: string; dir: 'ASC' | 'DESC' }) =>
+    ({
+      id: 'lst',
+      type: 'LIST',
+      props: {
+        source: { url: '/x/search', method: 'POST' },
+        ...(sortState ? { sortState } : {}),
+      },
+      children: [
+        {
+          id: 'col-data',
+          type: 'TABLE_COLUMN',
+          props: { header: 'Дата', attributeCode: 'Data', sortable: true },
+        },
+        {
+          id: 'col-nomer',
+          type: 'TABLE_COLUMN',
+          props: { header: 'Номер', attributeCode: 'Nomer', sortable: false },
+        },
+      ],
+      actions: [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }],
+    }) as unknown as ViewNode
+
+  const pageWithRow = (id: number) => ({
+    data: {
+      content: [{ id, Data: '2026-01-01', Nomer: '1' }],
+      last: true,
+      number: 0,
+      totalElements: 1,
+    },
+  })
+
+  const headerCells = (container: HTMLElement) =>
+    container.querySelectorAll('thead th')
+
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReset()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: { pages: [pageWithRow(1)] },
+    })
+    vi.mocked(fetchListPage).mockReset()
+    vi.mocked(fetchListPage).mockResolvedValue(pageWithRow(1))
+    setSelectionMock.mockReset()
+    clearSelectionMock.mockReset()
+    dispatchMock.mockReset()
+    dispatchMock.mockReturnValue(undefined)
+  })
+
+  it('клик по сортируемому заголовку без активной сортировки → applySort ASC', () => {
+    const { container } = render(<ListNode node={sortableNode()} />)
+    const dataHeader = headerCells(container)[0]
+    fireEvent.click(within(dataHeader).getByRole('button'))
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'list.applySort:TypeX',
+      value: { column: 'Data', dir: 'ASC' },
+      sourceNodeId: 'lst',
+    })
+  })
+
+  it('клик по уже отсортированной колонке переключает направление ASC → DESC', () => {
+    const { container } = render(
+      <ListNode node={sortableNode({ column: 'Data', dir: 'ASC' })} />
+    )
+    const dataHeader = headerCells(container)[0]
+    fireEvent.click(within(dataHeader).getByRole('button'))
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'list.applySort:TypeX',
+      value: { column: 'Data', dir: 'DESC' },
+      sourceNodeId: 'lst',
+    })
+  })
+
+  it('клик по несортируемому заголовку ничего не диспатчит', () => {
+    const { container } = render(<ListNode node={sortableNode()} />)
+    const nomerHeader = headerCells(container)[1]
+    fireEvent.click(within(nomerHeader).getByText('Номер'))
+
+    expect(dispatchMock).not.toHaveBeenCalled()
+  })
+
+  it('стрелка рисуется только на колонке из sortState; без sortState — стрелки нет нигде', () => {
+    const { container, rerender } = render(
+      <ListNode node={sortableNode({ column: 'Data', dir: 'ASC' })} />
+    )
+    const [dataHeader, nomerHeader] = headerCells(container)
+    expect(dataHeader.textContent).toContain('▲')
+    expect(nomerHeader.textContent).not.toMatch(/[▲▼]/)
+
+    rerender(<ListNode node={sortableNode()} />)
+    const headersAfter = headerCells(container)
+    expect(headersAfter[0].textContent).not.toMatch(/[▲▼]/)
+    expect(headersAfter[1].textContent).not.toMatch(/[▲▼]/)
+  })
+
+  it('подавляет повторные клики, пока предыдущий applySort не завершился', () => {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function -- намеренно never-resolving промис, эмулирует in-flight запрос
+    dispatchMock.mockReturnValue(new Promise(() => {}))
+    const { container } = render(<ListNode node={sortableNode()} />)
+    const dataHeader = headerCells(container)[0]
+    const button = within(dataHeader).getByRole('button')
+
+    fireEvent.click(button)
+    fireEvent.click(button)
+
+    expect(dispatchMock).toHaveBeenCalledTimes(1)
   })
 })

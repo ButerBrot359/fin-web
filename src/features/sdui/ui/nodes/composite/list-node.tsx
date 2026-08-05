@@ -33,6 +33,11 @@ interface ListRow {
   attributes?: Record<string, unknown>
 }
 
+interface ListSortState {
+  column: string
+  dir: 'ASC' | 'DESC'
+}
+
 const PAGE_SIZE = 25
 
 const resolveBinding = (row: ListRow, binding: string): unknown =>
@@ -52,6 +57,21 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
   const selectAction = node.actions?.find((a) => a.trigger === 'select')
   const activateAction = node.actions?.find((a) => a.trigger === 'activate')
+
+  // SCRUM-291 2b: {TypeCode} для list.applySort:{TypeCode} фронт не получает отдельным
+  // props — берёт его из суффикса ПОСЛЕ ПЕРВОГО ДВОЕТОЧИЯ команды активации строки
+  // (list.rowOpen:{TypeCode}, для справочников может содержать ещё двоеточия). Нет
+  // command с двоеточием → TypeCode не выводим, сортировка не рендерится/не диспатчится
+  // (fail-closed, см. design §2b).
+  const activateCommand = activateAction?.command
+  const typeCode = activateCommand?.includes(':')
+    ? activateCommand.slice(activateCommand.indexOf(':') + 1)
+    : undefined
+
+  const sortState = node.props?.sortState as ListSortState | undefined
+  // Подавление дублей in-flight: пока предыдущий list.applySort не завершился —
+  // повторные клики по заголовкам игнорируются («последний выигрывает» не требуется).
+  const sortInFlightRef = useRef(false)
 
   const [search, setSearch] = useState('')
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
@@ -173,34 +193,92 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
   const columns = useMemo<ColumnDef<ListRow>[]>(
     () =>
-      columnNodes.map((col: ViewNode) => ({
-        id: col.id,
-        header: () => <span>{(col.props?.header as string) || ''}</span>,
-        accessorFn: (row: ListRow) => {
-          const binding = (col.props?.attributeCode ??
-            col.props?.binding) as string
-          if (!binding) return ''
-          const val = resolveBinding(row, binding)
-          if (val && typeof val === 'object') {
-            const obj = val as Record<string, unknown>
-            // eslint-disable-next-line @typescript-eslint/no-base-to-string
-            return (obj.presentation ?? String(obj.id ?? '')) as string
-          }
-          return formatSduiCellValue(
-            val,
-            col.props?.dataType as string | undefined
-          )
-        },
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        size: (col.props?.width as number) ?? 150,
-        cell: (info: { getValue: () => unknown }) => (
-          <Typography variant="body2" noWrap className="text-ui-06">
-            {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
-            {String(info.getValue() ?? '')}
-          </Typography>
-        ),
-      })),
-    [columnNodes]
+      columnNodes.map((col: ViewNode) => {
+        const attributeCode = (col.props?.attributeCode ??
+          col.props?.binding) as string | undefined
+        const canSort =
+          col.props?.sortable === true && !!typeCode && !!attributeCode
+
+        const handleHeaderClick = canSort
+          ? () => {
+              if (sortInFlightRef.current) return
+              const column = attributeCode
+              const dir =
+                sortState?.column === column
+                  ? sortState.dir === 'ASC'
+                    ? 'DESC'
+                    : 'ASC'
+                  : 'ASC'
+              sortInFlightRef.current = true
+              void Promise.resolve(
+                dispatch({
+                  type: 'COMMAND',
+                  command: `list.applySort:${typeCode}`,
+                  value: { column, dir },
+                  sourceNodeId: node.id,
+                })
+              ).finally(() => {
+                sortInFlightRef.current = false
+              })
+            }
+          : undefined
+
+        return {
+          id: col.id,
+          header: () => {
+            const label = (col.props?.header as string) || ''
+            const arrowDir =
+              sortState && attributeCode && sortState.column === attributeCode
+                ? sortState.dir
+                : undefined
+
+            return (
+              <span
+                {...(handleHeaderClick
+                  ? {
+                      role: 'button' as const,
+                      tabIndex: 0,
+                      onClick: handleHeaderClick,
+                      className:
+                        'inline-flex cursor-pointer select-none items-center gap-1',
+                    }
+                  : {})}
+              >
+                {label}
+                {arrowDir && (
+                  <span aria-hidden="true">
+                    {arrowDir === 'ASC' ? '▲' : '▼'}
+                  </span>
+                )}
+              </span>
+            )
+          },
+          accessorFn: (row: ListRow) => {
+            const binding = (col.props?.attributeCode ??
+              col.props?.binding) as string
+            if (!binding) return ''
+            const val = resolveBinding(row, binding)
+            if (val && typeof val === 'object') {
+              const obj = val as Record<string, unknown>
+              // eslint-disable-next-line @typescript-eslint/no-base-to-string
+              return (obj.presentation ?? String(obj.id ?? '')) as string
+            }
+            return formatSduiCellValue(
+              val,
+              col.props?.dataType as string | undefined
+            )
+          },
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          size: (col.props?.width as number) ?? 150,
+          cell: (info: { getValue: () => unknown }) => (
+            <Typography variant="body2" noWrap className="text-ui-06">
+              {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
+              {String(info.getValue() ?? '')}
+            </Typography>
+          ),
+        }
+      }),
+    [columnNodes, sortState, typeCode, dispatch, node.id]
   )
 
   const table = useReactTable({

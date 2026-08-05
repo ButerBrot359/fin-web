@@ -757,3 +757,127 @@ describe('ListNode — 2c-a: воронка колоночного фильтр�
     expect(container.querySelector('[aria-label="table.filter"]')).toBeNull()
   })
 })
+
+describe('ListNode — 2c-b: панель чипов', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  const nodeWithChips = (
+    chips: { field: string; label: string }[] | undefined,
+    { withTypeCode = true }: { withTypeCode?: boolean } = {}
+  ) =>
+    ({
+      id: 'lst',
+      type: 'LIST',
+      props: {
+        source: { url: '/x/search', method: 'POST' },
+        ...(chips === undefined ? {} : { filterChips: chips }),
+      },
+      children: [],
+      actions: withTypeCode
+        ? [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }]
+        : [],
+    }) as unknown as ViewNode
+
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReset()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: { pages: [{ data: { content: [], last: true, number: 0 } }] },
+    })
+    vi.mocked(fetchListPage).mockReset()
+    setSelectionMock.mockReset()
+    clearSelectionMock.mockReset()
+    dispatchMock.mockReset()
+    dispatchMock.mockReturnValue(undefined)
+  })
+
+  it('рендерит чипы из props.filterChips с label дословно с сервера', () => {
+    render(
+      <ListNode
+        node={nodeWithChips([
+          { field: 'Kontragent', label: 'Контрагент равно: ТОО «Ромашка»' },
+        ])}
+      />
+    )
+    expect(screen.getByText('Контрагент равно: ТОО «Ромашка»')).toBeTruthy()
+  })
+
+  it('крестик чипа → dispatch list.clearFilter:{TypeCode} value={field}', () => {
+    render(
+      <ListNode
+        node={nodeWithChips([
+          { field: 'Kontragent', label: 'Контрагент равно: X' },
+        ])}
+      />
+    )
+    fireEvent.click(screen.getByLabelText('table.filterRemoveChip'))
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'list.clearFilter:TypeX',
+      value: { field: 'Kontragent' },
+      sourceNodeId: 'lst',
+    })
+  })
+
+  it('«Сбросить все» → dispatch list.clearAllFilters:{TypeCode} БЕЗ value', () => {
+    render(
+      <ListNode
+        node={nodeWithChips([
+          { field: 'Kontragent', label: 'Контрагент равно: X' },
+          { field: 'Status', label: 'Статус равно: Активен' },
+        ])}
+      />
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: 'table.filterClearAll' })
+    )
+
+    const call = dispatchMock.mock.calls.find(
+      (args: unknown[]) =>
+        (args[0] as { command?: string }).command ===
+        'list.clearAllFilters:TypeX'
+    )
+    expect(call).toBeTruthy()
+    expect(call?.[0]).toEqual({
+      type: 'COMMAND',
+      command: 'list.clearAllFilters:TypeX',
+      sourceNodeId: 'lst',
+    })
+    expect(call?.[0]).not.toHaveProperty('value')
+  })
+
+  it('filterChips отсутствует/пуст → панель чипов и «Сбросить все» не рендерятся', () => {
+    const { rerender } = render(<ListNode node={nodeWithChips(undefined)} />)
+    expect(screen.queryByLabelText('table.filterRemoveChip')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'table.filterClearAll' })
+    ).toBeNull()
+
+    rerender(<ListNode node={nodeWithChips([])} />)
+    expect(screen.queryByLabelText('table.filterRemoveChip')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'table.filterClearAll' })
+    ).toBeNull()
+  })
+
+  it('без TypeCode панель чипов не рендерится (fail-closed)', () => {
+    render(
+      <ListNode
+        node={nodeWithChips(
+          [{ field: 'Kontragent', label: 'Контрагент равно: X' }],
+          { withTypeCode: false }
+        )}
+      />
+    )
+    expect(screen.queryByLabelText('table.filterRemoveChip')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'table.filterClearAll' })
+    ).toBeNull()
+  })
+})

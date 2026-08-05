@@ -191,7 +191,10 @@
     "filter": "Фильтр",
     "filterOperator": "Оператор",
     "filterApply": "Применить",
-    "filterValuePlaceholder": "Значение"
+    "filterValuePlaceholder": "Значение",
+    "filterActiveTitle": "Активные фильтры",
+    "filterRemoveChip": "Удалить фильтр",
+    "filterClearAll": "Сбросить все"
   },
   "informationRegister": {
     "period": "Период",

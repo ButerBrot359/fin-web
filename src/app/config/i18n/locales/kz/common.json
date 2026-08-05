@@ -191,7 +191,10 @@
     "filter": "Сүзгі",
     "filterOperator": "Салыстыру түрі",
     "filterApply": "Қолдану",
-    "filterValuePlaceholder": "Мән"
+    "filterValuePlaceholder": "Мән",
+    "filterActiveTitle": "Белсенді сүзгілер",
+    "filterRemoveChip": "Сүзгіні жою",
+    "filterClearAll": "Барлығын тазарту"
   },
   "informationRegister": {
     "period": "Кезең",

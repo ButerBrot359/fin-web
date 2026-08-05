@@ -24,6 +24,7 @@ import type {
   FilterEnumOption,
   FilterValueSource,
 } from './list-filter-value-control'
+import { ListFilterChips, type ListFilterChip } from './list-filter-chips'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -133,6 +134,12 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   // SCRUM-291 2d: props.period присутствует ВСЕГДА при transport=SEARCH (даже
   // {null,null}); при PAGED prop отсутствует вовсе → контрол не рендерим.
   const periodProp = node.props?.period as ListPeriod | undefined
+  // SCRUM-291 2c-b: панель чипов — сервер шлёт готовый {field,label}; период
+  // сюда никогда не попадает (§8), фронт filterChips не трогает. Fail-closed:
+  // без typeCode команды clearFilter/clearAllFilters собрать нельзя — панель
+  // не рендерим вовсе, даже если filterChips пришёл.
+  const filterChips =
+    (node.props?.filterChips as ListFilterChip[] | undefined) ?? []
   // Подавление дублей in-flight: пока предыдущий list.applySort не завершился —
   // повторные клики по заголовкам игнорируются («последний выигрывает» не требуется).
   const sortInFlightRef = useRef(false)
@@ -428,6 +435,27 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
           />
         )}
       </div>
+
+      {typeCode && (
+        <ListFilterChips
+          chips={filterChips}
+          onRemove={(field) => {
+            void dispatch({
+              type: 'COMMAND',
+              command: `list.clearFilter:${typeCode}`,
+              value: { field },
+              sourceNodeId: node.id,
+            })
+          }}
+          onClearAll={() => {
+            void dispatch({
+              type: 'COMMAND',
+              command: `list.clearAllFilters:${typeCode}`,
+              sourceNodeId: node.id,
+            })
+          }}
+        />
+      )}
 
       <div className="relative min-h-0 flex-1 flex flex-col">
         {isLoading ? (

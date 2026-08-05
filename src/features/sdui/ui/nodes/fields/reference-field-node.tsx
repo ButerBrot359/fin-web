@@ -1,6 +1,8 @@
 import { useState, type FC } from 'react'
 import { IconButton } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import { useTranslation } from 'react-i18next'
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
@@ -29,6 +31,7 @@ function fromSelectOption(opt: SelectOption): ReferenceValue {
 export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
   const dispatch = useSduiDispatch()
+  const { t } = useTranslation()
 
   const domain = node.props?.domain as string | undefined
   const targetTypeCode = node.props?.targetTypeCode as string | undefined
@@ -49,11 +52,14 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const params = useResolvedOptionsParams(optionsSource?.params)
   const resetKey = JSON.stringify(params)
 
-  const { options, loading, load, loadDebounced, resetOptions } = useReferenceOptions(
-    (search?: string) =>
-      url ? fetchReferenceOptions({ url, params, search }) : Promise.resolve([]),
-    resetKey,
-  )
+  const { options, loading, load, loadDebounced, resetOptions } =
+    useReferenceOptions(
+      (search?: string) =>
+        url
+          ? fetchReferenceOptions({ url, params, search })
+          : Promise.resolve([]),
+      resetKey
+    )
 
   if (!f.visible) return null
 
@@ -96,14 +102,28 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     })
   }
 
+  // SCRUM-291 §18.3: props.allow* — единственный источник видимости affordance'ов.
+  // Асимметрия дефолтов не случайна и повторяет серверную (ReferenceAffordanceResolver):
+  // allowShowAll открыт, пока явно не false; остальные три закрыты, пока явно не true.
   const showAllAction = node.actions?.find(
     (a) => a.trigger === 'showAll' && a.actionId === 'command'
   )
   const allowShowAll = node.props?.allowShowAll as boolean | undefined
 
-  const createAction = node.actions?.find((a) => a.trigger === 'create' && a.actionId === 'command')
-  const openAction = node.actions?.find((a) => a.trigger === 'open' && a.actionId === 'command')
+  const createAction = node.actions?.find(
+    (a) => a.trigger === 'create' && a.actionId === 'command'
+  )
   const allowCreate = node.props?.allowCreate as boolean | undefined
+
+  const openAction = node.actions?.find(
+    (a) => a.trigger === 'open' && a.actionId === 'command'
+  )
+  const allowOpen = node.props?.allowOpen as boolean | undefined
+
+  const copyAction = node.actions?.find(
+    (a) => a.trigger === 'copy' && a.actionId === 'command'
+  )
+  const allowCopy = node.props?.allowCopy as boolean | undefined
 
   return (
     <div style={{ flex: f.flex !== undefined ? f.flex : undefined }}>
@@ -131,45 +151,94 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
         }}
         onChange={applySelected}
         onShowAll={
-          showAllAction
-            ? () => void dispatch({ type: 'COMMAND', command: showAllAction.command!, sourceNodeId: node.id })
-            : (allowShowAll ?? canBrowse) ? openDictList : undefined
+          showAllAction && allowShowAll !== false
+            ? () =>
+                void dispatch({
+                  type: 'COMMAND',
+                  command: showAllAction.command!,
+                  sourceNodeId: node.id,
+                })
+            : !showAllAction && (allowShowAll ?? canBrowse)
+              ? openDictList
+              : undefined
         }
         onAdd={
-          createAction
-            ? () => void dispatch({ type: 'COMMAND', command: createAction.command!, sourceNodeId: node.id })
-            : (allowCreate ?? canBrowse) ? openDictCreate : undefined
+          createAction && allowCreate === true
+            ? () =>
+                void dispatch({
+                  type: 'COMMAND',
+                  command: createAction.command!,
+                  sourceNodeId: node.id,
+                })
+            : !createAction && (allowCreate ?? canBrowse)
+              ? openDictCreate
+              : undefined
         }
         endAction={
-          selectedOption && openAction ? (
-            <IconButton
-              sx={{ p: '4px', borderRadius: '6px' }}
-              tabIndex={-1}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                void dispatch({ type: 'COMMAND', command: openAction.command!, sourceNodeId: node.id })
-              }}
-            >
-              <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
-            </IconButton>
-          ) : selectedOption && canBrowse ? (
-            <IconButton
-              sx={{ p: '4px', borderRadius: '6px' }}
-              tabIndex={-1}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                openReferencePicker({
-                  mode: 'edit',
-                  domain: domain!,
-                  typeCode: targetTypeCode,
-                  entryId: selectedOption.id,
-                  onSelect: applySelected,
-                })
-              }}
-            >
-              <ContentCopyIcon className="text-ui-05" sx={{ fontSize: 20 }} />
-            </IconButton>
-          ) : undefined
+          !selectedOption ? undefined : (
+            <>
+              {openAction ? (
+                allowOpen === true ? (
+                  <IconButton
+                    aria-label={t('inputs.openReference')}
+                    sx={{ p: '4px', borderRadius: '6px' }}
+                    tabIndex={-1}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      void dispatch({
+                        type: 'COMMAND',
+                        command: openAction.command!,
+                        sourceNodeId: node.id,
+                      })
+                    }}
+                  >
+                    <OpenInNewIcon
+                      className="text-ui-05"
+                      sx={{ fontSize: 20 }}
+                    />
+                  </IconButton>
+                ) : null
+              ) : canBrowse ? (
+                <IconButton
+                  aria-label={t('inputs.openReference')}
+                  sx={{ p: '4px', borderRadius: '6px' }}
+                  tabIndex={-1}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    openReferencePicker({
+                      mode: 'edit',
+                      domain: domain!,
+                      typeCode: targetTypeCode,
+                      entryId: selectedOption.id,
+                      onSelect: applySelected,
+                    })
+                  }}
+                >
+                  <OpenInNewIcon className="text-ui-05" sx={{ fontSize: 20 }} />
+                </IconButton>
+              ) : null}
+              {copyAction && allowCopy === true ? (
+                <IconButton
+                  aria-label={t('inputs.copyReference')}
+                  sx={{ p: '4px', borderRadius: '6px' }}
+                  tabIndex={-1}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    void dispatch({
+                      type: 'COMMAND',
+                      command: copyAction.command!,
+                      sourceNodeId: node.id,
+                    })
+                  }}
+                >
+                  <ContentCopyIcon
+                    className="text-ui-05"
+                    sx={{ fontSize: 20 }}
+                  />
+                </IconButton>
+              ) : null}
+            </>
+          )
         }
       />
     </div>

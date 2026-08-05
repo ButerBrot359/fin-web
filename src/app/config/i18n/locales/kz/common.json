@@ -134,7 +134,9 @@
   },
   "inputs": {
     "noOptions": "Нұсқалар жоқ",
-    "loading": "Жүктелуде..."
+    "loading": "Жүктелуде...",
+    "openReference": "Жазбаны ашу",
+    "copyReference": "Жазбаны көшіру"
   },
   "calendar": {
     "today": "Бүгін"

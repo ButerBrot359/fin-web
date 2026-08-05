@@ -134,7 +134,9 @@
   },
   "inputs": {
     "noOptions": "Нет вариантов",
-    "loading": "Загрузка..."
+    "loading": "Загрузка...",
+    "openReference": "Открыть запись",
+    "copyReference": "Скопировать запись"
   },
   "calendar": {
     "today": "Сегодня"

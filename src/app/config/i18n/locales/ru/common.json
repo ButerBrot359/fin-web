@@ -172,6 +172,7 @@
     "empty": "Пока тут пусто",
     "add": "Добавить",
     "loadedCount": "Загружено {{loaded}} из {{total}}",
+    "loadedCountNoTotal": "Загружено {{loaded}}",
     "exportExcel": "Выгрузить в Excel",
     "exportEmpty": "Нет данных для выгрузки",
     "exportError": "Не удалось выгрузить в Excel",
@@ -183,7 +184,8 @@
     "moveDown": "Переместить вниз",
     "find": "Найти",
     "cancelSearch": "Отменить поиск",
-    "searchPlaceholder": "Поиск"
+    "searchPlaceholder": "Поиск",
+    "loadError": "Не удалось загрузить данные"
   },
   "informationRegister": {
     "period": "Период",

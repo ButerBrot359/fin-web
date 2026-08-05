@@ -172,6 +172,7 @@
     "empty": "Әзірге бос",
     "add": "Қосу",
     "loadedCount": "{{total}} ішінен {{loaded}} жүктелді",
+    "loadedCountNoTotal": "{{loaded}} жүктелді",
     "exportExcel": "Excel-ге жүктеп алу",
     "exportEmpty": "Жүктеп алуға деректер жоқ",
     "exportError": "Excel-ге жүктеп алу мүмкін болмады",
@@ -183,7 +184,8 @@
     "moveDown": "Төмен жылжыту",
     "find": "Табу",
     "cancelSearch": "Іздеуді болдырмау",
-    "searchPlaceholder": "Іздеу"
+    "searchPlaceholder": "Іздеу",
+    "loadError": "Деректерді жүктеу мүмкін болмады"
   },
   "informationRegister": {
     "period": "Кезең",

@@ -14,6 +14,7 @@ import { SearchInput } from '@/shared/ui/inputs/search-input'
 import { fetchListPage } from '../../../api/reference-options'
 import { cn } from '@/shared/lib/utils/cn'
 import { formatSduiCellValue } from '../../../lib/format-cell'
+import { resolveLoadedCountLabel } from './list-loaded-count'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -22,6 +23,8 @@ import { useRefPickerSelectionStore } from '../../../lib/stores/ref-picker-selec
 interface ListSource {
   url: string
   params?: Record<string, string>
+  method?: string
+  body?: unknown
 }
 
 interface ListRow {
@@ -44,7 +47,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
   const columnNodes = useMemo(
     () => (node.children ?? []).filter((c) => c.type === 'TABLE_COLUMN'),
-    [node.children],
+    [node.children]
   )
 
   const selectAction = node.actions?.find((a) => a.trigger === 'select')
@@ -59,17 +62,27 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const {
     data: pagedData,
     isLoading,
+    isError,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
   } = useInfiniteQuery({
-    queryKey: ['sdui-list', source?.url, source?.params, search],
+    queryKey: [
+      'sdui-list',
+      source?.url,
+      source?.params,
+      source?.method,
+      source?.body,
+      search,
+    ],
     queryFn: async ({ pageParam, signal }) => {
       if (!source) throw new Error('LIST node: source is required')
       return fetchListPage({
         url: source.url,
         params: source.params,
-        page: pageParam as number,
+        method: source.method,
+        body: source.body,
+        page: pageParam,
         size: PAGE_SIZE,
         search,
         signal,
@@ -86,7 +99,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
   const rows = useMemo(
     () => pagedData?.pages.flatMap((page) => page.data.content) ?? [],
-    [pagedData],
+    [pagedData]
   )
 
   // Infinite scroll via IntersectionObserver
@@ -103,12 +116,13 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (!entries[0]?.isIntersecting) return
-        const { hasNextPage, isFetchingNextPage, fetchNextPage } = loadMoreRef.current
+        const { hasNextPage, isFetchingNextPage, fetchNextPage } =
+          loadMoreRef.current
         if (hasNextPage && !isFetchingNextPage) {
           void fetchNextPage()
         }
       },
-      { root: scrollContainer },
+      { root: scrollContainer }
     )
 
     observer.observe(sentinel)
@@ -130,34 +144,49 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     }
   }, [selectField, selectedRowId, setSelection, clearSelection])
 
-  const dispatchSelect = (action: { command?: string } | undefined, rowId: number) => {
+  const dispatchSelect = (
+    action: { command?: string } | undefined,
+    rowId: number
+  ) => {
     if (!action?.command) return
-    void dispatch({ type: 'COMMAND', command: action.command, value: { id: rowId }, sourceNodeId: node.id })
+    void dispatch({
+      type: 'COMMAND',
+      command: action.command,
+      value: { id: rowId },
+      sourceNodeId: node.id,
+    })
   }
 
   const columns = useMemo<ColumnDef<ListRow>[]>(
     () =>
       columnNodes.map((col: ViewNode) => ({
         id: col.id,
-        header: () => <span>{(col.props?.header as string) ?? ''}</span>,
+        header: () => <span>{(col.props?.header as string) || ''}</span>,
         accessorFn: (row: ListRow) => {
-          const binding = (col.props?.attributeCode ?? col.props?.binding) as string
+          const binding = (col.props?.attributeCode ??
+            col.props?.binding) as string
           if (!binding) return ''
           const val = resolveBinding(row, binding)
           if (val && typeof val === 'object') {
             const obj = val as Record<string, unknown>
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
             return (obj.presentation ?? String(obj.id ?? '')) as string
           }
-          return formatSduiCellValue(val, col.props?.dataType as string | undefined)
+          return formatSduiCellValue(
+            val,
+            col.props?.dataType as string | undefined
+          )
         },
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         size: (col.props?.width as number) ?? 150,
         cell: (info: { getValue: () => unknown }) => (
           <Typography variant="body2" noWrap className="text-ui-06">
+            {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
             {String(info.getValue() ?? '')}
           </Typography>
         ),
       })),
-    [columnNodes],
+    [columnNodes]
   )
 
   const table = useReactTable({
@@ -191,7 +220,9 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
             placeholder={t('pageToolbar.search')}
             value={search}
             className="w-62.5 bg-ui-01"
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value)
+            }}
             startIcon={<SearchIcon className="h-5 w-5 text-ui-05" />}
           />
         )}
@@ -200,16 +231,29 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
       <div className="relative min-h-0 flex-1 flex flex-col">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <Typography className="text-ui-05">{t('inputs.loading')}</Typography>
+            <Typography className="text-ui-05">
+              {t('inputs.loading')}
+            </Typography>
+          </div>
+        ) : isError ? (
+          <div className="flex items-center justify-center py-20">
+            <Typography className="text-ui-05">
+              {t('table.loadError')}
+            </Typography>
           </div>
         ) : rows.length === 0 ? (
           <div className="flex items-center justify-center py-20">
-            <Typography className="text-ui-05">{t('dictSidebar.noData')}</Typography>
+            <Typography className="text-ui-05">
+              {t('dictSidebar.noData')}
+            </Typography>
           </div>
         ) : (
           <>
             <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
-              <table className="w-full border-separate" style={{ borderSpacing: '2px' }}>
+              <table
+                className="w-full border-separate"
+                style={{ borderSpacing: '2px' }}
+              >
                 <thead>
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
@@ -221,7 +265,10 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
                         >
                           {header.isPlaceholder
                             ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
                         </th>
                       ))}
                     </tr>
@@ -240,13 +287,22 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
                     return (
                       <tr
                         key={row.id}
-                        onClick={() => setSelectedRowId(row.original.id)}
+                        onClick={() => {
+                          setSelectedRowId(row.original.id)
+                        }}
                         onDoubleClick={() => {
-                          dispatchSelect(activateAction ?? selectAction, row.original.id)
+                          dispatchSelect(
+                            activateAction ?? selectAction,
+                            row.original.id
+                          )
                         }}
                         className={cn(
                           'cursor-pointer transition-colors hover:bg-ui-07',
-                          isSelected ? 'bg-ui-07' : virtualRow.index % 2 === 1 ? 'bg-ui-01' : '',
+                          isSelected
+                            ? 'bg-ui-07'
+                            : virtualRow.index % 2 === 1
+                              ? 'bg-ui-01'
+                              : ''
                         )}
                       >
                         {row.getVisibleCells().map((cell) => (
@@ -254,7 +310,10 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
                             key={cell.id}
                             className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
                           >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
                           </td>
                         ))}
                       </tr>
@@ -272,7 +331,11 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
             <div className="shrink-0 px-3 py-2 flex items-center gap-2">
               <Typography variant="body2" className="text-ui-05">
-                {t('table.loadedCount', { loaded: rows.length, total: pagedData?.pages[0]?.data.totalElements ?? 0 })}
+                {resolveLoadedCountLabel(
+                  t,
+                  rows.length,
+                  pagedData?.pages[0]?.data.totalElements
+                )}
               </Typography>
               {isFetchingNextPage && <CircularProgress size={14} />}
             </div>

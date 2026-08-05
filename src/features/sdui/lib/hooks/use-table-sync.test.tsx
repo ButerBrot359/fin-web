@@ -274,4 +274,92 @@ describe('useTableSync', () => {
       })
     })
   })
+
+  // ── Дефект 1 (SCRUM-291 §0.5): фантомная строка ТЧ персистится в БД ──
+  //
+  // Цикл реконсиляции dirty→merged держит строки, которых нет в каноне, НЕ
+  // проверяя префикс `tmp-`. Серверная строка исчезает из канона не только при
+  // удалении, но и при пересборке/перенумерации ТЧ (у части типов `rowId` —
+  // порядковый номер, не персистентный id). Патч такой строки, не найдя канона,
+  // добавляется дублем из одних правленых колонок и уезжает полным снимком
+  // (fullSnapshot:true) — порча данных, а не только артефакт показа.
+  describe('дефект 1: реконсиляция не воскрешает серверную строку', () => {
+    it('не воскрешает серверную строку, которой в новом каноне уже нет', () => {
+      sessionState.rows = [{ rowId: '1', a: 1 }] // серверная строка, не tmp-
+      const { result, rerender } = renderHook(() => useTableSync(node, []))
+
+      // Правка ячейки без ухода фокуса: dirty непуст, EVENT ещё не ушёл.
+      act(() => {
+        result.current.updateCell('1', 'a', 2)
+      })
+
+      // Сервер пересобрал/перенумеровал ТЧ: новый канон БЕЗ строки '1'.
+      sessionState.rows = [{ rowId: '2', a: 99 }]
+      act(() => {
+        rerender()
+      })
+
+      // Результат обязан в точности совпасть с новым каноном — без дубля '1'.
+      expect(result.current.rows).toEqual([{ rowId: '2', a: 99 }])
+    })
+
+    it('фантом не уезжает следующим полным снимком (в БД)', () => {
+      sessionState.rows = [{ rowId: '1', a: 1 }]
+      const { result, rerender } = renderHook(() => useTableSync(node, []))
+
+      act(() => {
+        result.current.updateCell('1', 'a', 2)
+      })
+      sessionState.rows = [{ rowId: '2', a: 99 }]
+      act(() => {
+        rerender()
+      })
+
+      // Коммит гонит полный снимок ТЧ на сервер — в нём не должно быть фантома.
+      act(() => {
+        result.current.commitCell()
+      })
+      expect(lastAction()).toMatchObject({
+        type: 'EVENT',
+        fullSnapshot: true,
+        value: [{ rowId: '2', a: 99 }],
+      })
+    })
+
+    it('локально добавленную строку (tmp-) приход канона не съедает', async () => {
+      sessionState.rows = []
+      const columns = [
+        {
+          id: 'c1',
+          label: 'A',
+          binding: 'a',
+          cellWidget: 'TEXT',
+          dataType: 'INTEGER',
+          props: {},
+        },
+      ]
+      const { result, rerender } = renderHook(() => useTableSync(node, columns))
+
+      await act(async () => {
+        result.current.addRow(columns)
+        await Promise.resolve() // спускаем .then(dispatch)→drain()
+      })
+      const tmpId = result.current.rows[0].rowId
+      expect(tmpId.startsWith('tmp-')).toBe(true)
+
+      act(() => {
+        result.current.updateCell(tmpId, 'a', 5)
+      })
+
+      // Канон от сервера пришёл БЕЗ tmp-строки (ремапа tmp-→id ещё не было).
+      sessionState.rows = [{ rowId: 'srv1', a: 1 }]
+      act(() => {
+        rerender()
+      })
+
+      // tmp-строка обязана сохраниться рядом со строкой канона.
+      expect(result.current.rows).toContainEqual({ rowId: tmpId, a: 5 })
+      expect(result.current.rows).toContainEqual({ rowId: 'srv1', a: 1 })
+    })
+  })
 })

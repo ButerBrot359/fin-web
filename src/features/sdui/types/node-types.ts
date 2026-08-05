@@ -29,13 +29,14 @@ export type NodeType =
   | 'CHECKBOX_FIELD'
   | 'ENUM_FIELD'
   | 'REFERENCE_FIELD'
-  // Composite (6)
+  // Composite (7)
   | 'TABLE'
   | 'TABLE_COLUMN'
   | 'COLUMN_GROUP'
   | 'OBJECT_FIELD'
   | 'LIST'
   | 'CALENDAR'
+  | 'REPORT_RESULT'
   // Action (3)
   | 'BUTTON'
   | 'MENU_ITEM'

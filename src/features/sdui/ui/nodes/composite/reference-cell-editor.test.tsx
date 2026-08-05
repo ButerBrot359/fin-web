@@ -220,4 +220,70 @@ describe('ReferenceCellEditor', () => {
       expect(onCommit).toHaveBeenCalledTimes(1)
     })
   })
+
+  // ── SCRUM-291 §18.4.1: проваливание из заполненной ячейки ТЧ ──
+  //
+  // Это НЕ пикер (§18.4, заблокирован PM) — иконка открывает карточку УЖЕ
+  // стоящей в ячейке записи: читает {id, presentation} из значения, никакой
+  // командной модели с rowId не нужно (нестабильный rowId сюда не относится).
+  describe('открыть карточку записи (§18.4.1)', () => {
+    const openCardName = /inputs\.openReference|Открыть запись/i
+
+    it('заполненная ячейка + domain/targetTypeCode → иконка есть, клик открывает карточку', () => {
+      render(
+        <ReferenceCellEditor
+          colProps={{
+            optionsSource: { url: '/api/x/sdui-entries' },
+            domain: 'DICTIONARY',
+            targetTypeCode: 'VidyStazha',
+          }}
+          value={{ id: 5, presentation: 'ИПН 10%' }}
+          onChange={vi.fn()}
+          onCommit={vi.fn()}
+        />
+      )
+
+      const button = screen.getByRole('button', { name: openCardName })
+      fireEvent.mouseDown(button)
+
+      expect(openPickerMock).toHaveBeenCalledTimes(1)
+      expect(openPickerMock.mock.calls[0][0]).toMatchObject({
+        mode: 'edit',
+        domain: 'DICTIONARY',
+        typeCode: 'VidyStazha',
+        entryId: 5,
+      })
+      expect(typeof openPickerMock.mock.calls[0][0].onSelect).toBe('function')
+    })
+
+    it('пустая ячейка (нет значения) → иконки нет', () => {
+      render(
+        <ReferenceCellEditor
+          colProps={{
+            optionsSource: { url: '/api/x/sdui-entries' },
+            domain: 'DICTIONARY',
+            targetTypeCode: 'VidyStazha',
+          }}
+          value={null}
+          onChange={vi.fn()}
+          onCommit={vi.fn()}
+        />
+      )
+
+      expect(screen.queryByRole('button', { name: openCardName })).toBeNull()
+    })
+
+    it('нет domain/targetTypeCode → иконки нет, даже если ячейка заполнена', () => {
+      render(
+        <ReferenceCellEditor
+          colProps={{ optionsSource: { url: '/api/x/sdui-entries' } }}
+          value={{ id: 1, presentation: 'Значение' }}
+          onChange={vi.fn()}
+          onCommit={vi.fn()}
+        />
+      )
+
+      expect(screen.queryByRole('button', { name: openCardName })).toBeNull()
+    })
+  })
 })

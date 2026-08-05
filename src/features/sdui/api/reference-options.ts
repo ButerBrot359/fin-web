@@ -37,7 +37,7 @@ interface ListRow {
 interface PagedListResponse {
   data: {
     content: ListRow[]
-    totalElements: number
+    totalElements?: number
     last: boolean
     number: number
   }
@@ -46,19 +46,31 @@ interface PagedListResponse {
 export async function fetchListPage(args: {
   url: string
   params?: Record<string, string>
+  method?: string
+  body?: unknown
   page: number
   size: number
   search?: string
   signal?: AbortSignal
 }): Promise<PagedListResponse> {
+  const params = {
+    ...args.params,
+    page: args.page,
+    size: args.size,
+    ...(args.search?.trim() && { search: args.search.trim() }),
+  }
+  if (args.method === 'POST') {
+    const res = await apiService.post<PagedListResponse>({
+      url: args.url,
+      params,
+      data: args.body ?? {},
+      signal: args.signal,
+    })
+    return res.data
+  }
   const res = await apiService.get<PagedListResponse>({
     url: args.url,
-    params: {
-      ...args.params,
-      page: args.page,
-      size: args.size,
-      ...(args.search?.trim() && { search: args.search.trim() }),
-    },
+    params,
     signal: args.signal,
   })
   return res.data

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { apiService } from '@/shared/api/api'
-import { fetchReferenceOptions } from './reference-options'
-
 vi.mock('@/shared/api/api', () => ({
-  apiService: { get: vi.fn() },
+  apiService: { get: vi.fn(), post: vi.fn() },
 }))
+
+import { apiService } from '@/shared/api/api'
+import { fetchReferenceOptions, fetchListPage } from './reference-options'
 
 describe('fetchReferenceOptions (SCRUM-287 A5/A6)', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -24,5 +24,55 @@ describe('fetchReferenceOptions (SCRUM-287 A5/A6)', () => {
     } as never)
     const opts = await fetchReferenceOptions({ url: '/x' })
     expect(opts[0].label).toBe('9')
+  })
+})
+
+describe('fetchListPage — транспорт', () => {
+  beforeEach(() => {
+    vi.mocked(apiService.get).mockReset()
+    vi.mocked(apiService.post).mockReset()
+  })
+
+  it('method POST → apiService.post с data:body и page/size в params', async () => {
+    vi.mocked(apiService.post).mockResolvedValue({
+      data: { data: { content: [], last: true, number: 0 } },
+    } as never)
+
+    await fetchListPage({
+      url: '/x/search',
+      method: 'POST',
+      params: { sortAttr: 'Data' },
+      body: { filters: [], logic: 'AND' },
+      page: 0,
+      size: 25,
+    })
+
+    expect(apiService.post).toHaveBeenCalledWith({
+      url: '/x/search',
+      params: { sortAttr: 'Data', page: 0, size: 25 },
+      data: { filters: [], logic: 'AND' },
+      signal: undefined,
+    })
+    expect(apiService.get).not.toHaveBeenCalled()
+  })
+
+  it('без method → apiService.get, body не уходит (регресс PAGED)', async () => {
+    vi.mocked(apiService.get).mockResolvedValue({
+      data: { data: { content: [], totalElements: 0, last: true, number: 0 } },
+    } as never)
+
+    await fetchListPage({
+      url: '/x/paged',
+      params: { sortAttr: 'Data' },
+      page: 0,
+      size: 25,
+    })
+
+    expect(apiService.get).toHaveBeenCalledWith({
+      url: '/x/paged',
+      params: { sortAttr: 'Data', page: 0, size: 25 },
+      signal: undefined,
+    })
+    expect(apiService.post).not.toHaveBeenCalled()
   })
 })

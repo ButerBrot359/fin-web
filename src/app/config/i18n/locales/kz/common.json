@@ -185,7 +185,9 @@
     "find": "Табу",
     "cancelSearch": "Іздеуді болдырмау",
     "searchPlaceholder": "Іздеу",
-    "loadError": "Деректерді жүктеу мүмкін болмады"
+    "loadError": "Деректерді жүктеу мүмкін болмады",
+    "periodFrom": "бастап",
+    "periodTo": "дейін"
   },
   "informationRegister": {
     "period": "Кезең",

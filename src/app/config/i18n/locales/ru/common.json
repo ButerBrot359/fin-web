@@ -185,7 +185,9 @@
     "find": "Найти",
     "cancelSearch": "Отменить поиск",
     "searchPlaceholder": "Поиск",
-    "loadError": "Не удалось загрузить данные"
+    "loadError": "Не удалось загрузить данные",
+    "periodFrom": "С",
+    "periodTo": "По"
   },
   "informationRegister": {
     "period": "Период",

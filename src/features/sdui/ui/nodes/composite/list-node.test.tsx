@@ -36,6 +36,25 @@ vi.mock('../../../lib/stores/ref-picker-selection-store', () => ({
 }))
 vi.mock('../../../api/reference-options', () => ({ fetchListPage: vi.fn() }))
 
+// DateTimeInput — MUI-пикер, в jsdom без LocalizationProvider не рендерится
+// осмысленно. Предмет теста 2d — не рендер календаря, а КАКОЕ value уходит в
+// dispatch, поэтому подменяем на плоский input (см. прецедент date-cell-editor.test.tsx).
+vi.mock('@/shared/ui/inputs', () => ({
+  DateTimeInput: (props: {
+    value?: string
+    onChange: (v: string) => void
+    label?: string
+  }) => (
+    <input
+      data-testid={`date-input-${props.label ?? ''}`}
+      defaultValue={props.value}
+      onChange={(e) => {
+        props.onChange(e.target.value)
+      }}
+    />
+  ),
+}))
+
 // Виртуализация в jsdom без размеров контейнера не рендерит строки —
 // подменяем на «показать всё», чтобы тестировать выбор строки/сброс выделения (M5).
 vi.mock('@tanstack/react-virtual', () => ({
@@ -415,5 +434,116 @@ describe('ListNode — 2b: сортировка кликом по заголов
     fireEvent.click(button)
 
     expect(dispatchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ListNode — 2d: период (from/to)', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  // TypeCode — тот же источник, что в 2b: суффикс после первого двоеточия в
+  // команде активации (list.rowOpen:{TypeCode}).
+  const periodNode = (period?: { from: string | null; to: string | null }) =>
+    ({
+      id: 'lst',
+      type: 'LIST',
+      props: {
+        source: { url: '/x/search', method: 'POST' },
+        ...(period ? { period } : {}),
+      },
+      children: [],
+      actions: [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }],
+    }) as unknown as ViewNode
+
+  const pageWithRow = (id: number) => ({
+    data: {
+      content: [{ id, Data: '2026-01-01' }],
+      last: true,
+      number: 0,
+      totalElements: 1,
+    },
+  })
+
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReset()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: { pages: [pageWithRow(1)] },
+    })
+    vi.mocked(fetchListPage).mockReset()
+    vi.mocked(fetchListPage).mockResolvedValue(pageWithRow(1))
+    setSelectionMock.mockReset()
+    clearSelectionMock.mockReset()
+    dispatchMock.mockReset()
+  })
+
+  it('props.period присутствует → рендерятся два инпута даты', () => {
+    render(<ListNode node={periodNode({ from: null, to: null })} />)
+    expect(screen.getByTestId('date-input-table.periodFrom')).toBeTruthy()
+    expect(screen.getByTestId('date-input-table.periodTo')).toBeTruthy()
+  })
+
+  it('props.period отсутствует → контрол периода не рендерится', () => {
+    render(<ListNode node={periodNode(undefined)} />)
+    expect(screen.queryByTestId('date-input-table.periodFrom')).toBeNull()
+    expect(screen.queryByTestId('date-input-table.periodTo')).toBeNull()
+  })
+
+  it('изменение "from" → applyPeriod с текущей парой (новый from + существующий to)', () => {
+    render(<ListNode node={periodNode({ from: null, to: '2026-01-31' })} />)
+    const fromInput = screen.getByTestId('date-input-table.periodFrom')
+    fireEvent.change(fromInput, { target: { value: '2026-01-01' } })
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'list.applyPeriod:TypeX',
+      value: { from: '2026-01-01', to: '2026-01-31' },
+      sourceNodeId: 'lst',
+    })
+  })
+
+  it('изменение "to" → applyPeriod с текущей парой (существующий from + новый to)', () => {
+    render(<ListNode node={periodNode({ from: '2026-01-01', to: null })} />)
+    const toInput = screen.getByTestId('date-input-table.periodTo')
+    fireEvent.change(toInput, { target: { value: '2026-01-31' } })
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'list.applyPeriod:TypeX',
+      value: { from: '2026-01-01', to: '2026-01-31' },
+      sourceNodeId: 'lst',
+    })
+  })
+
+  it('очистка обеих границ шлёт {from:null,to:null} (без отдельной команды clear)', () => {
+    render(<ListNode node={periodNode({ from: '2026-01-01', to: null })} />)
+    const fromInput = screen.getByTestId('date-input-table.periodFrom')
+    fireEvent.change(fromInput, { target: { value: '' } })
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'list.applyPeriod:TypeX',
+      value: { from: null, to: null },
+      sourceNodeId: 'lst',
+    })
+  })
+
+  it('без TypeCode (нет activate-команды с двоеточием) контрол периода не рендерится', () => {
+    const node = {
+      id: 'lst',
+      type: 'LIST',
+      props: {
+        source: { url: '/x/search', method: 'POST' },
+        period: { from: null, to: null },
+      },
+      children: [],
+      actions: [],
+    } as unknown as ViewNode
+    render(<ListNode node={node} />)
+    expect(screen.queryByTestId('date-input-table.periodFrom')).toBeNull()
   })
 })

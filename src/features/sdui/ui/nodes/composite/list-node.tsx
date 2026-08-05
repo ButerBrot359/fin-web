@@ -11,6 +11,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
+import { DateTimeInput } from '@/shared/ui/inputs'
 import { fetchListPage } from '../../../api/reference-options'
 import { cn } from '@/shared/lib/utils/cn'
 import { formatSduiCellValue } from '../../../lib/format-cell'
@@ -38,10 +39,57 @@ interface ListSortState {
   dir: 'ASC' | 'DESC'
 }
 
+interface ListPeriod {
+  from: string | null
+  to: string | null
+}
+
 const PAGE_SIZE = 25
 
 const resolveBinding = (row: ListRow, binding: string): unknown =>
   row[binding] ?? row.attributes?.[binding] ?? ''
+
+// SCRUM-291 2d: period — независимый от колоночных фильтров контрол на LIST
+// (не в TOOLBAR, без чипа). {from:null,to:null} — валидный вызов, снимающий
+// период; отдельной команды clearPeriod нет (design §2d).
+const ListPeriodControl: FC<{
+  period: ListPeriod
+  typeCode: string
+  nodeId: string
+  dispatch: ReturnType<typeof useSduiDispatch>
+}> = ({ period, typeCode, nodeId, dispatch }) => {
+  const { t } = useTranslation()
+
+  const applyPeriod = (next: ListPeriod) => {
+    void dispatch({
+      type: 'COMMAND',
+      command: `list.applyPeriod:${typeCode}`,
+      value: next,
+      sourceNodeId: nodeId,
+    })
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <DateTimeInput
+        label={t('table.periodFrom')}
+        value={period.from ?? ''}
+        dateOnly
+        onChange={(value) => {
+          applyPeriod({ from: value || null, to: period.to })
+        }}
+      />
+      <DateTimeInput
+        label={t('table.periodTo')}
+        value={period.to ?? ''}
+        dateOnly
+        onChange={(value) => {
+          applyPeriod({ from: period.from, to: value || null })
+        }}
+      />
+    </div>
+  )
+}
 
 export const ListNode: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
@@ -69,6 +117,9 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     : undefined
 
   const sortState = node.props?.sortState as ListSortState | undefined
+  // SCRUM-291 2d: props.period присутствует ВСЕГДА при transport=SEARCH (даже
+  // {null,null}); при PAGED prop отсутствует вовсе → контрол не рендерим.
+  const periodProp = node.props?.period as ListPeriod | undefined
   // Подавление дублей in-flight: пока предыдущий list.applySort не завершился —
   // повторные клики по заголовкам игнорируются («последний выигрывает» не требуется).
   const sortInFlightRef = useRef(false)
@@ -306,7 +357,16 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-2">
       <div className="flex items-center justify-between">
-        <div />
+        {periodProp && typeCode ? (
+          <ListPeriodControl
+            period={periodProp}
+            typeCode={typeCode}
+            nodeId={node.id}
+            dispatch={dispatch}
+          />
+        ) : (
+          <div />
+        )}
         {searchable && (
           <SearchInput
             placeholder={t('pageToolbar.search')}

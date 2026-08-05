@@ -410,7 +410,7 @@ describe('ListNode — 2b: сортировка кликом по заголов
   })
 
   const headerCells = (container: HTMLElement) =>
-    container.querySelectorAll('thead th')
+    container.querySelectorAll<HTMLElement>('thead th')
 
   beforeEach(() => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -666,7 +666,7 @@ describe('ListNode — 2c-a: воронка колоночного фильтр�
   })
 
   const headerCells = (container: HTMLElement) =>
-    container.querySelectorAll('thead th')
+    container.querySelectorAll<HTMLElement>('thead th')
 
   beforeEach(() => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

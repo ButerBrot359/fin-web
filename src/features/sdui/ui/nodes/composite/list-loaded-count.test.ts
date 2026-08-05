@@ -1,8 +1,9 @@
+import type { TFunction } from 'i18next'
 import { describe, it, expect } from 'vitest'
 import { resolveLoadedCountLabel } from './list-loaded-count'
 
-const t = (key: string, opts?: Record<string, unknown>) =>
-  `${key}:${JSON.stringify(opts ?? {})}`
+const t = ((key: string, opts?: Record<string, unknown>) =>
+  `${key}:${JSON.stringify(opts ?? {})}`) as unknown as TFunction
 
 describe('resolveLoadedCountLabel', () => {
   it('с totalElements → loadedCount с total', () => {

@@ -56,6 +56,20 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const [search, setSearch] = useState('')
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
 
+  // SCRUM-291 M5: сервер может заменить props.source ответом на sort/filter/period
+  // (setProp-патч на LIST-узле) — при смене идентичности source выделенная строка
+  // могла уйти из выборки, поэтому сбрасываем выделение. Пропускаем первый рендер,
+  // чтобы не сбрасывать выделение, которого ещё не было.
+  const sourceKey = useMemo(() => JSON.stringify(source ?? null), [source])
+  const isFirstSourceRender = useRef(true)
+  useEffect(() => {
+    if (isFirstSourceRender.current) {
+      isFirstSourceRender.current = false
+      return
+    }
+    setSelectedRowId(null)
+  }, [sourceKey])
+
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
 

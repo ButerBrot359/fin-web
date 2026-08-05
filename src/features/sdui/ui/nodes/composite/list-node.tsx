@@ -14,6 +14,7 @@ import { SearchInput } from '@/shared/ui/inputs/search-input'
 import { fetchListPage } from '../../../api/reference-options'
 import { cn } from '@/shared/lib/utils/cn'
 import { formatSduiCellValue } from '../../../lib/format-cell'
+import { resolveLoadedCountLabel } from './list-loaded-count'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -330,10 +331,11 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
             <div className="shrink-0 px-3 py-2 flex items-center gap-2">
               <Typography variant="body2" className="text-ui-05">
-                {t('table.loadedCount', {
-                  loaded: rows.length,
-                  total: pagedData?.pages[0]?.data.totalElements ?? 0,
-                })}
+                {resolveLoadedCountLabel(
+                  t,
+                  rows.length,
+                  pagedData?.pages[0]?.data.totalElements
+                )}
               </Typography>
               {isFetchingNextPage && <CircularProgress size={14} />}
             </div>

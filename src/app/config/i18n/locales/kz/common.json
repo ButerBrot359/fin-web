@@ -189,6 +189,7 @@
     "periodFrom": "бастап",
     "periodTo": "дейін",
     "filter": "Сүзгі",
+    "filterOperator": "Салыстыру түрі",
     "filterApply": "Қолдану",
     "filterValuePlaceholder": "Мән"
   },

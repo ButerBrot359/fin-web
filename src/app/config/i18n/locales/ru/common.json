@@ -189,6 +189,7 @@
     "periodFrom": "С",
     "periodTo": "По",
     "filter": "Фильтр",
+    "filterOperator": "Оператор",
     "filterApply": "Применить",
     "filterValuePlaceholder": "Значение"
   },

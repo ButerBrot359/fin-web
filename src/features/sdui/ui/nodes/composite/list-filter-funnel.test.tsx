@@ -216,6 +216,89 @@ describe('ListFilterFunnel', () => {
     expect(onApply).toHaveBeenCalledWith('Kontragent', 'eq', 7)
   })
 
+  it('value-требующий оператор без значения → Применить задизейблена, onApply не вызывается', () => {
+    const onApply = vi.fn()
+    render(
+      <ListFilterFunnel
+        column={{
+          filterField: 'code',
+          filterOps: ['eq'],
+          dataType: 'STRING',
+        }}
+        onApply={onApply}
+      />
+    )
+    openPopover()
+
+    const applyBtn = screen.getByRole('button', { name: 'table.filterApply' })
+    expect(applyBtn.hasAttribute('disabled')).toBe(true)
+
+    fireEvent.click(applyBtn)
+    expect(onApply).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByTestId('scalar-text'), {
+      target: { value: 'РОМ' },
+    })
+    expect(applyBtn.hasAttribute('disabled')).toBe(false)
+
+    fireEvent.click(applyBtn)
+    expect(onApply).toHaveBeenCalledWith('code', 'eq', 'РОМ')
+  })
+
+  it('between: Применить задизейблена, пока не заполнены ОБЕ границы', () => {
+    const onApply = vi.fn()
+    render(
+      <ListFilterFunnel
+        column={{
+          filterField: 'Data',
+          filterOps: ['between'],
+          dataType: 'DATE',
+        }}
+        onApply={onApply}
+      />
+    )
+    openPopover()
+    const applyBtn = screen.getByRole('button', { name: 'table.filterApply' })
+    expect(applyBtn.hasAttribute('disabled')).toBe(true)
+
+    fireEvent.change(screen.getByTestId('scalar-date-table.periodFrom'), {
+      target: { value: '2026-01-01' },
+    })
+    expect(applyBtn.hasAttribute('disabled')).toBe(true)
+    fireEvent.click(applyBtn)
+    expect(onApply).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByTestId('scalar-date-table.periodTo'), {
+      target: { value: '2026-01-31' },
+    })
+    expect(applyBtn.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('isNull/isNotNull → Применить ВСЕГДА активна (значение не требуется)', () => {
+    render(
+      <ListFilterFunnel
+        column={{ filterField: 'Kontragent', filterOps: ['isNotNull'] }}
+        onApply={vi.fn()}
+      />
+    )
+    openPopover()
+    const applyBtn = screen.getByRole('button', { name: 'table.filterApply' })
+    expect(applyBtn.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('операторский select имеет доступное имя (aria-label)', () => {
+    render(
+      <ListFilterFunnel
+        column={{ filterField: 'Kontragent', filterOps: ['eq'] }}
+        onApply={vi.fn()}
+      />
+    )
+    openPopover()
+    expect(
+      screen.getByRole('combobox', { name: 'table.filterOperator' })
+    ).toBeTruthy()
+  })
+
   it('ENUMS (filterValueOptions) → onApply получает строковый value', () => {
     const onApply = vi.fn()
     render(

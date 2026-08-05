@@ -724,6 +724,30 @@ describe('ListNode — 2c-a: воронка колоночного фильтр�
     })
   })
 
+  it('value-требующий оператор без значения → Применить неактивна, list.applyFilter не уходит', () => {
+    const { container } = render(<ListNode node={filterableNode()} />)
+    const nomerHeader = headerCells(container)[0]
+    fireEvent.click(
+      within(nomerHeader).getByRole('button', { name: 'table.filter' })
+    )
+    const applyBtn = screen.getByRole('button', { name: 'table.filterApply' })
+    fireEvent.click(applyBtn)
+
+    expect(dispatchMock).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByTestId('scalar-text'), {
+      target: { value: 'РОМ' },
+    })
+    fireEvent.click(applyBtn)
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'list.applyFilter:TypeX',
+      value: { field: 'code', op: 'eq', value: 'РОМ' },
+      sourceNodeId: 'lst',
+    })
+  })
+
   it('без TypeCode воронка не рендерится (fail-closed)', () => {
     const node = {
       ...filterableNode(),

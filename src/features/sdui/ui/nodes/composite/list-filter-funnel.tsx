@@ -10,6 +10,11 @@ import {
 
 const VALUELESS_OPS = new Set(['isNull', 'isNotNull'])
 
+// Пустое значение — value-контрол ещё не тронут (undefined/null/'') — от реального
+// «0» отличаем: 0 — валидное числовое значение, не «пусто».
+const isEmptyValue = (v: unknown): boolean =>
+  v === undefined || v === null || v === ''
+
 export interface ListFilterFunnelColumn extends ColumnFilterValueMeta {
   filterField: string
   filterOps: string[]
@@ -39,7 +44,21 @@ export const ListFilterFunnel: FC<ListFilterFunnelProps> = ({
 
   const isValueless = VALUELESS_OPS.has(op)
 
+  // Apply заблокирован, пока оператор требует значение, а его нет — иначе
+  // onApply(field, op, undefined) уходит в list-node без ключа `value`, и на
+  // проводе получается тот же вид команды, что зарезервирован под isNull/isNotNull
+  // (баг: "contains" без значения неотличим от «поле пусто»).
+  const canApply = isValueless
+    ? true
+    : op === 'between'
+      ? Array.isArray(value) &&
+        value.length === 2 &&
+        !isEmptyValue(value[0]) &&
+        !isEmptyValue(value[1])
+      : !isEmptyValue(value)
+
   const handleApply = () => {
+    if (!canApply) return
     onApply(column.filterField, op, isValueless ? undefined : value)
     setAnchorEl(null)
   }
@@ -71,6 +90,7 @@ export const ListFilterFunnel: FC<ListFilterFunnelProps> = ({
         <div className="flex flex-col gap-2 p-3" style={{ minWidth: 220 }}>
           <select
             data-testid="filter-op-select"
+            aria-label={t('table.filterOperator')}
             value={op}
             onChange={(e) => {
               setOp(e.target.value)
@@ -92,7 +112,12 @@ export const ListFilterFunnel: FC<ListFilterFunnelProps> = ({
               onChange={setValue}
             />
           )}
-          <Button variant="contained" size="small" onClick={handleApply}>
+          <Button
+            variant="contained"
+            size="small"
+            disabled={!canApply}
+            onClick={handleApply}
+          >
             {t('table.filterApply')}
           </Button>
         </div>

@@ -148,6 +148,24 @@ describe('ListFilterValueControl', () => {
     expect(onChange).toHaveBeenCalledWith('B')
   })
 
+  it('ENUMS select имеет доступное имя (aria-label)', () => {
+    render(
+      <ListFilterValueControl
+        op="eq"
+        column={{
+          filterValueOptions: [
+            { value: 'A', label: 'Альфа', id: 1, code: 'A' },
+          ],
+        }}
+        value=""
+        onChange={vi.fn()}
+      />
+    )
+    expect(
+      screen.getByRole('combobox', { name: 'table.filterValuePlaceholder' })
+    ).toBeTruthy()
+  })
+
   it('ссылка (filterValueSource) → голый числовой id', async () => {
     fetchReferenceOptionsMock.mockResolvedValue([
       { id: 42, code: '42', label: 'ТОО «Ромашка»' },

@@ -97,10 +97,12 @@ const EnumValueControl: FC<SingleValueControlProps> = ({
   value,
   onChange,
 }) => {
+  const { t } = useTranslation()
   const options = column.filterValueOptions ?? []
   return (
     <select
       data-testid="filter-enum-select"
+      aria-label={t('table.filterValuePlaceholder')}
       value={typeof value === 'string' ? value : ''}
       onChange={(e) => {
         onChange(e.target.value)

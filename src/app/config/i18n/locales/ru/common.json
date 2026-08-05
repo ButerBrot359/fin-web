@@ -187,7 +187,10 @@
     "searchPlaceholder": "Поиск",
     "loadError": "Не удалось загрузить данные",
     "periodFrom": "С",
-    "periodTo": "По"
+    "periodTo": "По",
+    "filter": "Фильтр",
+    "filterApply": "Применить",
+    "filterValuePlaceholder": "Значение"
   },
   "informationRegister": {
     "period": "Период",

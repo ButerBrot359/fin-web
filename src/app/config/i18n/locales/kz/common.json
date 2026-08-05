@@ -187,7 +187,10 @@
     "searchPlaceholder": "Іздеу",
     "loadError": "Деректерді жүктеу мүмкін болмады",
     "periodFrom": "бастап",
-    "periodTo": "дейін"
+    "periodTo": "дейін",
+    "filter": "Сүзгі",
+    "filterApply": "Қолдану",
+    "filterValuePlaceholder": "Мән"
   },
   "informationRegister": {
     "period": "Кезең",

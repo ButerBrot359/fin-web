@@ -53,6 +53,56 @@ vi.mock('@/shared/ui/inputs', () => ({
       }}
     />
   ),
+  // SCRUM-291 2c-a: воронка колоночного фильтра (list-filter-value-control.tsx)
+  // тоже завязана на @/shared/ui/inputs — здесь тестируется только маршрутизация
+  // list-node → funnel → dispatch, а не рендер конкретных MUI-контролов
+  // (это покрыто list-filter-value-control.test.tsx), поэтому плоские заглушки.
+  TextInput: (props: {
+    value?: string
+    onChange: (e: { target: { value: string } }) => void
+  }) => (
+    <input
+      data-testid="scalar-text"
+      value={props.value ?? ''}
+      onChange={(e) => {
+        props.onChange(e)
+      }}
+    />
+  ),
+  NumberInput: (props: {
+    value?: string
+    onChange: (e: { target: { value: string } }) => void
+  }) => (
+    <input
+      data-testid="scalar-number"
+      value={props.value ?? ''}
+      onChange={(e) => {
+        props.onChange(e)
+      }}
+    />
+  ),
+  AutocompleteInput: (props: {
+    value: { id: number | string } | null
+    options: { id: number | string; label: string }[]
+    onChange: (v: { id: number | string; label: string } | null) => void
+  }) => (
+    <select
+      data-testid="ref-select"
+      value={props.value?.id ?? ''}
+      onChange={(e) => {
+        const opt =
+          props.options.find((o) => String(o.id) === e.target.value) ?? null
+        props.onChange(opt)
+      }}
+    >
+      <option value="" />
+      {props.options.map((o) => (
+        <option key={o.id} value={o.id}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  ),
 }))
 
 // Виртуализация в jsdom без размеров контейнера не рендерит строки —
@@ -545,5 +595,141 @@ describe('ListNode — 2d: период (from/to)', () => {
     } as unknown as ViewNode
     render(<ListNode node={node} />)
     expect(screen.queryByTestId('date-input-table.periodFrom')).toBeNull()
+  })
+})
+
+describe('ListNode — 2c-a: воронка колоночного фильтра', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  // TypeCode — тот же источник, что в 2b/2d: суффикс после первого двоеточия
+  // в команде активации строки (list.rowOpen:{TypeCode}).
+  const filterableNode = () =>
+    ({
+      id: 'lst',
+      type: 'LIST',
+      props: {
+        source: { url: '/x/search', method: 'POST' },
+        filterOpLabels: { eq: 'Равно', ne: 'Не равно' },
+      },
+      children: [
+        {
+          id: 'col-nomer',
+          type: 'TABLE_COLUMN',
+          // Алиас «Номер»: attributeCode="Nomer", но filterField="code" — команда
+          // ДОЛЖНА уйти с "code", не с "Nomer" (design §2c/§7).
+          props: {
+            header: 'Номер',
+            attributeCode: 'Nomer',
+            filterField: 'code',
+            filterOps: ['eq', 'ne'],
+            dataType: 'STRING',
+          },
+        },
+        {
+          id: 'col-status',
+          type: 'TABLE_COLUMN',
+          props: {
+            header: 'Статус',
+            attributeCode: 'Status',
+            filterField: 'Status',
+            filterOps: ['eq'],
+            filterValueOptions: [
+              { value: 'A', label: 'Активен', id: 1, code: 'A' },
+              { value: 'B', label: 'Завершён', id: 2, code: 'B' },
+            ],
+          },
+        },
+        {
+          id: 'col-data',
+          type: 'TABLE_COLUMN',
+          props: { header: 'Дата', attributeCode: 'Data' },
+        },
+      ],
+      actions: [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }],
+    }) as unknown as ViewNode
+
+  const pageWithRow = (id: number) => ({
+    data: {
+      content: [{ id, Nomer: '1', Status: 'A', Data: '2026-01-01' }],
+      last: true,
+      number: 0,
+      totalElements: 1,
+    },
+  })
+
+  const headerCells = (container: HTMLElement) =>
+    container.querySelectorAll('thead th')
+
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReset()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: { pages: [pageWithRow(1)] },
+    })
+    vi.mocked(fetchListPage).mockReset()
+    vi.mocked(fetchListPage).mockResolvedValue(pageWithRow(1))
+    setSelectionMock.mockReset()
+    clearSelectionMock.mockReset()
+    dispatchMock.mockReset()
+    dispatchMock.mockReturnValue(undefined)
+  })
+
+  it('воронка рисуется только на колонках с непустым filterOps', () => {
+    const { container } = render(<ListNode node={filterableNode()} />)
+    const [nomerHeader, statusHeader, dataHeader] = headerCells(container)
+
+    expect(
+      within(nomerHeader).getByRole('button', { name: 'table.filter' })
+    ).toBeTruthy()
+    expect(
+      within(statusHeader).getByRole('button', { name: 'table.filter' })
+    ).toBeTruthy()
+    expect(
+      within(dataHeader).queryByRole('button', { name: 'table.filter' })
+    ).toBeNull()
+  })
+
+  it('лейблы операторов — из LIST.props.filterOpLabels', () => {
+    const { container } = render(<ListNode node={filterableNode()} />)
+    const nomerHeader = headerCells(container)[0]
+    fireEvent.click(
+      within(nomerHeader).getByRole('button', { name: 'table.filter' })
+    )
+    const opSelect = screen.getByTestId('filter-op-select')
+    expect(opSelect.textContent).toContain('Равно')
+    expect(opSelect.textContent).toContain('Не равно')
+  })
+
+  it('Применить (ENUMS) → dispatch list.applyFilter с filterField (не attributeCode) и строковым value', () => {
+    const { container } = render(<ListNode node={filterableNode()} />)
+    const statusHeader = headerCells(container)[1]
+    fireEvent.click(
+      within(statusHeader).getByRole('button', { name: 'table.filter' })
+    )
+    fireEvent.change(screen.getByTestId('filter-enum-select'), {
+      target: { value: 'B' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'table.filterApply' }))
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'list.applyFilter:TypeX',
+      value: { field: 'Status', op: 'eq', value: 'B' },
+      sourceNodeId: 'lst',
+    })
+  })
+
+  it('без TypeCode воронка не рендерится (fail-closed)', () => {
+    const node = {
+      ...filterableNode(),
+      actions: [],
+    } as unknown as ViewNode
+    const { container } = render(<ListNode node={node} />)
+    expect(container.querySelector('[aria-label="table.filter"]')).toBeNull()
   })
 })

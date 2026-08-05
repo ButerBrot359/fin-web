@@ -16,6 +16,14 @@ import { fetchListPage } from '../../../api/reference-options'
 import { cn } from '@/shared/lib/utils/cn'
 import { formatSduiCellValue } from '../../../lib/format-cell'
 import { resolveLoadedCountLabel } from './list-loaded-count'
+import {
+  ListFilterFunnel,
+  type ListFilterFunnelColumn,
+} from './list-filter-funnel'
+import type {
+  FilterEnumOption,
+  FilterValueSource,
+} from './list-filter-value-control'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -117,6 +125,11 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     : undefined
 
   const sortState = node.props?.sortState as ListSortState | undefined
+  // SCRUM-291 2c: лейблы операторов воронки — с сервера (LIST.props.filterOpLabels),
+  // НЕ i18n (design §2c/§7).
+  const filterOpLabels = node.props?.filterOpLabels as
+    | Record<string, string>
+    | undefined
   // SCRUM-291 2d: props.period присутствует ВСЕГДА при transport=SEARCH (даже
   // {null,null}); при PAGED prop отсутствует вовсе → контрол не рендерим.
   const periodProp = node.props?.period as ListPeriod | undefined
@@ -250,6 +263,23 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         const canSort =
           col.props?.sortable === true && !!typeCode && !!attributeCode
 
+        // SCRUM-291 2c: метаданные воронки — ВСЕГДА filterField (не attributeCode,
+        // см. алиас «Номер»→"code" в design §2c/§7). filterOps пусто/нет → воронки нет.
+        const filterField = col.props?.filterField as string | undefined
+        const filterOps = (col.props?.filterOps as string[] | undefined) ?? []
+        const canFilter = !!typeCode && !!filterField && filterOps.length > 0
+        const filterColumn: ListFilterFunnelColumn = {
+          filterField: filterField ?? '',
+          filterOps,
+          dataType: col.props?.dataType as string | undefined,
+          filterValueSource: col.props?.filterValueSource as
+            | FilterValueSource
+            | undefined,
+          filterValueOptions: col.props?.filterValueOptions as
+            | FilterEnumOption[]
+            | undefined,
+        }
+
         const handleHeaderClick = canSort
           ? () => {
               if (sortInFlightRef.current) return
@@ -284,24 +314,43 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
                 : undefined
 
             return (
-              <span
-                {...(handleHeaderClick
-                  ? {
-                      role: 'button' as const,
-                      tabIndex: 0,
-                      onClick: handleHeaderClick,
-                      className:
-                        'inline-flex cursor-pointer select-none items-center gap-1',
-                    }
-                  : {})}
-              >
-                {label}
-                {arrowDir && (
-                  <span aria-hidden="true">
-                    {arrowDir === 'ASC' ? '▲' : '▼'}
-                  </span>
+              <div className="inline-flex items-center gap-1">
+                <span
+                  {...(handleHeaderClick
+                    ? {
+                        role: 'button' as const,
+                        tabIndex: 0,
+                        onClick: handleHeaderClick,
+                        className:
+                          'inline-flex cursor-pointer select-none items-center gap-1',
+                      }
+                    : {})}
+                >
+                  {label}
+                  {arrowDir && (
+                    <span aria-hidden="true">
+                      {arrowDir === 'ASC' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </span>
+                {canFilter && (
+                  <ListFilterFunnel
+                    column={filterColumn}
+                    filterOpLabels={filterOpLabels}
+                    onApply={(field, op, value) => {
+                      void dispatch({
+                        type: 'COMMAND',
+                        command: `list.applyFilter:${typeCode}`,
+                        value:
+                          value === undefined
+                            ? { field, op }
+                            : { field, op, value },
+                        sourceNodeId: node.id,
+                      })
+                    }}
+                  />
                 )}
-              </span>
+              </div>
             )
           },
           accessorFn: (row: ListRow) => {
@@ -329,7 +378,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
           ),
         }
       }),
-    [columnNodes, sortState, typeCode, dispatch, node.id]
+    [columnNodes, sortState, typeCode, dispatch, node.id, filterOpLabels]
   )
 
   const table = useReactTable({

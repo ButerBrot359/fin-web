@@ -167,30 +167,22 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
           const val = resolveBinding(row, binding)
           if (val && typeof val === 'object') {
             const obj = val as Record<string, unknown>
-            return (obj.presentation as string | undefined) ?? String(obj.id)
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
+            return (obj.presentation ?? String(obj.id ?? '')) as string
           }
           return formatSduiCellValue(
             val,
             col.props?.dataType as string | undefined
           )
         },
-        size: (col.props?.width as number) || 150,
-        cell: (info: { getValue: () => unknown }) => {
-          const value = info.getValue()
-          const displayValue =
-            typeof value === 'string'
-              ? value
-              : typeof value === 'number'
-                ? String(value)
-                : typeof value === 'boolean'
-                  ? String(value)
-                  : ''
-          return (
-            <Typography variant="body2" noWrap className="text-ui-06">
-              {displayValue}
-            </Typography>
-          )
-        },
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        size: (col.props?.width as number) ?? 150,
+        cell: (info: { getValue: () => unknown }) => (
+          <Typography variant="body2" noWrap className="text-ui-06">
+            {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
+            {String(info.getValue() ?? '')}
+          </Typography>
+        ),
       })),
     [columnNodes]
   )

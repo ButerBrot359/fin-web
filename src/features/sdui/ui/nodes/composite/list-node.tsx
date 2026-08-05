@@ -15,6 +15,7 @@ import { DateTimeInput } from '@/shared/ui/inputs'
 import { fetchListPage } from '../../../api/reference-options'
 import { cn } from '@/shared/lib/utils/cn'
 import { formatSduiCellValue } from '../../../lib/format-cell'
+import { getCellIcon } from './cell-icon-registry'
 import { resolveLoadedCountLabel } from './list-loaded-count'
 import {
   ListFilterFunnel,
@@ -377,12 +378,29 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
           },
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           size: (col.props?.width as number) ?? 150,
-          cell: (info: { getValue: () => unknown }) => (
-            <Typography variant="body2" noWrap className="text-ui-06">
-              {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
-              {String(info.getValue() ?? '')}
-            </Typography>
-          ),
+          // SCRUM-291 3b (§17.2): cellKind="ICON" — значение ячейки (строка
+          // "true"/"false", тот же примитивный формат, что у остальных ячеек)
+          // маппится через props.iconMap на имя иконки и рендерится глифом;
+          // неизвестное/отсутствующее имя → пустая ячейка, не текст "true"/"false".
+          cell:
+            col.props?.cellKind === 'ICON'
+              ? (info: { getValue: () => unknown }) => {
+                  const iconMap = col.props?.iconMap as
+                    | Record<string, string>
+                    | undefined
+                  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                  const value = String(info.getValue() ?? '')
+                  const Icon = getCellIcon(iconMap?.[value])
+                  return Icon ? (
+                    <Icon aria-hidden="true" className="h-4 w-4" />
+                  ) : null
+                }
+              : (info: { getValue: () => unknown }) => (
+                  <Typography variant="body2" noWrap className="text-ui-06">
+                    {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
+                    {String(info.getValue() ?? '')}
+                  </Typography>
+                ),
         }
       }),
     [columnNodes, sortState, typeCode, dispatch, node.id, filterOpLabels]

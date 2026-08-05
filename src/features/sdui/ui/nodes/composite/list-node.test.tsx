@@ -9,6 +9,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockedFunction } from 'vitest'
 
 vi.mock('@/shared/assets/icons/search.svg', () => ({ default: () => null }))
+vi.mock('@/shared/assets/icons/folder-icon.svg', () => ({
+  default: () => <span data-testid="icon-folder" />,
+}))
+vi.mock('@/shared/assets/icons/list-element-icon.svg', () => ({
+  default: () => <span data-testid="icon-list-element" />,
+}))
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }))
@@ -879,5 +885,135 @@ describe('ListNode — 2c-b: панель чипов', () => {
     expect(
       screen.queryByRole('button', { name: 'table.filterClearAll' })
     ).toBeNull()
+  })
+})
+
+describe('ListNode — 3b: cellKind="ICON" (§17.2)', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  const iconNode = () =>
+    ({
+      id: 'lst',
+      type: 'LIST',
+      props: {
+        source: { url: '/x/search', method: 'POST' },
+      },
+      children: [
+        {
+          id: 'col-isGroup',
+          type: 'TABLE_COLUMN',
+          props: {
+            attributeCode: 'isGroup',
+            header: '',
+            width: 40,
+            cellKind: 'ICON',
+            iconMap: { true: 'folder', false: 'listElement' },
+          },
+        },
+        {
+          id: 'col-code',
+          type: 'TABLE_COLUMN',
+          props: { header: 'Код', attributeCode: 'code' },
+        },
+      ],
+      actions: [],
+    }) as unknown as ViewNode
+
+  const pageWithRows = (
+    rows: { id: number; isGroup: boolean; code: string }[]
+  ) => ({
+    data: { content: rows, last: true, number: 0, totalElements: rows.length },
+  })
+
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReset()
+    vi.mocked(fetchListPage).mockReset()
+    vi.mocked(fetchListPage).mockResolvedValue(pageWithRows([]))
+    setSelectionMock.mockReset()
+    clearSelectionMock.mockReset()
+    dispatchMock.mockReset()
+  })
+
+  it('isGroup=true → рендерит иконку folder, isGroup=false → listElement, без литерального "true"/"false"', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: {
+        pages: [
+          pageWithRows([
+            { id: 1, isGroup: true, code: 'GRP' },
+            { id: 2, isGroup: false, code: 'ELM' },
+          ]),
+        ],
+      },
+    })
+
+    const { container } = render(<ListNode node={iconNode()} />)
+    const rows = container.querySelectorAll('tbody tr')
+    expect(rows.length).toBe(2)
+
+    const groupRowIconCell = within(rows[0] as HTMLElement).getAllByRole(
+      'cell'
+    )[0]
+    expect(within(groupRowIconCell).getByTestId('icon-folder')).toBeTruthy()
+    expect(groupRowIconCell.textContent).not.toContain('true')
+
+    const elementRowIconCell = within(rows[1] as HTMLElement).getAllByRole(
+      'cell'
+    )[0]
+    expect(
+      within(elementRowIconCell).getByTestId('icon-list-element')
+    ).toBeTruthy()
+    expect(elementRowIconCell.textContent).not.toContain('false')
+  })
+
+  it('неизвестное/отсутствующее имя иконки в iconMap → пустая ячейка, без исключения и без текста', () => {
+    const nodeWithBadMap = {
+      ...iconNode(),
+      children: [
+        {
+          id: 'col-isGroup',
+          type: 'TABLE_COLUMN',
+          props: {
+            attributeCode: 'isGroup',
+            header: '',
+            cellKind: 'ICON',
+            iconMap: { true: 'unknownGlyph' },
+          },
+        },
+      ],
+    } as unknown as ViewNode
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: { pages: [pageWithRows([{ id: 1, isGroup: true, code: 'GRP' }])] },
+    })
+
+    expect(() => {
+      render(<ListNode node={nodeWithBadMap} />)
+    }).not.toThrow()
+
+    const cell = document.querySelector('tbody tr td')!
+    expect(cell.textContent).toBe('')
+  })
+
+  it('обычная (не-ICON) колонка по-прежнему рендерит текстовое значение', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: {
+        pages: [pageWithRows([{ id: 1, isGroup: false, code: 'ELM-1' }])],
+      },
+    })
+
+    render(<ListNode node={iconNode()} />)
+    expect(screen.getByText('ELM-1')).toBeTruthy()
   })
 })

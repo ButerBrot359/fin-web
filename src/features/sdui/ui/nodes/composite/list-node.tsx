@@ -60,7 +60,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   // (setProp-патч на LIST-узле) — при смене идентичности source выделенная строка
   // могла уйти из выборки, поэтому сбрасываем выделение. Пропускаем первый рендер,
   // чтобы не сбрасывать выделение, которого ещё не было.
-  const sourceKey = useMemo(() => JSON.stringify(source ?? null), [source])
+  const sourceKey = JSON.stringify(source ?? null)
   const isFirstSourceRender = useRef(true)
   useEffect(() => {
     if (isFirstSourceRender.current) {

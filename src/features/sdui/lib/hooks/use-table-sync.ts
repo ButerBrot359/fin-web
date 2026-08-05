@@ -27,6 +27,15 @@ export interface TableRow {
 
 const EMPTY_ROWS: TableRow[] = []
 
+/**
+ * Префикс rowId локально добавленной строки — той, которой сервер ещё не видел.
+ * Всё остальное — серверные rowId (после save приходит remap на реальные id).
+ * Нужна в двух местах: где строка создаётся (buildEmptyRow) и где фильтруется
+ * при реконсиляции dirty→merged — раньше префикс был захардкожен в первом и НЕ
+ * читался во втором, из-за чего серверная строка воскресала дублем.
+ */
+const TMP_ROW_ID_PREFIX = 'tmp-'
+
 export interface UseTableSyncResult {
   rows: TableRow[]
   updateCell: (rowId: string, binding: string, value: unknown) => void
@@ -40,7 +49,7 @@ export interface UseTableSyncResult {
 }
 
 function buildEmptyRow(columns: TableColumnDef[]): TableRow {
-  const row: TableRow = { rowId: `tmp-${crypto.randomUUID()}` }
+  const row: TableRow = { rowId: `${TMP_ROW_ID_PREFIX}${crypto.randomUUID()}` }
   for (const col of columns) {
     switch (col.dataType) {
       case 'STRING':
@@ -280,7 +289,11 @@ export function useTableSync(
     })
 
     // Keep rows that exist only locally (added while in-flight, with tmp- ids).
+    // «Нет в каноне» ≠ «добавлена локально»: серверная строка выпадает из канона
+    // и при перенумерации/пересборке ТЧ. Её патч приземлять некуда — отбрасываем,
+    // а не превращаем в строку-дубль. Только tmp--строки достойны воскрешения.
     for (const [rowId, patch] of dirty) {
+      if (!rowId.startsWith(TMP_ROW_ID_PREFIX)) continue
       if (canonRows.some((r) => r.rowId === rowId)) continue
       merged.push({ rowId, ...patch } as TableRow)
     }

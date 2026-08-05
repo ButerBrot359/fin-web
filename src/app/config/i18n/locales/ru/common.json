@@ -183,7 +183,8 @@
     "moveDown": "Переместить вниз",
     "find": "Найти",
     "cancelSearch": "Отменить поиск",
-    "searchPlaceholder": "Поиск"
+    "searchPlaceholder": "Поиск",
+    "loadError": "Не удалось загрузить данные"
   },
   "informationRegister": {
     "period": "Период",

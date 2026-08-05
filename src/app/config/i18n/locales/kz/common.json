@@ -183,7 +183,8 @@
     "moveDown": "Төмен жылжыту",
     "find": "Табу",
     "cancelSearch": "Іздеуді болдырмау",
-    "searchPlaceholder": "Іздеу"
+    "searchPlaceholder": "Іздеу",
+    "loadError": "Деректерді жүктеу мүмкін болмады"
   },
   "informationRegister": {
     "period": "Кезең",

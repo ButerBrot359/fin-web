@@ -1,4 +1,4 @@
-import { render, cleanup } from '@testing-library/react'
+import { render, cleanup, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockedFunction } from 'vitest'
 
@@ -95,5 +95,17 @@ describe('ListNode — транспорт', () => {
         body: { filters: [], logic: 'AND' },
       })
     )
+  })
+
+  it('isError → показывает table.loadError, а не «нет данных»', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      isError: true,
+    })
+    render(<ListNode node={searchNode} />)
+    expect(screen.getByText('table.loadError')).toBeTruthy()
+    expect(screen.queryByText('dictSidebar.noData')).toBeNull()
   })
 })

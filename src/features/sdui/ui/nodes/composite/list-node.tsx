@@ -61,6 +61,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const {
     data: pagedData,
     isLoading,
+    isError,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
@@ -231,6 +232,12 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
           <div className="flex items-center justify-center py-20">
             <Typography className="text-ui-05">
               {t('inputs.loading')}
+            </Typography>
+          </div>
+        ) : isError ? (
+          <div className="flex items-center justify-center py-20">
+            <Typography className="text-ui-05">
+              {t('table.loadError')}
             </Typography>
           </div>
         ) : rows.length === 0 ? (

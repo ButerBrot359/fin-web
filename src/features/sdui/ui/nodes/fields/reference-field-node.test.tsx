@@ -316,3 +316,134 @@ describe('ReferenceFieldNode — SCRUM-291 §18.3 allow* гейтинг', () => 
     })
   })
 })
+
+// ── SCRUM-291 §19.3: props.multiple — списковые параметры отчёта ──
+//
+// props.multiple=true: значение узла — МАССИВ тех же объектов {id, presentation},
+// что и у одиночного поля (не новая форма значения, а множественное число уже
+// существующей). Рендер — мульти-select autocomplete (чипы), не drawer с чекбоксами.
+// EVENT-коэрсия: raw-значение в состоянии формы может прийти в любой форме —
+// массив, одиночный объект {id, presentation} или голый скаляр (number/string) —
+// все три должны нормализоваться в массив ReferenceValue.
+describe('ReferenceFieldNode — SCRUM-291 §19.3 props.multiple', () => {
+  const showAllName = /showAll|Показать все/i
+  const addName = /dictSidebar\.add|Добавить/i
+
+  const baseProps = {
+    label: 'Счета',
+    domain: 'ACCOUNT_PLAN',
+    targetTypeCode: 'Schet',
+    optionsSource: { url: '/api/test-options' },
+  }
+
+  const makeNode = (
+    props: Record<string, unknown>,
+    actions: { trigger: string; actionId: string; command?: string }[] = []
+  ): ViewNode =>
+    ({
+      id: 'f1',
+      type: 'REFERENCE_FIELD',
+      binding: 'ref',
+      props: { ...baseProps, ...props },
+      actions,
+    }) as unknown as ViewNode
+
+  beforeEach(() => {
+    fetchMock.mockReset()
+    fetchMock.mockResolvedValue([])
+    openPickerMock.mockReset()
+    mockDispatch.mockClear()
+    delete state.ref
+  })
+
+  it('(a) multiple=true рендерит мульти-select и показывает несколько выбранных значений', () => {
+    state.ref = [
+      { id: 1, presentation: 'Счёт 1' },
+      { id: 2, presentation: 'Счёт 2' },
+    ]
+    render(<ReferenceFieldNode node={makeNode({ multiple: true })} />)
+
+    expect(screen.getByText('Счёт 1')).toBeTruthy()
+    expect(screen.getByText('Счёт 2')).toBeTruthy()
+    expect(screen.getAllByTestId('CancelIcon')).toHaveLength(2)
+  })
+
+  it('(b) multiple: выбор опции добавляет в массив, удаление чипа убирает из массива', async () => {
+    state.ref = [{ id: 1, presentation: 'Счёт 1' }]
+    fetchMock.mockResolvedValue([{ id: 2, code: '2', label: 'Счёт 2' }])
+    render(<ReferenceFieldNode node={makeNode({ multiple: true })} />)
+
+    openDropdown()
+    const option = await screen.findByRole('option', { name: 'Счёт 2' })
+    fireEvent.click(option)
+
+    await waitFor(() => {
+      expect(state.ref).toEqual([
+        { id: 1, presentation: 'Счёт 1' },
+        { id: 2, presentation: 'Счёт 2' },
+      ])
+    })
+
+    const deleteIcons = screen.getAllByTestId('CancelIcon')
+    fireEvent.click(deleteIcons[0])
+
+    await waitFor(() => {
+      expect(state.ref).toEqual([{ id: 2, presentation: 'Счёт 2' }])
+    })
+  })
+
+  it('(c) multiple: одиночный объект {id,presentation} в состоянии приводится к массиву из одного элемента', () => {
+    state.ref = { id: 1, presentation: 'Счёт 1' }
+    render(<ReferenceFieldNode node={makeNode({ multiple: true })} />)
+
+    expect(screen.getByText('Счёт 1')).toBeTruthy()
+    expect(screen.getAllByTestId('CancelIcon')).toHaveLength(1)
+  })
+
+  it('(d) multiple: голый скаляр (number) в состоянии приводится к массиву из одного элемента', () => {
+    state.ref = 5
+    render(<ReferenceFieldNode node={makeNode({ multiple: true })} />)
+
+    expect(screen.getAllByTestId('CancelIcon')).toHaveLength(1)
+    expect(screen.getByText('5')).toBeTruthy()
+  })
+
+  it('(e) multiple не задан: выбор по-прежнему эмитит одиночное значение, а не массив (без регресса)', async () => {
+    fetchMock.mockResolvedValue([{ id: 1, code: '1', label: 'Счёт 1' }])
+    render(<ReferenceFieldNode node={makeNode({})} />)
+
+    openDropdown()
+    const option = await screen.findByRole('option', { name: 'Счёт 1' })
+    fireEvent.click(option)
+
+    await waitFor(() => {
+      expect(state.ref).toEqual({ id: 1, presentation: 'Счёт 1' })
+    })
+    expect(Array.isArray(state.ref)).toBe(false)
+  })
+
+  it('(f) multiple: showAll/create не показываются, даже если actions присутствуют (allow* от сервера — false)', () => {
+    render(
+      <ReferenceFieldNode
+        node={makeNode(
+          { multiple: true, allowShowAll: false, allowCreate: false },
+          [
+            {
+              trigger: 'showAll',
+              actionId: 'command',
+              command: 'ref.showAll:f1',
+            },
+            {
+              trigger: 'create',
+              actionId: 'command',
+              command: 'ref.create:f1',
+            },
+          ]
+        )}
+      />
+    )
+    openDropdown()
+    expect(screen.queryByRole('button', { name: showAllName })).toBeNull()
+    expect(screen.queryByRole('button', { name: addName })).toBeNull()
+  })
+})

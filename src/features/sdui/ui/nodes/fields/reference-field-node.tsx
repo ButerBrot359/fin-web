@@ -28,6 +28,39 @@ function fromSelectOption(opt: SelectOption): ReferenceValue {
   return { id: Number(opt.id), presentation: opt.label }
 }
 
+// SCRUM-291 §19.3: props.multiple — значение узла в состоянии формы должно
+// нормализоваться в массив ReferenceValue независимо от того, в какой форме
+// оно там оказалось: сам массив, одиночный объект {id, presentation} (сервер
+// когда-то прислал/сохранил его как одиночное значение) или голый скаляр
+// number/string (id без presentation). Presentation для голого скаляра
+// неизвестна — используем String(id) как заглушку.
+function toReferenceValue(raw: unknown): ReferenceValue | null {
+  if (raw == null) return null
+  if (typeof raw === 'number' || typeof raw === 'string') {
+    return { id: Number(raw), presentation: String(raw) }
+  }
+  if (typeof raw === 'object' && 'id' in raw) {
+    const obj = raw as { id: unknown; presentation?: unknown }
+    const presentation =
+      typeof obj.presentation === 'string' ||
+      typeof obj.presentation === 'number'
+        ? String(obj.presentation)
+        : String(obj.id)
+    return { id: Number(obj.id), presentation }
+  }
+  return null
+}
+
+function toReferenceArray(raw: unknown): ReferenceValue[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .map(toReferenceValue)
+      .filter((v): v is ReferenceValue => v !== null)
+  }
+  const single = toReferenceValue(raw)
+  return single ? [single] : []
+}
+
 export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
   const dispatch = useSduiDispatch()
@@ -40,7 +73,12 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     | { url: string; params?: Record<string, OptionsParamValue> }
     | undefined
 
-  const rawValue = f.value as ReferenceValue | null | undefined
+  const rawValue = f.value
+
+  // SCRUM-291 §19.3: параметр отчёта ACCOUNT_LIST/REF_LIST — тот же узел
+  // REFERENCE_FIELD, но значение множественное. Не путать с props.selectionMode
+  // (ELEMENT/GROUP_AND_ELEMENT/GROUP) — другой проп с другой семантикой.
+  const multiple = node.props?.multiple === true
 
   const [inputValue, setInputValue] = useState('')
 
@@ -63,13 +101,24 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
 
   if (!f.visible) return null
 
-  const selectedOption = rawValue ? toSelectOption(rawValue) : null
+  const selectedOption =
+    !multiple && rawValue ? toSelectOption(rawValue as ReferenceValue) : null
+  const selectedOptions = multiple
+    ? toReferenceArray(rawValue).map(toSelectOption)
+    : []
 
   const applySelected = (opt: SelectOption | null) => {
     const newVal = opt ? fromSelectOption(opt) : null
     f.setValue(newVal)
     // Сброс кэша опций: следующий onOpen перезапросит свежий список,
     // и запись, созданная из формы выбора, появится без перезагрузки страницы.
+    resetOptions()
+    f.fireServerEvent('change', newVal)
+  }
+
+  const applySelectedMultiple = (opts: SelectOption[]) => {
+    const newVal = opts.map(fromSelectOption)
+    f.setValue(newVal)
     resetOptions()
     f.fireServerEvent('change', newVal)
   }
@@ -125,70 +174,106 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   )
   const allowCopy = node.props?.allowCopy as boolean | undefined
 
+  // Общие пропы автокомплита — одинаковые и для одиночного, и для мульти-режима
+  // (§19.3): формула видимости showAll/create не зависит от multiple, J уже
+  // гейтит их по allow* (сервер сам шлёт allowShowAll/allowCreate=false для
+  // списковых параметров отчёта — доп. спецкейс на multiple не нужен).
+  const commonInputProps = {
+    inputValue,
+    options,
+    label: f.label,
+    required: f.required,
+    readOnly: f.readonly,
+    disabled: !f.enabled,
+    error: !!f.error,
+    helperText: f.error,
+    loading,
+    onInputChange: (_e: unknown, val: string, reason: string) => {
+      setInputValue(val)
+      if (reason === 'input') {
+        loadDebounced(val)
+      }
+    },
+    onOpen: () => {
+      if (options.length === 0) {
+        load()
+      }
+    },
+    onShowAll:
+      showAllAction && allowShowAll !== false
+        ? () =>
+            void dispatch({
+              type: 'COMMAND',
+              command: showAllAction.command!,
+              sourceNodeId: node.id,
+            })
+        : !showAllAction && (allowShowAll ?? canBrowse)
+          ? openDictList
+          : undefined,
+    onAdd:
+      createAction && allowCreate === true
+        ? () =>
+            void dispatch({
+              type: 'COMMAND',
+              command: createAction.command!,
+              sourceNodeId: node.id,
+            })
+        : !createAction && (allowCreate ?? canBrowse)
+          ? openDictCreate
+          : undefined,
+  }
+
   return (
     <div style={{ flex: f.flex !== undefined ? f.flex : undefined }}>
-      <AutocompleteInput
-        value={selectedOption}
-        inputValue={inputValue}
-        options={options}
-        label={f.label}
-        required={f.required}
-        readOnly={f.readonly}
-        disabled={!f.enabled}
-        error={!!f.error}
-        helperText={f.error}
-        loading={loading}
-        onInputChange={(_e, val, reason) => {
-          setInputValue(val)
-          if (reason === 'input') {
-            loadDebounced(val)
-          }
-        }}
-        onOpen={() => {
-          if (options.length === 0) {
-            load()
-          }
-        }}
-        onChange={applySelected}
-        onShowAll={
-          showAllAction && allowShowAll !== false
-            ? () =>
-                void dispatch({
-                  type: 'COMMAND',
-                  command: showAllAction.command!,
-                  sourceNodeId: node.id,
-                })
-            : !showAllAction && (allowShowAll ?? canBrowse)
-              ? openDictList
-              : undefined
-        }
-        onAdd={
-          createAction && allowCreate === true
-            ? () =>
-                void dispatch({
-                  type: 'COMMAND',
-                  command: createAction.command!,
-                  sourceNodeId: node.id,
-                })
-            : !createAction && (allowCreate ?? canBrowse)
-              ? openDictCreate
-              : undefined
-        }
-        endAction={
-          !selectedOption ? undefined : (
-            <>
-              {openAction ? (
-                allowOpen === true ? (
+      {multiple ? (
+        <AutocompleteInput
+          multiple
+          value={selectedOptions}
+          onChange={applySelectedMultiple}
+          {...commonInputProps}
+        />
+      ) : (
+        <AutocompleteInput
+          value={selectedOption}
+          onChange={applySelected}
+          {...commonInputProps}
+          endAction={
+            !selectedOption ? undefined : (
+              <>
+                {openAction ? (
+                  allowOpen === true ? (
+                    <IconButton
+                      aria-label={t('inputs.openReference')}
+                      sx={{ p: '4px', borderRadius: '6px' }}
+                      tabIndex={-1}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        void dispatch({
+                          type: 'COMMAND',
+                          command: openAction.command!,
+                          sourceNodeId: node.id,
+                        })
+                      }}
+                    >
+                      <OpenInNewIcon
+                        className="text-ui-05"
+                        sx={{ fontSize: 20 }}
+                      />
+                    </IconButton>
+                  ) : null
+                ) : canBrowse ? (
                   <IconButton
                     aria-label={t('inputs.openReference')}
                     sx={{ p: '4px', borderRadius: '6px' }}
                     tabIndex={-1}
                     onMouseDown={(e) => {
                       e.preventDefault()
-                      void dispatch({
-                        type: 'COMMAND',
-                        command: openAction.command!,
-                        sourceNodeId: node.id,
+                      openReferencePicker({
+                        mode: 'edit',
+                        domain: domain!,
+                        typeCode: targetTypeCode,
+                        entryId: selectedOption.id,
+                        onSelect: applySelected,
                       })
                     }}
                   >
@@ -197,50 +282,32 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
                       sx={{ fontSize: 20 }}
                     />
                   </IconButton>
-                ) : null
-              ) : canBrowse ? (
-                <IconButton
-                  aria-label={t('inputs.openReference')}
-                  sx={{ p: '4px', borderRadius: '6px' }}
-                  tabIndex={-1}
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    openReferencePicker({
-                      mode: 'edit',
-                      domain: domain!,
-                      typeCode: targetTypeCode,
-                      entryId: selectedOption.id,
-                      onSelect: applySelected,
-                    })
-                  }}
-                >
-                  <OpenInNewIcon className="text-ui-05" sx={{ fontSize: 20 }} />
-                </IconButton>
-              ) : null}
-              {copyAction && allowCopy === true ? (
-                <IconButton
-                  aria-label={t('inputs.copyReference')}
-                  sx={{ p: '4px', borderRadius: '6px' }}
-                  tabIndex={-1}
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    void dispatch({
-                      type: 'COMMAND',
-                      command: copyAction.command!,
-                      sourceNodeId: node.id,
-                    })
-                  }}
-                >
-                  <ContentCopyIcon
-                    className="text-ui-05"
-                    sx={{ fontSize: 20 }}
-                  />
-                </IconButton>
-              ) : null}
-            </>
-          )
-        }
-      />
+                ) : null}
+                {copyAction && allowCopy === true ? (
+                  <IconButton
+                    aria-label={t('inputs.copyReference')}
+                    sx={{ p: '4px', borderRadius: '6px' }}
+                    tabIndex={-1}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      void dispatch({
+                        type: 'COMMAND',
+                        command: copyAction.command!,
+                        sourceNodeId: node.id,
+                      })
+                    }}
+                  >
+                    <ContentCopyIcon
+                      className="text-ui-05"
+                      sx={{ fontSize: 20 }}
+                    />
+                  </IconButton>
+                ) : null}
+              </>
+            )
+          }
+        />
+      )}
     </div>
   )
 }

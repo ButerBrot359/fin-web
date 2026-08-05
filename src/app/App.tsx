@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 import { MainPage } from '@/pages/main'
 
@@ -7,12 +8,28 @@ import { TopBar } from '@/widgets/top-bar'
 import { Sidebar } from '@/widgets/sidebar'
 
 import { DictSidebarDrawer, useDictSidebarStore } from '@/features/dict-sidebar'
-import { setReferencePickerGateway } from '@/features/sdui'
+import {
+  setReferencePickerGateway,
+  setReportResultGateway,
+} from '@/features/sdui'
 import { WorkspaceTabSync } from '@/widgets/workspace-tab-bar'
+
+// SCRUM-291 K2: REPORT_RESULT-нода SDUI монтирует легаси-рендерер результата
+// отчёта только через gateway (`setReportResultGateway`) — прямой импорт
+// легаси в SDUI запрещён (CLAUDE.md). Легаси-импорты живут ИСКЛЮЧИТЕЛЬНО
+// здесь, в app/.
+import { ReportResultView } from '@/features/report-result-view'
+import { printReportAlt } from '@/pages/reportalt/api/reportalt-api'
+import { buildReportAltExport } from '@/pages/reportalt/lib/utils/build-reportalt-export'
+import type {
+  ReportAltResultDto,
+  RunReportAltBody,
+} from '@/pages/reportalt/types/reportalt'
 
 import { Toaster } from '@/shared/ui/toast/toast'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
+import { exportTableToXlsx } from '@/shared/lib/table-export'
 
 import { Layout } from './layout/layout'
 import { useWorkspaceTabGatewayBinding } from './providers/workspace-tab-binding'
@@ -269,6 +286,7 @@ const AppRoutes = () => {
 
 function App() {
   useWorkspaceTabGatewayBinding()
+  const { t, i18n } = useTranslation()
 
   useEffect(() => {
     setReferencePickerGateway((req) => {
@@ -285,6 +303,42 @@ function App() {
       setReferencePickerGateway(null)
     }
   }, [])
+
+  // SCRUM-291 K2: реализация REPORT_RESULT-gateway — легаси-рендерер
+  // `ReportResultView` (чистый, принимает {result}), печать/экспорт — те же
+  // легаси-эндпоинты/утилиты, что использует `reportalt-page.tsx`.
+  useEffect(() => {
+    setReportResultGateway({
+      // ReportResultView типизирован своим ReportResultDto (не экспортирован
+      // из барреля слайса) — gateway держит result как unknown (§ дизайн-док),
+      // адаптер приводит на границе, без утечки типа наружу SDUI.
+      Renderer: ({ result }) => (
+        <ReportResultView result={result as ReportAltResultDto} />
+      ),
+      print: (code, body, language) => {
+        const printLanguage: 'Ru' | 'Kz' = language === 'kz' ? 'Kz' : 'Ru'
+        return printReportAlt(
+          code,
+          body as RunReportAltBody,
+          printLanguage
+        ).then((res) => {
+          window.open(URL.createObjectURL(res.data), '_blank')
+        })
+      },
+      exportXlsx: (result, reportName) => {
+        const data = buildReportAltExport(
+          result as ReportAltResultDto,
+          i18n.language === 'kz',
+          t('reportalt.group'),
+          t('reportalt.total')
+        )
+        exportTableToXlsx(reportName, data)
+      },
+    })
+    return () => {
+      setReportResultGateway(null)
+    }
+  }, [t, i18n])
 
   return (
     <BrowserRouter>

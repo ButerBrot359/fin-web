@@ -25,6 +25,11 @@ export type {
   OpenPanelTabParams,
   WorkspaceTabGatewayImpl,
 } from './lib/workspace-tab-gateway'
+export {
+  setReportResultGateway,
+  getReportResultGateway,
+} from './lib/report-result-gateway'
+export type { ReportResultGatewayImpl } from './lib/report-result-gateway'
 export { usePanelStore } from './lib/stores/panel-store'
 export { WorkspacePanelHost } from './ui/workspace-panel-host'
 export {

@@ -21,6 +21,11 @@ export interface EffectHandlerDeps {
   // navigate с openInNewTab: маршрут открывается ОТДЕЛЬНОЙ рабочей вкладкой,
   // вкладка-источник остаётся жить. Реализация в dispatch.
   openRouteInNewTab: (route: string) => void
+  // Мост эффекта replaceUrl (SCRUM-291 §7): обновить query-строку адресной
+  // строки на месте (setSearchParams + replace:true) — БЕЗ push в историю,
+  // БЕЗ ремаунта экрана, БЕЗ повторного OPEN сессии. В отличие от navigate,
+  // сессию не трогает. Реализация в dispatch.
+  replaceUrl: (route: string) => void
 }
 
 export function createEffectHandler(deps: EffectHandlerDeps) {
@@ -37,7 +42,7 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
           break
         }
         void deps.closeSession()
-        deps.navigate(effect.route!)
+        void deps.navigate(effect.route!)
         break
 
       case 'openDialog':
@@ -48,11 +53,14 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
         deps.closeDialog(effect)
         break
 
+      case 'replaceUrl':
+        // Персист фильтра/сортировки/периода (SCRUM-291 §7): только query,
+        // сессия и история не трогаются — см. комментарий на EffectHandlerDeps.
+        if (effect.route) deps.replaceUrl(effect.route)
+        break
+
       case 'notify':
-        showToast(
-          (effect.level as ToastLevel) ?? 'info',
-          effect.message ?? '',
-        )
+        showToast((effect.level ?? 'info') as ToastLevel, effect.message ?? '')
         break
 
       case 'refresh':
@@ -93,9 +101,13 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
               // inline или без заголовка — превью в новой вкладке (как раньше)
               window.open(objectUrl, '_blank')
             }
-            setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
+            setTimeout(() => {
+              URL.revokeObjectURL(objectUrl)
+            }, 60_000)
           })
-          .catch(() => showToast('error', i18n.t('sdui.downloadError')))
+          .catch(() => {
+            showToast('error', i18n.t('sdui.downloadError'))
+          })
         break
       }
     }

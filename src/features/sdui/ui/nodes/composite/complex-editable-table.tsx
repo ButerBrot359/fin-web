@@ -39,6 +39,7 @@ import { renderCellValue } from '../../../lib/utils/cell-value'
 import {
   findSelectedMasterRow,
   filterDetailRows,
+  rowContentSignature,
 } from '../../../lib/utils/master-detail'
 import { SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
@@ -91,18 +92,43 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     [node.children]
   )
 
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
+  // Подпись содержимого выбранной строки на момент выбора — пара «id +
+  // подпись» (SCRUM-291 §0.5 дефект 2). Устойчивого id строки в контракте
+  // нет: у части типов документов (ИПН) rowId — порядковый номер, и
+  // пересборка ТЧ перенумеровывает строки заново, поэтому «та же запись»
+  // определяется по содержимому, а не по rowId. Пара, а не голая строка:
+  // без rowId в паре переход на другую строку (другое содержимое, другой
+  // rowId) выглядел бы как подмена под старым rowId.
+  const selectedSignatureRef = useRef<{
+    rowId: string
+    signature: string
+  } | null>(null)
+
   const sync = useTableSync(node, flatColumns)
-  // Stable ref for memoized cell callbacks — avoids stale closures
+  // Stable ref for memoized cell callbacks — avoids stale closures.
+  // updateCell обёрнут: правка ВЫБРАННОЙ строки — собственный ввод
+  // пользователя, а не подмена записи сервером. Сброс захваченной подписи
+  // ПЕРЕД вызовом настоящего updateCell — эффект ниже увидит «подписи ещё
+  // нет» на следующем рендере и просто пере-снимет свежую, не сочтя правку
+  // подменой (иначе обе редактируемые таблицы ИПН теряли бы выделение на
+  // каждый введённый символ).
   const syncRef = useRef(sync)
-  syncRef.current = sync
+  syncRef.current = {
+    ...sync,
+    updateCell: (rowId: string, binding: string, value: unknown) => {
+      if (rowId === selectedRowId) {
+        selectedSignatureRef.current = null
+      }
+      sync.updateCell(rowId, binding, value)
+    },
+  }
 
   const tableColumns = useMemo(
     () => buildColumnDefs(node.children, syncRef),
 
     [node.children]
   )
-
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
 
   // ── Master-detail filtering ──
   // Реактивные подписки (SCRUM-282 #4): getValue давал разовый снимок,
@@ -133,16 +159,60 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
       ? visibleRows.findIndex((r) => r.rowId === selectedRowId)
       : -1
 
-  // Сброс выбора, если выбранная строка выпала из видимого набора — покрывает
-  // и смену master-строки, и удаление/фильтрацию строки (SCRUM-282 I2).
+  // Сброс выбора, если выбранная строка выпала из видимого набора (смена
+  // master-строки, удаление/фильтрация — SCRUM-282 I2) ИЛИ была подменена
+  // сервером под тем же rowId (SCRUM-291 §0.5 дефект 2): у части типов
+  // документов (ИПН и другие, где строки ТЧ собирает хендлер) rowId —
+  // порядковый номер, и пересборка ТЧ перенумеровывает строки заново — номер
+  // остаётся, запись за ним меняется. Устойчивого id строки в контракте пока
+  // нет, поэтому «та же запись» определяется по содержимому
+  // (`rowContentSignature`), а не по rowId.
+  //
+  // ВАЖНО: сброс снимает и публикацию выбора в сторе
+  // (`setFromServer(..., null)`), не только локальный `selectedRowId` —
+  // detail-таблица фильтрует именно по опубликованному значению
+  // (`masterTable + '.__selectedRowId'`), и без снятия публикации она
+  // продолжила бы показывать чужой график даже после локального сброса.
+  //
+  // Остаточная неточность (сознательный размен): серверная нормализация
+  // значения уже ВЫБРАННОЙ строки (например, округление) тоже прочитается
+  // как подмена и сбросит выделение — «безопасный», хоть и избыточный, сброс
+  // предпочтительнее «опасной» пропущенной подмены, пока нет устойчивого id
+  // строки (ADR-0027 или его аналог).
   useEffect(() => {
-    if (
-      selectedRowId != null &&
-      !visibleRows.some((r) => r.rowId === selectedRowId)
-    ) {
-      setSelectedRowId(null)
+    if (selectedRowId == null) {
+      selectedSignatureRef.current = null
+      return
     }
-  }, [visibleRows, selectedRowId])
+
+    const resetSelection = () => {
+      selectedSignatureRef.current = null
+      setSelectedRowId(null)
+      if (node.binding) {
+        setFromServer(node.binding + '.__selectedRowId', null)
+      }
+    }
+
+    const row = visibleRows.find((r) => r.rowId === selectedRowId)
+    if (row === undefined) {
+      resetSelection()
+      return
+    }
+
+    const signature = rowContentSignature(row)
+    const captured = selectedSignatureRef.current
+    const substituted =
+      captured !== null &&
+      captured.rowId === selectedRowId &&
+      captured.signature !== signature
+
+    if (substituted) {
+      resetSelection()
+      return
+    }
+
+    selectedSignatureRef.current = { rowId: selectedRowId, signature }
+  }, [visibleRows, selectedRowId, node.binding, setFromServer])
 
   // ── Footer ──
   const footerValues = node.binding
@@ -321,7 +391,9 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                 )}
                 {hg.headers.map((header) => {
                   if (header.isPlaceholder) {
-                    return <TableCell key={header.id} colSpan={header.colSpan} />
+                    return (
+                      <TableCell key={header.id} colSpan={header.colSpan} />
+                    )
                   }
                   // VERTICAL-группа сама держит сетку под-строк и рисует
                   // разделитель во всю ширину — свой padding ячейки сдвинул бы

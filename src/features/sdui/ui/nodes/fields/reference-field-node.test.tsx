@@ -1,12 +1,20 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  cleanup,
+} from '@testing-library/react'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
 import type { SelectOption } from '@/shared/types/select-option'
 import { ReferenceFieldNode } from './reference-field-node'
 
 const mockDispatch = vi.fn(() => Promise.resolve(true))
-vi.mock('../../../lib/dispatch', () => ({ useSduiDispatch: () => mockDispatch }))
+vi.mock('../../../lib/dispatch', () => ({
+  useSduiDispatch: () => mockDispatch,
+}))
 
 const state: Record<string, unknown> = {}
 vi.mock('../../../lib/sdui-session-context', () => ({
@@ -21,14 +29,28 @@ vi.mock('../../../lib/sdui-session-context', () => ({
   useBindingValue: (b?: string) => (b ? state[b] : undefined),
 }))
 
+const openPickerMock = vi.fn<(req: Record<string, unknown>) => void>()
 vi.mock('../../../lib/reference-picker-gateway', () => ({
-  openReferencePicker: vi.fn(),
+  openReferencePicker: (req: Record<string, unknown>) => {
+    openPickerMock(req)
+  },
 }))
 
 const fetchMock = vi.fn<(...args: unknown[]) => Promise<SelectOption[]>>()
 vi.mock('../../../api/reference-options', () => ({
   fetchReferenceOptions: (...args: unknown[]) => fetchMock(...args),
 }))
+
+/** Футер («Показать все»/«Создать») живёт в Paper автокомплита — существует
+ *  только у открытого списка. */
+const openDropdown = () => {
+  fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' })
+}
+
+// Явный afterEach нужен файлу целиком: vitest.config.ts не включает globals,
+// и без него testing-library не подключает автоочистку между тестами —
+// смонтированные компоненты накапливаются и combobox перестаёт быть уникальным.
+afterEach(cleanup)
 
 describe('ReferenceFieldNode — кэш опций', () => {
   beforeEach(() => {
@@ -61,5 +83,367 @@ describe('ReferenceFieldNode — кэш опций', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2)
     })
+  })
+})
+
+// ── SCRUM-291 §18.3: props.allow* — единственный источник видимости ──
+//
+// Дефект: action-ветка сегодня игнорирует allow* (кнопка "+" показывается на
+// поле со ссылкой на классификатор, где create запрещён политикой бэка).
+// Формула (асимметричная, дефолты как на бэке):
+//   showAll ⟺ showAllAction && allowShowAll !== false   (открыто по умолчанию)
+//   create  ⟺ createAction  && allowCreate === true      (закрыто по умолчанию)
+//   open    ⟺ openAction    && allowOpen === true         (закрыто по умолчанию)
+//   copy    ⟺ copyAction    && allowCopy === true          (закрыто по умолчанию)
+describe('ReferenceFieldNode — SCRUM-291 §18.3 allow* гейтинг', () => {
+  // i18n в юнит-тестах не инициализирован — t() возвращает ключ, поэтому
+  // матчим и ключ, и переведённую подпись.
+  const showAllName = /showAll|Показать все/i
+  const addName = /dictSidebar\.add|Добавить/i
+  const openName = /openReference|Открыть запись/i
+  const copyName = /copyReference|Скопировать запись/i
+
+  const baseProps = {
+    label: 'Ссылка',
+    domain: 'DICTIONARY',
+    targetTypeCode: 'Organizatsii',
+    optionsSource: { url: '/api/test-options' },
+  }
+
+  const makeNode = (
+    props: Record<string, unknown>,
+    actions: { trigger: string; actionId: string; command?: string }[] = []
+  ): ViewNode =>
+    ({
+      id: 'f1',
+      type: 'REFERENCE_FIELD',
+      binding: 'ref',
+      props: { ...baseProps, ...props },
+      actions,
+    }) as unknown as ViewNode
+
+  beforeEach(() => {
+    fetchMock.mockReset()
+    fetchMock.mockResolvedValue([])
+    openPickerMock.mockReset()
+    mockDispatch.mockClear()
+    delete state.ref
+  })
+
+  // ── создать ──
+  it('createAction есть, allowCreate !== true → «Создать» не показывается (дефект)', () => {
+    render(
+      <ReferenceFieldNode
+        node={makeNode({ allowCreate: false }, [
+          { trigger: 'create', actionId: 'command', command: 'ref.create:f1' },
+        ])}
+      />
+    )
+    openDropdown()
+    expect(screen.queryByRole('button', { name: addName })).toBeNull()
+  })
+
+  it('createAction есть, allowCreate undefined → «Создать» не показывается (закрыто по умолчанию)', () => {
+    render(
+      <ReferenceFieldNode
+        node={makeNode({}, [
+          { trigger: 'create', actionId: 'command', command: 'ref.create:f1' },
+        ])}
+      />
+    )
+    openDropdown()
+    expect(screen.queryByRole('button', { name: addName })).toBeNull()
+  })
+
+  it('createAction + allowCreate === true → клик диспатчит команду создания', () => {
+    render(
+      <ReferenceFieldNode
+        node={makeNode({ allowCreate: true }, [
+          { trigger: 'create', actionId: 'command', command: 'ref.create:f1' },
+        ])}
+      />
+    )
+    openDropdown()
+    fireEvent.mouseDown(screen.getByRole('button', { name: addName }))
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'ref.create:f1',
+      sourceNodeId: 'f1',
+    })
+    expect(openPickerMock).not.toHaveBeenCalled()
+  })
+
+  // ── показать все ──
+  it('showAllAction + allowShowAll === false → «Показать все» не показывается', () => {
+    render(
+      <ReferenceFieldNode
+        node={makeNode({ allowShowAll: false }, [
+          {
+            trigger: 'showAll',
+            actionId: 'command',
+            command: 'ref.showAll:f1',
+          },
+        ])}
+      />
+    )
+    openDropdown()
+    expect(screen.queryByRole('button', { name: showAllName })).toBeNull()
+  })
+
+  it('showAllAction + allowShowAll undefined → «Показать все» показывается (открыто по умолчанию)', () => {
+    render(
+      <ReferenceFieldNode
+        node={makeNode({}, [
+          {
+            trigger: 'showAll',
+            actionId: 'command',
+            command: 'ref.showAll:f1',
+          },
+        ])}
+      />
+    )
+    openDropdown()
+    fireEvent.mouseDown(screen.getByRole('button', { name: showAllName }))
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'ref.showAll:f1',
+      sourceNodeId: 'f1',
+    })
+  })
+
+  // ── открыть ──
+  it('openAction + allowOpen === true + выбрано значение → клик диспатчит команду открытия', () => {
+    state.ref = { id: 1, presentation: 'Запись 1' }
+    render(
+      <ReferenceFieldNode
+        node={makeNode({ allowOpen: true }, [
+          { trigger: 'open', actionId: 'command', command: 'ref.open:f1' },
+        ])}
+      />
+    )
+    fireEvent.mouseDown(screen.getByRole('button', { name: openName }))
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'ref.open:f1',
+      sourceNodeId: 'f1',
+    })
+    expect(openPickerMock).not.toHaveBeenCalled()
+  })
+
+  it('openAction есть, allowOpen !== true + выбрано значение → открыть недоступно (ни action, ни легаси)', () => {
+    state.ref = { id: 1, presentation: 'Запись 1' }
+    render(
+      <ReferenceFieldNode
+        node={makeNode({ allowOpen: false }, [
+          { trigger: 'open', actionId: 'command', command: 'ref.open:f1' },
+        ])}
+      />
+    )
+    expect(screen.queryByRole('button', { name: openName })).toBeNull()
+    expect(mockDispatch).not.toHaveBeenCalled()
+    expect(openPickerMock).not.toHaveBeenCalled()
+  })
+
+  // ── скопировать ──
+  it('copyAction + allowCopy === true + выбрано значение → клик диспатчит команду копирования', () => {
+    state.ref = { id: 1, presentation: 'Запись 1' }
+    render(
+      <ReferenceFieldNode
+        node={makeNode({ allowCopy: true }, [
+          { trigger: 'copy', actionId: 'command', command: 'ref.copy:f1' },
+        ])}
+      />
+    )
+    fireEvent.mouseDown(screen.getByRole('button', { name: copyName }))
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'ref.copy:f1',
+      sourceNodeId: 'f1',
+    })
+  })
+
+  it('copyAction есть, allowCopy !== true → «Скопировать» не показывается', () => {
+    state.ref = { id: 1, presentation: 'Запись 1' }
+    render(
+      <ReferenceFieldNode
+        node={makeNode({ allowCopy: false }, [
+          { trigger: 'copy', actionId: 'command', command: 'ref.copy:f1' },
+        ])}
+      />
+    )
+    expect(screen.queryByRole('button', { name: copyName })).toBeNull()
+  })
+
+  // ── §18.6: легаси-фолбэк сохраняется, когда action отсутствует вовсе ──
+  describe('без action — легаси-фолбэк через gateway (§18.6, не C1)', () => {
+    it('нет showAllAction, canBrowse → «Показать все» открывает легаси-пикер list', () => {
+      render(<ReferenceFieldNode node={makeNode({})} />)
+      openDropdown()
+      fireEvent.mouseDown(screen.getByRole('button', { name: showAllName }))
+      expect(openPickerMock).toHaveBeenCalledTimes(1)
+      expect(openPickerMock.mock.calls[0][0]).toMatchObject({
+        mode: 'list',
+        domain: 'DICTIONARY',
+        typeCode: 'Organizatsii',
+      })
+      expect(mockDispatch).not.toHaveBeenCalled()
+    })
+
+    it('нет createAction, canBrowse → «Создать» открывает легаси-пикер create', () => {
+      render(<ReferenceFieldNode node={makeNode({})} />)
+      openDropdown()
+      fireEvent.mouseDown(screen.getByRole('button', { name: addName }))
+      expect(openPickerMock).toHaveBeenCalledTimes(1)
+      expect(openPickerMock.mock.calls[0][0]).toMatchObject({
+        mode: 'create',
+        domain: 'DICTIONARY',
+        typeCode: 'Organizatsii',
+      })
+    })
+
+    it('нет openAction, canBrowse, выбрано значение → иконка открывает легаси-пикер edit', () => {
+      state.ref = { id: 1, presentation: 'Запись 1' }
+      render(<ReferenceFieldNode node={makeNode({})} />)
+      fireEvent.mouseDown(screen.getByRole('button', { name: openName }))
+      expect(openPickerMock).toHaveBeenCalledTimes(1)
+      expect(openPickerMock.mock.calls[0][0]).toMatchObject({
+        mode: 'edit',
+        domain: 'DICTIONARY',
+        typeCode: 'Organizatsii',
+        entryId: 1,
+      })
+      expect(mockDispatch).not.toHaveBeenCalled()
+    })
+  })
+})
+
+// ── SCRUM-291 §19.3: props.multiple — списковые параметры отчёта ──
+//
+// props.multiple=true: значение узла — МАССИВ тех же объектов {id, presentation},
+// что и у одиночного поля (не новая форма значения, а множественное число уже
+// существующей). Рендер — мульти-select autocomplete (чипы), не drawer с чекбоксами.
+// EVENT-коэрсия: raw-значение в состоянии формы может прийти в любой форме —
+// массив, одиночный объект {id, presentation} или голый скаляр (number/string) —
+// все три должны нормализоваться в массив ReferenceValue.
+describe('ReferenceFieldNode — SCRUM-291 §19.3 props.multiple', () => {
+  const showAllName = /showAll|Показать все/i
+  const addName = /dictSidebar\.add|Добавить/i
+
+  const baseProps = {
+    label: 'Счета',
+    domain: 'ACCOUNT_PLAN',
+    targetTypeCode: 'Schet',
+    optionsSource: { url: '/api/test-options' },
+  }
+
+  const makeNode = (
+    props: Record<string, unknown>,
+    actions: { trigger: string; actionId: string; command?: string }[] = []
+  ): ViewNode =>
+    ({
+      id: 'f1',
+      type: 'REFERENCE_FIELD',
+      binding: 'ref',
+      props: { ...baseProps, ...props },
+      actions,
+    }) as unknown as ViewNode
+
+  beforeEach(() => {
+    fetchMock.mockReset()
+    fetchMock.mockResolvedValue([])
+    openPickerMock.mockReset()
+    mockDispatch.mockClear()
+    delete state.ref
+  })
+
+  it('(a) multiple=true рендерит мульти-select и показывает несколько выбранных значений', () => {
+    state.ref = [
+      { id: 1, presentation: 'Счёт 1' },
+      { id: 2, presentation: 'Счёт 2' },
+    ]
+    render(<ReferenceFieldNode node={makeNode({ multiple: true })} />)
+
+    expect(screen.getByText('Счёт 1')).toBeTruthy()
+    expect(screen.getByText('Счёт 2')).toBeTruthy()
+    expect(screen.getAllByTestId('CancelIcon')).toHaveLength(2)
+  })
+
+  it('(b) multiple: выбор опции добавляет в массив, удаление чипа убирает из массива', async () => {
+    state.ref = [{ id: 1, presentation: 'Счёт 1' }]
+    fetchMock.mockResolvedValue([{ id: 2, code: '2', label: 'Счёт 2' }])
+    render(<ReferenceFieldNode node={makeNode({ multiple: true })} />)
+
+    openDropdown()
+    const option = await screen.findByRole('option', { name: 'Счёт 2' })
+    fireEvent.click(option)
+
+    await waitFor(() => {
+      expect(state.ref).toEqual([
+        { id: 1, presentation: 'Счёт 1' },
+        { id: 2, presentation: 'Счёт 2' },
+      ])
+    })
+
+    const deleteIcons = screen.getAllByTestId('CancelIcon')
+    fireEvent.click(deleteIcons[0])
+
+    await waitFor(() => {
+      expect(state.ref).toEqual([{ id: 2, presentation: 'Счёт 2' }])
+    })
+  })
+
+  it('(c) multiple: одиночный объект {id,presentation} в состоянии приводится к массиву из одного элемента', () => {
+    state.ref = { id: 1, presentation: 'Счёт 1' }
+    render(<ReferenceFieldNode node={makeNode({ multiple: true })} />)
+
+    expect(screen.getByText('Счёт 1')).toBeTruthy()
+    expect(screen.getAllByTestId('CancelIcon')).toHaveLength(1)
+  })
+
+  it('(d) multiple: голый скаляр (number) в состоянии приводится к массиву из одного элемента', () => {
+    state.ref = 5
+    render(<ReferenceFieldNode node={makeNode({ multiple: true })} />)
+
+    expect(screen.getAllByTestId('CancelIcon')).toHaveLength(1)
+    expect(screen.getByText('5')).toBeTruthy()
+  })
+
+  it('(e) multiple не задан: выбор по-прежнему эмитит одиночное значение, а не массив (без регресса)', async () => {
+    fetchMock.mockResolvedValue([{ id: 1, code: '1', label: 'Счёт 1' }])
+    render(<ReferenceFieldNode node={makeNode({})} />)
+
+    openDropdown()
+    const option = await screen.findByRole('option', { name: 'Счёт 1' })
+    fireEvent.click(option)
+
+    await waitFor(() => {
+      expect(state.ref).toEqual({ id: 1, presentation: 'Счёт 1' })
+    })
+    expect(Array.isArray(state.ref)).toBe(false)
+  })
+
+  it('(f) multiple: showAll/create не показываются, даже если actions присутствуют (allow* от сервера — false)', () => {
+    render(
+      <ReferenceFieldNode
+        node={makeNode(
+          { multiple: true, allowShowAll: false, allowCreate: false },
+          [
+            {
+              trigger: 'showAll',
+              actionId: 'command',
+              command: 'ref.showAll:f1',
+            },
+            {
+              trigger: 'create',
+              actionId: 'command',
+              command: 'ref.create:f1',
+            },
+          ]
+        )}
+      />
+    )
+    openDropdown()
+    expect(screen.queryByRole('button', { name: showAllName })).toBeNull()
+    expect(screen.queryByRole('button', { name: addName })).toBeNull()
   })
 })

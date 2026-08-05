@@ -134,7 +134,9 @@
   },
   "inputs": {
     "noOptions": "Нет вариантов",
-    "loading": "Загрузка..."
+    "loading": "Загрузка...",
+    "openReference": "Открыть запись",
+    "copyReference": "Скопировать запись"
   },
   "calendar": {
     "today": "Сегодня"
@@ -185,7 +187,16 @@
     "find": "Найти",
     "cancelSearch": "Отменить поиск",
     "searchPlaceholder": "Поиск",
-    "loadError": "Не удалось загрузить данные"
+    "loadError": "Не удалось загрузить данные",
+    "periodFrom": "С",
+    "periodTo": "По",
+    "filter": "Фильтр",
+    "filterOperator": "Оператор",
+    "filterApply": "Применить",
+    "filterValuePlaceholder": "Значение",
+    "filterActiveTitle": "Активные фильтры",
+    "filterRemoveChip": "Удалить фильтр",
+    "filterClearAll": "Сбросить все"
   },
   "informationRegister": {
     "period": "Период",

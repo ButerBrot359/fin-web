@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import i18n from 'i18next'
 
@@ -27,6 +27,7 @@ import { openDialogAsPanel } from './open-dialog-panel'
 export function useSduiDispatch() {
   const location = useLocation()
   const navigate = useNavigate()
+  const [, setSearchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const session = useSduiSession()
 
@@ -114,6 +115,14 @@ export function useSduiDispatch() {
             .then((ok) => {
               if (ok) void dispatchAction({ type: 'COMMAND', command })
             })
+        },
+        replaceUrl: (route) => {
+          // SCRUM-291 §7: только query-строка, setSearchParams (НЕ navigate) —
+          // не пишет в историю, не трогает сессию, не перемонтирует экран
+          // (SduiScreen переоткрывает OPEN по location.pathname, не search).
+          const queryIndex = route.indexOf('?')
+          const search = queryIndex >= 0 ? route.slice(queryIndex + 1) : ''
+          setSearchParams(search, { replace: true })
         },
       })
 
@@ -225,7 +234,14 @@ export function useSduiDispatch() {
         return false
       }
     },
-    [location.pathname, location.search, navigate, session, queryClient]
+    [
+      location.pathname,
+      location.search,
+      navigate,
+      setSearchParams,
+      session,
+      queryClient,
+    ]
   )
 
   return dispatch

@@ -134,7 +134,9 @@
   },
   "inputs": {
     "noOptions": "Нұсқалар жоқ",
-    "loading": "Жүктелуде..."
+    "loading": "Жүктелуде...",
+    "openReference": "Жазбаны ашу",
+    "copyReference": "Жазбаны көшіру"
   },
   "calendar": {
     "today": "Бүгін"
@@ -185,7 +187,16 @@
     "find": "Табу",
     "cancelSearch": "Іздеуді болдырмау",
     "searchPlaceholder": "Іздеу",
-    "loadError": "Деректерді жүктеу мүмкін болмады"
+    "loadError": "Деректерді жүктеу мүмкін болмады",
+    "periodFrom": "бастап",
+    "periodTo": "дейін",
+    "filter": "Сүзгі",
+    "filterOperator": "Салыстыру түрі",
+    "filterApply": "Қолдану",
+    "filterValuePlaceholder": "Мән",
+    "filterActiveTitle": "Белсенді сүзгілер",
+    "filterRemoveChip": "Сүзгіні жою",
+    "filterClearAll": "Барлығын тазарту"
   },
   "informationRegister": {
     "period": "Кезең",

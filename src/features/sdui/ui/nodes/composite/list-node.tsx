@@ -11,10 +11,21 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
+import { DateTimeInput } from '@/shared/ui/inputs'
 import { fetchListPage } from '../../../api/reference-options'
 import { cn } from '@/shared/lib/utils/cn'
 import { formatSduiCellValue } from '../../../lib/format-cell'
+import { getCellIcon } from './cell-icon-registry'
 import { resolveLoadedCountLabel } from './list-loaded-count'
+import {
+  ListFilterFunnel,
+  type ListFilterFunnelColumn,
+} from './list-filter-funnel'
+import type {
+  FilterEnumOption,
+  FilterValueSource,
+} from './list-filter-value-control'
+import { ListFilterChips, type ListFilterChip } from './list-filter-chips'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -33,10 +44,62 @@ interface ListRow {
   attributes?: Record<string, unknown>
 }
 
+interface ListSortState {
+  column: string
+  dir: 'ASC' | 'DESC'
+}
+
+interface ListPeriod {
+  from: string | null
+  to: string | null
+}
+
 const PAGE_SIZE = 25
 
 const resolveBinding = (row: ListRow, binding: string): unknown =>
   row[binding] ?? row.attributes?.[binding] ?? ''
+
+// SCRUM-291 2d: period — независимый от колоночных фильтров контрол на LIST
+// (не в TOOLBAR, без чипа). {from:null,to:null} — валидный вызов, снимающий
+// период; отдельной команды clearPeriod нет (design §2d).
+const ListPeriodControl: FC<{
+  period: ListPeriod
+  typeCode: string
+  nodeId: string
+  dispatch: ReturnType<typeof useSduiDispatch>
+}> = ({ period, typeCode, nodeId, dispatch }) => {
+  const { t } = useTranslation()
+
+  const applyPeriod = (next: ListPeriod) => {
+    void dispatch({
+      type: 'COMMAND',
+      command: `list.applyPeriod:${typeCode}`,
+      value: next,
+      sourceNodeId: nodeId,
+    })
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <DateTimeInput
+        label={t('table.periodFrom')}
+        value={period.from ?? ''}
+        dateOnly
+        onChange={(value) => {
+          applyPeriod({ from: value || null, to: period.to })
+        }}
+      />
+      <DateTimeInput
+        label={t('table.periodTo')}
+        value={period.to ?? ''}
+        dateOnly
+        onChange={(value) => {
+          applyPeriod({ from: period.from, to: value || null })
+        }}
+      />
+    </div>
+  )
+}
 
 export const ListNode: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
@@ -53,8 +116,51 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const selectAction = node.actions?.find((a) => a.trigger === 'select')
   const activateAction = node.actions?.find((a) => a.trigger === 'activate')
 
+  // SCRUM-291 2b: {TypeCode} для list.applySort:{TypeCode} фронт не получает отдельным
+  // props — берёт его из суффикса ПОСЛЕ ПЕРВОГО ДВОЕТОЧИЯ команды активации строки
+  // (list.rowOpen:{TypeCode}, для справочников может содержать ещё двоеточия). Нет
+  // command с двоеточием → TypeCode не выводим, сортировка не рендерится/не диспатчится
+  // (fail-closed, см. design §2b).
+  const activateCommand = activateAction?.command
+  const typeCode = activateCommand?.includes(':')
+    ? activateCommand.slice(activateCommand.indexOf(':') + 1)
+    : undefined
+
+  const sortState = node.props?.sortState as ListSortState | undefined
+  // SCRUM-291 2c: лейблы операторов воронки — с сервера (LIST.props.filterOpLabels),
+  // НЕ i18n (design §2c/§7).
+  const filterOpLabels = node.props?.filterOpLabels as
+    | Record<string, string>
+    | undefined
+  // SCRUM-291 2d: props.period присутствует ВСЕГДА при transport=SEARCH (даже
+  // {null,null}); при PAGED prop отсутствует вовсе → контрол не рендерим.
+  const periodProp = node.props?.period as ListPeriod | undefined
+  // SCRUM-291 2c-b: панель чипов — сервер шлёт готовый {field,label}; период
+  // сюда никогда не попадает (§8), фронт filterChips не трогает. Fail-closed:
+  // без typeCode команды clearFilter/clearAllFilters собрать нельзя — панель
+  // не рендерим вовсе, даже если filterChips пришёл.
+  const filterChips =
+    (node.props?.filterChips as ListFilterChip[] | undefined) ?? []
+  // Подавление дублей in-flight: пока предыдущий list.applySort не завершился —
+  // повторные клики по заголовкам игнорируются («последний выигрывает» не требуется).
+  const sortInFlightRef = useRef(false)
+
   const [search, setSearch] = useState('')
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
+
+  // SCRUM-291 M5: сервер может заменить props.source ответом на sort/filter/period
+  // (setProp-патч на LIST-узле) — при смене идентичности source выделенная строка
+  // могла уйти из выборки, поэтому сбрасываем выделение. Пропускаем первый рендер,
+  // чтобы не сбрасывать выделение, которого ещё не было.
+  const sourceKey = JSON.stringify(source ?? null)
+  const isFirstSourceRender = useRef(true)
+  useEffect(() => {
+    if (isFirstSourceRender.current) {
+      isFirstSourceRender.current = false
+      return
+    }
+    setSelectedRowId(null)
+  }, [sourceKey])
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -159,34 +265,145 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
   const columns = useMemo<ColumnDef<ListRow>[]>(
     () =>
-      columnNodes.map((col: ViewNode) => ({
-        id: col.id,
-        header: () => <span>{(col.props?.header as string) || ''}</span>,
-        accessorFn: (row: ListRow) => {
-          const binding = (col.props?.attributeCode ??
-            col.props?.binding) as string
-          if (!binding) return ''
-          const val = resolveBinding(row, binding)
-          if (val && typeof val === 'object') {
-            const obj = val as Record<string, unknown>
-            // eslint-disable-next-line @typescript-eslint/no-base-to-string
-            return (obj.presentation ?? String(obj.id ?? '')) as string
-          }
-          return formatSduiCellValue(
-            val,
-            col.props?.dataType as string | undefined
-          )
-        },
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        size: (col.props?.width as number) ?? 150,
-        cell: (info: { getValue: () => unknown }) => (
-          <Typography variant="body2" noWrap className="text-ui-06">
-            {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
-            {String(info.getValue() ?? '')}
-          </Typography>
-        ),
-      })),
-    [columnNodes]
+      columnNodes.map((col: ViewNode) => {
+        const attributeCode = (col.props?.attributeCode ??
+          col.props?.binding) as string | undefined
+        const canSort =
+          col.props?.sortable === true && !!typeCode && !!attributeCode
+
+        // SCRUM-291 2c: метаданные воронки — ВСЕГДА filterField (не attributeCode,
+        // см. алиас «Номер»→"code" в design §2c/§7). filterOps пусто/нет → воронки нет.
+        const filterField = col.props?.filterField as string | undefined
+        const filterOps = (col.props?.filterOps as string[] | undefined) ?? []
+        const canFilter = !!typeCode && !!filterField && filterOps.length > 0
+        const filterColumn: ListFilterFunnelColumn = {
+          filterField: filterField ?? '',
+          filterOps,
+          dataType: col.props?.dataType as string | undefined,
+          filterValueSource: col.props?.filterValueSource as
+            | FilterValueSource
+            | undefined,
+          filterValueOptions: col.props?.filterValueOptions as
+            | FilterEnumOption[]
+            | undefined,
+        }
+
+        const handleHeaderClick = canSort
+          ? () => {
+              if (sortInFlightRef.current) return
+              const column = attributeCode
+              const dir =
+                sortState?.column === column
+                  ? sortState.dir === 'ASC'
+                    ? 'DESC'
+                    : 'ASC'
+                  : 'ASC'
+              sortInFlightRef.current = true
+              void Promise.resolve(
+                dispatch({
+                  type: 'COMMAND',
+                  command: `list.applySort:${typeCode}`,
+                  value: { column, dir },
+                  sourceNodeId: node.id,
+                })
+              ).finally(() => {
+                sortInFlightRef.current = false
+              })
+            }
+          : undefined
+
+        return {
+          id: col.id,
+          header: () => {
+            const label = (col.props?.header as string) || ''
+            const arrowDir =
+              sortState && attributeCode && sortState.column === attributeCode
+                ? sortState.dir
+                : undefined
+
+            return (
+              <div className="inline-flex items-center gap-1">
+                <span
+                  {...(handleHeaderClick
+                    ? {
+                        role: 'button' as const,
+                        tabIndex: 0,
+                        onClick: handleHeaderClick,
+                        className:
+                          'inline-flex cursor-pointer select-none items-center gap-1',
+                      }
+                    : {})}
+                >
+                  {label}
+                  {arrowDir && (
+                    <span aria-hidden="true">
+                      {arrowDir === 'ASC' ? '▲' : '▼'}
+                    </span>
+                  )}
+                </span>
+                {canFilter && (
+                  <ListFilterFunnel
+                    column={filterColumn}
+                    filterOpLabels={filterOpLabels}
+                    onApply={(field, op, value) => {
+                      void dispatch({
+                        type: 'COMMAND',
+                        command: `list.applyFilter:${typeCode}`,
+                        value:
+                          value === undefined
+                            ? { field, op }
+                            : { field, op, value },
+                        sourceNodeId: node.id,
+                      })
+                    }}
+                  />
+                )}
+              </div>
+            )
+          },
+          accessorFn: (row: ListRow) => {
+            const binding = (col.props?.attributeCode ??
+              col.props?.binding) as string
+            if (!binding) return ''
+            const val = resolveBinding(row, binding)
+            if (val && typeof val === 'object') {
+              const obj = val as Record<string, unknown>
+              // eslint-disable-next-line @typescript-eslint/no-base-to-string
+              return (obj.presentation ?? String(obj.id ?? '')) as string
+            }
+            return formatSduiCellValue(
+              val,
+              col.props?.dataType as string | undefined
+            )
+          },
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          size: (col.props?.width as number) ?? 150,
+          // SCRUM-291 3b (§17.2): cellKind="ICON" — значение ячейки (строка
+          // "true"/"false", тот же примитивный формат, что у остальных ячеек)
+          // маппится через props.iconMap на имя иконки и рендерится глифом;
+          // неизвестное/отсутствующее имя → пустая ячейка, не текст "true"/"false".
+          cell:
+            col.props?.cellKind === 'ICON'
+              ? (info: { getValue: () => unknown }) => {
+                  const iconMap = col.props?.iconMap as
+                    | Record<string, string>
+                    | undefined
+                  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                  const value = String(info.getValue() ?? '')
+                  const Icon = getCellIcon(iconMap?.[value])
+                  return Icon ? (
+                    <Icon aria-hidden="true" className="h-4 w-4" />
+                  ) : null
+                }
+              : (info: { getValue: () => unknown }) => (
+                  <Typography variant="body2" noWrap className="text-ui-06">
+                    {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
+                    {String(info.getValue() ?? '')}
+                  </Typography>
+                ),
+        }
+      }),
+    [columnNodes, sortState, typeCode, dispatch, node.id, filterOpLabels]
   )
 
   const table = useReactTable({
@@ -214,7 +431,16 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-2">
       <div className="flex items-center justify-between">
-        <div />
+        {periodProp && typeCode ? (
+          <ListPeriodControl
+            period={periodProp}
+            typeCode={typeCode}
+            nodeId={node.id}
+            dispatch={dispatch}
+          />
+        ) : (
+          <div />
+        )}
         {searchable && (
           <SearchInput
             placeholder={t('pageToolbar.search')}
@@ -227,6 +453,27 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
           />
         )}
       </div>
+
+      {typeCode && (
+        <ListFilterChips
+          chips={filterChips}
+          onRemove={(field) => {
+            void dispatch({
+              type: 'COMMAND',
+              command: `list.clearFilter:${typeCode}`,
+              value: { field },
+              sourceNodeId: node.id,
+            })
+          }}
+          onClearAll={() => {
+            void dispatch({
+              type: 'COMMAND',
+              command: `list.clearAllFilters:${typeCode}`,
+              sourceNodeId: node.id,
+            })
+          }}
+        />
+      )}
 
       <div className="relative min-h-0 flex-1 flex flex-col">
         {isLoading ? (

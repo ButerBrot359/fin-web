@@ -4,8 +4,11 @@ import {
   Paper,
   TextField,
   Tooltip,
+  type SxProps,
   type TextFieldProps,
+  type Theme,
 } from '@mui/material'
+import type { AutocompleteRenderInputParams } from '@mui/material/Autocomplete'
 import { useTranslation } from 'react-i18next'
 
 import type { SelectOption } from '@/shared/types/select-option'
@@ -66,11 +69,9 @@ function createFooterPaper({
   return FooterPaper
 }
 
-export interface AutocompleteInputProps {
-  value: SelectOption | null
+interface AutocompleteInputBaseProps {
   inputValue?: string
   options: SelectOption[]
-  onChange: (value: SelectOption | null) => void
   onInputChange?: (event: unknown, value: string, reason: string) => void
   label?: string
   readOnly?: boolean
@@ -89,27 +90,42 @@ export interface AutocompleteInputProps {
   fullWidth?: boolean
 }
 
-export const AutocompleteInput = ({
-  value,
-  inputValue,
-  options,
-  onChange,
-  onInputChange,
-  label,
-  readOnly,
-  disabled,
-  required,
-  error,
-  helperText,
-  loading,
-  onOpen,
-  endAction,
-  slotProps,
-  onShowAll,
-  onAdd,
-  size,
-  fullWidth,
-}: AutocompleteInputProps) => {
+export interface AutocompleteInputSingleProps extends AutocompleteInputBaseProps {
+  multiple?: false
+  value: SelectOption | null
+  onChange: (value: SelectOption | null) => void
+}
+
+export interface AutocompleteInputMultipleProps extends AutocompleteInputBaseProps {
+  multiple: true
+  value: SelectOption[]
+  onChange: (value: SelectOption[]) => void
+}
+
+export type AutocompleteInputProps =
+  | AutocompleteInputSingleProps
+  | AutocompleteInputMultipleProps
+
+export const AutocompleteInput = (props: AutocompleteInputProps) => {
+  const {
+    inputValue,
+    options,
+    onInputChange,
+    label,
+    readOnly,
+    disabled,
+    required,
+    error,
+    helperText,
+    loading,
+    onOpen,
+    endAction,
+    slotProps,
+    onShowAll,
+    onAdd,
+    size,
+    fullWidth,
+  } = props
   const { t } = useTranslation()
 
   const hasFooter = !!(onShowAll || onAdd)
@@ -124,9 +140,96 @@ export const AutocompleteInput = ({
     })
   }, [hasFooter, onShowAll, onAdd, t])
 
+  const sx: SxProps<Theme> = [
+    ...(disabled
+      ? [
+          {
+            '& .MuiFilledInput-root': {
+              backgroundColor: '#e6e9ee',
+              borderColor: '#c3cee0',
+              '&:hover': {
+                backgroundColor: '#e6e9ee',
+                borderColor: '#c3cee0',
+              },
+            },
+          },
+        ]
+      : []),
+    ...(size === 'small'
+      ? [
+          {
+            '& .MuiFilledInput-root': { minHeight: 32 },
+            '& .MuiAutocomplete-input': {
+              paddingTop: '6px !important',
+              paddingBottom: '6px !important',
+            },
+          },
+        ]
+      : []),
+  ]
+
+  const renderInput = (params: AutocompleteRenderInputParams) => (
+    <TextField
+      {...params}
+      label={label}
+      required={required}
+      error={error}
+      helperText={helperText}
+      slotProps={{
+        ...slotProps,
+        input: {
+          ...params.InputProps,
+          ...(slotProps?.input as object),
+          endAdornment: (
+            <>
+              {params.InputProps.endAdornment}
+              {!disabled && endAction}
+            </>
+          ),
+        },
+        htmlInput: {
+          ...params.inputProps,
+          ...(slotProps?.htmlInput as object),
+        },
+      }}
+    />
+  )
+
+  if (props.multiple) {
+    return (
+      <Autocomplete
+        multiple
+        size={size}
+        fullWidth={fullWidth}
+        value={props.value}
+        inputValue={inputValue}
+        options={options}
+        onChange={(_e, newValue) => {
+          props.onChange(newValue)
+        }}
+        onInputChange={onInputChange}
+        onOpen={onOpen}
+        filterOptions={onInputChange ? (x) => x : undefined}
+        getOptionLabel={(option) => option.label}
+        isOptionEqualToValue={(option, val) => option.id === val.id}
+        readOnly={readOnly}
+        disabled={disabled}
+        loading={loading}
+        sx={sx}
+        slots={PaperComponent ? { paper: PaperComponent } : undefined}
+        slotProps={{
+          popper: { style: { minWidth: 300 } },
+        }}
+        loadingText={t('inputs.loading')}
+        noOptionsText={t('inputs.noOptions')}
+        renderInput={renderInput}
+      />
+    )
+  }
+
   return (
     <Tooltip
-      title={value?.label ?? ''}
+      title={props.value?.label ?? ''}
       enterDelay={700}
       placement="bottom-start"
       disableInteractive
@@ -140,11 +243,11 @@ export const AutocompleteInput = ({
       <Autocomplete
         size={size}
         fullWidth={fullWidth}
-        value={value}
+        value={props.value}
         inputValue={inputValue}
         options={options}
         onChange={(_e, newValue) => {
-          onChange(newValue)
+          props.onChange(newValue)
         }}
         onInputChange={onInputChange}
         onOpen={onOpen}
@@ -154,65 +257,14 @@ export const AutocompleteInput = ({
         readOnly={readOnly}
         disabled={disabled}
         loading={loading}
-        sx={[
-          ...(disabled
-            ? [
-                {
-                  '& .MuiFilledInput-root': {
-                    backgroundColor: '#e6e9ee',
-                    borderColor: '#c3cee0',
-                    '&:hover': {
-                      backgroundColor: '#e6e9ee',
-                      borderColor: '#c3cee0',
-                    },
-                  },
-                },
-              ]
-            : []),
-          ...(size === 'small'
-            ? [
-                {
-                  '& .MuiFilledInput-root': { minHeight: 32 },
-                  '& .MuiAutocomplete-input': {
-                    paddingTop: '6px !important',
-                    paddingBottom: '6px !important',
-                  },
-                },
-              ]
-            : []),
-        ]}
+        sx={sx}
         slots={PaperComponent ? { paper: PaperComponent } : undefined}
         slotProps={{
           popper: { style: { minWidth: 300 } },
         }}
         loadingText={t('inputs.loading')}
         noOptionsText={t('inputs.noOptions')}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label={label}
-            required={required}
-            error={error}
-            helperText={helperText}
-            slotProps={{
-              ...slotProps,
-              input: {
-                ...params.InputProps,
-                ...(slotProps?.input as object),
-                endAdornment: (
-                  <>
-                    {params.InputProps.endAdornment}
-                    {!disabled && endAction}
-                  </>
-                ),
-              },
-              htmlInput: {
-                ...params.inputProps,
-                ...(slotProps?.htmlInput as object),
-              },
-            }}
-          />
-        )}
+        renderInput={renderInput}
       />
     </Tooltip>
   )

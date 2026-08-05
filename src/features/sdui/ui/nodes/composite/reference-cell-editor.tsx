@@ -1,6 +1,8 @@
 import { useState, type FC } from 'react'
-import { Box } from '@mui/material'
+import { Box, IconButton } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import { useTranslation } from 'react-i18next'
 
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
@@ -89,6 +91,8 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   onChange,
   onCommit,
 }) => {
+  const { t } = useTranslation()
+
   // Аффордансы пикера — тот же серверный контракт, что у REFERENCE_FIELD шапки
   // (reference-field-node.tsx). Ветки node.actions здесь нет: у TABLE_COLUMN
   // серверных команд showAll/create не бывает, только props.
@@ -171,6 +175,23 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   // Бэк тот же гейт заводит у себя, здесь — вторая дешёвая защита (спека §2).
   const canCreate = openPicker !== null && domain === 'DICTIONARY'
 
+  // SCRUM-291 §18.4.1: проваливание в карточку УЖЕ стоящей в ячейке записи —
+  // не пикер (§18.4 заблокирован PM). Читаем {id, presentation} из текущего
+  // значения ячейки, никакой rowId-командной модели не нужно (по образцу
+  // browse-edit ветки reference-field-node.tsx).
+  const openCard =
+    selectedOption && domain && targetTypeCode
+      ? () => {
+          openReferencePicker({
+            mode: 'edit',
+            domain,
+            typeCode: targetTypeCode,
+            entryId: selectedOption.id,
+            onSelect: applySelected,
+          })
+        }
+      : null
+
   return (
     <Box sx={wrapperSx}>
       <AutocompleteInput
@@ -201,6 +222,21 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
                 openPicker('create')
               }
             : undefined
+        }
+        endAction={
+          openCard ? (
+            <IconButton
+              aria-label={t('inputs.openReference')}
+              sx={{ p: '4px', borderRadius: '6px' }}
+              tabIndex={-1}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                openCard()
+              }}
+            >
+              <OpenInNewIcon className="text-ui-05" sx={{ fontSize: 20 }} />
+            </IconButton>
+          ) : undefined
         }
       />
     </Box>

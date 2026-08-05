@@ -43,17 +43,55 @@ vi.mock('../../../lib/sdui-session-context', () => ({
 }))
 
 // Не тянем реальные виджеты ячеек — упрощённые ColumnDef по accessorKey/header.
+// SCRUM-291 §0.5 дефект 2: props.testEditable — тестовый маркер, который
+// заводит ячейку через syncRef.current.updateCell (тот же путь, что и
+// настоящий TableCellEditor) — нужен тестам 7/8, чтобы прогнать правку через
+// обёртку updateCell компонента, а не только через клик по строке. Без
+// маркера — старое поведение (голый текст), чтобы не задеть остальные тесты
+// файла на getByText('A'/'B'): input не добавляет текстовый узел, а если бы
+// подпись дублировалась текстом рядом с ним, getByText ловил бы «несколько
+// совпадений».
 vi.mock('../../../lib/utils/build-column-defs', () => ({
   // Реальное значение: из него компонент считает высоту строки (2 × под-строка).
   VERTICAL_SUB_ROW_HEIGHT: 36,
-  buildColumnDefs: (children: ViewNode[] | undefined) =>
+  buildColumnDefs: (
+    children: ViewNode[] | undefined,
+    syncRef: {
+      current: {
+        updateCell: (rowId: string, binding: string, value: unknown) => void
+      } | null
+    }
+  ) =>
     (children ?? [])
       .filter((c) => c.type === 'TABLE_COLUMN')
-      .map((c) => ({
-        id: c.id,
-        accessorKey: c.binding!,
-        header: c.props?.label ?? c.id,
-      })),
+      .map((c) => {
+        const binding = c.binding!
+        if (!c.props?.testEditable) {
+          return {
+            id: c.id,
+            accessorKey: binding,
+            header: c.props?.label ?? c.id,
+          }
+        }
+        return {
+          id: c.id,
+          accessorKey: binding,
+          header: c.props.label ?? c.id,
+          cell: (info: { row: { original: Record<string, unknown> } }) => {
+            const rowId = String(info.row.original.rowId)
+            const cellValue = info.row.original[binding]
+            return (
+              <input
+                data-testid={`editor-${binding}-${rowId}`}
+                value={typeof cellValue === 'string' ? cellValue : ''}
+                onChange={(e) =>
+                  syncRef.current?.updateCell(rowId, binding, e.target.value)
+                }
+              />
+            )
+          },
+        }
+      }),
   extractAllLeafColumns: () => [
     {
       id: 'col-vychet',
@@ -133,14 +171,53 @@ const masterNode: ViewNode = {
     },
   ],
   children: [
-    { id: 'col-vychet', type: 'TABLE_COLUMN', binding: 'VychetIPN', props: { label: 'Вычет' } },
+    {
+      id: 'col-vychet',
+      type: 'TABLE_COLUMN',
+      binding: 'VychetIPN',
+      props: { label: 'Вычет' },
+    },
+  ],
+} as ViewNode
+
+// SCRUM-291 §0.5 дефект 2: узел с редактируемой (testEditable) колонкой —
+// отдельный от masterNode/detailNode выше, чтобы правка ячейки этого узла не
+// задевала их getByText('A'/'B')-тесты. node.binding='Defect2Table' — свой
+// канон, не пересекается с VychetyIPN/VychetyRows.
+const defect2Node: ViewNode = {
+  id: 'table.defect2',
+  type: 'TABLE',
+  binding: 'Defect2Table',
+  props: { editable: true, allowDelete: true },
+  children: [
+    {
+      id: 'col-vychet',
+      type: 'TABLE_COLUMN',
+      binding: 'VychetIPN',
+      props: { label: 'Вычет' },
+    },
+    {
+      id: 'col-vychet-edit',
+      type: 'TABLE_COLUMN',
+      binding: 'VychetIPN',
+      props: { label: 'Вычет (edit)', testEditable: true },
+    },
   ],
 } as ViewNode
 
 const commandCalls = () =>
   mockDispatch.mock.calls.filter(
-    (call) => (call[0] as { type: string }).type === 'COMMAND',
+    (call) => (call[0] as { type: string }).type === 'COMMAND'
   )
+
+// «Удалить» гейтится ровно по selectedRowId (canRemove={selectedRowId !== null})
+// — читаем aria-disabled пункта меню как прокси локального состояния выделения,
+// не полагаясь только на CSS-класс выбранной строки.
+const isDeleteDisabled = () => {
+  fireEvent.click(screen.getByRole('button', { name: 'table.more' }))
+  const deleteItem = screen.getByText('table.deleteRow')
+  return deleteItem.closest('li')?.getAttribute('aria-disabled') === 'true'
+}
 
 beforeEach(() => {
   cleanup()
@@ -354,7 +431,86 @@ describe('ComplexEditableTable — «Добавить» у detail-ТЧ при з
         type: 'EVENT',
         sourceNodeId: 'detailTbl',
         fullSnapshot: true,
-      }),
+      })
     )
+  })
+})
+
+// SCRUM-291 §0.5 дефект 2: master-detail показывает чужой график после
+// пересборки. Прувпойнт — ИПН: rowId у части типов документов — порядковый
+// номер строки, не устойчивая идентичность записи; после пересборки ТЧ
+// строка с тем же rowId в visibleRows, как правило, по-прежнему есть — но
+// это уже другая запись.
+describe('ComplexEditableTable — сброс выделения при подмене записи (SCRUM-291 §0.5 дефект 2)', () => {
+  beforeEach(() => {
+    state.Defect2Table = [
+      { rowId: 'r1', VychetIPN: 'A' },
+      { rowId: 'r2', VychetIPN: 'B' },
+    ]
+  })
+
+  it('сбрасывает выбор при подмене записи под тем же rowId — и локально, и в публикации', () => {
+    const { rerender } = render(<ComplexEditableTable node={defect2Node} />)
+
+    fireEvent.click(screen.getByText('B'))
+    expect(state['Defect2Table.__selectedRowId']).toBe('r2')
+
+    // «Пересборка» сервером: канон с тем же rowId r2, но другим содержимым.
+    state.Defect2Table = [
+      { rowId: 'r1', VychetIPN: 'A' },
+      { rowId: 'r2', VychetIPN: 'C' },
+    ]
+    rerender(<ComplexEditableTable node={defect2Node} />)
+
+    // Публикация в сторе снята — ровно то, что раньше НЕ снималось (симптом
+    // дефекта: detail фильтровал по опубликованному значению).
+    expect(state['Defect2Table.__selectedRowId']).toBeNull()
+    // И локальное выделение снято тоже — не только визуальный класс строки.
+    expect(isDeleteDisabled()).toBe(true)
+  })
+
+  it('сохраняет выбор при повторном каноне с тем же содержимым строки', () => {
+    const { rerender } = render(<ComplexEditableTable node={defect2Node} />)
+
+    fireEvent.click(screen.getByText('B'))
+    expect(state['Defect2Table.__selectedRowId']).toBe('r2')
+
+    // Новый массив/объекты — обычное эхо после table-EVENT, содержимое то же.
+    state.Defect2Table = [
+      { rowId: 'r1', VychetIPN: 'A' },
+      { rowId: 'r2', VychetIPN: 'B' },
+    ]
+    rerender(<ComplexEditableTable node={defect2Node} />)
+
+    expect(state['Defect2Table.__selectedRowId']).toBe('r2')
+    expect(isDeleteDisabled()).toBe(false)
+  })
+
+  it('сохраняет выбор при правке ячейки выбранной строки через updateCell', () => {
+    render(<ComplexEditableTable node={defect2Node} />)
+
+    fireEvent.click(screen.getByText('B'))
+    expect(state['Defect2Table.__selectedRowId']).toBe('r2')
+
+    fireEvent.change(screen.getByTestId('editor-VychetIPN-r2'), {
+      target: { value: 'B2' },
+    })
+
+    // Не слетело на собственный ввод — иначе обе редактируемые таблицы ИПН
+    // теряли бы выделение на каждый введённый символ.
+    expect(state['Defect2Table.__selectedRowId']).toBe('r2')
+    expect(isDeleteDisabled()).toBe(false)
+  })
+
+  it('переход на другую строку подменой не считается', () => {
+    render(<ComplexEditableTable node={defect2Node} />)
+
+    fireEvent.click(screen.getByText('B'))
+    expect(state['Defect2Table.__selectedRowId']).toBe('r2')
+
+    fireEvent.click(screen.getByText('A'))
+
+    expect(state['Defect2Table.__selectedRowId']).toBe('r1')
+    expect(isDeleteDisabled()).toBe(false)
   })
 })

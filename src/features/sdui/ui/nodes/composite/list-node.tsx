@@ -1,19 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { CircularProgress, Typography } from '@mui/material'
 import {
   useReactTable,
   getCoreRowModel,
-  flexRender,
   type ColumnDef,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
 import { fetchListPage } from '../../../api/reference-options'
-import { cn } from '@/shared/lib/utils/cn'
-import { resolveLoadedCountLabel } from './list-loaded-count'
 import { ListFilterChips, type ListFilterChip } from './list-filter-chips'
 import {
   buildListColumns,
@@ -23,6 +19,7 @@ import {
   type ListPeriod,
 } from './list-column-defs'
 import { ListPeriodControl } from './list-period-control'
+import { ListTable } from './list-table'
 
 import type { NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -221,13 +218,6 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     overscan: 10,
   })
 
-  const virtualRows = rowVirtualizer.getVirtualItems()
-  const paddingTop = virtualRows[0]?.start ?? 0
-  const paddingBottom =
-    virtualRows.length > 0
-      ? rowVirtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0)
-      : 0
-
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-2">
       <div className="flex items-center justify-between">
@@ -275,120 +265,22 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         />
       )}
 
-      <div className="relative min-h-0 flex-1 flex flex-col">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Typography className="text-ui-05">
-              {t('inputs.loading')}
-            </Typography>
-          </div>
-        ) : isError ? (
-          <div className="flex items-center justify-center py-20">
-            <Typography className="text-ui-05">
-              {t('table.loadError')}
-            </Typography>
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="flex items-center justify-center py-20">
-            <Typography className="text-ui-05">
-              {t('dictSidebar.noData')}
-            </Typography>
-          </div>
-        ) : (
-          <>
-            <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
-              <table
-                className="w-full border-separate"
-                style={{ borderSpacing: '2px' }}
-              >
-                <thead>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06"
-                          style={{ width: header.getSize() }}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {paddingTop > 0 && (
-                    <tr>
-                      <td style={{ height: paddingTop }} />
-                    </tr>
-                  )}
-                  {virtualRows.map((virtualRow) => {
-                    const row = tableRows[virtualRow.index]
-                    const isSelected = selectedRowId === row.original.id
-
-                    return (
-                      <tr
-                        key={row.id}
-                        onClick={() => {
-                          setSelectedRowId(row.original.id)
-                        }}
-                        onDoubleClick={() => {
-                          dispatchSelect(
-                            activateAction ?? selectAction,
-                            row.original.id
-                          )
-                        }}
-                        className={cn(
-                          'cursor-pointer transition-colors hover:bg-ui-07',
-                          isSelected
-                            ? 'bg-ui-07'
-                            : virtualRow.index % 2 === 1
-                              ? 'bg-ui-01'
-                              : ''
-                        )}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <td
-                            key={cell.id}
-                            className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    )
-                  })}
-                  {paddingBottom > 0 && (
-                    <tr>
-                      <td style={{ height: paddingBottom }} />
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-              <div ref={sentinelRef} className="h-1" />
-            </div>
-
-            <div className="shrink-0 px-3 py-2 flex items-center gap-2">
-              <Typography variant="body2" className="text-ui-05">
-                {resolveLoadedCountLabel(
-                  t,
-                  rows.length,
-                  pagedData?.pages[0]?.data.totalElements
-                )}
-              </Typography>
-              {isFetchingNextPage && <CircularProgress size={14} />}
-            </div>
-          </>
-        )}
-      </div>
+      <ListTable
+        table={table}
+        rowVirtualizer={rowVirtualizer}
+        scrollRef={scrollRef}
+        sentinelRef={sentinelRef}
+        rows={rows}
+        isLoading={isLoading}
+        isError={isError}
+        isFetchingNextPage={isFetchingNextPage}
+        pagedData={pagedData}
+        selectedRowId={selectedRowId}
+        setSelectedRowId={setSelectedRowId}
+        activateAction={activateAction}
+        selectAction={selectAction}
+        dispatchSelect={dispatchSelect}
+      />
     </div>
   )
 }

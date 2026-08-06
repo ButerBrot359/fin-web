@@ -373,6 +373,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           allowDelete={allowDelete}
           commands={tableCommands}
           search={search}
+          selectedRowId={selectedRowId}
         />
       </div>
       {/* basis auto, а не 0: контейнер растёт до высоты колонки, но никогда не

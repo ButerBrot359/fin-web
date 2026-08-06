@@ -196,6 +196,11 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           allowDelete={allowDelete}
           commands={tableCommands}
           search={search}
+          selectedRowId={
+            selectedIndex != null
+              ? (sync.rows[selectedIndex]?.rowId ?? null)
+              : null
+          }
         />
       </div>
       <TableContainer component={Paper} ref={containerRef}>

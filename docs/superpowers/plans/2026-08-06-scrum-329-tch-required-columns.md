@@ -18,6 +18,7 @@
 - Формат коммита: `feat|fix|add|refactor: описание`. Хук lint-staged гоняет ESLint/Prettier на коммите.
 - НЕ запускать `tsc`/`lint`/`build` после каждого шага — только целевой vitest указанного файла.
 - Тесты: `npx vitest run <path>`.
+- **Матчеры — только нативные vitest** (`.toBe/.toBeTruthy/.toBeNull/.toBeDefined`, `queryBy*`→`null`). Проект НЕ использует `@testing-library/jest-dom` (в `vitest.config.ts` нет `setupFiles`). НЕ добавлять jest-dom, НЕ трогать `vitest.config.ts`/`package.json` ради матчеров. `getByText/getByRole` бросают исключение при отсутствии — вызов сам по себе является проверкой.
 - Пустота: `null`/`undefined`/`""`/нет ключа; для `REFERENCE_FIELD`/`OBJECT_FIELD` — нет `id`; числовой `0` и `false` — НЕ пусто.
 - Reveal-триггер: `action.type==='COMMAND' && behavior?.flushPendingTables===true` (НЕ `shouldFlush`).
 - «\*» и рамка только при `required && !readonly`.
@@ -258,11 +259,11 @@ function Probe() {
 describe('useTableValidation', () => {
   it('revealErrors=false до сабмита, true после revealAll', () => {
     render(<Probe />)
-    expect(screen.getByText('off')).toBeInTheDocument()
+    expect(screen.getByText('off')).toBeTruthy()
     act(() => {
       revealAllTableErrors()
     })
-    expect(screen.getByText('on')).toBeInTheDocument()
+    expect(screen.getByText('on')).toBeTruthy()
   })
 })
 ```
@@ -448,8 +449,8 @@ import { RequiredMark } from './required-mark'
 describe('RequiredMark', () => {
   it('рендерит label и звёздочку', () => {
     render(<RequiredMark label="Вычет ИПН" />)
-    expect(screen.getByText('Вычет ИПН')).toBeInTheDocument()
-    expect(screen.getByText('*')).toBeInTheDocument()
+    expect(screen.getByText('Вычет ИПН')).toBeTruthy()
+    expect(screen.getByText('*')).toBeTruthy()
   })
 })
 ```

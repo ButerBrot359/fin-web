@@ -8,6 +8,8 @@ import type {
   UseTableSyncResult,
 } from '../hooks/use-table-sync'
 import { TableCellEditor } from '../../ui/nodes/composite/table-cell-editor'
+import { RequiredMark } from '../../ui/nodes/composite/required-mark'
+import type { UseTableValidationResult } from '../hooks/use-table-validation'
 
 /**
  * Кастомные поля в `ColumnDef.meta`. Читаются приведением типа на месте
@@ -47,7 +49,7 @@ export const VERTICAL_SUB_ROW_HEIGHT = 36
  */
 function verticalSubRows(
   items: { key: string; content: ReactNode }[],
-  paddingX: number,
+  paddingX: number
 ): ReactNode {
   return createElement(
     'div',
@@ -67,10 +69,20 @@ function verticalSubRows(
             boxSizing: 'border-box' as const,
           },
         },
-        item.content,
-      ),
-    ),
+        item.content
+      )
+    )
   )
+}
+
+/**
+ * Заголовок колонки: label с красным «*» (RequiredMark), если колонка
+ * обязательна и не readonly — иначе просто строка-label (SCRUM-329).
+ */
+function columnHeader(col: TableColumnDef): ReactNode {
+  return col.required && !col.readonly
+    ? createElement(RequiredMark, { label: col.label })
+    : col.label
 }
 
 /**
@@ -85,6 +97,7 @@ function verticalSubRows(
 export function buildColumnDefs(
   children: ViewNode[] | undefined,
   syncRef: RefObject<UseTableSyncResult>,
+  validationRef?: RefObject<UseTableValidationResult>
 ): ColumnDef<TableRow>[] {
   if (!children) return []
 
@@ -101,21 +114,26 @@ export function buildColumnDefs(
       const colDef: ColumnDef<TableRow> = {
         id: col.id,
         accessorFn: (row: TableRow) => row[col.binding],
-        header: col.label,
+        header: columnHeader(col),
         cell: (info: CellContext<TableRow, unknown>) =>
           createElement(TableCellEditor, {
             cellWidget: col.cellWidget,
             dataType: col.dataType,
             value: info.row.original[col.binding],
             readonly: col.readonly,
+            required: col.required,
+            revealErrors: validationRef?.current.revealErrors ?? false,
             props: col.props,
-            onChange: (val: unknown) =>
-              syncRef.current?.updateCell(
+            onChange: (val: unknown) => {
+              syncRef.current.updateCell(
                 info.row.original.rowId,
                 col.binding,
-                val,
-              ),
-            onCommit: () => syncRef.current?.commitCell(),
+                val
+              )
+            },
+            onCommit: () => {
+              syncRef.current.commitCell()
+            },
           }),
         ...(node.props?.footer === true ? { footer: col.id } : {}),
       }
@@ -124,14 +142,15 @@ export function buildColumnDefs(
     }
 
     if (nodeType === 'COLUMN_GROUP') {
-      const orientation = (node.props?.orientation as string | undefined) ?? 'HORIZONTAL'
+      const orientation =
+        (node.props?.orientation as string | undefined) ?? 'HORIZONTAL'
       const groupId = node.id
       const groupLabel = (node.props?.label as string | undefined) ?? ''
 
       if (orientation === 'VERTICAL') {
         // Vertical group: single column, cell renders stacked editors
         const visibleChildren = (node.children ?? []).filter(
-          (child) => child.props?.visible !== false,
+          (child) => child.props?.visible !== false
         )
 
         // Шапка VERTICAL-группы: подписи под-колонок СТОПКОЙ, по одной над своим
@@ -152,8 +171,11 @@ export function buildColumnDefs(
             subLabels.length > 0
               ? () =>
                   verticalSubRows(
-                    subLabels.map((col) => ({ key: col.id, content: col.label })),
-                    16,
+                    subLabels.map((col) => ({
+                      key: col.id,
+                      content: columnHeader(col),
+                    })),
+                    16
                   )
               : groupLabel,
           cell: (info: CellContext<TableRow, unknown>) =>
@@ -167,18 +189,23 @@ export function buildColumnDefs(
                     dataType: childCol.dataType,
                     value: info.row.original[childCol.binding],
                     readonly: childCol.readonly,
+                    required: childCol.required,
+                    revealErrors: validationRef?.current.revealErrors ?? false,
                     props: childCol.props,
-                    onChange: (val: unknown) =>
-                      syncRef.current?.updateCell(
+                    onChange: (val: unknown) => {
+                      syncRef.current.updateCell(
                         info.row.original.rowId,
                         childCol.binding,
-                        val,
-                      ),
-                    onCommit: () => syncRef.current?.commitCell(),
+                        val
+                      )
+                    },
+                    onCommit: () => {
+                      syncRef.current.commitCell()
+                    },
                   }),
                 }
               }),
-              0,
+              0
             ),
         }
         result.push(colDef)
@@ -187,7 +214,7 @@ export function buildColumnDefs(
         const colDef: ColumnDef<TableRow> = {
           id: groupId,
           header: groupLabel,
-          columns: buildColumnDefs(node.children, syncRef),
+          columns: buildColumnDefs(node.children, syncRef, validationRef),
         }
         result.push(colDef)
       }
@@ -205,7 +232,7 @@ export function buildColumnDefs(
  * hidden columns may carry master-detail keys needed in data.
  */
 export function extractAllLeafColumns(
-  children: ViewNode[] | undefined,
+  children: ViewNode[] | undefined
 ): TableColumnDef[] {
   if (!children) return []
 

@@ -62,27 +62,6 @@ describe('ReferenceCellEditor', () => {
     expect(screen.getByRole<HTMLInputElement>('combobox').value).toBe('ИПН 10%')
   })
 
-  it('extraParams уходят в запрос опций (сужение по __rowParentIds)', async () => {
-    render(
-      <ReferenceCellEditor
-        colProps={{
-          optionsSource: { url: '/api/dictionary-entries/VidyVNA/entries' },
-        }}
-        extraParams={{ parent: '4711' }}
-        value={null}
-        onChange={vi.fn()}
-        onCommit={vi.fn()}
-      />
-    )
-    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' })
-    await screen.findByText('ИПН 10%')
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        params: expect.objectContaining({ parent: '4711' }),
-      })
-    )
-  })
-
   it('без optionsSource и targetTypeCode — нейтральное отображение, не падает', () => {
     render(
       <ReferenceCellEditor

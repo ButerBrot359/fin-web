@@ -9,6 +9,7 @@ import { Sidebar } from '@/widgets/sidebar'
 
 import { DictSidebarDrawer, useDictSidebarStore } from '@/features/dict-sidebar'
 import {
+  ShellSidebarHost,
   setReferencePickerGateway,
   setReportResultGateway,
 } from '@/features/sdui'
@@ -336,7 +337,10 @@ function App() {
   return (
     <BrowserRouter>
       <WorkspaceTabSync />
-      <Layout sidebar={<Sidebar />} header={<TopBar />}>
+      <Layout
+        sidebar={<ShellSidebarHost fallback={<Sidebar />} />}
+        header={<TopBar />}
+      >
         <AppRoutes />
       </Layout>
       <DictSidebarDrawer />

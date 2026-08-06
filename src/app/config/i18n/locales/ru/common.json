@@ -1,6 +1,7 @@
 {
   "sidebar": {
     "appName": "Web-бухгалтерия",
+    "toggleCollapse": "Свернуть меню",
     "nav": {
       "main": "Главная"
     }

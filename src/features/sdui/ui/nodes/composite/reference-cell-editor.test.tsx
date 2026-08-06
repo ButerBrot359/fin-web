@@ -244,10 +244,8 @@ describe('ReferenceCellEditor', () => {
           onCommit={onCommit}
         />
       )
-
       const button = screen.getByRole('button', { name: openCardName })
       fireEvent.mouseDown(button)
-
       expect(openPickerMock).toHaveBeenCalledTimes(1)
       expect(openPickerMock.mock.calls[0][0]).toMatchObject({
         mode: 'edit',
@@ -255,7 +253,6 @@ describe('ReferenceCellEditor', () => {
         typeCode: 'VidyStazha',
         entryId: 5,
       })
-
       // Карточка резолвится тем же onSelect, что и пикер — проверяем запись обратно.
       const req = openPickerMock.mock.calls[0][0] as {
         onSelect: (o: SelectOption) => void

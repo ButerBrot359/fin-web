@@ -41,7 +41,7 @@
 **Фикс.**
 
 - `buildColumnDefs` (плоская ячейка, `src/features/sdui/lib/utils/build-column-defs.ts`): если `col.props.rowFilter` есть — `paramName = Object.keys(rowFilter)[0]`; `parentVal = (row.__rowParentIds as Record<string, unknown>)?.[col.binding]`; при `parentVal != null` собрать `extraParams = { [paramName]: String(parentVal) }`. Передать `extraParams` в `TableCellEditor`.
-- `TableCellEditor` (`table-cell-editor.tsx`): новый опциональный проп `extraParams?: Record<string, string>`, прокинуть в `ReferenceCellEditor` и `ObjectCellEditor`.
+- `TableCellEditor` (`table-cell-editor.tsx`): новый опциональный проп `extraParams?: Record<string, string>`, прокинуть в `ReferenceCellEditor`. `ObjectCellEditor` — намеренно НЕ трогаем (YAGNI): сегодня единственная rowFilter-колонка `vidVNA` — REFERENCE, ни одна OBJECT-колонка rowFilter не несёт; добавить при появлении.
 - `ReferenceCellEditor` / `ObjectCellEditor`: `params = { ...resolveOptionsParams(optionsSource?.params, () => undefined), ...extraParams }`; `resetKey` считать по итоговым `params` (уже так) → смена ОС в строке перезапрашивает опции.
 - Отсутствие ключа (`__rowParentIds` нет / ОС не выбран / ГруппаОС пуста) → `extraParams` пуст → полный список, поведение прежнее.
 

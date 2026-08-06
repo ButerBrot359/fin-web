@@ -70,7 +70,7 @@ Layout
 - Хром сайдбара (лого, имя приложения `sidebar.appName` — клиентский i18n, кнопка сворачивания) —
   стиль из существующего `widgets/sidebar/ui/sidebar.tsx`.
 - Маппит `node.children` (LINK-узлы) в пункты меню (внутренний под-компонент `SidebarLinkItem`):
-  иконка (резолвер §резолвер) + `props.label`; активность — совпадение `props.route` с
+  иконка (резолвер иконки, ниже) + `props.label`; активность — совпадение `props.route` с
   `location.pathname` (`/` точно, остальное `startsWith`); клик → `navigate(props.route)`.
 - Свёрнутость: `props.collapsed` — стартовое значение; дальше клиентский тоггл + localStorage
   (как сейчас). Открытый вопрос «клиент vs сервер» в фазе 1 не решаем.

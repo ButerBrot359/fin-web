@@ -39,13 +39,22 @@ export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
         label={f.label}
         value={value}
         readOnly={f.readonly}
+        IconComponent={f.readonly ? () => null : undefined}
         onChange={(e) => {
           const selectedValue = e.target.value
           f.setValue(selectedValue)
           const opt = options.find((o) => o.value === selectedValue)
           const enumValue = opt
-            ? { id: opt.id ?? selectedValue, code: opt.code ?? opt.value, presentation: opt.label }
-            : { id: selectedValue, code: selectedValue, presentation: selectedValue }
+            ? {
+                id: opt.id ?? selectedValue,
+                code: opt.code ?? opt.value,
+                presentation: opt.label,
+              }
+            : {
+                id: selectedValue,
+                code: selectedValue,
+                presentation: selectedValue,
+              }
           f.fireServerEvent('change', enumValue)
         }}
       >

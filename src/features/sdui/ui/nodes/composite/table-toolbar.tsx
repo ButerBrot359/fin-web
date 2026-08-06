@@ -28,6 +28,7 @@ interface TableToolbarProps {
   allowDelete?: boolean
   commands?: TableCommandDescriptor[]
   search: TableSearchApi
+  selectedRowId?: string | null
 }
 
 export const TableToolbar = ({
@@ -46,6 +47,7 @@ export const TableToolbar = ({
   allowDelete = true,
   commands = [],
   search,
+  selectedRowId = null,
 }: TableToolbarProps) => {
   const { t, i18n } = useTranslation()
   const dispatch = useSduiDispatch()
@@ -55,7 +57,17 @@ export const TableToolbar = ({
     i18n.language.startsWith('kz') ? (cmd.labelKz ?? cmd.label) : cmd.label
 
   const runCommand = (cmd: TableCommandDescriptor) => {
-    void dispatch({ type: 'COMMAND', command: cmd.command }, cmd.behavior)
+    void dispatch(
+      {
+        type: 'COMMAND',
+        command: cmd.command,
+        // rowId нужен построчным командам (table.copyRow); сервер читает его
+        // через extractRowId только у них, прочие игнорируют (SCRUM-332 §1).
+        // Спред, а не value:undefined — иначе ключ value ломает прежние тесты.
+        ...(selectedRowId ? { value: { rowId: selectedRowId } } : {}),
+      },
+      cmd.behavior
+    )
   }
 
   return (

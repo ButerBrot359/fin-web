@@ -160,4 +160,32 @@ describe('TableToolbar: доменные кнопки из tableCommands (SCRUM-
     expect(clear).not.toHaveBeenCalled()
     expect(outerKeyDown).toHaveBeenCalled()
   })
+
+  it('клик по команде при выбранной строке → value: {rowId}', () => {
+    render(
+      <TableToolbar
+        {...baseProps}
+        commands={[podbor]}
+        selectedRowId="27855679-3"
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Подбор' }))
+    expect(mockDispatch).toHaveBeenCalledWith(
+      {
+        type: 'COMMAND',
+        command: 'table.podbor:VychetyIPN',
+        value: { rowId: '27855679-3' },
+      },
+      { flushPendingTables: false, resetsDirty: false, closeAfter: false }
+    )
+  })
+
+  it('без выбранной строки → ключа value нет', () => {
+    render(<TableToolbar {...baseProps} commands={[podbor]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Подбор' }))
+    expect(mockDispatch).toHaveBeenCalledWith(
+      { type: 'COMMAND', command: 'table.podbor:VychetyIPN' },
+      { flushPendingTables: false, resetsDirty: false, closeAfter: false }
+    )
+  })
 })

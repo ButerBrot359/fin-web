@@ -48,14 +48,17 @@ export const ListFilterFunnel: FC<ListFilterFunnelProps> = ({
   // onApply(field, op, undefined) уходит в list-node без ключа `value`, и на
   // проводе получается тот же вид команды, что зарезервирован под isNull/isNotNull
   // (баг: "contains" без значения неотличим от «поле пусто»).
+  const isArrayOp = op === 'in' || op === 'notIn'
   const canApply = isValueless
     ? true
-    : op === 'between'
-      ? Array.isArray(value) &&
-        value.length === 2 &&
-        !isEmptyValue(value[0]) &&
-        !isEmptyValue(value[1])
-      : !isEmptyValue(value)
+    : isArrayOp
+      ? Array.isArray(value) && value.length > 0
+      : op === 'between'
+        ? Array.isArray(value) &&
+          value.length === 2 &&
+          !isEmptyValue(value[0]) &&
+          !isEmptyValue(value[1])
+        : !isEmptyValue(value)
 
   const handleApply = () => {
     if (!canApply) return

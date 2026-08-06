@@ -612,7 +612,9 @@ interface RequiredCellFrameProps {
 /**
  * Обёртка обязательной ячейки ТЧ (SCRUM-329): при show=true — красная рамка
  * + tooltip «Обязательное поле». Структура стабильна (Box+Tooltip всегда),
- * меняются только sx/title — инпут не перемонтируется, фокус сохраняется.
+ * меняются только sx/title/data-атрибут — инпут не перемонтируется, фокус
+ * сохраняется. `data-required-error` — надёжный якорь для тестов (MUI sx
+ * компилируется в CSS-класс, инлайн-стиля outline в DOM нет).
  */
 export const RequiredCellFrame: FC<RequiredCellFrameProps> = ({
   show,
@@ -622,6 +624,7 @@ export const RequiredCellFrame: FC<RequiredCellFrameProps> = ({
   return (
     <Tooltip title={show ? t('errors.required') : ''}>
       <Box
+        data-required-error={show ? 'true' : undefined}
         sx={{
           width: '100%',
           borderRadius: 1,
@@ -641,7 +644,7 @@ export const RequiredCellFrame: FC<RequiredCellFrameProps> = ({
 ```tsx
 // src/features/sdui/ui/nodes/composite/table-cell-editor.test.tsx
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, fireEvent } from '@testing-library/react'
 import { TableCellEditor } from './table-cell-editor'
 
 const base = {
@@ -651,44 +654,53 @@ const base = {
   onCommit: vi.fn(),
 }
 
+// Рамка ошибки маркируется data-required-error="true" на обёртке
+// (MUI sx → CSS-класс, инлайн-стиля outline в DOM нет — селектор по style не годится).
+const ERR = '[data-required-error="true"]'
+
 describe('TableCellEditor required validation', () => {
-  it('пустая обязательная ячейка после blur → рамка (tooltip-обёртка)', () => {
+  it('пустая обязательная: до blur рамки нет, после blur — есть', () => {
     const { container } = render(
       <TableCellEditor {...base} value="" required />
     )
-    const input = container.querySelector('input')!
-    fireEvent.blur(input)
-    // outline становится '1px solid' на обёртке
-    const framed = container.querySelector('[style*="outline"]')
-    expect(framed).toBeTruthy()
+    expect(container.querySelector(ERR)).toBeNull()
+    fireEvent.blur(container.querySelector('input')!)
+    expect(container.querySelector(ERR)).toBeTruthy()
   })
 
   it('revealErrors подсвечивает пустую обязательную БЕЗ blur', () => {
-    render(<TableCellEditor {...base} value="" required revealErrors />)
-    expect(screen.getByRole('tooltip', { hidden: true })).toBeDefined()
+    const { container } = render(
+      <TableCellEditor {...base} value="" required revealErrors />
+    )
+    expect(container.querySelector(ERR)).toBeTruthy()
+  })
+
+  it('заполненная обязательная — без рамки даже после blur', () => {
+    const { container } = render(
+      <TableCellEditor {...base} value="x" required />
+    )
+    fireEvent.blur(container.querySelector('input')!)
+    expect(container.querySelector(ERR)).toBeNull()
   })
 
   it('необязательная ячейка не оборачивается рамкой', () => {
     const { container } = render(<TableCellEditor {...base} value="" />)
-    const input = container.querySelector('input')!
-    fireEvent.blur(input)
-    expect(container.querySelector('[style*="outline: 1px solid"]')).toBeNull()
+    fireEvent.blur(container.querySelector('input')!)
+    expect(container.querySelector(ERR)).toBeNull()
   })
 
-  it('readonly обязательная — span без рамки', () => {
+  it('readonly обязательная — span без input и без рамки', () => {
     const { container } = render(
       <TableCellEditor {...base} value="" required readonly />
     )
     expect(container.querySelector('input')).toBeNull()
-    expect(container.querySelector('[style*="outline: 1px solid"]')).toBeNull()
+    expect(container.querySelector(ERR)).toBeNull()
   })
 })
 ```
 
-> Примечание для исполнителя: проверка рамки идёт по инлайн-стилю `outline`
-> (MUI кладёт `sx.outline` в style). Если в рантайме селектор `[style*="outline"]`
-> ловит и `outline: none`, уточни на `outline: 1px solid`. Тест должен именно
-> ПАДАТЬ до реализации (компонент ещё не принимает `required`).
+> Тест должен именно ПАДАТЬ до реализации (компонент ещё не принимает
+> `required`/`revealErrors` и не оборачивает ячейку рамкой).
 
 - [ ] **Step 5: Убедиться, что тест падает**
 

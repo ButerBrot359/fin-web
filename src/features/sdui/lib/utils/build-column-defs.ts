@@ -76,10 +76,13 @@ function verticalSubRows(
 }
 
 /**
- * Заголовок колонки: label с красным «*» (RequiredMark), если колонка
- * обязательна и не readonly — иначе просто строка-label (SCRUM-329).
+ * Содержимое заголовка колонки: label с красным «*» (RequiredMark), если
+ * колонка обязательна и не readonly — иначе просто строка-label (SCRUM-329).
+ * Возвращает СЫРОЙ ReactNode: годится как `content` вертикальной группы; для
+ * плоского `header` (тип TanStack — string|функция, не элемент) оборачивается
+ * в `() => …`.
  */
-function columnHeader(col: TableColumnDef): ReactNode {
+function columnHeaderContent(col: TableColumnDef): ReactNode {
   return col.required && !col.readonly
     ? createElement(RequiredMark, { label: col.label })
     : col.label
@@ -114,7 +117,13 @@ export function buildColumnDefs(
       const colDef: ColumnDef<TableRow> = {
         id: col.id,
         accessorFn: (row: TableRow) => row[col.binding],
-        header: columnHeader(col),
+        // TanStack `header` — string | функция; сырой элемент недопустим,
+        // поэтому маркер оборачиваем в render-функцию (flexRender её вызовет),
+        // а обычную колонку оставляем строкой-label (SCRUM-329).
+        header:
+          col.required && !col.readonly
+            ? () => columnHeaderContent(col)
+            : col.label,
         cell: (info: CellContext<TableRow, unknown>) =>
           createElement(TableCellEditor, {
             cellWidget: col.cellWidget,
@@ -173,7 +182,7 @@ export function buildColumnDefs(
                   verticalSubRows(
                     subLabels.map((col) => ({
                       key: col.id,
-                      content: columnHeader(col),
+                      content: columnHeaderContent(col),
                     })),
                     16
                   )

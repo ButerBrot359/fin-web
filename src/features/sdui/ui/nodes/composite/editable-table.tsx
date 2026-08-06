@@ -101,12 +101,12 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
       columns.map((col) => ({
         id: col.id,
         accessorFn: (row: TableRow) => row[col.binding],
+        // TanStack `header` — string | функция (не элемент): маркер оборачиваем
+        // в render-функцию, обычную колонку оставляем строкой-label (SCRUM-329).
         header:
-          col.required && !col.readonly ? (
-            <RequiredMark label={col.label} />
-          ) : (
-            col.label
-          ),
+          col.required && !col.readonly
+            ? () => <RequiredMark label={col.label} />
+            : col.label,
         size: col.flex ? undefined : 150,
         cell: ({ row }) => (
           <TableCellEditor

@@ -20,6 +20,8 @@ import { useSduiSession } from './sdui-session-context'
 import { usePanelStore } from './stores/panel-store'
 import { useConfirmStore } from './stores/confirm-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
+import { revealAllTableErrors } from './table-validation-registry'
+import { shouldRevealTableErrors } from './utils/reveal-policy'
 import { armNewTab } from './workspace-tab-gateway'
 import { relaySelectionToParent } from './relay-selection'
 import { openDialogAsPanel } from './open-dialog-panel'
@@ -150,6 +152,12 @@ export function useSduiDispatch() {
             showToast('error', i18n.t('sdui.tableFlushFailed'))
             return false
           }
+        }
+
+        // SCRUM-329: на write-команде (save/post) подсветить пустые обязательные
+        // ячейки ТЧ — клиентский дублёр серверной 422-валидации. Сабмит не блокируем.
+        if (shouldRevealTableErrors(action, behavior)) {
+          revealAllTableErrors()
         }
 
         const res = await viewTransport.post({

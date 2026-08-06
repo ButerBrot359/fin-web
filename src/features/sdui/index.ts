@@ -38,3 +38,4 @@ export {
 } from './lib/language-session-control'
 export { openMovementsForEntry } from './lib/open-movements'
 export { mapKindToPageType } from './lib/tab-kind'
+export { ShellSidebarHost } from './ui/shell-sidebar-host'

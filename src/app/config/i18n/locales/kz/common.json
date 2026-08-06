@@ -584,7 +584,8 @@
       "gatewayMissing": "Нәтиже рендерері қолжетімсіз",
       "showMore": "Тағы көрсету",
       "print": "Басып шығару",
-      "export": "Excel-ге жүктеу"
+      "export": "Excel-ге жүктеу",
+      "settings": "Баптаулар"
     },
     "loading": "Жүктелуде...",
     "requestError": "Сұраныс қатесі",

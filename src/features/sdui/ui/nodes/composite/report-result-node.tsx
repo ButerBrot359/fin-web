@@ -1,4 +1,4 @@
-import type { FC } from 'react'
+import { useState, type FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { CircularProgress, Typography } from '@mui/material'
@@ -41,34 +41,46 @@ const mergeReportPages = (
  * напрямую). `source == null` на открытии — точная копия поведения 1С
  * (§19.1): нода не фетчит на монтировании и не сбрасывает source сама.
  *
- * Phase-1 (K2): встроенная панель настроек (поля/отборы/сортировка/
- * группировка/оформление) и наложение клиентских userSettings поверх
- * source.body НЕ реализованы — отчёт показывается с серверными дефолтами,
- * settingsEnabled только читается, панель — follow-up.
+ * Панель настроек (§19.1): полностью реализуется на app-слое через
+ * `gateway.SettingsPanel` (легаси-drawer + meta-фетч, follow-up таска). Нода
+ * лишь держит клиентский `userSettings` (unknown) и накладывает его поверх
+ * `source.body` ровно одним полем (§19.6 — не пересобирает тело).
  */
 export const ReportResultNode: FC<NodeProps> = ({ node }) => {
   const { t, i18n } = useTranslation()
+  const [userSettings, setUserSettings] = useState<unknown>(undefined)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const reportCode = node.props?.reportCode as string | undefined
   const reportLayout = node.props?.reportLayout as string | undefined
   const pageSize = (node.props?.pageSize as number | undefined) ?? 200
   const printEnabled = node.props?.printEnabled === true
   const exportEnabled = node.props?.exportEnabled === true
+  const settingsEnabled = node.props?.settingsEnabled === true
   const source = node.props?.source as ReportResultSource | null | undefined
   const placeholder =
     (node.props?.placeholder as string | undefined) ||
     t('sdui.reportResult.placeholder')
 
+  // §19.6: наложение — ADD ровно одно поле поверх source.body, никогда не
+  // пересобирать тело; без userSettings или при не-объектном body body уходит как есть.
+  const effectiveBody =
+    userSettings != null &&
+    typeof source?.body === 'object' &&
+    source.body != null
+      ? { ...(source.body as Record<string, unknown>), userSettings }
+      : source?.body
+
   const { data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteQuery({
-      queryKey: ['sdui-report-result', source?.url, source?.body],
+      queryKey: ['sdui-report-result', source?.url, effectiveBody],
       queryFn: async ({ pageParam, signal }) => {
         if (!source) throw new Error('REPORT_RESULT node: source is required')
-        // §19.6: тело — целиком source.body, фронт его не собирает и не мутирует.
+        // §19.6: тело — целиком source.body (+userSettings), фронт его не собирает и не мутирует иначе.
         const res = await apiService.post<ReportResultPage>({
           url: source.url,
           params: { page: pageParam, pageSize },
-          data: source.body,
+          data: effectiveBody,
           signal,
         })
         return res.data
@@ -98,11 +110,14 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
   const result = mergeReportPages(data?.pages, reportLayout)
   const gateway = getReportResultGateway()
   const Renderer = gateway?.Renderer
+  const SettingsPanel = gateway?.SettingsPanel
   const reportName = result?.reportNameRu || reportCode || ''
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden">
-      {(printEnabled || exportEnabled) && (
+      {(printEnabled ||
+        exportEnabled ||
+        (settingsEnabled && SettingsPanel)) && (
         <div className="flex items-center gap-2">
           {printEnabled && (
             <Button
@@ -110,7 +125,7 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
               onClick={() => {
                 void gateway?.print?.(
                   reportCode ?? '',
-                  source.body,
+                  effectiveBody,
                   i18n.language
                 )
               }}
@@ -129,7 +144,36 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
               {t('sdui.reportResult.export')}
             </Button>
           )}
+          {settingsEnabled && SettingsPanel && (
+            <Button
+              data-testid="report-result-settings"
+              onClick={() => {
+                setSettingsOpen(true)
+              }}
+            >
+              {t('sdui.reportResult.settings')}
+            </Button>
+          )}
         </div>
+      )}
+
+      {settingsEnabled && SettingsPanel && reportCode && (
+        <SettingsPanel
+          reportCode={reportCode}
+          appliedUserSettings={userSettings}
+          open={settingsOpen}
+          onClose={() => {
+            setSettingsOpen(false)
+          }}
+          onApply={(us) => {
+            setUserSettings(us)
+            setSettingsOpen(false)
+          }}
+          onReset={() => {
+            setUserSettings(undefined)
+            setSettingsOpen(false)
+          }}
+        />
       )}
 
       {isLoading ? (

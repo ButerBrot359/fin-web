@@ -8,8 +8,9 @@ export interface ReportResultGatewayImpl {
   // Рисует результат отчёта. result структурно совместим с ReportResultDto/
   // ReportAltResultDto, но SDUI держит его как unknown — не разбирает, не мутирует.
   Renderer: FC<{ result: unknown }>
-  // Печать (опц.): POST .../print. code+body+language, blob открывает impl.
-  print?: (code: string, body: unknown, language: string) => Promise<void>
+  // Печать (опц.): POST по url от бэка (props.printSource.url; язык уже в url),
+  // blob открывает impl.
+  print?: (url: string, body: unknown) => Promise<void>
   // Экспорт в XLSX (опц.): клиентский, из result.
   exportXlsx?: (result: unknown, reportName: string) => void
   // Панель настроек отчёта (опц., §19.1): полностью реализуется на app-слое

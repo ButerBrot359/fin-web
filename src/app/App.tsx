@@ -19,13 +19,10 @@ import { WorkspaceTabSync } from '@/widgets/workspace-tab-bar'
 // легаси в SDUI запрещён (CLAUDE.md). Легаси-импорты живут ИСКЛЮЧИТЕЛЬНО
 // здесь, в app/.
 import { ReportResultView } from '@/features/report-result-view'
-import { printReportAlt } from '@/pages/reportalt/api/reportalt-api'
 import { buildReportAltExport } from '@/pages/reportalt/lib/utils/build-reportalt-export'
-import type {
-  ReportAltResultDto,
-  RunReportAltBody,
-} from '@/pages/reportalt/types/reportalt'
+import type { ReportAltResultDto } from '@/pages/reportalt/types/reportalt'
 
+import { apiService } from '@/shared/api/api'
 import { Toaster } from '@/shared/ui/toast/toast'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
@@ -316,16 +313,10 @@ function App() {
       Renderer: ({ result }) => (
         <ReportResultView result={result as ReportAltResultDto} />
       ),
-      print: (code, body, language) => {
-        const printLanguage: 'Ru' | 'Kz' = language === 'kz' ? 'Kz' : 'Ru'
-        return printReportAlt(
-          code,
-          body as RunReportAltBody,
-          printLanguage
-        ).then((res) => {
-          window.open(URL.createObjectURL(res.data), '_blank')
-        })
-      },
+      print: (url, body) =>
+        apiService.postFileBlob({ url, data: body }).then((res) => {
+          window.open(URL.createObjectURL(res.data))
+        }),
       exportXlsx: (result, reportName) => {
         const data = buildReportAltExport(
           result as ReportAltResultDto,

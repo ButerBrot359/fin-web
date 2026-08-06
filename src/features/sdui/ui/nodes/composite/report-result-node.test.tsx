@@ -35,7 +35,7 @@ interface SettingsPanelStubProps {
 
 interface GatewayImplStub {
   Renderer: FC<{ result: unknown }>
-  print?: (code: string, body: unknown, language: string) => Promise<void>
+  print?: (url: string, body: unknown) => Promise<void>
   exportXlsx?: (result: unknown, reportName: string) => void
   SettingsPanel?: FC<SettingsPanelStubProps>
 }
@@ -208,21 +208,36 @@ describe('ReportResultNode', () => {
     expect(screen.queryByTestId('report-result-show-more')).toBeNull()
   })
 
-  it('printEnabled → кнопка печати зовёт gateway.print(reportCode, source.body, language)', () => {
+  it('printSource → кнопка печати зовёт gateway.print(printSource.url, effectiveBody)', () => {
     const printMock = vi.fn().mockResolvedValue(undefined)
-    useInfiniteQuery.mockReturnValue({
-      ...baseQueryResult,
-      data: { pages: [{ reportCode: 'OSV', rows: [] }] },
-    })
     getReportResultGateway.mockReturnValue({
-      Renderer: () => null,
+      Renderer: (() => null) as unknown as FC<{ result: unknown }>,
       print: printMock,
     })
-
-    render(<ReportResultNode node={nodeWithSource({ printEnabled: true })} />)
-
+    render(
+      <ReportResultNode
+        node={nodeWithSource({
+          printSource: {
+            url: '/api/reportalt/OSV/print?language=Kz',
+            method: 'POST',
+          },
+        })}
+      />
+    )
     fireEvent.click(screen.getByTestId('report-result-print'))
-    expect(printMock).toHaveBeenCalledWith('OSV', { a: 1 }, 'ru')
+    expect(printMock).toHaveBeenCalledWith(
+      '/api/reportalt/OSV/print?language=Kz',
+      { a: 1 }
+    )
+  })
+
+  it('без printSource → кнопки печати нет', () => {
+    getReportResultGateway.mockReturnValue({
+      Renderer: (() => null) as unknown as FC<{ result: unknown }>,
+      print: vi.fn(),
+    })
+    render(<ReportResultNode node={nodeWithSource({ printEnabled: true })} />)
+    expect(screen.queryByTestId('report-result-print')).toBeNull()
   })
 
   it('exportEnabled → кнопка экспорта зовёт gateway.exportXlsx(result, reportName)', () => {

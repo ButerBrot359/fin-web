@@ -1,4 +1,4 @@
-import { isValidElement, type ReactElement, type RefObject } from 'react'
+import { type ReactElement, type RefObject } from 'react'
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -188,11 +188,11 @@ describe('buildColumnDefs — required header marker', () => {
     } as ViewNode
   }
 
-  it('required && !readonly → header это элемент (RequiredMark), в нём «*»', () => {
+  it('required && !readonly → header это render-функция, в ней label + «*»', () => {
     const defs = buildColumnDefs([col('c1', { required: true })], syncRef)
     const header = defs[0].header
-    expect(isValidElement(header)).toBe(true)
-    const { getByText } = render(header as ReactElement)
+    expect(typeof header).toBe('function')
+    const { getByText } = render((header as () => ReactElement)())
     expect(getByText('*')).toBeTruthy()
   })
 

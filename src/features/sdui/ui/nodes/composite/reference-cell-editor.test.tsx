@@ -229,7 +229,9 @@ describe('ReferenceCellEditor', () => {
   describe('открыть карточку записи (§18.4.1)', () => {
     const openCardName = /inputs\.openReference|Открыть запись/i
 
-    it('заполненная ячейка + domain/targetTypeCode → иконка есть, клик открывает карточку', () => {
+    it('заполненная ячейка + domain/targetTypeCode → иконка есть, клик открывает карточку, выбор в карточке пишет назад {id, presentation}', () => {
+      const onChange = vi.fn()
+      const onCommit = vi.fn()
       render(
         <ReferenceCellEditor
           colProps={{
@@ -238,8 +240,8 @@ describe('ReferenceCellEditor', () => {
             targetTypeCode: 'VidyStazha',
           }}
           value={{ id: 5, presentation: 'ИПН 10%' }}
-          onChange={vi.fn()}
-          onCommit={vi.fn()}
+          onChange={onChange}
+          onCommit={onCommit}
         />
       )
 
@@ -253,7 +255,18 @@ describe('ReferenceCellEditor', () => {
         typeCode: 'VidyStazha',
         entryId: 5,
       })
-      expect(typeof openPickerMock.mock.calls[0][0].onSelect).toBe('function')
+
+      // Карточка резолвится тем же onSelect, что и пикер — проверяем запись обратно.
+      const req = openPickerMock.mock.calls[0][0] as {
+        onSelect: (o: SelectOption) => void
+      }
+      req.onSelect({ id: 9, code: '9', label: 'Общий стаж' })
+
+      expect(onChange).toHaveBeenCalledWith({
+        id: 9,
+        presentation: 'Общий стаж',
+      })
+      expect(onCommit).toHaveBeenCalledTimes(1)
     })
 
     it('пустая ячейка (нет значения) → иконки нет', () => {

@@ -21,6 +21,7 @@ const MultiReferenceValueControl: FC<MultiValueControlProps> = ({
   value,
   onChange,
 }) => {
+  const { t } = useTranslation()
   const source = column.filterValueSource
   const resetKey = JSON.stringify(source?.params ?? null)
   const { options, loading, load, loadDebounced } = useReferenceOptions(
@@ -53,6 +54,9 @@ const MultiReferenceValueControl: FC<MultiValueControlProps> = ({
       value={selectedOptions}
       options={options}
       loading={loading}
+      slotProps={{
+        htmlInput: { 'aria-label': t('table.filterValuePlaceholder') },
+      }}
       onOpen={() => {
         if (options.length === 0) load()
       }}
@@ -163,6 +167,9 @@ const MultiScalarValueControl: FC<MultiValueControlProps> = ({
         <InputComponent
           value={draft}
           placeholder={t('table.filterValuePlaceholder')}
+          slotProps={{
+            htmlInput: { 'aria-label': t('table.filterValuePlaceholder') },
+          }}
           onChange={(e) => {
             setDraft((e.target as HTMLInputElement).value)
           }}

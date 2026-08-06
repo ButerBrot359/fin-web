@@ -65,4 +65,47 @@ describe('ReportSettingsPanel', () => {
     fireEvent.click(screen.getByText(/Применить/))
     expect(onApply).toHaveBeenCalledWith(undefined)
   })
+
+  it('closing without Apply then reopening discards the earlier draft edit', () => {
+    const onApply = vi.fn()
+    const { rerender } = render(
+      <ReportSettingsPanel
+        reportCode="R1"
+        appliedUserSettings={undefined}
+        onApply={onApply}
+        onReset={vi.fn()}
+        open
+        onClose={vi.fn()}
+      />
+    )
+    // Touch the one available field — a real, non-empty draft edit — but
+    // close (Drawer only unmounts visually, component stays mounted) without
+    // clicking Apply.
+    fireEvent.click(screen.getAllByRole('checkbox')[0])
+    rerender(
+      <ReportSettingsPanel
+        reportCode="R1"
+        appliedUserSettings={undefined}
+        onApply={onApply}
+        onReset={vi.fn()}
+        open={false}
+        onClose={vi.fn()}
+      />
+    )
+    // Reopen — with the fix, the open transition resets draft to null, so
+    // the earlier unsaved edit must not survive: Apply "as is" yields
+    // undefined again, same as a fresh open (isEmptySettings gate).
+    rerender(
+      <ReportSettingsPanel
+        reportCode="R1"
+        appliedUserSettings={undefined}
+        onApply={onApply}
+        onReset={vi.fn()}
+        open
+        onClose={vi.fn()}
+      />
+    )
+    fireEvent.click(screen.getByText(/Применить/))
+    expect(onApply).toHaveBeenCalledWith(undefined)
+  })
 })

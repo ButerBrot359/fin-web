@@ -35,6 +35,20 @@ export const ReportSettingsPanel: FC<ReportSettingsPanelProps> = ({
   const { meta } = useReportAltMeta(reportCode)
   const [draft, setDraft] = useState<ReportAltSettingsState | null>(null)
 
+  // Компонент не размонтируется между открытиями (переключается только
+  // Drawer.open) — без сброса черновик, набранный в прошлое открытие и
+  // отменённый закрытием без «Применить», всплывал бы заново при повторном
+  // открытии («отмена не отменяет»). Сброс — на переходе open false→true,
+  // выполнен во время рендера (паттерн React "adjust state as props change",
+  // не useEffect: react-hooks/set-state-in-effect запрещает синхронный
+  // setState в теле эффекта). Rehydrate из appliedUserSettings не делаем:
+  // обратного маппера DTO→draft нет (вне скоупа).
+  const [prevOpen, setPrevOpen] = useState(open)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
+    if (open) setDraft(null)
+  }
+
   if (!meta) return null
 
   const availableColumnCodes = (meta.availableFields ?? [])

@@ -274,6 +274,40 @@ describe('ListFilterFunnel', () => {
     expect(applyBtn.hasAttribute('disabled')).toBe(false)
   })
 
+  it('in: Применить задизейблена для пустого массива, активна после добавления элемента', () => {
+    const onApply = vi.fn()
+    render(
+      <ListFilterFunnel
+        column={{
+          filterField: 'code',
+          filterOps: ['in'],
+          dataType: 'STRING',
+        }}
+        onApply={onApply}
+      />
+    )
+    openPopover()
+    const applyBtn = screen.getByRole('button', { name: 'table.filterApply' })
+    expect(applyBtn.hasAttribute('disabled')).toBe(true)
+
+    fireEvent.change(screen.getByTestId('scalar-text'), {
+      target: { value: 'РОМ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'table.add' }))
+    expect(applyBtn.hasAttribute('disabled')).toBe(false)
+
+    // Возврат к пустому массиву (не undefined) — именно этот случай различает
+    // ветку isArrayOp (Array.isArray && length > 0) от общего !isEmptyValue,
+    // который для [] тоже вернул бы true (пустой массив — не '', не null/undefined).
+    fireEvent.click(
+      screen.getByRole('button', { name: 'table.filterRemoveChip' })
+    )
+    expect(applyBtn.hasAttribute('disabled')).toBe(true)
+
+    fireEvent.click(applyBtn)
+    expect(onApply).not.toHaveBeenCalled()
+  })
+
   it('isNull/isNotNull → Применить ВСЕГДА активна (значение не требуется)', () => {
     render(
       <ListFilterFunnel

@@ -2,8 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const useAppShellSidebar = vi.fn<
-  [],
-  {
+  () => {
     sidebarNode: { id: string; type: string } | null
     isPending: boolean
     isError: boolean

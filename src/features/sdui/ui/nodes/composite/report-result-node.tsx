@@ -47,14 +47,16 @@ const mergeReportPages = (
  * `source.body` ровно одним полем (§19.6 — не пересобирает тело).
  */
 export const ReportResultNode: FC<NodeProps> = ({ node }) => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const [userSettings, setUserSettings] = useState<unknown>(undefined)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const reportCode = node.props?.reportCode as string | undefined
   const reportLayout = node.props?.reportLayout as string | undefined
   const pageSize = (node.props?.pageSize as number | undefined) ?? 200
-  const printEnabled = node.props?.printEnabled === true
+  const printSource = node.props?.printSource as
+    | { url: string; method?: string }
+    | undefined
   const exportEnabled = node.props?.exportEnabled === true
   const settingsEnabled = node.props?.settingsEnabled === true
   const source = node.props?.source as ReportResultSource | null | undefined
@@ -115,19 +117,13 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden">
-      {(printEnabled ||
-        exportEnabled ||
-        (settingsEnabled && SettingsPanel)) && (
+      {(printSource || exportEnabled || (settingsEnabled && SettingsPanel)) && (
         <div className="flex items-center gap-2">
-          {printEnabled && (
+          {printSource && (
             <Button
               data-testid="report-result-print"
               onClick={() => {
-                void gateway?.print?.(
-                  reportCode ?? '',
-                  effectiveBody,
-                  i18n.language
-                )
+                void gateway?.print?.(printSource.url, effectiveBody)
               }}
             >
               {t('sdui.reportResult.print')}

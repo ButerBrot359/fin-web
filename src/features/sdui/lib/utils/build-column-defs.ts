@@ -10,6 +10,7 @@ import type {
 import { TableCellEditor } from '../../ui/nodes/composite/table-cell-editor'
 import { RequiredMark } from '../../ui/nodes/composite/required-mark'
 import type { UseTableValidationResult } from '../hooks/use-table-validation'
+import { resolveRowFilterParams } from './resolve-row-filter-params'
 
 /**
  * Кастомные поля в `ColumnDef.meta`. Читаются приведением типа на месте
@@ -133,6 +134,7 @@ export function buildColumnDefs(
             required: col.required,
             revealErrors: validationRef?.current.revealErrors ?? false,
             props: col.props,
+            extraParams: resolveRowFilterParams(col, info.row.original),
             onChange: (val: unknown) => {
               syncRef.current.updateCell(
                 info.row.original.rowId,
@@ -201,6 +203,10 @@ export function buildColumnDefs(
                     required: childCol.required,
                     revealErrors: validationRef?.current.revealErrors ?? false,
                     props: childCol.props,
+                    extraParams: resolveRowFilterParams(
+                      childCol,
+                      info.row.original
+                    ),
                     onChange: (val: unknown) => {
                       syncRef.current.updateCell(
                         info.row.original.rowId,

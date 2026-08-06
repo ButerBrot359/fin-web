@@ -23,6 +23,7 @@ interface TableCellEditorProps {
   props?: Record<string, unknown>
   onChange: (value: unknown) => void
   onCommit: () => void
+  extraParams?: Record<string, string>
 }
 
 interface EnumOption {
@@ -102,6 +103,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   props,
   onChange,
   onCommit,
+  extraParams,
 }) => {
   const [touched, setTouched] = useState(false)
   const handleCommit = () => {
@@ -229,6 +231,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             value={value}
             onChange={onChange}
             onCommit={handleCommit}
+            extraParams={extraParams}
           />
         )
 

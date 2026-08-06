@@ -20,6 +20,7 @@ interface ReferenceCellEditorProps {
   value: unknown
   onChange: (value: unknown) => void
   onCommit: () => void
+  extraParams?: Record<string, string>
 }
 
 /**
@@ -90,6 +91,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   value,
   onChange,
   onCommit,
+  extraParams,
 }) => {
   const { t } = useTranslation()
 
@@ -110,7 +112,10 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   // ожидается, но защитно резолвим (getValue → undefined), чтобы случайный
   // объект-параметр не улетел строкой [object Object].
   const url = optionsSource?.url ?? null
-  const params = resolveOptionsParams(optionsSource?.params, () => undefined)
+  const params = {
+    ...resolveOptionsParams(optionsSource?.params, () => undefined),
+    ...extraParams,
+  }
 
   const resetKey = JSON.stringify(params)
 

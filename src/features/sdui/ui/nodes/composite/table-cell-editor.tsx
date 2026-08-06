@@ -1,20 +1,25 @@
-import type { FC } from 'react'
+import type { FC, ReactNode } from 'react'
+import { useState } from 'react'
 import { Checkbox, MenuItem, Select } from '@mui/material'
-import type { SxProps, Theme } from '@mui/material'
 
 import { TextInput, NumberInput } from '@/shared/ui/inputs'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 import { renderCellValue } from '../../../lib/utils/cell-value'
+import { isCellEmpty } from '../../../lib/utils/is-cell-empty'
 import { ReferenceCellEditor } from './reference-cell-editor'
 import { DateCellEditor } from './date-cell-editor'
 import { ObjectCellEditor } from './object-cell-editor'
+import { cellSx, enumCellSx, dateCellSx } from './table-cell-editor-styles'
+import { RequiredCellFrame } from './required-cell-frame'
 
 interface TableCellEditorProps {
   cellWidget: string
   dataType: string
   value: unknown
   readonly?: boolean
+  required?: boolean
+  revealErrors?: boolean
   props?: Record<string, unknown>
   onChange: (value: unknown) => void
   onCommit: () => void
@@ -40,67 +45,6 @@ function resolveEnumValue(value: unknown, options: EnumOption[]): string {
     return match?.value ?? ''
   }
   return ''
-}
-
-const cellSx: SxProps<Theme> = {
-  mb: 0,
-  position: 'static',
-  '& .MuiInputBase-root': {
-    backgroundColor: 'transparent !important',
-    border: 'none !important',
-    borderRadius: '0 !important',
-    minHeight: '28px !important',
-  },
-  '& .MuiInputBase-input': {
-    padding: '4px 8px !important',
-    fontSize: '14px !important',
-  },
-}
-
-const enumCellSx: SxProps<Theme> = {
-  fontSize: '14px',
-  '&::before, &::after': { display: 'none' },
-  '& .MuiSelect-select': {
-    padding: '4px 8px !important',
-    minHeight: '28px',
-    display: 'flex',
-    alignItems: 'center',
-  },
-}
-
-const dateCellSx: SxProps<Theme> = {
-  '& .MuiFormControl-root': { mb: 0, position: 'static', width: '100%' },
-  '& .MuiInputBase-root': {
-    backgroundColor: 'transparent !important',
-    border: 'none !important',
-    borderRadius: '0 !important',
-    minHeight: '28px !important',
-    height: '28px !important',
-    padding: '0 !important',
-  },
-  '& .MuiPickersInputBase-root': {
-    position: 'relative',
-    backgroundColor: 'transparent !important',
-    border: 'none !important',
-    borderRadius: '0 !important',
-    minHeight: '28px !important',
-    height: '28px !important',
-    padding: '0 8px !important',
-  },
-  '& .MuiPickersInputBase-sectionsContainer': {
-    padding: '0 !important',
-    minHeight: '28px !important',
-    height: '28px !important',
-    fontSize: '14px !important',
-  },
-  '& .MuiInputAdornment-root': {
-    width: 0,
-    overflow: 'visible',
-    ml: 0,
-    transform: 'translateX(-24px)',
-  },
-  '& .MuiInputAdornment-root .MuiIconButton-root': { p: '2px' },
-  '& .MuiInputAdornment-root .MuiSvgIcon-root': { fontSize: 16 },
 }
 
 /**
@@ -153,10 +97,18 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   dataType,
   value,
   readonly,
+  required,
+  revealErrors,
   props,
   onChange,
   onCommit,
 }) => {
+  const [touched, setTouched] = useState(false)
+  const handleCommit = () => {
+    setTouched(true)
+    onCommit()
+  }
+
   if (readonly) {
     return (
       <span style={{ padding: '4px 8px', fontSize: 14, whiteSpace: 'nowrap' }}>
@@ -165,138 +117,147 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
     )
   }
 
-  switch (cellWidget) {
-    case 'TEXT_FIELD': {
-      const strValue = toDisplayString(value)
-      return (
-        <TextInput
-          value={strValue}
-          onChange={(e) => {
-            onChange(e.target.value)
-          }}
-          onBlur={onCommit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onCommit()
-          }}
-          size="small"
-          sx={cellSx}
-        />
-      )
+  const renderWidget = (): ReactNode => {
+    switch (cellWidget) {
+      case 'TEXT_FIELD': {
+        const strValue = toDisplayString(value)
+        return (
+          <TextInput
+            value={strValue}
+            onChange={(e) => {
+              onChange(e.target.value)
+            }}
+            onBlur={handleCommit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleCommit()
+            }}
+            size="small"
+            sx={cellSx}
+          />
+        )
+      }
+
+      case 'NUMBER_FIELD': {
+        const strValue = toDisplayString(value)
+        return (
+          <NumberInput
+            value={strValue}
+            decimal={dataType === 'DECIMAL'}
+            onChange={(e) => {
+              const raw = e.target.value
+              const parsed = raw === '' ? null : parseFloat(raw)
+              onChange(parsed)
+            }}
+            onBlur={handleCommit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleCommit()
+            }}
+            size="small"
+            sx={cellSx}
+          />
+        )
+      }
+
+      case 'DATE_FIELD':
+      case 'DATETIME_FIELD':
+        // Коммит НЕ на onChange: пикер стреляет на каждый сегмент даты, и коммит
+        // посреди набора перемонтировал ячейку — терялись цифры года (SCRUM-279 D6).
+        // Подробный разбор и ловушки фокуса — в date-cell-editor.tsx.
+        return (
+          <DateCellEditor
+            value={value}
+            dateOnly={cellWidget === 'DATE_FIELD'}
+            sx={dateCellSx}
+            onChange={onChange}
+            onCommit={handleCommit}
+          />
+        )
+
+      case 'CHECKBOX_FIELD': {
+        return (
+          <Checkbox
+            checked={!!value}
+            onChange={(e) => {
+              onChange(e.target.checked)
+              handleCommit()
+            }}
+            size="small"
+            sx={{ p: '2px' }}
+          />
+        )
+      }
+
+      case 'ENUM_FIELD': {
+        const options = (props?.options as EnumOption[] | undefined) ?? []
+        const current = resolveEnumValue(value, options)
+        return (
+          <Select
+            value={current}
+            onChange={(e) => {
+              const selected = e.target.value
+              const opt = options.find((o) => o.value === selected)
+              // Тот же контракт значения, что в enum-field-node.tsx
+              onChange(
+                opt
+                  ? {
+                      id: opt.id ?? selected,
+                      code: opt.code ?? opt.value,
+                      presentation: opt.label,
+                    }
+                  : { id: selected, code: selected, presentation: selected }
+              )
+              handleCommit()
+            }}
+            size="small"
+            fullWidth
+            variant="standard"
+            sx={enumCellSx}
+          >
+            {options.map((o) => (
+              <MenuItem key={o.value} value={o.value}>
+                {o.label}
+              </MenuItem>
+            ))}
+          </Select>
+        )
+      }
+
+      case 'REFERENCE_FIELD':
+        return (
+          <ReferenceCellEditor
+            colProps={props ?? {}}
+            value={value}
+            onChange={onChange}
+            onCommit={handleCommit}
+          />
+        )
+
+      // Составной (OBJECT) тип: селектор члена + пикер значения. Без этой ветки
+      // ячейка падала в `default:` и была нередактируемой — жалоба аналитика
+      // «„Значение“ в доп.реквизитах не активно» (SCRUM-279).
+      case 'OBJECT_FIELD':
+        return (
+          <ObjectCellEditor
+            colProps={props ?? {}}
+            value={value}
+            onChange={onChange}
+            onCommit={handleCommit}
+          />
+        )
+
+      default:
+        return (
+          <span style={{ padding: '4px 8px', fontSize: 14 }}>
+            {renderCellValue(value)}
+          </span>
+        )
     }
-
-    case 'NUMBER_FIELD': {
-      const strValue = toDisplayString(value)
-      return (
-        <NumberInput
-          value={strValue}
-          decimal={dataType === 'DECIMAL'}
-          onChange={(e) => {
-            const raw = e.target.value
-            const parsed = raw === '' ? null : parseFloat(raw)
-            onChange(parsed)
-          }}
-          onBlur={onCommit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onCommit()
-          }}
-          size="small"
-          sx={cellSx}
-        />
-      )
-    }
-
-    case 'DATE_FIELD':
-    case 'DATETIME_FIELD':
-      // Коммит НЕ на onChange: пикер стреляет на каждый сегмент даты, и коммит
-      // посреди набора перемонтировал ячейку — терялись цифры года (SCRUM-279 D6).
-      // Подробный разбор и ловушки фокуса — в date-cell-editor.tsx.
-      return (
-        <DateCellEditor
-          value={value}
-          dateOnly={cellWidget === 'DATE_FIELD'}
-          sx={dateCellSx}
-          onChange={onChange}
-          onCommit={onCommit}
-        />
-      )
-
-    case 'CHECKBOX_FIELD': {
-      return (
-        <Checkbox
-          checked={!!value}
-          onChange={(e) => {
-            onChange(e.target.checked)
-            onCommit()
-          }}
-          size="small"
-          sx={{ p: '2px' }}
-        />
-      )
-    }
-
-    case 'ENUM_FIELD': {
-      const options = (props?.options as EnumOption[] | undefined) ?? []
-      const current = resolveEnumValue(value, options)
-      return (
-        <Select
-          value={current}
-          onChange={(e) => {
-            const selected = e.target.value
-            const opt = options.find((o) => o.value === selected)
-            // Тот же контракт значения, что в enum-field-node.tsx
-            onChange(
-              opt
-                ? {
-                    id: opt.id ?? selected,
-                    code: opt.code ?? opt.value,
-                    presentation: opt.label,
-                  }
-                : { id: selected, code: selected, presentation: selected }
-            )
-            onCommit()
-          }}
-          size="small"
-          fullWidth
-          variant="standard"
-          sx={enumCellSx}
-        >
-          {options.map((o) => (
-            <MenuItem key={o.value} value={o.value}>
-              {o.label}
-            </MenuItem>
-          ))}
-        </Select>
-      )
-    }
-
-    case 'REFERENCE_FIELD':
-      return (
-        <ReferenceCellEditor
-          colProps={props ?? {}}
-          value={value}
-          onChange={onChange}
-          onCommit={onCommit}
-        />
-      )
-
-    // Составной (OBJECT) тип: селектор члена + пикер значения. Без этой ветки
-    // ячейка падала в `default:` и была нередактируемой — жалоба аналитика
-    // «„Значение“ в доп.реквизитах не активно» (SCRUM-279).
-    case 'OBJECT_FIELD':
-      return (
-        <ObjectCellEditor
-          colProps={props ?? {}}
-          value={value}
-          onChange={onChange}
-          onCommit={onCommit}
-        />
-      )
-
-    default:
-      return (
-        <span style={{ padding: '4px 8px', fontSize: 14 }}>
-          {renderCellValue(value)}
-        </span>
-      )
   }
+
+  const inner = renderWidget()
+  if (!required) return inner
+
+  const showError =
+    isCellEmpty(value, cellWidget) && (touched || !!revealErrors)
+  return <RequiredCellFrame show={showError}>{inner}</RequiredCellFrame>
 }

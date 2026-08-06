@@ -25,6 +25,7 @@ import {
 } from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
+import { useTableValidation } from '../../../lib/hooks/use-table-validation'
 import {
   useSduiSession,
   useBindingValue,
@@ -124,8 +125,12 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     },
   }
 
+  const validation = useTableValidation(node)
+  const validationRef = useRef(validation)
+  validationRef.current = validation
+
   const tableColumns = useMemo(
-    () => buildColumnDefs(node.children, syncRef),
+    () => buildColumnDefs(node.children, syncRef, validationRef),
 
     [node.children]
   )

@@ -29,7 +29,9 @@ import {
 } from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
+import { useTableValidation } from '../../../lib/hooks/use-table-validation'
 import { TableCellEditor } from './table-cell-editor'
+import { RequiredMark } from './required-mark'
 import { SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
 
@@ -55,6 +57,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   // читают refs, поэтому доступ через syncRef.current корректен.
   const syncRef = useRef(sync)
   syncRef.current = sync
+  const validation = useTableValidation(node)
+  const validationRef = useRef(validation)
+  validationRef.current = validation
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   // Активация строки уходит на сервер только если бэк прислал action
   // с trigger='activate' у этой ТЧ (props.rowActivate)
@@ -96,7 +101,12 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
       columns.map((col) => ({
         id: col.id,
         accessorFn: (row: TableRow) => row[col.binding],
-        header: col.label,
+        header:
+          col.required && !col.readonly ? (
+            <RequiredMark label={col.label} />
+          ) : (
+            col.label
+          ),
         size: col.flex ? undefined : 150,
         cell: ({ row }) => (
           <TableCellEditor
@@ -105,6 +115,8 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
             value={row.original[col.binding]}
             readonly={col.readonly}
             props={col.props}
+            required={col.required}
+            revealErrors={validationRef.current.revealErrors}
             onChange={(val) => {
               syncRef.current.updateCell(row.original.rowId, col.binding, val)
             }}

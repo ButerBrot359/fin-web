@@ -1,4 +1,5 @@
-import { type ReactElement, type RefObject } from 'react'
+import { isValidElement, type ReactElement, type RefObject } from 'react'
+import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import type { ViewNode } from '../../types/view'
@@ -12,17 +13,22 @@ import {
 describe('nodeToTableColumnDef', () => {
   it('приоритет binding: node.binding > props.binding > node.id', () => {
     expect(
-      nodeToTableColumnDef({ id: 'c1', type: 'TABLE_COLUMN', binding: 'top' } as ViewNode).binding,
+      nodeToTableColumnDef({
+        id: 'c1',
+        type: 'TABLE_COLUMN',
+        binding: 'top',
+      } as ViewNode).binding
     ).toBe('top')
     expect(
       nodeToTableColumnDef({
         id: 'c1',
         type: 'TABLE_COLUMN',
         props: { binding: 'inProps' },
-      } as ViewNode).binding,
+      } as ViewNode).binding
     ).toBe('inProps')
     expect(
-      nodeToTableColumnDef({ id: 'c1', type: 'TABLE_COLUMN' } as ViewNode).binding,
+      nodeToTableColumnDef({ id: 'c1', type: 'TABLE_COLUMN' } as ViewNode)
+        .binding
     ).toBe('c1')
   })
 })
@@ -36,7 +42,10 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     ({
       id: 'colgroup.osnovaniePredostavlyat',
       type: 'COLUMN_GROUP',
-      props: { label: 'Предоставление вычета / основание', orientation: 'VERTICAL' },
+      props: {
+        label: 'Предоставление вычета / основание',
+        orientation: 'VERTICAL',
+      },
       children,
     }) as ViewNode
 
@@ -47,8 +56,9 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
    */
   const subRows = (header: unknown): ReactElement[] => {
     const element = (header as () => ReactElement)()
-    const children = (element.props as { children: ReactElement | ReactElement[] })
-      .children
+    const children = (
+      element.props as { children: ReactElement | ReactElement[] }
+    ).children
     return Array.isArray(children) ? children : [children]
   }
 
@@ -63,7 +73,10 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
             id: 'col.predostavlyat',
             type: 'TABLE_COLUMN',
             binding: 'PredostavlyatVychet',
-            props: { label: 'Предоставлять вычет', cellWidget: 'CHECKBOX_FIELD' },
+            props: {
+              label: 'Предоставлять вычет',
+              cellWidget: 'CHECKBOX_FIELD',
+            },
           } as ViewNode,
           {
             id: 'col.osnovanie',
@@ -73,7 +86,7 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
           } as ViewNode,
         ]),
       ],
-      syncRef,
+      syncRef
     )
 
     expect(defs).toHaveLength(1)
@@ -103,7 +116,7 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
           } as ViewNode,
         ]),
       ],
-      syncRef,
+      syncRef
     )
 
     expect(renderedLabels(defs[0].header)).toEqual(['Предоставлять вычет'])
@@ -127,7 +140,7 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
           } as ViewNode,
         ]),
       ],
-      syncRef,
+      syncRef
     )
 
     const rows = subRows(defs[0].header)
@@ -135,13 +148,13 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     // встаёт над i-м редактором (сетка общая, VERTICAL_SUB_ROW_HEIGHT).
     for (const row of rows) {
       expect((row.props as { style: { height: number } }).style.height).toBe(
-        VERTICAL_SUB_ROW_HEIGHT,
+        VERTICAL_SUB_ROW_HEIGHT
       )
     }
     // Линия-разделитель как в 1С: только у второй под-строки, иначе получилась бы
     // лишняя черта под шапкой таблицы.
     const classNames = rows.map(
-      (row) => (row.props as { className?: string }).className,
+      (row) => (row.props as { className?: string }).className
     )
     expect(classNames[0]).toBeUndefined()
     expect(classNames[1]).toContain('border-t')
@@ -155,9 +168,44 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
           { id: 'col.b', type: 'TABLE_COLUMN', binding: 'B' } as ViewNode,
         ]),
       ],
-      syncRef,
+      syncRef
     )
 
     expect(defs[0].header).toBe('Предоставление вычета / основание')
+  })
+})
+
+// Маркер обязательности в шапке (SCRUM-329): RequiredMark вместо строки-label,
+// когда колонка required и не readonly.
+describe('buildColumnDefs — required header marker', () => {
+  const syncRef = { current: null } as unknown as RefObject<UseTableSyncResult>
+
+  function col(id: string, extra: Record<string, unknown>): ViewNode {
+    return {
+      id,
+      type: 'TABLE_COLUMN',
+      props: { label: id, ...extra },
+    } as ViewNode
+  }
+
+  it('required && !readonly → header это элемент (RequiredMark), в нём «*»', () => {
+    const defs = buildColumnDefs([col('c1', { required: true })], syncRef)
+    const header = defs[0].header
+    expect(isValidElement(header)).toBe(true)
+    const { getByText } = render(header as ReactElement)
+    expect(getByText('*')).toBeTruthy()
+  })
+
+  it('обычная колонка → header это строка-label', () => {
+    const defs = buildColumnDefs([col('c2', {})], syncRef)
+    expect(defs[0].header).toBe('c2')
+  })
+
+  it('required && readonly → без маркера (строка)', () => {
+    const defs = buildColumnDefs(
+      [col('c3', { required: true, readonly: true })],
+      syncRef
+    )
+    expect(defs[0].header).toBe('c3')
   })
 })

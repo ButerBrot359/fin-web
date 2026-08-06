@@ -57,27 +57,59 @@ vi.mock('@/shared/ui/inputs', () => ({
     />
   ),
   AutocompleteInput: (props: {
-    value: { id: number | string } | null
+    multiple?: boolean
+    value: unknown
     options: { id: number | string; label: string }[]
-    onChange: (v: { id: number | string; label: string } | null) => void
-  }) => (
-    <select
-      data-testid="ref-select"
-      value={props.value?.id ?? ''}
-      onChange={(e) => {
-        const opt =
-          props.options.find((o) => String(o.id) === e.target.value) ?? null
-        props.onChange(opt)
-      }}
-    >
-      <option value="" />
-      {props.options.map((o) => (
-        <option key={o.id} value={o.id}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  ),
+    onChange: (v: unknown) => void
+  }) => {
+    if (props.multiple) {
+      const selected = Array.isArray(props.value)
+        ? (props.value as { id: number | string }[])
+        : []
+      return (
+        <div data-testid="ref-multi">
+          {props.options.map((o) => (
+            <label key={o.id}>
+              <input
+                type="checkbox"
+                data-testid={`ref-multi-opt-${String(o.id)}`}
+                checked={selected.some((s) => String(s.id) === String(o.id))}
+                onChange={() => {
+                  const isSelected = selected.some(
+                    (s) => String(s.id) === String(o.id)
+                  )
+                  const next = isSelected
+                    ? selected.filter((s) => String(s.id) !== String(o.id))
+                    : [...selected, o]
+                  props.onChange(next)
+                }}
+              />
+              {o.label}
+            </label>
+          ))}
+        </div>
+      )
+    }
+    const single = props.value as { id: number | string } | null
+    return (
+      <select
+        data-testid="ref-select"
+        value={single?.id ?? ''}
+        onChange={(e) => {
+          const opt =
+            props.options.find((o) => String(o.id) === e.target.value) ?? null
+          props.onChange(opt)
+        }}
+      >
+        <option value="" />
+        {props.options.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    )
+  },
 }))
 
 const { fetchReferenceOptionsMock } = vi.hoisted(() => ({
@@ -220,5 +252,74 @@ describe('ListFilterValueControl', () => {
       target: { value: '15' },
     })
     expect(onChange).toHaveBeenCalledWith(15)
+  })
+
+  it('in с ENUMS-колонкой шлёт массив строковых value выбранных чекбоксов', () => {
+    const onChange = vi.fn()
+    const { rerender } = render(
+      <ListFilterValueControl
+        op="in"
+        column={{
+          filterValueOptions: [
+            { value: 'A', label: 'A' },
+            { value: 'B', label: 'B' },
+          ],
+        }}
+        value={[]}
+        onChange={onChange}
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText('A'))
+    expect(onChange).toHaveBeenLastCalledWith(['A'])
+
+    rerender(
+      <ListFilterValueControl
+        op="in"
+        column={{
+          filterValueOptions: [
+            { value: 'A', label: 'A' },
+            { value: 'B', label: 'B' },
+          ],
+        }}
+        value={['A']}
+        onChange={onChange}
+      />
+    )
+    fireEvent.click(screen.getByLabelText('B'))
+    expect(onChange).toHaveBeenLastCalledWith(['A', 'B'])
+  })
+
+  it('in со ссылочной колонкой шлёт массив числовых id выбранных опций', async () => {
+    fetchReferenceOptionsMock.mockResolvedValue([
+      { id: 12, code: '12', label: 'Компания А' },
+      { id: 34, code: '34', label: 'Компания Б' },
+    ])
+    const onChange = vi.fn()
+    const { rerender } = render(
+      <ListFilterValueControl
+        op="in"
+        column={{ filterValueSource: { url: '/x/entries' } }}
+        value={[]}
+        onChange={onChange}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('ref-multi-opt-12')).toBeTruthy()
+    })
+    fireEvent.click(screen.getByTestId('ref-multi-opt-12'))
+    expect(onChange).toHaveBeenLastCalledWith([12])
+
+    rerender(
+      <ListFilterValueControl
+        op="in"
+        column={{ filterValueSource: { url: '/x/entries' } }}
+        value={[12]}
+        onChange={onChange}
+      />
+    )
+    fireEvent.click(screen.getByTestId('ref-multi-opt-34'))
+    expect(onChange).toHaveBeenLastCalledWith([12, 34])
   })
 })

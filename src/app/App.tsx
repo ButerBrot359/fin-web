@@ -33,6 +33,7 @@ import { exportTableToXlsx } from '@/shared/lib/table-export'
 
 import { Layout } from './layout/layout'
 import { useWorkspaceTabGatewayBinding } from './providers/workspace-tab-binding'
+import { ReportSettingsPanel } from './providers/report-settings-panel'
 
 const ModulePage = lazy(() =>
   import('@/pages/module').then((m) => ({ default: m.ModulePage }))
@@ -334,6 +335,7 @@ function App() {
         )
         exportTableToXlsx(reportName, data)
       },
+      SettingsPanel: (props) => <ReportSettingsPanel {...props} />,
     })
     return () => {
       setReportResultGateway(null)

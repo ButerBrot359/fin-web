@@ -584,7 +584,8 @@
       "gatewayMissing": "Рендерер результата недоступен",
       "showMore": "Показать ещё",
       "print": "Печать",
-      "export": "Выгрузить в Excel"
+      "export": "Выгрузить в Excel",
+      "settings": "Настройки"
     },
     "loading": "Загрузка...",
     "requestError": "Ошибка запроса",

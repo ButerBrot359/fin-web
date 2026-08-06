@@ -1,105 +1,31 @@
 import { useEffect, useMemo, useRef, useState, type FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { CircularProgress, Typography } from '@mui/material'
 import {
   useReactTable,
   getCoreRowModel,
-  flexRender,
   type ColumnDef,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
-import { DateTimeInput } from '@/shared/ui/inputs'
 import { fetchListPage } from '../../../api/reference-options'
-import { cn } from '@/shared/lib/utils/cn'
-import { formatSduiCellValue } from '../../../lib/format-cell'
-import { getCellIcon } from './cell-icon-registry'
-import { resolveLoadedCountLabel } from './list-loaded-count'
-import {
-  ListFilterFunnel,
-  type ListFilterFunnelColumn,
-} from './list-filter-funnel'
-import type {
-  FilterEnumOption,
-  FilterValueSource,
-} from './list-filter-value-control'
 import { ListFilterChips, type ListFilterChip } from './list-filter-chips'
+import {
+  buildListColumns,
+  type ListRow,
+  type ListSource,
+  type ListSortState,
+  type ListPeriod,
+} from './list-column-defs'
+import { ListPeriodControl } from './list-period-control'
+import { ListTable } from './list-table'
 
-import type { NodeProps, ViewNode } from '../../../types/view'
+import type { NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useRefPickerSelectionStore } from '../../../lib/stores/ref-picker-selection-store'
 
-interface ListSource {
-  url: string
-  params?: Record<string, string>
-  method?: string
-  body?: unknown
-}
-
-interface ListRow {
-  id: number
-  [key: string]: unknown
-  attributes?: Record<string, unknown>
-}
-
-interface ListSortState {
-  column: string
-  dir: 'ASC' | 'DESC'
-}
-
-interface ListPeriod {
-  from: string | null
-  to: string | null
-}
-
 const PAGE_SIZE = 25
-
-const resolveBinding = (row: ListRow, binding: string): unknown =>
-  row[binding] ?? row.attributes?.[binding] ?? ''
-
-// SCRUM-291 2d: period — независимый от колоночных фильтров контрол на LIST
-// (не в TOOLBAR, без чипа). {from:null,to:null} — валидный вызов, снимающий
-// период; отдельной команды clearPeriod нет (design §2d).
-const ListPeriodControl: FC<{
-  period: ListPeriod
-  typeCode: string
-  nodeId: string
-  dispatch: ReturnType<typeof useSduiDispatch>
-}> = ({ period, typeCode, nodeId, dispatch }) => {
-  const { t } = useTranslation()
-
-  const applyPeriod = (next: ListPeriod) => {
-    void dispatch({
-      type: 'COMMAND',
-      command: `list.applyPeriod:${typeCode}`,
-      value: next,
-      sourceNodeId: nodeId,
-    })
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <DateTimeInput
-        label={t('table.periodFrom')}
-        value={period.from ?? ''}
-        dateOnly
-        onChange={(value) => {
-          applyPeriod({ from: value || null, to: period.to })
-        }}
-      />
-      <DateTimeInput
-        label={t('table.periodTo')}
-        value={period.to ?? ''}
-        dateOnly
-        onChange={(value) => {
-          applyPeriod({ from: period.from, to: value || null })
-        }}
-      />
-    </div>
-  )
-}
 
 export const ListNode: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
@@ -265,143 +191,14 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
   const columns = useMemo<ColumnDef<ListRow>[]>(
     () =>
-      columnNodes.map((col: ViewNode) => {
-        const attributeCode = (col.props?.attributeCode ??
-          col.props?.binding) as string | undefined
-        const canSort =
-          col.props?.sortable === true && !!typeCode && !!attributeCode
-
-        // SCRUM-291 2c: метаданные воронки — ВСЕГДА filterField (не attributeCode,
-        // см. алиас «Номер»→"code" в design §2c/§7). filterOps пусто/нет → воронки нет.
-        const filterField = col.props?.filterField as string | undefined
-        const filterOps = (col.props?.filterOps as string[] | undefined) ?? []
-        const canFilter = !!typeCode && !!filterField && filterOps.length > 0
-        const filterColumn: ListFilterFunnelColumn = {
-          filterField: filterField ?? '',
-          filterOps,
-          dataType: col.props?.dataType as string | undefined,
-          filterValueSource: col.props?.filterValueSource as
-            | FilterValueSource
-            | undefined,
-          filterValueOptions: col.props?.filterValueOptions as
-            | FilterEnumOption[]
-            | undefined,
-        }
-
-        const handleHeaderClick = canSort
-          ? () => {
-              if (sortInFlightRef.current) return
-              const column = attributeCode
-              const dir =
-                sortState?.column === column
-                  ? sortState.dir === 'ASC'
-                    ? 'DESC'
-                    : 'ASC'
-                  : 'ASC'
-              sortInFlightRef.current = true
-              void Promise.resolve(
-                dispatch({
-                  type: 'COMMAND',
-                  command: `list.applySort:${typeCode}`,
-                  value: { column, dir },
-                  sourceNodeId: node.id,
-                })
-              ).finally(() => {
-                sortInFlightRef.current = false
-              })
-            }
-          : undefined
-
-        return {
-          id: col.id,
-          header: () => {
-            const label = (col.props?.header as string) || ''
-            const arrowDir =
-              sortState && attributeCode && sortState.column === attributeCode
-                ? sortState.dir
-                : undefined
-
-            return (
-              <div className="inline-flex items-center gap-1">
-                <span
-                  {...(handleHeaderClick
-                    ? {
-                        role: 'button' as const,
-                        tabIndex: 0,
-                        onClick: handleHeaderClick,
-                        className:
-                          'inline-flex cursor-pointer select-none items-center gap-1',
-                      }
-                    : {})}
-                >
-                  {label}
-                  {arrowDir && (
-                    <span aria-hidden="true">
-                      {arrowDir === 'ASC' ? '▲' : '▼'}
-                    </span>
-                  )}
-                </span>
-                {canFilter && (
-                  <ListFilterFunnel
-                    column={filterColumn}
-                    filterOpLabels={filterOpLabels}
-                    onApply={(field, op, value) => {
-                      void dispatch({
-                        type: 'COMMAND',
-                        command: `list.applyFilter:${typeCode}`,
-                        value:
-                          value === undefined
-                            ? { field, op }
-                            : { field, op, value },
-                        sourceNodeId: node.id,
-                      })
-                    }}
-                  />
-                )}
-              </div>
-            )
-          },
-          accessorFn: (row: ListRow) => {
-            const binding = (col.props?.attributeCode ??
-              col.props?.binding) as string
-            if (!binding) return ''
-            const val = resolveBinding(row, binding)
-            if (val && typeof val === 'object') {
-              const obj = val as Record<string, unknown>
-              // eslint-disable-next-line @typescript-eslint/no-base-to-string
-              return (obj.presentation ?? String(obj.id ?? '')) as string
-            }
-            return formatSduiCellValue(
-              val,
-              col.props?.dataType as string | undefined
-            )
-          },
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          size: (col.props?.width as number) ?? 150,
-          // SCRUM-291 3b (§17.2): cellKind="ICON" — значение ячейки (строка
-          // "true"/"false", тот же примитивный формат, что у остальных ячеек)
-          // маппится через props.iconMap на имя иконки и рендерится глифом;
-          // неизвестное/отсутствующее имя → пустая ячейка, не текст "true"/"false".
-          cell:
-            col.props?.cellKind === 'ICON'
-              ? (info: { getValue: () => unknown }) => {
-                  const iconMap = col.props?.iconMap as
-                    | Record<string, string>
-                    | undefined
-                  // eslint-disable-next-line @typescript-eslint/no-base-to-string
-                  const value = String(info.getValue() ?? '')
-                  const Icon = getCellIcon(iconMap?.[value])
-                  return Icon ? (
-                    <Icon aria-hidden="true" className="h-4 w-4" />
-                  ) : null
-                }
-              : (info: { getValue: () => unknown }) => (
-                  <Typography variant="body2" noWrap className="text-ui-06">
-                    {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
-                    {String(info.getValue() ?? '')}
-                  </Typography>
-                ),
-        }
+      buildListColumns({
+        columnNodes,
+        sortState,
+        typeCode,
+        filterOpLabels,
+        dispatch,
+        nodeId: node.id,
+        sortInFlightRef,
       }),
     [columnNodes, sortState, typeCode, dispatch, node.id, filterOpLabels]
   )
@@ -420,13 +217,6 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     estimateSize: () => 40,
     overscan: 10,
   })
-
-  const virtualRows = rowVirtualizer.getVirtualItems()
-  const paddingTop = virtualRows[0]?.start ?? 0
-  const paddingBottom =
-    virtualRows.length > 0
-      ? rowVirtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0)
-      : 0
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-2">
@@ -475,120 +265,22 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         />
       )}
 
-      <div className="relative min-h-0 flex-1 flex flex-col">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Typography className="text-ui-05">
-              {t('inputs.loading')}
-            </Typography>
-          </div>
-        ) : isError ? (
-          <div className="flex items-center justify-center py-20">
-            <Typography className="text-ui-05">
-              {t('table.loadError')}
-            </Typography>
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="flex items-center justify-center py-20">
-            <Typography className="text-ui-05">
-              {t('dictSidebar.noData')}
-            </Typography>
-          </div>
-        ) : (
-          <>
-            <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
-              <table
-                className="w-full border-separate"
-                style={{ borderSpacing: '2px' }}
-              >
-                <thead>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06"
-                          style={{ width: header.getSize() }}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {paddingTop > 0 && (
-                    <tr>
-                      <td style={{ height: paddingTop }} />
-                    </tr>
-                  )}
-                  {virtualRows.map((virtualRow) => {
-                    const row = tableRows[virtualRow.index]
-                    const isSelected = selectedRowId === row.original.id
-
-                    return (
-                      <tr
-                        key={row.id}
-                        onClick={() => {
-                          setSelectedRowId(row.original.id)
-                        }}
-                        onDoubleClick={() => {
-                          dispatchSelect(
-                            activateAction ?? selectAction,
-                            row.original.id
-                          )
-                        }}
-                        className={cn(
-                          'cursor-pointer transition-colors hover:bg-ui-07',
-                          isSelected
-                            ? 'bg-ui-07'
-                            : virtualRow.index % 2 === 1
-                              ? 'bg-ui-01'
-                              : ''
-                        )}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <td
-                            key={cell.id}
-                            className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    )
-                  })}
-                  {paddingBottom > 0 && (
-                    <tr>
-                      <td style={{ height: paddingBottom }} />
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-              <div ref={sentinelRef} className="h-1" />
-            </div>
-
-            <div className="shrink-0 px-3 py-2 flex items-center gap-2">
-              <Typography variant="body2" className="text-ui-05">
-                {resolveLoadedCountLabel(
-                  t,
-                  rows.length,
-                  pagedData?.pages[0]?.data.totalElements
-                )}
-              </Typography>
-              {isFetchingNextPage && <CircularProgress size={14} />}
-            </div>
-          </>
-        )}
-      </div>
+      <ListTable
+        table={table}
+        rowVirtualizer={rowVirtualizer}
+        scrollRef={scrollRef}
+        sentinelRef={sentinelRef}
+        rows={rows}
+        isLoading={isLoading}
+        isError={isError}
+        isFetchingNextPage={isFetchingNextPage}
+        pagedData={pagedData}
+        selectedRowId={selectedRowId}
+        setSelectedRowId={setSelectedRowId}
+        activateAction={activateAction}
+        selectAction={selectAction}
+        dispatchSelect={dispatchSelect}
+      />
     </div>
   )
 }

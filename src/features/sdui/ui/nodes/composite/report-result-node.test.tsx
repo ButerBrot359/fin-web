@@ -24,10 +24,20 @@ interface QueryReturn {
   fetchNextPage: () => void
 }
 
+interface SettingsPanelStubProps {
+  reportCode: string
+  appliedUserSettings: unknown
+  onApply: (userSettings: unknown) => void
+  onReset: () => void
+  open: boolean
+  onClose: () => void
+}
+
 interface GatewayImplStub {
   Renderer: FC<{ result: unknown }>
   print?: (code: string, body: unknown, language: string) => Promise<void>
   exportXlsx?: (result: unknown, reportName: string) => void
+  SettingsPanel?: FC<SettingsPanelStubProps>
 }
 
 vi.mock('react-i18next', () => ({
@@ -247,5 +257,59 @@ describe('ReportResultNode', () => {
         params: expect.objectContaining({ page: 0, pageSize: 200 }),
       })
     )
+  })
+
+  it('settingsEnabled + gateway.SettingsPanel → кнопка «Настройки» открывает панель, apply наложением userSettings меняет тело следующего queryFn (§19.6)', async () => {
+    postMock.mockResolvedValue({ data: { reportCode: 'OSV', rows: [] } })
+    const SettingsPanelStub: FC<SettingsPanelStubProps> = ({
+      open,
+      onApply,
+    }) =>
+      open ? (
+        <button
+          data-testid="apply-us"
+          onClick={() => {
+            onApply({ schemaVersionRef: 1 })
+          }}
+        >
+          apply
+        </button>
+      ) : null
+    getReportResultGateway.mockReturnValue({
+      Renderer: () => null,
+      SettingsPanel: SettingsPanelStub,
+    })
+
+    render(
+      <ReportResultNode node={nodeWithSource({ settingsEnabled: true })} />
+    )
+
+    const settingsBtn = screen.getByTestId('report-result-settings')
+    expect(settingsBtn).toBeTruthy()
+    // панель ещё не открыта — фейковая кнопка apply не рендерится
+    expect(screen.queryByTestId('apply-us')).toBeNull()
+
+    fireEvent.click(settingsBtn)
+    fireEvent.click(screen.getByTestId('apply-us'))
+
+    const lastCfg = useInfiniteQuery.mock.calls.at(-1)?.[0]
+    await lastCfg?.queryFn({ pageParam: 0 })
+
+    expect(postMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/reportalt/OSV/run',
+        data: { a: 1, userSettings: { schemaVersionRef: 1 } },
+      })
+    )
+  })
+
+  it('settingsEnabled без gateway.SettingsPanel → кнопка «Настройки» не рендерится (fail-closed)', () => {
+    getReportResultGateway.mockReturnValue({ Renderer: () => null })
+
+    render(
+      <ReportResultNode node={nodeWithSource({ settingsEnabled: true })} />
+    )
+
+    expect(screen.queryByTestId('report-result-settings')).toBeNull()
   })
 })

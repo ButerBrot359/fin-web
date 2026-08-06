@@ -10,6 +10,7 @@ import {
 import type { SelectOption } from '@/shared/types/select-option'
 import { fetchReferenceOptions } from '../../../api/reference-options'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
+import { MultiValueControl } from './list-filter-multi-value-control'
 
 export interface FilterEnumOption {
   value: string
@@ -196,6 +197,11 @@ export const ListFilterValueControl: FC<ListFilterValueControlProps> = ({
   const { t } = useTranslation()
 
   if (op === 'isNull' || op === 'isNotNull') return null
+
+  if (op === 'in' || op === 'notIn') {
+    const arr = Array.isArray(value) ? (value as unknown[]) : []
+    return <MultiValueControl column={column} value={arr} onChange={onChange} />
+  }
 
   if (op === 'between') {
     const pair = Array.isArray(value)

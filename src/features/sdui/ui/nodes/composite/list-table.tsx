@@ -6,7 +6,7 @@ import type { FC, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CircularProgress, Typography } from '@mui/material'
 import { flexRender, type Table } from '@tanstack/react-table'
-import type { useVirtualizer } from '@tanstack/react-virtual'
+import type { Virtualizer } from '@tanstack/react-virtual'
 import { cn } from '@/shared/lib/utils/cn'
 import { resolveLoadedCountLabel } from './list-loaded-count'
 import type { ListRow } from './list-column-defs'
@@ -19,7 +19,7 @@ type ListTableAction = { command?: string } | undefined
 
 export interface ListTableProps {
   table: Table<ListRow>
-  rowVirtualizer: ReturnType<typeof useVirtualizer>
+  rowVirtualizer: Virtualizer<HTMLDivElement, Element>
   scrollRef: RefObject<HTMLDivElement | null>
   sentinelRef: RefObject<HTMLDivElement | null>
   rows: ListRow[]

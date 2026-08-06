@@ -62,7 +62,7 @@
 
 - Новый `src/features/sdui/lib/table-validation-registry.ts`: `registerRevealErrors(cb): symbol`, `unregisterRevealErrors(token)`, `revealAllTableErrors()`.
 - Хук `src/features/sdui/lib/hooks/use-table-validation.ts`: держит `revealErrors` (useState), регистрирует `() => setRevealErrors(true)` в реестре (эффект по `node.binding`, как `registerPendingFlush`).
-- `dispatch.ts`: в ветке `COMMAND` при `shouldFlush` (тот же момент, что `flushAllPendingTableCommits()`) дополнительно вызывает `revealAllTableErrors()`. Не блокирует, не влияет на flush.
+- `dispatch.ts`: в ветке `COMMAND` при **`behavior?.flushPendingTables === true`** вызывает `revealAllTableErrors()`. Признак выверен по живому ответу: `save`/`post`/`postAndClose` несут `behavior.flushPendingTables:true`; reference-команды (`showAll/create/open/copy`) и rowActivate — `false` (а reference-нода шлёт COMMAND вообще без `behavior`). НЕ использовать `shouldFlush` (`?? true` по умолчанию сработал бы на reference-командах). Не блокирует, не влияет на flush.
 
 Сброс: `revealErrors` не нужно явно гасить — пустые обязательные, будучи заполнены, перестают краситься индивидуально; после успешного сохранения ТЧ заполнена. На новом OPEN таблица перемонтируется (`tree reset`), стейт сбрасывается.
 

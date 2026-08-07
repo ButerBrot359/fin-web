@@ -1,5 +1,4 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -33,21 +32,16 @@ const tree = sidebar({ collapsed: false }, [
 ])
 
 describe('SidebarNode', () => {
-  let queryClient: QueryClient
-
   beforeEach(() => {
     localStorage.clear()
-    queryClient = new QueryClient()
   })
   afterEach(cleanup)
 
   it('рендерит по пункту на каждый LINK-ребёнок', () => {
     render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/']}>
-          <SidebarNode node={tree} />
-        </MemoryRouter>
-      </QueryClientProvider>
+      <MemoryRouter initialEntries={['/']}>
+        <SidebarNode node={tree} />
+      </MemoryRouter>
     )
     expect(screen.getByRole('button', { name: /Главная/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: /Банк и касса/ })).toBeTruthy()
@@ -55,11 +49,9 @@ describe('SidebarNode', () => {
 
   it('кнопка сворачивания прячет метки пунктов и пишет localStorage', () => {
     render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/']}>
-          <SidebarNode node={tree} />
-        </MemoryRouter>
-      </QueryClientProvider>
+      <MemoryRouter initialEntries={['/']}>
+        <SidebarNode node={tree} />
+      </MemoryRouter>
     )
     fireEvent.click(screen.getByLabelText('sidebar.toggleCollapse'))
     expect(screen.queryByText('Банк и касса')).toBeNull()
@@ -75,11 +67,9 @@ describe('SidebarNode', () => {
       JSON.stringify({ isCollapsed: true })
     )
     render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/']}>
-          <SidebarNode node={tree} />
-        </MemoryRouter>
-      </QueryClientProvider>
+      <MemoryRouter initialEntries={['/']}>
+        <SidebarNode node={tree} />
+      </MemoryRouter>
     )
     expect(screen.queryByText('Главная')).toBeNull()
   })

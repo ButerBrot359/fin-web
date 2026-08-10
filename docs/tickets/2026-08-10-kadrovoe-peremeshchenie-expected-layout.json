@@ -1,0 +1,104 @@
+{
+  "_comment": [
+    "Эталон РАСКЛАДКИ узлов OPEN /api/view для документа KadrovoePeremeshchenie.",
+    "Источник: Documents/КадровоеПеремещение/Forms/ФормаДокумента/Ext/Form.xml",
+    "(выгрузка КБП_ФормыДокументов_FormXML_1_0_1_633_2026_08_07) + скриншот 1С.",
+    "Меняется ТОЛЬКО расположение полей и табличных частей. Состав колонок ТЧ,",
+    "типы, cellWidget, enabled, optionsSource, actions, TOOLBAR — как в текущем ответе,",
+    "их разбор в 2026-08-10-kadrovoe-peremeshchenie-tch-layout.md.",
+    "\"_props\": \"без изменений\" = взять props/value/actions узла из текущего дескриптора."
+  ],
+  "id": "page",
+  "type": "PAGE",
+  "props": { "kind": "OBJECT_FORM", "title": "Кадровое перемещение (создание)" },
+  "children": [
+    { "id": "commandBar", "type": "TOOLBAR", "_props": "без изменений" },
+    {
+      "id": "content",
+      "type": "VSTACK",
+      "props": { "gap": 8 },
+      "children": [
+        {
+          "_comment": "UsualGroup ГруппаШапка — две колонки, как в 1С",
+          "id": "row.header",
+          "type": "HSTACK",
+          "props": { "align": "stretch", "gap": 6 },
+          "children": [
+            {
+              "_comment": "ГруппаШапкаЛево",
+              "id": "col.headerLeft",
+              "type": "VSTACK",
+              "props": { "flex": 1, "gap": 3 },
+              "children": [
+                {
+                  "_comment": "ГруппаНомерДата — Номер и Дата в одну строку",
+                  "id": "row.nomerData",
+                  "type": "HSTACK",
+                  "props": { "gap": 3 },
+                  "children": [
+                    { "id": "field.nomer", "type": "TEXT_FIELD", "binding": "Nomer", "props": { "flex": 1 }, "_props": "остальное без изменений" },
+                    { "id": "field.data", "type": "DATETIME_FIELD", "binding": "Data", "props": { "flex": 1 }, "_props": "остальное без изменений" }
+                  ]
+                },
+                { "id": "field.organizatsiya", "type": "REFERENCE_FIELD", "binding": "Organizatsiya", "_props": "без изменений" }
+              ]
+            },
+            {
+              "_comment": "ГруппаШапкаПраво",
+              "id": "col.headerRight",
+              "type": "VSTACK",
+              "props": { "flex": 1, "gap": 3 },
+              "children": [
+                { "id": "field.podrazdelenieOrganizatsiiStaroe", "type": "REFERENCE_FIELD", "binding": "PodrazdelenieOrganizatsiiStaroe", "_props": "без изменений" },
+                { "id": "field.podrazdelenieOrganizatsiiNovoe", "type": "REFERENCE_FIELD", "binding": "PodrazdelenieOrganizatsiiNovoe", "_props": "без изменений" },
+                { "id": "field.indeksatsiyaZarabotkaSKoeffitsientom", "type": "CHECKBOX_FIELD", "binding": "IndeksatsiyaZarabotkaSKoeffitsientom", "_props": "без изменений" },
+                {
+                  "_comment": "ВНЕ выгрузки: поля ДокументОснование на форме 1С нет (в Form.xml строка не встречается). Если поле оставляют осознанно — его место здесь; иначе убрать (п.9 тикета).",
+                  "id": "field.dokumentOsnovanie",
+                  "type": "REFERENCE_FIELD",
+                  "binding": "DokumentOsnovanie",
+                  "_props": "без изменений"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "_comment": "Pages «Страницы» — порядок страниц как в выгрузке",
+          "id": "tabs.main",
+          "type": "TABS",
+          "children": [
+            {
+              "_comment": "Page ГруппаСотрудники, Title = Сотрудники",
+              "id": "tab.sotrudniki",
+              "type": "TAB",
+              "props": { "title": "Сотрудники", "titleKz": "Қызметкерлер" },
+              "children": [
+                { "id": "table.sotrudniki", "type": "TABLE", "binding": "Sotrudniki", "_props": "без изменений (props, children-колонки, actions)" }
+              ]
+            },
+            {
+              "_comment": "Page ГруппаНачисления, Title = Начисления",
+              "id": "tab.nachisleniya",
+              "type": "TAB",
+              "props": { "title": "Начисления", "titleKz": "Есептеулер" },
+              "children": [
+                { "id": "table.nachisleniya", "type": "TABLE", "binding": "Nachisleniya", "_props": "без изменений (props, children-колонки, actions)" }
+              ]
+            }
+          ]
+        },
+        {
+          "_comment": "UsualGroup ГруппаПодвал",
+          "id": "group.podval",
+          "type": "VSTACK",
+          "props": { "gap": 3 },
+          "children": [
+            { "id": "field.kommentariy", "type": "TEXT_FIELD", "binding": "Kommentariy", "_props": "без изменений" },
+            { "id": "field.otvetstvennyy", "type": "REFERENCE_FIELD", "binding": "Otvetstvennyy", "_props": "без изменений" }
+          ]
+        }
+      ]
+    }
+  ]
+}

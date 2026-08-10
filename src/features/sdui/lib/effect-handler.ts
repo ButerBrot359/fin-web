@@ -10,6 +10,32 @@ import { parseContentDispositionFilename } from './parse-content-disposition'
 
 type ToastLevel = 'success' | 'error' | 'info' | 'warning'
 
+// SCRUM-288 §3.1: сохранение/превью blob — общая логика для GET (url) и POST
+// (request) веток download, вынесена, чтобы не дублировать между ними.
+function saveOrPreviewBlob(res: {
+  data: Blob
+  headers: Record<string, unknown>
+}): void {
+  const objectUrl = URL.createObjectURL(res.data)
+  const disposition = res.headers['content-disposition'] as string | undefined
+
+  if (disposition && /attachment/i.test(disposition)) {
+    // Сервер требует сохранение на диск (§3.5 SCRUM-268)
+    const a = document.createElement('a')
+    a.href = objectUrl
+    a.download = parseContentDispositionFilename(disposition) || 'download'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  } else {
+    // inline или без заголовка — превью в новой вкладке (как раньше)
+    window.open(objectUrl, '_blank')
+  }
+  setTimeout(() => {
+    URL.revokeObjectURL(objectUrl)
+  }, 60_000)
+}
+
 export interface EffectHandlerDeps {
   navigate: NavigateFunction
   closeSession: () => Promise<void>
@@ -80,31 +106,19 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
         break
 
       case 'download': {
-        if (!effect.url) break
-        void apiService
-          .getFileBlob({ url: effect.url })
+        // SCRUM-288 §3.1: есть request — POST с телом; иначе прежний GET по url.
+        const blobPromise = effect.request
+          ? apiService.postFileBlob({
+              url: effect.request.url,
+              data: effect.request.body ?? undefined,
+            })
+          : effect.url
+            ? apiService.getFileBlob({ url: effect.url })
+            : null
+        if (!blobPromise) break
+        void blobPromise
           .then((res) => {
-            const objectUrl = URL.createObjectURL(res.data)
-            const disposition = res.headers['content-disposition'] as
-              | string
-              | undefined
-
-            if (disposition && /attachment/i.test(disposition)) {
-              // Сервер требует сохранение на диск (§3.5 SCRUM-268)
-              const a = document.createElement('a')
-              a.href = objectUrl
-              a.download =
-                parseContentDispositionFilename(disposition) || 'download'
-              document.body.appendChild(a)
-              a.click()
-              a.remove()
-            } else {
-              // inline или без заголовка — превью в новой вкладке (как раньше)
-              window.open(objectUrl, '_blank')
-            }
-            setTimeout(() => {
-              URL.revokeObjectURL(objectUrl)
-            }, 60_000)
+            saveOrPreviewBlob(res as never)
           })
           .catch(() => {
             showToast('error', i18n.t('sdui.downloadError'))

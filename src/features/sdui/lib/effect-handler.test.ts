@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { apiService } from '@/shared/api/api'
 
@@ -121,6 +121,54 @@ describe('effect confirm (SCRUM-244 v3 §1 / SCRUM-288 §2.3)', () => {
     ])
     expect(deps.confirm).toHaveBeenCalledTimes(1)
     expect(deps.invalidateLists).not.toHaveBeenCalled()
+  })
+})
+
+describe('effect download (SCRUM-288 §3.1)', () => {
+  // Мок apiService общий на модуль — без сброса вызовы одного теста утекают
+  // в проверки соседнего (getFileBlob/postFileBlob не сбрасываются между it).
+  beforeEach(() => {
+    vi.mocked(apiService.getFileBlob).mockClear()
+    vi.mocked(apiService.postFileBlob).mockClear()
+  })
+
+  it('есть request — POST через postFileBlob с телом', async () => {
+    const blob = new Blob(['x'])
+    vi.mocked(apiService.postFileBlob).mockResolvedValue({
+      data: blob,
+      headers: {},
+    } as never)
+    createEffectHandler(makeDeps()).play({
+      type: 'download',
+      request: {
+        method: 'POST',
+        url: '/api/reportalt/OSVPoSchetu/print',
+        body: { parameters: {} },
+      },
+    })
+    await Promise.resolve()
+    expect(apiService.postFileBlob).toHaveBeenCalledWith({
+      url: '/api/reportalt/OSVPoSchetu/print',
+      data: { parameters: {} },
+    })
+    expect(apiService.getFileBlob).not.toHaveBeenCalled()
+  })
+
+  it('есть только url — прежний GET через getFileBlob', async () => {
+    const blob = new Blob(['x'])
+    vi.mocked(apiService.getFileBlob).mockResolvedValue({
+      data: blob,
+      headers: {},
+    } as never)
+    createEffectHandler(makeDeps()).play({
+      type: 'download',
+      url: '/api/print/42.pdf',
+    })
+    await Promise.resolve()
+    expect(apiService.getFileBlob).toHaveBeenCalledWith({
+      url: '/api/print/42.pdf',
+    })
+    expect(apiService.postFileBlob).not.toHaveBeenCalled()
   })
 })
 

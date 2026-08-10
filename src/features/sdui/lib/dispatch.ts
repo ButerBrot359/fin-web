@@ -58,6 +58,7 @@ export function useSduiDispatch() {
         clearAllErrors,
         setFromServer,
         resetDirty,
+        setDirty,
         closeAfter,
         setOnDirtyClose,
       } = session
@@ -167,6 +168,9 @@ export function useSduiDispatch() {
           applyTreePatches(patches)
           applyValuePatches(patches, setFromServer)
           merge(res.statePatch ?? {})
+          // SCRUM-288 §2.5: серверный dirty авторитетен и ПЕРЕКРЫВАЕТ клиентский флаг
+          // (включая false с LIST/REPORT). null/undefined — «решай сам».
+          if (res.dirty != null) setDirty(res.dirty)
           effectHandler.playAll(res.effects ?? []) // navigate играет здесь…
           if (action.type === 'COMMAND') {
             if (shouldReset) resetDirty()

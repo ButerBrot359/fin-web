@@ -489,6 +489,44 @@ describe('useSduiDispatch: confirm-мост (SCRUM-288 §2.3/§2.4)', () => {
   })
 })
 
+describe('useSduiDispatch: res.dirty авторитетно (SCRUM-288 §2.5)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  it('res.dirty=false перекрывает клиентский флаг', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValueOnce({
+      formSessionId: 's',
+      revision: 2,
+      dirty: false,
+    } as unknown as ViewResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'EVENT', command: 'x' })
+    expect(sessionMock.setDirty).toHaveBeenCalledWith(false)
+  })
+
+  it('res.dirty отсутствует — setDirty не зовём (клиентский флаг как есть)', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValueOnce({
+      formSessionId: 's',
+      revision: 2,
+    } as unknown as ViewResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'EVENT', command: 'x' })
+    expect(sessionMock.setDirty).not.toHaveBeenCalled()
+  })
+})
+
 // I-1 (ревью SCRUM-244): 404 на OPEN — штатный гейт раскатки, но тост должен
 // подавляться ТОЛЬКО когда хост реально обрабатывает фолбэк (opts.onOpenNotFound
 // передан). Без обработчика — прежнее поведение (тост), иначе документы без

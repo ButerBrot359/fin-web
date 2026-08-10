@@ -10,19 +10,32 @@ interface ViewStateStoreState {
   replaceAll: (s: Record<string, unknown>) => void
   getAll: () => Record<string, unknown>
   resetDirty: () => void
+  // Авторитетный dirty от сервера (SCRUM-288 §2.5): в отличие от resetDirty
+  // (только сброс в false), позволяет выставить любое значение флага.
+  setDirty: (value: boolean) => void
 }
 
 export const useViewStateStore = create<ViewStateStoreState>((set, get) => ({
   state: {},
   dirty: false,
   get: (binding) => get().state[binding],
-  set: (binding, value) =>
-    set((s) => ({ state: { ...s.state, [binding]: value }, dirty: true })),
-  setFromServer: (binding, value) =>
-    set((s) => ({ state: { ...s.state, [binding]: value } })),
-  merge: (patch) => set((s) => ({ state: { ...s.state, ...patch } })),
-  replaceAll: (s) => set({ state: s, dirty: false }),
+  set: (binding, value) => {
+    set((s) => ({ state: { ...s.state, [binding]: value }, dirty: true }))
+  },
+  setFromServer: (binding, value) => {
+    set((s) => ({ state: { ...s.state, [binding]: value } }))
+  },
+  merge: (patch) => {
+    set((s) => ({ state: { ...s.state, ...patch } }))
+  },
+  replaceAll: (s) => {
+    set({ state: s, dirty: false })
+  },
   getAll: () => get().state,
-  resetDirty: () => set({ dirty: false }),
+  resetDirty: () => {
+    set({ dirty: false })
+  },
+  setDirty: (value) => {
+    set({ dirty: value })
+  },
 }))
-

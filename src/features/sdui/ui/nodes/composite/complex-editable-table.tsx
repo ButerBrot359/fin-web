@@ -25,6 +25,7 @@ import {
 } from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
+import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import {
@@ -270,6 +271,11 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // выбора для master-detail фильтра; фильтр остаётся клиентским.
   const activateRow = useRowActivate(node)
 
+  // Двойной клик по строке — открыть форму строки (§2 спеки). Отдельный триггер
+  // `open`: одиночный клик (activate + выделение) остаётся как был, двойной
+  // добавляется сверху и выделение не трогает.
+  const openRow = useRowOpen(node)
+
   // Publish selected rowId to session for detail tables
   const handleRowClick = (rowId: string) => {
     setSelectedRowId(rowId)
@@ -489,6 +495,9 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                   selected={row.id === selectedRowId}
                   onClick={() => {
                     handleRowClick(row.id)
+                  }}
+                  onDoubleClick={(event) => {
+                    openRow(row.id, event)
                   }}
                   sx={{ cursor: 'pointer', height: ROW_HEIGHT }}
                 >

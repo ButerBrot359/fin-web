@@ -28,6 +28,7 @@ import {
 } from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
+import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { columnSizeProps } from '../../../lib/utils/column-sizing'
@@ -67,6 +68,10 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   // Активация строки уходит на сервер только если бэк прислал action
   // с trigger='activate' у этой ТЧ (props.rowActivate)
   const activateRow = useRowActivate(node)
+  // Двойной клик по строке уходит на сервер только если бэк прислал action
+  // с trigger='open' у этой ТЧ (props.rowOpen) — §2 спеки формы строки.
+  // Контракт общий для любой ТЧ, поэтому подключён и здесь, не только у свёртки.
+  const openRow = useRowOpen(node)
 
   const search = useTableSearch(
     sync.rows,
@@ -258,6 +263,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                   onClick={() => {
                     setSelectedIndex(index)
                     activateRow(row.id)
+                  }}
+                  onDoubleClick={(event) => {
+                    openRow(row.id, event)
                   }}
                   sx={{ cursor: 'pointer' }}
                 >

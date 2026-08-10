@@ -23,7 +23,7 @@ import { ListTable } from './list-table'
 
 import type { NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
-import { useRefPickerSelectionStore } from '../../../lib/stores/ref-picker-selection-store'
+import { useSelectionStore } from '../../../lib/stores/selection-store'
 
 const PAGE_SIZE = 25
 
@@ -166,8 +166,8 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   // Publish highlighted row to shared store for sibling toolbar buttons (ref.copy / ref.select)
   // SCRUM-284 Δ4: ключ группы выбора — с selectAction, не из props
   const selectField = selectAction?.selectionField ?? undefined
-  const setSelection = useRefPickerSelectionStore((s) => s.setSelection)
-  const clearSelection = useRefPickerSelectionStore((s) => s.clearSelection)
+  const setSelection = useSelectionStore((s) => s.setSelection)
+  const clearSelection = useSelectionStore((s) => s.clearSelection)
   useEffect(() => {
     if (!selectField) return
     setSelection(selectField, selectedRowId)

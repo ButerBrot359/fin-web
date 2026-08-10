@@ -28,8 +28,8 @@ const { setSelectionMock, clearSelectionMock } = vi.hoisted(() => ({
   setSelectionMock: vi.fn(),
   clearSelectionMock: vi.fn(),
 }))
-vi.mock('../../../lib/stores/ref-picker-selection-store', () => ({
-  useRefPickerSelectionStore: (
+vi.mock('../../../lib/stores/selection-store', () => ({
+  useSelectionStore: (
     selector: (s: {
       setSelection: typeof setSelectionMock
       clearSelection: typeof clearSelectionMock

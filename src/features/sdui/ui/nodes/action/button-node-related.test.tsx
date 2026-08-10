@@ -22,6 +22,9 @@ vi.mock('../../../lib/overflow/overflow-context', () => ({
 vi.mock('../../../lib/stores/selection-store', () => ({
   useSelection: () => 'row-7',
 }))
+vi.mock('../../node-renderer', () => ({
+  NodeRenderer: () => null,
+}))
 
 const btnWithRequest = (): ViewNode =>
   ({

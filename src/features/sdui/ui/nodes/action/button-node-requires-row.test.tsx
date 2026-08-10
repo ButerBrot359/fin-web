@@ -17,6 +17,10 @@ vi.mock('../../../lib/use-sdui-effects', () => ({
   }),
 }))
 
+vi.mock('../../node-renderer', () => ({
+  NodeRenderer: () => null,
+}))
+
 // requiresSelectedRow/selectionField приходят на click-action (SCRUM-284 Δ4),
 // command берётся из props (props.command побеждает, SCRUM-283).
 const button = (label: string, action: Record<string, unknown>): ViewNode =>

@@ -13,6 +13,12 @@ export interface TableColumnDef {
   label: string
   binding: string
   flex?: number | string
+  /** Начальная ширина колонки в px с бэка (`props.width`). */
+  width?: number
+  /** Пол при перетаскивании (`props.minWidth`). Приходит редко — см. SDUI_MIN_COLUMN_WIDTH. */
+  minWidth?: number
+  /** `props.resizable`; бэк эмитит только `false` — «эту колонку тянуть нельзя». */
+  resizable?: boolean
   cellWidget: string
   dataType: string
   readonly?: boolean

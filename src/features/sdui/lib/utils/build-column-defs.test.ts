@@ -9,6 +9,7 @@ import {
   nodeToTableColumnDef,
   VERTICAL_SUB_ROW_HEIGHT,
 } from './build-column-defs'
+import { columnSizeProps } from './column-sizing'
 
 describe('nodeToTableColumnDef', () => {
   it('приоритет binding: node.binding > props.binding > node.id', () => {
@@ -207,5 +208,53 @@ describe('buildColumnDefs — required header marker', () => {
       syncRef
     )
     expect(defs[0].header).toBe('c3')
+  })
+})
+
+// Ширины колонок из контракта бэка доезжают до TableColumnDef и до ColumnDef.
+describe('nodeToTableColumnDef / columnSizeProps — ширины', () => {
+  const node = (props: Record<string, unknown>): ViewNode =>
+    ({ id: 'tbl.col.a', type: 'TABLE_COLUMN', binding: 'a', props }) as ViewNode
+
+  it('width/minWidth/resizable читаются из props', () => {
+    const col = nodeToTableColumnDef(
+      node({ label: 'A', width: 240, minWidth: 80, resizable: false })
+    )
+    expect(col.width).toBe(240)
+    expect(col.minWidth).toBe(80)
+    expect(col.resizable).toBe(false)
+  })
+
+  it('Long-строка приводится к числу, мусор отбрасывается', () => {
+    expect(nodeToTableColumnDef(node({ width: '240' })).width).toBe(240)
+    expect(nodeToTableColumnDef(node({ width: 0 })).width).toBeUndefined()
+    expect(nodeToTableColumnDef(node({ width: 'wide' })).width).toBeUndefined()
+    expect(nodeToTableColumnDef(node({})).minWidth).toBeUndefined()
+  })
+
+  it('columnSizeProps: minSize по умолчанию 40, enableResizing только при запрете', () => {
+    expect(columnSizeProps({ width: 240 })).toEqual({ size: 240, minSize: 40 })
+    expect(columnSizeProps({ width: 240, minWidth: 80 })).toEqual({
+      size: 240,
+      minSize: 80,
+    })
+    // Явного enableResizing:true быть не должно — он перекрыл бы мастер-выключатель
+    // таблицы (enableColumnResizing) и включил бы ручки везде.
+    expect(columnSizeProps({})).toEqual({ minSize: 40 })
+    expect(columnSizeProps({ resizable: false })).toEqual({
+      minSize: 40,
+      enableResizing: false,
+    })
+  })
+
+  it('buildColumnDefs прокидывает ширины в ColumnDef листовой колонки', () => {
+    const syncRef = { current: null } as unknown as RefObject<UseTableSyncResult>
+    const [def] = buildColumnDefs(
+      [node({ label: 'A', width: 240, minWidth: 80, resizable: false })],
+      syncRef
+    )
+    expect(def.size).toBe(240)
+    expect(def.minSize).toBe(80)
+    expect(def.enableResizing).toBe(false)
   })
 })

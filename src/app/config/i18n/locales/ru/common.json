@@ -197,7 +197,8 @@
     "filterValuePlaceholder": "Значение",
     "filterActiveTitle": "Активные фильтры",
     "filterRemoveChip": "Удалить фильтр",
-    "filterClearAll": "Сбросить все"
+    "filterClearAll": "Сбросить все",
+    "resizeColumn": "Изменить ширину колонки"
   },
   "informationRegister": {
     "period": "Период",

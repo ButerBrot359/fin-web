@@ -22,6 +22,7 @@ import { ListPeriodControl } from './list-period-control'
 import { ListTable } from './list-table'
 
 import type { NodeProps } from '../../../types/view'
+import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useRefPickerSelectionStore } from '../../../lib/stores/ref-picker-selection-store'
 
@@ -203,10 +204,16 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     [columnNodes, sortState, typeCode, dispatch, node.id, filterOpLabels]
   )
 
+  const sizing = useSduiColumnSizing(node)
+
   const table = useReactTable({
     data: rows,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    enableColumnResizing: sizing.enableColumnResizing,
+    columnResizeMode: sizing.columnResizeMode,
+    state: { columnSizing: sizing.columnSizing },
+    onColumnSizingChange: sizing.onColumnSizingChange,
   })
 
   const tableRows = table.getRowModel().rows
@@ -267,6 +274,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
       <ListTable
         table={table}
+        isResizable={sizing.isResizable}
         rowVirtualizer={rowVirtualizer}
         scrollRef={scrollRef}
         sentinelRef={sentinelRef}

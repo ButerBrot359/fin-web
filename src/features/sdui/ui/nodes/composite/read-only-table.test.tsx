@@ -1,4 +1,4 @@
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
@@ -53,5 +53,90 @@ describe('ReadOnlyTable showRowNumbers', () => {
     state.rows = [{ rowId: 'r1', a: 'x' }]
     render(<TableNode node={makeTable({})} />)
     expect(screen.queryByText('table.rowNumber')).toBeNull()
+  })
+})
+
+// Ресайз read-only таблицы (движения): рендер ручной, без TanStack — ширины
+// едут через <colgroup>, ручки ставятся только на листовые ячейки шапки.
+describe('ReadOnlyTable ресайз колонок', () => {
+  const nodeWithGroups = (props: Record<string, unknown>): ViewNode =>
+    ({
+      id: 'tbl',
+      type: 'TABLE',
+      binding: 'rows',
+      props: { editable: false, ...props },
+      children: [
+        {
+          id: 'tbl.col.period',
+          type: 'TABLE_COLUMN',
+          binding: 'period',
+          props: { label: 'Период', width: 120 },
+        },
+        {
+          id: 'tbl.group.dt',
+          type: 'COLUMN_GROUP',
+          props: { label: 'ДЕБЕТ' },
+          children: [
+            {
+              id: 'tbl.col.dt',
+              type: 'TABLE_COLUMN',
+              binding: 'dt',
+              props: { label: 'Счёт', width: 90, resizable: false },
+            },
+          ],
+        },
+      ],
+    }) as ViewNode
+
+  // Регресс-пин: без columnsResizable read-only таблица рендерится как раньше.
+  it('без columnsResizable ручек и colgroup нет', () => {
+    state.rows = [{ rowId: 'r1', period: '01.01.2026', dt: '1010' }]
+    const { container } = render(<TableNode node={nodeWithGroups({})} />)
+    expect(container.querySelectorAll('[role="separator"]')).toHaveLength(0)
+    expect(container.querySelector('colgroup')).toBeNull()
+  })
+
+  it('с columnsResizable: ширины в colgroup, ручка только на разрешённом листе', () => {
+    state.rows = [{ rowId: 'r1', period: '01.01.2026', dt: '1010' }]
+    const { container } = render(
+      <TableNode
+        node={nodeWithGroups({
+          columnsResizable: true,
+          columnStateKey: 'movements:Test.Dvizhenie',
+        })}
+      />
+    )
+    const cols = [...container.querySelectorAll('colgroup col')]
+    expect(cols.map((c) => (c as HTMLElement).style.width)).toEqual([
+      '120px',
+      '90px',
+    ])
+    // Групповой заголовок ДЕБЕТ ручки не получает, колонка «Счёт» запрещена бэком.
+    expect(container.querySelectorAll('[role="separator"]')).toHaveLength(1)
+  })
+
+  it('перетаскивание пишет ширину в localStorage под относительным ключом', () => {
+    localStorage.clear()
+    state.rows = [{ rowId: 'r1', period: '01.01.2026', dt: '1010' }]
+    const { container } = render(
+      <TableNode
+        node={nodeWithGroups({
+          columnsResizable: true,
+          columnStateKey: 'movements:Test.Dvizhenie',
+        })}
+      />
+    )
+    const handle = container.querySelector('[role="separator"]')!
+    fireEvent.mouseDown(handle, { clientX: 100 })
+    fireEvent.mouseMove(document, { clientX: 160 })
+    fireEvent.mouseUp(document)
+
+    expect(
+      JSON.parse(
+        localStorage.getItem('sdui-col-widths:movements:Test.Dvizhenie') ?? '{}'
+      )
+    ).toEqual({ 'col.period': 180 })
+    const cols = [...container.querySelectorAll('colgroup col')]
+    expect((cols[0] as HTMLElement).style.width).toBe('180px')
   })
 })

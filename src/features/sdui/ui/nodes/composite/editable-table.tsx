@@ -11,7 +11,6 @@ import {
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow as MuiTableRow,
   Typography,
 } from '@mui/material'
@@ -30,6 +29,10 @@ import {
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
+import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
+import { columnSizeProps } from '../../../lib/utils/column-sizing'
+import { EditableTableHead } from './editable-table-head'
+import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { TableCellEditor } from './table-cell-editor'
 import { RequiredMark } from './required-mark'
 import { SearchHitCell } from './table-search-cell'
@@ -107,7 +110,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           col.required && !col.readonly
             ? () => <RequiredMark label={col.label} />
             : col.label,
-        size: col.flex ? undefined : 150,
+        // Ширина колонки: с бэка (props.width) либо прежний фолбэк 150/flex.
+        ...columnSizeProps(col.props),
+        size: col.width ?? (col.flex ? undefined : 150),
         cell: ({ row }) => (
           <TableCellEditor
             cellWidget={col.cellWidget}
@@ -129,12 +134,28 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     [columns]
   )
 
+  const sizing = useSduiColumnSizing(node)
+
   const table = useReactTable({
     data: sync.rows,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.rowId,
+    enableColumnResizing: sizing.enableColumnResizing,
+    columnResizeMode: sizing.columnResizeMode,
+    state: { columnSizing: sizing.columnSizing },
+    onColumnSizingChange: sizing.onColumnSizingChange,
   })
+
+  // Фиксированные ширины включаем ТОЛЬКО при ресайзе: без columnsResizable
+  // раскладка таблицы остаётся авто-шириной MUI, как до задачи.
+  const tableSx = sizing.isResizable
+    ? {
+        tableLayout: 'fixed' as const,
+        width: table.getTotalSize() + (showRowNumbers ? ROW_NUMBER_WIDTH : 0),
+        minWidth: '100%',
+      }
+    : undefined
 
   const handleAdd = () => {
     sync.addRow(columns)
@@ -204,28 +225,18 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
         />
       </div>
       <TableContainer component={Paper} ref={containerRef}>
-        <Table size="small">
-          <TableHead>
-            {table.getHeaderGroups().map((hg) => (
-              <MuiTableRow key={hg.id}>
-                {showRowNumbers && (
-                  <TableCell
-                    sx={{ width: 48, textAlign: 'center', fontWeight: 600 }}
-                  >
-                    {t('table.rowNumber')}
-                  </TableCell>
-                )}
-                {hg.headers.map((header) => (
-                  <TableCell key={header.id}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </TableCell>
-                ))}
-              </MuiTableRow>
-            ))}
-          </TableHead>
+        <Table size="small" sx={tableSx}>
+          {sizing.isResizable && (
+            <TableSizingColgroup
+              table={table}
+              leadingWidth={showRowNumbers ? ROW_NUMBER_WIDTH : undefined}
+            />
+          )}
+          <EditableTableHead
+            table={table}
+            showRowNumbers={showRowNumbers}
+            isResizable={sizing.isResizable}
+          />
           <TableBody>
             {table.getRowModel().rows.length === 0 ? (
               <MuiTableRow>

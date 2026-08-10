@@ -9,6 +9,7 @@ import { flexRender, type Table } from '@tanstack/react-table'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import { cn } from '@/shared/lib/utils/cn'
 import { resolveLoadedCountLabel } from './list-loaded-count'
+import { ColumnResizeHandle } from './column-resize-handle'
 import type { ListRow } from './list-column-defs'
 
 interface ListTablePagedData {
@@ -19,6 +20,8 @@ type ListTableAction = { command?: string } | undefined
 
 export interface ListTableProps {
   table: Table<ListRow>
+  /** Бэк разрешил тянуть границы (`columnsResizable`) — фиксируем ширины и рисуем ручки. */
+  isResizable: boolean
   rowVirtualizer: Virtualizer<HTMLDivElement, Element>
   scrollRef: RefObject<HTMLDivElement | null>
   sentinelRef: RefObject<HTMLDivElement | null>
@@ -36,6 +39,7 @@ export interface ListTableProps {
 
 export const ListTable: FC<ListTableProps> = ({
   table,
+  isResizable,
   rowVirtualizer,
   scrollRef,
   sentinelRef,
@@ -79,9 +83,22 @@ export const ListTable: FC<ListTableProps> = ({
       ) : (
         <>
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
+            {/* Ресайз требует фиксированной раскладки: иначе браузер
+                перераспределяет ширины по содержимому и перетаскивание не
+                видно. Без columnsResizable раскладка остаётся прежней (w-full,
+                auto), чтобы не менять вид уже работающих списков. */}
             <table
-              className="w-full border-separate"
-              style={{ borderSpacing: '2px' }}
+              className={cn('border-separate', !isResizable && 'w-full')}
+              style={
+                isResizable
+                  ? {
+                      borderSpacing: '2px',
+                      tableLayout: 'fixed',
+                      width: table.getTotalSize(),
+                      minWidth: '100%',
+                    }
+                  : { borderSpacing: '2px' }
+              }
             >
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -89,7 +106,12 @@ export const ListTable: FC<ListTableProps> = ({
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06"
+                        // sticky уже создаёт контекст позиционирования — ручке
+                        // достаточно overflow-hidden, чтобы её не срезал текст.
+                        className={cn(
+                          'sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06',
+                          isResizable && 'overflow-hidden'
+                        )}
                         style={{ width: header.getSize() }}
                       >
                         {header.isPlaceholder
@@ -98,6 +120,13 @@ export const ListTable: FC<ListTableProps> = ({
                               header.column.columnDef.header,
                               header.getContext()
                             )}
+                        {header.column.getCanResize() && (
+                          <ColumnResizeHandle
+                            isResizing={header.column.getIsResizing()}
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                          />
+                        )}
                       </th>
                     ))}
                   </tr>

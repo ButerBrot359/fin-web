@@ -1,123 +1,13 @@
 import type { FC } from 'react'
-import { useTranslation } from 'react-i18next'
-import {
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from '@mui/material'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
-import { useSduiSession } from '../../../lib/sdui-session-context'
 import { nodeToTableColumnDef } from '../../../lib/utils/build-column-defs'
-import { renderCellValue } from '../../../lib/utils/cell-value'
 import type { TableColumnDef } from '../../../lib/hooks/use-table-sync'
 import { EditableTable } from './editable-table'
 import { ComplexEditableTable } from './complex-editable-table'
 import { AccountingPostingsBlock } from './accounting-postings-block'
+import { ReadOnlyTable } from './read-only-table'
 import { SubordinationTree } from './subordination-tree'
-
-interface ReadOnlyColumnDef {
-  id: string
-  label: string
-  binding?: string
-  flex?: number | string
-}
-
-/** Рекурсивно собирает листовые TABLE_COLUMN (включая вложенные в COLUMN_GROUP) в порядке документа. */
-function collectLeafColumns(node: ViewNode): ViewNode[] {
-  if (node.type === 'TABLE_COLUMN') return [node]
-  if (node.type === 'COLUMN_GROUP')
-    return (node.children ?? []).flatMap(collectLeafColumns)
-  return []
-}
-
-export function extractReadOnlyColumns(
-  children: ViewNode[] | undefined
-): ReadOnlyColumnDef[] {
-  if (!children) return []
-  return children.flatMap(collectLeafColumns).map((c) => {
-    const col = nodeToTableColumnDef(c)
-    return {
-      id: col.id,
-      label: col.label,
-      binding: col.binding,
-      flex: col.flex,
-    }
-  })
-}
-
-interface HeaderCell {
-  id: string
-  label: string
-  colSpan?: number
-  rowSpan?: number
-  align?: 'center'
-}
-
-interface HeaderModel {
-  hasGroups: boolean
-  topRow: HeaderCell[]
-  bottomRow: HeaderCell[]
-}
-
-/**
- * Модель двухрядной шапки read-only таблицы.
- * COLUMN_GROUP → ячейка верхнего ряда (colSpan = число листьев), листья → нижний ряд.
- * Плоский TABLE_COLUMN при наличии групп → rowSpan=2.
- * Без групп colSpan/rowSpan не проставляются — DOM идентичен прежнему рендеру.
- * Пустые COLUMN_GROUP пропускаются (colSpan: 0 невалиден).
- */
-export function buildHeaderModel(
-  children: ViewNode[] | undefined
-): HeaderModel {
-  const nodes = children ?? []
-
-  // First pass: check if there are any non-empty groups
-  const hasNonEmptyGroups = nodes.some((node) => {
-    if (node.type === 'COLUMN_GROUP') {
-      return collectLeafColumns(node).length > 0
-    }
-    return false
-  })
-
-  const topRow: HeaderCell[] = []
-  const bottomRow: HeaderCell[] = []
-
-  // Second pass: build rows
-  for (const node of nodes) {
-    if (node.type === 'TABLE_COLUMN') {
-      const col = nodeToTableColumnDef(node)
-      topRow.push({
-        id: col.id,
-        label: col.label,
-        ...(hasNonEmptyGroups ? { rowSpan: 2 } : {}),
-      })
-    } else if (node.type === 'COLUMN_GROUP') {
-      const leaves = collectLeafColumns(node)
-      if (leaves.length === 0) {
-        // Skip empty groups entirely
-        continue
-      }
-      topRow.push({
-        id: node.id,
-        label: (node.props?.label as string | undefined) ?? '',
-        colSpan: leaves.length,
-        align: 'center',
-      })
-      for (const leaf of leaves) {
-        const col = nodeToTableColumnDef(leaf)
-        bottomRow.push({ id: col.id, label: col.label })
-      }
-    }
-  }
-
-  return { hasGroups: hasNonEmptyGroups, topRow, bottomRow }
-}
 
 function extractEditableColumns(
   children: ViewNode[] | undefined
@@ -126,11 +16,6 @@ function extractEditableColumns(
   return children
     .filter((c) => c.type === 'TABLE_COLUMN')
     .map((c) => nodeToTableColumnDef(c))
-}
-
-interface SimpleTableRow {
-  rowId: string
-  [key: string]: unknown
 }
 
 export const TableNode: FC<NodeProps> = ({ node }) => {
@@ -171,98 +56,4 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
     return <AccountingPostingsBlock node={node} />
   }
   return <ReadOnlyTable node={node} />
-}
-
-const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
-  const { t } = useTranslation()
-  const label = node.props?.label as string | undefined
-  const showRowNumbers = node.props?.showRowNumbers === true
-
-  const { getValue } = useSduiSession()
-  const rows = (getValue(node.binding) as SimpleTableRow[] | undefined) ?? []
-
-  const columns = extractReadOnlyColumns(node.children)
-  const headerModel = buildHeaderModel(node.children)
-
-  return (
-    <div>
-      {label && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: 8,
-            gap: 8,
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
-            {label}
-          </Typography>
-        </div>
-      )}
-      <TableContainer component={Paper}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              {showRowNumbers && (
-                <TableCell
-                  align="center"
-                  rowSpan={headerModel.hasGroups ? 2 : undefined}
-                  sx={{ width: 48 }}
-                >
-                  {t('table.rowNumber')}
-                </TableCell>
-              )}
-              {headerModel.topRow.map((cell) => (
-                <TableCell
-                  key={cell.id}
-                  colSpan={cell.colSpan}
-                  rowSpan={cell.rowSpan}
-                  align={cell.align}
-                >
-                  {cell.label}
-                </TableCell>
-              ))}
-            </TableRow>
-            {headerModel.hasGroups && (
-              <TableRow>
-                {headerModel.bottomRow.map((cell) => (
-                  <TableCell key={cell.id}>{cell.label}</TableCell>
-                ))}
-              </TableRow>
-            )}
-          </TableHead>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length + (showRowNumbers ? 1 : 0)}
-                  align="center"
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    {t('table.empty')}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row, idx) => (
-                <TableRow key={row.rowId}>
-                  {showRowNumbers && (
-                    <TableCell align="center">{idx + 1}</TableCell>
-                  )}
-                  {columns.map((col) => (
-                    <TableCell key={col.id}>
-                      {col.binding !== undefined
-                        ? renderCellValue(row[col.binding])
-                        : ''}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </div>
-  )
 }

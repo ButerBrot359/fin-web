@@ -197,7 +197,8 @@
     "filterValuePlaceholder": "Мән",
     "filterActiveTitle": "Белсенді сүзгілер",
     "filterRemoveChip": "Сүзгіні жою",
-    "filterClearAll": "Барлығын тазарту"
+    "filterClearAll": "Барлығын тазарту",
+    "resizeColumn": "Баған енін өзгерту"
   },
   "informationRegister": {
     "period": "Кезең",

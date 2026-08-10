@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ViewNode } from '../../../types/view'
-import { buildHeaderModel, extractReadOnlyColumns } from './table-node'
+import type { ViewNode } from '../../types/view'
+import {
+  buildHeaderModel,
+  extractReadOnlyColumns,
+  isLeafHeaderCell,
+} from './read-only-header-model'
 
 const col = (id: string, label: string, binding: string): ViewNode =>
   ({ id, type: 'TABLE_COLUMN', props: { label, binding } }) as unknown as ViewNode
@@ -82,5 +86,18 @@ describe('buildHeaderModel', () => {
       { id: 'c1', label: 'Период' },
     ])
     expect(m.topRow.every((c) => c.colSpan === undefined && c.rowSpan === undefined)).toBe(true)
+  })
+})
+
+// Ручка ресайза ставится только на листовые ячейки шапки; отдельного признака в
+// модели нет — признак «лист» = отсутствие colSpan (у группы он всегда есть).
+describe('isLeafHeaderCell', () => {
+  it('групповая ячейка (colSpan) — не лист, плоская колонка и нижний ряд — листья', () => {
+    const m = buildHeaderModel(groupedChildren)
+    expect(m.topRow.filter(isLeafHeaderCell).map((c) => c.id)).toEqual([
+      'c1',
+      'c5',
+    ])
+    expect(m.bottomRow.every(isLeafHeaderCell)).toBe(true)
   })
 })

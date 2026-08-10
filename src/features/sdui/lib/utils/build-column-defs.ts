@@ -11,6 +11,7 @@ import { TableCellEditor } from '../../ui/nodes/composite/table-cell-editor'
 import { RequiredMark } from '../../ui/nodes/composite/required-mark'
 import type { UseTableValidationResult } from '../hooks/use-table-validation'
 import { resolveRowFilterParams } from './resolve-row-filter-params'
+import { columnSizeProps, toColumnWidth } from './column-sizing'
 
 /**
  * Кастомные поля в `ColumnDef.meta`. Читаются приведением типа на месте
@@ -117,6 +118,7 @@ export function buildColumnDefs(
       const col = nodeToTableColumnDef(node)
       const colDef: ColumnDef<TableRow> = {
         id: col.id,
+        ...columnSizeProps(node.props),
         accessorFn: (row: TableRow) => row[col.binding],
         // TanStack `header` — string | функция; сырой элемент недопустим,
         // поэтому маркер оборачиваем в render-функцию (flexRender её вызовет),
@@ -177,6 +179,9 @@ export function buildColumnDefs(
 
         const colDef: ColumnDef<TableRow> = {
           id: groupId,
+          // VERTICAL-группа рендерится ОДНОЙ колонкой, поэтому ширины берутся с
+          // узла группы, а не с под-колонок.
+          ...columnSizeProps(node.props),
           meta: { verticalGroup: true },
           header:
             subLabels.length > 0
@@ -273,6 +278,11 @@ export function nodeToTableColumnDef(node: ViewNode): TableColumnDef {
     label: (props.label as string | undefined) ?? '',
     binding: node.binding ?? (props.binding as string | undefined) ?? node.id,
     flex: props.flex as number | string | undefined,
+    // Ширины ресайза (контракт бэка): width — начальная ширина, minWidth — пол
+    // при перетаскивании (приходит редко), resizable эмитится только как false.
+    width: toColumnWidth(props.width),
+    minWidth: toColumnWidth(props.minWidth),
+    resizable: props.resizable as boolean | undefined,
     cellWidget: (props.cellWidget as string | undefined) ?? 'TEXT_FIELD',
     dataType: (props.dataType as string | undefined) ?? 'STRING',
     readonly: (props.readonly as boolean | undefined) ?? false,

@@ -82,8 +82,10 @@ const treeNodeNoActions: ViewNode = {
   props: baseProps,
 } as ViewNode
 
-let setSelectionMock: ReturnType<typeof vi.fn>
-let clearSelectionMock: ReturnType<typeof vi.fn>
+let setSelectionMock: ReturnType<
+  typeof vi.fn<(field: string, id: string | number | null) => void>
+>
+let clearSelectionMock: ReturnType<typeof vi.fn<(field: string) => void>>
 
 beforeEach(() => {
   cleanup()

@@ -122,6 +122,17 @@ describe('effect confirm (SCRUM-244 v3 §1 / SCRUM-288 §2.3)', () => {
     expect(deps.confirm).toHaveBeenCalledTimes(1)
     expect(deps.invalidateLists).not.toHaveBeenCalled()
   })
+
+  it('playAll играет эффекты ДО confirm включительно, обрывается на самом confirm', () => {
+    const deps = makeDeps()
+    createEffectHandler(deps).playAll([
+      { type: 'refresh' },
+      { type: 'confirm', message: 'm', confirmCommand: 'c' },
+      { type: 'refresh' },
+    ])
+    expect(deps.invalidateLists).toHaveBeenCalledTimes(1) // the refresh BEFORE confirm ran
+    expect(deps.confirm).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('effect download (SCRUM-288 §3.1)', () => {

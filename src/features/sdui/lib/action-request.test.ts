@@ -65,4 +65,26 @@ describe('executeActionRequest', () => {
     await createActionRequestExecutor(play)({ url: '/api/x?y=1' }, undefined)
     expect(play).toHaveBeenCalledWith([])
   })
+
+  it('§6.3: revision/patches/state/formSessionId в ответе игнорируются — играются только effects', async () => {
+    const play = vi.fn()
+    mockPost.mockResolvedValue({
+      data: {
+        effects: [{ type: 'notify', message: 'ok' }],
+        revision: 99,
+        patches: [{ op: 'setProp', nodeId: 'x' }],
+        state: { a: 1 },
+        formSessionId: 'zzz',
+      },
+    } as never)
+    await createActionRequestExecutor(play)(
+      {
+        method: 'POST',
+        url: '/api/view/related-documents/post?rootId=1&anchorId=2',
+      },
+      '7'
+    )
+    expect(play).toHaveBeenCalledTimes(1)
+    expect(play).toHaveBeenCalledWith([{ type: 'notify', message: 'ok' }])
+  })
 })

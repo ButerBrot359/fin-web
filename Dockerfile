@@ -42,7 +42,15 @@ ENV DOCUMENT_TYPES_API_BASE_URL=$DOCUMENT_TYPES_API_BASE_URL
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
 COPY --from=build /app/vite.preview.config.ts ./
-RUN npm install vite
+# vite нужен рантайму: start.sh поднимает `vite preview` поверх готового dist.
+# Версию берём ИЗ package.json, а не `npm install vite` без пина. Беспиновый вариант
+# тянет latest-мажор: в vite 8 rollup/esbuild заменены нативными rolldown+lightningcss,
+# которые на alpine (musl) не встают — стадия падала с exit 1 без единой правки кода.
+# Вторая причина: рантайм не должен расходиться мажором с тем, чем собран dist
+# (build-стадия ставит vite по package-lock.json).
+# --include=dev: vite лежит в devDependencies, и появись здесь ENV NODE_ENV=production,
+# npm молча включил бы omit=dev и не поставил бы ничего (`up to date, audited 1 package`).
+RUN npm install --no-save --include=dev "vite@$(node -p "require('./package.json').devDependencies.vite")"
 
 COPY --from=configs-build /form-configs-server/dist ./form-configs-server/dist
 COPY --from=configs-build /form-configs-server/configs ./form-configs-server/configs

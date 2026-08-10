@@ -22,9 +22,8 @@ import { useConfirmStore } from './stores/confirm-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { revealAllTableErrors } from './table-validation-registry'
 import { shouldRevealTableErrors } from './utils/reveal-policy'
-import { armNewTab } from './workspace-tab-gateway'
 import { relaySelectionToParent } from './relay-selection'
-import { openDialogAsPanel } from './open-dialog-panel'
+import { buildCommonEffectDeps } from './build-effect-deps'
 
 export function useSduiDispatch() {
   const location = useLocation()
@@ -70,61 +69,37 @@ export function useSduiDispatch() {
       const shouldReset = behavior?.resetsDirty ?? false
       const shouldClose = behavior?.closeAfter ?? false
 
-      const closeSession = async () => {
-        if (formSessionId) {
-          try {
-            await viewTransport.post({
-              formSessionId,
-              action: { type: 'CLOSE' },
-            })
-          } catch {
-            // best-effort
-          }
-        }
-      }
-
-      const effectHandler = createEffectHandler({
+      const common = buildCommonEffectDeps({
         navigate,
-        closeSession,
-        openRouteInNewTab: (route) => {
-          // Взводим флаг ДО перехода: между navigate и целевым маршрутом может
-          // быть редирект (/documents/:type/new → /modules/…), и синхронизатор
-          // вкладок должен создать новую вкладку, а не переписать активную.
-          armNewTab()
-          void navigate(route)
-        },
-        openDialog: (effect) => {
-          openDialogAsPanel(
-            effect,
-            session.getSession().formSessionId ?? undefined
-          )
-        },
+        session,
+        queryClient,
+        setSearchParams,
+      })
+      const effectHandler = createEffectHandler({
+        ...common,
         closeDialog: (effect) => {
           if (effect.id) usePanelStore.getState().remove(effect.id)
           relaySelectionToParent(effect, (effects) => {
             effectHandler.playAll(effects)
           })
         },
-        invalidateLists: () => {
-          void queryClient.invalidateQueries({ queryKey: ['sdui-list'] })
-        },
-        confirm: (command, message) => {
-          // SCRUM-244 v3 §1.2: по «Да» шлём COMMAND в ту же сессию (revision
-          // берётся штатно внутри dispatch), по «Нет» — no-op, ничего не шлём.
+        confirm: (effect) => {
+          // SCRUM-288 §2.3/§2.4: session-less подтверждение (панель) исполняет
+          // confirmRequest; иначе — форм-сессионный COMMAND с confirmBehavior.
           void useConfirmStore
             .getState()
-            .ask(message)
+            .ask(effect.message ?? '')
             .then((ok) => {
-              if (ok) void dispatchAction({ type: 'COMMAND', command })
+              if (!ok) return
+              if (effect.confirmRequest) {
+                void effectHandler.executeActionRequest(effect.confirmRequest)
+                return
+              }
+              void dispatchAction(
+                { type: 'COMMAND', command: effect.confirmCommand ?? '' },
+                effect.confirmBehavior
+              )
             })
-        },
-        replaceUrl: (route) => {
-          // SCRUM-291 §7: только query-строка, setSearchParams (НЕ navigate) —
-          // не пишет в историю, не трогает сессию, не перемонтирует экран
-          // (SduiScreen переоткрывает OPEN по location.pathname, не search).
-          const queryIndex = route.indexOf('?')
-          const search = queryIndex >= 0 ? route.slice(queryIndex + 1) : ''
-          setSearchParams(search, { replace: true })
         },
       })
 

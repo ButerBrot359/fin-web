@@ -10,8 +10,16 @@ vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => dispatch,
 }))
 
-vi.mock('../../../lib/stores/ref-picker-selection-store', () => ({
-  useRefPickerSelection: () => null,
+vi.mock('../../../lib/stores/selection-store', () => ({
+  useSelection: () => null,
+}))
+
+vi.mock('../../../lib/use-sdui-effects', () => ({
+  useSduiEffects: () => ({
+    executeActionRequest: vi.fn(),
+    play: vi.fn(),
+    playAll: vi.fn(),
+  }),
 }))
 
 vi.mock('../../node-renderer', () => ({
@@ -33,10 +41,10 @@ describe('ButtonNode: icon и tooltip', () => {
           icon: 'related-hierarchy',
           tooltip: 'Вывести иерархию',
         })}
-      />,
+      />
     )
     expect(
-      screen.getByRole('button', { name: 'Вывести иерархию' }),
+      screen.getByRole('button', { name: 'Вывести иерархию' })
     ).toBeTruthy()
     expect(container.querySelector('svg')).toBeTruthy()
   })
@@ -49,7 +57,7 @@ describe('ButtonNode: icon и tooltip', () => {
           icon: 'related-hierarchy',
           tooltip: 'Вывести иерархию',
         })}
-      />,
+      />
     )
     fireEvent.mouseOver(screen.getByRole('button'))
     expect(await screen.findByRole('tooltip')).toBeTruthy()
@@ -62,7 +70,7 @@ describe('ButtonNode: icon и tooltip', () => {
     // behavior вторым аргументом; без actions/props.behavior → null
     expect(dispatch).toHaveBeenCalledWith(
       { type: 'COMMAND', command: 'post' },
-      null,
+      null
     )
   })
 
@@ -83,7 +91,7 @@ describe('ButtonNode: icon и tooltip', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Провести' }))
     expect(dispatch).toHaveBeenCalledWith(
       { type: 'COMMAND', command: 'post' },
-      { flushPendingTables: true, resetsDirty: true },
+      { flushPendingTables: true, resetsDirty: true }
     )
   })
 
@@ -108,13 +116,13 @@ describe('ButtonNode: icon и tooltip', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Провести' }))
     expect(dispatch).toHaveBeenCalledWith(
       { type: 'COMMAND', command: 'post' },
-      { flushPendingTables: true, closeAfter: true },
+      { flushPendingTables: true, closeAfter: true }
     )
   })
 
   it('неизвестная иконка: fallback на label, svg нет', () => {
     const { container } = render(
-      <ButtonNode node={button({ icon: 'nope', label: 'Метка' })} />,
+      <ButtonNode node={button({ icon: 'nope', label: 'Метка' })} />
     )
     expect(screen.getByRole('button', { name: 'Метка' })).toBeTruthy()
     expect(container.querySelector('svg')).toBeNull()

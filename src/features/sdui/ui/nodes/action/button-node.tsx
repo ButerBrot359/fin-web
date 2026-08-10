@@ -3,9 +3,9 @@ import { Button, Divider, Menu, Tooltip } from '@mui/material'
 
 import type { ActionBehavior, NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
-import { handleRelatedCommand } from '../../../lib/open-related-docs'
 import { useOverflowCollapsed } from '../../../lib/overflow/overflow-context'
-import { useRefPickerSelection } from '../../../lib/stores/ref-picker-selection-store'
+import { useSelection } from '../../../lib/stores/selection-store'
+import { useSduiEffects } from '../../../lib/use-sdui-effects'
 import { NodeRenderer } from '../../node-renderer'
 import { resolveButtonIcon } from './button-icons'
 import { resolveButtonPresentation } from './button-presentation'
@@ -30,6 +30,7 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
     null
 
   const dispatch = useSduiDispatch()
+  const effects = useSduiEffects()
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
 
   // FE-5: свёрнутые по ширине кнопки командной панели читаются только
@@ -41,9 +42,12 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
   // (click-действие), фронт имя команды не парсит.
   const requiresSelectedRow = clickAction?.requiresSelectedRow === true
   const selectionField = clickAction?.selectionField ?? undefined
-  const selectedRowId = useRefPickerSelection(
+  const selectedRowId = useSelection(
     requiresSelectedRow ? (selectionField ?? null) : null
   )
+  // SCRUM-288 §2.1: готовый request на click-действии (панель связей) —
+  // исполняется эффект-рантаймом напрямую, без COMMAND в форменную сессию.
+  const requestAction = clickAction?.request ?? null
 
   const { muiVariant, isDropdown } = resolveButtonPresentation(
     variantProp,
@@ -72,11 +76,15 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
       setMenuAnchor(e.currentTarget)
       return
     }
+    // SCRUM-288 §2.1: панель связей — исполнение готового request (не COMMAND в сессию).
+    if (requestAction) {
+      void effects.executeActionRequest(
+        requestAction,
+        requiresSelectedRow ? (selectedRowId ?? undefined) : undefined
+      )
+      return
+    }
     if (command) {
-      // SCRUM-301: команды панели связанных документов — фронтовый транспорт,
-      // COMMAND в /api/view не уходит (у панели нет form-сессии)
-      if (handleRelatedCommand(command, node.props)) return
-
       if (requiresSelectedRow) {
         if (selectedRowId == null) return
         void dispatch(

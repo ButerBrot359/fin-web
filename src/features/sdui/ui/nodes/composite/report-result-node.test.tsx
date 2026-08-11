@@ -63,6 +63,17 @@ vi.mock('../../../lib/report-result-gateway', () => ({
   getReportResultGateway: () => getReportResultGateway(),
 }))
 
+// SCRUM-288 T13: printEffect/exportEffect проигрываются через useSduiEffects,
+// а не через gateway — мокаем хук, чтобы отследить play() отдельно от gateway.
+const playMock = vi.fn()
+vi.mock('../../../lib/use-sdui-effects', () => ({
+  useSduiEffects: () => ({
+    play: playMock,
+    playAll: vi.fn(),
+    executeActionRequest: vi.fn(),
+  }),
+}))
+
 import { ReportResultNode } from './report-result-node'
 import type { ViewNode } from '../../../types/view'
 
@@ -89,6 +100,22 @@ const nodeWithSource = (props: Record<string, unknown> = {}): ViewNode =>
     actions: [],
   }) as unknown as ViewNode
 
+// SCRUM-288 §3.2-3.5: printEffect/exportEffect — READY download-эффекты от
+// бэка, кнопки должны проигрывать их через useSduiEffects, а не gateway.
+const nodeWithPrintEffect = (props: Record<string, unknown> = {}): ViewNode =>
+  nodeWithSource({
+    settingsEnabled: true,
+    printEffect: {
+      type: 'download',
+      request: {
+        method: 'POST',
+        url: '/api/reportalt/X/print',
+        body: { parameters: {} },
+      },
+    },
+    ...props,
+  })
+
 describe('ReportResultNode', () => {
   afterEach(() => {
     cleanup()
@@ -99,6 +126,7 @@ describe('ReportResultNode', () => {
     getReportResultGateway.mockReset()
     getReportResultGateway.mockReturnValue(null)
     postMock.mockReset()
+    playMock.mockReset()
   })
 
   it('source=null → показывает placeholder, query выключен (enabled=false)', () => {
@@ -326,5 +354,109 @@ describe('ReportResultNode', () => {
     )
 
     expect(screen.queryByTestId('report-result-settings')).toBeNull()
+  })
+
+  it('printEffect есть — «Печать» проигрывает эффект через useSduiEffects, gateway.print НЕ зовётся', () => {
+    const printMock = vi.fn().mockResolvedValue(undefined)
+    getReportResultGateway.mockReturnValue({
+      Renderer: () => null,
+      print: printMock,
+    })
+
+    render(<ReportResultNode node={nodeWithPrintEffect()} />)
+    fireEvent.click(screen.getByTestId('report-result-print'))
+
+    expect(playMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'download',
+        request: expect.objectContaining({ url: '/api/reportalt/X/print' }),
+      })
+    )
+    expect(printMock).not.toHaveBeenCalled()
+  })
+
+  it('exportEffect есть — «Экспорт» проигрывает эффект через useSduiEffects, gateway.exportXlsx НЕ зовётся', () => {
+    const exportMock = vi.fn()
+    getReportResultGateway.mockReturnValue({
+      Renderer: () => null,
+      exportXlsx: exportMock,
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithPrintEffect({
+          exportEffect: {
+            type: 'download',
+            request: {
+              method: 'POST',
+              url: '/api/reportalt/X/export',
+              body: { parameters: {} },
+            },
+          },
+        })}
+      />
+    )
+    fireEvent.click(screen.getByTestId('report-result-export'))
+
+    expect(playMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'download',
+        request: expect.objectContaining({ url: '/api/reportalt/X/export' }),
+      })
+    )
+    expect(exportMock).not.toHaveBeenCalled()
+  })
+
+  it('userSettings домешивается в request.body перед проигрыванием printEffect (§3.5 п.3)', () => {
+    const SettingsPanelStub: FC<SettingsPanelStubProps> = ({
+      open,
+      onApply,
+    }) =>
+      open ? (
+        <button
+          data-testid="apply-us"
+          onClick={() => {
+            onApply({ schemaVersionRef: 1 })
+          }}
+        >
+          apply
+        </button>
+      ) : null
+    getReportResultGateway.mockReturnValue({
+      Renderer: () => null,
+      SettingsPanel: SettingsPanelStub,
+    })
+
+    render(<ReportResultNode node={nodeWithPrintEffect()} />)
+
+    fireEvent.click(screen.getByTestId('report-result-settings'))
+    fireEvent.click(screen.getByTestId('apply-us'))
+    fireEvent.click(screen.getByTestId('report-result-print'))
+
+    expect(playMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request: expect.objectContaining({
+          body: expect.objectContaining({
+            userSettings: { schemaVersionRef: 1 },
+          }),
+        }),
+      })
+    )
+  })
+
+  it('без userSettings — printEffect проигрывается как есть, request.body не меняется', () => {
+    getReportResultGateway.mockReturnValue({ Renderer: () => null })
+
+    render(<ReportResultNode node={nodeWithPrintEffect()} />)
+    fireEvent.click(screen.getByTestId('report-result-print'))
+
+    expect(playMock).toHaveBeenCalledWith({
+      type: 'download',
+      request: {
+        method: 'POST',
+        url: '/api/reportalt/X/print',
+        body: { parameters: {} },
+      },
+    })
   })
 })

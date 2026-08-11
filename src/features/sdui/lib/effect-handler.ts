@@ -5,9 +5,36 @@ import { apiService } from '@/shared/api/api'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { ViewEffect } from '../types/view'
+import { createActionRequestExecutor } from './action-request'
 import { parseContentDispositionFilename } from './parse-content-disposition'
 
 type ToastLevel = 'success' | 'error' | 'info' | 'warning'
+
+// SCRUM-288 §3.1: сохранение/превью blob — общая логика для GET (url) и POST
+// (request) веток download, вынесена, чтобы не дублировать между ними.
+function saveOrPreviewBlob(res: {
+  data: Blob
+  headers: Record<string, unknown>
+}): void {
+  const objectUrl = URL.createObjectURL(res.data)
+  const disposition = res.headers['content-disposition'] as string | undefined
+
+  if (disposition && /attachment/i.test(disposition)) {
+    // Сервер требует сохранение на диск (§3.5 SCRUM-268)
+    const a = document.createElement('a')
+    a.href = objectUrl
+    a.download = parseContentDispositionFilename(disposition) || 'download'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  } else {
+    // inline или без заголовка — превью в новой вкладке (как раньше)
+    window.open(objectUrl, '_blank')
+  }
+  setTimeout(() => {
+    URL.revokeObjectURL(objectUrl)
+  }, 60_000)
+}
 
 export interface EffectHandlerDeps {
   navigate: NavigateFunction
@@ -15,9 +42,9 @@ export interface EffectHandlerDeps {
   openDialog: (effect: ViewEffect) => void
   closeDialog: (effect: ViewEffect) => void
   invalidateLists: () => void
-  // Мост эффекта confirm (SCRUM-244 v3 §1.2): показать диалог с message и по
-  // «Да» отправить command в ту же сессию; по «Нет» — no-op. Реализация в dispatch.
-  confirm: (command: string, message: string) => void
+  // SCRUM-288 §2.3/§2.4: мост получает ВЕСЬ эффект (confirmCommand ИЛИ confirmRequest,
+  // + confirmBehavior). Диалог и ветвление — в реализации (dispatch / use-sdui-effects).
+  confirm: (effect: ViewEffect) => void
   // navigate с openInNewTab: маршрут открывается ОТДЕЛЬНОЙ рабочей вкладкой,
   // вкладка-источник остаётся жить. Реализация в dispatch.
   openRouteInNewTab: (route: string) => void
@@ -72,38 +99,26 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
         break
 
       case 'confirm':
-        // SCRUM-244 v3 §1: message уже билингвально резолвлен сервером,
-        // confirmCommand передаём как есть. Провод (диалог + COMMAND по «Да») —
-        // в dispatch, здесь только вызываем мост.
-        deps.confirm(effect.confirmCommand ?? '', effect.message ?? '')
+        // SCRUM-244 v3 §1: message уже билингвально резолвлен сервером.
+        // Провод (диалог + ветвление по confirmCommand/confirmRequest) —
+        // в dispatch, здесь только вызываем мост с целым эффектом.
+        deps.confirm(effect)
         break
 
       case 'download': {
-        if (!effect.url) break
-        void apiService
-          .getFileBlob({ url: effect.url })
+        // SCRUM-288 §3.1: есть request — POST с телом; иначе прежний GET по url.
+        const blobPromise = effect.request
+          ? apiService.postFileBlob({
+              url: effect.request.url,
+              data: effect.request.body ?? undefined,
+            })
+          : effect.url
+            ? apiService.getFileBlob({ url: effect.url })
+            : null
+        if (!blobPromise) break
+        void blobPromise
           .then((res) => {
-            const objectUrl = URL.createObjectURL(res.data)
-            const disposition = res.headers['content-disposition'] as
-              | string
-              | undefined
-
-            if (disposition && /attachment/i.test(disposition)) {
-              // Сервер требует сохранение на диск (§3.5 SCRUM-268)
-              const a = document.createElement('a')
-              a.href = objectUrl
-              a.download =
-                parseContentDispositionFilename(disposition) || 'download'
-              document.body.appendChild(a)
-              a.click()
-              a.remove()
-            } else {
-              // inline или без заголовка — превью в новой вкладке (как раньше)
-              window.open(objectUrl, '_blank')
-            }
-            setTimeout(() => {
-              URL.revokeObjectURL(objectUrl)
-            }, 60_000)
+            saveOrPreviewBlob(res as never)
           })
           .catch(() => {
             showToast('error', i18n.t('sdui.downloadError'))
@@ -123,5 +138,7 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
     }
   }
 
-  return { play, playAll }
+  const executeActionRequest = createActionRequestExecutor(playAll)
+
+  return { play, playAll, executeActionRequest }
 }

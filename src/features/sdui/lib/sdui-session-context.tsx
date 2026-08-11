@@ -15,6 +15,8 @@ export interface SduiSessionValue {
   merge: (patch: Record<string, unknown>) => void
   isDirty: boolean
   resetDirty: () => void
+  // Авторитетный dirty от сервера (SCRUM-288 §2.5)
+  setDirty: (value: boolean) => void
   tree: ViewNode | null
   setRoot: (node: ViewNode) => void
   setSession: (id: string, rev: number) => void
@@ -63,6 +65,7 @@ export const useSduiSession = (): SduiSessionValue => {
     merge: useViewStateStore.getState().merge,
     isDirty: dirty,
     resetDirty: useViewStateStore.getState().resetDirty,
+    setDirty: useViewStateStore.getState().setDirty,
     tree,
     setRoot: useTreeStore.getState().setRoot,
     setSession: useTreeStore.getState().setSession,
@@ -82,7 +85,7 @@ export function useBindingValue(binding: string | undefined): unknown {
   const session = useSduiSession()
   // Вызываем безусловно — правила хуков соблюдены.
   const rootValue = useViewStateStore((s) =>
-    session.kind === 'root' && binding ? s.state[binding] : undefined,
+    session.kind === 'root' && binding ? s.state[binding] : undefined
   )
   if (session.kind === 'root') return rootValue
   return session.getValue(binding)

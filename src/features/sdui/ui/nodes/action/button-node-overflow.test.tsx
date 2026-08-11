@@ -9,8 +9,16 @@ vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => vi.fn(),
 }))
 
-vi.mock('../../../lib/stores/ref-picker-selection-store', () => ({
-  useRefPickerSelection: () => null,
+vi.mock('../../../lib/stores/selection-store', () => ({
+  useSelection: () => null,
+}))
+
+vi.mock('../../../lib/use-sdui-effects', () => ({
+  useSduiEffects: () => ({
+    executeActionRequest: vi.fn(),
+    play: vi.fn(),
+    playAll: vi.fn(),
+  }),
 }))
 
 vi.mock('../../node-renderer', () => ({

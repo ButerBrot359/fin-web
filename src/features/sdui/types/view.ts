@@ -21,6 +21,14 @@ export interface ActionBehavior {
   closeAfter?: boolean
 }
 
+// SCRUM-288: готовый запрос действия. url — БЕЗ плейсхолдеров (гарантия сервера,
+// бэк-тест ActionRequestUrlIsReadyTest). method пусто ⇒ GET.
+export interface ActionRequest {
+  method?: string
+  url: string
+  body?: Record<string, unknown> | null
+}
+
 export interface ViewNodeAction {
   trigger: string
   actionId: string
@@ -28,6 +36,8 @@ export interface ViewNodeAction {
   behavior?: ActionBehavior | null
   requiresSelectedRow?: boolean | null // SCRUM-284 Δ4
   selectionField?: string | null // SCRUM-284 Δ4
+  // SCRUM-288 §2.1: если задан — фронт НЕ диспатчит command, а исполняет ЭТОТ запрос.
+  request?: ActionRequest | null
 }
 
 // SCRUM-302: дескриптор доменной кнопки командной панели ТЧ (props.tableCommands
@@ -86,6 +96,9 @@ export interface ViewResponse {
   // Дескриптор «закрыть грязную вкладку» — приходит только на OPEN (SCRUM-283)
   onDirtyClose?: ViewNodeAction | null
   tab?: ViewTabMeta | null
+  // SCRUM-288 §2.5: авторитетный признак несохранённого. true/false перекрывают
+  // клиентский флаг; null/отсутствие — «решай сам». На OPEN не приходит.
+  dirty?: boolean | null
 }
 
 export interface ViewPatch {
@@ -115,6 +128,13 @@ export interface ViewEffect {
   // Команда, которую фронт шлёт по «Да» в диалоге confirm (SCRUM-244 v3 §1.1).
   // Непрозрачная строка: не парсить, не собирать — сервер валидирует её сам.
   confirmCommand?: string
+  // SCRUM-288 §3.1: download с телом — ровно одно из url/request заполнено.
+  request?: ActionRequest | null
+  // SCRUM-288 §2.3: session-less подтверждение (панель) — исполнить запрос по «Да».
+  // Ровно одно из confirmCommand/confirmRequest заполнено на эффекте confirm.
+  confirmRequest?: ActionRequest | null
+  // SCRUM-288 §2.4: behavior подтверждённой команды (resetsDirty и пр.).
+  confirmBehavior?: ActionBehavior | null
   sessionId?: string
   childRevision?: number
   childState?: Record<string, unknown>

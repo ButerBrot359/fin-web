@@ -6,8 +6,9 @@ import { CircularProgress, Typography } from '@mui/material'
 import { apiService } from '@/shared/api/api'
 import { Button } from '@/shared/ui/buttons'
 
-import type { NodeProps } from '../../../types/view'
+import type { NodeProps, ViewEffect } from '../../../types/view'
 import { getReportResultGateway } from '../../../lib/report-result-gateway'
+import { useSduiEffects } from '../../../lib/use-sdui-effects'
 
 interface ReportResultSource {
   url: string
@@ -48,6 +49,7 @@ const mergeReportPages = (
  */
 export const ReportResultNode: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
+  const effects = useSduiEffects()
   const [userSettings, setUserSettings] = useState<unknown>(undefined)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -63,6 +65,31 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
   const placeholder =
     (node.props?.placeholder as string | undefined) ||
     t('sdui.reportResult.placeholder')
+
+  // SCRUM-288 §3.2-3.5: READY download-эффекты от бэка. Если присутствуют —
+  // печать/экспорт проигрываются через useSduiEffects, старый gateway-путь
+  // (printSource/exportEnabled) не трогаем — ветвление строго по наличию.
+  const printEffect = node.props?.printEffect as ViewEffect | undefined
+  const exportEffect = node.props?.exportEffect as ViewEffect | undefined
+
+  // §3.5 п.3: клиентское наложение userSettings сохраняется и для нового
+  // пути — ADD ровно одно поле поверх request.body перед проигрыванием.
+  const playDownload = (effect: ViewEffect) => {
+    const req = effect.request
+    if (
+      req &&
+      userSettings != null &&
+      typeof req.body === 'object' &&
+      req.body != null
+    ) {
+      effects.play({
+        ...effect,
+        request: { ...req, body: { ...req.body, userSettings } },
+      })
+    } else {
+      effects.play(effect)
+    }
+  }
 
   // §19.6: наложение — ADD ровно одно поле поверх source.body, никогда не
   // пересобирать тело; без userSettings или при не-объектном body body уходит как есть.
@@ -117,9 +144,22 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden">
-      {(printSource || exportEnabled || (settingsEnabled && SettingsPanel)) && (
+      {(printSource ||
+        printEffect ||
+        exportEnabled ||
+        exportEffect ||
+        (settingsEnabled && SettingsPanel)) && (
         <div className="flex items-center gap-2">
-          {printSource && (
+          {printEffect ? (
+            <Button
+              data-testid="report-result-print"
+              onClick={() => {
+                playDownload(printEffect)
+              }}
+            >
+              {t('sdui.reportResult.print')}
+            </Button>
+          ) : printSource ? (
             <Button
               data-testid="report-result-print"
               onClick={() => {
@@ -128,8 +168,17 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
             >
               {t('sdui.reportResult.print')}
             </Button>
-          )}
-          {exportEnabled && (
+          ) : null}
+          {exportEffect ? (
+            <Button
+              data-testid="report-result-export"
+              onClick={() => {
+                playDownload(exportEffect)
+              }}
+            >
+              {t('sdui.reportResult.export')}
+            </Button>
+          ) : exportEnabled ? (
             <Button
               data-testid="report-result-export"
               disabled={!result}
@@ -139,7 +188,7 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
             >
               {t('sdui.reportResult.export')}
             </Button>
-          )}
+          ) : null}
           {settingsEnabled && SettingsPanel && (
             <Button
               data-testid="report-result-settings"

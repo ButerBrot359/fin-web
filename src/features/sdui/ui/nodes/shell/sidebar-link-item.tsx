@@ -53,6 +53,8 @@ export const SidebarLinkItem: FC<SidebarLinkItemProps> = ({
       className={buttonStyles(isActive, collapsed)}
     >
       <div className={iconWrapStyles(isActive)}>
+        {/* Icon — статичный компонент из карты по имени (resolveShellIcon), а не
+            инлайн-объявление; правило здесь ложно срабатывает. */}
         {/* eslint-disable-next-line react-hooks/static-components */}
         <Icon className={iconStyles(isActive)} />
       </div>

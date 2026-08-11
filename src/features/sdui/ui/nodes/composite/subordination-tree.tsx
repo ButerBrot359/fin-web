@@ -17,7 +17,10 @@ import DocDeletedIcon from '@/shared/assets/icons/doc-deleted.svg'
 import type { NodeProps } from '../../../types/view'
 import type { RelatedTreeRow } from '../../../types/related-docs'
 import { useSduiSession } from '../../../lib/sdui-session-context'
-import { useRelatedDocsStore } from '../../../lib/stores/related-docs-store'
+import {
+  useSelection,
+  useSelectionStore,
+} from '../../../lib/stores/selection-store'
 
 // Шаг отступа уровня дерева; базовые 8px — обычный горизонтальный padding ячейки
 const INDENT_STEP_PX = 24
@@ -41,12 +44,18 @@ const StatusIcon: FC<{ row: RelatedTreeRow }> = ({ row }) => {
 export const SubordinationTree: FC<NodeProps> = ({ node }) => {
   const navigate = useNavigate()
   const anchorIdProp = node.props?.anchorId as string | undefined
-  const anchorId = anchorIdProp ?? ''
   const { getValue } = useSduiSession()
   const rows =
     (getValue(node.binding) as RelatedTreeRow[] | undefined) ?? EMPTY_ROWS
-  const selected = useRelatedDocsStore((s) => s.selected[anchorId])
-  const select = useRelatedDocsStore((s) => s.select)
+
+  // SCRUM-288 §2.2: выделение пишется в объединённый стор по selectionField
+  // select-действия узла (тот же паттерн, что и у list-node/пикера). Без
+  // select-действия (флаг выключён) — старый путь мёртв, ничего не пишем.
+  const selectAction = node.actions?.find((a) => a.trigger === 'select')
+  const selectionField = selectAction?.selectionField ?? undefined
+  const setSelection = useSelectionStore((s) => s.setSelection)
+  const clearSelection = useSelectionStore((s) => s.clearSelection)
+  const selectedId = useSelection(selectionField ?? null)
 
   if (import.meta.env.DEV && !anchorIdProp) {
     console.warn('[sdui] SubordinationTree без anchorId в props')
@@ -54,26 +63,18 @@ export const SubordinationTree: FC<NodeProps> = ({ node }) => {
 
   // Реконсиляция выделения после перестроения дерева (фикс финального ревью
   // SCRUM-301, Important 1): снимок в сторе может отстать от нового rows —
-  // строка могла пропасть или сменить isDeletionMarked на сервере.
+  // строка могла пропасть после перестроения.
   useEffect(() => {
-    if (!selected) return
-    const match = rows.find((row) => row.rowId === selected.rowId)
-    if (!match) {
-      select(anchorId, null)
-    } else if (match._isDeletionMarked !== selected.isDeletionMarked) {
-      select(anchorId, {
-        rowId: match.rowId,
-        isDeletionMarked: match._isDeletionMarked,
-      })
+    if (!selectionField || selectedId == null) return
+    if (!rows.some((r) => r.rowId === selectedId)) {
+      clearSelection(selectionField)
     }
-  }, [rows, selected, anchorId, select])
+  }, [rows, selectedId, selectionField, clearSelection])
 
   const handleClick = (row: RelatedTreeRow) => {
     if (row._isTruncated === true) return
-    select(anchorId, {
-      rowId: row.rowId,
-      isDeletionMarked: row._isDeletionMarked,
-    })
+    if (!selectionField) return // флаг выкл: select-действия нет — старый путь мёртв, ничего не пишем
+    setSelection(selectionField, row.rowId)
   }
 
   const handleDoubleClick = (row: RelatedTreeRow) => {
@@ -93,7 +94,7 @@ export const SubordinationTree: FC<NodeProps> = ({ node }) => {
             <TableRow
               key={row.rowId}
               hover={row._isTruncated !== true}
-              selected={selected?.rowId === row.rowId}
+              selected={selectedId === row.rowId}
               title={row._status}
               aria-label={row._status}
               onClick={() => {

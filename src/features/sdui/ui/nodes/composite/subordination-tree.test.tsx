@@ -3,8 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
 import type { RelatedTreeRow } from '../../../types/related-docs'
-import { useRelatedDocsStore } from '../../../lib/stores/related-docs-store'
+import {
+  useSelection,
+  useSelectionStore,
+} from '../../../lib/stores/selection-store'
 import { TableNode } from './table-node'
+
+vi.mock('../../../lib/stores/selection-store', () => ({
+  useSelectionStore: vi.fn(),
+  useSelection: vi.fn(),
+}))
 
 const navigateMock = vi.fn()
 vi.mock('react-router-dom', () => ({
@@ -49,18 +57,50 @@ const row = (over: Partial<RelatedTreeRow>): RelatedTreeRow => ({
   ...over,
 })
 
-const treeNode: ViewNode = {
+const baseProps = {
+  editable: false,
+  rowMode: 'TREE',
+  navigable: true,
+  anchorId: 'a1',
+}
+
+// Узел с select-действием (флаг включён) — пишет выделение в объединённый стор по selectionField.
+const treeNodeWithSelectAction = (field: string): ViewNode =>
+  ({
+    id: 'tbl.related',
+    type: 'TABLE',
+    binding: 'related.tree',
+    props: baseProps,
+    actions: [{ trigger: 'select', actionId: 'select', selectionField: field }],
+  }) as ViewNode
+
+// Узел без select-действия (флаг выключён) — старый путь мёртв, клики ничего не пишут.
+const treeNodeNoActions: ViewNode = {
   id: 'tbl.related',
   type: 'TABLE',
   binding: 'related.tree',
-  props: { editable: false, rowMode: 'TREE', navigable: true, anchorId: 'a1' },
+  props: baseProps,
 } as ViewNode
+
+let setSelectionMock: ReturnType<
+  typeof vi.fn<(field: string, id: string | number | null) => void>
+>
+let clearSelectionMock: ReturnType<typeof vi.fn<(field: string) => void>>
 
 beforeEach(() => {
   cleanup()
   vi.clearAllMocks()
-  useRelatedDocsStore.getState().reset()
   delete state['related.tree']
+  setSelectionMock = vi.fn()
+  clearSelectionMock = vi.fn()
+  vi.mocked(useSelectionStore).mockImplementation((selector) =>
+    selector({
+      selection: {},
+      setSelection: setSelectionMock,
+      clearSelection: clearSelectionMock,
+    })
+  )
+  vi.mocked(useSelection).mockReturnValue(null)
 })
 
 describe('SubordinationTree', () => {
@@ -79,7 +119,7 @@ describe('SubordinationTree', () => {
         _presentation: 'Текущий',
       }),
     ]
-    render(<TableNode node={treeNode} />)
+    render(<TableNode node={treeNodeNoActions} />)
     const current = screen.getByText('Текущий')
     const ancestor = screen.getByText('Предок')
     expect(getComputedStyle(current).fontWeight).toBe('600')
@@ -96,20 +136,32 @@ describe('SubordinationTree', () => {
       row({ rowId: 'r2', _isPosted: true, _presentation: 'Б' }),
       row({ rowId: 'r3', _presentation: 'В' }),
     ]
-    render(<TableNode node={treeNode} />)
+    render(<TableNode node={treeNodeNoActions} />)
     expect(screen.getByTestId('icon-deleted')).toBeTruthy()
     expect(screen.getByTestId('icon-posted')).toBeTruthy()
     expect(screen.getByTestId('icon-draft')).toBeTruthy()
   })
 
-  it('одиночный клик выделяет строку в сторе по anchorId', () => {
-    state['related.tree'] = [row({ rowId: 'r1', _isDeletionMarked: true })]
-    render(<TableNode node={treeNode} />)
+  it('клик по строке пишет rowId в объединённый стор по selectionField (флаг вкл)', () => {
+    state['related.tree'] = [row({ rowId: 'r1', _presentation: 'Документ №1' })]
+    render(<TableNode node={treeNodeWithSelectAction('related.a1')} />)
+    fireEvent.click(screen.getByText('Документ №1'))
+    expect(setSelectionMock).toHaveBeenCalledWith('related.a1', 'r1')
+  })
+
+  it('без select-действия (флаг выкл) — клик не пишет в стор (старый путь не ломаем)', () => {
+    state['related.tree'] = [row({ rowId: 'r1' })]
+    render(<TableNode node={treeNodeNoActions} />)
     fireEvent.click(screen.getByText('Документ'))
-    expect(useRelatedDocsStore.getState().selected.a1).toEqual({
-      rowId: 'r1',
-      isDeletionMarked: true,
-    })
+    expect(setSelectionMock).not.toHaveBeenCalled()
+  })
+
+  it('строка подсвечивается selected, когда selectedId совпадает с rowId', () => {
+    vi.mocked(useSelection).mockReturnValue('r1')
+    state['related.tree'] = [row({ rowId: 'r1' })]
+    render(<TableNode node={treeNodeWithSelectAction('related.a1')} />)
+    const tr = screen.getByText('Документ').closest('tr')!
+    expect(tr.className).toContain('Mui-selected')
   })
 
   it('двойной клик навигирует по _route; фолбэк — entityRef', () => {
@@ -123,7 +175,7 @@ describe('SubordinationTree', () => {
         },
       }),
     ]
-    render(<TableNode node={treeNode} />)
+    render(<TableNode node={treeNodeNoActions} />)
     fireEvent.doubleClick(screen.getByText('Документ'))
     expect(navigateMock).toHaveBeenCalledWith('/documents/SchetKOplate/1002')
     fireEvent.doubleClick(screen.getByText('Без роута'))
@@ -139,52 +191,25 @@ describe('SubordinationTree', () => {
         _route: '/documents/X/1',
       }),
     ]
-    render(<TableNode node={treeNode} />)
+    render(<TableNode node={treeNodeWithSelectAction('related.a1')} />)
     const el = screen.getByText('…ещё')
     fireEvent.click(el)
     fireEvent.doubleClick(el)
-    expect(useRelatedDocsStore.getState().selected.a1).toBeUndefined()
+    expect(setSelectionMock).not.toHaveBeenCalled()
     expect(navigateMock).not.toHaveBeenCalled()
     expect(screen.queryByTestId('icon-draft')).toBeNull()
   })
 
   it('_status уходит в title строки', () => {
     state['related.tree'] = [row({ rowId: 'r1', _status: 'Проведён' })]
-    render(<TableNode node={treeNode} />)
+    render(<TableNode node={treeNodeNoActions} />)
     expect(screen.getByTitle('Проведён')).toBeTruthy()
   })
 
-  it('после перестроения дерева выделенная строка сверяется: isDeletionMarked обновляется из новых rows', () => {
-    state['related.tree'] = [row({ rowId: 'r1', _isDeletionMarked: false })]
-    const { rerender } = render(<TableNode node={treeNode} />)
-    fireEvent.click(screen.getByText('Документ'))
-    expect(useRelatedDocsStore.getState().selected.a1).toEqual({
-      rowId: 'r1',
-      isDeletionMarked: false,
-    })
-
-    // Дерево перестроилось после действия — та же строка теперь помечена на сервере
-    state['related.tree'] = [row({ rowId: 'r1', _isDeletionMarked: true })]
-    rerender(<TableNode node={treeNode} />)
-
-    expect(useRelatedDocsStore.getState().selected.a1).toEqual({
-      rowId: 'r1',
-      isDeletionMarked: true,
-    })
-  })
-
   it('после перестроения дерева выделение снимается, если строка пропала из rows', () => {
-    state['related.tree'] = [row({ rowId: 'r1' })]
-    const { rerender } = render(<TableNode node={treeNode} />)
-    fireEvent.click(screen.getByText('Документ'))
-    expect(useRelatedDocsStore.getState().selected.a1).toEqual({
-      rowId: 'r1',
-      isDeletionMarked: false,
-    })
-
+    vi.mocked(useSelection).mockReturnValue('r1')
     state['related.tree'] = [row({ rowId: 'r2', _presentation: 'Другой' })]
-    rerender(<TableNode node={treeNode} />)
-
-    expect(useRelatedDocsStore.getState().selected.a1).toBeUndefined()
+    render(<TableNode node={treeNodeWithSelectAction('related.a1')} />)
+    expect(clearSelectionMock).toHaveBeenCalledWith('related.a1')
   })
 })

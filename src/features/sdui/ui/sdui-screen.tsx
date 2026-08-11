@@ -195,6 +195,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       merge: useViewStateStore.getState().merge,
       isDirty: dirty,
       resetDirty: useViewStateStore.getState().resetDirty,
+      setDirty: useViewStateStore.getState().setDirty,
       tree,
       setRoot: useTreeStore.getState().setRoot,
       setSession: useTreeStore.getState().setSession,

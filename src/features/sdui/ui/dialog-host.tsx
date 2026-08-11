@@ -1,5 +1,12 @@
 import { useState, useMemo } from 'react'
-import { Dialog, DialogTitle, DialogContent, Drawer, IconButton, Typography } from '@mui/material'
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Drawer,
+  IconButton,
+  Typography,
+} from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 
 import { usePanelStore, type PanelEntry } from '../lib/stores/panel-store'
@@ -19,7 +26,7 @@ const BACKDROP_BG = 'rgba(34, 33, 36, 0.6)'
 const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
   const [tree, setTree] = useState<ViewNode>(panel.node)
   const [viewState, setViewState] = useState<Record<string, unknown>>(
-    panel.viewState,
+    panel.viewState
   )
   const [dirty, setDirty] = useState(false)
 
@@ -30,7 +37,10 @@ const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
       getSession: () => ({
         formSessionId: panel.session?.formSessionId ?? null,
         revision:
-          usePanelStore.getState().panels.find((p) => p.panelId === panel.panelId)?.session?.revision ??
+          usePanelStore
+            .getState()
+            .panels.find((p) => p.panelId === panel.panelId)?.session
+            ?.revision ??
           panel.session?.revision ??
           null,
       }),
@@ -47,9 +57,16 @@ const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
         setViewState(s)
         setDirty(false)
       },
-      merge: (patch) => { setViewState((s) => ({ ...s, ...patch })); },
+      merge: (patch) => {
+        setViewState((s) => ({ ...s, ...patch }))
+      },
       isDirty: dirty,
-      resetDirty: () => { setDirty(false); },
+      resetDirty: () => {
+        setDirty(false)
+      },
+      setDirty: (value) => {
+        setDirty(value)
+      },
       tree,
       setRoot: setTree,
       setSession: (_id, rev) => {
@@ -69,7 +86,7 @@ const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
         setTree((t) => clearErrors(t))
       },
     }),
-    [panel.session, panel.panelId, tree, viewState, dirty],
+    [panel.session, panel.panelId, tree, viewState, dirty]
   )
 
   // Рендер из ЖИВОГО tree-стейта: патчи setProp видны сразу (фикс §3.4 SCRUM-268)
@@ -114,7 +131,9 @@ export const DialogHost = () => {
             <Dialog
               key={panel.panelId}
               open
-              onClose={() => { usePanelStore.getState().pop(); }}
+              onClose={() => {
+                usePanelStore.getState().pop()
+              }}
               fullScreen
               slotProps={{
                 paper: {
@@ -129,7 +148,11 @@ export const DialogHost = () => {
                       {panel.node.props.title}
                     </Typography>
                   )}
-                  <IconButton onClick={() => { usePanelStore.getState().pop(); }}>
+                  <IconButton
+                    onClick={() => {
+                      usePanelStore.getState().pop()
+                    }}
+                  >
                     <CloseIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </div>
@@ -142,15 +165,16 @@ export const DialogHost = () => {
         }
 
         if (panel.presentation === 'drawer') {
-          const width =
-            (panel.node.props?.width as number | undefined) ?? 900
+          const width = (panel.node.props?.width as number | undefined) ?? 900
 
           return (
             <Drawer
               key={panel.panelId}
               anchor="right"
               open
-              onClose={() => { usePanelStore.getState().pop(); }}
+              onClose={() => {
+                usePanelStore.getState().pop()
+              }}
               slotProps={{
                 paper: {
                   sx: {
@@ -168,7 +192,11 @@ export const DialogHost = () => {
             >
               <div className="flex h-full flex-col p-7">
                 <div className="flex shrink-0 items-center justify-end">
-                  <IconButton onClick={() => { usePanelStore.getState().pop(); }}>
+                  <IconButton
+                    onClick={() => {
+                      usePanelStore.getState().pop()
+                    }}
+                  >
                     <CloseIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </div>
@@ -184,7 +212,9 @@ export const DialogHost = () => {
           <Dialog
             key={panel.panelId}
             open
-            onClose={() => { usePanelStore.getState().pop(); }}
+            onClose={() => {
+              usePanelStore.getState().pop()
+            }}
             maxWidth="md"
             fullWidth
           >

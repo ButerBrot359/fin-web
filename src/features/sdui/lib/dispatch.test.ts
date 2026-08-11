@@ -13,6 +13,7 @@ import { flushAllPendingTableCommits } from './pending-table-commits'
 import { useSduiDispatch } from './dispatch'
 import { useConfirmStore } from './stores/confirm-store'
 import { showToast } from '@/shared/ui/toast/show-toast'
+import { apiService } from '@/shared/api/api'
 
 // Мутабельная локация: тесты подменяют search между рендерами
 const router = vi.hoisted(() => ({
@@ -35,6 +36,8 @@ const sessionMock = vi.hoisted(() => ({
   clearAllErrors: vi.fn(),
   setFromServer: vi.fn(),
   resetDirty: vi.fn(),
+  // SCRUM-288 T11 (заранее, безвредно сейчас): понадобится будущему тесту.
+  setDirty: vi.fn(),
   closeAfter: vi.fn(),
   setOnDirtyClose: vi.fn(),
   getLayoutCode: (): string | null => null,
@@ -63,6 +66,15 @@ vi.mock('./pending-table-commits', () => ({
 
 vi.mock('@/shared/ui/toast/show-toast', () => ({
   showToast: vi.fn(),
+}))
+
+vi.mock('@/shared/api/api', () => ({
+  apiService: {
+    get: vi.fn(),
+    post: vi.fn(),
+    getFileBlob: vi.fn(),
+    postFileBlob: vi.fn(),
+  },
 }))
 
 const openResponse = {
@@ -387,6 +399,131 @@ describe('useSduiDispatch: эффект confirm (SCRUM-244 v3)', () => {
     await Promise.resolve()
     await Promise.resolve()
     expect(post).toHaveBeenCalledTimes(1)
+  })
+})
+
+// Confirm-мост (SCRUM-288 §2.3/§2.4): confirmRequest исполняется мимо сессии
+// (executeActionRequest → apiService), confirmCommand — COMMAND в сессию, и
+// ТЕПЕРЬ с confirmBehavior вторым аргументом (§2.4 — раньше терялось).
+describe('useSduiDispatch: confirm-мост (SCRUM-288 §2.3/§2.4)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  it('confirmCommand: по «Да» диспатчит COMMAND с confirmBehavior', async () => {
+    const mockPost = vi
+      .spyOn(viewTransport, 'post')
+      .mockResolvedValueOnce({
+        formSessionId: 's',
+        revision: 2,
+        effects: [
+          {
+            type: 'confirm',
+            message: 'm',
+            confirmCommand: 'setDeletionMark:confirmed',
+            confirmBehavior: { resetsDirty: true },
+          },
+        ],
+      } as unknown as ViewResponse)
+      .mockResolvedValueOnce({
+        formSessionId: 's',
+        revision: 3,
+      } as unknown as ViewResponse)
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const p = result.current({ type: 'COMMAND', command: 'setDeletionMark' })
+    // Дождаться, пока confirm-эффект реально откроет диалог (цепочка await'ов
+    // внутри dispatchAction длиннее одного тика микрозадач).
+    await vi.waitFor(() => {
+      expect(useConfirmStore.getState().open).toBe(true)
+    })
+    useConfirmStore.getState().answer(true)
+    await p
+    await vi.waitFor(() => {
+      expect(mockPost).toHaveBeenCalledTimes(2)
+    })
+    expect(sessionMock.resetDirty).toHaveBeenCalled()
+  })
+
+  it('confirmRequest: по «Да» исполняет запрос, НЕ диспатчит COMMAND в сессию', async () => {
+    const mockPost = vi.spyOn(viewTransport, 'post').mockResolvedValueOnce({
+      formSessionId: 's',
+      revision: 2,
+      effects: [
+        {
+          type: 'confirm',
+          message: 'm',
+          confirmRequest: {
+            method: 'POST',
+            url: '/api/view/related-documents/toggle-deletion-mark?rootId=1&anchorId=2&selectedRowId=7&confirmed=true',
+          },
+        },
+      ],
+    } as unknown as ViewResponse)
+    vi.mocked(apiService.post).mockResolvedValue({ data: {} } as never)
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const p = result.current({ type: 'COMMAND', command: 'noop' })
+    await vi.waitFor(() => {
+      expect(useConfirmStore.getState().open).toBe(true)
+    })
+    useConfirmStore.getState().answer(true)
+    await p
+    await vi.waitFor(() => {
+      expect(apiService.post).toHaveBeenCalledTimes(1)
+    })
+    // ровно один вызов viewTransport.post (исходный COMMAND); подтверждение
+    // ушло мимо сессии — через apiService.post исполнителя
+    expect(mockPost).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('useSduiDispatch: res.dirty авторитетно (SCRUM-288 §2.5)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  it('res.dirty=false перекрывает клиентский флаг', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValueOnce({
+      formSessionId: 's',
+      revision: 2,
+      dirty: false,
+    } as unknown as ViewResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'EVENT', command: 'x' })
+    expect(sessionMock.setDirty).toHaveBeenCalledWith(false)
+  })
+
+  it('res.dirty отсутствует — setDirty не зовём (клиентский флаг как есть)', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValueOnce({
+      formSessionId: 's',
+      revision: 2,
+    } as unknown as ViewResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'EVENT', command: 'x' })
+    expect(sessionMock.setDirty).not.toHaveBeenCalled()
   })
 })
 

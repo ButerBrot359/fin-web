@@ -2,30 +2,47 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
-import { handleRelatedCommand } from '../../../lib/open-related-docs'
 import { ButtonNode } from './button-node'
 
 const dispatchMock = vi.fn()
+const executeActionRequestMock = vi.fn()
 vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => dispatchMock,
 }))
-vi.mock('../../../lib/open-related-docs', () => ({
-  handleRelatedCommand: vi.fn(),
+vi.mock('../../../lib/use-sdui-effects', () => ({
+  useSduiEffects: () => ({
+    executeActionRequest: executeActionRequestMock,
+    play: vi.fn(),
+    playAll: vi.fn(),
+  }),
 }))
 vi.mock('../../../lib/overflow/overflow-context', () => ({
   useOverflowCollapsed: () => [],
 }))
-vi.mock('../../../lib/stores/ref-picker-selection-store', () => ({
-  useRefPickerSelection: () => null,
+vi.mock('../../../lib/stores/selection-store', () => ({
+  useSelection: () => 'row-7',
+}))
+vi.mock('../../node-renderer', () => ({
+  NodeRenderer: () => null,
 }))
 
-const mockHandle = vi.mocked(handleRelatedCommand)
-
-const btn = (command: string, props: Record<string, unknown> = {}): ViewNode =>
+const btnWithRequest = (): ViewNode =>
   ({
-    id: 'btn.x',
+    id: 'btn.post',
     type: 'BUTTON',
-    props: { label: 'Кнопка', command, ...props },
+    props: { label: 'Провести' },
+    actions: [
+      {
+        trigger: 'click',
+        actionId: 'post',
+        requiresSelectedRow: true,
+        selectionField: 'related.a1',
+        request: {
+          method: 'POST',
+          url: '/api/view/related-documents/post?rootId=1&anchorId=a1',
+        },
+      },
+    ],
   }) as ViewNode
 
 beforeEach(() => {
@@ -33,29 +50,32 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('ButtonNode перехват related.*', () => {
-  it('перехваченная команда не диспатчится', () => {
-    mockHandle.mockReturnValue(true)
-    render(
-      <ButtonNode
-        node={btn('related.refresh', { anchorId: 'a1', rootId: 'r1' })}
-      />
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'Кнопка' }))
-    expect(mockHandle).toHaveBeenCalledWith(
-      'related.refresh',
-      expect.objectContaining({ anchorId: 'a1', rootId: 'r1' })
+describe('ButtonNode — путь request (SCRUM-288 §2.1)', () => {
+  it('клик исполняет request с selectedRowId, НЕ диспатчит COMMAND', () => {
+    render(<ButtonNode node={btnWithRequest()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Провести' }))
+    expect(executeActionRequestMock).toHaveBeenCalledWith(
+      {
+        method: 'POST',
+        url: '/api/view/related-documents/post?rootId=1&anchorId=a1',
+      },
+      'row-7'
     )
     expect(dispatchMock).not.toHaveBeenCalled()
   })
 
-  it('чужая команда идёт прежним путём в dispatch', () => {
-    mockHandle.mockReturnValue(false)
-    render(<ButtonNode node={btn('form.save')} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Кнопка' }))
+  it('кнопка без request идёт прежним путём в dispatch', () => {
+    const node = {
+      id: 'b',
+      type: 'BUTTON',
+      props: { label: 'Сохранить', command: 'form.save' },
+    } as ViewNode
+    render(<ButtonNode node={node} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
     expect(dispatchMock).toHaveBeenCalledWith(
       { type: 'COMMAND', command: 'form.save' },
       null
     )
+    expect(executeActionRequestMock).not.toHaveBeenCalled()
   })
 })

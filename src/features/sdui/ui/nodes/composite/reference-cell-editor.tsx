@@ -222,7 +222,10 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
             : undefined
         }
         onAdd={
-          openPicker && canCreate && (allowCreate ?? true)
+          // Запрещающий дефолт (канон п.5, аудит F-21): сервер закрывает create,
+          // пока явно не пришлёт allowCreate: true (ReferenceAffordanceResolver) —
+          // фронт зеркалит. allowShowAll ниже остаётся ?? true: серверный default true.
+          openPicker && canCreate && allowCreate === true
             ? () => {
                 openPicker('create')
               }

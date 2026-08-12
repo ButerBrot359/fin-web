@@ -167,24 +167,53 @@ export const buildListColumns = (
       // маппится через props.iconMap на имя иконки и рендерится глифом;
       // неизвестное/отсутствующее имя → пустая ячейка, не текст "true"/"false".
       cell:
-        col.props?.cellKind === 'ICON'
-          ? (info: { getValue: () => unknown }) => {
+        // SCRUM-360 блок H: колонка иерархии — глиф группа/элемент (iconMap,
+        // ключ String(_isGroup) — тот же словарь, что у ICON) + отступ по
+        // уровню вложенности _level. Контракт строки — Q-2 к бэку; фолбэки:
+        // нет _level → 0 (плоско), нет глифа → только текст.
+        col.props?.cellKind === 'HIERARCHY'
+          ? (info: { getValue: () => unknown; row: { original: ListRow } }) => {
               const iconMap = col.props?.iconMap as
                 | Record<string, string>
                 | undefined
+              const { _level, _isGroup } = info.row.original
+              const level =
+                typeof _level === 'number' && _level > 0 ? _level : 0
               // eslint-disable-next-line @typescript-eslint/no-base-to-string
-              const value = String(info.getValue() ?? '')
-              const Icon = getCellIcon(iconMap?.[value])
-              return Icon ? (
-                <Icon aria-hidden="true" className="h-4 w-4" />
-              ) : null
+              const Icon = getCellIcon(iconMap?.[String(_isGroup ?? '')])
+              return (
+                <span
+                  className="flex items-center gap-1.5"
+                  style={{ paddingLeft: level * 16 }}
+                >
+                  {Icon ? (
+                    <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+                  ) : null}
+                  <Typography variant="body2" noWrap className="text-ui-06">
+                    {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
+                    {String(info.getValue() ?? '')}
+                  </Typography>
+                </span>
+              )
             }
-          : (info: { getValue: () => unknown }) => (
-              <Typography variant="body2" noWrap className="text-ui-06">
-                {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
-                {String(info.getValue() ?? '')}
-              </Typography>
-            ),
+          : col.props?.cellKind === 'ICON'
+            ? (info: { getValue: () => unknown }) => {
+                const iconMap = col.props?.iconMap as
+                  | Record<string, string>
+                  | undefined
+                // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                const value = String(info.getValue() ?? '')
+                const Icon = getCellIcon(iconMap?.[value])
+                return Icon ? (
+                  <Icon aria-hidden="true" className="h-4 w-4" />
+                ) : null
+              }
+            : (info: { getValue: () => unknown }) => (
+                <Typography variant="body2" noWrap className="text-ui-06">
+                  {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
+                  {String(info.getValue() ?? '')}
+                </Typography>
+              ),
     }
   })
 }

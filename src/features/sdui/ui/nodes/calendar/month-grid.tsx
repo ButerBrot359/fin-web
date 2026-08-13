@@ -10,8 +10,6 @@ export interface MonthGridProps {
   monthLabel: string
   weekdayLabels: string[]
   daysByDate: Map<string, CalendarDay>
-  editable: boolean
-  onToggle: (data: string) => void
   dayAriaLabel: (year: number, month: number, day: number) => string
 }
 
@@ -23,8 +21,6 @@ export const MonthGrid: FC<MonthGridProps> = ({
   monthLabel,
   weekdayLabels,
   daysByDate,
-  editable,
-  onToggle,
   dayAriaLabel,
 }) => {
   const weeks = buildMonthWeeks(year, month)
@@ -43,14 +39,12 @@ export const MonthGrid: FC<MonthGridProps> = ({
         <div key={wi} className="grid grid-cols-7">
           {week.map((cell, ci) => {
             if (cell == null) return <span key={ci} />
-            const iso = `${year}-${pad(month + 1)}-${pad(cell)}`
+            const iso = `${String(year)}-${pad(month + 1)}-${pad(cell)}`
             return (
               <CalendarDayCell
                 key={ci}
                 dayNumber={cell}
                 day={daysByDate.get(iso)}
-                editable={editable}
-                onToggle={onToggle}
                 ariaLabel={dayAriaLabel(year, month, cell)}
               />
             )

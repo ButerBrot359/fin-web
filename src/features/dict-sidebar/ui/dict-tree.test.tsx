@@ -13,9 +13,18 @@ import type { DictColumn } from '../lib/utils/dict-columns'
 import type { DictEntry } from '../api/dict-sidebar-api'
 import { DictTree } from './dict-tree'
 
-const fetchPagedMock = vi.fn<(...args: unknown[]) => Promise<unknown>>()
+/** Сигнатура `fetchDictEntriesPaged` — по ней тесты читают параметры уровня. */
+type FetchPaged = (
+  domain: string,
+  typeCode: string,
+  params: Record<string, unknown>,
+  signal?: AbortSignal
+) => Promise<unknown>
+
+const fetchPagedMock = vi.fn<FetchPaged>()
 vi.mock('../api/dict-sidebar-api', () => ({
-  fetchDictEntriesPaged: (...args: unknown[]) => fetchPagedMock(...args),
+  fetchDictEntriesPaged: (...args: Parameters<FetchPaged>) =>
+    fetchPagedMock(...args),
 }))
 
 vi.mock('react-i18next', () => ({
@@ -79,8 +88,7 @@ const renderTree = (over: Partial<DictSidebarPanel> = {}) => {
 }
 
 /** Параметры последнего запроса `/paged` (3-й аргумент). */
-const lastParams = () =>
-  fetchPagedMock.mock.calls.at(-1)?.[2] as Record<string, unknown>
+const lastParams = () => fetchPagedMock.mock.calls.at(-1)?.[2] ?? {}
 
 describe('DictTree', () => {
   afterEach(cleanup)

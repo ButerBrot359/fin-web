@@ -28,6 +28,36 @@ export const supportsHierarchy = (source: ListSource | undefined): boolean =>
 /** Строка-папка: провал внутрь вместо выбора. */
 export const isGroupRow = (row: ListRow): boolean => row.isGroup === true
 
+/**
+ * Путь папок от корня к записи, стоящей в поле (`LIST.props.selectedPath`) — панель
+ * открывается сразу внутри нужной папки. Считает сервер: подъём по предкам это цепочка
+ * запросов с проверкой каждого звена, на клиенте её быть не должно.
+ *
+ * Форма пропа не гарантирована типами — берём только узлы с числовым `id`.
+ */
+export const parseSelectedPath = (
+  raw: unknown
+): { id: number; label: string }[] => {
+  if (!Array.isArray(raw)) return []
+  const path: { id: number; label: string }[] = []
+  for (const node of raw) {
+    if (typeof node !== 'object' || node === null) continue
+    const { id, presentation } = node as {
+      id?: unknown
+      presentation?: unknown
+    }
+    if (typeof id !== 'number') continue
+    path.push({
+      id,
+      label:
+        typeof presentation === 'string' && presentation.trim()
+          ? presentation
+          : String(id),
+    })
+  }
+  return path
+}
+
 /** Подпись папки в хлебных крошках. */
 export const resolveRowLabel = (row: ListRow): string => {
   for (const key of ['presentation', 'displayName', 'nameRu', 'code']) {

@@ -24,6 +24,7 @@ import { ListBreadcrumbs, type ListTrailEntry } from './list-breadcrumbs'
 import {
   buildLevelParams,
   isGroupRow,
+  parseSelectedPath,
   resolveRowLabel,
   supportsHierarchy,
 } from './list-hierarchy'
@@ -88,8 +89,12 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     serverSelectedId ?? null
   )
 
-  // Путь по папкам справочника; пустой — корневой уровень.
-  const [trail, setTrail] = useState<ListTrailEntry[]>([])
+  // Путь по папкам справочника; пустой — корневой уровень. Начальное значение —
+  // с сервера: если запись из поля лежит внутри папки, панель открывается сразу там,
+  // иначе выделять на корне нечего (её строки там просто нет).
+  const [trail, setTrail] = useState<ListTrailEntry[]>(() =>
+    parseSelectedPath(node.props?.selectedPath)
+  )
   const isHierarchical = supportsHierarchy(source)
   const isSearchMode = search.trim().length > 0
   // Непустой поиск уплощает уровни и ищет по всему справочнику (эталон 1С): `parent`

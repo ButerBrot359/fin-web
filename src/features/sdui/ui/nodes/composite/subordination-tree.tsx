@@ -88,6 +88,7 @@ export const SubordinationTree: FC<NodeProps> = ({ node }) => {
     // Активная вкладка — sdui-panel, и пока она активна, layout рендерит хост
     // панели вместо route-children: без активации обычной вкладки документа
     // navigate поменяет только URL (спека v2 SCRUM-301).
+    // Порядок важен: armNewTab() строго после гарда !route — иначе взведённый one-shot флаг без навигации утёк бы в следующий переход.
     armNewTab()
     void navigate(route)
   }

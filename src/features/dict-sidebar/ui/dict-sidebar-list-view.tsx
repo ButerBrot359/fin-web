@@ -36,6 +36,7 @@ import {
   fetchDictTypeMetadata,
   fetchDictColumns,
   fetchDictEntriesPaged,
+  fetchDictEntryById,
   searchDictEntries,
   type DictEntry,
 } from '../api/dict-sidebar-api'
@@ -57,6 +58,26 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
+
+  // Панель встаёт на запись, стоящую в поле. Тянем её отдельно, а не ищем среди
+  // загруженных строк: нужная страница может быть ещё не подгружена, а в дереве
+  // запись может лежать внутри свёрнутой папки.
+  const { data: preselectedEntry } = useQuery({
+    queryKey: ['dict-sidebar-preselect', panel.domain, panel.selectedId],
+    queryFn: ({ signal }) =>
+      fetchDictEntryById(panel.domain, panel.selectedId!, signal),
+    enabled: panel.mode === 'list' && panel.selectedId != null,
+    staleTime: 60 * 1000,
+    retry: false,
+    select: (res) => res.data.data,
+  })
+
+  useEffect(() => {
+    // Только начальная установка: выбор пользователя внутри панели не перетираем.
+    if (preselectedEntry) {
+      setSelectedEntry((current) => current ?? preselectedEntry)
+    }
+  }, [preselectedEntry])
 
   const { data: typeData, isLoading: isLoadingType } = useQuery({
     queryKey: ['dict-sidebar-type', panel.domain, panel.typeCode],
@@ -252,6 +273,18 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     estimateSize: () => 40,
     overscan: 10,
   })
+
+  // Доводим выделенную запись до видимой области — один раз, если она попала в
+  // уже загруженные строки. Догружать страницы в её поиске не пытаемся: на какой
+  // странице лежит запись, знает бэк, а не панель.
+  const didScrollToSelection = useRef(false)
+  useEffect(() => {
+    if (didScrollToSelection.current || !selectedEntry) return
+    const index = rows.findIndex((r) => r.original.id === selectedEntry.id)
+    if (index < 0) return
+    didScrollToSelection.current = true
+    rowVirtualizer.scrollToIndex(index, { align: 'center' })
+  }, [selectedEntry, rows, rowVirtualizer])
 
   const virtualRows = rowVirtualizer.getVirtualItems()
   const paddingTop = virtualRows[0]?.start ?? 0

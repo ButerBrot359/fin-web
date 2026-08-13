@@ -170,6 +170,8 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
             typeCode: targetTypeCode,
             onSelect: applySelected,
             searchParams,
+            // Список открывается на записи, уже стоящей в ячейке.
+            selectedId: mode === 'list' ? selectedOption?.id : undefined,
           })
         }
       : null

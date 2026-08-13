@@ -44,6 +44,6 @@ describe('CalendarDayCell', () => {
       />
     )
     const btn = screen.getByRole('button', { name: '5' })
-    expect(btn.disabled).toBe(true)
+    expect(btn.hasAttribute('disabled')).toBe(true)
   })
 })

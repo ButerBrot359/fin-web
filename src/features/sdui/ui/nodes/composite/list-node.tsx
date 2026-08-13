@@ -80,7 +80,13 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const sortInFlightRef = useRef(false)
 
   const [search, setSearch] = useState('')
-  const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
+  // Панель выбора открывается на записи, стоящей в поле: сервер кладёт её id в
+  // props.selectedId (клиенту неоткуда его взять — панель приходит отдельным
+  // поддеревом и связи с полем не имеет).
+  const serverSelectedId = node.props?.selectedId as number | undefined
+  const [selectedRowId, setSelectedRowId] = useState<number | null>(
+    serverSelectedId ?? null
+  )
 
   // Путь по папкам справочника; пустой — корневой уровень.
   const [trail, setTrail] = useState<ListTrailEntry[]>([])

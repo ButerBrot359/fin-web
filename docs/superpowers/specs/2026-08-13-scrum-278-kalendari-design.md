@@ -70,7 +70,7 @@
 - calendar-node: клик по дню не порождает никаких dispatch; смена года шлёт только `kalendari.god.change`; маркеры вне периода неактивны.
 - table-node: роутинг по дискриминатору на оба новых компонента.
 
-E2e с живым бэком — после выкатки бэка (сейчас он только локально у Talgat'а); приёмка по чеклисту спеки v1 (7 пунктов).
+E2e с живым бэком доступен сразу: v2-back (§«No new backend code required. These nodes are emitted by the merged `main` implementation») подтверждает, что бэк уже влит в main и ноды kalendari-таблиц приходят обычной stateful `/api/view`-сессией. Приёмка по чеклисту спеки v1 (7 пунктов) на dev-api.
 
 ## Канон и реестр
 

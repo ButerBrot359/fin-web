@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
-import { buildHeaderModel, extractReadOnlyColumns } from './table-node'
+import {
+  buildHeaderModel,
+  extractReadOnlyColumns,
+  kalendariTableKind,
+} from './table-node'
 
 const col = (id: string, label: string, binding: string): ViewNode =>
-  ({ id, type: 'TABLE_COLUMN', props: { label, binding } }) as unknown as ViewNode
+  ({
+    id,
+    type: 'TABLE_COLUMN',
+    props: { label, binding },
+  }) as unknown as ViewNode
 
 const group = (id: string, label: string, children: ViewNode[]): ViewNode =>
   ({
@@ -14,7 +22,10 @@ const group = (id: string, label: string, children: ViewNode[]): ViewNode =>
     children,
   }) as unknown as ViewNode
 
-const flatChildren = [col('c1', 'Период', '_period'), col('c2', 'Сумма', '_summa')]
+const flatChildren = [
+  col('c1', 'Период', '_period'),
+  col('c2', 'Сумма', '_summa'),
+]
 
 const groupedChildren = [
   col('c1', 'Период', '_period'),
@@ -35,7 +46,9 @@ describe('extractReadOnlyColumns', () => {
   })
 
   it('рекурсивно собирает листья COLUMN_GROUP в порядке документа', () => {
-    expect(extractReadOnlyColumns(groupedChildren).map((c) => c.binding)).toEqual([
+    expect(
+      extractReadOnlyColumns(groupedChildren).map((c) => c.binding)
+    ).toEqual([
       '_period',
       '_accountDtCode',
       '_fkrDt',
@@ -55,7 +68,9 @@ describe('buildHeaderModel', () => {
     expect(m.hasGroups).toBe(false)
     expect(m.bottomRow).toEqual([])
     expect(m.topRow.map((c) => c.label)).toEqual(['Период', 'Сумма'])
-    expect(m.topRow.every((c) => c.colSpan === undefined && c.rowSpan === undefined)).toBe(true)
+    expect(
+      m.topRow.every((c) => c.colSpan === undefined && c.rowSpan === undefined)
+    ).toBe(true)
   })
 
   it('с группами: группа → colSpan=числу листьев (по центру), плоская колонка → rowSpan=2, листья → нижний ряд', () => {
@@ -78,9 +93,22 @@ describe('buildHeaderModel', () => {
     const m = buildHeaderModel(childrenWithEmptyGroup)
     expect(m.hasGroups).toBe(false)
     expect(m.bottomRow).toEqual([])
-    expect(m.topRow).toEqual([
-      { id: 'c1', label: 'Период' },
-    ])
-    expect(m.topRow.every((c) => c.colSpan === undefined && c.rowSpan === undefined)).toBe(true)
+    expect(m.topRow).toEqual([{ id: 'c1', label: 'Период' }])
+    expect(
+      m.topRow.every((c) => c.colSpan === undefined && c.rowSpan === undefined)
+    ).toBe(true)
+  })
+})
+
+describe('kalendariTableKind', () => {
+  it('binding ShablonZapolneniya → template', () => {
+    expect(kalendariTableKind('ShablonZapolneniya')).toBe('template')
+  })
+  it('binding RaspisanieRaboty → schedule', () => {
+    expect(kalendariTableKind('RaspisanieRaboty')).toBe('schedule')
+  })
+  it('прочие binding → null', () => {
+    expect(kalendariTableKind('SomeOtherTable')).toBeNull()
+    expect(kalendariTableKind(undefined)).toBeNull()
   })
 })

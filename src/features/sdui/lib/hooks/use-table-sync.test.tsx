@@ -106,6 +106,26 @@ describe('useTableSync', () => {
     expect(result.current.rows[0].VychetIPN).toBe('key-A')
   })
 
+  it('replaceRows шлёт полный EVENT с новым массивом и обновляет rows', () => {
+    sessionState.rows = [{ rowId: '1', DenVklyuchenVGrafik: true }]
+    const { result } = renderHook(() => useTableSync(node, []))
+    const next = [
+      { rowId: '1', DenVklyuchenVGrafik: true },
+      { rowId: 'tmp-2', DenVklyuchenVGrafik: false },
+    ]
+    act(() => {
+      result.current.replaceRows(next)
+    })
+    expect(result.current.rows).toEqual(next)
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'EVENT',
+      sourceNodeId: 'tbl',
+      trigger: 'change',
+      value: next,
+      fullSnapshot: true,
+    })
+  })
+
   // ── SCRUM-314 §6: правка ячейки ТЧ не должна теряться при записи ──
   //
   // Инвариант: flushPending() разрешается ТОЛЬКО когда серверу отправлен

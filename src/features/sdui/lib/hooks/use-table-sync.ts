@@ -46,6 +46,7 @@ export interface UseTableSyncResult {
   ) => void
   deleteRow: (index: number) => void
   moveRow: (from: number, to: number) => void
+  replaceRows: (next: TableRow[]) => void
 }
 
 function buildEmptyRow(columns: TableColumnDef[]): TableRow {
@@ -393,6 +394,23 @@ export function useTableSync(
     }
   }
 
+  /**
+   * Полная замена локального массива строк одним снимком (SCRUM-278: смена длины
+   * цикла шаблона). Ведёт себя как структурная правка: canon-эхо о ней не знает,
+   * поэтому при in-flight откладываем через needsCoalescedCommit, иначе шлём сразу.
+   */
+  const replaceRows = (next: TableRow[]) => {
+    setLocalRows(next)
+    localRowsRef.current = next
+    if (node.binding) setValue(node.binding, next)
+    if (inFlightRef.current) {
+      dirtyRef.current = new Map()
+      needsCoalescedCommitRef.current = true
+    } else {
+      sendEvent(next)
+    }
+  }
+
   const flushPending = (): Promise<void> => {
     if (!inFlightRef.current && !hasPendingWork()) return Promise.resolve()
 
@@ -437,5 +455,6 @@ export function useTableSync(
     addRow,
     deleteRow,
     moveRow,
+    replaceRows,
   }
 }

@@ -28,6 +28,7 @@ import {
 import { useManualColumnResize } from '../../../lib/hooks/use-manual-column-resize'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { ColumnResizeHandle } from './column-resize-handle'
+import { ColumnHeaderLabel } from './column-header-label'
 
 interface SimpleTableRow {
   rowId: string
@@ -110,11 +111,15 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
       colSpan={cell.colSpan}
       rowSpan={cell.rowSpan}
       align={cell.align}
-      sx={
-        isResizable ? { position: 'relative', overflow: 'hidden' } : undefined
-      }
+      // overflow:hidden — безусловно: обрезка заголовка нужна и без ресайза,
+      // иначе подпись шире колонки выходит за её границы. position:relative
+      // требуется только под абсолютную ручку ресайза.
+      sx={{
+        overflow: 'hidden',
+        ...(isResizable ? { position: 'relative' } : {}),
+      }}
     >
-      {cell.label}
+      <ColumnHeaderLabel label={cell.label} align={cell.align ?? 'left'} />
       {canResize(cell) && (
         <ColumnResizeHandle
           isResizing={resize.resizingColumnId === cell.id}

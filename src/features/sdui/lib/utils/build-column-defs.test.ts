@@ -1,6 +1,6 @@
 import { type ReactElement, type RefObject } from 'react'
-import { render } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { cleanup, render } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import type { ViewNode } from '../../types/view'
 import type { UseTableSyncResult } from '../hooks/use-table-sync'
@@ -37,6 +37,10 @@ describe('nodeToTableColumnDef', () => {
 // Шапка VERTICAL-группы (frontend-spec-ipn-vertical-group-header.md §1): 1С показывает
 // подписи под-колонок стопкой, по одной над своим редактором, а не единый заголовок группы.
 describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () => {
+  // Авто-cleanup RTL в проекте не включён (нет setupFiles) — убираем за собой
+  // сами, иначе отрисованная шапка утекает в следующий describe.
+  afterEach(cleanup)
+
   const syncRef = { current: null } as unknown as RefObject<UseTableSyncResult>
 
   const verticalGroup = (children: ViewNode[]): ViewNode =>
@@ -63,8 +67,20 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     return Array.isArray(children) ? children : [children]
   }
 
+  /**
+   * Подписи под-строк. Содержимое под-строки — `ColumnHeaderLabel` (он держит
+   * обрезку многоточием), поэтому текст берём из его пропа `label`, а не как
+   * голую строку-child.
+   */
   const renderedLabels = (header: unknown): string[] =>
-    subRows(header).map((row) => (row.props as { children: string }).children)
+    subRows(header).map(
+      (row) =>
+        (
+          (row.props as { children: ReactElement }).children.props as {
+            label: string
+          }
+        ).label
+    )
 
   it('рендерит подписи видимых под-колонок стопкой вместо label группы', () => {
     const defs = buildColumnDefs(
@@ -172,13 +188,21 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
       syncRef
     )
 
-    expect(defs[0].header).toBe('Предоставление вычета / основание')
+    const { getByText } = render((defs[0].header as () => ReactElement)())
+    expect(getByText('Предоставление вычета / основание')).toBeTruthy()
   })
 })
 
-// Маркер обязательности в шапке (SCRUM-329): RequiredMark вместо строки-label,
-// когда колонка required и не readonly.
+// Маркер обязательности в шапке (SCRUM-329) поверх ColumnHeaderLabel: подпись
+// рисуется через него ВСЕГДА (он держит обрезку многоточием — без неё длинный
+// заголовок переносится и наезжает на соседний), а «*» добавляется только когда
+// колонка required и не readonly.
 describe('buildColumnDefs — required header marker', () => {
+  // Без глобального setupFiles авто-cleanup RTL не включается: «*» от
+  // предыдущего теста остался бы в document.body и queryByText('*') ниже
+  // возвращал бы элемент вместо null.
+  afterEach(cleanup)
+
   const syncRef = { current: null } as unknown as RefObject<UseTableSyncResult>
 
   function col(id: string, extra: Record<string, unknown>): ViewNode {
@@ -189,25 +213,30 @@ describe('buildColumnDefs — required header marker', () => {
     } as ViewNode
   }
 
-  it('required && !readonly → header это render-функция, в ней label + «*»', () => {
-    const defs = buildColumnDefs([col('c1', { required: true })], syncRef)
-    const header = defs[0].header
+  const renderHeader = (node: ViewNode) => {
+    const header = buildColumnDefs([node], syncRef)[0].header
     expect(typeof header).toBe('function')
-    const { getByText } = render((header as () => ReactElement)())
+    return render((header as () => ReactElement)())
+  }
+
+  it('required && !readonly → label + «*»', () => {
+    const { getByText } = renderHeader(col('c1', { required: true }))
+    expect(getByText('c1')).toBeTruthy()
     expect(getByText('*')).toBeTruthy()
   })
 
-  it('обычная колонка → header это строка-label', () => {
-    const defs = buildColumnDefs([col('c2', {})], syncRef)
-    expect(defs[0].header).toBe('c2')
+  it('обычная колонка → только label, без «*»', () => {
+    const { getByText, queryByText } = renderHeader(col('c2', {}))
+    expect(getByText('c2')).toBeTruthy()
+    expect(queryByText('*')).toBeNull()
   })
 
-  it('required && readonly → без маркера (строка)', () => {
-    const defs = buildColumnDefs(
-      [col('c3', { required: true, readonly: true })],
-      syncRef
+  it('required && readonly → без маркера', () => {
+    const { getByText, queryByText } = renderHeader(
+      col('c3', { required: true, readonly: true })
     )
-    expect(defs[0].header).toBe('c3')
+    expect(getByText('c3')).toBeTruthy()
+    expect(queryByText('*')).toBeNull()
   })
 })
 

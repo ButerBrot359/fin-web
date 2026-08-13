@@ -451,11 +451,13 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     <TableCell
                       key={header.id}
                       colSpan={header.colSpan}
+                      // overflow:hidden — безусловно: подпись шире колонки
+                      // должна обрезаться и без ресайза, иначе она выходит за
+                      // границы ячейки и наезжает на соседний заголовок.
                       sx={{
+                        overflow: 'hidden',
                         ...(extra?.verticalGroup ? { p: 0 } : {}),
-                        ...(sizing.isResizable
-                          ? { position: 'relative', overflow: 'hidden' }
-                          : {}),
+                        ...(sizing.isResizable ? { position: 'relative' } : {}),
                       }}
                     >
                       {flexRender(

@@ -35,7 +35,7 @@ import { columnSizeProps } from '../../../lib/utils/column-sizing'
 import { EditableTableHead } from './editable-table-head'
 import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { TableCellEditor } from './table-cell-editor'
-import { RequiredMark } from './required-mark'
+import { ColumnHeaderLabel } from './column-header-label'
 import { SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
 
@@ -109,12 +109,16 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
       columns.map((col) => ({
         id: col.id,
         accessorFn: (row: TableRow) => row[col.binding],
-        // TanStack `header` — string | функция (не элемент): маркер оборачиваем
-        // в render-функцию, обычную колонку оставляем строкой-label (SCRUM-329).
-        header:
-          col.required && !col.readonly
-            ? () => <RequiredMark label={col.label} />
-            : col.label,
+        // TanStack `header` — string | функция (не элемент): подпись всегда
+        // оборачиваем в render-функцию. ColumnHeaderLabel обрезает её
+        // многоточием по ширине колонки — иначе длинный заголовок переносится
+        // и наезжает на соседний (SCRUM-329).
+        header: () => (
+          <ColumnHeaderLabel
+            label={col.label}
+            required={col.required && !col.readonly}
+          />
+        ),
         // Ширина колонки: с бэка (props.width) либо прежний фолбэк 150/flex.
         ...columnSizeProps(col.props),
         size: col.width ?? (col.flex ? undefined : 150),

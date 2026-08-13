@@ -8,7 +8,7 @@ import type {
   UseTableSyncResult,
 } from '../hooks/use-table-sync'
 import { TableCellEditor } from '../../ui/nodes/composite/table-cell-editor'
-import { RequiredMark } from '../../ui/nodes/composite/required-mark'
+import { ColumnHeaderLabel } from '../../ui/nodes/composite/column-header-label'
 import type { UseTableValidationResult } from '../hooks/use-table-validation'
 import { resolveRowFilterParams } from './resolve-row-filter-params'
 import { columnSizeProps, toColumnWidth } from './column-sizing'
@@ -48,10 +48,16 @@ export const VERTICAL_SUB_ROW_HEIGHT = 36
  *
  * @param paddingX горизонтальный отступ под-строки: 16px в шапке (совпасть с
  *                 остальными заголовками MUI), 0 в ячейке (у редакторов свой)
+ * @param clip     обрезать содержимое по границам под-строки. Только для ШАПКИ:
+ *                 подпись, не влезшая в ширину, не должна вылезать на соседнюю
+ *                 под-строку. В ЯЧЕЙКЕ обрезать нельзя — у редакторов есть то,
+ *                 что законно выходит за их 36px (рамка обязательного поля,
+ *                 focus-ring), и `overflow:hidden` срезал бы её
  */
 function verticalSubRows(
   items: { key: string; content: ReactNode }[],
-  paddingX: number
+  paddingX: number,
+  clip: boolean
 ): ReactNode {
   return createElement(
     'div',
@@ -65,7 +71,13 @@ function verticalSubRows(
           style: {
             height: VERTICAL_SUB_ROW_HEIGHT,
             display: 'grid',
+            // minmax(0, 1fr), а не дефолтный auto-трек: auto-трек не сжимается
+            // ниже ширины содержимого, поэтому длинная подпись растягивала бы
+            // его и вылезала за границы колонки вместо обрезки многоточием.
+            // Редакторы при этом по-прежнему занимают всю ширину ячейки (1fr).
+            gridTemplateColumns: 'minmax(0, 1fr)',
             alignContent: 'center',
+            ...(clip ? { overflow: 'hidden' } : {}),
             paddingLeft: paddingX,
             paddingRight: paddingX,
             boxSizing: 'border-box' as const,
@@ -78,16 +90,21 @@ function verticalSubRows(
 }
 
 /**
- * Содержимое заголовка колонки: label с красным «*» (RequiredMark), если
- * колонка обязательна и не readonly — иначе просто строка-label (SCRUM-329).
+ * Содержимое заголовка колонки: подпись, обрезаемая многоточием по ширине
+ * колонки, с красным «*» у обязательной не-readonly колонки (SCRUM-329).
  * Возвращает СЫРОЙ ReactNode: годится как `content` вертикальной группы; для
  * плоского `header` (тип TanStack — string|функция, не элемент) оборачивается
  * в `() => …`.
+ *
+ * Голую строку не возвращаем даже для необязательной колонки: обрезку держит
+ * `ColumnHeaderLabel`, и без него подпись переносилась бы на вторую строку,
+ * наезжая на соседний заголовок.
  */
 function columnHeaderContent(col: TableColumnDef): ReactNode {
-  return col.required && !col.readonly
-    ? createElement(RequiredMark, { label: col.label })
-    : col.label
+  return createElement(ColumnHeaderLabel, {
+    label: col.label,
+    required: col.required && !col.readonly,
+  })
 }
 
 /**
@@ -121,12 +138,8 @@ export function buildColumnDefs(
         ...columnSizeProps(node.props),
         accessorFn: (row: TableRow) => row[col.binding],
         // TanStack `header` — string | функция; сырой элемент недопустим,
-        // поэтому маркер оборачиваем в render-функцию (flexRender её вызовет),
-        // а обычную колонку оставляем строкой-label (SCRUM-329).
-        header:
-          col.required && !col.readonly
-            ? () => columnHeaderContent(col)
-            : col.label,
+        // поэтому подпись оборачиваем в render-функцию (flexRender её вызовет).
+        header: () => columnHeaderContent(col),
         cell: (info: CellContext<TableRow, unknown>) =>
           createElement(TableCellEditor, {
             cellWidget: col.cellWidget,
@@ -191,9 +204,10 @@ export function buildColumnDefs(
                       key: col.id,
                       content: columnHeaderContent(col),
                     })),
-                    16
+                    16,
+                    true
                   )
-              : groupLabel,
+              : () => createElement(ColumnHeaderLabel, { label: groupLabel }),
           cell: (info: CellContext<TableRow, unknown>) =>
             verticalSubRows(
               visibleChildren.map((child) => {
@@ -225,7 +239,8 @@ export function buildColumnDefs(
                   }),
                 }
               }),
-              0
+              0,
+              false
             ),
         }
         result.push(colDef)
@@ -233,7 +248,7 @@ export function buildColumnDefs(
         // Horizontal group (default): multi-level header via TanStack grouped columns
         const colDef: ColumnDef<TableRow> = {
           id: groupId,
-          header: groupLabel,
+          header: () => createElement(ColumnHeaderLabel, { label: groupLabel }),
           columns: buildColumnDefs(node.children, syncRef, validationRef),
         }
         result.push(colDef)

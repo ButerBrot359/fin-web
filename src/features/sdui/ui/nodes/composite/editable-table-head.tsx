@@ -43,15 +43,15 @@ export const EditableTableHead: FC<EditableTableHeadProps> = ({
           {hg.headers.map((header) => (
             <TableCell
               key={header.id}
-              sx={
-                isResizable
-                  ? {
-                      width: header.getSize(),
-                      position: 'relative',
-                      overflow: 'hidden',
-                    }
-                  : undefined
-              }
+              // overflow:hidden — безусловно: подпись шире колонки должна
+              // обрезаться и в таблице без ресайза, иначе она выходит за
+              // границы ячейки и наезжает на соседний заголовок.
+              sx={{
+                overflow: 'hidden',
+                ...(isResizable
+                  ? { width: header.getSize(), position: 'relative' }
+                  : {}),
+              }}
             >
               {flexRender(header.column.columnDef.header, header.getContext())}
               {header.column.getCanResize() && (

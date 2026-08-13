@@ -160,6 +160,7 @@
     "create": "Жасау",
     "search": "Іздеу",
     "noData": "Деректер жоқ",
+    "emptyGroup": "Топ бос",
     "createTitle": "{{name}} жасау",
     "editTitle": "{{name}} — {{entry}}",
     "saveAndClose": "Жазу және жабу",

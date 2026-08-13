@@ -10,6 +10,7 @@ import { cn } from '@/shared/lib/utils/cn'
 
 import type { DictSidebarPanel } from '../types/dict-sidebar'
 import type { DictColumn } from '../lib/utils/dict-columns'
+import { buildTreeLevelParams } from '../lib/utils/dict-tree-params'
 import { fetchDictEntriesPaged, type DictEntry } from '../api/dict-sidebar-api'
 
 /** Догружаем узлы порциями; для пикера этого хватает без бесконечного скролла. */
@@ -47,7 +48,9 @@ export const DictTree = ({
 
   return (
     <div className="min-h-0 flex-1 overflow-auto pb-2">
-      <table style={{ tableLayout: 'fixed', width: totalWidth, minWidth: '100%' }}>
+      <table
+        style={{ tableLayout: 'fixed', width: totalWidth, minWidth: '100%' }}
+      >
         <colgroup>
           {columns.map((col) => (
             <col key={col.id} style={{ width: widthOf(col.id) }} />
@@ -64,8 +67,12 @@ export const DictTree = ({
                 <div
                   role="separator"
                   aria-orientation="vertical"
-                  onMouseDown={(e) => startResize(col.id, e)}
-                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => {
+                    startResize(col.id, e)
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                  }}
                   className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-ui-04"
                 />
               </th>
@@ -81,6 +88,7 @@ export const DictTree = ({
             onSelectRow={onSelectRow}
             onConfirm={onConfirm}
             emptyLabel={t('dictSidebar.noData')}
+            emptyGroupLabel={t('dictSidebar.emptyGroup')}
             loadMoreLabel={t('actions.more')}
           />
         </tbody>
@@ -98,6 +106,7 @@ interface LevelProps {
   onSelectRow: (entry: DictEntry) => void
   onConfirm: () => void
   emptyLabel: string
+  emptyGroupLabel: string
   loadMoreLabel: string
 }
 
@@ -111,9 +120,11 @@ const DictTreeLevel = ({
   onSelectRow,
   onConfirm,
   emptyLabel,
+  emptyGroupLabel,
   loadMoreLabel,
 }: LevelProps) => {
   const [size, setSize] = useState(PAGE_SIZE)
+  const levelParams = buildTreeLevelParams(panel.searchParams, parentId)
 
   const { data, isLoading, isPlaceholderData } = useQuery({
     queryKey: [
@@ -122,18 +133,13 @@ const DictTreeLevel = ({
       panel.typeCode,
       parentId ?? 'root',
       size,
-      panel.searchParams,
+      levelParams,
     ],
     queryFn: ({ signal }) =>
       fetchDictEntriesPaged(
         panel.domain,
         panel.typeCode,
-        {
-          page: 0,
-          size,
-          ...(parentId != null && { parent: parentId }),
-          ...panel.searchParams,
-        },
+        { page: 0, size, ...levelParams },
         signal
       ),
     placeholderData: keepPreviousData,
@@ -147,7 +153,11 @@ const DictTreeLevel = ({
   if (isLoading) {
     return (
       <tr>
-        <td colSpan={colSpan} className="px-3 py-2" style={{ paddingLeft: depth * INDENT + 12 }}>
+        <td
+          colSpan={colSpan}
+          className="px-3 py-2"
+          style={{ paddingLeft: depth * INDENT + 12 }}
+        >
           <CircularProgress size={14} />
         </td>
       </tr>
@@ -155,8 +165,21 @@ const DictTreeLevel = ({
   }
 
   if (entries.length === 0) {
-    // Корень без записей показываем как «нет данных»; пустую группу — молча.
-    if (parentId != null) return null
+    // Пустая папка — штатное состояние: показываем пустой уровень под её строкой,
+    // чтобы было видно, что провалились именно в неё, и можно было свернуться назад.
+    if (parentId != null) {
+      return (
+        <tr>
+          <td
+            colSpan={colSpan}
+            className="px-3 py-2 text-ui-05 text-body2 italic"
+            style={{ paddingLeft: depth * INDENT + 12 }}
+          >
+            {emptyGroupLabel}
+          </td>
+        </tr>
+      )
+    }
     return (
       <tr>
         <td colSpan={colSpan} className="px-3 py-8 text-center text-ui-05">
@@ -179,17 +202,24 @@ const DictTreeLevel = ({
           onSelectRow={onSelectRow}
           onConfirm={onConfirm}
           emptyLabel={emptyLabel}
+          emptyGroupLabel={emptyGroupLabel}
           loadMoreLabel={loadMoreLabel}
         />
       ))}
       {paged && !paged.last && (
         <tr>
-          <td colSpan={colSpan} className="px-3 py-1" style={{ paddingLeft: depth * INDENT + 12 }}>
+          <td
+            colSpan={colSpan}
+            className="px-3 py-1"
+            style={{ paddingLeft: depth * INDENT + 12 }}
+          >
             <button
               type="button"
               className="text-body2 text-primary hover:underline disabled:opacity-50"
               disabled={isPlaceholderData}
-              onClick={() => setSize((s) => s + PAGE_SIZE)}
+              onClick={() => {
+                setSize((s) => s + PAGE_SIZE)
+              }}
             >
               {loadMoreLabel}
             </button>
@@ -214,6 +244,7 @@ const DictTreeNode = ({
   onSelectRow,
   onConfirm,
   emptyLabel,
+  emptyGroupLabel,
   loadMoreLabel,
 }: NodeProps) => {
   const [expanded, setExpanded] = useState(false)
@@ -257,7 +288,18 @@ const DictTreeNode = ({
                 ) : (
                   <span className="inline-block h-3 w-3 shrink-0" />
                 )}
-                {isGroup && <FolderIcon className="h-4 w-4 shrink-0" />}
+                {isGroup ? (
+                  <FolderIcon className="h-4 w-4 shrink-0" />
+                ) : (
+                  // Прочерк вместо папки — маркер элемента в эталоне 1С; без него
+                  // папка и элемент в дереве различались бы только шевроном.
+                  <span
+                    aria-hidden
+                    className="inline-flex h-4 w-4 shrink-0 items-center justify-center"
+                  >
+                    <span className="block h-0.5 w-2.5 rounded-sm bg-ui-05" />
+                  </span>
+                )}
                 <span className="truncate">{col.render(entry)}</span>
               </span>
             ) : (
@@ -276,6 +318,7 @@ const DictTreeNode = ({
           onSelectRow={onSelectRow}
           onConfirm={onConfirm}
           emptyLabel={emptyLabel}
+          emptyGroupLabel={emptyGroupLabel}
           loadMoreLabel={loadMoreLabel}
         />
       )}

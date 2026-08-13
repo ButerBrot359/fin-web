@@ -1,4 +1,10 @@
-import { render, cleanup } from '@testing-library/react'
+import {
+  render,
+  cleanup,
+  fireEvent,
+  screen,
+  within,
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
@@ -36,5 +42,56 @@ describe('EnumFieldNode readonly', () => {
   it('editable → иконка раскрытия есть', () => {
     const { container } = render(<EnumFieldNode node={node(false)} />)
     expect(container.querySelector('.MuiSelect-icon')).toBeTruthy()
+  })
+})
+
+const richOptions = [
+  { value: 'week', label: 'По неделям', id: 31, code: 'PoNedelyam' },
+  {
+    value: 'cycle',
+    label: 'По циклам',
+    id: 32,
+    code: 'PoTsiklamProizvolnoyDliny',
+  },
+]
+const richNode = (): ViewNode => ({
+  id: 'field.sposob',
+  type: 'ENUM_FIELD',
+  binding: 'SposobZapolneniya',
+  props: { label: 'Способ', options: richOptions },
+  actions: [{ trigger: 'change', actionId: 'fieldEvent' }],
+})
+
+describe('EnumFieldNode форма значения', () => {
+  it('гидрация из полного объекта → выбран нужный пункт', () => {
+    state.SposobZapolneniya = {
+      id: 32,
+      code: 'PoTsiklamProizvolnoyDliny',
+      presentation: 'По циклам',
+    }
+    render(<EnumFieldNode node={richNode()} />)
+    expect(screen.getByText('По циклам')).toBeTruthy()
+    delete state.SposobZapolneniya
+  })
+
+  it('гидрация из строки-кода → выбран нужный пункт', () => {
+    state.SposobZapolneniya = 'week'
+    render(<EnumFieldNode node={richNode()} />)
+    expect(screen.getByText('По неделям')).toBeTruthy()
+    delete state.SposobZapolneniya
+  })
+
+  it('после выбора в session-state лежит полный объект {id, code, presentation}', () => {
+    delete state.SposobZapolneniya
+    render(<EnumFieldNode node={richNode()} />)
+    fireEvent.mouseDown(screen.getByRole('combobox'))
+    const listbox = within(screen.getByRole('listbox'))
+    fireEvent.click(listbox.getByText('По циклам'))
+    expect(state.SposobZapolneniya).toEqual({
+      id: 32,
+      code: 'PoTsiklamProizvolnoyDliny',
+      presentation: 'По циклам',
+    })
+    delete state.SposobZapolneniya
   })
 })

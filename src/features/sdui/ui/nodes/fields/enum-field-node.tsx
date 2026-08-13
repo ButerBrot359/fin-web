@@ -9,18 +9,15 @@ import {
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
-
-interface EnumOption {
-  value: string
-  label: string
-  id?: number
-  code?: string
-}
+import {
+  resolveEnumValue,
+  type EnumOption,
+} from '../../../lib/utils/enum-value'
 
 export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
   const options = (node.props?.options as EnumOption[] | undefined) ?? []
-  const value = (f.value as string | undefined) ?? ''
+  const value = resolveEnumValue(f.value, options)
 
   if (!f.visible) return null
 
@@ -42,7 +39,6 @@ export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
         IconComponent={f.readonly ? () => null : undefined}
         onChange={(e) => {
           const selectedValue = e.target.value
-          f.setValue(selectedValue)
           const opt = options.find((o) => o.value === selectedValue)
           const enumValue = opt
             ? {
@@ -55,6 +51,7 @@ export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
                 code: selectedValue,
                 presentation: selectedValue,
               }
+          f.setValue(enumValue)
           f.fireServerEvent('change', enumValue)
         }}
       >

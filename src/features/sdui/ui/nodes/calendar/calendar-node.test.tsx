@@ -70,7 +70,8 @@ describe('CalendarNode', () => {
     expect(dispatch).toHaveBeenCalledTimes(before + 1)
     expect(
       dispatch.mock.calls.every(
-        ([a]: [{ command: string }]) => a.command !== 'kalendari.den.toggle'
+        (call) =>
+          (call[0] as { command?: string }).command !== 'kalendari.den.toggle'
       )
     ).toBe(true)
   })

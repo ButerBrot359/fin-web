@@ -83,16 +83,16 @@ describe('KalendariTemplateTable', () => {
     expect(screen.getByLabelText('sdui.kalendari.cycleLength')).toBeTruthy()
   })
 
-  it('увеличение длины цикла → replaceRows: общие позиции сохранены, новые unchecked tmp-*', () => {
+  it('увеличение длины цикла → коммит на blur: replaceRows с общими позициями сохранён, новые unchecked tmp-*', () => {
     sessionState.SposobZapolneniya = {
       id: 32,
       code: 'PoTsiklamProizvolnoyDliny',
     }
     sessionState.ShablonZapolneniya = rows(3) // r1,r2 checked; r3 unchecked
     render(<KalendariTemplateTable node={node()} />)
-    fireEvent.change(screen.getByLabelText('sdui.kalendari.cycleLength'), {
-      target: { value: '5' },
-    })
+    const input = screen.getByLabelText('sdui.kalendari.cycleLength')
+    fireEvent.change(input, { target: { value: '5' } })
+    fireEvent.blur(input)
     const sent = mockDispatch.mock.calls.at(-1)?.[0] as {
       value: { rowId: string; DenVklyuchenVGrafik: boolean }[]
     }
@@ -106,18 +106,43 @@ describe('KalendariTemplateTable', () => {
     expect(sent.value[3].rowId.startsWith('tmp-')).toBe(true)
   })
 
-  it('уменьшение длины цикла → хвост отброшен', () => {
+  it('уменьшение длины цикла → коммит по Enter: хвост отброшен', () => {
     sessionState.SposobZapolneniya = {
       id: 32,
       code: 'PoTsiklamProizvolnoyDliny',
     }
     sessionState.ShablonZapolneniya = rows(6)
     render(<KalendariTemplateTable node={node()} />)
-    fireEvent.change(screen.getByLabelText('sdui.kalendari.cycleLength'), {
-      target: { value: '2' },
-    })
+    const input = screen.getByLabelText('sdui.kalendari.cycleLength')
+    fireEvent.change(input, { target: { value: '2' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
     const sent = mockDispatch.mock.calls.at(-1)?.[0] as { value: unknown[] }
     expect(sent.value).toHaveLength(2)
+  })
+
+  it('промежуточное значение без blur/Enter: не резайзит и не шлёт EVENT; коммит происходит только на blur', () => {
+    sessionState.SposobZapolneniya = {
+      id: 32,
+      code: 'PoTsiklamProizvolnoyDliny',
+    }
+    sessionState.ShablonZapolneniya = rows(3)
+    render(<KalendariTemplateTable node={node()} />)
+    const input = screen.getByLabelText('sdui.kalendari.cycleLength')
+    // Перепечатывание: стирание до "" — раньше на каждый onChange резайзило и
+    // роняло хвост строк. Теперь только буфер поля меняется.
+    fireEvent.change(input, { target: { value: '' } })
+    expect(mockDispatch).not.toHaveBeenCalled()
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3)
+
+    fireEvent.change(input, { target: { value: '5' } })
+    expect(mockDispatch).not.toHaveBeenCalled()
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3)
+
+    // Коммит финального значения — единственный resize/EVENT.
+    fireEvent.blur(input)
+    expect(mockDispatch).toHaveBeenCalledTimes(1)
+    const sent = mockDispatch.mock.calls[0][0] as { value: unknown[] }
+    expect(sent.value).toHaveLength(5)
   })
 
   it('чекбокс шлёт EVENT, длина цикла в строки не попадает', () => {

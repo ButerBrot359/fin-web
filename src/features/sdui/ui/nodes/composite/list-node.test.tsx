@@ -1030,6 +1030,7 @@ describe('ListNode — навигация по уровням иерархиче
       data: { content: [], last: true, number: 0 },
     })
     dispatchMock.mockReset()
+    setSelectionMock.mockReset()
   })
 
   const DICT_URL =
@@ -1076,6 +1077,35 @@ describe('ListNode — навигация по уровням иерархиче
     const calls = useInfiniteQuery.mock.calls as { queryKey: unknown[] }[][]
     return calls.at(-1)?.[0]?.queryKey[2] as Record<string, string>
   }
+
+  it('props.selectedId с сервера → панель открывается выделенной на этой записи', () => {
+    withRows([{ id: 42, nameRu: 'Запасные части' }])
+    const node = dictNode()
+    // Сервер кладёт текущее значение поля в props LIST-узла панели.
+    node.props!.selectedId = 42
+    ;(
+      node.actions as { trigger: string; selectionField?: string }[]
+    )[0].selectionField = 'field.nomenklatura'
+
+    render(<ListNode node={node} />)
+
+    expect(setSelectionMock).toHaveBeenLastCalledWith('field.nomenklatura', 42)
+  })
+
+  it('без props.selectedId выделения нет', () => {
+    withRows([{ id: 42, nameRu: 'Запасные части' }])
+    const node = dictNode()
+    ;(
+      node.actions as { trigger: string; selectionField?: string }[]
+    )[0].selectionField = 'field.nomenklatura'
+
+    render(<ListNode node={node} />)
+
+    expect(setSelectionMock).toHaveBeenLastCalledWith(
+      'field.nomenklatura',
+      null
+    )
+  })
 
   it('flatWithGroups не уходит в запрос — иначе вместо уровня придёт весь справочник', () => {
     withRows([])

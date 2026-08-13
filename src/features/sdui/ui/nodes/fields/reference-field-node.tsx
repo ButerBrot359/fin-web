@@ -138,6 +138,8 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
       typeCode: targetTypeCode!,
       onSelect: applySelected,
       searchParams: filterSearchParams,
+      // Список открывается на записи, уже стоящей в поле.
+      selectedId: selectedOption?.id,
     })
   }
 

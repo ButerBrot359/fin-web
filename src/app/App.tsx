@@ -294,6 +294,7 @@ function App() {
         domain: req.domain,
         typeCode: req.typeCode,
         entryId: req.entryId,
+        selectedId: req.selectedId,
         onSelect: req.onSelect,
         searchParams: req.searchParams,
       })

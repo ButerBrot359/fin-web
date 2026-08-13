@@ -114,6 +114,39 @@ describe('ReferenceCellEditor', () => {
       })
     })
 
+    it('заполненная ячейка → пикер открывается на текущей записи', () => {
+      render(
+        <ReferenceCellEditor
+          colProps={cellProps({ allowShowAll: true })}
+          value={{ id: 7, presentation: 'Запасные части' }}
+          onChange={vi.fn()}
+          onCommit={vi.fn()}
+        />
+      )
+      openDropdown()
+      fireEvent.mouseDown(screen.getByRole('button', { name: showAllName }))
+
+      expect(openPickerMock.mock.calls[0][0]).toMatchObject({
+        mode: 'list',
+        selectedId: 7,
+      })
+    })
+
+    it('пустая ячейка → selectedId не шлём', () => {
+      render(
+        <ReferenceCellEditor
+          colProps={cellProps({ allowShowAll: true })}
+          value={null}
+          onChange={vi.fn()}
+          onCommit={vi.fn()}
+        />
+      )
+      openDropdown()
+      fireEvent.mouseDown(screen.getByRole('button', { name: showAllName }))
+
+      expect(openPickerMock.mock.calls[0][0].selectedId).toBeUndefined()
+    })
+
     it('allowCreate: true и domain=DICTIONARY → «Добавить» есть', () => {
       render(
         <ReferenceCellEditor

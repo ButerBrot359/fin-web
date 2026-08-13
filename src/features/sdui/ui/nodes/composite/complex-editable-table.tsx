@@ -46,6 +46,7 @@ import {
 } from '../../../lib/utils/master-detail'
 import { ColumnResizeHandle } from './column-resize-handle'
 import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
+import { TABLE_GRID_SX } from './table-grid-sx'
 import { SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
 
@@ -257,15 +258,19 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     onColumnSizingChange: sizing.onColumnSizingChange,
   })
 
+  // Сетка (рамка + линии между колонками) — всегда: она не зависит от ресайза.
   // Фиксированные ширины — только при ресайзе; иначе раскладка остаётся
   // прежней авто-шириной MUI (важно для многоуровневых шапок и футера).
-  const tableSx = sizing.isResizable
-    ? {
-        tableLayout: 'fixed' as const,
-        width: table.getTotalSize() + (showRowNumbers ? ROW_NUMBER_WIDTH : 0),
-        minWidth: '100%',
-      }
-    : undefined
+  const tableSx = {
+    ...TABLE_GRID_SX,
+    ...(sizing.isResizable
+      ? {
+          tableLayout: 'fixed' as const,
+          width: table.getTotalSize() + (showRowNumbers ? ROW_NUMBER_WIDTH : 0),
+          minWidth: '100%',
+        }
+      : {}),
+  }
 
   // Серверная реакция на активацию строки — тот же момент, что и публикация
   // выбора для master-detail фильтра; фильтр остаётся клиентским.
@@ -348,8 +353,6 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     [search.current?.rowId, search.current?.columnId]
   )
 
-  const leafColumnCount = flatColumns.length || 1
-
   const handleKeyDown = createTableHotkeysHandler({
     onAdd: handleAdd,
     onCopy: handleCopy,
@@ -425,6 +428,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                       width: ROW_NUMBER_WIDTH,
                       textAlign: 'center',
                       fontWeight: 600,
+                      // Дефолтный padding MUI size="small" — 6px 16px, то есть
+                      // 32px из 48px ширины колонки уходят в отступы и «N»
+                      // остаётся 16px. Сжимаем, как уже сделано у ячейки тела.
+                      p: '4px 8px',
                     }}
                   >
                     {t('table.rowNumber')}
@@ -480,8 +487,17 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           <TableBody>
             {visibleRows.length === 0 ? (
               <MuiTableRow>
+                {/* Колонок в разметке — столько, сколько РИСУЕТСЯ. Прежний
+                    flatColumns.length (extractAllLeafColumns) для этого не
+                    годится: он по своему контракту считает и скрытые колонки, и
+                    каждую под-колонку VERTICAL-группы отдельно, хотя группа
+                    рисуется одной ячейкой. У «Начислений» это дало бы 11 против
+                    6 реальных. */}
                 <TableCell
-                  colSpan={leafColumnCount + (showRowNumbers ? 1 : 0)}
+                  colSpan={
+                    table.getVisibleLeafColumns().length +
+                    (showRowNumbers ? 1 : 0)
+                  }
                   align="center"
                 >
                   <Typography variant="body2" color="text.secondary">

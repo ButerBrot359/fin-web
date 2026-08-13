@@ -119,7 +119,7 @@ export function buildHeaderModel(
   return { hasGroups: hasNonEmptyGroups, topRow, bottomRow }
 }
 
-function extractEditableColumns(
+export function extractEditableColumns(
   children: ViewNode[] | undefined
 ): TableColumnDef[] {
   if (!children) return []

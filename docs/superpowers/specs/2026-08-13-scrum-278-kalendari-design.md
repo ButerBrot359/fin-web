@@ -22,9 +22,11 @@
 
 `table-node.tsx` получает третью ветку роутинга на эти компоненты. Оба строятся поверх существующего `use-table-sync` (`src/features/sdui/lib/hooks/use-table-sync.ts`): он уже шлёт полный локальный снимок строк (ADR-0011 §3.4) — ровно требование спеки «on every table edit send the whole ordered array» — и генерирует `tmp-*` rowId для новых строк. Новых механизмов синхронизации и нового TanStack Query кэша для stateful `/api/view` сессий не создаётся (прямой запрет спеки).
 
-### Дискриминатор роутинга — ОТКРЫТЫЙ ПУНКТ
+### Дискриминатор роутинга — РЕШЕНО (v2-back 2026-08-13)
 
-Спека не говорит, по какому признаку фронт распознаёт kalendari-таблицы. Вопрос задан Talgat'у (коммент 10461 в SCRUM-278, 2026-08-13). Канонично — prop от бэка (например `props.tableKind`); временный фолбэк до ответа — по `binding` (`ShablonZapolneniya` / `RaspisanieRaboty`). Решение локализовано в одной функции-дискриминаторе в `table-node.tsx`; смена варианта после ответа — правка одной константы/условия, остальной дизайн не зависит.
+Бэк ответил (`SCRUM-278-spec-v2-2026-08-13-back.md`, §1): фронт распознаёт kalendari-таблицы **по `binding`** — `ShablonZapolneniya` (шаблон) и `RaspisanieRaboty` (расписание). Специального пропа (`kalendariKind`/`tableKind`) намеренно НЕТ: классификация ограничена карточкой `Kalendari`. Решение локализовано в одной функции-дискриминаторе в `table-node.tsx`. Это ровно тот фолбэк, что был заложен изначально, — архитектура не меняется.
+
+Прочие пункты v2-back, подтверждающие дизайн: шаблон несёт единственную персистируемую колонку `DenVklyuchenVGrafik` (BOOLEAN/`CHECKBOX_FIELD`); расписание — `NomerDnya` (INTEGER/`NUMBER_FIELD`), `VremyaNachala`/`VremyaOkonchaniya` (DATETIME/`DATETIME_FIELD`); режим читается из enum-поля `SposobZapolneniya` (session-state, `code`); `DlinaTsikla` — фронтовое состояние из `ShablonZapolneniya.length`, ни в EVENT, ни в save не попадает; новые строки — нечисловой `rowId` (`tmp-*`), на любой правке — весь упорядоченный массив TABLE-level EVENT'ом на id ноды.
 
 ## Шаблон заполнения (`kalendari-template-table`)
 

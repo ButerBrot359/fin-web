@@ -619,6 +619,14 @@
         "manual": "Қолмен өзгертілген"
       }
     },
+    "kalendari": {
+      "dayColumn": "Күн",
+      "workingDay": "Жұмыс күні",
+      "cycleLength": "Цикл ұзақтығы",
+      "dayN": "{{n}}-күн",
+      "fillSchedule": "Кестені толтыру",
+      "schedule": "Кесте"
+    },
     "notFound": {
       "title": "Бет табылмады",
       "description": "Мекенжайды тексеріңіз немесе басты бетке оралыңыз."

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   buildLevelParams,
+  parseSelectedPath,
   isGroupRow,
   isGroupsOnlySource,
   resolveRowLabel,
@@ -106,5 +107,33 @@ describe('resolveRowLabel', () => {
 
   it('пустые строки пропускает, в крайнем случае — id', () => {
     expect(resolveRowLabel({ id: 7, presentation: '  ', nameRu: '' })).toBe('7')
+  })
+})
+
+describe('parseSelectedPath', () => {
+  it('путь с сервера → уровни для крошек', () => {
+    expect(
+      parseSelectedPath([
+        { id: 10, presentation: 'Категории по уровням' },
+        { id: 20, presentation: 'Подгруппа' },
+      ])
+    ).toEqual([
+      { id: 10, label: 'Категории по уровням' },
+      { id: 20, label: 'Подгруппа' },
+    ])
+  })
+
+  it('запись в корне — путь пуст', () => {
+    expect(parseSelectedPath([])).toEqual([])
+    expect(parseSelectedPath(undefined)).toEqual([])
+  })
+
+  it('мусор в пропе не роняет панель', () => {
+    expect(parseSelectedPath('нет')).toEqual([])
+    expect(parseSelectedPath([null, { presentation: 'без id' }, 5])).toEqual([])
+  })
+
+  it('без presentation подписью становится id', () => {
+    expect(parseSelectedPath([{ id: 7 }])).toEqual([{ id: 7, label: '7' }])
   })
 })

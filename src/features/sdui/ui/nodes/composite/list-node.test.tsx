@@ -1078,6 +1078,21 @@ describe('ListNode — навигация по уровням иерархиче
     return calls.at(-1)?.[0]?.queryKey[2] as Record<string, string>
   }
 
+  it('props.selectedPath → панель открывается внутри папки записи, а не на корне', () => {
+    withRows([{ id: 42, nameRu: '1 уровень' }])
+    const node = dictNode()
+    Object.assign(node.props!, {
+      selectedId: 42,
+      selectedPath: [{ id: 78, presentation: 'Категории по уровням' }],
+    })
+
+    render(<ListNode node={node} />)
+
+    // Уровень запрошен сразу по папке, крошка с её именем видна.
+    expect(lastQueryParams()).toEqual({ parent: '78' })
+    expect(screen.getByText('Категории по уровням')).toBeTruthy()
+  })
+
   it('props.selectedId с сервера → панель открывается выделенной на этой записи', () => {
     withRows([{ id: 42, nameRu: 'Запасные части' }])
     const node = dictNode()

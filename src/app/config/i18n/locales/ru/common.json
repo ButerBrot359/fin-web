@@ -176,6 +176,7 @@
     "empty": "Пока тут пусто",
     "add": "Добавить",
     "loadedCount": "Загружено {{loaded}} из {{total}}",
+    "treeRoot": "Все",
     "loadedCountNoTotal": "Загружено {{loaded}}",
     "exportExcel": "Выгрузить в Excel",
     "exportEmpty": "Нет данных для выгрузки",

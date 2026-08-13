@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { CircularProgress, Typography } from '@mui/material'
 import { flexRender, type Table } from '@tanstack/react-table'
 import type { Virtualizer } from '@tanstack/react-virtual'
+import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
 import { cn } from '@/shared/lib/utils/cn'
 import { resolveLoadedCountLabel } from './list-loaded-count'
 import { ColumnResizeHandle } from './column-resize-handle'
@@ -35,6 +36,11 @@ export interface ListTableProps {
   activateAction: ListTableAction
   selectAction: ListTableAction
   dispatchSelect: (action: ListTableAction, rowId: number) => void
+  /** Строка-папка иерархического справочника: клик проваливает внутрь, а не выбирает. */
+  canDrillInto: (row: ListRow) => boolean
+  onDrillInto: (row: ListRow) => void
+  /** Рисовать иконку папки самим — сервер не прислал колонку-иконку. */
+  showFolderIcon: boolean
 }
 
 export const ListTable: FC<ListTableProps> = ({
@@ -53,6 +59,9 @@ export const ListTable: FC<ListTableProps> = ({
   activateAction,
   selectAction,
   dispatchSelect,
+  canDrillInto,
+  onDrillInto,
+  showFolderIcon,
 }) => {
   const { t } = useTranslation()
 
@@ -141,14 +150,25 @@ export const ListTable: FC<ListTableProps> = ({
                 {virtualRows.map((virtualRow) => {
                   const row = tableRows[virtualRow.index]
                   const isSelected = selectedRowId === row.original.id
+                  const isFolder = canDrillInto(row.original)
 
                   return (
                     <tr
                       key={row.id}
                       onClick={() => {
+                        if (isFolder) {
+                          onDrillInto(row.original)
+                          return
+                        }
                         setSelectedRowId(row.original.id)
                       }}
                       onDoubleClick={() => {
+                        // Папка не выбирается значением — двойной клик тоже
+                        // проваливает внутрь.
+                        if (isFolder) {
+                          onDrillInto(row.original)
+                          return
+                        }
                         dispatchSelect(
                           activateAction ?? selectAction,
                           row.original.id
@@ -163,14 +183,26 @@ export const ListTable: FC<ListTableProps> = ({
                             : ''
                       )}
                     >
-                      {row.getVisibleCells().map((cell) => (
+                      {row.getVisibleCells().map((cell, cellIndex) => (
                         <td
                           key={cell.id}
                           className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
                         >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
+                          {cellIndex === 0 && isFolder && showFolderIcon ? (
+                            <span className="flex items-center gap-1.5">
+                              <FolderIcon className="h-4 w-4 shrink-0" />
+                              <span className="truncate">
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext()
+                                )}
+                              </span>
+                            </span>
+                          ) : (
+                            flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )
                           )}
                         </td>
                       ))}

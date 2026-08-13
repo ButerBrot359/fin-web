@@ -160,6 +160,7 @@
     "create": "Создать",
     "search": "Поиск",
     "noData": "Нет данных",
+    "emptyGroup": "Группа пуста",
     "createTitle": "{{name}} создание",
     "editTitle": "{{name}} — {{entry}}",
     "saveAndClose": "Записать и закрыть",

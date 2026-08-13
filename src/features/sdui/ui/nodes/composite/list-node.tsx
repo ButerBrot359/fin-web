@@ -20,6 +20,13 @@ import {
 } from './list-column-defs'
 import { ListPeriodControl } from './list-period-control'
 import { ListTable } from './list-table'
+import { ListBreadcrumbs, type ListTrailEntry } from './list-breadcrumbs'
+import {
+  buildLevelParams,
+  isGroupRow,
+  resolveRowLabel,
+  supportsHierarchy,
+} from './list-hierarchy'
 
 import type { NodeProps } from '../../../types/view'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
@@ -75,6 +82,18 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const [search, setSearch] = useState('')
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
 
+  // Путь по папкам справочника; пустой — корневой уровень.
+  const [trail, setTrail] = useState<ListTrailEntry[]>([])
+  const isHierarchical = supportsHierarchy(source)
+  const isSearchMode = search.trim().length > 0
+  // Непустой поиск уплощает уровни и ищет по всему справочнику (эталон 1С): `parent`
+  // вместе с поисковой строкой бэк отвергает (HTTP 400 — поиск внутри папки не
+  // поддержан). Путь при этом сохраняется: очистили поиск — вернулись на свой уровень.
+  const parentId = isSearchMode ? undefined : trail.at(-1)?.id
+  const levelParams = isHierarchical
+    ? buildLevelParams(source?.params, parentId)
+    : source?.params
+
   // SCRUM-291 M5: сервер может заменить props.source ответом на sort/filter/period
   // (setProp-патч на LIST-узле) — при смене идентичности source выделенная строка
   // могла уйти из выборки, поэтому сбрасываем выделение. Пропускаем первый рендер,
@@ -103,7 +122,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     queryKey: [
       'sdui-list',
       source?.url,
-      source?.params,
+      levelParams,
       source?.method,
       source?.body,
       search,
@@ -112,7 +131,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
       if (!source) throw new Error('LIST node: source is required')
       return fetchListPage({
         url: source.url,
-        params: source.params,
+        params: levelParams,
         method: source.method,
         body: source.body,
         page: pageParam,
@@ -143,26 +162,32 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     if (isLoading) return
 
     const sentinel = sentinelRef.current
-    const scrollContainer = scrollRef.current
-    if (!sentinel || !scrollContainer) return
+    if (!sentinel) return
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting) return
-        const { hasNextPage, isFetchingNextPage, fetchNextPage } =
-          loadMoreRef.current
-        if (hasNextPage && !isFetchingNextPage) {
-          void fetchNextPage()
-        }
-      },
-      { root: scrollContainer }
-    )
+    // root НЕ задаём. Раньше корнем был scrollRef, но прокручивается он не всегда:
+    // в drawer-панели высота не ограничена (PAGE не тянется по высоте), скроллится
+    // внешний контейнер, а сентинел внутри scrollRef остаётся в его области всегда —
+    // наблюдатель срабатывал один раз при observe() и больше никогда, из-за чего
+    // подгрузка вставала на второй странице («Загружено 50 из 110»). Пересечение с
+    // вьюпортом считается с учётом отсечения всеми прокручиваемыми предками, поэтому
+    // работает в обоих случаях.
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries[0]?.isIntersecting) return
+      const { hasNextPage, isFetchingNextPage, fetchNextPage } =
+        loadMoreRef.current
+      if (hasNextPage && !isFetchingNextPage) {
+        void fetchNextPage()
+      }
+    })
 
     observer.observe(sentinel)
     return () => {
       observer.disconnect()
     }
-  }, [isLoading])
+    // rows.length в зависимостях — пересоздаём наблюдателя после каждой подгруженной
+    // страницы: если сентинел так и остался в зоне видимости, событие пересечения
+    // повторно не придёт и цепочка подгрузки оборвётся.
+  }, [isLoading, rows.length])
 
   // Publish highlighted row to shared store for sibling toolbar buttons (ref.copy / ref.select)
   // SCRUM-284 Δ4: ключ группы выбора — с selectAction, не из props
@@ -176,6 +201,20 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
       clearSelection(selectField)
     }
   }, [selectField, selectedRowId, setSelection, clearSelection])
+
+  // Провал в папку: строка-группа — навигация внутрь, а не выбор значения.
+  const drillInto = (row: ListRow) => {
+    setSelectedRowId(null)
+    setTrail((prev) => [...prev, { id: row.id, label: resolveRowLabel(row) }])
+  }
+
+  const canDrillInto = (row: ListRow) =>
+    isHierarchical && !isSearchMode && isGroupRow(row)
+
+  // Свою иконку папки рисуем, только если сервер не прислал колонку-иконку
+  // (cellKind='ICON' с iconMap по isGroup) — иначе в строке было бы две папки.
+  const showFolderIcon =
+    isHierarchical && !columnNodes.some((c) => c.props?.cellKind === 'ICON')
 
   const dispatchSelect = (
     action: { command?: string } | undefined,
@@ -272,8 +311,19 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         />
       )}
 
+      <ListBreadcrumbs
+        trail={isSearchMode ? [] : trail}
+        onNavigate={(depth) => {
+          setSelectedRowId(null)
+          setTrail((prev) => prev.slice(0, depth))
+        }}
+      />
+
       <ListTable
         table={table}
+        canDrillInto={canDrillInto}
+        onDrillInto={drillInto}
+        showFolderIcon={showFolderIcon}
         isResizable={sizing.isResizable}
         rowVirtualizer={rowVirtualizer}
         scrollRef={scrollRef}

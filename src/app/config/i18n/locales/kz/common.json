@@ -176,6 +176,7 @@
     "empty": "Әзірге бос",
     "add": "Қосу",
     "loadedCount": "{{total}} ішінен {{loaded}} жүктелді",
+    "treeRoot": "Барлығы",
     "loadedCountNoTotal": "{{loaded}} жүктелді",
     "exportExcel": "Excel-ге жүктеп алу",
     "exportEmpty": "Жүктеп алуға деректер жоқ",

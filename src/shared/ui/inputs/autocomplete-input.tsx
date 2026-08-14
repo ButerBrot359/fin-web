@@ -141,10 +141,24 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
   } = props
   const { t } = useTranslation()
 
-  // Подсветку снимаем на время загрузки: `options` в этот момент — результат ПРЕДЫДУЩЕГО
-  // запроса (клиентская фильтрация отключена, см. filterOptions ниже), и Enter подставил бы
-  // значение из устаревшей выдачи. Без подсветки Enter — безобидный no-op, как было раньше.
-  const highlightFirst = autoHighlight && !loading
+  // ВНИМАНИЕ: `autoHighlight` уходит в MUI КАК ЕСТЬ. Вычислять его от `loading` НЕЛЬЗЯ —
+  // проверено по исходнику @mui/material/useAutocomplete:
+  //
+  //   defaultHighlighted = autoHighlight ? 0 : -1                            (:139)
+  //   syncHighlightedIndex — useCallback с deps
+  //     [filteredOptions.length, value, changeHighlightedIndex,
+  //      setHighlightedIndex, popupOpen, inputValue, multiple]               (:476-480)
+  //   useEffect(..., [syncHighlightedIndex, filteredOptionsChanged,
+  //                   popupOpen, disableCloseOnSelect])                      (:497-500)
+  //
+  // Ни `autoHighlight`, ни `loading` в зависимостях нет. Поэтому при `autoHighlight && !loading`
+  // эффект успевал отработать в рендере, где загрузка ещё шла (autoHighlight=false →
+  // defaultHighlighted=-1 → сброс подсветки), а последующий переход loading→false его НЕ
+  // перезапускал: список, value, inputValue и popupOpen не менялись. Подсветка не появлялась
+  // никогда, и Enter не срабатывал — ровно тот баг, который этой опцией и чинится.
+  //
+  // Пустое поле (value=null) попадает в ветку «popup пуст → reset» (:425-429), а reset
+  // возвращает defaultHighlighted (:333) — то есть 0. Так первая опция и подсвечивается.
 
   const hasFooter = !!(onShowAll || onAdd)
 
@@ -227,7 +241,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
         }}
         onInputChange={onInputChange}
         onOpen={onOpen}
-        autoHighlight={highlightFirst}
+        autoHighlight={autoHighlight}
         filterOptions={onInputChange ? (x) => x : undefined}
         getOptionLabel={(option) => option.label}
         isOptionEqualToValue={(option, val) => option.id === val.id}
@@ -270,7 +284,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
         }}
         onInputChange={onInputChange}
         onOpen={onOpen}
-        autoHighlight={highlightFirst}
+        autoHighlight={autoHighlight}
         filterOptions={onInputChange ? (x) => x : undefined}
         getOptionLabel={(option) => option.label}
         isOptionEqualToValue={(option, val) => option.id === val.id}

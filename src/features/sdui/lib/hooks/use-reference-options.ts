@@ -60,12 +60,6 @@ export function useReferenceOptions(
 
   const loadDebounced = (search: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    // loading взводим СРАЗУ, а не внутри load() после таймера: между нажатием клавиши и
-    // срабатыванием debounce `options` держит выдачу ПРЕДЫДУЩЕГО запроса. Пикер отключает
-    // клиентскую фильтрацию (серверный отбор — единственный), поэтому в это окно список на
-    // экране не соответствует введённому тексту, и потребители, завязанные на loading
-    // (например, подсветка первой опции под Enter), обязаны видеть «идёт загрузка».
-    setLoading(true)
     debounceRef.current = setTimeout(() => load(search), DEBOUNCE_MS)
   }
 

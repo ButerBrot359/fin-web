@@ -88,6 +88,18 @@ interface AutocompleteInputBaseProps {
   size?: 'small' | 'medium'
   /** Растянуть на всю ширину контейнера (по умолчанию ширина по контенту). */
   fullWidth?: boolean
+  /**
+   * Подсвечивать первую опцию → Enter её выбирает (поведение 1С: «ввёл часть
+   * наименования, нажал Enter — значение подставилось»).
+   *
+   * <p>Опция, а не поведение по умолчанию: компонент общий для SDUI и легаси, а
+   * `autoHighlight` меняет семантику Enter на ~20 легаси-экранах (параметры отчётов,
+   * ОСВ, карточка счёта), которые в эту задачу не входят.
+   *
+   * <p>Именно `autoHighlight`, а не `autoSelect`: последний выбирает опцию ещё и при
+   * потере фокуса — подставлял бы значение, которого пользователь не выбирал.
+   */
+  autoHighlight?: boolean
 }
 
 export interface AutocompleteInputSingleProps extends AutocompleteInputBaseProps {
@@ -125,8 +137,14 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
     onAdd,
     size,
     fullWidth,
+    autoHighlight = false,
   } = props
   const { t } = useTranslation()
+
+  // Подсветку снимаем на время загрузки: `options` в этот момент — результат ПРЕДЫДУЩЕГО
+  // запроса (клиентская фильтрация отключена, см. filterOptions ниже), и Enter подставил бы
+  // значение из устаревшей выдачи. Без подсветки Enter — безобидный no-op, как было раньше.
+  const highlightFirst = autoHighlight && !loading
 
   const hasFooter = !!(onShowAll || onAdd)
 
@@ -209,6 +227,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
         }}
         onInputChange={onInputChange}
         onOpen={onOpen}
+        autoHighlight={highlightFirst}
         filterOptions={onInputChange ? (x) => x : undefined}
         getOptionLabel={(option) => option.label}
         isOptionEqualToValue={(option, val) => option.id === val.id}
@@ -251,6 +270,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
         }}
         onInputChange={onInputChange}
         onOpen={onOpen}
+        autoHighlight={highlightFirst}
         filterOptions={onInputChange ? (x) => x : undefined}
         getOptionLabel={(option) => option.label}
         isOptionEqualToValue={(option, val) => option.id === val.id}

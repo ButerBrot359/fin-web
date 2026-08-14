@@ -21,6 +21,7 @@ import {
   useSelection,
   useSelectionStore,
 } from '../../../lib/stores/selection-store'
+import { armNewTab } from '../../../lib/workspace-tab-gateway'
 
 // Шаг отступа уровня дерева; базовые 8px — обычный горизонтальный padding ячейки
 const INDENT_STEP_PX = 24
@@ -83,7 +84,13 @@ export const SubordinationTree: FC<NodeProps> = ({ node }) => {
     const route =
       row._route ??
       (ref ? `/documents/${ref.typeCode}/${String(ref.id)}` : undefined)
-    if (route) void navigate(route)
+    if (!route) return
+    // Активная вкладка — sdui-panel, и пока она активна, layout рендерит хост
+    // панели вместо route-children: без активации обычной вкладки документа
+    // navigate поменяет только URL (спека v2 SCRUM-301).
+    // Порядок важен: armNewTab() строго после гарда !route — иначе взведённый one-shot флаг без навигации утёк бы в следующий переход.
+    armNewTab()
+    void navigate(route)
   }
 
   return (

@@ -20,8 +20,8 @@ function makeCtx() {
 
 describe('invalidateLists', () => {
   const invalidatedKeys = (invalidateQueries: ReturnType<typeof vi.fn>) =>
-    invalidateQueries.mock.calls.map(([arg]: [{ queryKey: unknown }]) =>
-      JSON.stringify(arg.queryKey)
+    (invalidateQueries.mock.calls as { queryKey: unknown }[][]).map((call) =>
+      JSON.stringify(call[0].queryKey)
     )
 
   it('инвалидирует SDUI-списки (контракт ADR-0035)', () => {

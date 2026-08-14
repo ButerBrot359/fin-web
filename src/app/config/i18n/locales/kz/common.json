@@ -615,12 +615,19 @@
       "cancel": "Жоқ"
     },
     "calendar": {
-      "applyImmediately": "Өзгерістер бірден қолданылады",
       "legend": {
         "working": "Жұмыс күні",
         "nonWorking": "Жұмыс емес",
         "manual": "Қолмен өзгертілген"
       }
+    },
+    "kalendari": {
+      "dayColumn": "Күн",
+      "workingDay": "Жұмыс күні",
+      "cycleLength": "Цикл ұзақтығы",
+      "dayN": "{{n}}-күн",
+      "fillSchedule": "Кестені толтыру",
+      "schedule": "Кесте"
     },
     "notFound": {
       "title": "Бет табылмады",

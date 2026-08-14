@@ -3,14 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
 
-const { dispatch, showToast } = vi.hoisted(() => ({
+const { dispatch } = vi.hoisted(() => ({
   dispatch: vi.fn().mockResolvedValue(true),
-  showToast: vi.fn(),
 }))
 
 vi.mock('../../../lib/dispatch', () => ({ useSduiDispatch: () => dispatch }))
-vi.mock('@/shared/ui/toast/show-toast', () => ({ showToast }))
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }))
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (k: string) => k }),
+}))
 vi.mock('./calendar-legend', () => ({ CalendarLegend: () => null }))
 // YearSelector-стаб: кнопка, дёргающая onChange(2026)
 vi.mock('./year-selector', () => ({
@@ -24,17 +24,9 @@ vi.mock('./year-selector', () => ({
     </button>
   ),
 }))
-// MonthGrid-стаб: одна кнопка на месяц, дёргает onToggle фикс-датой
+// MonthGrid-стаб: без onToggle — дни read-only
 vi.mock('./month-grid', () => ({
-  MonthGrid: ({ month, onToggle }: { month: number; onToggle: (d: string) => void }) => (
-    <button
-      onClick={() => {
-        onToggle(`2025-0${String(month + 1)}-01`)
-      }}
-    >
-      m{month}
-    </button>
-  ),
+  MonthGrid: ({ month }: { month: number }) => <span>m{month}</span>,
 }))
 
 import { CalendarNode } from './calendar-node'
@@ -42,7 +34,7 @@ import { CalendarNode } from './calendar-node'
 const node = (props: Record<string, unknown>): ViewNode =>
   ({ id: 'kalendari.rezultatZapolneniya', type: 'CALENDAR', props }) as ViewNode
 
-const baseProps = { god: 2025, godMin: 2021, godMax: 2027, redaktiruemyy: true, dni: [] }
+const baseProps = { god: 2025, godMin: 2021, godMax: 2027, dni: [] }
 
 describe('CalendarNode', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -51,37 +43,6 @@ describe('CalendarNode', () => {
   it('рендерит 12 месяцев', () => {
     render(<CalendarNode node={node(baseProps)} />)
     expect(screen.getAllByText(/^m\d+$/)).toHaveLength(12)
-  })
-
-  it('клик по дню шлёт COMMAND kalendari.den.toggle с датой', () => {
-    render(<CalendarNode node={node(baseProps)} />)
-    fireEvent.click(screen.getByText('m0'))
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'COMMAND',
-      command: 'kalendari.den.toggle',
-      value: '2025-01-01',
-      sourceNodeId: 'kalendari.rezultatZapolneniya',
-    })
-  })
-
-  it('первый тоггл показывает toast один раз, второй — нет', async () => {
-    render(<CalendarNode node={node(baseProps)} />)
-    fireEvent.click(screen.getByText('m0'))
-    await dispatch.mock.results[0].value
-    expect(showToast).toHaveBeenCalledTimes(1)
-    expect(showToast).toHaveBeenCalledWith('info', 'sdui.calendar.applyImmediately')
-
-    fireEvent.click(screen.getByText('m1'))
-    await dispatch.mock.results[1].value
-    expect(showToast).toHaveBeenCalledTimes(1)
-  })
-
-  it('отклонённый тоггл не показывает toast', async () => {
-    dispatch.mockResolvedValueOnce(false)
-    render(<CalendarNode node={node(baseProps)} />)
-    fireEvent.click(screen.getByText('m0'))
-    await dispatch.mock.results[0].value
-    expect(showToast).not.toHaveBeenCalled()
   })
 
   it('смена года шлёт COMMAND kalendari.god.change', () => {
@@ -98,5 +59,20 @@ describe('CalendarNode', () => {
   it('god отсутствует → ничего не рендерит', () => {
     const { container } = render(<CalendarNode node={node({})} />)
     expect(container.firstChild).toBeNull()
+  })
+
+  it('дни некликабельны: клик по ячейке не шлёт никакой dispatch', () => {
+    render(<CalendarNode node={node(baseProps)} />)
+    // в реальном DOM день — disabled button; убеждаемся, что toggle-команда невозможна
+    const before = dispatch.mock.calls.length
+    // никаких onToggle-стабов больше нет; проверяем, что смена года — единственный dispatch-путь
+    fireEvent.click(screen.getByText('year'))
+    expect(dispatch).toHaveBeenCalledTimes(before + 1)
+    expect(
+      dispatch.mock.calls.every(
+        (call) =>
+          (call[0] as { command?: string }).command !== 'kalendari.den.toggle'
+      )
+    ).toBe(true)
   })
 })

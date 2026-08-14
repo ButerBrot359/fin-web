@@ -615,12 +615,19 @@
       "cancel": "Нет"
     },
     "calendar": {
-      "applyImmediately": "Изменения применяются сразу",
       "legend": {
         "working": "Рабочий",
         "nonWorking": "Нерабочий",
         "manual": "Изменён вручную"
       }
+    },
+    "kalendari": {
+      "dayColumn": "День",
+      "workingDay": "Рабочий день",
+      "cycleLength": "Длина цикла",
+      "dayN": "День {{n}}",
+      "fillSchedule": "Заполнить расписание",
+      "schedule": "Расписание"
     },
     "notFound": {
       "title": "Страница не найдена",

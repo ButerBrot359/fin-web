@@ -7,6 +7,10 @@ import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import { isCellEmpty } from '../../../lib/utils/is-cell-empty'
+import {
+  resolveEnumValue,
+  type EnumOption,
+} from '../../../lib/utils/enum-value'
 import { ReferenceCellEditor } from './reference-cell-editor'
 import { DateCellEditor } from './date-cell-editor'
 import { ObjectCellEditor } from './object-cell-editor'
@@ -24,28 +28,6 @@ interface TableCellEditorProps {
   onChange: (value: unknown) => void
   onCommit: () => void
   extraParams?: Record<string, string>
-}
-
-interface EnumOption {
-  value: string
-  label: string
-  id?: number
-  code?: string
-}
-
-/** Текущее значение enum-ячейки → строковый `value` опции для <Select>. */
-function resolveEnumValue(value: unknown, options: EnumOption[]): string {
-  if (value == null) return ''
-  if (typeof value === 'string') return value
-  if (typeof value === 'object') {
-    const v = value as { id?: unknown; code?: unknown }
-    const match = options.find(
-      (o) =>
-        (v.id != null && o.id === v.id) || (v.code != null && o.code === v.code)
-    )
-    return match?.value ?? ''
-  }
-  return ''
 }
 
 /**

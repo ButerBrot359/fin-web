@@ -8,8 +8,22 @@ import { ComplexEditableTable } from './complex-editable-table'
 import { AccountingPostingsBlock } from './accounting-postings-block'
 import { ReadOnlyTable } from './read-only-table'
 import { SubordinationTree } from './subordination-tree'
+import { KalendariTemplateTable } from './kalendari-template-table'
+import { KalendariScheduleTable } from './kalendari-schedule-table'
 
-function extractEditableColumns(
+/**
+ * Дискриминатор kalendari-таблиц по binding (v2-back §1). Спец-пропа нет —
+ * классификация намеренно ограничена карточкой Kalendari (реестр §9, D-10).
+ */
+export function kalendariTableKind(
+  binding: string | undefined
+): 'template' | 'schedule' | null {
+  if (binding === 'ShablonZapolneniya') return 'template'
+  if (binding === 'RaspisanieRaboty') return 'schedule'
+  return null
+}
+
+export function extractEditableColumns(
   children: ViewNode[] | undefined
 ): TableColumnDef[] {
   if (!children) return []
@@ -22,6 +36,12 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
   const editable = node.props?.editable === true
 
   if (editable) {
+    const kalendariKind = kalendariTableKind(node.binding)
+    if (kalendariKind === 'template')
+      return <KalendariTemplateTable node={node} />
+    if (kalendariKind === 'schedule')
+      return <KalendariScheduleTable node={node} />
+
     // Route to complex table if COLUMN_GROUP children exist or master-detail props present
     const hasGroups = node.children?.some((c) => c.type === 'COLUMN_GROUP')
     const hasMasterDetail = !!(

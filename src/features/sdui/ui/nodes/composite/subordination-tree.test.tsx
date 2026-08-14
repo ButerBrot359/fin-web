@@ -19,6 +19,14 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => navigateMock,
 }))
 
+const armNewTabMock = vi.fn()
+vi.mock('../../../lib/workspace-tab-gateway', () => ({
+  armNewTab: () => {
+    armNewTabMock()
+    return false
+  },
+}))
+
 const state: Record<string, unknown> = {}
 vi.mock('../../../lib/sdui-session-context', () => ({
   useSduiSession: () => ({
@@ -180,6 +188,25 @@ describe('SubordinationTree', () => {
     expect(navigateMock).toHaveBeenCalledWith('/documents/SchetKOplate/1002')
     fireEvent.doubleClick(screen.getByText('Без роута'))
     expect(navigateMock).toHaveBeenCalledWith('/documents/Zayavka/7')
+    expect(armNewTabMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('двойной клик по строке без _route и entityRef — no-op: ни навигации, ни армирования вкладки', () => {
+    state['related.tree'] = [row({ rowId: 'r1' })]
+    render(<TableNode node={treeNodeNoActions} />)
+    fireEvent.doubleClick(screen.getByText('Документ'))
+    expect(navigateMock).not.toHaveBeenCalled()
+    expect(armNewTabMock).not.toHaveBeenCalled()
+  })
+
+  it('двойной клик армит новую workspace-вкладку через gateway (спека v2)', () => {
+    state['related.tree'] = [
+      row({ rowId: 'r1', _route: '/documents/SchetKOplate/1002' }),
+    ]
+    render(<TableNode node={treeNodeNoActions} />)
+    fireEvent.doubleClick(screen.getByText('Документ'))
+    expect(armNewTabMock).toHaveBeenCalledTimes(1)
+    expect(navigateMock).toHaveBeenCalledWith('/documents/SchetKOplate/1002')
   })
 
   it('_isTruncated: без иконки, клик не выделяет, dblclick не навигирует', () => {
@@ -197,6 +224,7 @@ describe('SubordinationTree', () => {
     fireEvent.doubleClick(el)
     expect(setSelectionMock).not.toHaveBeenCalled()
     expect(navigateMock).not.toHaveBeenCalled()
+    expect(armNewTabMock).not.toHaveBeenCalled()
     expect(screen.queryByTestId('icon-draft')).toBeNull()
   })
 

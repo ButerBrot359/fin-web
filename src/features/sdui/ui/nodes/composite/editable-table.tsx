@@ -30,7 +30,8 @@ import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
-import { isCellRequired } from '../../../lib/utils/is-cell-required'
+import { resolveCellState } from '../../../lib/utils/resolve-cell-state'
+import { omitServiceRowKeys } from '../../../lib/utils/service-row-keys'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { columnSizeProps } from '../../../lib/utils/column-sizing'
 import { EditableTableHead } from './editable-table-head'
@@ -123,25 +124,28 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
         // Ширина колонки: с бэка (props.width) либо прежний фолбэк 150/flex.
         ...columnSizeProps(col.props),
         size: col.width ?? (col.flex ? undefined : 150),
-        cell: ({ row }) => (
-          <TableCellEditor
-            cellWidget={col.cellWidget}
-            dataType={col.dataType}
-            value={row.original[col.binding]}
-            readonly={col.readonly}
-            props={col.props}
-            // Обязательность считается на ЯЧЕЙКЕ, а не на колонке: строка может
-            // быть помечена условно обязательной через `__requiredCells`.
-            required={isCellRequired(col, row.original)}
-            revealErrors={validationRef.current.revealErrors}
-            onChange={(val) => {
-              syncRef.current.updateCell(row.original.rowId, col.binding, val)
-            }}
-            onCommit={() => {
-              syncRef.current.commitCell()
-            }}
-          />
-        ),
+        cell: ({ row }) => {
+          // Доступность и обязательность считаются на ЯЧЕЙКЕ, а не на колонке:
+          // строка несёт собственное условное состояние (см. resolve-cell-state).
+          const state = resolveCellState(col, row.original)
+          return (
+            <TableCellEditor
+              cellWidget={col.cellWidget}
+              dataType={col.dataType}
+              value={row.original[col.binding]}
+              readonly={state.readonly}
+              props={col.props}
+              required={state.required}
+              revealErrors={validationRef.current.revealErrors}
+              onChange={(val) => {
+                syncRef.current.updateCell(row.original.rowId, col.binding, val)
+              }}
+              onCommit={() => {
+                syncRef.current.commitCell()
+              }}
+            />
+          )
+        },
       })),
     [columns]
   )
@@ -183,7 +187,10 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     const src = sync.rows[selectedIndex]
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!src) return
-    const { rowId: _rowId, ...values } = src
+    // Копируются ЗНАЧЕНИЯ строки: служебные ключи посчитаны для источника, и
+    // без очистки копия заблокированной строки приезжала бы заблокированной
+    // ещё до ответа сервера (см. service-row-keys).
+    const { rowId: _rowId, ...values } = omitServiceRowKeys(src)
     sync.addRow(columns, values)
   }
   const handleMoveUp = () => {

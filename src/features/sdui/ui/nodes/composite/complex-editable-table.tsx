@@ -39,6 +39,7 @@ import {
   type SduiColumnMetaExtra,
 } from '../../../lib/utils/build-column-defs'
 import { renderCellValue } from '../../../lib/utils/cell-value'
+import { omitServiceRowKeys } from '../../../lib/utils/service-row-keys'
 import {
   findSelectedMasterRow,
   filterDetailRows,
@@ -310,12 +311,13 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   }
   // Копия строки: существующий addRow с пресетами из выбранной строки (без rowId —
   // buildEmptyRow сгенерирует новый tmp-id). Ссылочные ячейки {id, presentation}
-  // копируются как есть.
+  // копируются как есть, служебные ключи — нет: состояние посчитано бэком для
+  // строки-источника и к копии не относится (см. service-row-keys).
   const handleCopy = () => {
     if (selectedRowId === null) return
     const src = sync.rows.find((r) => r.rowId === selectedRowId)
     if (!src) return
-    const { rowId: _rowId, ...values } = src
+    const { rowId: _rowId, ...values } = omitServiceRowKeys(src)
     sync.addRow(flatColumns, values)
   }
   // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail в

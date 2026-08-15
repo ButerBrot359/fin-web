@@ -11,7 +11,7 @@ import { TableCellEditor } from '../../ui/nodes/composite/table-cell-editor'
 import { ColumnHeaderLabel } from '../../ui/nodes/composite/column-header-label'
 import type { UseTableValidationResult } from '../hooks/use-table-validation'
 import { resolveRowFilterParams } from './resolve-row-filter-params'
-import { isCellRequired } from './is-cell-required'
+import { resolveCellState } from './resolve-cell-state'
 import { columnSizeProps, toColumnWidth } from './column-sizing'
 
 /**
@@ -141,15 +141,16 @@ export function buildColumnDefs(
         // TanStack `header` — string | функция; сырой элемент недопустим,
         // поэтому подпись оборачиваем в render-функцию (flexRender её вызовет).
         header: () => columnHeaderContent(col),
-        cell: (info: CellContext<TableRow, unknown>) =>
-          createElement(TableCellEditor, {
+        cell: (info: CellContext<TableRow, unknown>) => {
+          // Доступность и обязательность считаются на ЯЧЕЙКЕ, а не на колонке:
+          // строка несёт собственное условное состояние (см. resolve-cell-state).
+          const state = resolveCellState(col, info.row.original)
+          return createElement(TableCellEditor, {
             cellWidget: col.cellWidget,
             dataType: col.dataType,
             value: info.row.original[col.binding],
-            readonly: col.readonly,
-            // Обязательность считается на ЯЧЕЙКЕ, а не на колонке: строка может
-            // быть помечена условно обязательной через `__requiredCells`.
-            required: isCellRequired(col, info.row.original),
+            readonly: state.readonly,
+            required: state.required,
             revealErrors: validationRef?.current.revealErrors ?? false,
             props: col.props,
             extraParams: resolveRowFilterParams(col, info.row.original),
@@ -163,7 +164,8 @@ export function buildColumnDefs(
             onCommit: () => {
               syncRef.current.commitCell()
             },
-          }),
+          })
+        },
         ...(node.props?.footer === true ? { footer: col.id } : {}),
       }
       result.push(colDef)
@@ -215,14 +217,15 @@ export function buildColumnDefs(
             verticalSubRows(
               visibleChildren.map((child) => {
                 const childCol = nodeToTableColumnDef(child)
+                const state = resolveCellState(childCol, info.row.original)
                 return {
                   key: childCol.id,
                   content: createElement(TableCellEditor, {
                     cellWidget: childCol.cellWidget,
                     dataType: childCol.dataType,
                     value: info.row.original[childCol.binding],
-                    readonly: childCol.readonly,
-                    required: isCellRequired(childCol, info.row.original),
+                    readonly: state.readonly,
+                    required: state.required,
                     revealErrors: validationRef?.current.revealErrors ?? false,
                     props: childCol.props,
                     extraParams: resolveRowFilterParams(

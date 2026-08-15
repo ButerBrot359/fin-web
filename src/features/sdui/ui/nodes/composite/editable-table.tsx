@@ -30,6 +30,7 @@ import {
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
+import { isCellRequired } from '../../../lib/utils/is-cell-required'
 import { TableCellEditor } from './table-cell-editor'
 import { RequiredMark } from './required-mark'
 import { SearchHitCell } from './table-search-cell'
@@ -115,7 +116,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
             value={row.original[col.binding]}
             readonly={col.readonly}
             props={col.props}
-            required={col.required}
+            // Обязательность считается на ЯЧЕЙКЕ, а не на колонке: строка может
+            // быть помечена условно обязательной через `__requiredCells`.
+            required={isCellRequired(col, row.original)}
             revealErrors={validationRef.current.revealErrors}
             onChange={(val) => {
               syncRef.current.updateCell(row.original.rowId, col.binding, val)

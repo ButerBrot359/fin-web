@@ -1,9 +1,10 @@
 import { type ReactElement, type RefObject } from 'react'
-import { render } from '@testing-library/react'
+import { render, fireEvent } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import type { CellContext } from '@tanstack/react-table'
 
 import type { ViewNode } from '../../types/view'
-import type { UseTableSyncResult } from '../hooks/use-table-sync'
+import type { TableRow, UseTableSyncResult } from '../hooks/use-table-sync'
 import {
   buildColumnDefs,
   nodeToTableColumnDef,
@@ -207,5 +208,57 @@ describe('buildColumnDefs — required header marker', () => {
       syncRef
     )
     expect(defs[0].header).toBe('c3')
+  })
+})
+
+// Условная обязательность строки: бэк помечает ячейку служебным ключом
+// `__requiredCells` (например, «Код платных услуг» при источнике финансирования
+// «Деньги от реализации…»). Колоночного props.required у такой колонки нет —
+// он пометил бы и строки с бюджетным источником.
+describe('buildColumnDefs — условно обязательная ячейка (__requiredCells)', () => {
+  // Здесь ячейка реально рендерится и получает blur — в отличие от тестов шапки,
+  // sync-колбэки вызываются, поэтому нужны заглушки, а не null.
+  const syncRef = {
+    current: { updateCell: () => undefined, commitCell: () => undefined },
+  } as unknown as RefObject<UseTableSyncResult>
+  const ERR = '[data-required-error="true"]'
+
+  const columnNode = {
+    id: 'col.kodPlatnykhUslug',
+    type: 'TABLE_COLUMN',
+    binding: 'KodPlatnykhUslug',
+    props: { label: 'Код платных услуг', cellWidget: 'TEXT_FIELD' },
+  } as ViewNode
+
+  /** Ячейка колонки для конкретной строки — как её отрисует TanStack. */
+  const renderCell = (row: TableRow) => {
+    const defs = buildColumnDefs([columnNode], syncRef)
+    const cell = defs[0].cell as (
+      info: CellContext<TableRow, unknown>
+    ) => ReactElement
+    return render(
+      cell({ row: { original: row } } as CellContext<TableRow, unknown>)
+    )
+  }
+
+  it('строка с ключом → пустая ячейка подсвечивается как обязательная', () => {
+    const { container } = renderCell({
+      rowId: '1',
+      KodPlatnykhUslug: '',
+      __requiredCells: ['KodPlatnykhUslug'],
+    })
+    fireEvent.blur(container.querySelector('input')!)
+    expect(container.querySelector(ERR)).toBeTruthy()
+  })
+
+  it('соседняя строка без ключа → та же колонка не обязательна', () => {
+    const { container } = renderCell({ rowId: '2', KodPlatnykhUslug: '' })
+    fireEvent.blur(container.querySelector('input')!)
+    expect(container.querySelector(ERR)).toBeNull()
+  })
+
+  it('ключ не превращается в колонку — колонки только из ViewNode', () => {
+    const defs = buildColumnDefs([columnNode], syncRef)
+    expect(defs.map((d) => d.id)).toEqual(['col.kodPlatnykhUslug'])
   })
 })

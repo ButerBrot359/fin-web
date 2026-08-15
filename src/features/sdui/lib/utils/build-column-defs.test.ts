@@ -289,11 +289,12 @@ describe('nodeToTableColumnDef / columnSizeProps — ширины', () => {
   })
 })
 
-// Условная обязательность строки: бэк помечает ячейку служебным ключом
-// `__requiredCells` (например, «Код платных услуг» при источнике финансирования
-// «Деньги от реализации…»). Колоночного props.required у такой колонки нет —
-// он пометил бы и строки с бюджетным источником.
-describe('buildColumnDefs — условно обязательная ячейка (__requiredCells)', () => {
+// Условное состояние строки: бэк помечает ячейки служебными ключами
+// `__requiredCells` / `__readonlyCells` / `__rowReadonly` (например, «Код
+// платных услуг» обязателен при источнике «Деньги от реализации…» и недоступен
+// при любом другом). Колоночные props.required/readonly этого не выражают —
+// они пометили бы и строки с бюджетным источником.
+describe('buildColumnDefs — условное состояние ячейки', () => {
   // Авто-cleanup RTL в проекте не включён (нет setupFiles) — как в тестах выше.
   afterEach(cleanup)
 
@@ -341,5 +342,44 @@ describe('buildColumnDefs — условно обязательная ячейк
   it('ключ не превращается в колонку — колонки только из ViewNode', () => {
     const defs = buildColumnDefs([columnNode], syncRef)
     expect(defs.map((d) => d.id)).toEqual(['col.kodPlatnykhUslug'])
+  })
+
+  // Недоступная ячейка рендерится как текст: readonly-ветка TableCellEditor
+  // отдаёт span, а не редактор — вводить в неё нечего.
+  it('binding в __readonlyCells → ячейка без редактора', () => {
+    const { container } = renderCell({
+      rowId: '1',
+      KodPlatnykhUslug: 'Услуга',
+      __readonlyCells: ['KodPlatnykhUslug'],
+    })
+    expect(container.querySelector('input')).toBeNull()
+    expect(container.textContent).toContain('Услуга')
+  })
+
+  it('__rowReadonly → ячейка без редактора даже без списка колонок', () => {
+    const { container } = renderCell({
+      rowId: '1',
+      KodPlatnykhUslug: '',
+      __rowReadonly: true,
+    })
+    expect(container.querySelector('input')).toBeNull()
+  })
+
+  // §3.3: взаимоисключающих комбинаций бэк не присылает, но правило должно
+  // давать тот же результат — рамки обязательности у заблокированной нет.
+  it('readonly сильнее required', () => {
+    const { container } = renderCell({
+      rowId: '1',
+      KodPlatnykhUslug: '',
+      __requiredCells: ['KodPlatnykhUslug'],
+      __readonlyCells: ['KodPlatnykhUslug'],
+    })
+    expect(container.querySelector('input')).toBeNull()
+    expect(container.querySelector(ERR)).toBeNull()
+  })
+
+  it('соседняя строка без ключей остаётся редактируемой', () => {
+    const { container } = renderCell({ rowId: '2', KodPlatnykhUslug: '' })
+    expect(container.querySelector('input')).toBeTruthy()
   })
 })

@@ -11,6 +11,7 @@ import { TableCellEditor } from '../../ui/nodes/composite/table-cell-editor'
 import { ColumnHeaderLabel } from '../../ui/nodes/composite/column-header-label'
 import type { UseTableValidationResult } from '../hooks/use-table-validation'
 import { resolveRowFilterParams } from './resolve-row-filter-params'
+import { isCellRequired } from './is-cell-required'
 import { columnSizeProps, toColumnWidth } from './column-sizing'
 
 /**
@@ -146,7 +147,9 @@ export function buildColumnDefs(
             dataType: col.dataType,
             value: info.row.original[col.binding],
             readonly: col.readonly,
-            required: col.required,
+            // Обязательность считается на ЯЧЕЙКЕ, а не на колонке: строка может
+            // быть помечена условно обязательной через `__requiredCells`.
+            required: isCellRequired(col, info.row.original),
             revealErrors: validationRef?.current.revealErrors ?? false,
             props: col.props,
             extraParams: resolveRowFilterParams(col, info.row.original),
@@ -219,7 +222,7 @@ export function buildColumnDefs(
                     dataType: childCol.dataType,
                     value: info.row.original[childCol.binding],
                     readonly: childCol.readonly,
-                    required: childCol.required,
+                    required: isCellRequired(childCol, info.row.original),
                     revealErrors: validationRef?.current.revealErrors ?? false,
                     props: childCol.props,
                     extraParams: resolveRowFilterParams(

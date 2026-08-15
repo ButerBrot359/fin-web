@@ -514,3 +514,133 @@ describe('ComplexEditableTable — сброс выделения при подм
     expect(isDeleteDisabled()).toBe(false)
   })
 })
+
+// Двойной клик по строке ТЧ → форма строки (frontend-spec-tch-dvoynoy-klik §2).
+// Первый потребитель — свёртка «Итоги по работникам» Тарификации; контракт общий.
+// Здесь проверяется именно РАЗВОДКА событий на строке: одиночный клик остаётся
+// activate + выделение, двойной добавляет rowOpen и выделение не ломает.
+describe('ComplexEditableTable — двойной клик по строке (table.rowOpen)', () => {
+  const openBehavior = {
+    flushPendingTables: false,
+    resetsDirty: false,
+    closeAfter: false,
+  }
+
+  // Узел с ОБОИМИ действиями — как приходит у Тарификации: activate уже был,
+  // open добавлен сверху.
+  const openNode = {
+    ...masterNode,
+    props: { ...masterNode.props, rowOpen: true },
+    actions: [
+      ...(masterNode.actions ?? []),
+      {
+        trigger: 'open',
+        actionId: 'command',
+        command: 'table.rowOpen:VychetyIPN',
+        behavior: openBehavior,
+      },
+    ],
+  } as ViewNode
+
+  const openCalls = () =>
+    commandCalls().filter((call) =>
+      String((call[0] as { command?: string }).command).startsWith(
+        'table.rowOpen:'
+      )
+    )
+
+  it('двойной клик шлёт готовую команду бэка с value.rowId', () => {
+    render(<ComplexEditableTable node={openNode} />)
+
+    fireEvent.doubleClick(screen.getByText('B'))
+
+    expect(openCalls()).toEqual([
+      [
+        {
+          type: 'COMMAND',
+          command: 'table.rowOpen:VychetyIPN',
+          value: { rowId: 'm2' },
+        },
+        openBehavior,
+      ],
+    ])
+  })
+
+  it('одиночный клик шлёт activate и НЕ шлёт rowOpen', () => {
+    render(<ComplexEditableTable node={openNode} />)
+
+    fireEvent.click(screen.getByText('B'))
+
+    expect(openCalls()).toHaveLength(0)
+    expect(commandCalls()).toEqual([
+      [
+        {
+          type: 'COMMAND',
+          command: 'table.rowActivate:VychetyIPN',
+          value: { rowId: 'm2' },
+        },
+        activateBehavior,
+      ],
+    ])
+  })
+
+  it('двойной клик не ломает выделение строки', () => {
+    render(<ComplexEditableTable node={openNode} />)
+
+    fireEvent.click(screen.getByText('B'))
+    fireEvent.doubleClick(screen.getByText('B'))
+
+    // Публикация выбора для master-detail фильтра на месте…
+    expect(state['VychetyIPN.__selectedRowId']).toBe('m2')
+    // …и локальное выделение строки тоже (selected={row.id === selectedRowId}).
+    expect(
+      screen.getByText('B').closest('tr')?.classList.contains('Mui-selected')
+    ).toBe(true)
+  })
+
+  it('повторный двойной клик по той же строке шлёт запрос снова (§2.6)', () => {
+    render(<ComplexEditableTable node={openNode} />)
+
+    fireEvent.doubleClick(screen.getByText('B'))
+    fireEvent.doubleClick(screen.getByText('B'))
+
+    expect(openCalls()).toHaveLength(2)
+  })
+
+  it('без action open двойной клик запроса не порождает (§8 п.9)', () => {
+    render(<ComplexEditableTable node={masterNode} />)
+
+    fireEvent.doubleClick(screen.getByText('B'))
+
+    expect(openCalls()).toHaveLength(0)
+  })
+
+  // Guard — ДОПОЛНЕНИЕ к спеке: onDoubleClick всплывает из <input> редактора
+  // ячейки, где двойной клик — жест выделения слова, а не «открыть строку».
+  it('двойной клик по input внутри ячейки команду не шлёт', () => {
+    state.Defect2Table = [
+      { rowId: 'r1', VychetIPN: 'A' },
+      { rowId: 'r2', VychetIPN: 'B' },
+    ]
+    const editableOpenNode = {
+      ...defect2Node,
+      props: { ...defect2Node.props, rowOpen: true },
+      actions: [
+        {
+          trigger: 'open',
+          actionId: 'command',
+          command: 'table.rowOpen:Defect2Table',
+          behavior: openBehavior,
+        },
+      ],
+    } as ViewNode
+    render(<ComplexEditableTable node={editableOpenNode} />)
+
+    fireEvent.doubleClick(screen.getByTestId('editor-VychetIPN-r2'))
+    expect(openCalls()).toHaveLength(0)
+
+    // Контроль, что сам тракт живой: та же строка, но клик по обычной ячейке.
+    fireEvent.doubleClick(screen.getByText('B'))
+    expect(openCalls()).toHaveLength(1)
+  })
+})

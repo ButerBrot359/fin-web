@@ -138,6 +138,8 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
       typeCode: targetTypeCode!,
       onSelect: applySelected,
       searchParams: filterSearchParams,
+      // Список открывается на записи, уже стоящей в поле.
+      selectedId: selectedOption?.id,
     })
   }
 
@@ -188,6 +190,12 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     error: !!f.error,
     helperText: f.error,
     loading,
+    // 1С: ввёл часть наименования, нажал Enter — первое подходящее значение подставилось.
+    // Включаем точечно у ссылочного поля SDUI, а не по умолчанию в общем компоненте:
+    // AutocompleteInput живёт в shared/ и используется легаси-экранами, которым менять
+    // семантику Enter в этой задаче нельзя. Подсветка сама снимается на время загрузки —
+    // см. highlightFirst в autocomplete-input.tsx.
+    autoHighlight: true,
     onInputChange: (_e: unknown, val: string, reason: string) => {
       setInputValue(val)
       if (reason === 'input') {

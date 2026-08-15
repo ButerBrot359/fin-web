@@ -88,6 +88,18 @@ interface AutocompleteInputBaseProps {
   size?: 'small' | 'medium'
   /** Растянуть на всю ширину контейнера (по умолчанию ширина по контенту). */
   fullWidth?: boolean
+  /**
+   * Подсвечивать первую опцию → Enter её выбирает (поведение 1С: «ввёл часть
+   * наименования, нажал Enter — значение подставилось»).
+   *
+   * <p>Опция, а не поведение по умолчанию: компонент общий для SDUI и легаси, а
+   * `autoHighlight` меняет семантику Enter на ~20 легаси-экранах (параметры отчётов,
+   * ОСВ, карточка счёта), которые в эту задачу не входят.
+   *
+   * <p>Именно `autoHighlight`, а не `autoSelect`: последний выбирает опцию ещё и при
+   * потере фокуса — подставлял бы значение, которого пользователь не выбирал.
+   */
+  autoHighlight?: boolean
 }
 
 export interface AutocompleteInputSingleProps extends AutocompleteInputBaseProps {
@@ -125,8 +137,28 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
     onAdd,
     size,
     fullWidth,
+    autoHighlight = false,
   } = props
   const { t } = useTranslation()
+
+  // ВНИМАНИЕ: `autoHighlight` уходит в MUI КАК ЕСТЬ. Вычислять его от `loading` НЕЛЬЗЯ —
+  // проверено по исходнику @mui/material/useAutocomplete:
+  //
+  //   defaultHighlighted = autoHighlight ? 0 : -1                            (:139)
+  //   syncHighlightedIndex — useCallback с deps
+  //     [filteredOptions.length, value, changeHighlightedIndex,
+  //      setHighlightedIndex, popupOpen, inputValue, multiple]               (:476-480)
+  //   useEffect(..., [syncHighlightedIndex, filteredOptionsChanged,
+  //                   popupOpen, disableCloseOnSelect])                      (:497-500)
+  //
+  // Ни `autoHighlight`, ни `loading` в зависимостях нет. Поэтому при `autoHighlight && !loading`
+  // эффект успевал отработать в рендере, где загрузка ещё шла (autoHighlight=false →
+  // defaultHighlighted=-1 → сброс подсветки), а последующий переход loading→false его НЕ
+  // перезапускал: список, value, inputValue и popupOpen не менялись. Подсветка не появлялась
+  // никогда, и Enter не срабатывал — ровно тот баг, который этой опцией и чинится.
+  //
+  // Пустое поле (value=null) попадает в ветку «popup пуст → reset» (:425-429), а reset
+  // возвращает defaultHighlighted (:333) — то есть 0. Так первая опция и подсвечивается.
 
   const hasFooter = !!(onShowAll || onAdd)
 
@@ -209,6 +241,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
         }}
         onInputChange={onInputChange}
         onOpen={onOpen}
+        autoHighlight={autoHighlight}
         filterOptions={onInputChange ? (x) => x : undefined}
         getOptionLabel={(option) => option.label}
         isOptionEqualToValue={(option, val) => option.id === val.id}
@@ -251,6 +284,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
         }}
         onInputChange={onInputChange}
         onOpen={onOpen}
+        autoHighlight={autoHighlight}
         filterOptions={onInputChange ? (x) => x : undefined}
         getOptionLabel={(option) => option.label}
         isOptionEqualToValue={(option, val) => option.id === val.id}

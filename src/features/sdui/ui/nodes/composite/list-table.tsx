@@ -7,8 +7,10 @@ import { useTranslation } from 'react-i18next'
 import { CircularProgress, Typography } from '@mui/material'
 import { flexRender, type Table } from '@tanstack/react-table'
 import type { Virtualizer } from '@tanstack/react-virtual'
+import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
 import { cn } from '@/shared/lib/utils/cn'
 import { resolveLoadedCountLabel } from './list-loaded-count'
+import { ColumnResizeHandle } from './column-resize-handle'
 import type { ListRow } from './list-column-defs'
 
 interface ListTablePagedData {
@@ -19,6 +21,8 @@ type ListTableAction = { command?: string } | undefined
 
 export interface ListTableProps {
   table: Table<ListRow>
+  /** Бэк разрешил тянуть границы (`columnsResizable`) — фиксируем ширины и рисуем ручки. */
+  isResizable: boolean
   rowVirtualizer: Virtualizer<HTMLDivElement, Element>
   scrollRef: RefObject<HTMLDivElement | null>
   sentinelRef: RefObject<HTMLDivElement | null>
@@ -32,10 +36,16 @@ export interface ListTableProps {
   activateAction: ListTableAction
   selectAction: ListTableAction
   dispatchSelect: (action: ListTableAction, rowId: number) => void
+  /** Строка-папка иерархического справочника: клик проваливает внутрь, а не выбирает. */
+  canDrillInto: (row: ListRow) => boolean
+  onDrillInto: (row: ListRow) => void
+  /** Рисовать иконку папки самим — сервер не прислал колонку-иконку. */
+  showFolderIcon: boolean
 }
 
 export const ListTable: FC<ListTableProps> = ({
   table,
+  isResizable,
   rowVirtualizer,
   scrollRef,
   sentinelRef,
@@ -49,6 +59,9 @@ export const ListTable: FC<ListTableProps> = ({
   activateAction,
   selectAction,
   dispatchSelect,
+  canDrillInto,
+  onDrillInto,
+  showFolderIcon,
 }) => {
   const { t } = useTranslation()
 
@@ -79,9 +92,22 @@ export const ListTable: FC<ListTableProps> = ({
       ) : (
         <>
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
+            {/* Ресайз требует фиксированной раскладки: иначе браузер
+                перераспределяет ширины по содержимому и перетаскивание не
+                видно. Без columnsResizable раскладка остаётся прежней (w-full,
+                auto), чтобы не менять вид уже работающих списков. */}
             <table
-              className="w-full border-separate"
-              style={{ borderSpacing: '2px' }}
+              className={cn('border-separate', !isResizable && 'w-full')}
+              style={
+                isResizable
+                  ? {
+                      borderSpacing: '2px',
+                      tableLayout: 'fixed',
+                      width: table.getTotalSize(),
+                      minWidth: '100%',
+                    }
+                  : { borderSpacing: '2px' }
+              }
             >
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -89,7 +115,12 @@ export const ListTable: FC<ListTableProps> = ({
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06"
+                        // sticky уже создаёт контекст позиционирования — ручке
+                        // достаточно overflow-hidden, чтобы её не срезал текст.
+                        className={cn(
+                          'sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06',
+                          isResizable && 'overflow-hidden'
+                        )}
                         style={{ width: header.getSize() }}
                       >
                         {header.isPlaceholder
@@ -98,6 +129,13 @@ export const ListTable: FC<ListTableProps> = ({
                               header.column.columnDef.header,
                               header.getContext()
                             )}
+                        {header.column.getCanResize() && (
+                          <ColumnResizeHandle
+                            isResizing={header.column.getIsResizing()}
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                          />
+                        )}
                       </th>
                     ))}
                   </tr>
@@ -112,14 +150,25 @@ export const ListTable: FC<ListTableProps> = ({
                 {virtualRows.map((virtualRow) => {
                   const row = tableRows[virtualRow.index]
                   const isSelected = selectedRowId === row.original.id
+                  const isFolder = canDrillInto(row.original)
 
                   return (
                     <tr
                       key={row.id}
                       onClick={() => {
+                        if (isFolder) {
+                          onDrillInto(row.original)
+                          return
+                        }
                         setSelectedRowId(row.original.id)
                       }}
                       onDoubleClick={() => {
+                        // Папка не выбирается значением — двойной клик тоже
+                        // проваливает внутрь.
+                        if (isFolder) {
+                          onDrillInto(row.original)
+                          return
+                        }
                         dispatchSelect(
                           activateAction ?? selectAction,
                           row.original.id
@@ -134,14 +183,26 @@ export const ListTable: FC<ListTableProps> = ({
                             : ''
                       )}
                     >
-                      {row.getVisibleCells().map((cell) => (
+                      {row.getVisibleCells().map((cell, cellIndex) => (
                         <td
                           key={cell.id}
                           className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
                         >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
+                          {cellIndex === 0 && isFolder && showFolderIcon ? (
+                            <span className="flex items-center gap-1.5">
+                              <FolderIcon className="h-4 w-4 shrink-0" />
+                              <span className="truncate">
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext()
+                                )}
+                              </span>
+                            </span>
+                          ) : (
+                            flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )
                           )}
                         </td>
                       ))}

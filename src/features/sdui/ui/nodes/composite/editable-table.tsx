@@ -11,7 +11,6 @@ import {
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow as MuiTableRow,
   Typography,
 } from '@mui/material'
@@ -29,10 +28,15 @@ import {
 } from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
+import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
 import { isCellRequired } from '../../../lib/utils/is-cell-required'
+import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
+import { columnSizeProps } from '../../../lib/utils/column-sizing'
+import { EditableTableHead } from './editable-table-head'
+import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { TableCellEditor } from './table-cell-editor'
-import { RequiredMark } from './required-mark'
+import { ColumnHeaderLabel } from './column-header-label'
 import { SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
 
@@ -65,6 +69,10 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   // Активация строки уходит на сервер только если бэк прислал action
   // с trigger='activate' у этой ТЧ (props.rowActivate)
   const activateRow = useRowActivate(node)
+  // Двойной клик по строке уходит на сервер только если бэк прислал action
+  // с trigger='open' у этой ТЧ (props.rowOpen) — §2 спеки формы строки.
+  // Контракт общий для любой ТЧ, поэтому подключён и здесь, не только у свёртки.
+  const openRow = useRowOpen(node)
 
   const search = useTableSearch(
     sync.rows,
@@ -102,13 +110,19 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
       columns.map((col) => ({
         id: col.id,
         accessorFn: (row: TableRow) => row[col.binding],
-        // TanStack `header` — string | функция (не элемент): маркер оборачиваем
-        // в render-функцию, обычную колонку оставляем строкой-label (SCRUM-329).
-        header:
-          col.required && !col.readonly
-            ? () => <RequiredMark label={col.label} />
-            : col.label,
-        size: col.flex ? undefined : 150,
+        // TanStack `header` — string | функция (не элемент): подпись всегда
+        // оборачиваем в render-функцию. ColumnHeaderLabel обрезает её
+        // многоточием по ширине колонки — иначе длинный заголовок переносится
+        // и наезжает на соседний (SCRUM-329).
+        header: () => (
+          <ColumnHeaderLabel
+            label={col.label}
+            required={col.required && !col.readonly}
+          />
+        ),
+        // Ширина колонки: с бэка (props.width) либо прежний фолбэк 150/flex.
+        ...columnSizeProps(col.props),
+        size: col.width ?? (col.flex ? undefined : 150),
         cell: ({ row }) => (
           <TableCellEditor
             cellWidget={col.cellWidget}
@@ -132,12 +146,28 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     [columns]
   )
 
+  const sizing = useSduiColumnSizing(node)
+
   const table = useReactTable({
     data: sync.rows,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.rowId,
+    enableColumnResizing: sizing.enableColumnResizing,
+    columnResizeMode: sizing.columnResizeMode,
+    state: { columnSizing: sizing.columnSizing },
+    onColumnSizingChange: sizing.onColumnSizingChange,
   })
+
+  // Фиксированные ширины включаем ТОЛЬКО при ресайзе: без columnsResizable
+  // раскладка таблицы остаётся авто-шириной MUI, как до задачи.
+  const tableSx = sizing.isResizable
+    ? {
+        tableLayout: 'fixed' as const,
+        width: table.getTotalSize() + (showRowNumbers ? ROW_NUMBER_WIDTH : 0),
+        minWidth: '100%',
+      }
+    : undefined
 
   const handleAdd = () => {
     sync.addRow(columns)
@@ -207,28 +237,18 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
         />
       </div>
       <TableContainer component={Paper} ref={containerRef}>
-        <Table size="small">
-          <TableHead>
-            {table.getHeaderGroups().map((hg) => (
-              <MuiTableRow key={hg.id}>
-                {showRowNumbers && (
-                  <TableCell
-                    sx={{ width: 48, textAlign: 'center', fontWeight: 600 }}
-                  >
-                    {t('table.rowNumber')}
-                  </TableCell>
-                )}
-                {hg.headers.map((header) => (
-                  <TableCell key={header.id}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </TableCell>
-                ))}
-              </MuiTableRow>
-            ))}
-          </TableHead>
+        <Table size="small" sx={tableSx}>
+          {sizing.isResizable && (
+            <TableSizingColgroup
+              table={table}
+              leadingWidth={showRowNumbers ? ROW_NUMBER_WIDTH : undefined}
+            />
+          )}
+          <EditableTableHead
+            table={table}
+            showRowNumbers={showRowNumbers}
+            isResizable={sizing.isResizable}
+          />
           <TableBody>
             {table.getRowModel().rows.length === 0 ? (
               <MuiTableRow>
@@ -250,6 +270,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                   onClick={() => {
                     setSelectedIndex(index)
                     activateRow(row.id)
+                  }}
+                  onDoubleClick={(event) => {
+                    openRow(row.id, event)
                   }}
                   sx={{ cursor: 'pointer' }}
                 >

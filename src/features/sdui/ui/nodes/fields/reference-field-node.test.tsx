@@ -289,6 +289,17 @@ describe('ReferenceFieldNode — SCRUM-291 §18.3 allow* гейтинг', () => 
       expect(mockDispatch).not.toHaveBeenCalled()
     })
 
+    it('поле заполнено → легаси-пикер открывается на текущей записи', () => {
+      state.ref = { id: 42, presentation: 'Запасные части' }
+      render(<ReferenceFieldNode node={makeNode({})} />)
+      openDropdown()
+      fireEvent.mouseDown(screen.getByRole('button', { name: showAllName }))
+      expect(openPickerMock.mock.calls[0][0]).toMatchObject({
+        mode: 'list',
+        selectedId: 42,
+      })
+    })
+
     it('нет createAction, canBrowse → «Создать» открывает легаси-пикер create', () => {
       render(<ReferenceFieldNode node={makeNode({})} />)
       openDropdown()

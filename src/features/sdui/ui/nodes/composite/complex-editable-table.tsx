@@ -25,7 +25,9 @@ import {
 } from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
+import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
+import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import {
   useSduiSession,
   useBindingValue,
@@ -42,6 +44,9 @@ import {
   filterDetailRows,
   rowContentSignature,
 } from '../../../lib/utils/master-detail'
+import { ColumnResizeHandle } from './column-resize-handle'
+import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
+import { TABLE_GRID_SX } from './table-grid-sx'
 import { SearchHitCell } from './table-search-cell'
 import { TableToolbar } from './table-toolbar'
 
@@ -240,16 +245,41 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     })
   )
 
+  const sizing = useSduiColumnSizing(node)
+
   const table = useReactTable({
     data: visibleRows,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.rowId,
+    enableColumnResizing: sizing.enableColumnResizing,
+    columnResizeMode: sizing.columnResizeMode,
+    state: { columnSizing: sizing.columnSizing },
+    onColumnSizingChange: sizing.onColumnSizingChange,
   })
+
+  // Сетка (рамка + линии между колонками) — всегда: она не зависит от ресайза.
+  // Фиксированные ширины — только при ресайзе; иначе раскладка остаётся
+  // прежней авто-шириной MUI (важно для многоуровневых шапок и футера).
+  const tableSx = {
+    ...TABLE_GRID_SX,
+    ...(sizing.isResizable
+      ? {
+          tableLayout: 'fixed' as const,
+          width: table.getTotalSize() + (showRowNumbers ? ROW_NUMBER_WIDTH : 0),
+          minWidth: '100%',
+        }
+      : {}),
+  }
 
   // Серверная реакция на активацию строки — тот же момент, что и публикация
   // выбора для master-detail фильтра; фильтр остаётся клиентским.
   const activateRow = useRowActivate(node)
+
+  // Двойной клик по строке — открыть форму строки (§2 спеки). Отдельный триггер
+  // `open`: одиночный клик (activate + выделение) остаётся как был, двойной
+  // добавляется сверху и выделение не трогает.
+  const openRow = useRowOpen(node)
 
   // Publish selected rowId to session for detail tables
   const handleRowClick = (rowId: string) => {
@@ -323,8 +353,6 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     [search.current?.rowId, search.current?.columnId]
   )
 
-  const leafColumnCount = flatColumns.length || 1
-
   const handleKeyDown = createTableHotkeysHandler({
     onAdd: handleAdd,
     onCopy: handleCopy,
@@ -383,14 +411,28 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
         ref={containerRef}
         sx={{ flex: '1 1 auto' }}
       >
-        <Table size="small">
+        <Table size="small" sx={tableSx}>
+          {sizing.isResizable && (
+            <TableSizingColgroup
+              table={table}
+              leadingWidth={showRowNumbers ? ROW_NUMBER_WIDTH : undefined}
+            />
+          )}
           <TableHead>
             {table.getHeaderGroups().map((hg, hgIndex) => (
               <MuiTableRow key={hg.id}>
                 {showRowNumbers && hgIndex === 0 && (
                   <TableCell
                     rowSpan={table.getHeaderGroups().length}
-                    sx={{ width: 48, textAlign: 'center', fontWeight: 600 }}
+                    sx={{
+                      width: ROW_NUMBER_WIDTH,
+                      textAlign: 'center',
+                      fontWeight: 600,
+                      // Дефолтный padding MUI size="small" — 6px 16px, то есть
+                      // 32px из 48px ширины колонки уходят в отступы и «N»
+                      // остаётся 16px. Сжимаем, как уже сделано у ячейки тела.
+                      p: '4px 8px',
+                    }}
                   >
                     {t('table.rowNumber')}
                   </TableCell>
@@ -407,15 +449,34 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                   const extra = header.column.columnDef.meta as
                     | SduiColumnMetaExtra
                     | undefined
+                  // Ручка — только на ЛИСТОВОЙ колонке: групповой заголовок
+                  // (subHeaders непусты) шириной не владеет, её задают листья.
+                  const canResizeHere =
+                    header.subHeaders.length === 0 &&
+                    header.column.getCanResize()
                   return (
                     <TableCell
                       key={header.id}
                       colSpan={header.colSpan}
-                      sx={extra?.verticalGroup ? { p: 0 } : undefined}
+                      // overflow:hidden — безусловно: подпись шире колонки
+                      // должна обрезаться и без ресайза, иначе она выходит за
+                      // границы ячейки и наезжает на соседний заголовок.
+                      sx={{
+                        overflow: 'hidden',
+                        ...(extra?.verticalGroup ? { p: 0 } : {}),
+                        ...(sizing.isResizable ? { position: 'relative' } : {}),
+                      }}
                     >
                       {flexRender(
                         header.column.columnDef.header,
                         header.getContext()
+                      )}
+                      {canResizeHere && (
+                        <ColumnResizeHandle
+                          isResizing={header.column.getIsResizing()}
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                        />
                       )}
                     </TableCell>
                   )
@@ -426,8 +487,17 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           <TableBody>
             {visibleRows.length === 0 ? (
               <MuiTableRow>
+                {/* Колонок в разметке — столько, сколько РИСУЕТСЯ. Прежний
+                    flatColumns.length (extractAllLeafColumns) для этого не
+                    годится: он по своему контракту считает и скрытые колонки, и
+                    каждую под-колонку VERTICAL-группы отдельно, хотя группа
+                    рисуется одной ячейкой. У «Начислений» это дало бы 11 против
+                    6 реальных. */}
                 <TableCell
-                  colSpan={leafColumnCount + (showRowNumbers ? 1 : 0)}
+                  colSpan={
+                    table.getVisibleLeafColumns().length +
+                    (showRowNumbers ? 1 : 0)
+                  }
                   align="center"
                 >
                   <Typography variant="body2" color="text.secondary">
@@ -443,6 +513,9 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                   selected={row.id === selectedRowId}
                   onClick={() => {
                     handleRowClick(row.id)
+                  }}
+                  onDoubleClick={(event) => {
+                    openRow(row.id, event)
                   }}
                   sx={{ cursor: 'pointer', height: ROW_HEIGHT }}
                 >

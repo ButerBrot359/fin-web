@@ -160,6 +160,7 @@
     "create": "Жасау",
     "search": "Іздеу",
     "noData": "Деректер жоқ",
+    "emptyGroup": "Топ бос",
     "createTitle": "{{name}} жасау",
     "editTitle": "{{name}} — {{entry}}",
     "saveAndClose": "Жазу және жабу",
@@ -175,6 +176,7 @@
     "empty": "Әзірге бос",
     "add": "Қосу",
     "loadedCount": "{{total}} ішінен {{loaded}} жүктелді",
+    "treeRoot": "Барлығы",
     "loadedCountNoTotal": "{{loaded}} жүктелді",
     "exportExcel": "Excel-ге жүктеп алу",
     "exportEmpty": "Жүктеп алуға деректер жоқ",
@@ -197,7 +199,8 @@
     "filterValuePlaceholder": "Мән",
     "filterActiveTitle": "Белсенді сүзгілер",
     "filterRemoveChip": "Сүзгіні жою",
-    "filterClearAll": "Барлығын тазарту"
+    "filterClearAll": "Барлығын тазарту",
+    "resizeColumn": "Баған енін өзгерту"
   },
   "informationRegister": {
     "period": "Кезең",

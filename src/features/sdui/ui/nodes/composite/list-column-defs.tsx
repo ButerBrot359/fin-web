@@ -6,6 +6,10 @@ import { Typography } from '@mui/material'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { RefObject } from 'react'
 import { formatSduiCellValue } from '../../../lib/format-cell'
+import {
+  columnSizeProps,
+  toColumnWidth,
+} from '../../../lib/utils/column-sizing'
 import { getCellIcon } from './cell-icon-registry'
 import { ListSortHeader } from './list-sort-header'
 import {
@@ -160,8 +164,10 @@ export const buildListColumns = (
           col.props?.dataType as string | undefined
         )
       },
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      size: (col.props?.width as number) ?? 150,
+      // Ширины: size из props.width (фолбэк 150 — прежнее поведение), minSize
+      // из props.minWidth, enableResizing:false только при запрете с бэка.
+      ...columnSizeProps(col.props),
+      size: toColumnWidth(col.props?.width) ?? 150,
       // SCRUM-291 3b (§17.2): cellKind="ICON" — значение ячейки (строка
       // "true"/"false", тот же примитивный формат, что у остальных ячеек)
       // маппится через props.iconMap на имя иконки и рендерится глифом;

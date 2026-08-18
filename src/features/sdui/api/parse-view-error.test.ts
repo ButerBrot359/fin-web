@@ -18,10 +18,14 @@ describe('parseViewError', () => {
     })
   })
 
-  it('унаследованный 404: code=NOT_FOUND', () => {
+  it('ключ code игнорируется — бэк эмитит только error (SCRUM-362 B-8)', () => {
     expect(parseViewError({ code: 'NOT_FOUND', message: 'нет типа' })).toEqual({
-      code: 'NOT_FOUND',
       message: 'нет типа',
+    })
+    expect(
+      parseViewError({ error: 'ROUTE_UNKNOWN', code: 'NOT_FOUND' })
+    ).toEqual({
+      code: 'ROUTE_UNKNOWN',
     })
   })
 

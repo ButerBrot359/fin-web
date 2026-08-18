@@ -14,9 +14,11 @@ describe('normalizeConflictBody', () => {
     expect(result.formSessionId).toBe('abc')
   })
 
-  it('поле code имеет приоритет, если бэк начнёт слать его', () => {
-    const result = normalizeConflictBody({ code: 'STALE_REVISION', error: 'X' })
-    expect(result.code).toBe('STALE_REVISION')
+  it('ключ code игнорируется — бэк эмитит только error (SCRUM-362 B-8)', () => {
+    expect(
+      normalizeConflictBody({ code: 'STALE_REVISION', error: 'X' }).code
+    ).toBe('X')
+    expect(normalizeConflictBody({ code: 'STALE_REVISION' }).code).toBe('')
   })
 
   it('переносит currentRevision и snapshot как есть', () => {

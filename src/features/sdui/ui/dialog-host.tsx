@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -18,6 +18,10 @@ import { applyPatches, clearErrors } from '../lib/patch-applier'
 import type { ViewNode, ViewPatch } from '../types/view'
 import { NodeRenderer } from './node-renderer'
 import { PanelStateProvider } from '../lib/panel-state-provider'
+import {
+  registerPanelPatchSink,
+  unregisterPanelPatchSink,
+} from '../lib/panel-patch-registry'
 import { ConfirmDialogHost } from './confirm-dialog-host'
 
 const PANEL_BG = '#F2F6FD'
@@ -88,6 +92,17 @@ const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
     }),
     [panel.session, panel.panelId, tree, viewState, dirty]
   )
+
+  // Патчи, адресованные ЭТОЙ панели извне React-дерева (выбор в дочерней панели
+  // ретранслируется в родительскую сессию — relay-selection). Регистрируем
+  // актуальный sessionValue: он пересоздаётся на каждое изменение стейта, и
+  // реестр всегда держит свежие сеттеры, а не замыкание первого рендера.
+  useEffect(() => {
+    registerPanelPatchSink(panel.panelId, sessionValue)
+    return () => {
+      unregisterPanelPatchSink(panel.panelId)
+    }
+  }, [panel.panelId, sessionValue])
 
   // Рендер из ЖИВОГО tree-стейта: патчи setProp видны сразу (фикс §3.4 SCRUM-268)
   return (

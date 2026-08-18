@@ -10,9 +10,7 @@ const entry = (id: string, sessionId?: string): PanelEntry => ({
   node: { id, type: 'PAGE' } as ViewNode,
   presentation: 'modal',
   viewState: {},
-  session: sessionId
-    ? { formSessionId: sessionId, revision: 1 }
-    : undefined,
+  session: sessionId ? { formSessionId: sessionId, revision: 1 } : undefined,
 })
 
 describe('panel-store', () => {
@@ -31,7 +29,68 @@ describe('panel-store', () => {
   it('updateSession обновляет ревизию нужной панели', () => {
     usePanelStore.getState().push(entry('a', 'fs-1'))
     usePanelStore.getState().updateSession('a', 5)
-    expect(usePanelStore.getState().findBySessionId('fs-1')?.session?.revision).toBe(5)
+    expect(
+      usePanelStore.getState().findBySessionId('fs-1')?.session?.revision
+    ).toBe(5)
+  })
+})
+
+// §3.2 спеки вложенного openDialog: закрытие родителя закрывает и вложенные.
+// Проверяем позиционным правилом, а не по parentSessionId: панель выбора
+// приезжает БЕЗ своей сессии, и ссылки на родителя у неё нет.
+describe('panel-store — каскадное закрытие', () => {
+  beforeEach(() => {
+    usePanelStore.setState({ panels: [] })
+  })
+
+  const ids = () => usePanelStore.getState().panels.map((p) => p.panelId)
+
+  it('закрытие родителя убирает и открытые поверх него панели', () => {
+    const s = usePanelStore.getState()
+    s.push(entry('rowForm', 'fs-1'))
+    s.push(entry('choice')) // без сессии — как реальная панель выбора
+    usePanelStore.getState().remove('rowForm')
+    expect(ids()).toEqual([])
+  })
+
+  it('закрытие верхней не трогает родителя', () => {
+    const s = usePanelStore.getState()
+    s.push(entry('rowForm', 'fs-1'))
+    s.push(entry('choice'))
+    usePanelStore.getState().remove('choice')
+    expect(ids()).toEqual(['rowForm'])
+  })
+
+  it('панели под закрываемой остаются', () => {
+    const s = usePanelStore.getState()
+    s.push(entry('under'))
+    s.push(entry('target'))
+    s.push(entry('above'))
+    usePanelStore.getState().remove('target')
+    expect(ids()).toEqual(['under'])
+  })
+
+  // Workspace-вкладка живёт не в стеке диалогов: закрытие чужого диалога её
+  // касаться не должно, даже если она оказалась выше по массиву.
+  it('панель workspace-вкладки каскадом не закрывается', () => {
+    const s = usePanelStore.getState()
+    s.push(entry('rowForm', 'fs-1'))
+    s.push({
+      panelId: 'tab',
+      node,
+      presentation: 'page',
+      viewState: {},
+      openInWorkspaceTab: true,
+      tabKey: 'movements:1',
+    })
+    usePanelStore.getState().remove('rowForm')
+    expect(ids()).toEqual(['tab'])
+  })
+
+  it('неизвестный id ничего не закрывает', () => {
+    usePanelStore.getState().push(entry('a'))
+    usePanelStore.getState().remove('нет-такой')
+    expect(ids()).toEqual(['a'])
   })
 })
 

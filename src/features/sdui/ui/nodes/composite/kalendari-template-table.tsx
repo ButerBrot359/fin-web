@@ -30,6 +30,16 @@ const WEEKDAY_LABELS = Array.from({ length: 7 }, (_, i) =>
 )
 const MIN_CYCLE = 1
 const MAX_CYCLE = 366
+const WEEK_LENGTH = 7
+
+// Общие позиции сохраняются, недостающие достраиваются unchecked с tmp-* id
+// (spec v2 §5: resize replaces the local ordered template array).
+const resizeRows = (current: SyncRow[], n: number): SyncRow[] =>
+  Array.from({ length: n }, (_, i) =>
+    i < current.length
+      ? current[i]
+      : { rowId: `tmp-${crypto.randomUUID()}`, DenVklyuchenVGrafik: false }
+  )
 
 export const KalendariTemplateTable: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
@@ -49,6 +59,27 @@ export const KalendariTemplateTable: FC<NodeProps> = ({ node }) => {
   const columns = col ? [col] : []
 
   const sync = useTableSync(node, columns)
+
+  // Бэк при смене SposobZapolneniya строки НЕ пересобирает (коммент Talgat в
+  // SCRUM-278 от 18.08): переход на «По неделям» — фронт формирует ровно 7 строк
+  // и шлёт полный массив EVENT'ом; переход на циклы строки не трогает (длина
+  // цикла = текущее количество). Реагируем только на реальную смену режима:
+  // prevMode непустой и отличается — первичная гидратация ('' → значение) не
+  // должна слать EVENT, дефолтные 7 строк новой карточки — зона бэка (spec v1).
+  const prevModeRef = useRef(modeCode)
+  const syncRef = useRef(sync)
+  useEffect(() => {
+    syncRef.current = sync
+  })
+  useEffect(() => {
+    const prev = prevModeRef.current
+    prevModeRef.current = modeCode
+    if (!prev || !modeCode || prev === modeCode) return
+    if (modeCode === CYCLIC_CODE) return
+    const rows = syncRef.current.rows
+    if (rows.length === WEEK_LENGTH) return
+    syncRef.current.replaceRows(resizeRows(rows, WEEK_LENGTH))
+  }, [modeCode])
 
   // Локальный буфер поля длины цикла: коммит на blur/Enter, не на каждый keystroke —
   // resize-на-onChange стирал хвост при обычном перепечатывании (backspace → "" →
@@ -80,13 +111,7 @@ export const KalendariTemplateTable: FC<NodeProps> = ({ node }) => {
     }
     const n = Math.max(MIN_CYCLE, Math.min(MAX_CYCLE, parsed))
     if (n !== sync.rows.length) {
-      const current = sync.rows
-      const next: SyncRow[] = Array.from({ length: n }, (_, i) =>
-        i < current.length
-          ? current[i]
-          : { rowId: `tmp-${crypto.randomUUID()}`, DenVklyuchenVGrafik: false }
-      )
-      sync.replaceRows(next)
+      sync.replaceRows(resizeRows(sync.rows, n))
     }
     setCycleInput(String(n))
   }

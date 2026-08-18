@@ -39,7 +39,7 @@ import {
 import { TableCellRenderer } from './table-cell-renderer'
 import { TableFieldToolbar } from './table-field-toolbar'
 import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
-import { useVirtualTableRows } from '../lib/hooks/use-virtual-table-rows'
+import { useVirtualTableRows } from '@/shared/lib/virtual-rows/use-virtual-table-rows'
 
 interface TableFieldProps {
   attribute: DocumentAttribute

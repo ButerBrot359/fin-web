@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
 import { cn } from '@/shared/lib/utils/cn'
+import { useVirtualBlocks } from '@/shared/lib/virtual-rows/use-virtual-blocks'
 
 import type { NodeProps } from '../../../types/view'
 import { useSduiSession } from '../../../lib/sdui-session-context'
@@ -49,8 +50,26 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
   const label = (binding: string) => labels.get(binding) ?? ''
   const headSpan = 1 + rowDefs.length
 
+  // Виртуализация журнала (SCRUM-368): окно по БЛОКАМ проводок (tbody на N
+  // строк). Распорки-tbody держат высоту скролла, ниже порога хука рендер
+  // прежний (все блоки).
+  const {
+    isVirtualized,
+    virtualItems,
+    paddingTop,
+    paddingBottom,
+    setScrollerRef,
+    measureBlock,
+  } = useVirtualBlocks(rows.length)
+  const renderedRows = virtualItems
+    ? virtualItems.map((item) => ({ row: rows[item.index], idx: item.index }))
+    : rows.map((row, idx) => ({ row, idx }))
+
   return (
-    <div className="min-h-0 flex-1 overflow-auto rounded-md border border-ui-04">
+    <div
+      ref={setScrollerRef}
+      className="min-h-0 flex-1 overflow-auto rounded-md border border-ui-04"
+    >
       <table className="w-full border-collapse">
         <thead className="bg-ui-02">
           {/* Ряд 1 — группы ДЕБЕТ / КРЕДИТ. */}
@@ -78,7 +97,9 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
           {rowDefs.map((rd, r) => (
             <tr
               key={r}
-              className={r === rowDefs.length - 1 ? 'border-b border-ui-04' : undefined}
+              className={
+                r === rowDefs.length - 1 ? 'border-b border-ui-04' : undefined
+              }
             >
               {r === 0 && (
                 <th rowSpan={rowDefs.length} className={cn(thBase, bl)}>
@@ -99,9 +120,21 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
             </tr>
           ))}
         </thead>
+        {paddingTop > 0 && (
+          <tbody aria-hidden="true">
+            <tr>
+              <td colSpan={12} style={{ height: paddingTop, padding: 0 }} />
+            </tr>
+          </tbody>
+        )}
         {/* Каждая проводка — отдельный <tbody class="group"> для hover всего блока. */}
-        {rows.map((row, idx) => (
-          <tbody key={row.rowId} className="group">
+        {renderedRows.map(({ row, idx }) => (
+          <tbody
+            key={row.rowId}
+            className="group"
+            data-index={isVirtualized ? idx : undefined}
+            ref={measureBlock}
+          >
             {rowDefs.map((rd, r) => (
               <BlockRow
                 key={r}
@@ -115,6 +148,13 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
             ))}
           </tbody>
         ))}
+        {paddingBottom > 0 && (
+          <tbody aria-hidden="true">
+            <tr>
+              <td colSpan={12} style={{ height: paddingBottom, padding: 0 }} />
+            </tr>
+          </tbody>
+        )}
       </table>
     </div>
   )
@@ -129,7 +169,14 @@ interface BlockRowProps {
   num: number
 }
 
-const BlockRow = ({ row, rd, first, blockHeight, zebra, num }: BlockRowProps) => {
+const BlockRow = ({
+  row,
+  rd,
+  first,
+  blockHeight,
+  zebra,
+  num,
+}: BlockRowProps) => {
   const numeric = rd.a2Dt === '_kolichestvo' // строка с «Количество»
   const a2 = (key: string) =>
     key === '_kolichestvo' ? formatSum(row[key]) : resolveCellValue(row[key])
@@ -139,15 +186,21 @@ const BlockRow = ({ row, rd, first, blockHeight, zebra, num }: BlockRowProps) =>
       className={cn(
         zebra && 'bg-ui-02/40',
         'group-hover:bg-ui-07',
-        first && 'border-t-2 border-ui-04',
+        first && 'border-t-2 border-ui-04'
       )}
     >
       {first && (
         <>
-          <td rowSpan={blockHeight} className={cn(cellPad, 'text-center text-ui-06')}>
+          <td
+            rowSpan={blockHeight}
+            className={cn(cellPad, 'text-center text-ui-06')}
+          >
             {num}
           </td>
-          <td rowSpan={blockHeight} className={cn(cellPad, 'whitespace-nowrap text-ui-06')}>
+          <td
+            rowSpan={blockHeight}
+            className={cn(cellPad, 'whitespace-nowrap text-ui-06')}
+          >
             <Typography variant="body2" noWrap className="text-ui-06">
               {resolveCellValue(row._period)}
             </Typography>
@@ -188,7 +241,10 @@ const BlockRow = ({ row, rd, first, blockHeight, zebra, num }: BlockRowProps) =>
       </td>
       {first && (
         <>
-          <td rowSpan={blockHeight} className={cn(cellPad, bl, 'text-right align-middle')}>
+          <td
+            rowSpan={blockHeight}
+            className={cn(cellPad, bl, 'text-right align-middle')}
+          >
             <Typography variant="body2" noWrap className="font-bold text-ui-06">
               {formatSum(row._summa)}
             </Typography>

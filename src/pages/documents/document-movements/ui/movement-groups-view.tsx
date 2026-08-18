@@ -11,6 +11,7 @@ import {
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 import { cn } from '@/shared/lib/utils/cn'
+import { useVirtualBlocks } from '@/shared/lib/virtual-rows/use-virtual-blocks'
 
 import type {
   MovementGroup,
@@ -109,8 +110,17 @@ const MovementTable = ({ group }: { group: MovementGroup }) => {
     getCoreRowModel: getCoreRowModel(),
   })
 
+  // Виртуализация плоских движений (SCRUM-368): у документа на тысячи строк
+  // регистр отдаёт столько же движений — окно по строкам, распорки держат
+  // высоту собственного скролла контейнера. Ниже порога хука рендер прежний.
+  const virt = useVirtualBlocks(group.entries.length, { estimatedSize: 40 })
+  const renderedRows = virt.virtualItems
+    ? virt.virtualItems.map((item) => table.getRowModel().rows[item.index])
+    : table.getRowModel().rows
+  const spacerColSpan = columns.length
+
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
+    <div ref={virt.setScrollerRef} className="min-h-0 flex-1 overflow-auto">
       <table
         className="w-full border-separate"
         style={{ borderSpacing: '2px' }}
@@ -135,12 +145,22 @@ const MovementTable = ({ group }: { group: MovementGroup }) => {
           ))}
         </thead>
         <tbody>
-          {table.getRowModel().rows.map((row, rowIndex) => (
+          {virt.paddingTop > 0 && (
+            <tr aria-hidden="true">
+              <td
+                colSpan={spacerColSpan}
+                style={{ height: virt.paddingTop, padding: 0 }}
+              />
+            </tr>
+          )}
+          {renderedRows.map((row) => (
             <tr
               key={row.id}
+              data-index={virt.isVirtualized ? row.index : undefined}
+              ref={virt.measureBlock}
               className={cn(
                 'transition-colors hover:bg-ui-07',
-                rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-ui-01'
+                row.index % 2 === 0 ? 'bg-transparent' : 'bg-ui-01'
               )}
             >
               {row.getVisibleCells().map((cell, cellIndex) => (
@@ -158,6 +178,14 @@ const MovementTable = ({ group }: { group: MovementGroup }) => {
               ))}
             </tr>
           ))}
+          {virt.paddingBottom > 0 && (
+            <tr aria-hidden="true">
+              <td
+                colSpan={spacerColSpan}
+                style={{ height: virt.paddingBottom, padding: 0 }}
+              />
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

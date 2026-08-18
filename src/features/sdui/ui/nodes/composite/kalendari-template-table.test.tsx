@@ -145,6 +145,99 @@ describe('KalendariTemplateTable', () => {
     expect(sent.value).toHaveLength(5)
   })
 
+  // Переключение режима: бэк строки не пересобирает (коммент Talgat 18.08) —
+  // реактивность фронта: → недели = ровно 7 строк полным EVENT'ом.
+  it('смена циклы(3) → недели: EVENT с 7 строками, общие позиции сохранены, новые unchecked tmp-*', () => {
+    sessionState.SposobZapolneniya = {
+      id: 32,
+      code: 'PoTsiklamProizvolnoyDliny',
+    }
+    sessionState.ShablonZapolneniya = rows(3)
+    const { rerender } = render(<KalendariTemplateTable node={node()} />)
+    sessionState.SposobZapolneniya = { id: 31, code: 'PoNedelyam' }
+    rerender(<KalendariTemplateTable node={node()} />)
+
+    expect(mockDispatch).toHaveBeenCalledTimes(1)
+    const sent = mockDispatch.mock.calls[0][0] as {
+      value: { rowId: string; DenVklyuchenVGrafik: boolean }[]
+    }
+    expect(sent.value).toHaveLength(7)
+    expect(sent.value.slice(0, 3).map((r) => r.rowId)).toEqual([
+      'r1',
+      'r2',
+      'r3',
+    ])
+    for (const row of sent.value.slice(3)) {
+      expect(row.rowId.startsWith('tmp-')).toBe(true)
+      expect(row.DenVklyuchenVGrafik).toBe(false)
+    }
+    expect(screen.getAllByRole('checkbox')).toHaveLength(7)
+  })
+
+  it('смена циклы(10) → недели: хвост отброшен до 7', () => {
+    sessionState.SposobZapolneniya = {
+      id: 32,
+      code: 'PoTsiklamProizvolnoyDliny',
+    }
+    sessionState.ShablonZapolneniya = rows(10)
+    const { rerender } = render(<KalendariTemplateTable node={node()} />)
+    sessionState.SposobZapolneniya = { id: 31, code: 'PoNedelyam' }
+    rerender(<KalendariTemplateTable node={node()} />)
+
+    const sent = mockDispatch.mock.calls[0][0] as {
+      value: { rowId: string }[]
+    }
+    expect(sent.value).toHaveLength(7)
+    expect(sent.value.map((r) => r.rowId)).toEqual([
+      'r1',
+      'r2',
+      'r3',
+      'r4',
+      'r5',
+      'r6',
+      'r7',
+    ])
+  })
+
+  it('смена циклы(7) → недели: длина уже 7 — EVENT не шлётся', () => {
+    sessionState.SposobZapolneniya = {
+      id: 32,
+      code: 'PoTsiklamProizvolnoyDliny',
+    }
+    sessionState.ShablonZapolneniya = rows(7)
+    const { rerender } = render(<KalendariTemplateTable node={node()} />)
+    sessionState.SposobZapolneniya = { id: 31, code: 'PoNedelyam' }
+    rerender(<KalendariTemplateTable node={node()} />)
+    expect(mockDispatch).not.toHaveBeenCalled()
+  })
+
+  it('смена недели → циклы: строки не трогаем, длина цикла = текущее количество', () => {
+    sessionState.SposobZapolneniya = { id: 31, code: 'PoNedelyam' }
+    sessionState.ShablonZapolneniya = rows(7)
+    const { rerender } = render(<KalendariTemplateTable node={node()} />)
+    sessionState.SposobZapolneniya = {
+      id: 32,
+      code: 'PoTsiklamProizvolnoyDliny',
+    }
+    rerender(<KalendariTemplateTable node={node()} />)
+
+    expect(mockDispatch).not.toHaveBeenCalled()
+    expect(screen.getAllByRole('checkbox')).toHaveLength(7)
+    const input = screen.getByLabelText<HTMLInputElement>(
+      'sdui.kalendari.cycleLength'
+    )
+    expect(input.value).toBe('7')
+  })
+
+  it('первичная гидратация режима (undefined → недели): EVENT не шлётся, дефолт — зона бэка', () => {
+    sessionState.ShablonZapolneniya = rows(3)
+    const { rerender } = render(<KalendariTemplateTable node={node()} />)
+    sessionState.SposobZapolneniya = { id: 31, code: 'PoNedelyam' }
+    rerender(<KalendariTemplateTable node={node()} />)
+    expect(mockDispatch).not.toHaveBeenCalled()
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3)
+  })
+
   it('чекбокс шлёт EVENT, длина цикла в строки не попадает', () => {
     sessionState.SposobZapolneniya = {
       id: 32,

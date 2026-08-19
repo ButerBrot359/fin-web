@@ -1,6 +1,7 @@
 import { useState, type FC } from 'react'
 import { IconButton, Typography } from '@mui/material'
-import { ChevronLeft, ChevronRight } from '@mui/icons-material'
+import ChevronLeft from '@mui/icons-material/ChevronLeft'
+import ChevronRight from '@mui/icons-material/ChevronRight'
 import { useTranslation } from 'react-i18next'
 
 import Logo from '@/shared/assets/logo.svg'

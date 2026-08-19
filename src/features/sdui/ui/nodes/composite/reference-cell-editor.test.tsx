@@ -252,6 +252,21 @@ describe('ReferenceCellEditor', () => {
       })
       expect(onCommit).toHaveBeenCalledTimes(1)
     })
+
+    it('allowCreate отсутствует → «Добавить» НЕТ (запрещающий дефолт, аудит F-21)', () => {
+      render(
+        <ReferenceCellEditor
+          colProps={cellProps({})}
+          value={null}
+          onChange={vi.fn()}
+          onCommit={vi.fn()}
+        />
+      )
+      openDropdown()
+      // Футер существует (allowShowAll ?? true), но кнопки создания в нём нет:
+      expect(screen.getByRole('button', { name: showAllName })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: addName })).toBeNull()
+    })
   })
 
   // ── SCRUM-291 §18.4.1: проваливание из заполненной ячейки ТЧ ──

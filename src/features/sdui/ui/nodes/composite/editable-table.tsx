@@ -16,6 +16,8 @@ import {
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
+import { useVirtualTableRows } from '@/shared/lib/virtual-rows/use-virtual-table-rows'
+
 import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import {
   useTableSync,
@@ -81,13 +83,28 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   )
   const containerRef = useRef<HTMLDivElement | null>(null)
 
+  // Виртуализация строк (SCRUM-368): в DOM — только видимое окно. Ниже порога
+  // хука рендер прежний (все строки).
+  const virt = useVirtualTableRows(sync.rows.length)
+  const setContainerRef = (node: HTMLDivElement | null) => {
+    containerRef.current = node
+    virt.setContainerRef(node)
+  }
+
   // Скролл к текущему совпадению поиска (§6.5: поиск не фильтрует строки).
+  // При виртуализации строка совпадения может быть вне окна — сначала подводим
+  // окно к её индексу, затем после кадра доводим по горизонтали к самой ячейке.
   useEffect(
     () => {
-      if (!search.current) return
-      containerRef.current
-        ?.querySelector('[data-search-hit="true"]')
-        ?.scrollIntoView({ block: 'nearest' })
+      const current = search.current
+      if (!current) return
+      const idx = sync.rows.findIndex((r) => r.rowId === current.rowId)
+      if (idx >= 0) virt.scrollToRow(idx)
+      requestAnimationFrame(() => {
+        containerRef.current
+          ?.querySelector('[data-search-hit="true"]')
+          ?.scrollIntoView({ block: 'nearest' })
+      })
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [search.current?.rowId, search.current?.columnId]
@@ -243,7 +260,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           }
         />
       </div>
-      <TableContainer component={Paper} ref={containerRef}>
+      <TableContainer component={Paper} ref={setContainerRef}>
         <Table size="small" sx={tableSx}>
           {sizing.isResizable && (
             <TableSizingColgroup
@@ -256,7 +273,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
             showRowNumbers={showRowNumbers}
             isResizable={sizing.isResizable}
           />
-          <TableBody>
+          <TableBody ref={virt.setBodyRef}>
             {table.getRowModel().rows.length === 0 ? (
               <MuiTableRow>
                 <TableCell
@@ -269,46 +286,71 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                 </TableCell>
               </MuiTableRow>
             ) : (
-              table.getRowModel().rows.map((row, index) => (
-                <MuiTableRow
-                  key={row.id}
-                  hover
-                  selected={selectedIndex === index}
-                  onClick={() => {
-                    setSelectedIndex(index)
-                    activateRow(row.id)
-                  }}
-                  onDoubleClick={(event) => {
-                    openRow(row.id, event)
-                  }}
-                  sx={{ cursor: 'pointer' }}
-                >
-                  {showRowNumbers && (
+              <>
+                {virt.paddingTop > 0 && (
+                  <MuiTableRow aria-hidden="true">
                     <TableCell
-                      sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        {index + 1}
-                      </Typography>
-                    </TableCell>
-                  )}
-                  {row.getVisibleCells().map((cell) => (
-                    <SearchHitCell
-                      key={cell.id}
-                      isHit={isSearchHit(
-                        search.current,
-                        row.original.rowId,
-                        cell.column.id
-                      )}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </SearchHitCell>
-                  ))}
-                </MuiTableRow>
-              ))
+                      colSpan={columns.length + (showRowNumbers ? 1 : 0)}
+                      sx={{ height: virt.paddingTop, p: 0, border: 0 }}
+                    />
+                  </MuiTableRow>
+                )}
+                {(virt.virtualItems
+                  ? virt.virtualItems.map(
+                      (item) => table.getRowModel().rows[item.index]
+                    )
+                  : table.getRowModel().rows
+                ).map((row) => (
+                  <MuiTableRow
+                    key={row.id}
+                    hover
+                    data-index={virt.isVirtualized ? row.index : undefined}
+                    ref={virt.measureRow}
+                    selected={selectedIndex === row.index}
+                    onClick={() => {
+                      setSelectedIndex(row.index)
+                      activateRow(row.id)
+                    }}
+                    onDoubleClick={(event) => {
+                      openRow(row.id, event)
+                    }}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    {showRowNumbers && (
+                      <TableCell
+                        sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          {row.index + 1}
+                        </Typography>
+                      </TableCell>
+                    )}
+                    {row.getVisibleCells().map((cell) => (
+                      <SearchHitCell
+                        key={cell.id}
+                        isHit={isSearchHit(
+                          search.current,
+                          row.original.rowId,
+                          cell.column.id
+                        )}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </SearchHitCell>
+                    ))}
+                  </MuiTableRow>
+                ))}
+                {virt.paddingBottom > 0 && (
+                  <MuiTableRow aria-hidden="true">
+                    <TableCell
+                      colSpan={columns.length + (showRowNumbers ? 1 : 0)}
+                      sx={{ height: virt.paddingBottom, p: 0, border: 0 }}
+                    />
+                  </MuiTableRow>
+                )}
+              </>
             )}
           </TableBody>
         </Table>

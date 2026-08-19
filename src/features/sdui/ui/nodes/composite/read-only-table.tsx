@@ -11,6 +11,8 @@ import {
   Typography,
 } from '@mui/material'
 
+import { useVirtualTableRows } from '@/shared/lib/virtual-rows/use-virtual-table-rows'
+
 import type { NodeProps } from '../../../types/view'
 import { useSduiSession } from '../../../lib/sdui-session-context'
 import { renderCellValue } from '../../../lib/utils/cell-value'
@@ -134,6 +136,26 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
     columns.reduce((sum, col) => sum + widthOf(col.id), 0) +
     (showRowNumbers ? ROW_NUMBER_WIDTH : 0)
 
+  // Виртуализация строк (SCRUM-368): в DOM живёт только видимое окно — движения
+  // и прочие read-only ТЧ бывают на тысячи строк. Ниже порога хука рендер
+  // прежний (все строки).
+  const {
+    isVirtualized,
+    virtualItems,
+    paddingTop,
+    paddingBottom,
+    setContainerRef,
+    setBodyRef,
+    measureRow,
+  } = useVirtualTableRows(rows.length)
+  const renderedRows = virtualItems
+    ? virtualItems.map((item) => ({
+        row: rows[item.index],
+        index: item.index,
+      }))
+    : rows.map((row, index) => ({ row, index }))
+  const spacerColSpan = columns.length + (showRowNumbers ? 1 : 0)
+
   return (
     <div>
       {label && (
@@ -150,7 +172,7 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
           </Typography>
         </div>
       )}
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} ref={setContainerRef}>
         <Table
           size="small"
           sx={
@@ -191,36 +213,55 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
               <TableRow>{headerModel.bottomRow.map(renderHeaderCell)}</TableRow>
             )}
           </TableHead>
-          <TableBody>
+          <TableBody ref={setBodyRef}>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length + (showRowNumbers ? 1 : 0)}
-                  align="center"
-                >
+                <TableCell colSpan={spacerColSpan} align="center">
                   <Typography variant="body2" color="text.secondary">
                     {t('table.empty')}
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((row, idx) => (
-                <TableRow key={row.rowId}>
-                  {showRowNumbers && (
-                    <TableCell align="center">{idx + 1}</TableCell>
-                  )}
-                  {columns.map((col) => (
+              <>
+                {paddingTop > 0 && (
+                  <TableRow aria-hidden="true">
                     <TableCell
-                      key={col.id}
-                      sx={isResizable ? { overflow: 'hidden' } : undefined}
-                    >
-                      {col.binding !== undefined
-                        ? renderCellValue(row[col.binding])
-                        : ''}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+                      colSpan={spacerColSpan}
+                      sx={{ height: paddingTop, p: 0, border: 0 }}
+                    />
+                  </TableRow>
+                )}
+                {renderedRows.map(({ row, index }) => (
+                  <TableRow
+                    key={row.rowId}
+                    data-index={isVirtualized ? index : undefined}
+                    ref={measureRow}
+                  >
+                    {showRowNumbers && (
+                      <TableCell align="center">{index + 1}</TableCell>
+                    )}
+                    {columns.map((col) => (
+                      <TableCell
+                        key={col.id}
+                        sx={isResizable ? { overflow: 'hidden' } : undefined}
+                      >
+                        {col.binding !== undefined
+                          ? renderCellValue(row[col.binding])
+                          : ''}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+                {paddingBottom > 0 && (
+                  <TableRow aria-hidden="true">
+                    <TableCell
+                      colSpan={spacerColSpan}
+                      sx={{ height: paddingBottom, p: 0, border: 0 }}
+                    />
+                  </TableRow>
+                )}
+              </>
             )}
           </TableBody>
         </Table>

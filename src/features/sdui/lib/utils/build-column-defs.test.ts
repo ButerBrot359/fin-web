@@ -1,14 +1,16 @@
 import { type ReactElement, type RefObject } from 'react'
-import { render } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { cleanup, render, fireEvent } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+import type { CellContext } from '@tanstack/react-table'
 
 import type { ViewNode } from '../../types/view'
-import type { UseTableSyncResult } from '../hooks/use-table-sync'
+import type { TableRow, UseTableSyncResult } from '../hooks/use-table-sync'
 import {
   buildColumnDefs,
   nodeToTableColumnDef,
   VERTICAL_SUB_ROW_HEIGHT,
 } from './build-column-defs'
+import { columnSizeProps } from './column-sizing'
 
 describe('nodeToTableColumnDef', () => {
   it('приоритет binding: node.binding > props.binding > node.id', () => {
@@ -36,6 +38,10 @@ describe('nodeToTableColumnDef', () => {
 // Шапка VERTICAL-группы (frontend-spec-ipn-vertical-group-header.md §1): 1С показывает
 // подписи под-колонок стопкой, по одной над своим редактором, а не единый заголовок группы.
 describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () => {
+  // Авто-cleanup RTL в проекте не включён (нет setupFiles) — убираем за собой
+  // сами, иначе отрисованная шапка утекает в следующий describe.
+  afterEach(cleanup)
+
   const syncRef = { current: null } as unknown as RefObject<UseTableSyncResult>
 
   const verticalGroup = (children: ViewNode[]): ViewNode =>
@@ -62,8 +68,20 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     return Array.isArray(children) ? children : [children]
   }
 
+  /**
+   * Подписи под-строк. Содержимое под-строки — `ColumnHeaderLabel` (он держит
+   * обрезку многоточием), поэтому текст берём из его пропа `label`, а не как
+   * голую строку-child.
+   */
   const renderedLabels = (header: unknown): string[] =>
-    subRows(header).map((row) => (row.props as { children: string }).children)
+    subRows(header).map(
+      (row) =>
+        (
+          (row.props as { children: ReactElement }).children.props as {
+            label: string
+          }
+        ).label
+    )
 
   it('рендерит подписи видимых под-колонок стопкой вместо label группы', () => {
     const defs = buildColumnDefs(
@@ -171,13 +189,21 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
       syncRef
     )
 
-    expect(defs[0].header).toBe('Предоставление вычета / основание')
+    const { getByText } = render((defs[0].header as () => ReactElement)())
+    expect(getByText('Предоставление вычета / основание')).toBeTruthy()
   })
 })
 
-// Маркер обязательности в шапке (SCRUM-329): RequiredMark вместо строки-label,
-// когда колонка required и не readonly.
+// Маркер обязательности в шапке (SCRUM-329) поверх ColumnHeaderLabel: подпись
+// рисуется через него ВСЕГДА (он держит обрезку многоточием — без неё длинный
+// заголовок переносится и наезжает на соседний), а «*» добавляется только когда
+// колонка required и не readonly.
 describe('buildColumnDefs — required header marker', () => {
+  // Без глобального setupFiles авто-cleanup RTL не включается: «*» от
+  // предыдущего теста остался бы в document.body и queryByText('*') ниже
+  // возвращал бы элемент вместо null.
+  afterEach(cleanup)
+
   const syncRef = { current: null } as unknown as RefObject<UseTableSyncResult>
 
   function col(id: string, extra: Record<string, unknown>): ViewNode {
@@ -188,24 +214,172 @@ describe('buildColumnDefs — required header marker', () => {
     } as ViewNode
   }
 
-  it('required && !readonly → header это render-функция, в ней label + «*»', () => {
-    const defs = buildColumnDefs([col('c1', { required: true })], syncRef)
-    const header = defs[0].header
+  const renderHeader = (node: ViewNode) => {
+    const header = buildColumnDefs([node], syncRef)[0].header
     expect(typeof header).toBe('function')
-    const { getByText } = render((header as () => ReactElement)())
+    return render((header as () => ReactElement)())
+  }
+
+  it('required && !readonly → label + «*»', () => {
+    const { getByText } = renderHeader(col('c1', { required: true }))
+    expect(getByText('c1')).toBeTruthy()
     expect(getByText('*')).toBeTruthy()
   })
 
-  it('обычная колонка → header это строка-label', () => {
-    const defs = buildColumnDefs([col('c2', {})], syncRef)
-    expect(defs[0].header).toBe('c2')
+  it('обычная колонка → только label, без «*»', () => {
+    const { getByText, queryByText } = renderHeader(col('c2', {}))
+    expect(getByText('c2')).toBeTruthy()
+    expect(queryByText('*')).toBeNull()
   })
 
-  it('required && readonly → без маркера (строка)', () => {
-    const defs = buildColumnDefs(
-      [col('c3', { required: true, readonly: true })],
+  it('required && readonly → без маркера', () => {
+    const { getByText, queryByText } = renderHeader(
+      col('c3', { required: true, readonly: true })
+    )
+    expect(getByText('c3')).toBeTruthy()
+    expect(queryByText('*')).toBeNull()
+  })
+})
+
+// Ширины колонок из контракта бэка доезжают до TableColumnDef и до ColumnDef.
+describe('nodeToTableColumnDef / columnSizeProps — ширины', () => {
+  const node = (props: Record<string, unknown>): ViewNode =>
+    ({ id: 'tbl.col.a', type: 'TABLE_COLUMN', binding: 'a', props }) as ViewNode
+
+  it('width/minWidth/resizable читаются из props', () => {
+    const col = nodeToTableColumnDef(
+      node({ label: 'A', width: 240, minWidth: 80, resizable: false })
+    )
+    expect(col.width).toBe(240)
+    expect(col.minWidth).toBe(80)
+    expect(col.resizable).toBe(false)
+  })
+
+  it('Long-строка приводится к числу, мусор отбрасывается', () => {
+    expect(nodeToTableColumnDef(node({ width: '240' })).width).toBe(240)
+    expect(nodeToTableColumnDef(node({ width: 0 })).width).toBeUndefined()
+    expect(nodeToTableColumnDef(node({ width: 'wide' })).width).toBeUndefined()
+    expect(nodeToTableColumnDef(node({})).minWidth).toBeUndefined()
+  })
+
+  it('columnSizeProps: minSize по умолчанию 40, enableResizing только при запрете', () => {
+    expect(columnSizeProps({ width: 240 })).toEqual({ size: 240, minSize: 40 })
+    expect(columnSizeProps({ width: 240, minWidth: 80 })).toEqual({
+      size: 240,
+      minSize: 80,
+    })
+    // Явного enableResizing:true быть не должно — он перекрыл бы мастер-выключатель
+    // таблицы (enableColumnResizing) и включил бы ручки везде.
+    expect(columnSizeProps({})).toEqual({ minSize: 40 })
+    expect(columnSizeProps({ resizable: false })).toEqual({
+      minSize: 40,
+      enableResizing: false,
+    })
+  })
+
+  it('buildColumnDefs прокидывает ширины в ColumnDef листовой колонки', () => {
+    const syncRef = { current: null } as unknown as RefObject<UseTableSyncResult>
+    const [def] = buildColumnDefs(
+      [node({ label: 'A', width: 240, minWidth: 80, resizable: false })],
       syncRef
     )
-    expect(defs[0].header).toBe('c3')
+    expect(def.size).toBe(240)
+    expect(def.minSize).toBe(80)
+    expect(def.enableResizing).toBe(false)
+  })
+})
+
+// Условное состояние строки: бэк помечает ячейки служебными ключами
+// `__requiredCells` / `__readonlyCells` / `__rowReadonly` (например, «Код
+// платных услуг» обязателен при источнике «Деньги от реализации…» и недоступен
+// при любом другом). Колоночные props.required/readonly этого не выражают —
+// они пометили бы и строки с бюджетным источником.
+describe('buildColumnDefs — условное состояние ячейки', () => {
+  // Авто-cleanup RTL в проекте не включён (нет setupFiles) — как в тестах выше.
+  afterEach(cleanup)
+
+  // Здесь ячейка реально рендерится и получает blur — в отличие от тестов шапки,
+  // sync-колбэки вызываются, поэтому нужны заглушки, а не null.
+  const syncRef = {
+    current: { updateCell: () => undefined, commitCell: () => undefined },
+  } as unknown as RefObject<UseTableSyncResult>
+  const ERR = '[data-required-error="true"]'
+
+  const columnNode = {
+    id: 'col.kodPlatnykhUslug',
+    type: 'TABLE_COLUMN',
+    binding: 'KodPlatnykhUslug',
+    props: { label: 'Код платных услуг', cellWidget: 'TEXT_FIELD' },
+  } as ViewNode
+
+  /** Ячейка колонки для конкретной строки — как её отрисует TanStack. */
+  const renderCell = (row: TableRow) => {
+    const defs = buildColumnDefs([columnNode], syncRef)
+    const cell = defs[0].cell as (
+      info: CellContext<TableRow, unknown>
+    ) => ReactElement
+    return render(
+      cell({ row: { original: row } } as CellContext<TableRow, unknown>)
+    )
+  }
+
+  it('строка с ключом → пустая ячейка подсвечивается как обязательная', () => {
+    const { container } = renderCell({
+      rowId: '1',
+      KodPlatnykhUslug: '',
+      __requiredCells: ['KodPlatnykhUslug'],
+    })
+    fireEvent.blur(container.querySelector('input')!)
+    expect(container.querySelector(ERR)).toBeTruthy()
+  })
+
+  it('соседняя строка без ключа → та же колонка не обязательна', () => {
+    const { container } = renderCell({ rowId: '2', KodPlatnykhUslug: '' })
+    fireEvent.blur(container.querySelector('input')!)
+    expect(container.querySelector(ERR)).toBeNull()
+  })
+
+  it('ключ не превращается в колонку — колонки только из ViewNode', () => {
+    const defs = buildColumnDefs([columnNode], syncRef)
+    expect(defs.map((d) => d.id)).toEqual(['col.kodPlatnykhUslug'])
+  })
+
+  // Недоступная ячейка рендерится как текст: readonly-ветка TableCellEditor
+  // отдаёт span, а не редактор — вводить в неё нечего.
+  it('binding в __readonlyCells → ячейка без редактора', () => {
+    const { container } = renderCell({
+      rowId: '1',
+      KodPlatnykhUslug: 'Услуга',
+      __readonlyCells: ['KodPlatnykhUslug'],
+    })
+    expect(container.querySelector('input')).toBeNull()
+    expect(container.textContent).toContain('Услуга')
+  })
+
+  it('__rowReadonly → ячейка без редактора даже без списка колонок', () => {
+    const { container } = renderCell({
+      rowId: '1',
+      KodPlatnykhUslug: '',
+      __rowReadonly: true,
+    })
+    expect(container.querySelector('input')).toBeNull()
+  })
+
+  // §3.3: взаимоисключающих комбинаций бэк не присылает, но правило должно
+  // давать тот же результат — рамки обязательности у заблокированной нет.
+  it('readonly сильнее required', () => {
+    const { container } = renderCell({
+      rowId: '1',
+      KodPlatnykhUslug: '',
+      __requiredCells: ['KodPlatnykhUslug'],
+      __readonlyCells: ['KodPlatnykhUslug'],
+    })
+    expect(container.querySelector('input')).toBeNull()
+    expect(container.querySelector(ERR)).toBeNull()
+  })
+
+  it('соседняя строка без ключей остаётся редактируемой', () => {
+    const { container } = renderCell({ rowId: '2', KodPlatnykhUslug: '' })
+    expect(container.querySelector('input')).toBeTruthy()
   })
 })

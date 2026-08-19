@@ -106,6 +106,58 @@ describe('useTableSync', () => {
     expect(result.current.rows[0].VychetIPN).toBe('key-A')
   })
 
+  // Служебные ключи бэк считает сам на каждом OPEN/EVENT — эхо в каждом коммите
+  // ячейки было бы лишним трафиком. Локальный снимок при этом остаётся полным:
+  // по нему рисуется состояние ячеек.
+  it('служебные ключи строки не уезжают в EVENT, но остаются в rows', () => {
+    sessionState.rows = [
+      {
+        rowId: '1',
+        a: 1,
+        __requiredCells: ['a'],
+        __rowReadonly: true,
+        __rowParentIds: { a: 7 },
+      },
+    ]
+    const { result } = renderHook(() => useTableSync(node, []))
+    act(() => {
+      result.current.updateCell('1', 'a', 2)
+    })
+    act(() => {
+      result.current.commitCell()
+    })
+    expect(lastAction()?.value).toEqual([{ rowId: '1', a: 2 }])
+    expect(result.current.rows[0].__rowReadonly).toBe(true)
+    expect(result.current.rows[0].__requiredCells).toEqual(['a'])
+  })
+
+  // Канал EVENT: пересчитанное состояние строки приезжает в setValue-патче на
+  // ТЧ. Сценарий приёмки «Отпуск → Средний заработок»: ввели «Индексируемый» —
+  // соседняя ячейка гаснет ответом сервера. Ключ обязан пережить реконсиляцию
+  // канона с локальными правками, иначе гашение не доедет до рендера.
+  it('ключи из серверного канона переживают наложение локальных правок', () => {
+    sessionState.rows = [{ rowId: '1', Indeksiruemyy: null, Neindeksiruemyy: 0 }]
+    const { result, rerender } = renderHook(() => useTableSync(node, []))
+
+    // Правка ещё не отправлена (dirty), приходит канон с новым состоянием.
+    act(() => {
+      result.current.updateCell('1', 'Indeksiruemyy', 100)
+    })
+    sessionState.rows = [
+      {
+        rowId: '1',
+        Indeksiruemyy: null,
+        Neindeksiruemyy: 0,
+        __readonlyCells: ['Neindeksiruemyy'],
+      },
+    ]
+    rerender()
+
+    expect(result.current.rows[0].__readonlyCells).toEqual(['Neindeksiruemyy'])
+    // Локальная правка при этом не затёрта каноном.
+    expect(result.current.rows[0].Indeksiruemyy).toBe(100)
+  })
+
   it('replaceRows шлёт полный EVENT с новым массивом и обновляет rows', () => {
     sessionState.rows = [{ rowId: '1', DenVklyuchenVGrafik: true }]
     const { result } = renderHook(() => useTableSync(node, []))

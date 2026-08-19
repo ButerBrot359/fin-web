@@ -16,6 +16,7 @@ export const DateFieldNode: FC<NodeProps> = ({ node }) => {
         label={f.label}
         value={value}
         dateOnly={true}
+        dateFormat={node.props?.dateFormat as string | undefined}
         required={f.required}
         readOnly={f.readonly}
         disabled={!f.enabled}

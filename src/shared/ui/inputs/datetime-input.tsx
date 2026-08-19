@@ -4,6 +4,7 @@ import { parseISO, isValid } from 'date-fns'
 
 import { CalendarSidebar, CalendarNavProvider } from './calendar-layout'
 import { serializeDateInput } from './serialize-date-input'
+import { resolveDateFormatSpec, snapToGranularity } from './date-format-spec'
 
 export interface DateTimeInputProps {
   value?: string
@@ -20,6 +21,14 @@ export interface DateTimeInputProps {
   onClose?: () => void
   /** Растянуть на всю ширину контейнера. */
   fullWidth?: boolean
+  /**
+   * Формат отображения и ввода (date-fns), например «MM.yyyy» у «Месяца
+   * начисления». Приходит с бэка в `props.dateFormat` по коду реквизита, то есть
+   * задевает 20+ типов документов и колонки ТЧ — поэтому живёт здесь, в общем
+   * компоненте даты, а не в конкретной форме. Без ключа поведение прежнее:
+   * дд.ММ.гггг и выбор дня.
+   */
+  dateFormat?: string
 }
 
 export const DateTimeInput = ({
@@ -36,13 +45,22 @@ export const DateTimeInput = ({
   onOpen,
   onClose,
   fullWidth,
+  dateFormat,
 }: DateTimeInputProps) => {
   const dateValue = value ? parseISO(value) : null
   const validDate = dateValue && isValid(dateValue) ? dateValue : null
 
+  const spec = dateFormat ? resolveDateFormatSpec(dateFormat) : null
+
   const handleChange = (newValue: Date | null) => {
+    // Разряды мельче формата пикер берёт из текущего значения или сегодняшнего
+    // дня — их нужно обнулить ДО сериализации, иначе выбранный месяц уехал бы
+    // на сервер с посторонним днём (см. snapToGranularity).
+    const snapped = spec
+      ? snapToGranularity(newValue, spec.granularity)
+      : newValue
     // DATE-поля (dateOnly) уходят как локальный yyyy-MM-dd, datetime — как ISO Z.
-    onChange(serializeDateInput(newValue, dateOnly))
+    onChange(serializeDateInput(snapped, dateOnly))
   }
 
   const slotProps = {
@@ -50,6 +68,12 @@ export const DateTimeInput = ({
   }
 
   const slots = { shortcuts: CalendarSidebar }
+
+  // Без dateFormat пропсы не передаём вовсе — у пикера остаются его дефолты
+  // (дд.ММ.гггг, выбор дня), то есть поведение всех прежних полей не меняется.
+  const formatProps = spec
+    ? { format: dateFormat, views: spec.views, openTo: spec.views.at(-1) }
+    : {}
 
   if (dateOnly) {
     return (
@@ -66,6 +90,7 @@ export const DateTimeInput = ({
           disabled={disabled}
           slots={slots}
           slotProps={slotProps}
+          {...formatProps}
         />
       </CalendarNavProvider>
     )
@@ -85,6 +110,9 @@ export const DateTimeInput = ({
         disabled={disabled}
         slots={slots}
         slotProps={slotProps}
+        // Только формат: `views` у DateTimePicker перечисляют и часы с минутами,
+        // и подстановка сюда календарных видов отняла бы у поля ввод времени.
+        {...(dateFormat ? { format: dateFormat } : {})}
       />
     </CalendarNavProvider>
   )

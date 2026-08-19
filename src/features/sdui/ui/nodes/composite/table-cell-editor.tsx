@@ -48,7 +48,11 @@ function toDisplayString(value: unknown): string {
   return renderCellValue(value)
 }
 
-function formatReadonlyValue(value: unknown, dataType: string): string {
+function formatReadonlyValue(
+  value: unknown,
+  dataType: string,
+  dateFormat?: string
+): string {
   if (value == null || value === '') return ''
   // Ссылочные/enum значения {id, presentation} — показываем presentation
   if (typeof value === 'object' && 'presentation' in value) {
@@ -61,10 +65,13 @@ function formatReadonlyValue(value: unknown, dataType: string): string {
     case 'INTEGER':
     case 'DECIMAL':
       return formatWithSpaces(toDisplayString(value))
+    // Формат колонки действует и здесь: у readonly-ячейки «Месяца начисления»
+    // нет редактора, но показывать в ней день так же неверно.
     case 'DATE':
-      return typeof value === 'string' ? formatDate(value) : ''
+      return typeof value === 'string' ? formatDate(value, dateFormat) : ''
     case 'DATETIME':
-      return typeof value === 'string' ? formatDateTime(value) : ''
+      if (typeof value !== 'string') return ''
+      return dateFormat ? formatDate(value, dateFormat) : formatDateTime(value)
     case 'BOOLEAN':
       // Явное сравнение, а не проверка на «истинность» unknown: у BOOLEAN-колонки
       // на проводе приезжает boolean (или его строковая форма), а для unknown
@@ -92,11 +99,12 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
     setTouched(true)
     onCommit()
   }
+  const dateFormat = props?.dateFormat as string | undefined
 
   if (readonly) {
     return (
       <span style={{ padding: '4px 8px', fontSize: 14, whiteSpace: 'nowrap' }}>
-        {formatReadonlyValue(value, dataType)}
+        {formatReadonlyValue(value, dataType, dateFormat)}
       </span>
     )
   }
@@ -151,6 +159,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
           <DateCellEditor
             value={value}
             dateOnly={cellWidget === 'DATE_FIELD'}
+            dateFormat={dateFormat}
             sx={dateCellSx}
             onChange={onChange}
             onCommit={handleCommit}

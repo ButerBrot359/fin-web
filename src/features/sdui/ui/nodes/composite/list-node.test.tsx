@@ -1017,3 +1017,197 @@ describe('ListNode — 3b: cellKind="ICON" (§17.2)', () => {
     expect(screen.getByText('ELM-1')).toBeTruthy()
   })
 })
+
+describe('ListNode — навигация по уровням иерархического справочника', () => {
+  afterEach(() => {
+    cleanup()
+  })
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReset()
+    vi.mocked(fetchListPage).mockReset()
+    vi.mocked(fetchListPage).mockResolvedValue({
+      data: { content: [], last: true, number: 0 },
+    })
+    dispatchMock.mockReset()
+    setSelectionMock.mockReset()
+  })
+
+  const DICT_URL =
+    '/api/universaldomain-entries/DICTIONARY/Klassifikatsiya/paged'
+
+  const dictNode = (url = DICT_URL, params?: Record<string, string>) =>
+    ({
+      id: 'lst',
+      type: 'LIST',
+      props: { source: { url, ...(params && { params }) }, searchable: true },
+      children: [
+        {
+          id: 'col-name',
+          type: 'TABLE_COLUMN',
+          props: { header: 'Наименование', attributeCode: 'nameRu' },
+        },
+      ],
+      actions: [{ trigger: 'select', command: 'ref.select:field' }],
+    }) as unknown as ViewNode
+
+  const withRows = (rows: Record<string, unknown>[]) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: {
+        pages: [
+          {
+            data: {
+              content: rows,
+              last: true,
+              number: 0,
+              totalElements: rows.length,
+            },
+          },
+        ],
+      },
+    })
+  }
+
+  /** Параметры, с которыми ушёл последний вызов useInfiniteQuery. */
+  const lastQueryParams = () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const calls = useInfiniteQuery.mock.calls as { queryKey: unknown[] }[][]
+    return calls.at(-1)?.[0]?.queryKey[2] as Record<string, string>
+  }
+
+  it('props.selectedPath → панель открывается внутри папки записи, а не на корне', () => {
+    withRows([{ id: 42, nameRu: '1 уровень' }])
+    const node = dictNode()
+    Object.assign(node.props!, {
+      selectedId: 42,
+      selectedPath: [{ id: 78, presentation: 'Категории по уровням' }],
+    })
+
+    render(<ListNode node={node} />)
+
+    // Уровень запрошен сразу по папке, крошка с её именем видна.
+    expect(lastQueryParams()).toEqual({ parent: '78' })
+    expect(screen.getByText('Категории по уровням')).toBeTruthy()
+  })
+
+  it('props.selectedId с сервера → панель открывается выделенной на этой записи', () => {
+    withRows([{ id: 42, nameRu: 'Запасные части' }])
+    const node = dictNode()
+    // Сервер кладёт текущее значение поля в props LIST-узла панели.
+    node.props!.selectedId = 42
+    ;(
+      node.actions as { trigger: string; selectionField?: string }[]
+    )[0].selectionField = 'field.nomenklatura'
+
+    render(<ListNode node={node} />)
+
+    expect(setSelectionMock).toHaveBeenLastCalledWith('field.nomenklatura', 42)
+  })
+
+  it('без props.selectedId выделения нет', () => {
+    withRows([{ id: 42, nameRu: 'Запасные части' }])
+    const node = dictNode()
+    ;(
+      node.actions as { trigger: string; selectionField?: string }[]
+    )[0].selectionField = 'field.nomenklatura'
+
+    render(<ListNode node={node} />)
+
+    expect(setSelectionMock).toHaveBeenLastCalledWith(
+      'field.nomenklatura',
+      null
+    )
+  })
+
+  it('flatWithGroups не уходит в запрос — иначе вместо уровня придёт весь справочник', () => {
+    withRows([])
+    render(
+      <ListNode
+        node={dictNode(DICT_URL, { flatWithGroups: 'true', af: 'X:1' })}
+      />
+    )
+
+    expect(lastQueryParams()).toEqual({ af: 'X:1' })
+  })
+
+  it('клик по папке грузит её содержимое запросом с parent и показывает крошки', () => {
+    withRows([{ id: 28485, nameRu: 'Блок B', isGroup: true }])
+    render(<ListNode node={dictNode()} />)
+
+    fireEvent.click(screen.getByText('Блок B'))
+
+    expect(lastQueryParams()).toEqual({ parent: '28485' })
+    // Крошки: корень + текущая папка.
+    expect(screen.getByText('table.treeRoot')).toBeTruthy()
+  })
+
+  it('возврат по крошке «корень» убирает parent', () => {
+    withRows([{ id: 28485, nameRu: 'Блок B', isGroup: true }])
+    render(<ListNode node={dictNode()} />)
+
+    fireEvent.click(screen.getByText('Блок B'))
+    expect(lastQueryParams()).toEqual({ parent: '28485' })
+
+    fireEvent.click(screen.getByText('table.treeRoot'))
+    expect(lastQueryParams()).toEqual({})
+  })
+
+  it('поиск уплощает уровни: parent не шлётся (бэк отвечает 400)', () => {
+    withRows([{ id: 28485, nameRu: 'Блок B', isGroup: true }])
+    render(<ListNode node={dictNode()} />)
+
+    fireEvent.click(screen.getByText('Блок B'))
+    expect(lastQueryParams()).toEqual({ parent: '28485' })
+
+    fireEvent.change(screen.getByPlaceholderText('pageToolbar.search'), {
+      target: { value: 'Здрав' },
+    })
+
+    expect(lastQueryParams()).toEqual({})
+  })
+
+  it('элемент (не папка) по-прежнему выбирается, а не проваливается', () => {
+    withRows([{ id: 70, nameRu: '1-й разряд', isGroup: false }])
+    render(<ListNode node={dictNode()} />)
+
+    fireEvent.doubleClick(screen.getByText('1-й разряд'))
+
+    expect(dispatchMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: 'ref.select:field',
+        value: { id: 70 },
+      })
+    )
+  })
+
+  it('источник вне DICTIONARY: parent не поддержан, строка с isGroup выбирается', () => {
+    withRows([{ id: 5, nameRu: 'Группа счетов', isGroup: true }])
+    render(
+      <ListNode
+        node={dictNode(
+          '/api/universaldomain-entries/ACCOUNT_PLAN/Hozraschet/paged'
+        )}
+      />
+    )
+
+    fireEvent.doubleClick(screen.getByText('Группа счетов'))
+
+    expect(dispatchMock).toHaveBeenCalledWith(
+      expect.objectContaining({ value: { id: 5 } })
+    )
+  })
+
+  it('панель выбора папки (groupsOnly): папка выбирается, внутрь не проваливаемся', () => {
+    withRows([{ id: 28485, nameRu: 'Блок B', isGroup: true }])
+    render(<ListNode node={dictNode(DICT_URL, { groupsOnly: 'true' })} />)
+
+    fireEvent.doubleClick(screen.getByText('Блок B'))
+
+    expect(dispatchMock).toHaveBeenCalledWith(
+      expect.objectContaining({ value: { id: 28485 } })
+    )
+  })
+})

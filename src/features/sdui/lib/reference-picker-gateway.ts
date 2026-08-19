@@ -5,6 +5,11 @@ export interface ReferencePickerRequest {
   domain: string
   typeCode: string
   entryId?: number | string
+  /**
+   * Значение, уже стоящее в поле (`mode: 'list'`). Панель открывается с этой
+   * строкой выделенной — как в 1С, где «Показать все» встаёт на текущую запись.
+   */
+  selectedId?: number | string
   searchParams?: Record<string, string>
   onSelect: (option: SelectOption | null) => void
 }

@@ -7,16 +7,33 @@ import { ViewConflictError, viewTransport } from '../api/view-transport'
 import { applyValuePatches } from './patch-applier'
 import { validatePatches } from './validation'
 import { usePanelStore } from './stores/panel-store'
+import { getPanelPatchSink } from './panel-patch-registry'
 import { useTreeStore } from './stores/tree-store'
 import { useViewStateStore } from './stores/view-state-store'
 
 function applyRelayResponse(
   res: ViewResponse,
   parentPanelId: string | undefined,
-  playEffects: (effects: ViewEffect[]) => void,
+  playEffects: (effects: ViewEffect[]) => void
 ): void {
   if (parentPanelId !== undefined) {
     usePanelStore.getState().updateSession(parentPanelId, res.revision)
+    // Патчи ответа адресованы узлам РОДИТЕЛЬСКОЙ панели (поле, в которое
+    // подставляется выбранное значение). Раньше здесь обновлялась только
+    // ревизия, а patches/statePatch отбрасывались: выбор во вложенной панели
+    // доезжал до сервера, но в окне-родителе поле оставалось пустым.
+    // Порядок тот же, что в dispatch: ревизия → сброс ошибок → патчи дерева →
+    // патчи значений → statePatch → эффекты.
+    const sink = getPanelPatchSink(parentPanelId)
+    // Нет приёмника — панель уже размонтирована (успели закрыть): применять
+    // патчи некуда, но ревизия обновлена и эффекты сыграть надо.
+    if (sink) {
+      sink.clearAllErrors()
+      const patches = validatePatches(res.patches)
+      sink.applyTreePatches(patches)
+      applyValuePatches(patches, sink.setFromServer)
+      sink.merge(res.statePatch ?? {})
+    }
   } else {
     const tree = useTreeStore.getState()
     const vs = useViewStateStore.getState()
@@ -34,9 +51,13 @@ function applyRelayResponse(
 // готовой командой applyToParentCommand. Родитель — либо панель в стеке, либо корневая форма.
 export function relaySelectionToParent(
   effect: ViewEffect,
-  playEffects: (effects: ViewEffect[]) => void,
+  playEffects: (effects: ViewEffect[]) => void
 ): void {
-  if (!effect.applyToParentSessionId || !effect.applyToParentCommand || !effect.applyToParentValue) {
+  if (
+    !effect.applyToParentSessionId ||
+    !effect.applyToParentCommand ||
+    !effect.applyToParentValue
+  ) {
     return
   }
   const panels = usePanelStore.getState()
@@ -61,7 +82,10 @@ export function relaySelectionToParent(
       applyRelayResponse(res, parentPanelId, playEffects)
     })
     .catch((error) => {
-      if (error instanceof ViewConflictError && error.data.code === 'STALE_REVISION') {
+      if (
+        error instanceof ViewConflictError &&
+        error.data.code === 'STALE_REVISION'
+      ) {
         const freshRevision = error.data.currentRevision ?? parentRevision
         void viewTransport
           .post({
@@ -73,16 +97,30 @@ export function relaySelectionToParent(
             applyRelayResponse(res, parentPanelId, playEffects)
           })
           .catch((retryError) => {
-            if (retryError instanceof ViewConflictError && retryError.data.code === 'SESSION_NOT_FOUND') {
+            if (
+              retryError instanceof ViewConflictError &&
+              retryError.data.code === 'SESSION_NOT_FOUND'
+            ) {
               showToast('warning', i18n.t('sdui.refSelectStale'))
             } else {
-              showToast('error', retryError instanceof Error ? retryError.message : i18n.t('sdui.error'))
+              showToast(
+                'error',
+                retryError instanceof Error
+                  ? retryError.message
+                  : i18n.t('sdui.error')
+              )
             }
           })
-      } else if (error instanceof ViewConflictError && error.data.code === 'SESSION_NOT_FOUND') {
+      } else if (
+        error instanceof ViewConflictError &&
+        error.data.code === 'SESSION_NOT_FOUND'
+      ) {
         showToast('warning', i18n.t('sdui.refSelectStale'))
       } else {
-        showToast('error', error instanceof Error ? error.message : i18n.t('sdui.error'))
+        showToast(
+          'error',
+          error instanceof Error ? error.message : i18n.t('sdui.error')
+        )
       }
     })
 }

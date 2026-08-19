@@ -2,6 +2,17 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/react'
 import { TableCellEditor } from './table-cell-editor'
 
+// Настоящий пикер здесь не нужен (он покрыт в datetime-input.test.tsx) — важно,
+// что колоночный props.dateFormat доезжает до редактора ячейки.
+const dateEditorProps: { dateFormat?: string; dateOnly?: boolean } = {}
+vi.mock('./date-cell-editor', () => ({
+  DateCellEditor: (props: { dateFormat?: string; dateOnly?: boolean }) => {
+    dateEditorProps.dateFormat = props.dateFormat
+    dateEditorProps.dateOnly = props.dateOnly
+    return <input data-testid="date-cell" />
+  },
+}))
+
 const base = {
   cellWidget: 'TEXT_FIELD',
   dataType: 'STRING',
@@ -50,5 +61,47 @@ describe('TableCellEditor required validation', () => {
     )
     expect(container.querySelector('input')).toBeNull()
     expect(container.querySelector(ERR)).toBeNull()
+  })
+})
+
+// props.dateFormat колонки ТЧ («Месяц начисления» — MM.yyyy).
+describe('TableCellEditor — формат даты колонки', () => {
+  const dateBase = {
+    cellWidget: 'DATE_FIELD',
+    dataType: 'DATE',
+    value: '2026-08-12',
+    onChange: vi.fn(),
+    onCommit: vi.fn(),
+  }
+
+  it('формат доезжает до редактора ячейки', () => {
+    render(<TableCellEditor {...dateBase} props={{ dateFormat: 'MM.yyyy' }} />)
+    expect(dateEditorProps.dateFormat).toBe('MM.yyyy')
+    expect(dateEditorProps.dateOnly).toBe(true)
+  })
+
+  it('без ключа редактор получает undefined — поведение прежнее', () => {
+    render(<TableCellEditor {...dateBase} props={{}} />)
+    expect(dateEditorProps.dateFormat).toBeUndefined()
+  })
+
+  // У readonly-ячейки редактора нет вовсе, но показывать в ней день так же
+  // неверно, как и в редактируемой.
+  it('readonly-ячейка показывает дату в формате колонки', () => {
+    const { container } = render(
+      <TableCellEditor
+        {...dateBase}
+        readonly
+        props={{ dateFormat: 'MM.yyyy' }}
+      />
+    )
+    expect(container.textContent).toBe('08.2026')
+  })
+
+  it('readonly-ячейка без ключа остаётся дд.ММ.гггг', () => {
+    const { container } = render(
+      <TableCellEditor {...dateBase} readonly props={{}} />
+    )
+    expect(container.textContent).toBe('12.08.2026')
   })
 })

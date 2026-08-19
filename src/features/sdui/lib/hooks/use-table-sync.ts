@@ -7,12 +7,19 @@ import {
   registerPendingFlush,
   unregisterPendingFlush,
 } from '../pending-table-commits'
+import { omitServiceRowKeys } from '../utils/service-row-keys'
 
 export interface TableColumnDef {
   id: string
   label: string
   binding: string
   flex?: number | string
+  /** Начальная ширина колонки в px с бэка (`props.width`). */
+  width?: number
+  /** Пол при перетаскивании (`props.minWidth`). Приходит редко — см. SDUI_MIN_COLUMN_WIDTH. */
+  minWidth?: number
+  /** `props.resizable`; бэк эмитит только `false` — «эту колонку тянуть нельзя». */
+  resizable?: boolean
   cellWidget: string
   dataType: string
   readonly?: boolean
@@ -204,7 +211,12 @@ export function useTableSync(
       type: 'EVENT',
       sourceNodeId: node.id,
       trigger: 'change',
-      value: rows,
+      // Наверх уезжают только ЗНАЧЕНИЯ строк. Служебные ключи (`__requiredCells`,
+      // `__rowReadonly`, `__rowParentIds`, …) бэк считает сам на каждом OPEN и
+      // EVENT, поэтому эхо в каждом коммите ячейки — лишний трафик. Локальный
+      // снимок (localRows/sentRows) остаётся ПОЛНЫМ: по нему рисуется состояние
+      // ячеек и сравнивается «сервер уже знает то, что набрал пользователь».
+      value: rows.map(omitServiceRowKeys),
       // rows здесь всегда полный локальный снимок (ADR-0011 §3.4) — маркер безусловный
       fullSnapshot: true,
     }).then((ok) => {

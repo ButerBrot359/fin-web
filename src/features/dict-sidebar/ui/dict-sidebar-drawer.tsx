@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { cn } from '@/shared/lib/utils/cn'
+import { DICT_SIDEBAR_Z } from '@/shared/lib/utils/overlay-z-index'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
 import { fetchDictTypeMetadata } from '../api/dict-sidebar-api'
 import type { DictSidebarPanel } from '../types/dict-sidebar'
@@ -44,14 +45,13 @@ const PanelContent = ({
     <div className={cn('flex h-full flex-col p-7', !isActive && 'hidden')}>
       {isActive && <DictSidebarHeader title={title} />}
       {panel.mode === 'list' && <DictSidebarListView panel={panel} />}
-      {(panel.mode === 'create' || panel.mode === 'edit') &&
-        typeData && (
-          <DictSidebarFormView
-            panel={panel}
-            typeData={typeData}
-            typeName={typeName}
-          />
-        )}
+      {(panel.mode === 'create' || panel.mode === 'edit') && typeData && (
+        <DictSidebarFormView
+          panel={panel}
+          typeData={typeData}
+          typeName={typeName}
+        />
+      )}
     </div>
   )
 }
@@ -65,6 +65,10 @@ export const DictSidebarDrawer = () => {
       anchor="right"
       open={isOpen}
       onClose={closeAll}
+      // Панель всегда открывается ПОВЕРХ текущего — в том числе из
+      // SDUI-панели. Без явного слоя она осталась бы на `zIndex.drawer` (1200)
+      // и уехала бы под полноэкранную панель (`zIndex.modal`, 1300).
+      style={{ zIndex: DICT_SIDEBAR_Z }}
       slotProps={{
         paper: {
           sx: {

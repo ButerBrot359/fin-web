@@ -8,6 +8,11 @@ export interface DictSidebarPanel {
   domain: string
   typeCode: string
   entryId?: number | string
+  /**
+   * Запись, стоящая в поле на момент открытия списка: панель встаёт на неё,
+   * как «Показать все» в 1С.
+   */
+  selectedId?: number | string
   copyFromId?: number
   title?: string
   searchParams?: Record<string, string>

@@ -1,6 +1,8 @@
 import type { NavigateFunction } from 'react-router-dom'
 import type { QueryClient } from '@tanstack/react-query'
 
+import { invalidateDictionaryQueries } from '@/shared/lib/query/invalidate-entities'
+
 import { viewTransport } from '../api/view-transport'
 import type { EffectHandlerDeps } from './effect-handler'
 import { openDialogAsPanel } from './open-dialog-panel'
@@ -38,7 +40,13 @@ export function buildCommonEffectDeps(
       )
     },
     invalidateLists: () => {
+      // SDUI-списки (LIST-нода, list-node.tsx) — часть контракта, не трогаем.
       void ctx.queryClient.invalidateQueries({ queryKey: ['sdui-list'] })
+      // Экран списка справочника на проде ещё легаси (kill switch
+      // sdui.list-form.enabled-types), а карточка уже SDUI: после записи из
+      // SDUI-карточки refresh обязан освежить и легаси-кэши справочника
+      // (список, сайдбар, ссылочные пикеры), иначе список показывает старое.
+      invalidateDictionaryQueries(ctx.queryClient)
     },
     openRouteInNewTab: (route) => {
       // armNewTab взводится ДО navigate — см. dispatch (редирект между OPEN и целью)

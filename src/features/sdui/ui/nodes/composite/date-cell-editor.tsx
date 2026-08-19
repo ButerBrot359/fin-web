@@ -8,6 +8,8 @@ interface DateCellEditorProps {
   value: unknown
   /** DATE_FIELD → true (календарь), DATETIME_FIELD → false (календарь + время). */
   dateOnly: boolean
+  /** Формат отображения и ввода из `props.dateFormat` колонки (например «MM.yyyy»). */
+  dateFormat?: string
   sx: SxProps<Theme>
   onChange: (value: unknown) => void
   onCommit: () => void
@@ -45,6 +47,7 @@ interface DateCellEditorProps {
 export const DateCellEditor: FC<DateCellEditorProps> = ({
   value,
   dateOnly,
+  dateFormat,
   sx,
   onChange,
   onCommit,
@@ -70,6 +73,7 @@ export const DateCellEditor: FC<DateCellEditorProps> = ({
       <DateTimeInput
         value={strValue}
         dateOnly={dateOnly}
+        dateFormat={dateFormat}
         onChange={onChange}
         onOpen={() => {
           pickerOpenRef.current = true

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -18,7 +18,12 @@ import { applyPatches, clearErrors } from '../lib/patch-applier'
 import type { ViewNode, ViewPatch } from '../types/view'
 import { NodeRenderer } from './node-renderer'
 import { PanelStateProvider } from '../lib/panel-state-provider'
+import {
+  registerPanelPatchSink,
+  unregisterPanelPatchSink,
+} from '../lib/panel-patch-registry'
 import { ConfirmDialogHost } from './confirm-dialog-host'
+import { panelZIndex } from '@/shared/lib/utils/overlay-z-index'
 
 const PANEL_BG = '#F2F6FD'
 const BACKDROP_BG = 'rgba(34, 33, 36, 0.6)'
@@ -89,6 +94,17 @@ const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
     [panel.session, panel.panelId, tree, viewState, dirty]
   )
 
+  // Патчи, адресованные ЭТОЙ панели извне React-дерева (выбор в дочерней панели
+  // ретранслируется в родительскую сессию — relay-selection). Регистрируем
+  // актуальный sessionValue: он пересоздаётся на каждое изменение стейта, и
+  // реестр всегда держит свежие сеттеры, а не замыкание первого рендера.
+  useEffect(() => {
+    registerPanelPatchSink(panel.panelId, sessionValue)
+    return () => {
+      unregisterPanelPatchSink(panel.panelId)
+    }
+  }, [panel.panelId, sessionValue])
+
   // Рендер из ЖИВОГО tree-стейта: патчи setProp видны сразу (фикс §3.4 SCRUM-268)
   return (
     <SduiSessionProvider value={sessionValue}>
@@ -102,7 +118,7 @@ export const DialogHost = () => {
 
   return (
     <>
-      {stack.map((panel) => {
+      {stack.map((panel, index) => {
         // Панель, открытая в workspace-вкладке, рендерится через
         // WorkspacePanelHost — DialogHost её не показывает.
         if (panel.openInWorkspaceTab) return null
@@ -135,6 +151,7 @@ export const DialogHost = () => {
                 usePanelStore.getState().pop()
               }}
               fullScreen
+              style={{ zIndex: panelZIndex(index) }}
               slotProps={{
                 paper: {
                   sx: { backgroundColor: PANEL_BG },
@@ -175,6 +192,7 @@ export const DialogHost = () => {
               onClose={() => {
                 usePanelStore.getState().pop()
               }}
+              style={{ zIndex: panelZIndex(index) }}
               slotProps={{
                 paper: {
                   sx: {
@@ -217,6 +235,7 @@ export const DialogHost = () => {
             }}
             maxWidth="md"
             fullWidth
+            style={{ zIndex: panelZIndex(index) }}
           >
             {typeof panel.node.props?.title === 'string' && (
               <DialogTitle>{panel.node.props.title}</DialogTitle>

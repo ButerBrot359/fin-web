@@ -27,11 +27,16 @@ import type { DictSidebarPanel } from '../types/dict-sidebar'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
 import { useColumnWidths } from '../lib/hooks/use-column-widths'
 import { buildDictColumns, mapDictColumns } from '../lib/utils/dict-columns'
+import {
+  buildSearchParams,
+  isGroupsOnlyPanel,
+} from '../lib/utils/dict-tree-params'
 import { DictTree } from './dict-tree'
 import {
   fetchDictTypeMetadata,
   fetchDictColumns,
   fetchDictEntriesPaged,
+  fetchDictEntryById,
   searchDictEntries,
   type DictEntry,
 } from '../api/dict-sidebar-api'
@@ -54,6 +59,26 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
+  // Панель встаёт на запись, стоящую в поле. Тянем её отдельно, а не ищем среди
+  // загруженных строк: нужная страница может быть ещё не подгружена, а в дереве
+  // запись может лежать внутри свёрнутой папки.
+  const { data: preselectedEntry } = useQuery({
+    queryKey: ['dict-sidebar-preselect', panel.domain, panel.selectedId],
+    queryFn: ({ signal }) =>
+      fetchDictEntryById(panel.domain, panel.selectedId!, signal),
+    enabled: panel.mode === 'list' && panel.selectedId != null,
+    staleTime: 60 * 1000,
+    retry: false,
+    select: (res) => res.data.data,
+  })
+
+  useEffect(() => {
+    // Только начальная установка: выбор пользователя внутри панели не перетираем.
+    if (preselectedEntry) {
+      setSelectedEntry((current) => current ?? preselectedEntry)
+    }
+  }, [preselectedEntry])
+
   const { data: typeData, isLoading: isLoadingType } = useQuery({
     queryKey: ['dict-sidebar-type', panel.domain, panel.typeCode],
     queryFn: ({ signal }) =>
@@ -67,10 +92,15 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   // показывает ПЛОСКИЙ отфильтрованный список детей группы (как эталон 1С — виды
   // выбранной группы ОС), а не полное дерево справочника.
   const hasParentFilter = panel.searchParams?.parent != null
-  // Дерево — только для иерархических типов в режиме навигации (не поиск, не parent-отбор):
-  // поиск и parent-отбор возвращают плоский список.
+  // Поле выбирает папку (referenceSelectionMode=GROUP): бэк отдаёт плоский список
+  // всех групп и игнорирует parent/grouped — дерево не нужно, папки выбираются
+  // как обычные строки, проваливаться внутрь некуда.
+  const isGroupsOnly = isGroupsOnlyPanel(panel.searchParams)
+  // Дерево — только для иерархических типов в режиме навигации (не поиск, не parent-отбор,
+  // не выбор папки): все три случая возвращают плоский список.
   const isHierarchical = !!typeData?.isHierarchical
-  const isTree = isHierarchical && !isSearchMode && !hasParentFilter
+  const isTree =
+    isHierarchical && !isSearchMode && !hasParentFilter && !isGroupsOnly
 
   const PAGE_SIZE = 25
 
@@ -116,13 +146,15 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       const paged = lastPage.data.data
       return paged.last ? undefined : paged.number + 1
     },
-    enabled:
-      !isSearchMode &&
-      typeData != null &&
-      (!isHierarchical || hasParentFilter),
+    // Плоский список грузим всегда, КРОМЕ дерева и поиска — у них свои запросы.
+    enabled: !isSearchMode && typeData != null && !isTree,
     staleTime: 60 * 1000,
     placeholderData: keepPreviousData,
   })
+
+  // Поиск уплощает дерево и ищет по всему справочнику (как 1С): `parent` вместе с
+  // поисковой строкой бэк отвергает — поиск внутри папки не поддержан.
+  const searchRequestParams = buildSearchParams(panel.searchParams)
 
   const { data: searchData, isLoading: isLoadingSearch } = useQuery({
     queryKey: [
@@ -131,14 +163,14 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       panel.typeCode,
       'search',
       search,
-      panel.searchParams,
+      searchRequestParams,
     ],
     queryFn: ({ signal }) =>
       searchDictEntries(
         panel.domain,
         panel.typeCode,
         search.trim(),
-        panel.searchParams,
+        searchRequestParams,
         signal
       ),
     enabled: isSearchMode,
@@ -241,6 +273,18 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
     estimateSize: () => 40,
     overscan: 10,
   })
+
+  // Доводим выделенную запись до видимой области — один раз, если она попала в
+  // уже загруженные строки. Догружать страницы в её поиске не пытаемся: на какой
+  // странице лежит запись, знает бэк, а не панель.
+  const didScrollToSelection = useRef(false)
+  useEffect(() => {
+    if (didScrollToSelection.current || !selectedEntry) return
+    const index = rows.findIndex((r) => r.original.id === selectedEntry.id)
+    if (index < 0) return
+    didScrollToSelection.current = true
+    rowVirtualizer.scrollToIndex(index, { align: 'center' })
+  }, [selectedEntry, rows, rowVirtualizer])
 
   const virtualRows = rowVirtualizer.getVirtualItems()
   const paddingTop = virtualRows[0]?.start ?? 0
@@ -409,8 +453,12 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                             <div
                               role="separator"
                               aria-orientation="vertical"
-                              onMouseDown={(e) => startResize(header.column.id, e)}
-                              onClick={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => {
+                                startResize(header.column.id, e)
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                              }}
                               className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-ui-04"
                             />
                           </th>

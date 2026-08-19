@@ -1,33 +1,35 @@
 import type { FC } from 'react'
 
-import type { CalendarDay } from '../../../lib/calendar/calendar-types'
+import type { CalendarInclusionDay } from '../../../lib/calendar/calendar-types'
 
 export interface CalendarDayCellProps {
   dayNumber: number
-  day?: CalendarDay // нет в dni → трактуем как нерабочий
+  day?: CalendarInclusionDay // нет в days → трактуем как нерабочий
   ariaLabel: string
 }
 
+// Ячейка режима inclusion (график работы): просмотр без правки — правка дня
+// отключена осознанно с SCRUM-278, триггера toggleDay в контракте нет (B-2).
 export const CalendarDayCell: FC<CalendarDayCellProps> = ({
   dayNumber,
   day,
   ariaLabel,
 }) => {
-  const vklyuchen = day?.vklyuchen ?? false
-  const ruchnoy = day?.ruchnoy ?? false
+  const active = day?.active ?? false
+  const manual = day?.manual ?? false
 
   return (
     <button
       type="button"
       aria-label={ariaLabel}
-      aria-pressed={vklyuchen}
-      data-working={vklyuchen}
-      data-manual={ruchnoy}
+      aria-pressed={active}
+      data-working={active}
+      data-manual={manual}
       disabled
       className={[
         'w-full h-7 text-sm rounded',
-        vklyuchen ? 'text-[#2a75f4] font-semibold' : 'text-gray-400',
-        ruchnoy ? 'bg-amber-100' : '',
+        active ? 'text-[#2a75f4] font-semibold' : 'text-gray-400',
+        manual ? 'bg-amber-100' : '',
       ]
         .filter(Boolean)
         .join(' ')}

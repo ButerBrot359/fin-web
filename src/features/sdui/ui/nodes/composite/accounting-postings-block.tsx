@@ -9,11 +9,11 @@ import { useSduiSession } from '../../../lib/sdui-session-context'
 import {
   type AccountingRow,
   type BlockRowDef,
-  buildRowDefs,
+  type SemanticBindings,
+  buildBlockModel,
   collectColumnLabels,
   collectGroupLabels,
   formatSum,
-  getBlockRowCount,
   resolveCellValue,
 } from './accounting-block-logic'
 
@@ -45,9 +45,12 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
   const rows = (getValue(node.binding) as AccountingRow[] | undefined) ?? []
   const labels = collectColumnLabels(node)
   const groups = collectGroupLabels(node)
-  const rowDefs = buildRowDefs(getBlockRowCount(rows))
+  // SCRUM-362 B-3: сетка блока и биндинги внесеточных колонок — из ролей
+  // колонок (props.role), не из захардкоженной раскладки/подсчёта по данным.
+  const { rowDefs, semantic } = buildBlockModel(node)
 
-  const label = (binding: string) => labels.get(binding) ?? ''
+  const label = (binding: string | undefined) =>
+    binding ? (labels.get(binding) ?? '') : ''
   const headSpan = 1 + rowDefs.length
 
   // Виртуализация журнала (SCRUM-368): окно по БЛОКАМ проводок (tbody на N
@@ -78,7 +81,7 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
               {t('table.rowNumber')}
             </th>
             <th rowSpan={headSpan} className={thBase}>
-              {label('_period')}
+              {label(semantic.period)}
             </th>
             <th colSpan={4} className={cn(thBase, bl, 'text-center')}>
               {groups[0] ?? ''}
@@ -87,10 +90,10 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
               {groups[1] ?? ''}
             </th>
             <th rowSpan={headSpan} className={cn(thBase, bl, 'text-right')}>
-              {label('_summa')}
+              {label(semantic.sum)}
             </th>
             <th rowSpan={headSpan} className={cn(thBase, bl)}>
-              {label('_soderzhanie')}
+              {label(semantic.content)}
             </th>
           </tr>
           {/* Ряды 2..N+1 — метки субконто/аналитики построчно, как в 1С. */}
@@ -103,7 +106,7 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
             >
               {r === 0 && (
                 <th rowSpan={rowDefs.length} className={cn(thBase, bl)}>
-                  {label('_accountDtCode')}
+                  {label(semantic.accountDt)}
                 </th>
               )}
               <th className={thBase}>{label(rd.subDt)}</th>
@@ -111,7 +114,7 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
               <th className={thBase}>{rd.a2Dt ? label(rd.a2Dt) : ''}</th>
               {r === 0 && (
                 <th rowSpan={rowDefs.length} className={cn(thBase, bl)}>
-                  {label('_accountKtCode')}
+                  {label(semantic.accountKt)}
                 </th>
               )}
               <th className={thBase}>{label(rd.subKt)}</th>
@@ -140,6 +143,7 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
                 key={r}
                 row={row}
                 rd={rd}
+                semantic={semantic}
                 first={r === 0}
                 blockHeight={rowDefs.length}
                 zebra={idx % 2 === 1}
@@ -163,6 +167,7 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
 interface BlockRowProps {
   row: AccountingRow
   rd: BlockRowDef
+  semantic: SemanticBindings
   first: boolean
   blockHeight: number
   zebra: boolean
@@ -172,14 +177,20 @@ interface BlockRowProps {
 const BlockRow = ({
   row,
   rd,
+  semantic,
   first,
   blockHeight,
   zebra,
   num,
 }: BlockRowProps) => {
-  const numeric = rd.a2Dt === '_kolichestvo' // строка с «Количество»
+  // SCRUM-362 B-3: одна колонка на обеих сторонах (роль block: без стороны) —
+  // это «Количество»: рисуется числом с разрядами, а не презентацией ссылки.
+  const shared = rd.a2Dt !== '' && rd.a2Dt === rd.a2Kt
+  const numeric = shared
   const a2 = (key: string) =>
-    key === '_kolichestvo' ? formatSum(row[key]) : resolveCellValue(row[key])
+    shared && key === rd.a2Dt ? formatSum(row[key]) : resolveCellValue(row[key])
+  const semanticValue = (binding: string | undefined): unknown =>
+    binding ? row[binding] : undefined
 
   return (
     <tr
@@ -202,12 +213,12 @@ const BlockRow = ({
             className={cn(cellPad, 'whitespace-nowrap text-ui-06')}
           >
             <Typography variant="body2" noWrap className="text-ui-06">
-              {resolveCellValue(row._period)}
+              {resolveCellValue(semanticValue(semantic.period))}
             </Typography>
           </td>
           <td rowSpan={blockHeight} className={cn(cellPad, bl, 'align-middle')}>
             <Typography variant="body2" noWrap className="font-bold text-ui-06">
-              {resolveCellValue(row._accountDtCode)}
+              {resolveCellValue(semanticValue(semantic.accountDt))}
             </Typography>
           </td>
         </>
@@ -225,7 +236,7 @@ const BlockRow = ({
       {first && (
         <td rowSpan={blockHeight} className={cn(cellPad, bl, 'align-middle')}>
           <Typography variant="body2" noWrap className="font-bold text-ui-06">
-            {resolveCellValue(row._accountKtCode)}
+            {resolveCellValue(semanticValue(semantic.accountKt))}
           </Typography>
         </td>
       )}
@@ -246,12 +257,12 @@ const BlockRow = ({
             className={cn(cellPad, bl, 'text-right align-middle')}
           >
             <Typography variant="body2" noWrap className="font-bold text-ui-06">
-              {formatSum(row._summa)}
+              {formatSum(semanticValue(semantic.sum))}
             </Typography>
           </td>
           <td rowSpan={blockHeight} className={cn(cellPad, bl, 'align-middle')}>
             <Typography variant="body2" className="text-ui-06">
-              {resolveCellValue(row._soderzhanie)}
+              {resolveCellValue(semanticValue(semantic.content))}
             </Typography>
           </td>
         </>

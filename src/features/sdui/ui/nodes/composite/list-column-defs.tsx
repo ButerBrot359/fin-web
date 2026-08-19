@@ -52,7 +52,10 @@ const resolveBinding = (row: ListRow, binding: string): unknown =>
 export interface BuildListColumnsArgs {
   columnNodes: ViewNode[]
   sortState: ListSortState | undefined
-  typeCode: string | undefined
+  // SCRUM-362 B-1: готовые команды из sort/filter-действий LIST-узла; строка
+  // непрозрачна. Нет action → capability отсутствует, контрол не рендерится.
+  sortCommand: string | undefined
+  filterCommand: string | undefined
   filterOpLabels: Record<string, string> | undefined
   dispatch: ReturnType<typeof useSduiDispatch>
   nodeId: string
@@ -62,21 +65,28 @@ export interface BuildListColumnsArgs {
 export const buildListColumns = (
   args: BuildListColumnsArgs
 ): ColumnDef<ListRow>[] => {
-  const { columnNodes, sortState, typeCode, filterOpLabels, dispatch, nodeId } =
-    args
+  const {
+    columnNodes,
+    sortState,
+    sortCommand,
+    filterCommand,
+    filterOpLabels,
+    dispatch,
+    nodeId,
+  } = args
 
   return columnNodes.map((col: ViewNode) => {
     const attributeCode = (col.props?.attributeCode ?? col.props?.binding) as
       | string
       | undefined
     const canSort =
-      col.props?.sortable === true && !!typeCode && !!attributeCode
+      col.props?.sortable === true && !!sortCommand && !!attributeCode
 
     // SCRUM-291 2c: метаданные воронки — ВСЕГДА filterField (не attributeCode,
     // см. алиас «Номер»→"code" в design §2c/§7). filterOps пусто/нет → воронки нет.
     const filterField = col.props?.filterField as string | undefined
     const filterOps = (col.props?.filterOps as string[] | undefined) ?? []
-    const canFilter = !!typeCode && !!filterField && filterOps.length > 0
+    const canFilter = !!filterCommand && !!filterField && filterOps.length > 0
     const filterColumn: ListFilterFunnelColumn = {
       filterField: filterField ?? '',
       filterOps,
@@ -89,29 +99,30 @@ export const buildListColumns = (
         | undefined,
     }
 
-    const handleHeaderClick = canSort
-      ? () => {
-          if (args.sortInFlightRef.current) return
-          const column = attributeCode
-          const dir =
-            sortState?.column === column
-              ? sortState.dir === 'ASC'
-                ? 'DESC'
+    const handleHeaderClick =
+      canSort && sortCommand
+        ? () => {
+            if (args.sortInFlightRef.current) return
+            const column = attributeCode
+            const dir =
+              sortState?.column === column
+                ? sortState.dir === 'ASC'
+                  ? 'DESC'
+                  : 'ASC'
                 : 'ASC'
-              : 'ASC'
-          args.sortInFlightRef.current = true
-          void Promise.resolve(
-            dispatch({
-              type: 'COMMAND',
-              command: `list.applySort:${typeCode}`,
-              value: { column, dir },
-              sourceNodeId: nodeId,
+            args.sortInFlightRef.current = true
+            void Promise.resolve(
+              dispatch({
+                type: 'COMMAND',
+                command: sortCommand,
+                value: { column, dir },
+                sourceNodeId: nodeId,
+              })
+            ).finally(() => {
+              args.sortInFlightRef.current = false
             })
-          ).finally(() => {
-            args.sortInFlightRef.current = false
-          })
-        }
-      : undefined
+          }
+        : undefined
 
     return {
       id: col.id,
@@ -128,14 +139,14 @@ export const buildListColumns = (
             arrowDir={arrowDir}
             onSort={handleHeaderClick}
             funnel={
-              canFilter ? (
+              canFilter && filterCommand ? (
                 <ListFilterFunnel
                   column={filterColumn}
                   filterOpLabels={filterOpLabels}
                   onApply={(field, op, value) => {
                     void dispatch({
                       type: 'COMMAND',
-                      command: `list.applyFilter:${typeCode}`,
+                      command: filterCommand,
                       value:
                         value === undefined
                           ? { field, op }

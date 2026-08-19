@@ -5,10 +5,10 @@ import { CalendarDayCell } from './calendar-day-cell'
 
 afterEach(cleanup)
 
-const day = (over: Partial<{ vklyuchen: boolean; ruchnoy: boolean }> = {}) => ({
-  data: '2025-03-15',
-  vklyuchen: over.vklyuchen ?? false,
-  ruchnoy: over.ruchnoy ?? false,
+const day = (over: Partial<{ active: boolean; manual: boolean }> = {}) => ({
+  date: '2025-03-15',
+  active: over.active ?? false,
+  manual: over.manual ?? false,
 })
 
 describe('CalendarDayCell', () => {
@@ -16,7 +16,7 @@ describe('CalendarDayCell', () => {
     render(
       <CalendarDayCell
         dayNumber={15}
-        day={day({ vklyuchen: true })}
+        day={day({ active: true })}
         ariaLabel="15 марта 2025"
       />
     )
@@ -28,7 +28,7 @@ describe('CalendarDayCell', () => {
     render(
       <CalendarDayCell
         dayNumber={15}
-        day={day({ ruchnoy: true })}
+        day={day({ manual: true })}
         ariaLabel="d"
       />
     )
@@ -39,7 +39,7 @@ describe('CalendarDayCell', () => {
     render(
       <CalendarDayCell
         dayNumber={5}
-        day={{ data: '2025-01-05', vklyuchen: true, ruchnoy: false }}
+        day={{ date: '2025-01-05', active: true, manual: false }}
         ariaLabel="5"
       />
     )

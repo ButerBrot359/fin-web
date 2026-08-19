@@ -1,23 +1,30 @@
 import type { FC } from 'react'
 import { IconButton, MenuItem, Select } from '@mui/material'
 
-const FORWARD_SPAN = 5 // при godMax=null окно дропдауна вперёд
+const FORWARD_SPAN = 5 // при maxYear=null окно дропдауна вперёд
 
+// SCRUM-362 B-2: новые ключи контракта (year/minYear/maxYear вместо
+// легаси-транслита god/godMin/godMax).
 export interface YearSelectorProps {
-  god: number
-  godMin?: number | null
-  godMax?: number | null
+  year: number
+  minYear?: number | null
+  maxYear?: number | null
   onChange: (year: number) => void
 }
 
-export const YearSelector: FC<YearSelectorProps> = ({ god, godMin, godMax, onChange }) => {
-  const min = godMin ?? god - FORWARD_SPAN
-  const max = godMax ?? god + FORWARD_SPAN
+export const YearSelector: FC<YearSelectorProps> = ({
+  year,
+  minYear,
+  maxYear,
+  onChange,
+}) => {
+  const min = minYear ?? year - FORWARD_SPAN
+  const max = maxYear ?? year + FORWARD_SPAN
   const years: number[] = []
   for (let y = min; y <= max; y++) years.push(y)
 
-  const canPrev = godMin == null || god > godMin
-  const canNext = godMax == null || god < godMax
+  const canPrev = minYear == null || year > minYear
+  const canNext = maxYear == null || year < maxYear
 
   return (
     <div className="flex items-center gap-2">
@@ -25,14 +32,18 @@ export const YearSelector: FC<YearSelectorProps> = ({ god, godMin, godMax, onCha
         size="small"
         aria-label="prev-year"
         disabled={!canPrev}
-        onClick={() => onChange(god - 1)}
+        onClick={() => {
+          onChange(year - 1)
+        }}
       >
         ‹
       </IconButton>
       <Select
         size="small"
-        value={god}
-        onChange={(e) => onChange(Number(e.target.value))}
+        value={year}
+        onChange={(e) => {
+          onChange(e.target.value)
+        }}
       >
         {years.map((y) => (
           <MenuItem key={y} value={y}>
@@ -44,7 +55,9 @@ export const YearSelector: FC<YearSelectorProps> = ({ god, godMin, godMax, onCha
         size="small"
         aria-label="next-year"
         disabled={!canNext}
-        onClick={() => onChange(god + 1)}
+        onClick={() => {
+          onChange(year + 1)
+        }}
       >
         ›
       </IconButton>

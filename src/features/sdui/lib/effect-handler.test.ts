@@ -165,6 +165,42 @@ describe('effect download (SCRUM-288 §3.1)', () => {
     expect(apiService.getFileBlob).not.toHaveBeenCalled()
   })
 
+  it('request.method: GET — скачивание через getFileBlob по request.url', async () => {
+    const blob = new Blob(['x'])
+    vi.mocked(apiService.getFileBlob).mockResolvedValue({
+      data: blob,
+      headers: {},
+    } as never)
+    createEffectHandler(makeDeps()).play({
+      type: 'download',
+      request: {
+        method: 'GET',
+        url: '/api/reportalt/OSVPoSchetu/print?fmt=pdf',
+      },
+    })
+    await Promise.resolve()
+    expect(apiService.getFileBlob).toHaveBeenCalledWith({
+      url: '/api/reportalt/OSVPoSchetu/print?fmt=pdf',
+    })
+    expect(apiService.postFileBlob).not.toHaveBeenCalled()
+  })
+
+  it('B-7: request с неизвестным method — warn, скачивание не запускается', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    createEffectHandler(makeDeps()).play({
+      type: 'download',
+      request: {
+        method: 'PUT' as never,
+        url: '/api/reportalt/OSVPoSchetu/print',
+      },
+    })
+    await Promise.resolve()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(apiService.getFileBlob).not.toHaveBeenCalled()
+    expect(apiService.postFileBlob).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   it('есть только url — прежний GET через getFileBlob', async () => {
     const blob = new Blob(['x'])
     vi.mocked(apiService.getFileBlob).mockResolvedValue({
@@ -189,7 +225,10 @@ describe('executeActionRequest на хэндлере (SCRUM-288 §2.1)', () => {
       data: { effects: [{ type: 'refresh' }] },
     } as never)
     const deps = makeDeps()
-    await createEffectHandler(deps).executeActionRequest({ url: '/api/x?a=1' })
+    await createEffectHandler(deps).executeActionRequest({
+      method: 'GET',
+      url: '/api/x?a=1',
+    })
     expect(deps.invalidateLists).toHaveBeenCalledTimes(1)
   })
 })

@@ -619,7 +619,8 @@
         "working": "Жұмыс күні",
         "nonWorking": "Жұмыс емес",
         "manual": "Қолмен өзгертілген"
-      }
+      },
+      "fillDefaults": "Әдепкі бойынша толтыру"
     },
     "kalendari": {
       "dayColumn": "Күн",

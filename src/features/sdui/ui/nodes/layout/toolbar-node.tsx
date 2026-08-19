@@ -8,7 +8,6 @@ import {
   type OverflowItem,
 } from '../../../lib/overflow/compute-overflow'
 
-const PINNED_IDS = new Set(['btn.postClose', 'btn.more', 'spacer.more'])
 const HYSTERESIS_PX = 4
 
 export const ToolbarNode: FC<NodeProps> = ({ node }) => {
@@ -18,9 +17,20 @@ export const ToolbarNode: FC<NodeProps> = ({ node }) => {
   const lastWidth = useRef(0)
   const [collapsedIds, setCollapsedIds] = useState<string[]>([])
 
+  // SCRUM-362 B-5: pinned/overflowHost приходят пропами с бэка (эмитится
+  // только true). Нет узла-хозяина «Ещё» ⇒ сворачивание не включается вовсе,
+  // содержимое уходит в горизонтальный скролл (панели списка и отчёта
+  // btn.more не строят — пиннится тестом бэка).
+  const overflowHostId = children.find(
+    (c) => c.props?.overflowHost === true
+  )?.id
+
   useLayoutEffect(() => {
     const container = containerRef.current
     if (!container) return
+    // Без хозяина сворачивание выключено: состояние не пересчитываем, а
+    // игнорируем при рендере (см. collapsedSet ниже) — setState тут не нужен.
+    if (!overflowHostId) return
 
     const recompute = () => {
       const available = container.clientWidth
@@ -30,9 +40,10 @@ export const ToolbarNode: FC<NodeProps> = ({ node }) => {
       const items: OverflowItem[] = (node.children ?? []).map((c) => ({
         id: c.id,
         width: childRefs.current.get(c.id)?.offsetWidth ?? 0,
-        pinned: PINNED_IDS.has(c.id),
+        pinned: c.props?.pinned === true,
+        overflowHost: c.props?.overflowHost === true,
       }))
-      const moreWidth = childRefs.current.get('btn.more')?.offsetWidth ?? 0
+      const moreWidth = childRefs.current.get(overflowHostId)?.offsetWidth ?? 0
       setCollapsedIds(computeOverflow(items, available, moreWidth))
     }
 
@@ -42,16 +53,19 @@ export const ToolbarNode: FC<NodeProps> = ({ node }) => {
     return () => {
       observer.disconnect()
     }
-  }, [node.children])
+  }, [node.children, overflowHostId])
 
-  const collapsedSet = new Set(collapsedIds)
+  const collapsedSet = new Set(overflowHostId ? collapsedIds : [])
   const collapsedNodes: ViewNode[] = children.filter((c) =>
     collapsedSet.has(c.id)
   )
 
   return (
     <OverflowContext.Provider value={{ collapsedNodes }}>
-      <div ref={containerRef} className="flex items-center gap-1">
+      <div
+        ref={containerRef}
+        className={`flex items-center gap-1${overflowHostId ? '' : ' overflow-x-auto'}`}
+      >
         {children.map((c) => (
           <div
             key={c.id}

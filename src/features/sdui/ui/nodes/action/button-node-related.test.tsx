@@ -30,7 +30,7 @@ const btnWithRequest = (): ViewNode =>
   ({
     id: 'btn.post',
     type: 'BUTTON',
-    props: { label: 'Провести' },
+    props: { label: 'Провести', enabled: true },
     actions: [
       {
         trigger: 'click',
@@ -68,7 +68,7 @@ describe('ButtonNode — путь request (SCRUM-288 §2.1)', () => {
     const node = {
       id: 'b',
       type: 'BUTTON',
-      props: { label: 'Сохранить', command: 'form.save' },
+      props: { label: 'Сохранить', command: 'form.save', enabled: true },
     } as ViewNode
     render(<ButtonNode node={node} />)
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))

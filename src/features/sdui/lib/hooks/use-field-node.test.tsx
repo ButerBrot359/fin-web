@@ -21,12 +21,12 @@ vi.mock('../sdui-session-context', () => ({
 }))
 
 describe('useFieldNode', () => {
-  it('извлекает props с дефолтами и значение по binding', () => {
+  it('извлекает props и значение по binding; явные visible/enabled: true → видим и включён', () => {
     const node = {
       id: 'f1',
       type: 'TEXT_FIELD',
       binding: 'name',
-      props: { label: 'Имя', required: true },
+      props: { label: 'Имя', required: true, visible: true, enabled: true },
     } as ViewNode
     const { result } = renderHook(() => useFieldNode(node))
     expect(result.current.label).toBe('Имя')
@@ -36,11 +36,24 @@ describe('useFieldNode', () => {
     expect(result.current.value).toBe('Иван')
   })
 
+  it('без visible/enabled в props → НЕ видим и НЕ включён (контракт B-4: бэк проставляет явно)', () => {
+    const node = {
+      id: 'f1',
+      type: 'TEXT_FIELD',
+      binding: 'name',
+      props: { label: 'Имя' },
+    } as ViewNode
+    const { result } = renderHook(() => useFieldNode(node))
+    expect(result.current.visible).toBe(false)
+    expect(result.current.enabled).toBe(false)
+  })
+
   it('fireServerEvent диспатчит только при подходящем action', () => {
     const node = {
       id: 'f1',
       type: 'TEXT_FIELD',
       binding: 'name',
+      props: { visible: true, enabled: true },
       actions: [{ trigger: 'change', actionId: 'fieldEvent' }],
     } as ViewNode
     const { result } = renderHook(() => useFieldNode(node))

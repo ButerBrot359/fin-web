@@ -173,6 +173,8 @@ describe('виртуализация EditableTable (SCRUM-368)', () => {
 })
 
 describe('виртуализация журнала проводок (SCRUM-368)', () => {
+  // SCRUM-362 B-3: раскладка блока — из ролей колонок (props.role), без роли
+  // колонка в блок не попадает; content/period — смысловые роли вне сетки.
   const node = (): ViewNode => ({
     id: 'tbl',
     type: 'TABLE',
@@ -183,7 +185,25 @@ describe('виртуализация журнала проводок (SCRUM-368)
         id: 'c.period',
         type: 'TABLE_COLUMN',
         binding: '_period',
-        props: { label: 'Дата' },
+        props: { label: 'Дата', role: 'period' },
+      },
+      {
+        id: 'c.soderzhanie',
+        type: 'TABLE_COLUMN',
+        binding: '_soderzhanie',
+        props: { label: 'Содержание', role: 'content' },
+      },
+      {
+        id: 'c.subDt1',
+        type: 'TABLE_COLUMN',
+        binding: '_subkontoDt1',
+        props: { label: 'Субконто Дт', role: 'blockDt:1:0' },
+      },
+      {
+        id: 'c.subKt1',
+        type: 'TABLE_COLUMN',
+        binding: '_subkontoKt1',
+        props: { label: 'Субконто Кт', role: 'blockKt:1:0' },
       },
     ],
   })

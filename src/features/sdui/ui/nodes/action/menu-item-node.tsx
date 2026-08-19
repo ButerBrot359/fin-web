@@ -9,7 +9,8 @@ export const MenuItemNode: FC<NodeProps> = ({ node }) => {
   const command = node.props?.command as string | undefined
   // Заглушки-команды приходят disabled + tooltip-причиной (SCRUM-265 FE-2) —
   // как и BUTTON верхнего ряда; пункт не должен быть кликабельным.
-  const enabled = (node.props?.enabled as boolean | undefined) ?? true
+  // SCRUM-362 B-4: enabled эмитится бэком явно — строгая проверка вместо ?? true.
+  const enabled = node.props?.enabled === true
   const tooltip = node.props?.tooltip as string | undefined
 
   // props.behavior побеждает action.behavior (SCRUM-283 §2.5)

@@ -9,18 +9,20 @@ import type { ListPeriod } from './list-column-defs'
 // SCRUM-291 2d: period — независимый от колоночных фильтров контрол на LIST
 // (не в TOOLBAR, без чипа). {from:null,to:null} — валидный вызов, снимающий
 // период; отдельной команды clearPeriod нет (design §2d).
+// SCRUM-362 B-1: команда приходит готовой в period-действии узла, фронт её
+// не собирает.
 export const ListPeriodControl: FC<{
   period: ListPeriod
-  typeCode: string
+  command: string
   nodeId: string
   dispatch: ReturnType<typeof useSduiDispatch>
-}> = ({ period, typeCode, nodeId, dispatch }) => {
+}> = ({ period, command, nodeId, dispatch }) => {
   const { t } = useTranslation()
 
   const applyPeriod = (next: ListPeriod) => {
     void dispatch({
       type: 'COMMAND',
-      command: `list.applyPeriod:${typeCode}`,
+      command,
       value: next,
       sourceNodeId: nodeId,
     })

@@ -16,6 +16,14 @@ export function createActionRequestExecutor(
     request: ActionRequest,
     selectedRowId?: string | number
   ): Promise<void> {
+    // SCRUM-362 B-7: method обязателен (GET|POST); неизвестное значение —
+    // отказ исполнять вместо тихого GET. Рантайм-гард шире типа сознательно:
+    // контракту не доверяем на границе провода.
+    const method: string = request.method
+    if (method !== 'GET' && method !== 'POST') {
+      console.warn('[sdui] action request с неизвестным method', request)
+      return
+    }
     let url = request.url
     // Единственная допустимая модификация адреса — один selectedRowId (§2.1).
     if (selectedRowId != null) {

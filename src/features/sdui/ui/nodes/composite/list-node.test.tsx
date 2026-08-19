@@ -375,8 +375,8 @@ describe('ListNode — 2b: сортировка кликом по заголов
     cleanup()
   })
 
-  // TypeCode для list.applySort:{TypeCode} берётся из command активации строки
-  // (list.rowOpen:{TypeCode}) — суффикс ПОСЛЕ ПЕРВОГО двоеточия.
+  // SCRUM-362 B-1: команда сортировки приходит готовой в sort-действии узла,
+  // фронт её не собирает из TypeCode.
   const sortableNode = (sortState?: { column: string; dir: 'ASC' | 'DESC' }) =>
     ({
       id: 'lst',
@@ -397,7 +397,10 @@ describe('ListNode — 2b: сортировка кликом по заголов
           props: { header: 'Номер', attributeCode: 'Nomer', sortable: false },
         },
       ],
-      actions: [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }],
+      actions: [
+        { trigger: 'activate', command: 'list.rowOpen:TypeX' },
+        { trigger: 'sort', command: 'list.applySort:TypeX' },
+      ],
     }) as unknown as ViewNode
 
   const pageWithRow = (id: number) => ({
@@ -465,6 +468,18 @@ describe('ListNode — 2b: сортировка кликом по заголов
     expect(dispatchMock).not.toHaveBeenCalled()
   })
 
+  it('B-1: без sort-действия сортировка выключена даже у sortable-колонок', () => {
+    const node = {
+      ...sortableNode(),
+      actions: [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }],
+    } as unknown as ViewNode
+    const { container } = render(<ListNode node={node} />)
+    const dataHeader = headerCells(container)[0]
+    expect(within(dataHeader).queryByRole('button')).toBeNull()
+    fireEvent.click(within(dataHeader).getByText('Дата'))
+    expect(dispatchMock).not.toHaveBeenCalled()
+  })
+
   it('стрелка рисуется только на колонке из sortState; без sortState — стрелки нет нигде', () => {
     const { container, rerender } = render(
       <ListNode node={sortableNode({ column: 'Data', dir: 'ASC' })} />
@@ -498,8 +513,8 @@ describe('ListNode — 2d: период (from/to)', () => {
     cleanup()
   })
 
-  // TypeCode — тот же источник, что в 2b: суффикс после первого двоеточия в
-  // команде активации (list.rowOpen:{TypeCode}).
+  // SCRUM-362 B-1: команда периода приходит готовой в period-действии узла;
+  // контрол рендерится по наличию действия.
   const periodNode = (period?: { from: string | null; to: string | null }) =>
     ({
       id: 'lst',
@@ -509,7 +524,10 @@ describe('ListNode — 2d: период (from/to)', () => {
         ...(period ? { period } : {}),
       },
       children: [],
-      actions: [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }],
+      actions: [
+        { trigger: 'activate', command: 'list.rowOpen:TypeX' },
+        { trigger: 'period', command: 'list.applyPeriod:TypeX' },
+      ],
     }) as unknown as ViewNode
 
   const pageWithRow = (id: number) => ({
@@ -537,16 +555,10 @@ describe('ListNode — 2d: период (from/to)', () => {
     dispatchMock.mockReset()
   })
 
-  it('props.period присутствует → рендерятся два инпута даты', () => {
+  it('period-действие есть → рендерятся два инпута даты', () => {
     render(<ListNode node={periodNode({ from: null, to: null })} />)
     expect(screen.getByTestId('date-input-table.periodFrom')).toBeTruthy()
     expect(screen.getByTestId('date-input-table.periodTo')).toBeTruthy()
-  })
-
-  it('props.period отсутствует → контрол периода не рендерится', () => {
-    render(<ListNode node={periodNode(undefined)} />)
-    expect(screen.queryByTestId('date-input-table.periodFrom')).toBeNull()
-    expect(screen.queryByTestId('date-input-table.periodTo')).toBeNull()
   })
 
   it('изменение "from" → applyPeriod с текущей парой (новый from + существующий to)', () => {
@@ -588,7 +600,7 @@ describe('ListNode — 2d: период (from/to)', () => {
     })
   })
 
-  it('без TypeCode (нет activate-команды с двоеточием) контрол периода не рендерится', () => {
+  it('B-1: без period-действия контрол периода не рендерится, даже при props.period', () => {
     const node = {
       id: 'lst',
       type: 'LIST',
@@ -597,10 +609,11 @@ describe('ListNode — 2d: период (from/to)', () => {
         period: { from: null, to: null },
       },
       children: [],
-      actions: [],
+      actions: [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }],
     } as unknown as ViewNode
     render(<ListNode node={node} />)
     expect(screen.queryByTestId('date-input-table.periodFrom')).toBeNull()
+    expect(screen.queryByTestId('date-input-table.periodTo')).toBeNull()
   })
 })
 
@@ -609,8 +622,8 @@ describe('ListNode — 2c-a: воронка колоночного фильтр�
     cleanup()
   })
 
-  // TypeCode — тот же источник, что в 2b/2d: суффикс после первого двоеточия
-  // в команде активации строки (list.rowOpen:{TypeCode}).
+  // SCRUM-362 B-1: команда фильтра приходит готовой в filter-действии узла;
+  // воронка рендерится по наличию действия.
   const filterableNode = () =>
     ({
       id: 'lst',
@@ -653,7 +666,10 @@ describe('ListNode — 2c-a: воронка колоночного фильтр�
           props: { header: 'Дата', attributeCode: 'Data' },
         },
       ],
-      actions: [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }],
+      actions: [
+        { trigger: 'activate', command: 'list.rowOpen:TypeX' },
+        { trigger: 'filter', command: 'list.applyFilter:TypeX' },
+      ],
     }) as unknown as ViewNode
 
   const pageWithRow = (id: number) => ({
@@ -754,10 +770,10 @@ describe('ListNode — 2c-a: воронка колоночного фильтр�
     })
   })
 
-  it('без TypeCode воронка не рендерится (fail-closed)', () => {
+  it('B-1: без filter-действия воронка не рендерится (fail-closed)', () => {
     const node = {
       ...filterableNode(),
-      actions: [],
+      actions: [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }],
     } as unknown as ViewNode
     const { container } = render(<ListNode node={node} />)
     expect(container.querySelector('[aria-label="table.filter"]')).toBeNull()
@@ -769,9 +785,11 @@ describe('ListNode — 2c-b: панель чипов', () => {
     cleanup()
   })
 
+  // SCRUM-362 B-1: команды снятия фильтров приходят готовыми в clearFilter/
+  // clearAllFilters-действиях узла; панель чипов рендерится по их наличию.
   const nodeWithChips = (
     chips: { field: string; label: string }[] | undefined,
-    { withTypeCode = true }: { withTypeCode?: boolean } = {}
+    { withClearActions = true }: { withClearActions?: boolean } = {}
   ) =>
     ({
       id: 'lst',
@@ -781,9 +799,16 @@ describe('ListNode — 2c-b: панель чипов', () => {
         ...(chips === undefined ? {} : { filterChips: chips }),
       },
       children: [],
-      actions: withTypeCode
-        ? [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }]
-        : [],
+      actions: withClearActions
+        ? [
+            { trigger: 'activate', command: 'list.rowOpen:TypeX' },
+            { trigger: 'clearFilter', command: 'list.clearFilter:TypeX' },
+            {
+              trigger: 'clearAllFilters',
+              command: 'list.clearAllFilters:TypeX',
+            },
+          ]
+        : [{ trigger: 'activate', command: 'list.rowOpen:TypeX' }],
     }) as unknown as ViewNode
 
   beforeEach(() => {
@@ -872,12 +897,12 @@ describe('ListNode — 2c-b: панель чипов', () => {
     ).toBeNull()
   })
 
-  it('без TypeCode панель чипов не рендерится (fail-closed)', () => {
+  it('B-1: без clearFilter/clearAllFilters-действий панель чипов не рендерится (fail-closed)', () => {
     render(
       <ListNode
         node={nodeWithChips(
           [{ field: 'Kontragent', label: 'Контрагент равно: X' }],
-          { withTypeCode: false }
+          { withClearActions: false }
         )}
       />
     )

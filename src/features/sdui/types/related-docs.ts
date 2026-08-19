@@ -23,6 +23,8 @@ export interface RelatedTreeRow {
   _isPosted: boolean
   _isDeletionMarked: boolean
   _status?: string
-  _route?: string
-  _type?: { entityRef?: RelatedTreeEntityRef }
+  // SCRUM-362 B-6: непустой на каждой строке-документе; null — только на
+  // маркере недоступности/обрыва (_isTruncated: true), фронт маршрут не строит.
+  _route: string | null
+  _type?: { entityRef?: RelatedTreeEntityRef } | null
 }

@@ -64,7 +64,12 @@ describe('ReferenceFieldNode — кэш опций', () => {
       id: 'f1',
       type: 'REFERENCE_FIELD',
       binding: 'ref',
-      props: { label: 'Ссылка', optionsSource: { url: '/api/test-options' } },
+      props: {
+        label: 'Ссылка',
+        visible: true,
+        enabled: true,
+        optionsSource: { url: '/api/test-options' },
+      },
     } as unknown as ViewNode
 
     render(<ReferenceFieldNode node={node} />)
@@ -103,10 +108,13 @@ describe('ReferenceFieldNode — SCRUM-291 §18.3 allow* гейтинг', () => 
   const openName = /openReference|Открыть запись/i
   const copyName = /copyReference|Скопировать запись/i
 
+  // visible/enabled явные — по контракту SCRUM-362 B-4 бэк всегда их проставляет
   const baseProps = {
     label: 'Ссылка',
     domain: 'DICTIONARY',
     targetTypeCode: 'Organizatsii',
+    visible: true,
+    enabled: true,
     optionsSource: { url: '/api/test-options' },
   }
 
@@ -344,6 +352,8 @@ describe('ReferenceFieldNode — SCRUM-291 §19.3 props.multiple', () => {
     label: 'Счета',
     domain: 'ACCOUNT_PLAN',
     targetTypeCode: 'Schet',
+    visible: true,
+    enabled: true,
     optionsSource: { url: '/api/test-options' },
   }
 

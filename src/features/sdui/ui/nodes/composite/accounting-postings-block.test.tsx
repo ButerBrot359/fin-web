@@ -19,20 +19,55 @@ vi.mock('../../../lib/sdui-session-context', () => ({
   useBindingValue: (b?: string) => (b ? state[b] : undefined),
 }))
 
+// SCRUM-362 B-3: раскладка блока — из ролей-координат props.role на колонках
+// (карта wave-1 спеки), биндинги остались ключами значений строк.
 const table = {
   id: 'tbl',
   type: 'TABLE',
   binding: 'movements.acc.Zhurnal',
   props: { regKind: 'ACCOUNTING', editable: false },
   children: [
-    { id: 'c.period', type: 'TABLE_COLUMN', binding: '_period', props: { label: 'Дата' } },
+    {
+      id: 'c.period',
+      type: 'TABLE_COLUMN',
+      binding: '_period',
+      props: { label: 'Дата', role: 'period' },
+    },
     {
       id: 'g.dt',
       type: 'COLUMN_GROUP',
       props: { label: 'ДЕБЕТ' },
       children: [
-        { id: 'c.accDt', type: 'TABLE_COLUMN', binding: '_accountDtCode', props: { label: 'Счёт' } },
-        { id: 'c.subDt1', type: 'TABLE_COLUMN', binding: '_subkontoDt1', props: { label: 'КПС' } },
+        {
+          id: 'c.accDt',
+          type: 'TABLE_COLUMN',
+          binding: '_accountDtCode',
+          props: { label: 'Счёт', role: 'accountDt' },
+        },
+        {
+          id: 'c.subDt1',
+          type: 'TABLE_COLUMN',
+          binding: '_subkontoDt1',
+          props: { label: 'КПС', role: 'blockDt:1:0' },
+        },
+        {
+          id: 'c.fkrDt',
+          type: 'TABLE_COLUMN',
+          binding: '_fkrDt',
+          props: { label: 'ФКР', role: 'blockDt:1:1' },
+        },
+        {
+          id: 'c.subDt2',
+          type: 'TABLE_COLUMN',
+          binding: '_subkontoDt2',
+          props: { label: 'Субконто2', role: 'blockDt:2:0' },
+        },
+        {
+          id: 'c.subDt3',
+          type: 'TABLE_COLUMN',
+          binding: '_subkontoDt3',
+          props: { label: 'Субконто3', role: 'blockDt:3:0' },
+        },
       ],
     },
     {
@@ -40,11 +75,44 @@ const table = {
       type: 'COLUMN_GROUP',
       props: { label: 'КРЕДИТ' },
       children: [
-        { id: 'c.accKt', type: 'TABLE_COLUMN', binding: '_accountKtCode', props: { label: 'Счёт' } },
+        {
+          id: 'c.accKt',
+          type: 'TABLE_COLUMN',
+          binding: '_accountKtCode',
+          props: { label: 'Счёт', role: 'accountKt' },
+        },
+        {
+          id: 'c.subKt1',
+          type: 'TABLE_COLUMN',
+          binding: '_subkontoKt1',
+          props: { label: 'КОСГУ', role: 'blockKt:1:0' },
+        },
       ],
     },
-    { id: 'c.summa', type: 'TABLE_COLUMN', binding: '_summa', props: { label: 'Сумма' } },
-    { id: 'c.sod', type: 'TABLE_COLUMN', binding: '_soderzhanie', props: { label: 'Содержание' } },
+    {
+      id: 'c.kol',
+      type: 'TABLE_COLUMN',
+      binding: '_kolichestvo',
+      props: { label: 'Количество', role: 'block:2:2' },
+    },
+    {
+      id: 'c.summa',
+      type: 'TABLE_COLUMN',
+      binding: '_summa',
+      props: { label: 'Сумма', role: 'sum' },
+    },
+    {
+      id: 'c.sod',
+      type: 'TABLE_COLUMN',
+      binding: '_soderzhanie',
+      props: { label: 'Содержание', role: 'content' },
+    },
+    {
+      id: 'c.active',
+      type: 'TABLE_COLUMN',
+      binding: '_isActiveLabel',
+      props: { label: 'Активность', role: 'active' },
+    },
   ],
 } as ViewNode
 

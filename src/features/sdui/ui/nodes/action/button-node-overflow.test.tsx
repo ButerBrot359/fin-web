@@ -30,16 +30,22 @@ vi.mock('../../node-renderer', () => ({
 afterEach(cleanup)
 
 describe('ButtonNode: overflow-секция в меню «Ещё» (SCRUM-265 FE-5)', () => {
-  it('btn.more показывает свёрнутые узлы отдельной секцией перед штатными пунктами', () => {
+  it('хозяин (props.overflowHost) показывает свёрнутые узлы отдельной секцией перед штатными пунктами', () => {
     const moreNode = {
       id: 'btn.more',
       type: 'BUTTON',
-      props: { label: 'Ещё', variant: 'dropdown' },
+      // SCRUM-362 B-5: хозяин меню «Ещё» — props.overflowHost, не id.
+      props: {
+        label: 'Ещё',
+        variant: 'dropdown',
+        enabled: true,
+        overflowHost: true,
+      },
       children: [
         {
           id: 'mi.more.x',
           type: 'MENU_ITEM',
-          props: { label: 'Штатный пункт', command: 'x' },
+          props: { label: 'Штатный пункт', command: 'x', enabled: true },
         },
       ],
     } as unknown as ViewNode
@@ -47,7 +53,7 @@ describe('ButtonNode: overflow-секция в меню «Ещё» (SCRUM-265 FE
       {
         id: 'btn.reports',
         type: 'BUTTON',
-        props: { label: 'Отчеты', command: 'reports' },
+        props: { label: 'Отчеты', command: 'reports', enabled: true },
       },
     ] as unknown as ViewNode[]
 
@@ -63,16 +69,17 @@ describe('ButtonNode: overflow-секция в меню «Ещё» (SCRUM-265 FE
     expect(screen.getByText('Штатный пункт')).toBeTruthy()
   })
 
-  it('не-btn.more кнопка игнорирует контекст (default пустой)', () => {
+  it('кнопка без overflowHost игнорирует контекст, даже с id btn.more', () => {
     const node = {
-      id: 'btn.other',
+      // id хозяина больше ничего не значит — без props.overflowHost секции нет.
+      id: 'btn.more',
       type: 'BUTTON',
-      props: { label: 'Другое', variant: 'dropdown' },
+      props: { label: 'Другое', variant: 'dropdown', enabled: true },
       children: [
         {
           id: 'mi.other.x',
           type: 'MENU_ITEM',
-          props: { label: 'Пункт', command: 'x' },
+          props: { label: 'Пункт', command: 'x', enabled: true },
         },
       ],
     } as unknown as ViewNode
@@ -80,7 +87,7 @@ describe('ButtonNode: overflow-секция в меню «Ещё» (SCRUM-265 FE
       {
         id: 'btn.reports',
         type: 'BUTTON',
-        props: { label: 'Отчеты', command: 'reports' },
+        props: { label: 'Отчеты', command: 'reports', enabled: true },
       },
     ] as unknown as ViewNode[]
 

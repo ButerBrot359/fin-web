@@ -51,15 +51,24 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const selectAction = node.actions?.find((a) => a.trigger === 'select')
   const activateAction = node.actions?.find((a) => a.trigger === 'activate')
 
-  // SCRUM-291 2b: {TypeCode} для list.applySort:{TypeCode} фронт не получает отдельным
-  // props — берёт его из суффикса ПОСЛЕ ПЕРВОГО ДВОЕТОЧИЯ команды активации строки
-  // (list.rowOpen:{TypeCode}, для справочников может содержать ещё двоеточия). Нет
-  // command с двоеточием → TypeCode не выводим, сортировка не рендерится/не диспатчится
-  // (fail-closed, см. design §2b).
-  const activateCommand = activateAction?.command
-  const typeCode = activateCommand?.includes(':')
-    ? activateCommand.slice(activateCommand.indexOf(':') + 1)
-    : undefined
+  // SCRUM-362 B-1: команды приезжают готовыми в node.actions, строка command
+  // непрозрачна — фронт больше не собирает их по шаблону и не выкусывает
+  // {TypeCode}. Набор actions — сигнал capability: sort/filter/clearFilter/
+  // clearAllFilters/period сервер шлёт только на транспорте SEARCH, поэтому
+  // контролы гейтятся наличием action (на PAGED их нет — это корректно).
+  const sortCommand = node.actions?.find((a) => a.trigger === 'sort')?.command
+  const filterCommand = node.actions?.find(
+    (a) => a.trigger === 'filter'
+  )?.command
+  const clearFilterCommand = node.actions?.find(
+    (a) => a.trigger === 'clearFilter'
+  )?.command
+  const clearAllFiltersCommand = node.actions?.find(
+    (a) => a.trigger === 'clearAllFilters'
+  )?.command
+  const periodCommand = node.actions?.find(
+    (a) => a.trigger === 'period'
+  )?.command
 
   const sortState = node.props?.sortState as ListSortState | undefined
   // SCRUM-291 2c: лейблы операторов воронки — с сервера (LIST.props.filterOpLabels),
@@ -67,13 +76,13 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const filterOpLabels = node.props?.filterOpLabels as
     | Record<string, string>
     | undefined
-  // SCRUM-291 2d: props.period присутствует ВСЕГДА при transport=SEARCH (даже
-  // {null,null}); при PAGED prop отсутствует вовсе → контрол не рендерим.
+  // SCRUM-291 2d → SCRUM-362 B-1: контрол периода гейтится period-действием
+  // (сервер шлёт его только при SEARCH и наличии реквизита периода);
+  // props.period несёт текущие значения границ.
   const periodProp = node.props?.period as ListPeriod | undefined
   // SCRUM-291 2c-b: панель чипов — сервер шлёт готовый {field,label}; период
   // сюда никогда не попадает (§8), фронт filterChips не трогает. Fail-closed:
-  // без typeCode команды clearFilter/clearAllFilters собрать нельзя — панель
-  // не рендерим вовсе, даже если filterChips пришёл.
+  // без clearFilter/clearAllFilters-действий панель не рендерим вовсе.
   const filterChips =
     (node.props?.filterChips as ListFilterChip[] | undefined) ?? []
   // Подавление дублей in-flight: пока предыдущий list.applySort не завершился —
@@ -245,13 +254,22 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
       buildListColumns({
         columnNodes,
         sortState,
-        typeCode,
+        sortCommand,
+        filterCommand,
         filterOpLabels,
         dispatch,
         nodeId: node.id,
         sortInFlightRef,
       }),
-    [columnNodes, sortState, typeCode, dispatch, node.id, filterOpLabels]
+    [
+      columnNodes,
+      sortState,
+      sortCommand,
+      filterCommand,
+      dispatch,
+      node.id,
+      filterOpLabels,
+    ]
   )
 
   const sizing = useSduiColumnSizing(node)
@@ -278,10 +296,10 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-2">
       <div className="flex items-center justify-between">
-        {periodProp && typeCode ? (
+        {periodCommand ? (
           <ListPeriodControl
-            period={periodProp}
-            typeCode={typeCode}
+            period={periodProp ?? { from: null, to: null }}
+            command={periodCommand}
             nodeId={node.id}
             dispatch={dispatch}
           />
@@ -301,13 +319,13 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         )}
       </div>
 
-      {typeCode && (
+      {clearFilterCommand && clearAllFiltersCommand && (
         <ListFilterChips
           chips={filterChips}
           onRemove={(field) => {
             void dispatch({
               type: 'COMMAND',
-              command: `list.clearFilter:${typeCode}`,
+              command: clearFilterCommand,
               value: { field },
               sourceNodeId: node.id,
             })
@@ -315,7 +333,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
           onClearAll={() => {
             void dispatch({
               type: 'COMMAND',
-              command: `list.clearAllFilters:${typeCode}`,
+              command: clearAllFiltersCommand,
               sourceNodeId: node.id,
             })
           }}

@@ -27,7 +27,8 @@ const button = (label: string, action: Record<string, unknown>): ViewNode =>
   ({
     id: 'b1',
     type: 'BUTTON',
-    props: { label, command: 'noparse' },
+    // SCRUM-362 B-4: enabled эмитится бэком явно — без него кнопка disabled.
+    props: { label, command: 'noparse', enabled: true },
     actions: [{ trigger: 'click', actionId: 'command', ...action }],
   }) as ViewNode
 

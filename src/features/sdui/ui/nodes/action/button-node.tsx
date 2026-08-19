@@ -13,7 +13,8 @@ import { resolveButtonPresentation } from './button-presentation'
 export const ButtonNode: FC<NodeProps> = ({ node }) => {
   const label = node.props?.label as string | undefined
   const command = node.props?.command as string | undefined
-  const enabled = (node.props?.enabled as boolean | undefined) ?? true
+  // SCRUM-362 B-4: enabled эмитится бэком явно — строгая проверка вместо ?? true.
+  const enabled = node.props?.enabled === true
   const variantProp = node.props?.variant as string | undefined
   const iconName = node.props?.icon as string | undefined
   const tooltip = node.props?.tooltip as string | undefined
@@ -34,9 +35,10 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
 
   // FE-5: свёрнутые по ширине кнопки командной панели читаются только
-  // кнопкой «Ещё» — остальные кнопки контекст игнорируют (default пустой).
+  // кнопкой-хозяином «Ещё» — остальные кнопки контекст игнорируют (default
+  // пустой). SCRUM-362 B-5: хозяин определяется пропом overflowHost с бэка.
   const collapsedNodes = useOverflowCollapsed()
-  const overflowNodes = node.id === 'btn.more' ? collapsedNodes : []
+  const overflowNodes = node.props?.overflowHost === true ? collapsedNodes : []
 
   // SCRUM-284 Δ4: активность кнопки пикера — явные поля на ViewNodeAction
   // (click-действие), фронт имя команды не парсит.

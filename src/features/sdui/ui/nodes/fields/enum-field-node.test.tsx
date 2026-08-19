@@ -29,7 +29,14 @@ const node = (readonly: boolean): ViewNode => ({
   id: 'field.vidOperatsii',
   type: 'ENUM_FIELD',
   binding: 'VidOperatsii',
-  props: { label: 'Вид операции', options, readonly },
+  // visible/enabled явные — по контракту SCRUM-362 B-4 бэк всегда их проставляет
+  props: {
+    label: 'Вид операции',
+    options,
+    readonly,
+    visible: true,
+    enabled: true,
+  },
 })
 
 afterEach(cleanup)
@@ -58,7 +65,12 @@ const richNode = (): ViewNode => ({
   id: 'field.sposob',
   type: 'ENUM_FIELD',
   binding: 'SposobZapolneniya',
-  props: { label: 'Способ', options: richOptions },
+  props: {
+    label: 'Способ',
+    options: richOptions,
+    visible: true,
+    enabled: true,
+  },
   actions: [{ trigger: 'change', actionId: 'fieldEvent' }],
 })
 

@@ -37,10 +37,10 @@ describe('executeActionRequest', () => {
     expect(play).toHaveBeenCalledWith([{ type: 'notify', message: 'ok' }])
   })
 
-  it('GET без selectedRowId — url не трогается, method пуст ⇒ get', async () => {
+  it('GET без selectedRowId — url не трогается, уходит через get', async () => {
     const play = vi.fn()
     await createActionRequestExecutor(play)(
-      { url: '/api/view/related-documents/5?anchorId=2' },
+      { method: 'GET', url: '/api/view/related-documents/5?anchorId=2' },
       undefined
     )
     expect(mockGet).toHaveBeenCalledWith({
@@ -62,8 +62,25 @@ describe('executeActionRequest', () => {
   it('effects отсутствуют — играет пустой массив', async () => {
     const play = vi.fn()
     mockGet.mockResolvedValue({ data: {} } as never)
-    await createActionRequestExecutor(play)({ url: '/api/x?y=1' }, undefined)
+    await createActionRequestExecutor(play)(
+      { method: 'GET', url: '/api/x?y=1' },
+      undefined
+    )
     expect(play).toHaveBeenCalledWith([])
+  })
+
+  it('B-7: неизвестный method — warn, запрос не уходит, effects не играются', async () => {
+    const play = vi.fn()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    await createActionRequestExecutor(play)(
+      { method: 'DELETE' as never, url: '/api/x?y=1' },
+      undefined
+    )
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(mockGet).not.toHaveBeenCalled()
+    expect(mockPost).not.toHaveBeenCalled()
+    expect(play).not.toHaveBeenCalled()
+    warn.mockRestore()
   })
 
   it('§6.3: revision/patches/state/formSessionId в ответе игнорируются — играются только effects', async () => {

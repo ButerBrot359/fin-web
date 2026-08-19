@@ -2,19 +2,36 @@ import { describe, expect, it } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
 import {
-  ROW_LAYOUT,
-  buildRowDefs,
+  buildBlockModel,
   collectColumnLabels,
   collectGroupLabels,
   formatSum,
-  getBlockRowCount,
   resolveCellValue,
 } from './accounting-block-logic'
+
+const col = (binding: string, role?: string): ViewNode =>
+  ({
+    id: `c.${binding}`,
+    type: 'TABLE_COLUMN',
+    binding,
+    props: role ? { role } : {},
+  }) as ViewNode
+
+const group = (label: string, children: ViewNode[]): ViewNode =>
+  ({
+    id: `g.${label}`,
+    type: 'COLUMN_GROUP',
+    props: { label },
+    children,
+  }) as ViewNode
+
+const tableOf = (children: ViewNode[]): ViewNode =>
+  ({ id: 'tbl', type: 'TABLE', children }) as ViewNode
 
 describe('resolveCellValue', () => {
   it('ссылочная ячейка → presentation', () => {
     expect(
-      resolveCellValue({ id: 5, presentation: 'Касса', entityRef: { id: 5 } }),
+      resolveCellValue({ id: 5, presentation: 'Касса', entityRef: { id: 5 } })
     ).toBe('Касса')
   })
   it('пусто → пустая строка', () => {
@@ -51,14 +68,29 @@ describe('collectColumnLabels / collectGroupLabels', () => {
     id: 'tbl',
     type: 'TABLE',
     children: [
-      { id: 'c.period', type: 'TABLE_COLUMN', binding: '_period', props: { label: 'Дата' } },
+      {
+        id: 'c.period',
+        type: 'TABLE_COLUMN',
+        binding: '_period',
+        props: { label: 'Дата' },
+      },
       {
         id: 'g.dt',
         type: 'COLUMN_GROUP',
         props: { label: 'ДЕБЕТ' },
         children: [
-          { id: 'c.accDt', type: 'TABLE_COLUMN', binding: '_accountDtCode', props: { label: 'Счёт' } },
-          { id: 'c.subDt1', type: 'TABLE_COLUMN', binding: '_subkontoDt1', props: { label: 'КПС' } },
+          {
+            id: 'c.accDt',
+            type: 'TABLE_COLUMN',
+            binding: '_accountDtCode',
+            props: { label: 'Счёт' },
+          },
+          {
+            id: 'c.subDt1',
+            type: 'TABLE_COLUMN',
+            binding: '_subkontoDt1',
+            props: { label: 'КПС' },
+          },
         ],
       },
       {
@@ -66,7 +98,12 @@ describe('collectColumnLabels / collectGroupLabels', () => {
         type: 'COLUMN_GROUP',
         props: { label: 'КРЕДИТ' },
         children: [
-          { id: 'c.accKt', type: 'TABLE_COLUMN', binding: '_accountKtCode', props: { label: 'Счёт' } },
+          {
+            id: 'c.accKt',
+            type: 'TABLE_COLUMN',
+            binding: '_accountKtCode',
+            props: { label: 'Счёт' },
+          },
         ],
       },
     ],
@@ -84,24 +121,148 @@ describe('collectColumnLabels / collectGroupLabels', () => {
   })
 })
 
-describe('getBlockRowCount / buildRowDefs', () => {
-  it('минимум 3 строки', () => {
-    expect(getBlockRowCount([])).toBe(3)
-    expect(getBlockRowCount([{ rowId: '1', _subkontoDt1: '' }])).toBe(3)
+// SCRUM-362 B-3: сетка блока — из ролей-координат props.role, не из ROW_LAYOUT.
+describe('buildBlockModel', () => {
+  it('полная карта ролей wave-1 → rowDefs строк 1-3 и semantic', () => {
+    const table = tableOf([
+      col('_period', 'period'),
+      group('ДЕБЕТ', [
+        col('_accountDtCode', 'accountDt'),
+        col('_subkontoDt1', 'blockDt:1:0'),
+        col('_fkrDt', 'blockDt:1:1'),
+        col('_podrazdelenieDt', 'blockDt:1:2'),
+        col('_subkontoDt2', 'blockDt:2:0'),
+        col('_spetsifikaDt', 'blockDt:2:1'),
+        col('_subkontoDt3', 'blockDt:3:0'),
+        col('_istochnikFinansirovaniyaDt', 'blockDt:3:1'),
+        col('_kodPlatnykhUslugDt', 'blockDt:3:2'),
+      ]),
+      group('КРЕДИТ', [
+        col('_accountKtCode', 'accountKt'),
+        col('_subkontoKt1', 'blockKt:1:0'),
+        col('_fkrKt', 'blockKt:1:1'),
+        col('_podrazdelenieKt', 'blockKt:1:2'),
+        col('_subkontoKt2', 'blockKt:2:0'),
+        col('_spetsifikaKt', 'blockKt:2:1'),
+        col('_subkontoKt3', 'blockKt:3:0'),
+        col('_istochnikFinansirovaniyaKt', 'blockKt:3:1'),
+        col('_kodPlatnykhUslugKt', 'blockKt:3:2'),
+      ]),
+      col('_kolichestvo', 'block:2:2'),
+      col('_organizatsiya', 'organization'),
+      col('_summa', 'sum'),
+      col('_valyutnayaSumma', 'currencySum'),
+      col('_soderzhanie', 'content'),
+      col('_isActiveLabel', 'active'),
+    ])
+
+    const { rowDefs, semantic } = buildBlockModel(table)
+
+    expect(rowDefs).toEqual([
+      {
+        subDt: '_subkontoDt1',
+        subKt: '_subkontoKt1',
+        a1Dt: '_fkrDt',
+        a1Kt: '_fkrKt',
+        a2Dt: '_podrazdelenieDt',
+        a2Kt: '_podrazdelenieKt',
+      },
+      {
+        subDt: '_subkontoDt2',
+        subKt: '_subkontoKt2',
+        a1Dt: '_spetsifikaDt',
+        a1Kt: '_spetsifikaKt',
+        a2Dt: '_kolichestvo',
+        a2Kt: '_kolichestvo',
+      },
+      {
+        subDt: '_subkontoDt3',
+        subKt: '_subkontoKt3',
+        a1Dt: '_istochnikFinansirovaniyaDt',
+        a1Kt: '_istochnikFinansirovaniyaKt',
+        a2Dt: '_kodPlatnykhUslugDt',
+        a2Kt: '_kodPlatnykhUslugKt',
+      },
+    ])
+    expect(semantic).toEqual({
+      period: '_period',
+      accountDt: '_accountDtCode',
+      accountKt: '_accountKtCode',
+      organization: '_organizatsiya',
+      sum: '_summa',
+      currencySum: '_valyutnayaSumma',
+      content: '_soderzhanie',
+      active: '_isActiveLabel',
+    })
   })
-  it('расширяется по фактическому max индексу субконто', () => {
-    expect(getBlockRowCount([{ rowId: '1', _subkontoKt4: '' }])).toBe(4)
+
+  it('block:<r>:<s> без стороны — одна колонка на обеих сторонах (a2Dt === a2Kt)', () => {
+    const table = tableOf([
+      col('_subkontoDt2', 'blockDt:2:0'),
+      col('_kolichestvo', 'block:2:2'),
+    ])
+    const { rowDefs } = buildBlockModel(table)
+    expect(rowDefs).toHaveLength(2)
+    expect(rowDefs[1].a2Dt).toBe('_kolichestvo')
+    expect(rowDefs[1].a2Kt).toBe('_kolichestvo')
+    expect(rowDefs[1].a2Dt).toBe(rowDefs[1].a2Kt)
   })
-  it('строки 1-3 из ROW_LAYOUT, дальше — только субконто', () => {
-    const defs = buildRowDefs(4)
-    expect(defs.slice(0, 3)).toEqual(ROW_LAYOUT)
-    expect(defs[3]).toEqual({
-      subDt: '_subkontoDt4',
-      subKt: '_subkontoKt4',
+
+  it('субконто строк 4+ без слотов 1/2 → пустые клетки, rowCount по максимуму строки', () => {
+    const table = tableOf([
+      col('_subkontoDt1', 'blockDt:1:0'),
+      col('_subkontoKt1', 'blockKt:1:0'),
+      col('_subkontoDt5', 'blockDt:5:0'),
+    ])
+    const { rowDefs } = buildBlockModel(table)
+    expect(rowDefs).toHaveLength(5)
+    // строка 5: только субконто Дт, остальные клетки пустые
+    expect(rowDefs[4]).toEqual({
+      subDt: '_subkontoDt5',
+      subKt: '',
       a1Dt: '',
       a1Kt: '',
       a2Dt: '',
       a2Kt: '',
     })
+    // промежуточные строки без колонок — полностью пустые
+    expect(rowDefs[2]).toEqual({
+      subDt: '',
+      subKt: '',
+      a1Dt: '',
+      a1Kt: '',
+      a2Dt: '',
+      a2Kt: '',
+    })
+  })
+
+  it('колонки без роли игнорируются (ни в rowDefs, ни в semantic)', () => {
+    const table = tableOf([col('_subkontoDt1', 'blockDt:1:0'), col('_noRole')])
+    const { rowDefs, semantic } = buildBlockModel(table)
+    expect(rowDefs).toHaveLength(1)
+    expect(Object.values(rowDefs[0])).not.toContain('_noRole')
+    expect(semantic).toEqual({})
+  })
+
+  it('обходит листья, вложенные в COLUMN_GROUP', () => {
+    const table = tableOf([
+      group('ДЕБЕТ', [
+        col('_accountDtCode', 'accountDt'),
+        col('_subkontoDt1', 'blockDt:1:0'),
+      ]),
+      group('КРЕДИТ', [col('_subkontoKt1', 'blockKt:1:0')]),
+    ])
+    const { rowDefs, semantic } = buildBlockModel(table)
+    expect(rowDefs).toEqual([
+      {
+        subDt: '_subkontoDt1',
+        subKt: '_subkontoKt1',
+        a1Dt: '',
+        a1Kt: '',
+        a2Dt: '',
+        a2Kt: '',
+      },
+    ])
+    expect(semantic).toEqual({ accountDt: '_accountDtCode' })
   })
 })

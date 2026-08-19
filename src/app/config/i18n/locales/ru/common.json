@@ -619,7 +619,8 @@
         "working": "Рабочий",
         "nonWorking": "Нерабочий",
         "manual": "Изменён вручную"
-      }
+      },
+      "fillDefaults": "Заполнить по умолчанию"
     },
     "kalendari": {
       "dayColumn": "День",

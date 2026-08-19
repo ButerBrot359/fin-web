@@ -17,17 +17,34 @@ describe('MenuItemNode: enabled/disabled (SCRUM-265 FE-2)', () => {
   beforeEach(() => vi.clearAllMocks())
   afterEach(cleanup)
 
-  it('enabled-пункт диспатчит команду по клику', () => {
-    render(<MenuItemNode node={item({ label: 'Заполнить', command: 'zapolnit' })} />)
+  it('enabled:true → пункт диспатчит команду по клику', () => {
+    render(
+      <MenuItemNode
+        node={item({ label: 'Заполнить', command: 'zapolnit', enabled: true })}
+      />
+    )
     fireEvent.click(screen.getByRole('menuitem', { name: 'Заполнить' }))
-    expect(dispatch).toHaveBeenCalledWith({ type: 'COMMAND', command: 'zapolnit' }, null)
+    expect(dispatch).toHaveBeenCalledWith(
+      { type: 'COMMAND', command: 'zapolnit' },
+      null
+    )
+  })
+
+  it('без пропа enabled → пункт disabled (строгий контракт SCRUM-362 B-4)', () => {
+    render(
+      <MenuItemNode node={item({ label: 'Заполнить', command: 'zapolnit' })} />
+    )
+    const mi = screen.getByRole('menuitem', { name: 'Заполнить' })
+    expect(mi.getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(mi)
+    expect(dispatch).not.toHaveBeenCalled()
   })
 
   it('enabled:false → пункт disabled и НЕ диспатчит', () => {
     render(
       <MenuItemNode
         node={item({ label: 'Заполнить', command: 'zapolnit', enabled: false })}
-      />,
+      />
     )
     const mi = screen.getByRole('menuitem', { name: 'Заполнить' })
     expect(mi.getAttribute('aria-disabled')).toBe('true')
@@ -44,7 +61,7 @@ describe('MenuItemNode: enabled/disabled (SCRUM-265 FE-2)', () => {
           enabled: false,
           tooltip: 'В разработке',
         })}
-      />,
+      />
     )
     fireEvent.mouseOver(screen.getByText('Заполнить'))
     expect(await screen.findByRole('tooltip')).toBeTruthy()

@@ -26,8 +26,10 @@ vi.mock('../../node-renderer', () => ({
   NodeRenderer: () => null,
 }))
 
+// SCRUM-362 B-4: бэк всегда явно проставляет enabled на BUTTON —
+// фикстура отражает контракт, отдельные тесты могут переопределить.
 const button = (props: Record<string, unknown>): ViewNode =>
-  ({ id: 'b1', type: 'BUTTON', props }) as ViewNode
+  ({ id: 'b1', type: 'BUTTON', props: { enabled: true, ...props } }) as ViewNode
 
 describe('ButtonNode: icon и tooltip', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -78,7 +80,7 @@ describe('ButtonNode: icon и tooltip', () => {
     const node = {
       id: 'b1',
       type: 'BUTTON',
-      props: { label: 'Провести', command: 'post' },
+      props: { label: 'Провести', command: 'post', enabled: true },
       actions: [
         {
           trigger: 'click',
@@ -102,6 +104,7 @@ describe('ButtonNode: icon и tooltip', () => {
       props: {
         label: 'Провести',
         command: 'post',
+        enabled: true,
         behavior: { flushPendingTables: true, closeAfter: true },
       },
       actions: [
@@ -131,5 +134,18 @@ describe('ButtonNode: icon и tooltip', () => {
   it('без label и без валидной иконки: fallback на command', () => {
     render(<ButtonNode node={button({ icon: 'nope', command: 'doIt' })} />)
     expect(screen.getByRole('button', { name: 'doIt' })).toBeTruthy()
+  })
+
+  it('без пропа enabled → кнопка disabled (строгий контракт SCRUM-362 B-4)', () => {
+    const node = {
+      id: 'b1',
+      type: 'BUTTON',
+      props: { label: 'Провести', command: 'post' },
+    } as ViewNode
+    render(<ButtonNode node={node} />)
+    const btn = screen.getByRole('button', { name: 'Провести' })
+    expect(btn.hasAttribute('disabled')).toBe(true)
+    fireEvent.click(btn)
+    expect(dispatch).not.toHaveBeenCalled()
   })
 })

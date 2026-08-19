@@ -22,9 +22,11 @@ export interface ActionBehavior {
 }
 
 // SCRUM-288: готовый запрос действия. url — БЕЗ плейсхолдеров (гарантия сервера,
-// бэк-тест ActionRequestUrlIsReadyTest). method пусто ⇒ GET.
+// бэк-тест ActionRequestUrlIsReadyTest). SCRUM-362 B-7: method обязателен и
+// приходит явной строкой (правило «пусто ⇒ GET» из контракта убрано насовсем);
+// неизвестное значение — warn + отказ исполнять, не тихий GET.
 export interface ActionRequest {
-  method?: string
+  method: 'GET' | 'POST'
   url: string
   body?: Record<string, unknown> | null
 }

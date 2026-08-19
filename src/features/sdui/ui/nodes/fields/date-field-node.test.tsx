@@ -37,7 +37,14 @@ const node = (props: Record<string, unknown>): ViewNode =>
     id: 'field.periodRegistratsii',
     type: 'DATE_FIELD',
     binding: 'PeriodRegistratsii',
-    props: { label: 'Месяц начисления', dataType: 'DATE', ...props },
+    // visible/enabled явные — по контракту SCRUM-362 B-4 бэк всегда их проставляет
+    props: {
+      label: 'Месяц начисления',
+      dataType: 'DATE',
+      visible: true,
+      enabled: true,
+      ...props,
+    },
   }) as ViewNode
 
 describe('DateFieldNode — props.dateFormat', () => {

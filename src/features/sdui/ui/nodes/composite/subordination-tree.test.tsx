@@ -62,6 +62,7 @@ const row = (over: Partial<RelatedTreeRow>): RelatedTreeRow => ({
   _presentation: 'Документ',
   _isPosted: false,
   _isDeletionMarked: false,
+  _route: null,
   ...over,
 })
 
@@ -172,12 +173,13 @@ describe('SubordinationTree', () => {
     expect(tr.className).toContain('Mui-selected')
   })
 
-  it('двойной клик навигирует по _route; фолбэк — entityRef', () => {
+  it('двойной клик навигирует по _route; B-6: _route: null — no-op даже при entityRef', () => {
     state['related.tree'] = [
       row({ rowId: 'r1', _route: '/documents/SchetKOplate/1002' }),
       row({
         rowId: 'r2',
         _presentation: 'Без роута',
+        _route: null,
         _type: {
           entityRef: { domain: 'DOCUMENT', id: 7, typeCode: 'Zayavka' },
         },
@@ -187,12 +189,13 @@ describe('SubordinationTree', () => {
     fireEvent.doubleClick(screen.getByText('Документ'))
     expect(navigateMock).toHaveBeenCalledWith('/documents/SchetKOplate/1002')
     fireEvent.doubleClick(screen.getByText('Без роута'))
-    expect(navigateMock).toHaveBeenCalledWith('/documents/Zayavka/7')
-    expect(armNewTabMock).toHaveBeenCalledTimes(2)
+    // Фолбэк-конструирование маршрута из entityRef удалено — навигации нет.
+    expect(navigateMock).toHaveBeenCalledTimes(1)
+    expect(armNewTabMock).toHaveBeenCalledTimes(1)
   })
 
-  it('двойной клик по строке без _route и entityRef — no-op: ни навигации, ни армирования вкладки', () => {
-    state['related.tree'] = [row({ rowId: 'r1' })]
+  it('B-6: _route: null и не truncated — даблклик ничего не делает', () => {
+    state['related.tree'] = [row({ rowId: 'r1', _route: null })]
     render(<TableNode node={treeNodeNoActions} />)
     fireEvent.doubleClick(screen.getByText('Документ'))
     expect(navigateMock).not.toHaveBeenCalled()

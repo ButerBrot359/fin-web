@@ -80,10 +80,9 @@ export const SubordinationTree: FC<NodeProps> = ({ node }) => {
 
   const handleDoubleClick = (row: RelatedTreeRow) => {
     if (row._isTruncated === true) return
-    const ref = row._type?.entityRef
-    const route =
-      row._route ??
-      (ref ? `/documents/${ref.typeCode}/${String(ref.id)}` : undefined)
+    // SCRUM-362 B-6: _route гарантирован бэком на каждой строке-документе;
+    // узел без маршрута приезжает маркером (_isTruncated) и сюда не попадает.
+    const route = row._route
     if (!route) return
     // Активная вкладка — sdui-panel, и пока она активна, layout рендерит хост
     // панели вместо route-children: без активации обычной вкладки документа

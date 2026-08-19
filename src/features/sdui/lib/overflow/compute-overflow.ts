@@ -1,8 +1,10 @@
 export interface OverflowItem {
   id: string
   width: number
-  /** Никогда не сворачивается (btn.postClose, btn.more, spacer.more). */
+  /** Никогда не сворачивается — props.pinned с бэка (SCRUM-362 B-5). */
   pinned: boolean
+  /** Хозяин свёрнутого меню — props.overflowHost с бэка (SCRUM-362 B-5). */
+  overflowHost: boolean
 }
 
 /**
@@ -21,8 +23,8 @@ export function computeOverflow(
   const pinnedWidth = items
     .filter((i) => i.pinned)
     .reduce((sum, i) => sum + i.width, 0)
-  const hasMoreInItems = items.some((i) => i.id === 'btn.more' && i.pinned)
-  const reserved = pinnedWidth + (hasMoreInItems ? 0 : moreWidth)
+  const hasHostInItems = items.some((i) => i.overflowHost && i.pinned)
+  const reserved = pinnedWidth + (hasHostInItems ? 0 : moreWidth)
 
   const collapsible = items.filter((i) => !i.pinned)
   const totalCollapsible = collapsible.reduce((sum, i) => sum + i.width, 0)

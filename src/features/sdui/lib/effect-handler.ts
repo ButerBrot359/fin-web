@@ -106,12 +106,22 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
         break
 
       case 'download': {
-        // SCRUM-288 §3.1: есть request — POST с телом; иначе прежний GET по url.
+        // SCRUM-288 §3.1: есть request — исполняем его; иначе прежний GET по url.
+        // SCRUM-362 B-7: метод читается из request.method (не «всегда POST»),
+        // неизвестное значение — warn + отказ вместо тихого GET. Рантайм-гард
+        // шире типа сознательно: контракту не доверяем на границе провода.
+        const reqMethod: string | undefined = effect.request?.method
+        if (effect.request && reqMethod !== 'GET' && reqMethod !== 'POST') {
+          console.warn('[sdui] download request с неизвестным method', effect)
+          break
+        }
         const blobPromise = effect.request
-          ? apiService.postFileBlob({
-              url: effect.request.url,
-              data: effect.request.body ?? undefined,
-            })
+          ? effect.request.method === 'POST'
+            ? apiService.postFileBlob({
+                url: effect.request.url,
+                data: effect.request.body ?? undefined,
+              })
+            : apiService.getFileBlob({ url: effect.request.url })
           : effect.url
             ? apiService.getFileBlob({ url: effect.url })
             : null

@@ -1,16 +1,15 @@
-import type { FC } from 'react'
+import type { FC, ReactNode } from 'react'
 
 import { buildMonthWeeks } from '../../../lib/calendar/build-month-weeks'
-import type { CalendarDay } from '../../../lib/calendar/calendar-types'
-import { CalendarDayCell } from './calendar-day-cell'
 
 export interface MonthGridProps {
   year: number
   month: number // 0-индексный
   monthLabel: string
   weekdayLabels: string[]
-  daysByDate: Map<string, CalendarDay>
-  dayAriaLabel: (year: number, month: number, day: number) => string
+  // SCRUM-362 B-2: сетка не знает режима календаря — ячейку рисует владелец
+  // (inclusion / dayKind), сюда приходит только render-функция дня.
+  renderDay: (iso: string, dayNumber: number) => ReactNode
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -20,8 +19,7 @@ export const MonthGrid: FC<MonthGridProps> = ({
   month,
   monthLabel,
   weekdayLabels,
-  daysByDate,
-  dayAriaLabel,
+  renderDay,
 }) => {
   const weeks = buildMonthWeeks(year, month)
 
@@ -40,14 +38,7 @@ export const MonthGrid: FC<MonthGridProps> = ({
           {week.map((cell, ci) => {
             if (cell == null) return <span key={ci} />
             const iso = `${String(year)}-${pad(month + 1)}-${pad(cell)}`
-            return (
-              <CalendarDayCell
-                key={ci}
-                dayNumber={cell}
-                day={daysByDate.get(iso)}
-                ariaLabel={dayAriaLabel(year, month, cell)}
-              />
-            )
+            return <span key={ci}>{renderDay(iso, cell)}</span>
           })}
         </div>
       ))}

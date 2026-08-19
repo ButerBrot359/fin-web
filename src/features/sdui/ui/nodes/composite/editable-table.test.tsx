@@ -83,6 +83,42 @@ beforeEach(() => {
   localStorage.clear()
 })
 
+// §111/§273: колонка с visible:false не рендерится, но её значение остаётся в
+// данных строки и уезжает в EVENT — на скрытых колонках держатся ключи
+// master-detail. Поэтому фильтруется РЕНДЕР, а не набор колонок синхронизации.
+describe('EditableTable — visible: false', () => {
+  const withHidden: ViewNode[] = [
+    ...columnNodes,
+    {
+      id: `${TABLE_ID}.col.oklad`,
+      type: 'TABLE_COLUMN',
+      binding: 'Oklad',
+      props: { label: 'Оклад', visible: false },
+    } as ViewNode,
+  ]
+
+  it('скрытая колонка не рендерится, видимые — рендерятся', () => {
+    render(
+      <EditableTable
+        node={
+          {
+            id: TABLE_ID,
+            type: 'TABLE',
+            binding: 'TMZ',
+            props: { editable: true },
+            children: withHidden,
+          } as ViewNode
+        }
+        columns={withHidden.map(nodeToTableColumnDef)}
+      />
+    )
+
+    expect(screen.queryByText('Оклад')).toBeNull()
+    expect(screen.getByText('Номенклатура')).toBeTruthy()
+    expect(screen.getByText('Сумма')).toBeTruthy()
+  })
+})
+
 describe('EditableTable — ресайз колонок', () => {
   // Регресс-пин: ресайз включается ТОЛЬКО контрактом бэка. Если ручки появятся
   // «по умолчанию», сломается вид всех уже работающих ТЧ (tableLayout:fixed).

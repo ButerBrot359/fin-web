@@ -31,6 +31,7 @@ import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
 import { resolveCellState } from '../../../lib/utils/resolve-cell-state'
+import { isColumnVisible } from '../../../lib/utils/column-visibility'
 import { omitServiceRowKeys } from '../../../lib/utils/service-row-keys'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { columnSizeProps } from '../../../lib/utils/column-sizing'
@@ -57,6 +58,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     | TableCommandDescriptor[]
     | undefined
 
+  // Колонки СИНХРОНИЗАЦИИ — все, включая скрытые: на них держатся ключи
+  // master-detail и служебные значения, они обязаны попадать в новую строку и
+  // в EVENT (§111/§273). Рисуются только видимые — см. visibleColumns ниже.
   const sync = useTableSync(node, columns)
   // Стабильная ссылка на актуальный sync для мемоизированных cell-колбэков:
   // без неё useMemo(tableColumns) захватил бы устаревший sync. Методы sync
@@ -75,9 +79,16 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   // Контракт общий для любой ТЧ, поэтому подключён и здесь, не только у свёртки.
   const openRow = useRowOpen(node)
 
+  // Всё, что видит пользователь, строится отсюда: шапка, ячейки, подвал, поиск,
+  // colSpan пустой таблицы. Скрытая колонка не рендерится и не ищется.
+  const visibleColumns = useMemo(
+    () => columns.filter(isColumnVisible),
+    [columns]
+  )
+
   const search = useTableSearch(
     sync.rows,
-    columns.map((c) => ({ id: c.id, binding: c.binding }))
+    visibleColumns.map((c) => ({ id: c.id, binding: c.binding }))
   )
   const containerRef = useRef<HTMLDivElement | null>(null)
 
@@ -108,7 +119,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   // через syncRef.current.
   const tableColumns = useMemo<ColumnDef<TableRow>[]>(
     () =>
-      columns.map((col) => ({
+      visibleColumns.map((col) => ({
         id: col.id,
         accessorFn: (row: TableRow) => row[col.binding],
         // TanStack `header` — string | функция (не элемент): подпись всегда
@@ -147,7 +158,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           )
         },
       })),
-    [columns]
+    [visibleColumns]
   )
 
   const sizing = useSduiColumnSizing(node)
@@ -260,7 +271,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
             {table.getRowModel().rows.length === 0 ? (
               <MuiTableRow>
                 <TableCell
-                  colSpan={columns.length + (showRowNumbers ? 1 : 0)}
+                  colSpan={visibleColumns.length + (showRowNumbers ? 1 : 0)}
                   align="center"
                 >
                   <Typography variant="body2" color="text.secondary">

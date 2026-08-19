@@ -6,6 +6,7 @@
 
 import type { ViewNode } from '../../types/view'
 import { nodeToTableColumnDef } from './build-column-defs'
+import { isNodeVisible } from './column-visibility'
 
 export interface ReadOnlyColumnDef {
   id: string
@@ -20,8 +21,14 @@ export interface ReadOnlyColumnDef {
   resizable?: boolean
 }
 
-/** Рекурсивно собирает листовые TABLE_COLUMN (включая вложенные в COLUMN_GROUP) в порядке документа. */
+/**
+ * Рекурсивно собирает ВИДИМЫЕ листовые TABLE_COLUMN (включая вложенные в
+ * COLUMN_GROUP) в порядке документа. Скрытая колонка и скрытая группа целиком
+ * выпадают: read-only таблица только показывает данные, ключи связи ей не нужны
+ * (см. column-visibility).
+ */
 function collectLeafColumns(node: ViewNode): ViewNode[] {
+  if (!isNodeVisible(node)) return []
   if (node.type === 'TABLE_COLUMN') return [node]
   if (node.type === 'COLUMN_GROUP')
     return (node.children ?? []).flatMap(collectLeafColumns)
@@ -85,6 +92,10 @@ export function buildHeaderModel(
 
   // Second pass: build rows
   for (const node of nodes) {
+    // Скрытая колонка/группа не попадает в шапку (§111/§273). Для групп этого
+    // мало: у видимой группы могут быть скрытые листья, поэтому colSpan ниже
+    // считается по отфильтрованным листьям collectLeafColumns.
+    if (!isNodeVisible(node)) continue
     if (node.type === 'TABLE_COLUMN') {
       const col = nodeToTableColumnDef(node)
       topRow.push({

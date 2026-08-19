@@ -17,6 +17,8 @@ import {
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
+import { useVirtualTableRows } from '@/shared/lib/virtual-rows/use-virtual-table-rows'
+
 import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import { useTableSync, type TableRow } from '../../../lib/hooks/use-table-sync'
 import {
@@ -311,13 +313,29 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   )
   const containerRef = useRef<HTMLDivElement | null>(null)
 
+  // Виртуализация строк (SCRUM-368): в DOM — только видимое окно видимого
+  // набора (для master-detail — уже отфильтрованного). Ниже порога хука рендер
+  // прежний (все строки).
+  const virt = useVirtualTableRows(visibleRows.length)
+  const setContainerRef = (node: HTMLDivElement | null) => {
+    containerRef.current = node
+    virt.setContainerRef(node)
+  }
+
   // Скролл к текущему совпадению поиска (§6.5: поиск не фильтрует строки).
+  // При виртуализации строка совпадения может быть вне окна — сначала подводим
+  // окно к её индексу, затем после кадра доводим по горизонтали к самой ячейке.
   useEffect(
     () => {
-      if (!search.current) return
-      containerRef.current
-        ?.querySelector('[data-search-hit="true"]')
-        ?.scrollIntoView({ block: 'nearest' })
+      const current = search.current
+      if (!current) return
+      const idx = visibleRows.findIndex((r) => r.rowId === current.rowId)
+      if (idx >= 0) virt.scrollToRow(idx)
+      requestAnimationFrame(() => {
+        containerRef.current
+          ?.querySelector('[data-search-hit="true"]')
+          ?.scrollIntoView({ block: 'nearest' })
+      })
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [search.current?.rowId, search.current?.columnId]
@@ -380,7 +398,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           становится ниже собственного содержимого, если растягивать нечего. */}
       <TableContainer
         component={Paper}
-        ref={containerRef}
+        ref={setContainerRef}
         sx={{ flex: '1 1 auto' }}
       >
         <Table size="small">
@@ -423,7 +441,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
               </MuiTableRow>
             ))}
           </TableHead>
-          <TableBody>
+          <TableBody ref={virt.setBodyRef}>
             {visibleRows.length === 0 ? (
               <MuiTableRow>
                 <TableCell
@@ -436,42 +454,67 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                 </TableCell>
               </MuiTableRow>
             ) : (
-              table.getRowModel().rows.map((row, index) => (
-                <MuiTableRow
-                  key={row.id}
-                  hover
-                  selected={row.id === selectedRowId}
-                  onClick={() => {
-                    handleRowClick(row.id)
-                  }}
-                  sx={{ cursor: 'pointer', height: ROW_HEIGHT }}
-                >
-                  {showRowNumbers && (
+              <>
+                {virt.paddingTop > 0 && (
+                  <MuiTableRow aria-hidden="true">
                     <TableCell
-                      sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        {index + 1}
-                      </Typography>
-                    </TableCell>
-                  )}
-                  {row.getVisibleCells().map((cell) => (
-                    <SearchHitCell
-                      key={cell.id}
-                      isHit={isSearchHit(
-                        search.current,
-                        row.original.rowId,
-                        cell.column.id
-                      )}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </SearchHitCell>
-                  ))}
-                </MuiTableRow>
-              ))
+                      colSpan={leafColumnCount + (showRowNumbers ? 1 : 0)}
+                      sx={{ height: virt.paddingTop, p: 0, border: 0 }}
+                    />
+                  </MuiTableRow>
+                )}
+                {(virt.virtualItems
+                  ? virt.virtualItems.map(
+                      (item) => table.getRowModel().rows[item.index]
+                    )
+                  : table.getRowModel().rows
+                ).map((row) => (
+                  <MuiTableRow
+                    key={row.id}
+                    hover
+                    data-index={virt.isVirtualized ? row.index : undefined}
+                    ref={virt.measureRow}
+                    selected={row.id === selectedRowId}
+                    onClick={() => {
+                      handleRowClick(row.id)
+                    }}
+                    sx={{ cursor: 'pointer', height: ROW_HEIGHT }}
+                  >
+                    {showRowNumbers && (
+                      <TableCell
+                        sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          {row.index + 1}
+                        </Typography>
+                      </TableCell>
+                    )}
+                    {row.getVisibleCells().map((cell) => (
+                      <SearchHitCell
+                        key={cell.id}
+                        isHit={isSearchHit(
+                          search.current,
+                          row.original.rowId,
+                          cell.column.id
+                        )}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </SearchHitCell>
+                    ))}
+                  </MuiTableRow>
+                ))}
+                {virt.paddingBottom > 0 && (
+                  <MuiTableRow aria-hidden="true">
+                    <TableCell
+                      colSpan={leafColumnCount + (showRowNumbers ? 1 : 0)}
+                      sx={{ height: virt.paddingBottom, p: 0, border: 0 }}
+                    />
+                  </MuiTableRow>
+                )}
+              </>
             )}
           </TableBody>
           {hasFooter && footerValues && (

@@ -6,6 +6,7 @@ import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
 import { formatDate } from '@/shared/lib/utils/date'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { cn } from '@/shared/lib/utils/cn'
+import { useVirtualBlocks } from '@/shared/lib/virtual-rows/use-virtual-blocks'
 
 import type { MovementGroup } from '../api/document-movements-api'
 
@@ -109,7 +110,10 @@ export const AccountingPostingsTable = ({
     <Typography
       variant="body2"
       noWrap
-      className={cn('truncate text-ui-06', numeric && 'text-right tabular-nums')}
+      className={cn(
+        'truncate text-ui-06',
+        numeric && 'text-right tabular-nums'
+      )}
     >
       {resolveValue(v)}
     </Typography>
@@ -123,8 +127,29 @@ export const AccountingPostingsTable = ({
 
   const bl = 'border-l border-ui-04'
 
+  // Виртуализация журнала (SCRUM-368): окно по БЛОКАМ проводок (tbody на 3
+  // строки), у документов на тысячи строк проводок ещё больше. Распорки-tbody
+  // держат высоту скролла, ниже порога хука рендер прежний.
+  const {
+    isVirtualized,
+    virtualItems,
+    paddingTop,
+    paddingBottom,
+    setScrollerRef,
+    measureBlock,
+  } = useVirtualBlocks(group.entries.length)
+  const renderedEntries = virtualItems
+    ? virtualItems.map((item) => ({
+        entry: group.entries[item.index],
+        idx: item.index,
+      }))
+    : group.entries.map((entry, idx) => ({ entry, idx }))
+
   return (
-    <div className="min-h-0 flex-1 overflow-auto rounded-md border border-ui-04">
+    <div
+      ref={setScrollerRef}
+      className="min-h-0 flex-1 overflow-auto rounded-md border border-ui-04"
+    >
       <table className="w-full border-collapse">
         <thead className="bg-ui-02">
           {/* Ряд 1 — группы Дебет / Кредит. */}
@@ -150,7 +175,10 @@ export const AccountingPostingsTable = ({
           </tr>
           {/* Ряды 2-4 — названия полей (субконто/аналитика построчно), как в 1С. */}
           {[0, 1, 2].map((r) => (
-            <tr key={r} className={r === 2 ? 'border-b border-ui-04' : undefined}>
+            <tr
+              key={r}
+              className={r === 2 ? 'border-b border-ui-04' : undefined}
+            >
               {r === 0 && (
                 <th rowSpan={3} className={cn(thBase, bl)}>
                   {t('accountingRegister.account')}
@@ -170,13 +198,22 @@ export const AccountingPostingsTable = ({
             </tr>
           ))}
         </thead>
-        {group.entries.map((entry, idx) => {
+        {paddingTop > 0 && (
+          <tbody aria-hidden="true">
+            <tr>
+              <td colSpan={12} style={{ height: paddingTop, padding: 0 }} />
+            </tr>
+          </tbody>
+        )}
+        {renderedEntries.map(({ entry, idx }) => {
           const period = entry._period
           // Каждая проводка — отдельный <tbody class="group"> для hover всей проводки.
           return (
             <tbody
               key={(entry._id as number | string | undefined) ?? idx}
               className="group"
+              data-index={isVirtualized ? idx : undefined}
+              ref={measureBlock}
             >
               {ROW_FIELDS.map((rf, r) => {
                 const first = r === 0
@@ -210,18 +247,38 @@ export const AccountingPostingsTable = ({
                   >
                     {first && (
                       <>
-                        <td rowSpan={3} className={cn(cellPad, 'text-center text-ui-06')}>
+                        <td
+                          rowSpan={3}
+                          className={cn(cellPad, 'text-center text-ui-06')}
+                        >
                           {idx + 1}
                         </td>
-                        <td rowSpan={3} className={cn(cellPad, 'whitespace-nowrap text-ui-06')}>
-                          <Typography variant="body2" noWrap className="text-ui-06">
+                        <td
+                          rowSpan={3}
+                          className={cn(
+                            cellPad,
+                            'whitespace-nowrap text-ui-06'
+                          )}
+                        >
+                          <Typography
+                            variant="body2"
+                            noWrap
+                            className="text-ui-06"
+                          >
                             {typeof period === 'string'
                               ? formatDate(period, 'dd.MM.yyyy HH:mm:ss')
                               : ''}
                           </Typography>
                         </td>
-                        <td rowSpan={3} className={cn(cellPad, bl, 'align-middle')}>
-                          <Typography variant="body2" noWrap className="font-bold text-ui-06">
+                        <td
+                          rowSpan={3}
+                          className={cn(cellPad, bl, 'align-middle')}
+                        >
+                          <Typography
+                            variant="body2"
+                            noWrap
+                            className="font-bold text-ui-06"
+                          >
                             {resolveValue(entry.accountDt)}
                           </Typography>
                         </td>
@@ -238,8 +295,15 @@ export const AccountingPostingsTable = ({
                       <Val v={a2DtVal} numeric={numeric} />
                     </td>
                     {first && (
-                      <td rowSpan={3} className={cn(cellPad, bl, 'align-middle')}>
-                        <Typography variant="body2" noWrap className="font-bold text-ui-06">
+                      <td
+                        rowSpan={3}
+                        className={cn(cellPad, bl, 'align-middle')}
+                      >
+                        <Typography
+                          variant="body2"
+                          noWrap
+                          className="font-bold text-ui-06"
+                        >
                           {resolveValue(entry.accountKt)}
                         </Typography>
                       </td>
@@ -256,12 +320,22 @@ export const AccountingPostingsTable = ({
                     </td>
                     {first && (
                       <>
-                        <td rowSpan={3} className={cn(cellPad, bl, 'text-right align-middle')}>
-                          <Typography variant="body2" noWrap className="font-bold text-ui-06">
+                        <td
+                          rowSpan={3}
+                          className={cn(cellPad, bl, 'text-right align-middle')}
+                        >
+                          <Typography
+                            variant="body2"
+                            noWrap
+                            className="font-bold text-ui-06"
+                          >
                             {resolveValue(entry.summa)}
                           </Typography>
                         </td>
-                        <td rowSpan={3} className={cn(cellPad, bl, 'align-middle')}>
+                        <td
+                          rowSpan={3}
+                          className={cn(cellPad, bl, 'align-middle')}
+                        >
                           <Typography variant="body2" className="text-ui-06">
                             {resolveValue(entry.soderzhanie)}
                           </Typography>
@@ -274,6 +348,13 @@ export const AccountingPostingsTable = ({
             </tbody>
           )
         })}
+        {paddingBottom > 0 && (
+          <tbody aria-hidden="true">
+            <tr>
+              <td colSpan={12} style={{ height: paddingBottom, padding: 0 }} />
+            </tr>
+          </tbody>
+        )}
       </table>
     </div>
   )

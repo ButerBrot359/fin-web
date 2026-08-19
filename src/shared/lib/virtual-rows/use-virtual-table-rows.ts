@@ -65,6 +65,12 @@ export interface VirtualTableRows {
   setBodyRef: (node: HTMLTableSectionElement | null) => void
   /** Вешать на `<tr>`: замер реальной высоты строки; `undefined` без виртуализации. */
   measureRow: ((node: HTMLTableRowElement | null) => void) | undefined
+  /**
+   * Прокрутить окно к строке по абсолютному индексу (поиск по ТЧ: совпадение
+   * может быть вне отрисованного окна). Без виртуализации — no-op: строка уже
+   * в DOM, потребитель скроллит к ней сам.
+   */
+  scrollToRow: (index: number) => void
 }
 
 /**
@@ -155,5 +161,8 @@ export const useVirtualTableRows = (rowCount: number): VirtualTableRows => {
     setContainerRef,
     setBodyRef,
     measureRow: isVirtualized ? virtualizer.measureElement : undefined,
+    scrollToRow: (index: number) => {
+      if (isVirtualized) virtualizer.scrollToIndex(index, { align: 'center' })
+    },
   }
 }

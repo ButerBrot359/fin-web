@@ -86,6 +86,29 @@ describe('DialogHost — стек панелей', () => {
     expect(mounts.get('rowForm')).toBe(1)
   })
 
+  // Дефект со стенда 19.08.2026: «нажимаю „Показать все“ — ничего не
+  // происходит». Окно строки — полноэкранная page-панель (у MUI Dialog слой
+  // 1300), панель выбора — drawer (слой 1200), поэтому она открывалась ПОД
+  // окном строки. Слой обязан определяться позицией в стеке, а не типом
+  // компонента.
+  it('панель выбора (drawer) ложится ПОВЕРХ полноэкранной панели', () => {
+    render(<DialogHost />)
+
+    push({ ...panel('rowForm', 's1'), presentation: 'page' })
+    push({ ...panel('choice', 's2'), presentation: 'drawer' })
+
+    const zIndex = (id: string) =>
+      Number(
+        screen
+          .getByTestId(`node-${id}`)
+          .closest('[style*="z-index"]')
+          ?.getAttribute('style')
+          ?.match(/z-index:\s*(\d+)/)?.[1]
+      )
+
+    expect(zIndex('choice')).toBeGreaterThan(zIndex('rowForm'))
+  })
+
   it('обновление ревизии родителя не перемонтирует его', () => {
     render(<DialogHost />)
     push(panel('rowForm', 's1'))

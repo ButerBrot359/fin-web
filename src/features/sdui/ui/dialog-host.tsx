@@ -23,6 +23,7 @@ import {
   unregisterPanelPatchSink,
 } from '../lib/panel-patch-registry'
 import { ConfirmDialogHost } from './confirm-dialog-host'
+import { panelZIndex } from '@/shared/lib/utils/overlay-z-index'
 
 const PANEL_BG = '#F2F6FD'
 const BACKDROP_BG = 'rgba(34, 33, 36, 0.6)'
@@ -117,7 +118,7 @@ export const DialogHost = () => {
 
   return (
     <>
-      {stack.map((panel) => {
+      {stack.map((panel, index) => {
         // Панель, открытая в workspace-вкладке, рендерится через
         // WorkspacePanelHost — DialogHost её не показывает.
         if (panel.openInWorkspaceTab) return null
@@ -150,6 +151,7 @@ export const DialogHost = () => {
                 usePanelStore.getState().pop()
               }}
               fullScreen
+              style={{ zIndex: panelZIndex(index) }}
               slotProps={{
                 paper: {
                   sx: { backgroundColor: PANEL_BG },
@@ -190,6 +192,7 @@ export const DialogHost = () => {
               onClose={() => {
                 usePanelStore.getState().pop()
               }}
+              style={{ zIndex: panelZIndex(index) }}
               slotProps={{
                 paper: {
                   sx: {
@@ -232,6 +235,7 @@ export const DialogHost = () => {
             }}
             maxWidth="md"
             fullWidth
+            style={{ zIndex: panelZIndex(index) }}
           >
             {typeof panel.node.props?.title === 'string' && (
               <DialogTitle>{panel.node.props.title}</DialogTitle>

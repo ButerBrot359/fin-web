@@ -101,6 +101,9 @@ export interface ViewResponse {
   // SCRUM-288 §2.5: авторитетный признак несохранённого. true/false перекрывают
   // клиентский флаг; null/отсутствие — «решай сам». На OPEN не приходит.
   dirty?: boolean | null
+  // SCRUM-277 §3.1: true ⇒ команда завершилась неуспехом на 200-ответе —
+  // closeAfter применять нельзя (карточка остаётся открытой).
+  commandFailed?: boolean | null
 }
 
 export interface ViewPatch {

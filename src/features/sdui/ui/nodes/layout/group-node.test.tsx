@@ -124,6 +124,42 @@ describe('GroupNode / сворачивание', () => {
     expect(isCollapsed(container)).toBe(true)
   })
 
+  // «Сбросить» в отчёте подменяет группу параметров целиком, и пересобранный
+  // узел не несёт collapsed вовсе. Здесь GroupNode остаётся тем же React-инстансом
+  // (id в дереве не меняется, перемонтирования нет) — то есть проверяется худший
+  // случай: состояние обязано слететь и без размонтирования.
+  it('replaceNode без collapsed разворачивает группу, схлопнутую патчем', () => {
+    let node = group(false)
+    const { container, rerender } = render(<GroupNode node={node} />)
+
+    node = applyPatches(node, [
+      { op: 'setProp', nodeId: 'group.params', key: 'collapsed', value: true },
+    ])
+    rerender(<GroupNode node={node} />)
+    expect(isCollapsed(container)).toBe(true)
+
+    node = applyPatches(node, [
+      { op: 'replaceNode', nodeId: 'group.params', node: group() },
+    ])
+    rerender(<GroupNode node={node} />)
+
+    expect(isCollapsed(container)).toBe(false)
+  })
+
+  it('replaceNode без collapsed разворачивает группу, схлопнутую руками', () => {
+    let node = group(false)
+    const { container, rerender } = render(<GroupNode node={node} />)
+    toggle(container)
+    expect(isCollapsed(container)).toBe(true)
+
+    node = applyPatches(node, [
+      { op: 'replaceNode', nodeId: 'group.params', node: group() },
+    ])
+    rerender(<GroupNode node={node} />)
+
+    expect(isCollapsed(container)).toBe(false)
+  })
+
   it('патч в дочерний узел не трогает состояние группы', () => {
     let node = group(false)
     const { container, rerender } = render(<GroupNode node={node} />)

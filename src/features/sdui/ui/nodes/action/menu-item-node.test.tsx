@@ -5,13 +5,19 @@ import type { ViewNode } from '../../../types/view'
 import { MenuItemNode } from './menu-item-node'
 
 const dispatch = vi.fn()
+const executeActionRequest = vi.fn()
 
 vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => dispatch,
 }))
+vi.mock('../../../lib/use-sdui-effects', () => ({
+  useSduiEffects: () => ({ executeActionRequest }),
+}))
 
-const item = (props: Record<string, unknown>): ViewNode =>
-  ({ id: 'mi1', type: 'MENU_ITEM', props }) as ViewNode
+const item = (
+  props: Record<string, unknown>,
+  actions?: ViewNode['actions']
+): ViewNode => ({ id: 'mi1', type: 'MENU_ITEM', props, actions }) as ViewNode
 
 describe('MenuItemNode: enabled/disabled (SCRUM-265 FE-2)', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -49,6 +55,40 @@ describe('MenuItemNode: enabled/disabled (SCRUM-265 FE-2)', () => {
     const mi = screen.getByRole('menuitem', { name: 'Заполнить' })
     expect(mi.getAttribute('aria-disabled')).toBe('true')
     fireEvent.click(mi)
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('request на click-действии → executeActionRequest, command НЕ диспатчится (SCRUM-277 §13.12)', () => {
+    const request = {
+      method: 'POST' as const,
+      url: '/api/view/production-calendar/classifier-picker/panel',
+      body: { formSessionId: 'fs-1' },
+    }
+    render(
+      <MenuItemNode
+        node={item({ label: 'По классификатору...', enabled: true }, [
+          { trigger: 'click', actionId: 'request', request },
+        ])}
+      />
+    )
+    fireEvent.click(
+      screen.getByRole('menuitem', { name: 'По классификатору...' })
+    )
+    expect(executeActionRequest).toHaveBeenCalledWith(request)
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('request побеждает command в одной ветке клика', () => {
+    const request = { method: 'POST' as const, url: '/x', body: null }
+    render(
+      <MenuItemNode
+        node={item({ label: 'Пункт', command: 'cmd', enabled: true }, [
+          { trigger: 'click', actionId: 'request', request },
+        ])}
+      />
+    )
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Пункт' }))
+    expect(executeActionRequest).toHaveBeenCalledWith(request)
     expect(dispatch).not.toHaveBeenCalled()
   })
 

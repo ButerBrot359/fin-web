@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ViewNode, ViewNodeAction } from '../../../types/view'
+import type { NodeProps, ViewNode, ViewNodeAction } from '../../../types/view'
 
 const { dispatch } = vi.hoisted(() => ({
   dispatch: vi.fn().mockResolvedValue(true),
@@ -13,7 +13,12 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }))
 vi.mock('./calendar-legend', () => ({ CalendarLegend: () => null }))
-vi.mock('./day-kind-legend', () => ({ DayKindLegend: () => null }))
+// Production-receiver стаб: маркер + ключ ремоунта (draftId:draftVersion:year)
+vi.mock('./production/production-calendar-node', () => ({
+  ProductionCalendarNode: ({ node }: NodeProps) => (
+    <div data-testid="production-calendar">{node.id}</div>
+  ),
+}))
 // YearSelector-стаб: кнопка, дёргающая onChange(2026)
 vi.mock('./year-selector', () => ({
   YearSelector: ({ onChange }: { onChange: (y: number) => void }) => (
@@ -27,7 +32,7 @@ vi.mock('./year-selector', () => ({
   ),
 }))
 // MonthGrid-стаб: маркер месяца + реальная ячейка через renderDay (15-е число
-// января) — так узел тестируется с настоящими CalendarDayCell/DayKindCell.
+// января) — так узел тестируется с настоящей CalendarDayCell.
 vi.mock('./month-grid', () => ({
   MonthGrid: ({
     month,
@@ -67,17 +72,6 @@ const inclusionProps = {
   days: [{ date: '2025-01-15', active: true, manual: false }],
 }
 
-const dayKindProps = {
-  mode: 'dayKind',
-  year: 2025,
-  yearFilled: true,
-  dayKinds: [
-    { code: 'WORK', title: 'Рабочий' },
-    { code: 'HOLIDAY', title: 'Праздник' },
-  ],
-  days: [{ date: '2025-01-15', kind: 'HOLIDAY', kindTitle: 'Праздник' }],
-}
-
 const dayCell = () => screen.getByRole('button', { name: '15 января 2025' })
 
 describe('CalendarNode', () => {
@@ -92,6 +86,7 @@ describe('CalendarNode', () => {
     )
     expect(screen.getAllByText(/^m\d+$/)).toHaveLength(12)
     expect(dayCell().getAttribute('data-working')).toBe('true')
+    expect(screen.queryByTestId('production-calendar')).toBeNull()
   })
 
   it('inclusion: смена года диспатчит команду changeYear-действия со значением-годом', () => {
@@ -115,54 +110,28 @@ describe('CalendarNode', () => {
     expect(dispatch).not.toHaveBeenCalled()
   })
 
-  it('dayKind: ячейка красится по kind, выбор вида из меню диспатчит {date, kind}', () => {
+  it('mode отсутствует → inclusion-режим по умолчанию', () => {
+    render(<CalendarNode node={node({ year: 2025, days: [] })} />)
+    expect(screen.getAllByText(/^m\d+$/)).toHaveLength(12)
+    expect(screen.queryByTestId('production-calendar')).toBeNull()
+  })
+
+  it('dayKind → production-receiver (SCRUM-277 contract v2)', () => {
     render(
       <CalendarNode
-        node={node(dayKindProps, [action('setDayKind', 'cal.setDayKind:X')])}
+        node={node({
+          mode: 'dayKind',
+          year: 2030,
+          draftId: 'd',
+          draftVersion: 4,
+        })}
       />
     )
-    expect(dayCell().getAttribute('data-kind')).toBe('HOLIDAY')
-    fireEvent.click(dayCell())
-    fireEvent.click(screen.getByText('Рабочий'))
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'COMMAND',
-      command: 'cal.setDayKind:X',
-      value: { date: '2025-01-15', kind: 'WORK' },
-      sourceNodeId: 'proizvKalendar',
-    })
+    expect(screen.getByTestId('production-calendar')).toBeTruthy()
+    expect(screen.queryByText(/^m\d+$/)).toBeNull()
   })
 
-  it('dayKind без setDayKind-действия: ячейки disabled, меню не открывается', () => {
-    render(<CalendarNode node={node(dayKindProps)} />)
-    const cell = dayCell()
-    expect(cell.hasAttribute('disabled')).toBe(true)
-    fireEvent.click(cell)
-    expect(screen.queryByText('Рабочий')).toBeNull()
-    expect(dispatch).not.toHaveBeenCalled()
-  })
-
-  it('кнопка fillDefaults видна только при fillDefaults-действии и диспатчит год', () => {
-    const { unmount } = render(<CalendarNode node={node(dayKindProps)} />)
-    expect(screen.queryByText('sdui.calendar.fillDefaults')).toBeNull()
-    unmount()
-
-    render(
-      <CalendarNode
-        node={node(dayKindProps, [
-          action('fillDefaults', 'cal.fillDefaults:X'),
-        ])}
-      />
-    )
-    fireEvent.click(screen.getByText('sdui.calendar.fillDefaults'))
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'COMMAND',
-      command: 'cal.fillDefaults:X',
-      value: 2025,
-      sourceNodeId: 'proizvKalendar',
-    })
-  })
-
-  it('year отсутствует → ничего не рендерит', () => {
+  it('inclusion: year отсутствует → ничего не рендерит', () => {
     const { container } = render(<CalendarNode node={node({})} />)
     expect(container.firstChild).toBeNull()
   })

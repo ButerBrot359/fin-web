@@ -40,6 +40,7 @@ import { ObjectFieldNode } from '../ui/nodes/composite/object-field-node'
 import { ListNode } from '../ui/nodes/composite/list-node'
 import { ReportResultNode } from '../ui/nodes/composite/report-result-node'
 import { CalendarNode } from '../ui/nodes/calendar/calendar-node'
+import { ProductionCalendarClassifierPickerNode } from '../ui/nodes/calendar/production/production-calendar-classifier-picker-node'
 // Action
 import { ButtonNode } from '../ui/nodes/action/button-node'
 import { MenuItemNode } from '../ui/nodes/action/menu-item-node'
@@ -79,6 +80,7 @@ const registry: Record<string, FC<NodeProps>> = {
   LIST: ListNode,
   REPORT_RESULT: ReportResultNode,
   CALENDAR: CalendarNode,
+  PRODUCTION_CALENDAR_CLASSIFIER_PICKER: ProductionCalendarClassifierPickerNode,
   BUTTON: ButtonNode,
   MENU_ITEM: MenuItemNode,
   LINK: LinkNode,

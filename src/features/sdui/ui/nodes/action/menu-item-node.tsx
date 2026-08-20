@@ -3,6 +3,7 @@ import { MenuItem, Tooltip } from '@mui/material'
 
 import type { ActionBehavior, NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import { useSduiEffects } from '../../../lib/use-sdui-effects'
 
 export const MenuItemNode: FC<NodeProps> = ({ node }) => {
   const label = node.props?.label as string | undefined
@@ -13,16 +14,26 @@ export const MenuItemNode: FC<NodeProps> = ({ node }) => {
   const enabled = node.props?.enabled === true
   const tooltip = node.props?.tooltip as string | undefined
 
+  const clickAction = node.actions?.find((a) => a.trigger === 'click')
   // props.behavior побеждает action.behavior (SCRUM-283 §2.5)
-  const clickBehavior =
-    node.actions?.find((a) => a.trigger === 'click')?.behavior ?? null
   const behavior =
-    (node.props?.behavior as ActionBehavior | undefined) ?? clickBehavior
+    (node.props?.behavior as ActionBehavior | undefined) ??
+    clickAction?.behavior ??
+    null
+  // SCRUM-277 §13.12: готовый request на click-действии (пункт «По
+  // классификатору...») — исполняется эффект-рантаймом, command в той же
+  // ветке НЕ диспатчится. URL непрозрачен, фронт его не разбирает.
+  const requestAction = clickAction?.request ?? null
 
   const dispatch = useSduiDispatch()
+  const effects = useSduiEffects()
 
   const handleClick = () => {
     if (!enabled) return
+    if (requestAction) {
+      void effects.executeActionRequest(requestAction)
+      return
+    }
     if (command) {
       void dispatch({ type: 'COMMAND', command }, behavior)
     }

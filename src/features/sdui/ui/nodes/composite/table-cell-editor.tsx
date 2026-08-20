@@ -8,6 +8,10 @@ import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import { isCellEmpty } from '../../../lib/utils/is-cell-empty'
 import {
+  allowsDecimalInput,
+  numberPrecision,
+} from '../../../lib/utils/number-input-mode'
+import {
   resolveEnumValue,
   type EnumOption,
 } from '../../../lib/utils/enum-value'
@@ -134,7 +138,10 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
         return (
           <NumberInput
             value={strValue}
-            decimal={dataType === 'DECIMAL'}
+            // Дробная часть — по props.precision колонки, а dataType лишь
+            // фолбэк: колонки «Размер»/«Ставка» в эталоне 1С дробные.
+            decimal={allowsDecimalInput(props, dataType)}
+            precision={numberPrecision(props)}
             onChange={(e) => {
               const raw = e.target.value
               const parsed = raw === '' ? null : parseFloat(raw)

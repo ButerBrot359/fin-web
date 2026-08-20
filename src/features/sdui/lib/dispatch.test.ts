@@ -247,6 +247,21 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
     expect(sessionMock.closeAfter).not.toHaveBeenCalled()
   })
 
+  it('commandFailed: true → false, resetDirty/closeAfter НЕ вызваны (SCRUM-277 §3.1)', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValue({
+      ...commandResponse,
+      commandFailed: true,
+    } as unknown as ViewResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const ok = await result.current(
+      { type: 'COMMAND', command: 'save' },
+      { flushPendingTables: true, resetsDirty: true, closeAfter: true }
+    )
+    expect(ok).toBe(false)
+    expect(sessionMock.resetDirty).not.toHaveBeenCalled()
+    expect(sessionMock.closeAfter).not.toHaveBeenCalled()
+  })
+
   it('closeAfter: true, без navigate-эффекта → closeAfter(false) (SCRUM-283 v2)', async () => {
     // commandResponse.effects = [] → сервер не навигировал → хост сядет на соседнюю
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })

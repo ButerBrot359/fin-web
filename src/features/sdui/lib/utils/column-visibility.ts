@@ -1,5 +1,6 @@
-import type { ViewNode } from '../../types/view'
 import type { TableColumnDef } from '../hooks/use-table-sync'
+
+export { isNodeVisible } from './node-visibility'
 
 /**
  * `props.visible === false` у TABLE_COLUMN / COLUMN_GROUP: колонка НЕ рендерится
@@ -15,10 +16,10 @@ import type { TableColumnDef } from '../hooks/use-table-sync'
  *
  * Признак динамический: `setProp(colNodeId, "visible", …)` меняет узел дерева, и
  * колонки пересобираются из него на следующем рендере (§124).
+ *
+ * Само правило — общее для всех узлов, живёт в `node-visibility.ts` и здесь
+ * только переэкспортируется для потребителей колонок.
  */
-export function isNodeVisible(node: ViewNode): boolean {
-  return node.props?.visible !== false
-}
 
 /** То же правило для уже собранного описания колонки. */
 export function isColumnVisible(col: TableColumnDef): boolean {

@@ -2,6 +2,7 @@ import type { FC } from 'react'
 
 import type { NodeProps } from '../../../types/view'
 import { NodeRenderer } from '../../node-renderer'
+import { isNodeVisible } from '../../../lib/utils/node-visibility'
 
 export const HStackNode: FC<NodeProps> = ({ node }) => {
   const gap = (node.props?.gap as number | undefined) ?? 0
@@ -20,7 +21,10 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
         flex: flex !== undefined ? flex : undefined,
       }}
     >
-      {node.children?.map((c) => (
+      {/* Скрытых детей отсеиваем здесь, а не только в NodeRenderer: обёртка
+          ниже — собственный DOM-узел с flex:1, и от невидимого ребёнка
+          осталась бы пустая колонка. */}
+      {node.children?.filter(isNodeVisible).map((c) => (
         // Равное деление ширины по умолчанию (SCRUM-282 #1): без flex дети
         // ужимаются до контента (таблицы «скомканы»). minWidth:0 обязателен,
         // иначе таблица не даёт контейнеру сжиматься и появляется h-скролл формы.

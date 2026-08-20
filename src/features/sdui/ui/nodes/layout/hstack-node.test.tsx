@@ -22,10 +22,10 @@ describe('HStackNode', () => {
       children: [child('t1'), child('t2')],
     } as ViewNode
     const { getByTestId } = render(<HStackNode node={node} />)
-    const wrapper = getByTestId('t1').parentElement as HTMLElement
+    const wrapper = getByTestId('t1').parentElement!
     expect(wrapper.style.flex).toBe('1 1 0%')
     expect(wrapper.style.minWidth).toBe('0px')
-    const wrapper2 = getByTestId('t2').parentElement as HTMLElement
+    const wrapper2 = getByTestId('t2').parentElement!
     expect(wrapper2.style.flex).toBe('1 1 0%')
   })
 
@@ -37,7 +37,24 @@ describe('HStackNode', () => {
       children: [child('t3', 2), child('t4')],
     } as ViewNode
     const { getByTestId } = render(<HStackNode node={node} />)
-    const wrapper = getByTestId('t3').parentElement as HTMLElement
+    const wrapper = getByTestId('t3').parentElement!
     expect(wrapper.style.flexGrow).toBe('2')
+  })
+
+  it('скрытый ребёнок не оставляет пустую flex-колонку', () => {
+    const hidden = {
+      id: 't6',
+      type: 'TABLE',
+      props: { visible: false },
+    } as ViewNode
+    const node = {
+      id: 'h3',
+      type: 'HSTACK',
+      props: {},
+      children: [child('t5'), hidden],
+    } as ViewNode
+    const { container, queryByTestId } = render(<HStackNode node={node} />)
+    expect(queryByTestId('t6')).toBeNull()
+    expect(container.firstElementChild?.children).toHaveLength(1)
   })
 })

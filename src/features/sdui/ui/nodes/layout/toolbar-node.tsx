@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef, useState, type FC } from 'react'
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { NodeRenderer } from '../../node-renderer'
 import { OverflowContext } from '../../../lib/overflow/overflow-context'
+import { isNodeVisible } from '../../../lib/utils/node-visibility'
 import {
   computeOverflow,
   type OverflowItem,
@@ -11,7 +12,9 @@ import {
 const HYSTERESIS_PX = 4
 
 export const ToolbarNode: FC<NodeProps> = ({ node }) => {
-  const children = node.children ?? []
+  // Скрытые узлы выбывают до раскладки: каждый ребёнок получает свою обёртку с
+  // gap, и его ещё и меряют для «Ещё» — пустая обёртка съедала бы ширину.
+  const children = (node.children ?? []).filter(isNodeVisible)
   const containerRef = useRef<HTMLDivElement>(null)
   const childRefs = useRef<Map<string, HTMLElement>>(new Map())
   const lastWidth = useRef(0)
@@ -37,12 +40,14 @@ export const ToolbarNode: FC<NodeProps> = ({ node }) => {
       if (Math.abs(available - lastWidth.current) < HYSTERESIS_PX) return
       lastWidth.current = available
 
-      const items: OverflowItem[] = (node.children ?? []).map((c) => ({
-        id: c.id,
-        width: childRefs.current.get(c.id)?.offsetWidth ?? 0,
-        pinned: c.props?.pinned === true,
-        overflowHost: c.props?.overflowHost === true,
-      }))
+      const items: OverflowItem[] = (node.children ?? [])
+        .filter(isNodeVisible)
+        .map((c) => ({
+          id: c.id,
+          width: childRefs.current.get(c.id)?.offsetWidth ?? 0,
+          pinned: c.props?.pinned === true,
+          overflowHost: c.props?.overflowHost === true,
+        }))
       const moreWidth = childRefs.current.get(overflowHostId)?.offsetWidth ?? 0
       setCollapsedIds(computeOverflow(items, available, moreWidth))
     }

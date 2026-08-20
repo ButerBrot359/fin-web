@@ -10,6 +10,7 @@ import { NodeRenderer } from '../../node-renderer'
 export const GroupNode: FC<NodeProps> = ({ node }) => {
   const title = node.props?.title as string | undefined
   const collapsible = node.props?.collapsible as boolean | undefined
+  const gap = node.props?.gap as number | undefined
   const serverCollapsed =
     (node.props?.collapsed as boolean | undefined) ?? false
 
@@ -32,6 +33,10 @@ export const GroupNode: FC<NodeProps> = ({ node }) => {
   }
 
   const collapsed = userCollapsed ?? serverCollapsed
+
+  const children = node.children?.map((c) => (
+    <NodeRenderer key={c.id} node={c} />
+  ))
 
   return (
     <Paper variant="outlined" style={{ padding: 16 }}>
@@ -65,9 +70,19 @@ export const GroupNode: FC<NodeProps> = ({ node }) => {
         </div>
       )}
       <Collapse in={!collapsed}>
-        {node.children?.map((c) => (
-          <NodeRenderer key={c.id} node={c} />
-        ))}
+        {/* gap трактуется как у VSTACK (шаг 4px): группа, приезжающая GROUP'ом
+            вместо VSTACK ради заголовка, не должна терять отступы между детьми.
+            Флекс-обёртка появляется только когда проп задан — у групп без gap
+            раскладка детей остаётся ровно прежней. */}
+        {gap === undefined ? (
+          children
+        ) : (
+          <div
+            style={{ display: 'flex', flexDirection: 'column', gap: gap * 4 }}
+          >
+            {children}
+          </div>
+        )}
       </Collapse>
     </Paper>
   )

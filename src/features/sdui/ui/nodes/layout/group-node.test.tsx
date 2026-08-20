@@ -51,6 +51,42 @@ const toggle = (container: HTMLElement) => {
   fireEvent.click(container.querySelector('button')!)
 }
 
+describe('GroupNode / отступы между детьми', () => {
+  const withGap = (gap?: number): ViewNode =>
+    ({
+      id: 'group.avans',
+      type: 'GROUP',
+      props: { title: 'Аванс:', ...(gap === undefined ? {} : { gap }) },
+      children: [
+        { id: 'field.protsentAvansa', type: 'NUMBER_FIELD' },
+        { id: 'field.summaAvansa', type: 'NUMBER_FIELD' },
+      ],
+    }) as ViewNode
+
+  /** Флекс-обёртка детей, которую ставит только ветка с gap. */
+  const gapBox = (container: HTMLElement) =>
+    container.querySelector<HTMLElement>('.MuiCollapse-root div[style*="gap"]')
+
+  it('gap: 3 даёт тот же шаг 4px, что и у VSTACK', () => {
+    const { container } = render(<GroupNode node={withGap(3)} />)
+    expect(gapBox(container)?.style.gap).toBe('12px')
+  })
+
+  it('без gap раскладка детей прежняя — лишней обёртки нет', () => {
+    const { container } = render(<GroupNode node={withGap()} />)
+    expect(gapBox(container)).toBeNull()
+  })
+
+  it('дети рендерятся в обоих вариантах', () => {
+    const { container: withBox } = render(<GroupNode node={withGap(3)} />)
+    const { container: plain } = render(<GroupNode node={withGap()} />)
+    for (const c of [withBox, plain]) {
+      expect(c.textContent).toContain('field.protsentAvansa')
+      expect(c.textContent).toContain('field.summaAvansa')
+    }
+  })
+})
+
 describe('GroupNode / сворачивание', () => {
   it('collapsed из стартового дерева применяется', () => {
     const { container } = render(<GroupNode node={group(true)} />)

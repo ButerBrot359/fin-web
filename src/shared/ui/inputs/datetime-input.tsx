@@ -1,5 +1,7 @@
+import { useRef, type KeyboardEvent } from 'react'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
+import type { FieldRef, PickerValidDate } from '@mui/x-date-pickers/models'
 import { parseISO, isValid } from 'date-fns'
 
 import { CalendarSidebar, CalendarNavProvider } from './calendar-layout'
@@ -63,8 +65,44 @@ export const DateTimeInput = ({
     onChange(serializeDateInput(snapped, dateOnly))
   }
 
+  const fieldRef = useRef<FieldRef<PickerValidDate | null> | null>(null)
+
+  /**
+   * Backspace идёт по разрядам справа налево сам, без мыши.
+   *
+   * Поле MUI посекционное (дд | ММ | гггг | чч | мм), и штатный Backspace стирает
+   * ровно тот разряд, где стоит каретка, после чего упирается: чтобы дойти до
+   * начала даты, приходилось перещёлкивать каждый разряд вручную. Выделение мышью
+   * не спасает — секции гасят его в своём `onMouseUp`, «выделить всё» доступно
+   * только по Ctrl+A, о котором пользователь знать не обязан.
+   *
+   * Здесь добавлен только перевод каретки: стирает по-прежнему сам пикер, мы
+   * следом сдвигаем выделение на разряд левее. Нажатие за нажатием дата стирается
+   * от секунд к дню, как в 1С, — с той разницей, что 1С работает по символам, а
+   * посекционное поле умеет только целыми разрядами.
+   *
+   * Сдвиг отложен в макрозадачу намеренно: разряд стирается браузером на
+   * `input`-событии, которое приходит уже ПОСЛЕ `keydown`. Переставить выделение
+   * синхронно — значит подставить под удаление соседний разряд вместо текущего.
+   */
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== 'Backspace' || readOnly || disabled) return
+    const activeIndex = fieldRef.current?.getActiveSectionIndex()
+    // null — выделены все разряды (Ctrl+A), их пикер стирает разом сам;
+    // 0 — левее уже некуда.
+    if (activeIndex == null || activeIndex === 0) return
+    setTimeout(() => fieldRef.current?.setSelectedSections(activeIndex - 1))
+  }
+
   const slotProps = {
     textField: { error, helperText, required, size, fullWidth },
+    // `clearable` — крестик «стереть всё сразу», альтернатива поразрядному
+    // Backspace. Пикер сам прячет его, пока на поле нет курсора или фокуса.
+    field: {
+      clearable: true,
+      onKeyDown: handleKeyDown,
+      unstableFieldRef: fieldRef,
+    },
   }
 
   const slots = { shortcuts: CalendarSidebar }

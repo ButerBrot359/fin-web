@@ -1,4 +1,12 @@
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { useState } from 'react'
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  waitFor,
+  act,
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
@@ -28,8 +36,38 @@ const renderInput = (props: Partial<DateTimeInputProps>) => {
   return {
     ...utils,
     fieldValue: () => utils.container.querySelector('input')?.value,
+    // Кнопок в поле две, и крестик очистки идёт раньше — «первая попавшаяся»
+    // больше не годится. У кнопки календаря есть aria-label, у крестика — title.
     openCalendar: () =>
-      fireEvent.click(utils.container.querySelector('button')!),
+      fireEvent.click(
+        utils.container.querySelector<HTMLButtonElement>('button[aria-label]')!
+      ),
+  }
+}
+
+/** Поле со стейтом наверху — как в настоящей форме. */
+const renderControlledInput = (spy?: (value: string) => void) => {
+  const Controlled = () => {
+    const [value, setValue] = useState('2026-08-12')
+    return (
+      <DateTimeInput
+        dateOnly
+        value={value}
+        onChange={(next) => {
+          spy?.(next)
+          setValue(next)
+        }}
+      />
+    )
+  }
+  const utils = render(
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ru}>
+      <Controlled />
+    </LocalizationProvider>
+  )
+  return {
+    ...utils,
+    fieldValue: () => utils.container.querySelector('input')?.value,
   }
 }
 
@@ -74,5 +112,107 @@ describe('DateTimeInput — props.dateFormat', () => {
     const { openCalendar } = renderInput({ dateFormat: 'dd.MM.yyyy' })
     openCalendar()
     expect(screen.getByRole('grid')).toBeTruthy()
+  })
+})
+
+/**
+ * Очистка значения. Два пути: поразрядный Backspace (каретка сама идёт справа
+ * налево) и крестик «стереть всё сразу».
+ */
+describe('DateTimeInput — очистка значения', () => {
+  afterEach(cleanup)
+
+  const clearButton = () =>
+    document.querySelector<HTMLButtonElement>('button.clearButton')
+
+  const sections = () =>
+    Array.from(document.querySelectorAll<HTMLElement>('[role="spinbutton"]'))
+
+  // Пикер запоминает активный разряд по фокусу — без act() обновление стейта не
+  // успевает примениться, и он считает, что в поле не выбрано ничего.
+  const focusSection = (section: HTMLElement) => {
+    act(() => {
+      section.focus()
+    })
+  }
+
+  /**
+   * Backspace в браузере: пикер держит текущий разряд выделенным, браузер стирает
+   * выделение и шлёт `input` уже после `keydown`. jsdom за него этого не делает —
+   * эмулируем обе половины, иначе проверялся бы только наш перевод каретки.
+   */
+  const pressBackspace = (section: HTMLElement) => {
+    fireEvent.keyDown(section, { key: 'Backspace' })
+    section.textContent = ''
+    fireEvent.input(section)
+  }
+
+  it('у заполненного поля есть кнопка очистки', () => {
+    renderInput({})
+    expect(clearButton()).toBeTruthy()
+  })
+
+  it('крестик отдаёт наружу пустую строку', () => {
+    const onChange = vi.fn<(v: string) => void>()
+    renderInput({ onChange })
+    fireEvent.click(clearButton()!)
+    expect(onChange).toHaveBeenCalledWith('')
+  })
+
+  it('Backspace стирает текущий разряд и сам переводит каретку на предыдущий', async () => {
+    // Поле контролируемое: без стейта наверху пикер пересинхронизировал бы
+    // разряды обратно из неизменившегося `value`.
+    const onChange = vi.fn<(v: string) => void>()
+    renderControlledInput(onChange)
+    const [day, month, year] = sections()
+
+    focusSection(year)
+    pressBackspace(year)
+    await waitFor(() => {
+      expect(year.getAttribute('aria-valuenow')).toBeNull()
+    })
+    // Дата стала неполной — наружу уходит пустая строка, как при любой правке.
+    expect(onChange).toHaveBeenLastCalledWith('')
+    // Главное: каретка сама переехала на месяц, мышь не понадобилась.
+    await waitFor(() => {
+      expect(document.activeElement).toBe(month)
+    })
+
+    pressBackspace(month)
+    await waitFor(() => {
+      expect(document.activeElement).toBe(day)
+    })
+
+    // Три нажатия — и от «12.08.2026» не осталось ни одного разряда.
+    pressBackspace(day)
+    await waitFor(() => {
+      expect(sections().every((s) => !s.getAttribute('aria-valuenow'))).toBe(
+        true
+      )
+    })
+  })
+
+  it('на первом разряде каретка не уезжает за границу поля', async () => {
+    renderControlledInput()
+    const [day] = sections()
+    focusSection(day)
+    pressBackspace(day)
+    await waitFor(() => {
+      expect(document.activeElement).toBe(day)
+    })
+  })
+
+  it('readOnly не очищается ни крестиком, ни клавишей', async () => {
+    const onChange = vi.fn<(v: string) => void>()
+    const { fieldValue } = renderInput({ readOnly: true, onChange })
+    expect(clearButton()).toBeNull()
+    const year = sections().at(-1)!
+    focusSection(year)
+    fireEvent.keyDown(year, { key: 'Backspace' })
+    await waitFor(() => {
+      expect(document.activeElement).toBe(year)
+    })
+    expect(onChange).not.toHaveBeenCalled()
+    expect(fieldValue()).toBe('12.08.2026')
   })
 })

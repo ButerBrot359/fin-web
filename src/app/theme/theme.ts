@@ -1,6 +1,8 @@
 import { createTheme } from '@mui/material/styles'
 import type {} from '@mui/x-date-pickers/themeAugmentation'
 
+import { POPUP_Z } from '@/shared/lib/utils/overlay-z-index'
+
 export const theme = createTheme({
   palette: {
     primary: { main: '#2a75f4' },
@@ -91,6 +93,9 @@ export const theme = createTheme({
     },
     MuiAutocomplete: {
       styleOverrides: {
+        popper: {
+          zIndex: POPUP_Z,
+        },
         inputRoot: {
           paddingTop: '0 !important',
           paddingBottom: '0 !important',
@@ -192,9 +197,19 @@ export const theme = createTheme({
     },
     MuiPickerPopper: {
       styleOverrides: {
+        root: {
+          zIndex: POPUP_Z,
+        },
         paper: {
           borderRadius: 8,
           boxShadow: '0px 3px 24px rgba(42, 117, 244, 0.4)',
+        },
+      },
+    },
+    MuiPopover: {
+      styleOverrides: {
+        root: {
+          zIndex: POPUP_Z,
         },
       },
     },

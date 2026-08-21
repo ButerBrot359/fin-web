@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { buildCommonEffectDeps } from './build-effect-deps'
 import { createEffectHandler } from './effect-handler'
+import { openDialogAsPanel } from './open-dialog-panel'
 import { relaySelectionToParent } from './relay-selection'
 import { useSduiSession } from './sdui-session-context'
 import { useConfirmStore } from './stores/confirm-store'
@@ -30,6 +31,24 @@ export function useSduiEffects() {
       relaySelectionToParent(effect, (effects) => {
         handler.playAll(effects)
       })
+    },
+    replaceDialog: (closes, open) => {
+      // Пересборка панели одной транзакцией — тот же путь, что в dispatch:
+      // без него closeDialog+openDialog из одного ответа дают кадр без панели
+      // и повторную анимацию появления («окно мигает»).
+      const closeIds = closes
+        .map((e) => e.id)
+        .filter((id): id is string => typeof id === 'string')
+      openDialogAsPanel(
+        open,
+        session.getSession().formSessionId ?? undefined,
+        closeIds
+      )
+      for (const close of closes) {
+        relaySelectionToParent(close, (effects) => {
+          handler.playAll(effects)
+        })
+      }
     },
     confirm: (effect) => {
       void useConfirmStore

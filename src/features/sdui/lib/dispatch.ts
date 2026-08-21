@@ -23,6 +23,7 @@ import { useUnsavedChangesStore } from './stores/unsaved-changes-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { revealAllTableErrors } from './table-validation-registry'
 import { shouldRevealTableErrors } from './utils/reveal-policy'
+import { openDialogAsPanel } from './open-dialog-panel'
 import { relaySelectionToParent } from './relay-selection'
 import { buildCommonEffectDeps } from './build-effect-deps'
 
@@ -84,6 +85,26 @@ export function useSduiDispatch() {
           relaySelectionToParent(effect, (effects) => {
             effectHandler.playAll(effects)
           })
+        },
+        replaceDialog: (closes, open) => {
+          // Одна транзакция стора вместо remove+push: панель не исчезает ни на
+          // кадр, и хост не проигрывает анимацию появления (см. panel-store).
+          const closeIds = closes
+            .map((e) => e.id)
+            .filter((id): id is string => typeof id === 'string')
+          openDialogAsPanel(
+            open,
+            session.getSession().formSessionId ?? undefined,
+            closeIds
+          )
+          // Ретрансляция выбора родителю к анимации отношения не имеет, но
+          // живёт на ЗАКРЫВАЕМОМ эффекте — пропустить её здесь значило бы
+          // потерять её в паре (SCRUM-265: выбор из дочерней панели).
+          for (const close of closes) {
+            relaySelectionToParent(close, (effects) => {
+              effectHandler.playAll(effects)
+            })
+          }
         },
         confirm: (effect) => {
           // SCRUM-288 §2.3/§2.4: session-less подтверждение (панель) исполняет

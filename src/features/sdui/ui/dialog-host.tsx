@@ -161,11 +161,18 @@ export const DialogHost = () => {
           <NodeRenderer node={panel.node} />
         )
 
+        // Панель-замена показывается БЕЗ анимации появления: сервер прислал
+        // её вместе с закрытием предыдущей (пересборка того же окна), и fade-in
+        // на месте только что убранной панели читается как «окно закрылось и
+        // открылось заново». Первое открытие анимацию сохраняет.
+        const transitionDuration = panel.swappedIn === true ? 0 : undefined
+
         if (panel.presentation === 'page') {
           return (
             <Dialog
               key={panel.panelId}
               open
+              transitionDuration={transitionDuration}
               onClose={() => {
                 closePanel(panel.panelId)
               }}
@@ -208,6 +215,7 @@ export const DialogHost = () => {
               key={panel.panelId}
               anchor="right"
               open
+              transitionDuration={transitionDuration}
               onClose={() => {
                 closePanel(panel.panelId)
               }}
@@ -248,6 +256,7 @@ export const DialogHost = () => {
         return (
           <Dialog
             key={panel.panelId}
+            transitionDuration={transitionDuration}
             open
             onClose={() => {
               closePanel(panel.panelId)

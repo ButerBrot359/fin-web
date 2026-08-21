@@ -8,6 +8,11 @@ import { openPanelTab } from './workspace-tab-gateway'
 export function openDialogAsPanel(
   effect: ViewEffect,
   parentSessionId?: string,
+  // id панелей, которые эта заменяет: сервер прислал их closeDialog в ОДНОМ
+  // ответе с этим openDialog (пересборка того же окна под новый id). Тогда
+  // закрытие и открытие идут одной транзакцией стора и без анимации —
+  // см. panel-store.replace.
+  closePanelIds?: string[]
 ): void {
   const props = effect.node?.props
   const presentationRaw = props?.presentation as string | undefined
@@ -26,7 +31,9 @@ export function openDialogAsPanel(
     typeof tabKey === 'string' &&
     openPanelTab({
       tabKey,
-      title: (props?.title as string | undefined) ?? '',
+      // props здесь уже сужен предыдущим условием цепочки — `?.` лишний
+      // (eslint no-unnecessary-condition).
+      title: (props.title as string | undefined) ?? '',
       panelId,
     })
   const entry: PanelEntry = {
@@ -44,6 +51,10 @@ export function openDialogAsPanel(
       parentSessionId,
       targetNodeId: undefined,
     }
+  }
+  if (closePanelIds && closePanelIds.length > 0) {
+    usePanelStore.getState().replace(closePanelIds, entry)
+    return
   }
   // Повторное открытие того же документа (тот же tabKey → тот же node.id):
   // свежий PanelEntry с новым childState заменяет старый.

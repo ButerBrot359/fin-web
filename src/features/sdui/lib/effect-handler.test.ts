@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { apiService } from '@/shared/api/api'
 
+import type { ViewEffect } from '../types/view'
 import { createEffectHandler, type EffectHandlerDeps } from './effect-handler'
 
 vi.mock('@/shared/api/api', () => ({
@@ -22,6 +23,7 @@ function makeDeps(): EffectHandlerDeps {
     invalidateLists: vi.fn(),
     confirm: vi.fn(),
     unsavedChanges: vi.fn(),
+    replaceDialog: vi.fn(),
     openRouteInNewTab: vi.fn(),
     replaceUrl: vi.fn(),
   }
@@ -133,6 +135,85 @@ describe('effect confirm (SCRUM-244 v3 §1 / SCRUM-288 §2.3)', () => {
     ])
     expect(deps.invalidateLists).toHaveBeenCalledTimes(1) // the refresh BEFORE confirm ran
     expect(deps.confirm).toHaveBeenCalledTimes(1)
+  })
+})
+
+// Пересборка окна (смена режима формы строки, переключение работника) приезжает
+// парой «закрыть старую панель + открыть новую». Раздельная игра оставляла стек
+// без панели на кадр и заново проигрывала анимацию появления — окно мигало.
+describe('playAll — пара closeDialog+openDialog исполняется одной заменой', () => {
+  it('пара уходит в replaceDialog, а closeDialog/openDialog по отдельности НЕ зовутся', () => {
+    const deps = makeDeps()
+    const close = { type: 'closeDialog' as const, id: 'panel.view.1' }
+    const open: ViewEffect = {
+      type: 'openDialog',
+      node: { id: 'panel.edit.2', type: 'PAGE' },
+    }
+    createEffectHandler(deps).playAll([close, open])
+
+    expect(deps.replaceDialog).toHaveBeenCalledWith([close], open)
+    expect(deps.closeDialog).not.toHaveBeenCalled()
+    expect(deps.openDialog).not.toHaveBeenCalled()
+  })
+
+  it('несколько закрытий перед открытием схлопываются в одну замену', () => {
+    const deps = makeDeps()
+    const c1 = { type: 'closeDialog' as const, id: 'p1' }
+    const c2 = { type: 'closeDialog' as const, id: 'p2' }
+    const open: ViewEffect = {
+      type: 'openDialog',
+      node: { id: 'p3', type: 'PAGE' },
+    }
+    createEffectHandler(deps).playAll([c1, c2, open])
+
+    expect(deps.replaceDialog).toHaveBeenCalledWith([c1, c2], open)
+  })
+
+  // Прочие эффекты ответа порядок не меняют и играются как раньше.
+  it('соседние эффекты играются обычным путём', () => {
+    const deps = makeDeps()
+    createEffectHandler(deps).playAll([
+      { type: 'notify', level: 'info', message: 'm' },
+      { type: 'closeDialog', id: 'p1' },
+      { type: 'openDialog', node: { id: 'p2', type: 'PAGE' } },
+      { type: 'refresh' },
+    ])
+
+    expect(deps.replaceDialog).toHaveBeenCalledTimes(1)
+    expect(deps.invalidateLists).toHaveBeenCalledTimes(1)
+  })
+
+  // Узкие условия: одиночное закрытие — это закрытие, а не замена.
+  it('закрытие без открытия остаётся обычным closeDialog', () => {
+    const deps = makeDeps()
+    createEffectHandler(deps).playAll([{ type: 'closeDialog', id: 'p1' }])
+
+    expect(deps.replaceDialog).not.toHaveBeenCalled()
+    expect(deps.closeDialog).toHaveBeenCalledTimes(1)
+  })
+
+  it('открытие без предшествующего закрытия остаётся обычным openDialog', () => {
+    const deps = makeDeps()
+    createEffectHandler(deps).playAll([
+      { type: 'openDialog', node: { id: 'p2', type: 'PAGE' } },
+      { type: 'closeDialog', id: 'p1' },
+    ])
+
+    expect(deps.replaceDialog).not.toHaveBeenCalled()
+    expect(deps.openDialog).toHaveBeenCalledTimes(1)
+    expect(deps.closeDialog).toHaveBeenCalledTimes(1)
+  })
+
+  // Без моста (session-less путь) поведение прежнее — пара играется по очереди.
+  it('без replaceDialog пара играется по очереди, как раньше', () => {
+    const deps = { ...makeDeps(), replaceDialog: undefined }
+    createEffectHandler(deps).playAll([
+      { type: 'closeDialog', id: 'p1' },
+      { type: 'openDialog', node: { id: 'p2', type: 'PAGE' } },
+    ])
+
+    expect(deps.closeDialog).toHaveBeenCalledTimes(1)
+    expect(deps.openDialog).toHaveBeenCalledTimes(1)
   })
 })
 

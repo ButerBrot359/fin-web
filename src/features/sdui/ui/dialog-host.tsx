@@ -23,6 +23,9 @@ import {
   unregisterPanelPatchSink,
 } from '../lib/panel-patch-registry'
 import { ConfirmDialogHost } from './confirm-dialog-host'
+import { UnsavedChangesHost } from './unsaved-changes-host'
+import { PanelCloseCommand } from './panel-close-command'
+import { requestPanelClose } from '../lib/panel-close-registry'
 import { panelZIndex } from '@/shared/lib/utils/overlay-z-index'
 
 const PANEL_BG = '#F2F6FD'
@@ -108,9 +111,25 @@ const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
   // Рендер из ЖИВОГО tree-стейта: патчи setProp видны сразу (фикс §3.4 SCRUM-268)
   return (
     <SduiSessionProvider value={sessionValue}>
+      {/* Крестик панели — снаружи, в DialogHost; команда закрытия живёт в
+          сессии панели. Мост между ними — этот компонент (ничего не рисует). */}
+      <PanelCloseCommand panelId={panel.panelId} node={tree} />
       <NodeRenderer node={tree} />
     </SduiSessionProvider>
   )
+}
+
+/**
+ * Закрытие панели пользователем (крестик, клик мимо, Esc).
+ *
+ * Панель, объявившая серверную команду закрытия (`props.closeCommand`), сама её
+ * не закрывает: решение принимает сервер — он либо гасит панель эффектом
+ * `closeDialog`, либо сперва спрашивает «Сохранить изменения?». Остальные
+ * панели закрываются как раньше, локально.
+ */
+const closePanel = (panelId: string): void => {
+  if (requestPanelClose(panelId)) return
+  usePanelStore.getState().pop()
 }
 
 export const DialogHost = () => {
@@ -148,7 +167,7 @@ export const DialogHost = () => {
               key={panel.panelId}
               open
               onClose={() => {
-                usePanelStore.getState().pop()
+                closePanel(panel.panelId)
               }}
               fullScreen
               style={{ zIndex: panelZIndex(index) }}
@@ -167,7 +186,7 @@ export const DialogHost = () => {
                   )}
                   <IconButton
                     onClick={() => {
-                      usePanelStore.getState().pop()
+                      closePanel(panel.panelId)
                     }}
                   >
                     <CloseIcon sx={{ fontSize: 20 }} />
@@ -190,7 +209,7 @@ export const DialogHost = () => {
               anchor="right"
               open
               onClose={() => {
-                usePanelStore.getState().pop()
+                closePanel(panel.panelId)
               }}
               style={{ zIndex: panelZIndex(index) }}
               slotProps={{
@@ -212,7 +231,7 @@ export const DialogHost = () => {
                 <div className="flex shrink-0 items-center justify-end">
                   <IconButton
                     onClick={() => {
-                      usePanelStore.getState().pop()
+                      closePanel(panel.panelId)
                     }}
                   >
                     <CloseIcon sx={{ fontSize: 20 }} />
@@ -231,7 +250,7 @@ export const DialogHost = () => {
             key={panel.panelId}
             open
             onClose={() => {
-              usePanelStore.getState().pop()
+              closePanel(panel.panelId)
             }}
             maxWidth="md"
             fullWidth
@@ -245,6 +264,7 @@ export const DialogHost = () => {
         )
       })}
       <ConfirmDialogHost />
+      <UnsavedChangesHost />
     </>
   )
 }

@@ -140,6 +140,13 @@ export interface ViewEffect {
   confirmRequest?: ActionRequest | null
   // SCRUM-288 §2.4: behavior подтверждённой команды (resetsDirty и пр.).
   confirmBehavior?: ActionBehavior | null
+  // unsavedChanges: ответы «Да, сохранить» и «Нет, не сохранять». Обе —
+  // КОМАНДЫ в ту же сессию: несохранённое дочерней формы лежит на сервере, и
+  // «не сохранять» одним лишь закрытием панели его не выбросить.
+  saveCommand?: string
+  saveBehavior?: ActionBehavior | null
+  discardCommand?: string
+  discardBehavior?: ActionBehavior | null
   sessionId?: string
   childRevision?: number
   childState?: Record<string, unknown>

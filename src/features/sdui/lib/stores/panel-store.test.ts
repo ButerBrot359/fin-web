@@ -14,7 +14,9 @@ const entry = (id: string, sessionId?: string): PanelEntry => ({
 })
 
 describe('panel-store', () => {
-  beforeEach(() => usePanelStore.setState({ panels: [] }))
+  beforeEach(() => {
+    usePanelStore.setState({ panels: [] })
+  })
 
   it('push/pop/remove управляют стеком', () => {
     const s = usePanelStore.getState()
@@ -118,5 +120,48 @@ describe('panel-store reset', () => {
     const panels = usePanelStore.getState().panels
     expect(panels).toHaveLength(1)
     expect(panels[0].panelId).toBe('tab')
+  })
+})
+
+// Пересборка окна (смена режима формы строки): сервер закрывает панель и тут же
+// открывает её же под новым id. Раздельные remove+push оставляли стек пустым и
+// заставляли хост проигрывать анимацию появления заново — окно мигало.
+describe('panel-store — замена панели', () => {
+  beforeEach(() => {
+    usePanelStore.setState({ panels: [] })
+  })
+
+  it('replace убирает старые панели и ставит новую ОДНОЙ транзакцией', () => {
+    const seen: number[] = []
+    const unsubscribe = usePanelStore.subscribe((s) => {
+      seen.push(s.panels.length)
+    })
+    usePanelStore.getState().push(entry('rowForm.view.1', 'fs-1'))
+    seen.length = 0
+
+    usePanelStore
+      .getState()
+      .replace(['rowForm.view.1'], entry('rowForm.edit.2', 'fs-1'))
+
+    expect(usePanelStore.getState().panels.map((p) => p.panelId)).toEqual([
+      'rowForm.edit.2',
+    ])
+    // Ни одного промежуточного состояния «панелей нет» — иначе хост успел бы
+    // размонтировать диалог и проиграть появление заново.
+    expect(seen).toEqual([1])
+    unsubscribe()
+  })
+
+  it('панель-замена помечена swappedIn — хост покажет её без анимации', () => {
+    usePanelStore.getState().push(entry('a', 'fs-1'))
+    usePanelStore.getState().replace(['a'], entry('b', 'fs-1'))
+
+    expect(usePanelStore.getState().panels[0].swappedIn).toBe(true)
+  })
+
+  it('обычный push панель заменой не помечает — первое открытие анимируется', () => {
+    usePanelStore.getState().push(entry('a', 'fs-1'))
+
+    expect(usePanelStore.getState().panels[0].swappedIn).toBeUndefined()
   })
 })

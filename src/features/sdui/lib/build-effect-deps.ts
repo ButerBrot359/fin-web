@@ -16,12 +16,13 @@ export interface EffectDepsCtx {
   setSearchParams: (search: string, opts?: { replace?: boolean }) => void
 }
 
-// SCRUM-288: общая часть зависимостей эффект-хэндлера (без confirm/closeDialog —
-// они ссылаются на сам хэндлер и строятся на месте вызова). Используют dispatch и
-// use-sdui-effects. closeSession/openDialog читают сессию ЛЕНИВО (в момент проигрывания).
+// SCRUM-288: общая часть зависимостей эффект-хэндлера (без confirm/closeDialog/
+// unsavedChanges — они ссылаются на сам хэндлер либо на dispatch и строятся на
+// месте вызова). Используют dispatch и use-sdui-effects.
+// closeSession/openDialog читают сессию ЛЕНИВО (в момент проигрывания).
 export function buildCommonEffectDeps(
   ctx: EffectDepsCtx
-): Omit<EffectHandlerDeps, 'confirm' | 'closeDialog'> {
+): Omit<EffectHandlerDeps, 'confirm' | 'closeDialog' | 'unsavedChanges'> {
   return {
     navigate: ctx.navigate,
     closeSession: async () => {

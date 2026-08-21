@@ -19,6 +19,7 @@ import { isRetryableAfterReopen } from './reopen-retry-policy'
 import { useSduiSession } from './sdui-session-context'
 import { usePanelStore } from './stores/panel-store'
 import { useConfirmStore } from './stores/confirm-store'
+import { useUnsavedChangesStore } from './stores/unsaved-changes-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { revealAllTableErrors } from './table-validation-registry'
 import { shouldRevealTableErrors } from './utils/reveal-policy'
@@ -99,6 +100,25 @@ export function useSduiDispatch() {
               void dispatchAction(
                 { type: 'COMMAND', command: effect.confirmCommand ?? '' },
                 effect.confirmBehavior
+              )
+            })
+        },
+        unsavedChanges: (effect) => {
+          // Три ответа — три исхода: «Да» и «Нет» уходят серверными командами в
+          // ТУ ЖЕ сессию, «Отмена» не шлёт ничего (форма остаётся открытой).
+          // «Нет» — тоже команда, а не локальное закрытие: несохранённое лежит
+          // в серверной сессии, и без неё оно всплыло бы при следующем открытии.
+          void useUnsavedChangesStore
+            .getState()
+            .ask()
+            .then((answer) => {
+              if (answer === 'cancel') return
+              const command =
+                answer === 'save' ? effect.saveCommand : effect.discardCommand
+              if (!command) return
+              void dispatchAction(
+                { type: 'COMMAND', command },
+                answer === 'save' ? effect.saveBehavior : effect.discardBehavior
               )
             })
         },

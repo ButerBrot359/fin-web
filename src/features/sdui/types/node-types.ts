@@ -61,5 +61,8 @@ export type EffectType =
   | 'refresh'
   | 'confirm'
   | 'replaceUrl'
+  // Диалог «Сохранить изменения?» с тремя ответами — тот же, что у карточки
+  // документа. Эксклюзивен, как confirm.
+  | 'unsavedChanges'
 
 export type ActionType = 'OPEN' | 'EVENT' | 'COMMAND' | 'CLOSE'

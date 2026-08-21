@@ -21,6 +21,7 @@ function makeDeps(): EffectHandlerDeps {
     closeDialog: vi.fn(),
     invalidateLists: vi.fn(),
     confirm: vi.fn(),
+    unsavedChanges: vi.fn(),
     openRouteInNewTab: vi.fn(),
     replaceUrl: vi.fn(),
   }
@@ -132,6 +133,31 @@ describe('effect confirm (SCRUM-244 v3 §1 / SCRUM-288 §2.3)', () => {
     ])
     expect(deps.invalidateLists).toHaveBeenCalledTimes(1) // the refresh BEFORE confirm ran
     expect(deps.confirm).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('effect unsavedChanges — вопрос «Сохранить изменения?» при закрытии панели', () => {
+  it('прокидывает весь эффект в мост: обе команды и их behavior — серверные', () => {
+    const deps = makeDeps()
+    const effect = {
+      type: 'unsavedChanges' as const,
+      saveCommand: 'tarifikatsiya.rowForm.closeSave:42',
+      discardCommand: 'tarifikatsiya.rowForm.closeDiscard:42',
+    }
+    createEffectHandler(deps).play(effect)
+    expect(deps.unsavedChanges).toHaveBeenCalledWith(effect)
+  })
+
+  // Эксклюзивность — тот же контракт, что у confirm: за модальным вопросом не
+  // должен сыграть второй эффект (иначе панель закрылась бы под вопросом).
+  it('playAll обрывается на первом unsavedChanges', () => {
+    const deps = makeDeps()
+    createEffectHandler(deps).playAll([
+      { type: 'unsavedChanges', saveCommand: 's', discardCommand: 'd' },
+      { type: 'closeDialog', id: 'panel-1' },
+    ])
+    expect(deps.unsavedChanges).toHaveBeenCalledTimes(1)
+    expect(deps.closeDialog).not.toHaveBeenCalled()
   })
 })
 

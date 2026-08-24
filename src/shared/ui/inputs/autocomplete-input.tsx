@@ -244,6 +244,9 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
         autoHighlight={autoHighlight}
         filterOptions={onInputChange ? (x) => x : undefined}
         getOptionLabel={(option) => option.label}
+        // Ключ опции — id: дефолтный ключ MUI по label роняет/дублирует опции
+        // с одинаковым представлением (например, полные тёзки у физлиц).
+        getOptionKey={(option) => option.id}
         isOptionEqualToValue={(option, val) => option.id === val.id}
         readOnly={readOnly}
         disabled={disabled}
@@ -287,6 +290,9 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
         autoHighlight={autoHighlight}
         filterOptions={onInputChange ? (x) => x : undefined}
         getOptionLabel={(option) => option.label}
+        // Ключ опции — id: дефолтный ключ MUI по label роняет/дублирует опции
+        // с одинаковым представлением (например, полные тёзки у физлиц).
+        getOptionKey={(option) => option.id}
         isOptionEqualToValue={(option, val) => option.id === val.id}
         readOnly={readOnly}
         disabled={disabled}

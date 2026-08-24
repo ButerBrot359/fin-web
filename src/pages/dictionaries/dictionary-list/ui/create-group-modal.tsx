@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -37,6 +38,12 @@ export const CreateGroupModal = ({
     defaultValues: { nameRu: '', nameKz: '' },
   })
 
+  // SCRUM-360 §6: код группы присваивает бэк (автонумерация, лежит в
+  // attributes.Kod ответа). До записи поле пустое — как в эталонной форме 1С;
+  // после создания показываем присвоенный код, не перечитывая запись.
+  // Kod в запрос не кладём: непустое значение отключило бы автонумерацию.
+  const [createdKod, setCreatedKod] = useState<string | null>(null)
+
   const mutation = useMutation({
     mutationFn: (data: CreateGroupForm) =>
       createDictEntry(domain, typeCode, {
@@ -46,11 +53,16 @@ export const CreateGroupModal = ({
         ...(parentId != null && { parentId }),
         attributes: {},
       }),
-    onSuccess: () => {
+    onSuccess: (res) => {
       invalidateDictionaryQueries(queryClient)
       showToast('success', t('dictSidebar.groupCreated'))
-      form.reset()
-      onClose()
+      const kod = res.data.data.attributes?.Kod
+      if (typeof kod === 'string' && kod) {
+        setCreatedKod(kod)
+      } else {
+        form.reset()
+        onClose()
+      }
     },
     onError: () => {
       showToast('error', t('dictSidebar.groupCreateError'))
@@ -63,6 +75,7 @@ export const CreateGroupModal = ({
 
   const handleClose = () => {
     form.reset()
+    setCreatedKod(null)
     onClose()
   }
 
@@ -94,9 +107,19 @@ export const CreateGroupModal = ({
         </div>
 
         <TextField
+          label={t('dictSidebar.kod')}
+          value={createdKod ?? ''}
+          helperText={t('dictSidebar.kodAutoHint')}
+          slotProps={{ input: { readOnly: true } }}
+          disabled={!createdKod}
+          fullWidth
+        />
+
+        <TextField
           label={t('dictSidebar.nameRu')}
           {...form.register('nameRu', { required: true })}
           error={!!form.formState.errors.nameRu}
+          slotProps={{ input: { readOnly: !!createdKod } }}
           fullWidth
           autoFocus
         />
@@ -104,26 +127,40 @@ export const CreateGroupModal = ({
         <TextField
           label={t('dictSidebar.nameKz')}
           {...form.register('nameKz')}
+          slotProps={{ input: { readOnly: !!createdKod } }}
           fullWidth
         />
 
         <div className="flex gap-3">
-          <Button
-            variant="primary"
-            type="submit"
-            disabled={mutation.isPending}
-            className="flex-1 rounded-lg"
-          >
-            {t('actions.create')}
-          </Button>
-          <Button
-            variant="secondary"
-            type="button"
-            onClick={handleClose}
-            className="flex-1 rounded-lg"
-          >
-            {t('actions.cancel')}
-          </Button>
+          {createdKod ? (
+            <Button
+              variant="primary"
+              type="button"
+              onClick={handleClose}
+              className="flex-1 rounded-lg"
+            >
+              {t('actions.close')}
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={mutation.isPending}
+                className="flex-1 rounded-lg"
+              >
+                {t('actions.create')}
+              </Button>
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={handleClose}
+                className="flex-1 rounded-lg"
+              >
+                {t('actions.cancel')}
+              </Button>
+            </>
+          )}
         </div>
       </form>
     </Dialog>

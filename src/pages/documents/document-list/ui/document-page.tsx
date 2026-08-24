@@ -6,6 +6,7 @@ import { useDocumentType } from '@/entities/document-type'
 import type { DocumentEntry } from '@/entities/document-entry'
 import {
   ActiveFiltersBar,
+  useDebouncedValue,
   useFilterUrlSync,
   useTableFilterRequest,
 } from '@/features/table-filter'
@@ -20,6 +21,9 @@ import { DocumentListToolbar } from '@/widgets/document-list-toolbar'
 import { EavEntityTable } from '@/widgets/eav-entity-table'
 
 import { useDocumentColumns } from '../lib/hooks/use-document-columns'
+
+// SCRUM-360 §2: та же задержка, что у DictField (DEBOUNCE_MS).
+const SEARCH_DEBOUNCE_MS = 300
 
 export const DocumentPage = () => {
   const navigate = useNavigate()
@@ -44,6 +48,14 @@ export const DocumentPage = () => {
 
   const filterRequest = useTableFilterRequest(moduleCode)
 
+  // SCRUM-360 §2: поиск фильтрует по вводу (без Enter), с дебаунсом; значение
+  // уходит в тело FilterRequest.q, а не query-параметром.
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(search.trim(), SEARCH_DEBOUNCE_MS)
+  const filter = debouncedSearch
+    ? { ...filterRequest, q: debouncedSearch }
+    : filterRequest
+
   const {
     entries,
     totalElements,
@@ -58,7 +70,7 @@ export const DocumentPage = () => {
   } = useEavEntries<DocumentEntry>(DOCUMENT_DOMAIN_CONFIG, moduleCode, {
     sortAttr,
     sortDir,
-    filter: filterRequest,
+    filter,
   })
 
   const columns = useDocumentColumns(attributes)
@@ -81,7 +93,11 @@ export const DocumentPage = () => {
   return (
     <div className="flex flex-col gap-5 pt-5 h-full">
       <PageHeader title={title} onClose={handleClose} />
-      <DocumentListToolbar selectedRowId={selectedRowId} />
+      <DocumentListToolbar
+        selectedRowId={selectedRowId}
+        searchValue={search}
+        onSearchChange={setSearch}
+      />
       <ActiveFiltersBar tableId={moduleCode} columns={columnsMeta} />
       <EavEntityTable<DocumentEntry>
         filterTableId={moduleCode}

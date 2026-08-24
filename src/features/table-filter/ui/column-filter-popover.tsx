@@ -2,11 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Box, Button, Popover, Typography } from '@mui/material'
 
-import type {
-  ColumnMetaDto,
-  FilterCondition,
-  FilterOp,
-} from '@/shared/lib/eav'
+import type { ColumnMetaDto, FilterCondition, FilterOp } from '@/shared/lib/eav'
 import { resolveAllowedOps } from '@/shared/lib/filter/default-allowed-ops'
 import { isConditionValid } from '@/shared/lib/filter/validate-condition'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
@@ -38,15 +34,17 @@ export const ColumnFilterPopover = ({
 
   const allowedOps = useMemo(() => resolveAllowedOps(column), [column])
 
-  const [op, setOp] = useState<FilterOp>(
-    initial?.op ?? allowedOps.at(0) ?? 'eq'
-  )
+  // SCRUM-360 §4: предвыбор оператора — серверный `defaultOp` (строковые →
+  // contains, прочие → eq); фолбэк на первый разрешённый — для старого
+  // кэша/прокси без поля.
+  const fallbackOp = column.defaultOp ?? allowedOps.at(0) ?? 'eq'
+
+  const [op, setOp] = useState<FilterOp>(initial?.op ?? fallbackOp)
   const [value, setValue] = useState<unknown>(initial?.value)
 
   useEffect(() => {
     if (!anchorEl) return
-    const nextOp = initial?.op ?? allowedOps.at(0) ?? 'eq'
-    setOp(nextOp)
+    setOp(initial?.op ?? fallbackOp)
     setValue(initial?.value)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anchorEl])
@@ -82,6 +80,15 @@ export const ColumnFilterPopover = ({
       anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       slotProps={{ paper: { sx: { p: 2.5, minWidth: 340, maxWidth: 480 } } }}
+      // SCRUM-360 §3.1: портал MUI всплывает по React-дереву — без стопов
+      // клики внутри поповера доходят до onClick заголовка <th> и переключают
+      // сортировку. onMouseDown тоже: Select/Autocomplete закрываются по нему.
+      onClick={(e) => {
+        e.stopPropagation()
+      }}
+      onMouseDown={(e) => {
+        e.stopPropagation()
+      }}
     >
       <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.primary' }}>
         {t('tableFilter.filterBy', {
@@ -90,7 +97,11 @@ export const ColumnFilterPopover = ({
       </Typography>
 
       <Box className="flex flex-col gap-4">
-        <OperatorSelect value={op} onChange={handleOpChange} options={allowedOps} />
+        <OperatorSelect
+          value={op}
+          onChange={handleOpChange}
+          options={allowedOps}
+        />
         <ValueControl
           column={column}
           op={op}

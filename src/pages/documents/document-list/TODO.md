@@ -6,11 +6,6 @@
 - `useDocumentEntries` берёт только `content`, выкидывая метаданные пагинации
 - Нужно: передать `page`/`size` параметры в API, добавить UI пагинации (номера страниц или infinite scroll)
 
-## Поиск
-
-- `DocumentListToolbar` имеет `SearchInput` со стейтом `search` — но он **никуда не подключён**
-- Нужно: пробросить `search` в `useDocumentEntries` как query-параметр, добавить debounce
-
 ## Сортировка
 
 - TanStack Table подключён с `getCoreRowModel()` без `getSortedRowModel()`

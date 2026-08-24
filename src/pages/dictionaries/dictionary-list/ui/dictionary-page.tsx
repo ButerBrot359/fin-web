@@ -7,6 +7,7 @@ import { useModule } from '@/entities/module'
 import type { DictEntry } from '@/features/dict-sidebar/api/dict-sidebar-api'
 import {
   ActiveFiltersBar,
+  useDebouncedValue,
   useFilterUrlSync,
   useTableFilterRequest,
 } from '@/features/table-filter'
@@ -38,6 +39,9 @@ import { CreateGroupModal } from './create-group-modal'
  * TODO(backend): убрать после фикса gap бэка #10 (присылать self-FK как обычный
  * referencedTypeCode).
  */
+// SCRUM-360 §2: та же задержка, что у DictField (DEBOUNCE_MS).
+const SEARCH_DEBOUNCE_MS = 300
+
 const patchSelfFkParentId = (
   columns: ColumnMetaDto[],
   typeCode: string
@@ -46,7 +50,11 @@ const patchSelfFkParentId = (
     c.code === 'parentId' &&
     c.dataType === 'DICTIONARY' &&
     !c.referencedTypeCode
-      ? { ...c, referencedTypeCode: typeCode, referencedDomainKind: 'DICTIONARY' }
+      ? {
+          ...c,
+          referencedTypeCode: typeCode,
+          referencedDomainKind: 'DICTIONARY',
+        }
       : c
   )
 
@@ -67,8 +75,12 @@ export const DictionaryPage = () => {
     )
   )
 
-  const { title, attributes, typeData, isLoading: isLoadingType } =
-    useDictionaryType(domain, moduleCode)
+  const {
+    title,
+    attributes,
+    typeData,
+    isLoading: isLoadingType,
+  } = useDictionaryType(domain, moduleCode)
   const isHierarchical = typeData?.isHierarchical ?? false
 
   useTabMeta(title)
@@ -96,6 +108,14 @@ export const DictionaryPage = () => {
 
   const filterRequest = useTableFilterRequest(moduleCode)
 
+  // SCRUM-360 §2: поиск фильтрует по вводу (без Enter), с дебаунсом; значение
+  // уходит в тело FilterRequest.q, а не query-параметром.
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(search.trim(), SEARCH_DEBOUNCE_MS)
+  const filter = debouncedSearch
+    ? { ...filterRequest, q: debouncedSearch }
+    : filterRequest
+
   const eavExtra = useMemo(
     () => ({
       ...(skipDependsOn && { skipDependsOn: true }),
@@ -117,7 +137,7 @@ export const DictionaryPage = () => {
   } = useEavEntries<DictEntry>(DICTIONARY_DOMAIN_CONFIG, moduleCode, {
     sortAttr,
     sortDir,
-    filter: filterRequest,
+    filter,
     extraParams: eavExtra,
   })
 
@@ -159,6 +179,13 @@ export const DictionaryPage = () => {
   }
 
   // Ancestor folder rows для drill-down (только в иерархических справочниках).
+  // SCRUM-360 §5: строка рисуется теми же колонками, что и строки данных, —
+  // имя папки лежит в той колонке, где у дочерних строк наименование
+  // (EAV-реквизит `Naimenovaniya`, у типов без него — системная «Ссылка»),
+  // а не размазывается colSpan от первой колонки после иерархической.
+  const nameColumnId = columns.some((c) => c.id === 'Naimenovaniya')
+    ? 'Naimenovaniya'
+    : 'nameRu'
   const ancestorRows = isHierarchical ? (
     <>
       {openFolders.map((folder, index) => (
@@ -169,20 +196,30 @@ export const DictionaryPage = () => {
             closeFolder(folder.id)
           }}
         >
-          <td className="whitespace-nowrap px-3 py-2 first:rounded-l-md">
-            <div
-              className="flex items-center gap-1"
-              style={{ paddingLeft: index * 24 }}
-            >
-              <ArrowDownIcon className="h-3 w-3 shrink-0" />
-              <FolderIcon className="h-4 w-4 shrink-0" />
-            </div>
-          </td>
-          <td className="px-3 py-2" colSpan={columns.length - 1}>
-            <Typography variant="body2" noWrap className="text-ui-06">
-              {folder.name}
-            </Typography>
-          </td>
+          {columns.map((column) =>
+            column.id === '__hierarchy' ? (
+              <td
+                key={column.id}
+                className="whitespace-nowrap px-3 py-2 first:rounded-l-md"
+              >
+                <div
+                  className="flex items-center gap-1"
+                  style={{ paddingLeft: index * 24 }}
+                >
+                  <ArrowDownIcon className="h-3 w-3 shrink-0" />
+                  <FolderIcon className="h-4 w-4 shrink-0" />
+                </div>
+              </td>
+            ) : (
+              <td key={column.id} className="px-3 py-2 last:rounded-r-md">
+                {column.id === nameColumnId && (
+                  <Typography variant="body2" noWrap className="text-ui-06">
+                    {folder.name}
+                  </Typography>
+                )}
+              </td>
+            )
+          )}
         </tr>
       ))}
     </>
@@ -200,6 +237,8 @@ export const DictionaryPage = () => {
         onCreateGroup={() => {
           setIsCreateGroupOpen(true)
         }}
+        searchValue={search}
+        onSearchChange={setSearch}
       />
       <ActiveFiltersBar tableId={moduleCode} columns={columnsMeta} />
       <EavEntityTable<DictEntry>

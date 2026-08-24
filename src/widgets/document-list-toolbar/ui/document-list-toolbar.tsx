@@ -39,15 +39,20 @@ interface OnGetFormField {
 
 interface DocumentListToolbarProps {
   selectedRowId?: number | null
+  // SCRUM-360 §2: поиск контролируется страницей — значение уходит в
+  // FilterRequest.q (по образцу account-plan-list-toolbar).
+  searchValue: string
+  onSearchChange: (value: string) => void
 }
 
 export const DocumentListToolbar = ({
   selectedRowId,
+  searchValue,
+  onSearchChange,
 }: DocumentListToolbarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { pageCode = '', moduleCode = '' } = useParams()
-  const [search, setSearch] = useState('')
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [operations, setOperations] = useState<EnumsValue[]>([])
@@ -198,10 +203,10 @@ export const DocumentListToolbar = ({
         <div className="flex items-center gap-2">
           <SearchInput
             placeholder={t('pageToolbar.search')}
-            value={search}
+            value={searchValue}
             className="w-64 bg-ui-01"
             onChange={(e) => {
-              setSearch(e.target.value)
+              onSearchChange(e.target.value)
             }}
             startIcon={<SearchIcon className="h-5 w-5 text-ui-05" />}
           />

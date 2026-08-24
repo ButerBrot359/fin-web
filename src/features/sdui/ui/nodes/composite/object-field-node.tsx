@@ -3,11 +3,7 @@ import { MenuItem, TextField } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import type { NodeProps } from '../../../types/view'
-import {
-  useFieldNode,
-  type FieldNodeCommon,
-} from '../../../lib/hooks/use-field-node'
-import { fieldBoxStyle } from '../../../lib/utils/field-box-style'
+import { useFieldNode, type FieldNodeCommon } from '../../../lib/hooks/use-field-node'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
 import { fetchReferenceOptions } from '../../../api/reference-options'
 import { AutocompleteInput } from '@/shared/ui/inputs'
@@ -30,24 +26,18 @@ export const ObjectFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
 
   const allowedTypes = sortAllowedTypes(
-    (node.props?.allowedTypes as AllowedType[] | undefined) ?? []
+    (node.props?.allowedTypes as AllowedType[] | undefined) ?? [],
   )
 
   const value = (f.value as ObjectValue | null | undefined) ?? null
 
   // Единственный локальный стейт: ручной выбор члена при пустом значении.
   // Тип из значения всегда приоритетнее — селектор производный.
-  const [userTypeCode, setUserTypeCode] = useState<string | undefined>(
-    undefined
-  )
+  const [userTypeCode, setUserTypeCode] = useState<string | undefined>(undefined)
 
   if (!f.visible || allowedTypes.length === 0) return null
 
-  const selectedTypeCode = resolveSelectedTypeCode(
-    allowedTypes,
-    value,
-    userTypeCode
-  )
+  const selectedTypeCode = resolveSelectedTypeCode(allowedTypes, value, userTypeCode)
   const member = findAllowedType(allowedTypes, selectedTypeCode)
 
   const emitChange = (newVal: ObjectValue | null) => {
@@ -62,14 +52,15 @@ export const ObjectFieldNode: FC<NodeProps> = ({ node }) => {
   }
 
   return (
-    <div className="flex gap-2" style={fieldBoxStyle(f)}>
+    <div
+      className="flex gap-2"
+      style={{ flex: f.flex !== undefined ? f.flex : undefined }}
+    >
       <TextField
         select
         label={t('sdui.objectField.type')}
         value={selectedTypeCode ?? ''}
-        onChange={(e) => {
-          handleMemberChange(e.target.value)
-        }}
+        onChange={(e) => handleMemberChange(e.target.value)}
         disabled={!f.enabled}
         slotProps={{ input: { readOnly: f.readonly } }}
         sx={{ minWidth: 160 }}
@@ -121,7 +112,7 @@ const ObjectValuePicker: FC<ObjectValuePickerProps> = ({
             search,
           })
         : Promise.resolve([]),
-    JSON.stringify(optionsSource ?? null)
+    JSON.stringify(optionsSource ?? null),
   )
 
   // Член без optionsSource (примитив/ENUMS) — пока не поддержан, не падаем
@@ -168,9 +159,7 @@ const ObjectValuePicker: FC<ObjectValuePickerProps> = ({
           load()
         }
       }}
-      onChange={(opt) => {
-        onEmit(opt ? buildObjectValue(member, opt) : null)
-      }}
+      onChange={(opt) => onEmit(opt ? buildObjectValue(member, opt) : null)}
     />
   )
 }

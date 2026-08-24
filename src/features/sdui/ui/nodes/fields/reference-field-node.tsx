@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next'
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
-import { fieldBoxStyle } from '../../../lib/utils/field-box-style'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
 import { useResolvedOptionsParams } from '../../../lib/hooks/use-resolved-options-params'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -233,7 +232,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   }
 
   return (
-    <div style={fieldBoxStyle(f)}>
+    <div style={{ flex: f.flex !== undefined ? f.flex : undefined }}>
       {multiple ? (
         <AutocompleteInput
           multiple

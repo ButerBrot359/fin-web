@@ -2,7 +2,6 @@ import type { FC } from 'react'
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
-import { fieldBoxStyle } from '../../../lib/utils/field-box-style'
 import { DateTimeInput } from '@/shared/ui/inputs'
 
 export const DatetimeFieldNode: FC<NodeProps> = ({ node }) => {
@@ -12,7 +11,7 @@ export const DatetimeFieldNode: FC<NodeProps> = ({ node }) => {
   if (!f.visible) return null
 
   return (
-    <div style={fieldBoxStyle(f)}>
+    <div style={{ flex: f.flex !== undefined ? f.flex : undefined }}>
       <DateTimeInput
         label={f.label}
         value={value}

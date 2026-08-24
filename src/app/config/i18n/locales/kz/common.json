@@ -578,7 +578,8 @@
   "sdui": {
     "conflict": {
       "staleRevision": "Синхрондау...",
-      "sessionNotFound": "Сессия мерзімі аяқталды, қайта ашу..."
+      "sessionNotFound": "Сессия мерзімі аяқталды, қайта ашу...",
+      "productionCalendarState": "Күнтізбе жобасы ескірді, қайта ашу..."
     },
     "relatedDocs": {
       "noSelection": "Ағаштағы құжатты таңдаңыз",

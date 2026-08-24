@@ -578,7 +578,8 @@
   "sdui": {
     "conflict": {
       "staleRevision": "Синхронизирую...",
-      "sessionNotFound": "Сессия истекла, переоткрываю..."
+      "sessionNotFound": "Сессия истекла, переоткрываю...",
+      "productionCalendarState": "Черновик календаря устарел, переоткрываю..."
     },
     "relatedDocs": {
       "noSelection": "Выберите документ в дереве",

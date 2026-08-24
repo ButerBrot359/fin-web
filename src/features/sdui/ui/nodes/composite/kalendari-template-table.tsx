@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
+  Button,
   Paper,
   Table,
   TableBody,
@@ -13,16 +14,22 @@ import {
   TextField,
 } from '@mui/material'
 
-import type { NodeProps } from '../../../types/view'
-import { useBindingValue } from '../../../lib/sdui-session-context'
+import type { NodeProps, ViewNode } from '../../../types/view'
+import {
+  useBindingValue,
+  useSduiSession,
+} from '../../../lib/sdui-session-context'
 import {
   useTableSync,
   type TableRow as SyncRow,
 } from '../../../lib/hooks/use-table-sync'
 import { nodeToTableColumnDef } from '../../../lib/utils/build-column-defs'
 import { TableCellEditor } from './table-cell-editor'
+import { summarizeDay, type ScheduleRow } from './kalendari-schedule-summary'
+import { KalendariScheduleEditor } from './kalendari-schedule-editor'
 
 const MODE_BINDING = 'SposobZapolneniya'
+const SCHEDULE_BINDING = 'RaspisanieRaboty'
 const CYCLIC_CODE = 'PoTsiklamProizvolnoyDliny'
 // 2024-01-01 — понедельник: эталонная неделя для подписей Пн…Вс (как в calendar-node)
 const WEEKDAY_LABELS = Array.from({ length: 7 }, (_, i) =>
@@ -40,6 +47,26 @@ const resizeRows = (current: SyncRow[], n: number): SyncRow[] =>
       ? current[i]
       : { rowId: `tmp-${crypto.randomUUID()}`, DenVklyuchenVGrafik: false }
   )
+
+const findNodeByBinding = (
+  root: ViewNode,
+  binding: string
+): ViewNode | null => {
+  if (root.binding === binding) return root
+  for (const child of root.children ?? []) {
+    const found = findNodeByBinding(child, binding)
+    if (found) return found
+  }
+  return null
+}
+
+// Заглушка для безусловного вызова useTableSync, когда узла RaspisanieRaboty
+// в дереве нет: без binding хук не регистрирует flush и ничего не шлёт.
+const MISSING_SCHEDULE_NODE: ViewNode = {
+  id: 'kalendari-schedule-missing',
+  type: 'TABLE',
+}
+const NO_COLUMNS: never[] = []
 
 export const KalendariTemplateTable: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
@@ -59,6 +86,18 @@ export const KalendariTemplateTable: FC<NodeProps> = ({ node }) => {
   const columns = col ? [col] : []
 
   const sync = useTableSync(node, columns)
+
+  // Рабочее время живёт в независимой таблице RaspisanieRaboty (spec v3):
+  // её узел не рендерится отдельно — шаблон находит его в дереве сессии и
+  // владеет его синком. Полный снимок массива — контракт таблицы.
+  const { tree } = useSduiSession()
+  const scheduleNode = tree ? findNodeByBinding(tree, SCHEDULE_BINDING) : null
+  const scheduleSync = useTableSync(
+    scheduleNode ?? MISSING_SCHEDULE_NODE,
+    NO_COLUMNS
+  )
+  const scheduleRows = scheduleSync.rows as ScheduleRow[]
+  const [editDay, setEditDay] = useState<number | null>(null)
 
   // Бэк при смене SposobZapolneniya строки НЕ пересобирает (коммент Talgat в
   // SCRUM-278 от 18.08): переход на «По неделям» — фронт формирует ровно 7 строк
@@ -116,6 +155,42 @@ export const KalendariTemplateTable: FC<NodeProps> = ({ node }) => {
     setCycleInput(String(n))
   }
 
+  // Ячейка «Рабочее время» дня day (NomerDnya = позиция в шаблоне, 1..N):
+  // нет валидных интервалов → «Заполнить расписание», есть → кликабельное
+  // саммари «9 ч. (09:00–18:00)». Оба открывают модалку этого дня.
+  const workTimeCell = (day: number) => {
+    const summary = summarizeDay(scheduleRows, day)
+    if (!summary) {
+      return (
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => {
+            setEditDay(day)
+          }}
+        >
+          {t('sdui.kalendari.fillSchedule')}
+        </Button>
+      )
+    }
+    return (
+      <Button
+        variant="text"
+        size="small"
+        onClick={() => {
+          setEditDay(day)
+        }}
+      >
+        {t('sdui.kalendari.daySummary', {
+          hours: summary.hours,
+          intervals: summary.intervals
+            .map((i) => `${i.start}–${i.end}`)
+            .join(', '),
+        })}
+      </Button>
+    )
+  }
+
   if (!col) return null
 
   return (
@@ -155,6 +230,9 @@ export const KalendariTemplateTable: FC<NodeProps> = ({ node }) => {
               <TableCell>
                 {col.label || t('sdui.kalendari.workingDay')}
               </TableCell>
+              {scheduleNode && (
+                <TableCell>{t('sdui.kalendari.workTime')}</TableCell>
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -175,11 +253,28 @@ export const KalendariTemplateTable: FC<NodeProps> = ({ node }) => {
                     }}
                   />
                 </TableCell>
+                {scheduleNode && (
+                  <TableCell>{workTimeCell(index + 1)}</TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+      {editDay != null && (
+        <KalendariScheduleEditor
+          day={editDay}
+          dayLabel={rowLabel(editDay - 1)}
+          rows={scheduleRows}
+          onApply={(next) => {
+            scheduleSync.replaceRows(next as SyncRow[])
+            setEditDay(null)
+          }}
+          onClose={() => {
+            setEditDay(null)
+          }}
+        />
+      )}
     </div>
   )
 }

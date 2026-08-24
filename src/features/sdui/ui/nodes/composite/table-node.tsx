@@ -9,7 +9,6 @@ import { AccountingPostingsBlock } from './accounting-postings-block'
 import { ReadOnlyTable } from './read-only-table'
 import { SubordinationTree } from './subordination-tree'
 import { KalendariTemplateTable } from './kalendari-template-table'
-import { KalendariScheduleTable } from './kalendari-schedule-table'
 
 /**
  * Дискриминатор kalendari-таблиц по binding (v2-back §1). Спец-пропа нет —
@@ -39,8 +38,10 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
     const kalendariKind = kalendariTableKind(node.binding)
     if (kalendariKind === 'template')
       return <KalendariTemplateTable node={node} />
-    if (kalendariKind === 'schedule')
-      return <KalendariScheduleTable node={node} />
+    // Расписание работы самостоятельно не рендерится (spec v3): его узел
+    // остаётся в дереве как источник binding/id, а UI — колонка «Рабочее
+    // время» и модалка внутри KalendariTemplateTable.
+    if (kalendariKind === 'schedule') return null
 
     // Route to complex table if COLUMN_GROUP children exist or master-detail props present
     const hasGroups = node.children?.some((c) => c.type === 'COLUMN_GROUP')

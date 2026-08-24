@@ -678,7 +678,18 @@
       "cycleLength": "Длина цикла",
       "dayN": "День {{n}}",
       "fillSchedule": "Заполнить расписание",
-      "schedule": "Расписание"
+      "workTime": "Рабочее время",
+      "workTimeTitle": "Рабочее время — {{label}}",
+      "daySummary": "{{hours}} ч. ({{intervals}})",
+      "start": "Начало",
+      "end": "Окончание",
+      "addInterval": "Добавить интервал",
+      "deleteInterval": "Удалить интервал",
+      "apply": "Применить",
+      "cancel": "Отмена",
+      "errInvalidTime": "Неверный формат времени (ЧЧ:ММ)",
+      "errEndBeforeStart": "Время окончания должно быть больше времени начала",
+      "errOverlap": "Интервалы времени пересекаются"
     },
     "notFound": {
       "title": "Страница не найдена",

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import type { SortingState } from '@tanstack/react-table'
+import type { SortingState, VisibilityState } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 
 import { useDocumentType } from '@/entities/document-type'
@@ -23,6 +23,7 @@ import { showToast } from '@/shared/ui/toast/show-toast'
 
 import { documentEntryLink } from '../lib/document-entry-link'
 import { useDocumentColumns } from '../lib/hooks/use-document-columns'
+import { DocumentListSettingsDialog } from './document-list-settings-dialog'
 
 export const DocumentPage = () => {
   const navigate = useNavigate()
@@ -43,6 +44,8 @@ export const DocumentPage = () => {
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
   const [selectedRowIsPosted, setSelectedRowIsPosted] = useState(false)
   const [sorting, setSorting] = useState<SortingState>([])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [listSettingsOpen, setListSettingsOpen] = useState(false)
 
   const sortAttr = sorting[0]?.id
   const sortDir = sorting[0] ? (sorting[0].desc ? 'DESC' : 'ASC') : undefined
@@ -122,6 +125,9 @@ export const DocumentPage = () => {
         selectedRowId={selectedRowId}
         selectedRowIsPosted={selectedRowIsPosted}
         onSelectedRowPostedChange={setSelectedRowIsPosted}
+        onOpenListSettings={() => {
+          setListSettingsOpen(true)
+        }}
       />
       <ActiveFiltersBar tableId={moduleCode} columns={columnsMeta} />
       <EavEntityTable<DocumentEntry>
@@ -139,11 +145,25 @@ export const DocumentPage = () => {
         fetchNextPage={fetchNextPage}
         sorting={sorting}
         onSortingChange={setSorting}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={setColumnVisibility}
         exportFileName={title}
         fetchAllEntries={fetchAllEntries}
         selectedRowId={selectedRowId}
         onRowClick={handleSelectRow}
         onRowDoubleClick={handleDoubleClick}
+      />
+      <DocumentListSettingsDialog
+        open={listSettingsOpen}
+        tableId={moduleCode}
+        columns={columnsMeta}
+        columnVisibility={columnVisibility}
+        sorting={sorting}
+        onClose={() => {
+          setListSettingsOpen(false)
+        }}
+        onColumnVisibilityChange={setColumnVisibility}
+        onSortingChange={setSorting}
       />
     </div>
   )

@@ -44,12 +44,14 @@ interface DocumentListToolbarProps {
   selectedRowId?: number | null
   selectedRowIsPosted?: boolean
   onSelectedRowPostedChange?: (isPosted: boolean) => void
+  onOpenListSettings?: () => void
 }
 
 export const DocumentListToolbar = ({
   selectedRowId,
   selectedRowIsPosted = false,
   onSelectedRowPostedChange,
+  onOpenListSettings,
 }: DocumentListToolbarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -193,6 +195,7 @@ export const DocumentListToolbar = ({
               variant="secondary"
               aria-label={t('actions.layers')}
               startIcon={<LayersIcon className="h-5 w-5" />}
+              onClick={onOpenListSettings}
             />
           </div>
 

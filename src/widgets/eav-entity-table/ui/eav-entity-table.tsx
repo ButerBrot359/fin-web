@@ -11,7 +11,10 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 
 import { ColumnFilterTrigger } from '@/features/table-filter'
 import type { ColumnMetaDto } from '@/shared/lib/eav'
-import { extractTableExport, exportTableToXlsx } from '@/shared/lib/table-export'
+import {
+  extractTableExport,
+  exportTableToXlsx,
+} from '@/shared/lib/table-export'
 import { useAutoFitColumnsByContent } from '@/shared/lib/table-autofit/use-auto-fit-columns'
 
 import { cn } from '@/shared/lib/utils/cn'
@@ -38,6 +41,8 @@ export const EavEntityTable = <T extends { id: number }>({
   fetchNextPage,
   sorting,
   onSortingChange,
+  columnVisibility,
+  onColumnVisibilityChange,
   selectedRowId,
   onRowClick,
   onRowDoubleClick,
@@ -59,9 +64,10 @@ export const EavEntityTable = <T extends { id: number }>({
 
   useEffect(() => {
     if (!isError) return
-    const apiError = error as
-      | { message?: string; data?: { message?: string } }
-      | null
+    const apiError = error as {
+      message?: string
+      data?: { message?: string }
+    } | null
     const description =
       apiError?.data?.message ??
       apiError?.message ??
@@ -117,9 +123,10 @@ export const EavEntityTable = <T extends { id: number }>({
     enableColumnResizing: true,
     columnResizeMode: 'onChange',
     defaultColumn: { minSize: 48, size: 180 },
-    state: { sorting, columnSizing },
+    state: { sorting, columnSizing, columnVisibility },
     onSortingChange,
     onColumnSizingChange,
+    onColumnVisibilityChange,
   })
 
   const { rows } = table.getRowModel()

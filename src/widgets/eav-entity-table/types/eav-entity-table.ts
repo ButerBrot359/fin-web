@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type {
   ColumnDef,
+  VisibilityState,
   OnChangeFn,
   SortingState,
 } from '@tanstack/react-table'
@@ -47,6 +48,10 @@ export interface EavEntityTableProps<T extends { id: number }> {
 
   sorting: SortingState
   onSortingChange: OnChangeFn<SortingState>
+
+  /** Controlled visible columns; omitted keeps the existing all-columns view. */
+  columnVisibility?: VisibilityState
+  onColumnVisibilityChange?: OnChangeFn<VisibilityState>
 
   selectedRowId?: number | null
   onRowClick?: (row: T) => void

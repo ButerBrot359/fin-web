@@ -417,11 +417,15 @@ describe('useSduiDispatch: эффект confirm (SCRUM-244 v3)', () => {
   })
 
   it('по «Нет» отправляет cancelCommand, когда сервер запросил rollback', async () => {
+    const confirmEffect = confirmResponse.effects?.[0]
+    if (!confirmEffect) {
+      throw new Error('fixture must contain a confirmation effect')
+    }
     const rollbackResponse = {
       ...confirmResponse,
       effects: [
         {
-          ...confirmResponse.effects[0],
+          ...confirmEffect,
           cancelCommand: 'field.rollback:Nomer',
         },
       ],

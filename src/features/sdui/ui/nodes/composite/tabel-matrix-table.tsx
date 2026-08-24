@@ -187,7 +187,7 @@ export function filterTabelMatrixEmployees(
       ...employee.workKinds.map(
         (kind) => kind.workTimeKindPresentation ?? String(kind.workTimeKindRef)
       ),
-    ].some((value) => value.toLocaleLowerCase().includes(normalized))
+    ].some((value) => (value ?? '').toLocaleLowerCase().includes(normalized))
   )
 }
 

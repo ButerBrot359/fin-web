@@ -3,7 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { unpostDocumentEntry } from '@/entities/document-entry'
+import {
+  postDocumentEntry,
+  unpostDocumentEntry,
+} from '@/entities/document-entry'
 import { useDocumentType } from '@/entities/document-type'
 import { openMovementsForEntry } from '@/features/sdui'
 import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
@@ -39,10 +42,14 @@ interface OnGetFormField {
 
 interface DocumentListToolbarProps {
   selectedRowId?: number | null
+  selectedRowIsPosted?: boolean
+  onSelectedRowPostedChange?: (isPosted: boolean) => void
 }
 
 export const DocumentListToolbar = ({
   selectedRowId,
+  selectedRowIsPosted = false,
+  onSelectedRowPostedChange,
 }: DocumentListToolbarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -68,10 +75,23 @@ export const DocumentListToolbar = ({
     mutationFn: (id: number) => unpostDocumentEntry(id),
     onSuccess: () => {
       invalidateDocumentQueries(queryClient)
+      onSelectedRowPostedChange?.(false)
       showToast('success', t('documentListToolbar.unpostSuccess'))
     },
     onError: () => {
       showToast('error', t('documentListToolbar.unpostError'))
+    },
+  })
+
+  const postMutation = useMutation({
+    mutationFn: (id: number) => postDocumentEntry(id),
+    onSuccess: () => {
+      invalidateDocumentQueries(queryClient)
+      onSelectedRowPostedChange?.(true)
+      showToast('success', t('documentEntry.posted'))
+    },
+    onError: () => {
+      showToast('error', t('documentEntry.postError'))
     },
   })
 
@@ -178,7 +198,25 @@ export const DocumentListToolbar = ({
 
           <Button
             variant="secondary"
-            disabled={selectedRowId == null || unpostMutation.isPending}
+            disabled={
+              selectedRowId == null ||
+              selectedRowIsPosted ||
+              postMutation.isPending
+            }
+            onClick={() => {
+              if (selectedRowId) postMutation.mutate(selectedRowId)
+            }}
+          >
+            {t('documentFormToolbar.post')}
+          </Button>
+
+          <Button
+            variant="secondary"
+            disabled={
+              selectedRowId == null ||
+              !selectedRowIsPosted ||
+              unpostMutation.isPending
+            }
             onClick={() => {
               if (selectedRowId) unpostMutation.mutate(selectedRowId)
             }}

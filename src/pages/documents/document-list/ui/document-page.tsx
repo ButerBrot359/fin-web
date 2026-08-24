@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { SortingState } from '@tanstack/react-table'
+import { useTranslation } from 'react-i18next'
 
 import { useDocumentType } from '@/entities/document-type'
 import type { DocumentEntry } from '@/entities/document-entry'
@@ -18,12 +19,15 @@ import {
 import { PageHeader } from '@/widgets/page-header'
 import { DocumentListToolbar } from '@/widgets/document-list-toolbar'
 import { EavEntityTable } from '@/widgets/eav-entity-table'
+import { showToast } from '@/shared/ui/toast/show-toast'
 
+import { documentEntryLink } from '../lib/document-entry-link'
 import { useDocumentColumns } from '../lib/hooks/use-document-columns'
 
 export const DocumentPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useTranslation()
 
   const { moduleCode = '', pageCode = '' } = useParams()
   const { title, attributes } = useDocumentType(moduleCode)
@@ -37,6 +41,7 @@ export const DocumentPage = () => {
   useFilterUrlSync(moduleCode)
 
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
+  const [selectedRowIsPosted, setSelectedRowIsPosted] = useState(false)
   const [sorting, setSorting] = useState<SortingState>([])
 
   const sortAttr = sorting[0]?.id
@@ -65,6 +70,7 @@ export const DocumentPage = () => {
 
   const handleSelectRow = (row: DocumentEntry) => {
     setSelectedRowId(row.id)
+    setSelectedRowIsPosted(row.isPosted)
   }
 
   const handleDoubleClick = (row: DocumentEntry) => {
@@ -78,10 +84,45 @@ export const DocumentPage = () => {
     void navigate(`/modules/${pageCode}`)
   }
 
+  const handleGetLink = () => {
+    // The DOM type declares clipboard non-null, but some embedded/webview
+    // receivers do not expose it at runtime.
+    const clipboard = Reflect.get(navigator, 'clipboard') as
+      | Clipboard
+      | undefined
+    if (
+      selectedRowId === null ||
+      !clipboard ||
+      typeof clipboard.writeText !== 'function'
+    ) {
+      showToast('error', t('actions.copyError'))
+      return
+    }
+
+    void clipboard
+      .writeText(
+        documentEntryLink(moduleCode, selectedRowId, window.location.origin)
+      )
+      .then(() => {
+        showToast('success', t('actions.copied'))
+      })
+      .catch(() => {
+        showToast('error', t('actions.copyError'))
+      })
+  }
+
   return (
     <div className="flex flex-col gap-5 pt-5 h-full">
-      <PageHeader title={title} onClose={handleClose} />
-      <DocumentListToolbar selectedRowId={selectedRowId} />
+      <PageHeader
+        title={title}
+        onClose={handleClose}
+        onLink={selectedRowId === null ? undefined : handleGetLink}
+      />
+      <DocumentListToolbar
+        selectedRowId={selectedRowId}
+        selectedRowIsPosted={selectedRowIsPosted}
+        onSelectedRowPostedChange={setSelectedRowIsPosted}
+      />
       <ActiveFiltersBar tableId={moduleCode} columns={columnsMeta} />
       <EavEntityTable<DocumentEntry>
         filterTableId={moduleCode}

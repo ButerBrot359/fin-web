@@ -87,6 +87,26 @@ describe('effect replaceUrl (SCRUM-291 §7 персист)', () => {
   })
 })
 
+describe('effect copyText', () => {
+  it('copies the server-issued flat document route as an absolute URL', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+
+    createEffectHandler(makeDeps()).play({
+      type: 'copyText',
+      text: '/documents/Tabel/42',
+    })
+
+    await Promise.resolve()
+    expect(writeText).toHaveBeenCalledWith(
+      `${window.location.origin}/documents/Tabel/42`
+    )
+  })
+})
+
 describe('effect refresh', () => {
   it('вызывает инвалидацию списков', () => {
     const deps = makeDeps()

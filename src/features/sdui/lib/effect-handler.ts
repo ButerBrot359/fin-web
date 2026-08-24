@@ -120,6 +120,31 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
         showToast((effect.level ?? 'info') as ToastLevel, effect.message ?? '')
         break
 
+      case 'copyText': {
+        // The DOM type declares clipboard non-null, but some embedded/webview
+        // receivers do not expose it at runtime.
+        const clipboard = Reflect.get(navigator, 'clipboard') as
+          | Clipboard
+          | undefined
+        if (
+          !effect.text ||
+          !clipboard ||
+          typeof clipboard.writeText !== 'function'
+        ) {
+          showToast('error', i18n.t('actions.copyError'))
+          break
+        }
+        void clipboard
+          .writeText(new URL(effect.text, window.location.origin).toString())
+          .then(() => {
+            showToast('success', i18n.t('actions.copied'))
+          })
+          .catch(() => {
+            showToast('error', i18n.t('actions.copyError'))
+          })
+        break
+      }
+
       case 'refresh':
         // Списки (LIST-ноды) перечитываются через TanStack Query. Payload
         // эффекта игнорируем намеренно: адресации в контракте нет (SCRUM-244 v3

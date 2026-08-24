@@ -129,10 +129,13 @@ export interface ViewEffect {
   id?: string
   level?: string
   message?: string
+  text?: string
   url?: string
   // Команда, которую фронт шлёт по «Да» в диалоге confirm (SCRUM-244 v3 §1.1).
   // Непрозрачная строка: не парсить, не собирать — сервер валидирует её сам.
   confirmCommand?: string
+  // Optional server continuation for "No" when cancellation must roll back a field event.
+  cancelCommand?: string
   // SCRUM-288 §3.1: download с телом — ровно одно из url/request заполнено.
   request?: ActionRequest | null
   // SCRUM-288 §2.3: session-less подтверждение (панель) — исполнить запрос по «Да».

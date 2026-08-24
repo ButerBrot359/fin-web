@@ -12,9 +12,15 @@ interface PageHeaderProps {
   title: string
   onClose?: () => void
   onBack?: () => void
+  onLink?: () => void
 }
 
-export const PageHeader = ({ title, onClose, onBack }: PageHeaderProps) => {
+export const PageHeader = ({
+  title,
+  onClose,
+  onBack,
+  onLink,
+}: PageHeaderProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -38,7 +44,11 @@ export const PageHeader = ({ title, onClose, onBack }: PageHeaderProps) => {
       </div>
 
       <div className="flex items-center">
-        <IconButton aria-label={t('actions.link')}>
+        <IconButton
+          aria-label={t('actions.link')}
+          onClick={onLink}
+          disabled={!onLink}
+        >
           <LinkIcon className="h-5 w-5" />
         </IconButton>
         <IconButton aria-label={t('actions.more')}>

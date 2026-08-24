@@ -415,6 +415,34 @@ describe('useSduiDispatch: эффект confirm (SCRUM-244 v3)', () => {
     await Promise.resolve()
     expect(post).toHaveBeenCalledTimes(1)
   })
+
+  it('по «Нет» отправляет cancelCommand, когда сервер запросил rollback', async () => {
+    const rollbackResponse = {
+      ...confirmResponse,
+      effects: [
+        {
+          ...confirmResponse.effects[0],
+          cancelCommand: 'field.rollback:Nomer',
+        },
+      ],
+    } as unknown as ViewResponse
+    const post = vi
+      .spyOn(viewTransport, 'post')
+      .mockResolvedValueOnce(rollbackResponse)
+      .mockResolvedValueOnce(commandResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'COMMAND', command: 'nav.open:X' })
+
+    useConfirmStore.getState().answer(false)
+    await vi.waitFor(() => {
+      expect(post).toHaveBeenCalledTimes(2)
+    })
+    expect(post).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: { type: 'COMMAND', command: 'field.rollback:Nomer' },
+      })
+    )
+  })
 })
 
 // Confirm-мост (SCRUM-288 §2.3/§2.4): confirmRequest исполняется мимо сессии

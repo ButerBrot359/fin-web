@@ -113,7 +113,15 @@ export function useSduiDispatch() {
             .getState()
             .ask(effect.message ?? '')
             .then((ok) => {
-              if (!ok) return
+              if (!ok) {
+                if (effect.cancelCommand) {
+                  void dispatchAction({
+                    type: 'COMMAND',
+                    command: effect.cancelCommand,
+                  })
+                }
+                return
+              }
               if (effect.confirmRequest) {
                 void effectHandler.executeActionRequest(effect.confirmRequest)
                 return

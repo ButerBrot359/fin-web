@@ -5,6 +5,7 @@ export {
   createDocumentEntry,
   updateDocumentEntry,
   unpostDocumentEntry,
+  postDocumentEntry,
   getPrintCommands,
   printDocumentEntry,
 } from './api/document-entry'

@@ -98,6 +98,10 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({
     }
   }
 
+  const handleGetLink = () => {
+    void dispatch({ type: 'COMMAND', command: 'getLink' })
+  }
+
   const tabsApi = useMemo(
     () => ({
       // Стабильные колбэки: SduiScreen подписан на них эффектами,
@@ -123,7 +127,11 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({
 
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
-      <PageHeader title={pageTitle} onClose={handleClose} />
+      <PageHeader
+        title={pageTitle}
+        onClose={handleClose}
+        onLink={handleGetLink}
+      />
       <SduiScreen {...tabsApi} onTitleChange={setTabTitle} />
       <UnsavedChangesDialog
         open={unsavedDialog.isOpen}

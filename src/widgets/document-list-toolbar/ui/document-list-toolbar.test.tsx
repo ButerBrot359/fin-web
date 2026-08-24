@@ -16,6 +16,7 @@ vi.mock('@/entities/document-entry', () => ({
     handlePrint: vi.fn(),
     isPrintLoading: false,
   }),
+  postDocumentEntry: vi.fn(),
   unpostDocumentEntry: vi.fn(),
 }))
 vi.mock('@/features/sdui', () => ({ openMovementsForEntry: vi.fn() }))
@@ -27,7 +28,9 @@ vi.mock('@/shared/api/api', () => ({ apiService: { get: vi.fn() } }))
 vi.mock('@/widgets/document-form-toolbar', () => ({
   PrintDropdownButton: () => null,
 }))
-vi.mock('./select-operation-dialog', () => ({ SelectOperationDialog: () => null }))
+vi.mock('./select-operation-dialog', () => ({
+  SelectOperationDialog: () => null,
+}))
 // В vitest svg-импорты резолвятся как data-URI строки (svgr не применяется).
 // Мокаем shared-UI, через которые тулбар тянет svg (Button/Dropdown/SearchInput),
 // и сами svg тулбара — иначе <Icon/> получает невалидное имя тега.
@@ -43,7 +46,11 @@ vi.mock('@/shared/ui/buttons', () => ({
     disabled?: boolean
     'aria-label'?: string
   }) => (
-    <button onClick={onClick} disabled={disabled} aria-label={rest['aria-label']}>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={rest['aria-label']}
+    >
       {children}
     </button>
   ),
@@ -51,10 +58,14 @@ vi.mock('@/shared/ui/buttons', () => ({
 }))
 vi.mock('@/shared/ui/inputs', () => ({ SearchInput: () => null }))
 vi.mock('@/shared/assets/icons/copy-doc.svg', () => ({ default: () => null }))
-vi.mock('@/shared/assets/icons/debet-kredit.svg', () => ({ default: () => null }))
+vi.mock('@/shared/assets/icons/debet-kredit.svg', () => ({
+  default: () => null,
+}))
 vi.mock('@/shared/assets/icons/layers.svg', () => ({ default: () => null }))
 vi.mock('@/shared/assets/icons/search.svg', () => ({ default: () => null }))
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }))
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (k: string) => k }),
+}))
 vi.mock('react-router-dom', () => ({
   useNavigate: () => vi.fn(),
   useParams: () => ({ pageCode: 'P', moduleCode: 'PriemNaRabotuSpiskom' }),
@@ -85,5 +96,37 @@ describe('DocumentListToolbar: interactiveCreationForbidden (SCRUM-265 FE-4)', (
     docType.interactiveCreationForbidden = undefined
     render(<DocumentListToolbar selectedRowId={null} />)
     expect(screen.getByText('actions.create')).toBeTruthy()
+  })
+
+  it('keeps unpost disabled for a selected unposted document', () => {
+    render(
+      <DocumentListToolbar selectedRowId={42} selectedRowIsPosted={false} />
+    )
+
+    expect(
+      screen.getByText('documentListToolbar.unpost').hasAttribute('disabled')
+    ).toBe(true)
+  })
+
+  it('enables unpost for a selected posted document', () => {
+    render(<DocumentListToolbar selectedRowId={42} selectedRowIsPosted />)
+
+    expect(
+      screen.getByText('documentListToolbar.unpost').hasAttribute('disabled')
+    ).toBe(false)
+  })
+
+  it('enables post only for a selected unposted document', () => {
+    const { rerender } = render(
+      <DocumentListToolbar selectedRowId={42} selectedRowIsPosted={false} />
+    )
+    expect(
+      screen.getByText('documentFormToolbar.post').hasAttribute('disabled')
+    ).toBe(false)
+
+    rerender(<DocumentListToolbar selectedRowId={42} selectedRowIsPosted />)
+    expect(
+      screen.getByText('documentFormToolbar.post').hasAttribute('disabled')
+    ).toBe(true)
   })
 })

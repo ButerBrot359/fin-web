@@ -76,3 +76,9 @@ export const unpostDocumentEntry = (id: number) =>
   apiService.post<DocumentEntryResponseData>({
     url: `/api/document-entries/${String(id)}/unpost`,
   })
+
+export const postDocumentEntry = (id: number) =>
+  apiService.post<DocumentEntryResponseData>({
+    url: `/api/document-entries/${String(id)}/post`,
+    timeout: LONG_OPERATION_TIMEOUT_MS,
+  })

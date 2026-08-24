@@ -3,6 +3,7 @@ import { TextField } from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
+import { fieldBoxStyle } from '../../../lib/utils/field-box-style'
 import { useChangeOnBlur } from '../../../lib/hooks/use-change-on-blur'
 
 export const TextAreaNode: FC<NodeProps> = ({ node }) => {
@@ -31,7 +32,7 @@ export const TextAreaNode: FC<NodeProps> = ({ node }) => {
       }}
       onFocus={changeOnBlur.onFocus}
       onBlur={changeOnBlur.onBlur}
-      sx={{ flex: f.flex !== undefined ? f.flex : undefined }}
+      sx={fieldBoxStyle(f)}
       slotProps={{
         input: { readOnly: f.readonly },
         htmlInput: maxLength !== undefined ? { maxLength } : undefined,

@@ -1,6 +1,7 @@
 import type { ViewNode } from '../../types/view'
 import { useSduiDispatch } from '../dispatch'
 import { useSduiSession, useBindingValue } from '../sdui-session-context'
+import { parseMaxWidth } from '../utils/field-box-style'
 
 export interface FieldNodeCommon {
   label?: string
@@ -10,6 +11,8 @@ export interface FieldNodeCommon {
   enabled: boolean
   error?: string
   flex?: number | string
+  /** Потолок ширины контрола в px из эталона 1С — см. parseMaxWidth. */
+  maxWidth?: number
   value: unknown
   setValue: (v: unknown) => void
   fireServerEvent: (trigger: string, newValue: unknown) => void
@@ -32,6 +35,7 @@ export function useFieldNode(node: ViewNode): FieldNodeCommon {
     enabled: node.props?.enabled === true,
     error: node.props?.error as string | undefined,
     flex: node.props?.flex as number | string | undefined,
+    maxWidth: parseMaxWidth(node.props?.maxWidth),
     value,
     setValue: (v) => {
       if (node.binding) setValue(node.binding, v)

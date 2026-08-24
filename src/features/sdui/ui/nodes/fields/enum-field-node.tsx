@@ -9,6 +9,7 @@ import {
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
+import { fieldBoxStyle } from '../../../lib/utils/field-box-style'
 import {
   resolveEnumValue,
   type EnumOption,
@@ -28,7 +29,7 @@ export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
       error={!!f.error}
       required={f.required}
       disabled={!f.enabled}
-      sx={{ flex: f.flex !== undefined ? f.flex : undefined }}
+      sx={fieldBoxStyle(f)}
     >
       {f.label && <InputLabel id={labelId}>{f.label}</InputLabel>}
       <Select

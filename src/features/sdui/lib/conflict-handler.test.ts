@@ -25,8 +25,30 @@ describe('handleConflict', () => {
   it('SESSION_NOT_FOUND: вызывает reopen, не трогая сессию', () => {
     const session = { setSession: vi.fn(), replaceAll: vi.fn() }
     const reopen = vi.fn(() => Promise.resolve())
-    handleConflict({ code: 'SESSION_NOT_FOUND' } as ConflictError, session, null, reopen)
+    handleConflict(
+      { code: 'SESSION_NOT_FOUND' } as ConflictError,
+      session,
+      null,
+      reopen
+    )
     expect(reopen).toHaveBeenCalledOnce()
+    expect(session.setSession).not.toHaveBeenCalled()
+  })
+
+  // SCRUM-277 v3 §4.1: стейл draftId/expectedDraftVersion производственного
+  // календаря — переоткрыть draft, НЕ ретраить команду со старой версией.
+  it('PRODUCTION_CALENDAR_STATE_CONFLICT: reopen без retry', () => {
+    const session = { setSession: vi.fn(), replaceAll: vi.fn() }
+    const retry = vi.fn(() => Promise.resolve(true))
+    const reopen = vi.fn(() => Promise.resolve())
+    handleConflict(
+      { code: 'PRODUCTION_CALENDAR_STATE_CONFLICT' } as ConflictError,
+      session,
+      retry,
+      reopen
+    )
+    expect(reopen).toHaveBeenCalledOnce()
+    expect(retry).not.toHaveBeenCalled()
     expect(session.setSession).not.toHaveBeenCalled()
   })
 })

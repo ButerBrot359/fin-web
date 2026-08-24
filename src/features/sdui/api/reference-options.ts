@@ -53,20 +53,28 @@ export async function fetchListPage(args: {
   search?: string
   signal?: AbortSignal
 }): Promise<PagedListResponse> {
+  // SCRUM-45 §4-бис.1: /search читает поиск из поля q в теле FilterRequest,
+  // а не из query — на POST-ветке строка уходит в body, иначе она молча
+  // перестаёт фильтровать (условие включения transport: SEARCH на бэке).
+  const search = args.search?.trim()
+  if (args.method === 'POST') {
+    const params = { ...args.params, page: args.page, size: args.size }
+    const body = search
+      ? { ...((args.body ?? {}) as object), q: search }
+      : (args.body ?? {})
+    const res = await apiService.post<PagedListResponse>({
+      url: args.url,
+      params,
+      data: body,
+      signal: args.signal,
+    })
+    return res.data
+  }
   const params = {
     ...args.params,
     page: args.page,
     size: args.size,
-    ...(args.search?.trim() && { search: args.search.trim() }),
-  }
-  if (args.method === 'POST') {
-    const res = await apiService.post<PagedListResponse>({
-      url: args.url,
-      params,
-      data: args.body ?? {},
-      signal: args.signal,
-    })
-    return res.data
+    ...(search && { search }),
   }
   const res = await apiService.get<PagedListResponse>({
     url: args.url,

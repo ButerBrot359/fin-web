@@ -56,6 +56,42 @@ describe('fetchListPage — транспорт', () => {
     expect(apiService.get).not.toHaveBeenCalled()
   })
 
+  it('POST + search → q в теле, search НЕ в params (SCRUM-45 §4-бис.1)', async () => {
+    vi.mocked(apiService.post).mockResolvedValue({
+      data: { data: { content: [], last: true, number: 0 } },
+    } as never)
+
+    await fetchListPage({
+      url: '/x/search',
+      method: 'POST',
+      body: { filters: [], logic: 'AND' },
+      page: 0,
+      size: 25,
+      search: '  казна  ',
+    })
+
+    expect(apiService.post).toHaveBeenCalledWith({
+      url: '/x/search',
+      params: { page: 0, size: 25 },
+      data: { filters: [], logic: 'AND', q: 'казна' },
+      signal: undefined,
+    })
+  })
+
+  it('GET + search → search остаётся в query (регресс PAGED)', async () => {
+    vi.mocked(apiService.get).mockResolvedValue({
+      data: { data: { content: [], last: true, number: 0 } },
+    } as never)
+
+    await fetchListPage({ url: '/x/paged', page: 0, size: 25, search: 'акт' })
+
+    expect(apiService.get).toHaveBeenCalledWith({
+      url: '/x/paged',
+      params: { page: 0, size: 25, search: 'акт' },
+      signal: undefined,
+    })
+  })
+
   it('без method → apiService.get, body не уходит (регресс PAGED)', async () => {
     vi.mocked(apiService.get).mockResolvedValue({
       data: { data: { content: [], totalElements: 0, last: true, number: 0 } },

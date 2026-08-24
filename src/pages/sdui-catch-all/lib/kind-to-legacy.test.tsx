@@ -26,6 +26,8 @@ const LIST_KINDS: [string, string][] = [
   ],
   ['DICTIONARY_LIST', '/modules/:pageCode/dictionary/:moduleCode'],
   ['REGISTER', '/modules/:pageCode/informationregister/:moduleCode'],
+  // SCRUM-45: бэк развёл вид списка и карточки регистра сведений
+  ['REGISTER_LIST', '/modules/:pageCode/informationregister/:moduleCode'],
   [
     'ACCUMULATION_REGISTER',
     '/modules/:pageCode/accumulationregister/:moduleCode',

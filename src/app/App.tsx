@@ -51,6 +51,13 @@ const DictionaryRedirect = lazy(() =>
     default: m.DictionaryRedirect,
   }))
 )
+const InformationRegisterRedirect = lazy(() =>
+  import('@/pages/information-register/information-register-redirect').then(
+    (m) => ({
+      default: m.InformationRegisterRedirect,
+    })
+  )
+)
 const DictionaryEntryPage = lazy(() =>
   import('@/pages/dictionaries/dictionary-entry').then((m) => ({
     default: m.DictionaryEntryPage,
@@ -124,6 +131,23 @@ const AppRoutes = () => {
           <Route
             path="/dictionaries/:typeCode/:entryId"
             element={<DictionaryRedirect mode="entry" />}
+          />
+          {/*
+            SCRUM-45: плоские ссылки с бэка /information-registers/:typeCode…
+            (navigate из list.rowOpen, list.create, «Записать и закрыть»).
+            Порядок важен: /new раньше /:entryId.
+          */}
+          <Route
+            path="/information-registers/:typeCode"
+            element={<InformationRegisterRedirect mode="list" />}
+          />
+          <Route
+            path="/information-registers/:typeCode/new"
+            element={<InformationRegisterRedirect mode="new" />}
+          />
+          <Route
+            path="/information-registers/:typeCode/:entryId"
+            element={<InformationRegisterRedirect mode="entry" />}
           />
           <Route
             path="/modules/:pageCode/dictionary/:moduleCode/new"

@@ -678,7 +678,18 @@
       "cycleLength": "Цикл ұзақтығы",
       "dayN": "{{n}}-күн",
       "fillSchedule": "Кестені толтыру",
-      "schedule": "Кесте"
+      "workTime": "Жұмыс уақыты",
+      "workTimeTitle": "Жұмыс уақыты — {{label}}",
+      "daySummary": "{{hours}} сағ. ({{intervals}})",
+      "start": "Басталуы",
+      "end": "Аяқталуы",
+      "addInterval": "Аралық қосу",
+      "deleteInterval": "Аралықты жою",
+      "apply": "Қолдану",
+      "cancel": "Болдырмау",
+      "errInvalidTime": "Уақыт форматы қате (СС:ММ)",
+      "errEndBeforeStart": "Аяқталу уақыты басталу уақытынан кейін болуы керек",
+      "errOverlap": "Уақыт аралықтары қиылысады"
     },
     "notFound": {
       "title": "Бет табылмады",

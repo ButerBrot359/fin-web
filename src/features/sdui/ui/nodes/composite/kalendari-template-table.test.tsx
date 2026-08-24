@@ -7,6 +7,8 @@ const { mockDispatch } = vi.hoisted(() => ({
   mockDispatch: vi.fn().mockResolvedValue(true),
 }))
 const sessionState: Record<string, unknown> = {}
+// Дерево сессии — template ищет в нём узел RaspisanieRaboty (spec v3).
+const treeState: { root: unknown } = { root: null }
 vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => mockDispatch,
 }))
@@ -16,13 +18,14 @@ vi.mock('../../../lib/sdui-session-context', () => ({
       sessionState[b] = v
     },
     getValue: (b?: string) => (b ? sessionState[b] : undefined),
+    tree: treeState.root,
   }),
   useBindingValue: (b?: string) => (b ? sessionState[b] : undefined),
 }))
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (k: string, o?: { n?: number }) =>
-      o?.n != null ? `${k}:${String(o.n)}` : k,
+    t: (k: string, o?: Record<string, unknown>) =>
+      o ? `${k}:${Object.values(o).join(':')}` : k,
   }),
   // Требуется транзитивной цепочкой TableCellEditor → resolve-select-value.ts
   // → реальный i18n singleton (i18n.use(initReactI18next)) — без экспорта
@@ -53,10 +56,26 @@ const rows = (n: number) =>
     DenVklyuchenVGrafik: i < 5,
   }))
 
+const scheduleNode: ViewNode = {
+  id: 'dict.field.RaspisanieRaboty',
+  type: 'TABLE',
+  binding: 'RaspisanieRaboty',
+  props: {},
+  children: [],
+}
+const treeWithSchedule = (): ViewNode => ({
+  id: 'root',
+  type: 'PAGE',
+  children: [node(), scheduleNode],
+})
+
+const wire = (hhmm: string) => `2000-01-01T${hhmm}:00`
+
 afterEach(() => {
   cleanup()
   // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
   for (const k of Object.keys(sessionState)) delete sessionState[k]
+  treeState.root = null
 })
 beforeEach(() => mockDispatch.mockClear())
 
@@ -257,5 +276,109 @@ describe('KalendariTemplateTable', () => {
     }
     expect(sent.value[2].DenVklyuchenVGrafik).toBe(true)
     expect(sent.value[0]).not.toHaveProperty('DlinaTsikla')
+  })
+})
+
+describe('KalendariTemplateTable — колонка «Рабочее время» (spec v3)', () => {
+  const setup = (schedule: unknown[]) => {
+    sessionState.SposobZapolneniya = 'PoNedelyam'
+    sessionState.ShablonZapolneniya = rows(7)
+    sessionState.RaspisanieRaboty = schedule
+    treeState.root = treeWithSchedule()
+    render(<KalendariTemplateTable node={node()} />)
+  }
+
+  it('день без интервалов → кнопка «Заполнить расписание», день с интервалами → кликабельное саммари', () => {
+    setup([
+      {
+        rowId: '10',
+        NomerDnya: 1,
+        VremyaNachala: wire('09:00'),
+        VremyaOkonchaniya: wire('18:00'),
+      },
+    ])
+    // Заголовок колонки
+    expect(screen.getByText('sdui.kalendari.workTime')).toBeTruthy()
+    // Пн — саммари 9 ч (hours:intervals через mock t)
+    expect(
+      screen.getByText('sdui.kalendari.daySummary:9:09:00–18:00')
+    ).toBeTruthy()
+    // Остальные 6 дней — «Заполнить расписание»
+    expect(screen.getAllByText('sdui.kalendari.fillSchedule')).toHaveLength(6)
+  })
+
+  it('день 0 (предпраздничный) не отображается как строка и не ломает саммари', () => {
+    setup([
+      {
+        rowId: '30',
+        NomerDnya: 0,
+        VremyaNachala: wire('09:00'),
+        VremyaOkonchaniya: wire('15:00'),
+      },
+    ])
+    expect(screen.getAllByText('sdui.kalendari.fillSchedule')).toHaveLength(7)
+  })
+
+  it('Apply из модалки: полный массив уезжает EVENT-ом узла расписания, чужие дни сохранены', () => {
+    const tuesday = {
+      rowId: '20',
+      NomerDnya: 2,
+      VremyaNachala: wire('08:00'),
+      VremyaOkonchaniya: wire('17:00'),
+    }
+    setup([tuesday])
+    // Открыть модалку понедельника (первая кнопка «Заполнить расписание»)
+    fireEvent.click(screen.getAllByText('sdui.kalendari.fillSchedule')[0])
+    fireEvent.click(screen.getByText('sdui.kalendari.addInterval'))
+    fireEvent.change(screen.getByLabelText('sdui.kalendari.start'), {
+      target: { value: '09:00' },
+    })
+    fireEvent.change(screen.getByLabelText('sdui.kalendari.end'), {
+      target: { value: '18:00' },
+    })
+    fireEvent.click(screen.getByText('sdui.kalendari.apply'))
+
+    expect(mockDispatch).toHaveBeenCalledTimes(1)
+    const sent = mockDispatch.mock.calls[0][0] as {
+      sourceNodeId: string
+      value: {
+        rowId: string
+        NomerDnya: number
+        VremyaNachala: unknown
+      }[]
+    }
+    expect(sent.sourceNodeId).toBe('dict.field.RaspisanieRaboty')
+    expect(sent.value).toHaveLength(2)
+    expect(sent.value[0]).toEqual(tuesday)
+    expect(sent.value[1].NomerDnya).toBe(1)
+    expect(sent.value[1].VremyaNachala).toBe(wire('09:00'))
+    expect(sent.value[1].rowId.startsWith('tmp-')).toBe(true)
+    // Модалка закрыта после Apply
+    expect(screen.queryByText('sdui.kalendari.apply')).toBeNull()
+  })
+
+  it('клик по саммари открывает редактор с интервалами дня', () => {
+    setup([
+      {
+        rowId: '10',
+        NomerDnya: 1,
+        VremyaNachala: wire('09:00'),
+        VremyaOkonchaniya: wire('18:00'),
+      },
+    ])
+    fireEvent.click(screen.getByText('sdui.kalendari.daySummary:9:09:00–18:00'))
+    const start = screen.getByLabelText<HTMLInputElement>(
+      'sdui.kalendari.start'
+    )
+    expect(start.value).toBe('09:00')
+  })
+
+  it('без узла RaspisanieRaboty в дереве колонка не рендерится', () => {
+    sessionState.SposobZapolneniya = 'PoNedelyam'
+    sessionState.ShablonZapolneniya = rows(7)
+    treeState.root = node()
+    render(<KalendariTemplateTable node={node()} />)
+    expect(screen.queryByText('sdui.kalendari.workTime')).toBeNull()
+    expect(screen.queryByText('sdui.kalendari.fillSchedule')).toBeNull()
   })
 })

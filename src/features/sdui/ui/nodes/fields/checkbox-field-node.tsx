@@ -1,14 +1,8 @@
 import type { FC } from 'react'
-import {
-  Checkbox,
-  FormControlLabel,
-  FormHelperText,
-  FormControl,
-} from '@mui/material'
+import { Checkbox, FormControlLabel, FormHelperText, FormControl } from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
-import { fieldBoxStyle } from '../../../lib/utils/field-box-style'
 
 export const CheckboxFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
@@ -17,7 +11,11 @@ export const CheckboxFieldNode: FC<NodeProps> = ({ node }) => {
   if (!f.visible) return null
 
   return (
-    <FormControl error={!!f.error} required={f.required} sx={fieldBoxStyle(f)}>
+    <FormControl
+      error={!!f.error}
+      required={f.required}
+      sx={{ flex: f.flex !== undefined ? f.flex : undefined }}
+    >
       <FormControlLabel
         label={f.label ?? ''}
         control={

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
@@ -12,6 +11,10 @@ interface DictionaryListToolbarProps {
   domain: string
   isHierarchical?: boolean
   onCreateGroup?: () => void
+  // SCRUM-360 §2: поиск контролируется страницей — значение уходит в
+  // FilterRequest.q (по образцу account-plan-list-toolbar).
+  searchValue: string
+  onSearchChange: (value: string) => void
 }
 
 export const DictionaryListToolbar = ({
@@ -19,11 +22,12 @@ export const DictionaryListToolbar = ({
   domain,
   isHierarchical,
   onCreateGroup,
+  searchValue,
+  onSearchChange,
 }: DictionaryListToolbarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { pageCode = '', moduleCode = '' } = useParams()
-  const [search, setSearch] = useState('')
 
   const handleCreate = () => {
     if (!pageCode || !moduleCode) return
@@ -62,10 +66,10 @@ export const DictionaryListToolbar = ({
       <div className="flex items-center gap-2">
         <SearchInput
           placeholder={t('pageToolbar.search')}
-          value={search}
+          value={searchValue}
           className="w-64 bg-ui-01"
           onChange={(e) => {
-            setSearch(e.target.value)
+            onSearchChange(e.target.value)
           }}
           startIcon={<SearchIcon className="h-5 w-5 text-ui-05" />}
         />

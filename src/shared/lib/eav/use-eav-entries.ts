@@ -22,9 +22,21 @@ const buildSafeExtra = (
 ): Record<string, unknown> | undefined =>
   config.supportsQSearch || !extraParams
     ? extraParams
-    : Object.fromEntries(
-        Object.entries(extraParams).filter(([k]) => k !== 'q')
-      )
+    : Object.fromEntries(Object.entries(extraParams).filter(([k]) => k !== 'q'))
+
+/**
+ * Та же защита для тела запроса (SCRUM-360 §2): `q` теперь живёт в
+ * `FilterRequest`, и для домена без `supportsQSearch` бэк на него отвечает
+ * HTTP 400 (`q-search is not supported for domain ...`).
+ */
+const buildSafeFilter = (
+  config: EavDomainConfig,
+  filter: FilterRequest
+): FilterRequest => {
+  if (config.supportsQSearch || filter.q === undefined) return filter
+  const { q: _q, ...rest } = filter
+  return rest
+}
 
 interface UseEavEntriesOptions {
   sortAttr?: string
@@ -65,10 +77,11 @@ export const useEavEntries = <T>(
   const {
     sortAttr,
     sortDir,
-    filter = EMPTY_FILTER,
+    filter: rawFilter = EMPTY_FILTER,
     extraParams,
     enabled = true,
   } = options
+  const filter = buildSafeFilter(config, rawFilter)
 
   const {
     data,

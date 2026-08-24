@@ -10,18 +10,15 @@ import { SduiDictionaryEntryPage } from './sdui-dictionary-entry-page'
 
 /**
  * Развилка SDUI/легаси для карточки справочника (SCRUM-244 §C1), по образцу
- * document-entry-page. SDUI — для существующей записи и для создания (route
- * /new без copyFrom) типа с newView. Копирование (?copyFrom) остаётся на легаси:
- * предзаполнение из источника на SDUI-OPEN бэком не подтверждено (v3 §1.7).
- * 404 от OPEN — тоже легаси.
+ * document-entry-page. SDUI — для существующей записи, создания и копирования
+ * (route /new, в т.ч. с ?copyFrom — SCRUM-360 §7: OPEN отдаёт заполненный
+ * state с суффиксом «(копия)», маршрут уходит на бэк вместе с query-строкой).
+ * 404 от OPEN — легаси.
  */
 export const DictionaryEntryPage = () => {
   const { moduleCode = '' } = useParams()
   const [searchParams] = useSearchParams()
   const domain = searchParams.get('domain') ?? 'DICTIONARY'
-  // Копирование живёт на том же /new-маршруте с ?copyFrom — отличаем его от
-  // чистого создания, чтобы не увести копию в SDUI (v3 §1.7).
-  const isCopy = searchParams.has('copyFrom')
   // 404 от OPEN: тип помечен newView, но конкретная форма ещё не раскатана
   const [sduiFailed, setSduiFailed] = useState(false)
 
@@ -34,7 +31,7 @@ export const DictionaryEntryPage = () => {
 
   if (isLoading) return <PageSkeleton />
 
-  if (newView && !isCopy && !sduiFailed) {
+  if (newView && !sduiFailed) {
     return (
       <SduiDictionaryEntryPage
         moduleCode={moduleCode}

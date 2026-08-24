@@ -26,6 +26,12 @@ export interface FilterCondition {
 export interface FilterRequest {
   filters: FilterCondition[]
   logic: LogicOperator
+  /**
+   * Строка быстрого поиска (SCRUM-360 §2): бэк ищет вхождением по колонкам
+   * списка. Читается ТОЛЬКО из тела POST /search; домены без
+   * `supportsQSearch` (регистры) на `q` в теле отвечают HTTP 400.
+   */
+  q?: string
 }
 
 export interface ColumnMetaDto {
@@ -37,6 +43,12 @@ export interface ColumnMetaDto {
   referencedTypeCode: string | null
   referencedDomainKind: string | null
   allowedOps: FilterOp[] | null
+  /**
+   * Предвыбранный оператор фильтра (SCRUM-360 §4): строковые → `contains`,
+   * прочие → `eq`. Всегда входит в `allowedOps`; `null` — фильтрация по
+   * колонке запрещена. Опциональное: старый кэш/прокси могут не прислать.
+   */
+  defaultOp?: FilterOp | null
   /**
    * `true` — колонка опциональная (NULL допустим), `false` — обязательная.
    * `undefined` трактуется как `true` — защита от старого кэша/прокси.

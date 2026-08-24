@@ -27,7 +27,9 @@ vi.mock('@/shared/api/api', () => ({ apiService: { get: vi.fn() } }))
 vi.mock('@/widgets/document-form-toolbar', () => ({
   PrintDropdownButton: () => null,
 }))
-vi.mock('./select-operation-dialog', () => ({ SelectOperationDialog: () => null }))
+vi.mock('./select-operation-dialog', () => ({
+  SelectOperationDialog: () => null,
+}))
 // В vitest svg-импорты резолвятся как data-URI строки (svgr не применяется).
 // Мокаем shared-UI, через которые тулбар тянет svg (Button/Dropdown/SearchInput),
 // и сами svg тулбара — иначе <Icon/> получает невалидное имя тега.
@@ -43,7 +45,11 @@ vi.mock('@/shared/ui/buttons', () => ({
     disabled?: boolean
     'aria-label'?: string
   }) => (
-    <button onClick={onClick} disabled={disabled} aria-label={rest['aria-label']}>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={rest['aria-label']}
+    >
       {children}
     </button>
   ),
@@ -51,10 +57,14 @@ vi.mock('@/shared/ui/buttons', () => ({
 }))
 vi.mock('@/shared/ui/inputs', () => ({ SearchInput: () => null }))
 vi.mock('@/shared/assets/icons/copy-doc.svg', () => ({ default: () => null }))
-vi.mock('@/shared/assets/icons/debet-kredit.svg', () => ({ default: () => null }))
+vi.mock('@/shared/assets/icons/debet-kredit.svg', () => ({
+  default: () => null,
+}))
 vi.mock('@/shared/assets/icons/layers.svg', () => ({ default: () => null }))
 vi.mock('@/shared/assets/icons/search.svg', () => ({ default: () => null }))
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }))
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (k: string) => k }),
+}))
 vi.mock('react-router-dom', () => ({
   useNavigate: () => vi.fn(),
   useParams: () => ({ pageCode: 'P', moduleCode: 'PriemNaRabotuSpiskom' }),
@@ -69,21 +79,39 @@ describe('DocumentListToolbar: interactiveCreationForbidden (SCRUM-265 FE-4)', (
 
   it('флаг true → нет «Создать» и «Скопировать»', () => {
     docType.interactiveCreationForbidden = true
-    render(<DocumentListToolbar selectedRowId={null} />)
+    render(
+      <DocumentListToolbar
+        selectedRowId={null}
+        searchValue=""
+        onSearchChange={() => undefined}
+      />
+    )
     expect(screen.queryByText('actions.create')).toBeNull()
     expect(screen.queryByLabelText('actions.copy')).toBeNull()
   })
 
   it('флаг false → кнопки на месте (регресс)', () => {
     docType.interactiveCreationForbidden = false
-    render(<DocumentListToolbar selectedRowId={null} />)
+    render(
+      <DocumentListToolbar
+        selectedRowId={null}
+        searchValue=""
+        onSearchChange={() => undefined}
+      />
+    )
     expect(screen.getByText('actions.create')).toBeTruthy()
     expect(screen.getByLabelText('actions.copy')).toBeTruthy()
   })
 
   it('undefined (старый бэк) → кнопки видимы, регресса нет', () => {
     docType.interactiveCreationForbidden = undefined
-    render(<DocumentListToolbar selectedRowId={null} />)
+    render(
+      <DocumentListToolbar
+        selectedRowId={null}
+        searchValue=""
+        onSearchChange={() => undefined}
+      />
+    )
     expect(screen.getByText('actions.create')).toBeTruthy()
   })
 })

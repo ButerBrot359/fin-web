@@ -87,6 +87,13 @@ const KIND_TO_LEGACY: Record<string, LegacyEntry> = {
     path: '/modules/:pageCode/informationregister/:moduleCode',
     element: <InformationRegisterPage />,
   },
+  // SCRUM-45 / ADR-0044_SDUI: бэк развёл вид списка регистра сведений
+  // (REGISTER_LIST) и карточки записи (REGISTER) — предикат «это список»
+  // проверяется раньше резолва layoutCode. Легаси-страница у обоих одна.
+  REGISTER_LIST: {
+    path: '/modules/:pageCode/informationregister/:moduleCode',
+    element: <InformationRegisterPage />,
+  },
   ACCUMULATION_REGISTER: {
     path: '/modules/:pageCode/accumulationregister/:moduleCode',
     element: <AccumulationRegisterPage />,

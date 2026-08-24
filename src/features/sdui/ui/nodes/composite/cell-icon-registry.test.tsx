@@ -6,6 +6,15 @@ vi.mock('@/shared/assets/icons/folder-icon.svg', () => ({
 vi.mock('@/shared/assets/icons/list-element-icon.svg', () => ({
   default: () => <span data-testid="icon-list-element" />,
 }))
+vi.mock('@/shared/assets/icons/doc-posted.svg', () => ({
+  default: () => <span data-testid="icon-doc-posted" />,
+}))
+vi.mock('@/shared/assets/icons/doc-draft.svg', () => ({
+  default: () => <span data-testid="icon-doc-draft" />,
+}))
+vi.mock('@/shared/assets/icons/doc-deleted.svg', () => ({
+  default: () => <span data-testid="icon-doc-deleted" />,
+}))
 
 import { getCellIcon } from './cell-icon-registry'
 
@@ -20,6 +29,14 @@ describe('getCellIcon', () => {
   it('listElement → компонент иконки', () => {
     expect(getCellIcon('listElement')).toBeTruthy()
   })
+
+  // SCRUM-45 §4-бис.2: иконки состояния документа для колонки статуса
+  it.each(['docPosted', 'docDraft', 'docDeleted'])(
+    '%s → компонент иконки',
+    (name) => {
+      expect(getCellIcon(name)).toBeTruthy()
+    }
+  )
 
   it('неизвестное имя → null (не исключение)', () => {
     expect(getCellIcon('unknownIconName')).toBeNull()

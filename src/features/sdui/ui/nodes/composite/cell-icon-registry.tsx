@@ -1,5 +1,8 @@
 import type { FC, SVGProps } from 'react'
 
+import DocDeletedIcon from '@/shared/assets/icons/doc-deleted.svg'
+import DocDraftIcon from '@/shared/assets/icons/doc-draft.svg'
+import DocPostedIcon from '@/shared/assets/icons/doc-posted.svg'
 import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
 import ListElementIcon from '@/shared/assets/icons/list-element-icon.svg'
 
@@ -15,6 +18,14 @@ type CellIconComponent = FC<SVGProps<SVGSVGElement>>
 const CELL_ICONS: Record<string, CellIconComponent | undefined> = {
   folder: FolderIcon,
   listElement: ListElementIcon,
+  // SCRUM-45 §4-бис.2: иконки состояния документа для колонки статуса
+  // («КартинкаЗначения»/«ИндексКартинкиСостояния» из 1С). Бэк эмитит iconMap
+  // со значениями-именами из этого реестра: docPosted — проведён, docDraft —
+  // записан не проведён, docDeleted — помечен на удаление. Те же глифы, что
+  // в легаси-списке документов и в SDUI-дереве подчинённости.
+  docPosted: DocPostedIcon,
+  docDraft: DocDraftIcon,
+  docDeleted: DocDeletedIcon,
 }
 
 // Неизвестное/отсутствующее имя → null (пустая ячейка), НЕ исключение (§17.2):

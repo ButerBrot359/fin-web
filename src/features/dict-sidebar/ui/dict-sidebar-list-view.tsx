@@ -45,12 +45,25 @@ interface DictSidebarListViewProps {
   panel: DictSidebarPanel
 }
 
+export function toggleSelectedEntries(
+  selectedEntries: ReadonlyMap<number, DictEntry>,
+  entry: DictEntry
+): Map<number, DictEntry> {
+  const next = new Map(selectedEntries)
+  if (next.has(entry.id)) next.delete(entry.id)
+  else next.set(entry.id, entry)
+  return next
+}
+
 export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
   const { t, i18n } = useTranslation()
   const { pop, push } = useDictSidebarStore()
 
   const [search, setSearch] = useState('')
   const [selectedEntry, setSelectedEntry] = useState<DictEntry | null>(null)
+  const [selectedEntries, setSelectedEntries] = useState<
+    Map<number, DictEntry>
+  >(new Map())
   const [sorting, setSorting] = useState<SortingState>([])
 
   const sortAttr = sorting[0]?.id
@@ -293,17 +306,27 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
       ? rowVirtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0)
       : 0
 
+  const toSelectOption = (entry: DictEntry): SelectOption => ({
+    id: entry.id,
+    code: entry.code,
+    label: entry.displayName ?? getLocalizedName(entry, i18n.language),
+    raw: entry as unknown as Record<string, unknown>,
+  })
+
+  const selectRow = (entry: DictEntry) => {
+    setSelectedEntry(entry)
+    if (!panel.multiple) return
+    setSelectedEntries((current) => toggleSelectedEntries(current, entry))
+  }
+
   const handleSelect = () => {
-    if (!selectedEntry) return
-    const option: SelectOption = {
-      id: selectedEntry.id,
-      code: selectedEntry.code,
-      label:
-        selectedEntry.displayName ??
-        getLocalizedName(selectedEntry, i18n.language),
-      raw: selectedEntry as unknown as Record<string, unknown>,
+    if (panel.multiple) {
+      if (selectedEntries.size === 0) return
+      panel.onSelectMany?.([...selectedEntries.values()].map(toSelectOption))
+    } else {
+      if (!selectedEntry) return
+      panel.onSelect?.(toSelectOption(selectedEntry))
     }
-    panel.onSelect?.(option)
     pop()
   }
 
@@ -315,7 +338,9 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
           <Button
             variant="primary"
             onClick={handleSelect}
-            disabled={!selectedEntry}
+            disabled={
+              panel.multiple ? selectedEntries.size === 0 : !selectedEntry
+            }
           >
             {t('dictSidebar.select')}
           </Button>
@@ -404,12 +429,13 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                   tableLayout: 'fixed',
                   width: dictColumns.reduce(
                     (sum, col) => sum + widthOf(col.id),
-                    0
+                    panel.multiple ? 44 : 0
                   ),
                   minWidth: '100%',
                 }}
               >
                 <colgroup>
+                  {panel.multiple && <col style={{ width: 44 }} />}
                   {dictColumns.map((col) => (
                     <col key={col.id} style={{ width: widthOf(col.id) }} />
                   ))}
@@ -417,6 +443,12 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                 <thead>
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
+                      {panel.multiple && (
+                        <th
+                          scope="col"
+                          className="sticky top-0 z-10 w-11 bg-white"
+                        />
+                      )}
                       {headerGroup.headers.map((header) => {
                         const canSort = header.column.getCanSort()
                         const sorted = header.column.getIsSorted()
@@ -475,15 +507,19 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                   )}
                   {virtualRows.map((virtualRow) => {
                     const row = rows[virtualRow.index]
-                    const isSelected = selectedEntry?.id === row.original.id
+                    const isSelected = panel.multiple
+                      ? selectedEntries.has(row.original.id)
+                      : selectedEntry?.id === row.original.id
 
                     return (
                       <tr
                         key={row.id}
                         onClick={() => {
-                          setSelectedEntry(row.original)
+                          selectRow(row.original)
                         }}
-                        onDoubleClick={handleSelect}
+                        onDoubleClick={
+                          panel.multiple ? undefined : handleSelect
+                        }
                         className={cn(
                           'cursor-pointer transition-colors hover:bg-ui-07',
                           isSelected
@@ -493,6 +529,21 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                               : ''
                         )}
                       >
+                        {panel.multiple && (
+                          <td className="px-3 py-2">
+                            <input
+                              aria-label="Выбрать запись"
+                              checked={isSelected}
+                              type="checkbox"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                              }}
+                              onChange={() => {
+                                selectRow(row.original)
+                              }}
+                            />
+                          </td>
+                        )}
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}

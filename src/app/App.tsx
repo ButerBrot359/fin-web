@@ -166,6 +166,8 @@ function App() {
         entryId: req.entryId,
         selectedId: req.selectedId,
         onSelect: req.onSelect,
+        onSelectMany: req.onSelectMany,
+        multiple: req.multiple,
         searchParams: req.searchParams,
       })
     })

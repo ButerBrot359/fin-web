@@ -45,7 +45,7 @@ export interface TabelMatrixPayload {
   generation: number
   interval: TabelMatrixInterval
   employees: TabelMatrixEmployee[]
-  manualWorkKinds: Array<{ workTimeKindRef: number; presentation: string }>
+  manualWorkKinds: { workTimeKindRef: number; presentation: string }[]
 }
 
 /** One optimistic-free employee subtree replacement sent by the matrix editor. */
@@ -55,6 +55,30 @@ export interface TabelMatrixReplaceEmployeeCommand {
   baseGeneration: number
   employeeNodeId: string
   employee: Pick<TabelMatrixEmployee, 'employeeRef' | 'workKinds'>
+}
+
+/** Selects an employee for existing row-scoped Tabel commands without exposing raw row ids. */
+export interface TabelMatrixSelectEmployeeCommand {
+  type: 'SELECT_EMPLOYEE'
+  baseGeneration: number
+  employeeRef: number
+}
+
+/** Deletes the selected level-one employee row and its semantic child rows. */
+export interface TabelMatrixDeleteEmployeeCommand {
+  type: 'DELETE_EMPLOYEE'
+  operationId: string
+  baseGeneration: number
+  employeeNodeId: string
+  employeeRef: number
+}
+
+/** Adds several server-authorised employees through the 1C-style picker in one revision. */
+export interface TabelMatrixAddEmployeesCommand {
+  type: 'ADD_EMPLOYEES'
+  operationId: string
+  baseGeneration: number
+  employeeRefs: number[]
 }
 
 /** Server-owned identity and hierarchy visible to the matrix renderer. */
@@ -76,12 +100,14 @@ export interface TabelMatrixRow {
 export function isTabelMatrixNode(node: ViewNode): boolean {
   return (
     node.props?.sourceBinding === 'UchetRabochegoVremeni' &&
-    node.props?.tablePresentation === TABEL_MATRIX_PRESENTATION &&
-    node.props?.tableWireVersion === TABEL_MATRIX_WIRE_VERSION
+    node.props.tablePresentation === TABEL_MATRIX_PRESENTATION &&
+    node.props.tableWireVersion === TABEL_MATRIX_WIRE_VERSION
   )
 }
 
-export function isTabelMatrixPayload(value: unknown): value is TabelMatrixPayload {
+export function isTabelMatrixPayload(
+  value: unknown
+): value is TabelMatrixPayload {
   if (!value || typeof value !== 'object') return false
   const payload = value as Partial<TabelMatrixPayload>
   return (

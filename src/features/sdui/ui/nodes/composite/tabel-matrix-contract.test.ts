@@ -6,9 +6,24 @@ import {
   isTabelMatrixNode,
   TABEL_MATRIX_PRESENTATION,
   TABEL_MATRIX_WIRE_VERSION,
+  type TabelMatrixAddEmployeesCommand,
 } from './tabel-matrix-contract'
 
 describe('Tabel matrix contract marker', () => {
+  it('keeps batch employee selection on the explicit semantic wire', () => {
+    const command: TabelMatrixAddEmployeesCommand = {
+      type: 'ADD_EMPLOYEES',
+      operationId: 'batch-1',
+      baseGeneration: 4,
+      employeeRefs: [8, 9],
+    }
+
+    expect(command).toMatchObject({
+      type: 'ADD_EMPLOYEES',
+      employeeRefs: [8, 9],
+    })
+  })
+
   it('recognises only the explicit Tabel table presentation', () => {
     const node = {
       id: 'table.uchetRabochegoVremeni',

@@ -16,6 +16,7 @@ export interface DictSidebarPanel {
   copyFromId?: number
   title?: string
   searchParams?: Record<string, string>
+  multiple?: boolean
   /**
    * Предзаполнение полей формы создания записи (attributeCode → значение).
    * Напр. `{ Vladelets: <контрагент документа> }` — чтобы при создании нового
@@ -23,4 +24,5 @@ export interface DictSidebarPanel {
    */
   defaults?: Record<string, unknown>
   onSelect?: (value: SelectOption) => void
+  onSelectMany?: (values: SelectOption[]) => void
 }

@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import {
   addManualWorkKind,
+  collapseAllEmployees,
   datesInInterval,
+  filterTabelMatrixEmployees,
   replaceWorkKindCell,
+  TABEL_MATRIX_LABELS,
+  tabelEmployeePickerConfig,
+  tabelManualWorkKindPickerConfig,
   toggleCollapsedEmployee,
 } from './tabel-matrix-table'
 import {
@@ -11,8 +16,20 @@ import {
   type TabelMatrixEmployee,
   type TabelMatrixPayload,
 } from './tabel-matrix-contract'
+import type { ViewNode } from '../../../types/view'
 
 describe('TabelMatrixTable helpers', () => {
+  it('keeps the visible matrix controls as decoded Russian labels', () => {
+    expect(TABEL_MATRIX_LABELS).toEqual({
+      addEmployee: 'Добавить сотрудника',
+      selectEmployees: 'Подбор сотрудников',
+      addWorkKind: 'Добавить вид времени',
+      delete: 'Удалить',
+      expandTree: 'Развернуть дерево',
+      collapseTree: 'Свернуть дерево',
+    })
+  })
+
   it('uses interval dates and replaces only the addressed semantic work-kind cell', () => {
     const payload: TabelMatrixPayload = {
       wireVersion: TABEL_MATRIX_WIRE_VERSION,
@@ -27,12 +44,29 @@ describe('TabelMatrixTable helpers', () => {
       dayTotals: {},
       total: '0',
       workKinds: [
-        { kindNodeId: 'work-kind:7:1', workTimeKindRef: 1, protected: false, cells: {}, total: '0' },
-        { kindNodeId: 'work-kind:7:2', workTimeKindRef: 2, protected: true, cells: {}, total: '0' },
+        {
+          kindNodeId: 'work-kind:7:1',
+          workTimeKindRef: 1,
+          protected: false,
+          cells: {},
+          total: '0',
+        },
+        {
+          kindNodeId: 'work-kind:7:2',
+          workTimeKindRef: 2,
+          protected: true,
+          cells: {},
+          total: '0',
+        },
       ],
     }
 
-    const updated = replaceWorkKindCell(employee, 'work-kind:7:1', '2026-02-02', '8')
+    const updated = replaceWorkKindCell(
+      employee,
+      'work-kind:7:1',
+      '2026-02-02',
+      '8'
+    )
 
     expect(datesInInterval(payload)).toEqual(['2026-02-01', '2026-02-02'])
     expect(updated.workKinds[0].cells).toEqual({ '2026-02-02': '8' })
@@ -51,14 +85,16 @@ describe('TabelMatrixTable helpers', () => {
 
     const updated = addManualWorkKind(employee, 12, 'Night work')
 
-    expect(updated.workKinds).toEqual([{
-      kindNodeId: 'work-kind:7:12',
-      workTimeKindRef: 12,
-      workTimeKindPresentation: 'Night work',
-      protected: false,
-      cells: {},
-      total: '0',
-    }])
+    expect(updated.workKinds).toEqual([
+      {
+        kindNodeId: 'work-kind:7:12',
+        workTimeKindRef: 12,
+        workTimeKindPresentation: 'Night work',
+        protected: false,
+        cells: {},
+        total: '0',
+      },
+    ])
     expect(addManualWorkKind(updated, 12, 'Night work')).toBe(updated)
   })
 
@@ -67,5 +103,114 @@ describe('TabelMatrixTable helpers', () => {
 
     expect(collapsed).toEqual(new Set(['employee:7']))
     expect(toggleCollapsedEmployee(collapsed, 'employee:7')).toEqual(new Set())
+  })
+
+  it('collapses every employee without changing the matrix payload', () => {
+    const employees: TabelMatrixEmployee[] = [
+      {
+        employeeNodeId: 'employee:7',
+        employeeRef: 7,
+        dayTotals: {},
+        total: '0',
+        workKinds: [],
+      },
+      {
+        employeeNodeId: 'employee:8',
+        employeeRef: 8,
+        dayTotals: {},
+        total: '0',
+        workKinds: [],
+      },
+    ]
+
+    expect(collapseAllEmployees(employees)).toEqual(
+      new Set(['employee:7', 'employee:8'])
+    )
+    expect(employees).toHaveLength(2)
+  })
+
+  it('filters the 1C-style tree locally by employee or work-time-kind presentation', () => {
+    const employees: TabelMatrixEmployee[] = [
+      {
+        employeeNodeId: 'employee:7',
+        employeeRef: 7,
+        employeePresentation: 'Aruzhan',
+        dayTotals: {},
+        total: '0',
+        workKinds: [
+          {
+            kindNodeId: 'work-kind:7:1',
+            workTimeKindRef: 1,
+            workTimeKindPresentation: 'Attendance',
+            protected: false,
+            cells: {},
+            total: '0',
+          },
+        ],
+      },
+      {
+        employeeNodeId: 'employee:8',
+        employeeRef: 8,
+        employeePresentation: 'Maksat',
+        dayTotals: {},
+        total: '0',
+        workKinds: [
+          {
+            kindNodeId: 'work-kind:8:2',
+            workTimeKindRef: 2,
+            workTimeKindPresentation: 'Night work',
+            protected: false,
+            cells: {},
+            total: '0',
+          },
+        ],
+      },
+    ]
+
+    expect(filterTabelMatrixEmployees(employees, 'night')).toEqual([
+      employees[1],
+    ])
+    expect(filterTabelMatrixEmployees(employees, '7')).toEqual([employees[0]])
+    expect(filterTabelMatrixEmployees(employees, '   ')).toBe(employees)
+  })
+
+  it('reuses the backend-owned employee picker type and scope from the table column', () => {
+    const table: ViewNode = {
+      id: 'table.uchetRabochegoVremeni',
+      type: 'TABLE',
+      children: [
+        {
+          id: 'table.uchetRabochegoVremeni.col.sotrudnik',
+          type: 'TABLE_COLUMN',
+          props: {
+            domain: 'DICTIONARY',
+            targetTypeCode: 'Sotrudniki',
+            filter: { Organizatsiya: 10, entryIds: '7,8' },
+          },
+        },
+      ],
+    }
+
+    expect(tabelEmployeePickerConfig(table)).toEqual({
+      domain: 'DICTIONARY',
+      targetTypeCode: 'Sotrudniki',
+      searchParams: { Organizatsiya: '10', entryIds: '7,8' },
+    })
+  })
+
+  it('opens the work-time-kind picker with only server-authorised manual ids', () => {
+    expect(
+      tabelManualWorkKindPickerConfig([
+        { workTimeKindRef: 8, presentation: 'Night work' },
+        { workTimeKindRef: 3, presentation: 'Attendance' },
+        { workTimeKindRef: 8, presentation: 'Night work duplicate' },
+        { workTimeKindRef: 0, presentation: 'Invalid' },
+      ])
+    ).toEqual({
+      domain: 'DICTIONARY',
+      targetTypeCode: 'KlassifikatorRabochegoVremeni',
+      searchParams: { entryIds: '8,3' },
+    })
+    expect(tabelManualWorkKindPickerConfig([])).toBeNull()
   })
 })

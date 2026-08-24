@@ -11,7 +11,10 @@ export interface ReferencePickerRequest {
    */
   selectedId?: number | string
   searchParams?: Record<string, string>
+  /** Enables a deliberate multi-select list; ordinary reference fields stay single-select. */
+  multiple?: boolean
   onSelect: (option: SelectOption | null) => void
+  onSelectMany?: (options: SelectOption[]) => void
 }
 
 type Gateway = (req: ReferencePickerRequest) => void

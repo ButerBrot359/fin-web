@@ -10,6 +10,8 @@ import { ReadOnlyTable } from './read-only-table'
 import { SubordinationTree } from './subordination-tree'
 import { KalendariTemplateTable } from './kalendari-template-table'
 import { KalendariScheduleTable } from './kalendari-schedule-table'
+import { isTabelMatrixNode } from './tabel-matrix-contract'
+import { TabelMatrixTable } from './tabel-matrix-table'
 
 /**
  * Дискриминатор kalendari-таблиц по binding (v2-back §1). Спец-пропа нет —
@@ -34,6 +36,10 @@ export function extractEditableColumns(
 
 export const TableNode: FC<NodeProps> = ({ node }) => {
   const editable = node.props?.editable === true
+
+  if (isTabelMatrixNode(node)) {
+    return <TabelMatrixTable node={node} />
+  }
 
   if (editable) {
     const kalendariKind = kalendariTableKind(node.binding)

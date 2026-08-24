@@ -8,6 +8,8 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import SearchIcon from '@/shared/assets/icons/search.svg'
+import LayersIcon from '@/shared/assets/icons/layers.svg'
+import { Button } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
 import { fetchListPage } from '../../../api/reference-options'
 import { ListFilterChips, type ListFilterChip } from './list-filter-chips'
@@ -21,6 +23,7 @@ import {
 import { ListPeriodControl } from './list-period-control'
 import { ListTable } from './list-table'
 import { ListBreadcrumbs, type ListTrailEntry } from './list-breadcrumbs'
+import { SduiListSettingsDialog } from './sdui-list-settings-dialog'
 import {
   buildLevelParams,
   isGroupRow,
@@ -90,6 +93,10 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const sortInFlightRef = useRef(false)
 
   const [search, setSearch] = useState('')
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [columnVisibility, setColumnVisibility] = useState<
+    Record<string, boolean>
+  >({})
   // Панель выбора открывается на записи, стоящей в поле: сервер кладёт её id в
   // props.selectedId (клиенту неоткуда его взять — панель приходит отдельным
   // поддеревом и связи с полем не имеет).
@@ -231,10 +238,16 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const canDrillInto = (row: ListRow) =>
     isHierarchical && !isSearchMode && isGroupRow(row)
 
+  const visibleColumnNodes = useMemo(
+    () => columnNodes.filter((column) => columnVisibility[column.id] ?? true),
+    [columnNodes, columnVisibility]
+  )
+
   // Свою иконку папки рисуем, только если сервер не прислал колонку-иконку
   // (cellKind='ICON' с iconMap по isGroup) — иначе в строке было бы две папки.
   const showFolderIcon =
-    isHierarchical && !columnNodes.some((c) => c.props?.cellKind === 'ICON')
+    isHierarchical &&
+    !visibleColumnNodes.some((column) => column.props?.cellKind === 'ICON')
 
   const dispatchSelect = (
     action: { command?: string } | undefined,
@@ -252,7 +265,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const columns = useMemo<ColumnDef<ListRow>[]>(
     () =>
       buildListColumns({
-        columnNodes,
+        columnNodes: visibleColumnNodes,
         sortState,
         sortCommand,
         filterCommand,
@@ -262,7 +275,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         sortInFlightRef,
       }),
     [
-      columnNodes,
+      visibleColumnNodes,
       sortState,
       sortCommand,
       filterCommand,
@@ -306,17 +319,27 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         ) : (
           <div />
         )}
-        {searchable && (
-          <SearchInput
-            placeholder={t('pageToolbar.search')}
-            value={search}
-            className="w-62.5 bg-ui-01"
-            onChange={(e) => {
-              setSearch(e.target.value)
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            aria-label={t('sdui.listSettings.open')}
+            startIcon={<LayersIcon className="h-5 w-5" />}
+            onClick={() => {
+              setSettingsOpen(true)
             }}
-            startIcon={<SearchIcon className="h-5 w-5 text-ui-05" />}
           />
-        )}
+          {searchable && (
+            <SearchInput
+              placeholder={t('pageToolbar.search')}
+              value={search}
+              className="w-62.5 bg-ui-01"
+              onChange={(e) => {
+                setSearch(e.target.value)
+              }}
+              startIcon={<SearchIcon className="h-5 w-5 text-ui-05" />}
+            />
+          )}
+        </div>
       </div>
 
       {clearFilterCommand && clearAllFiltersCommand && (
@@ -367,6 +390,38 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         activateAction={activateAction}
         selectAction={selectAction}
         dispatchSelect={dispatchSelect}
+      />
+      <SduiListSettingsDialog
+        open={settingsOpen}
+        columns={columnNodes}
+        visibility={columnVisibility}
+        sortState={sortState}
+        sortCommand={sortCommand}
+        filterChips={filterChips}
+        canClearFilters={!!clearAllFiltersCommand}
+        nodeId={node.id}
+        dispatch={dispatch}
+        onClose={() => {
+          setSettingsOpen(false)
+        }}
+        onVisibilityChange={setColumnVisibility}
+        onRemoveFilter={(field) => {
+          if (!clearFilterCommand) return
+          void dispatch({
+            type: 'COMMAND',
+            command: clearFilterCommand,
+            value: { field },
+            sourceNodeId: node.id,
+          })
+        }}
+        onClearFilters={() => {
+          if (!clearAllFiltersCommand) return
+          void dispatch({
+            type: 'COMMAND',
+            command: clearAllFiltersCommand,
+            sourceNodeId: node.id,
+          })
+        }}
       />
     </div>
   )

@@ -591,6 +591,36 @@
       "export": "Excel-ге жүктеу",
       "settings": "Баптаулар"
     },
+    "listSettings": {
+      "open": "Тізімді баптау",
+      "title": "Тізімді баптау",
+      "tabs": {
+        "basic": "Негізгі",
+        "filter": "Іріктеу",
+        "sorting": "Сұрыптау",
+        "formatting": "Шартты рәсімдеу",
+        "grouping": "Топтау"
+      },
+      "visibleColumns": "Көрсетілетін бағандар",
+      "activeFilters": "Белсенді іріктеулер",
+      "noFilters": "Іріктеулер берілмеген.",
+      "removeFilter": "Жою",
+      "clearFilters": "Іріктеулерді тазалау",
+      "sortUnavailable": "Сервер бұл тізімге сұрыптауды бермеді.",
+      "sortField": "Өріс",
+      "sortDirection": "Бағыт",
+      "asc": "Өсуі бойынша",
+      "desc": "Кемуі бойынша",
+      "formattingUnavailable": "Шартты рәсімдеу осы тізімнің серверлік келісімшартында берілмеген.",
+      "groupingUnavailable": "Топталған дереккөз осы тізімнің серверлік келісімшартында берілмеген.",
+      "done": "Дайын"
+    },
+    "listOutput": {
+      "destination": "Шығару орны",
+      "xlsx": "Excel файлы (.xlsx)",
+      "columns": "Бағандарды таңдаңыз",
+      "selectAll": "Барлығын таңдау"
+    },
     "loading": "Жүктелуде...",
     "requestError": "Сұраныс қатесі",
     "tableFlushFailed": "Кесте өзгерістерін сақтау мүмкін болмады",

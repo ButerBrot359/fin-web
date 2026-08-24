@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockedFunction } from 'vitest'
 
 vi.mock('@/shared/assets/icons/search.svg', () => ({ default: () => null }))
+vi.mock('@/shared/assets/icons/layers.svg', () => ({ default: () => null }))
 vi.mock('@/shared/assets/icons/folder-icon.svg', () => ({
   default: () => <span data-testid="icon-folder" />,
 }))

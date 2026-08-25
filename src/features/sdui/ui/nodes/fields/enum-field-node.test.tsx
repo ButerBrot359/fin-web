@@ -52,6 +52,24 @@ describe('EnumFieldNode readonly', () => {
   })
 })
 
+describe('EnumFieldNode ширина', () => {
+  // Содержимое TAB рендерится в обычный блочный div, без flex-контейнера:
+  // FormControl там inline-flex и схлопывается до содержимого (~40px у пустого
+  // перечисления, подпись обрезается «Ст…»). В VSTACK этого не видно —
+  // там alignItems: 'stretch' растягивает детей за нас.
+  it('поле растягивается в блочном контейнере', () => {
+    const { container } = render(
+      <div style={{ display: 'block' }}>
+        <EnumFieldNode node={node(false)} />
+      </div>
+    )
+    const control = container.querySelector('.MuiFormControl-root')
+    expect(control).toBeTruthy()
+    expect(control?.classList.contains('MuiFormControl-fullWidth')).toBe(true)
+    expect(getComputedStyle(control as HTMLElement).width).toBe('100%')
+  })
+})
+
 const richOptions = [
   { value: 'week', label: 'По неделям', id: 31, code: 'PoNedelyam' },
   {

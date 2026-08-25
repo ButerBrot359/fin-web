@@ -1,5 +1,10 @@
 import type { FC } from 'react'
-import { Checkbox, FormControlLabel, FormHelperText, FormControl } from '@mui/material'
+import {
+  Checkbox,
+  FormControlLabel,
+  FormHelperText,
+  FormControl,
+} from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
@@ -10,8 +15,14 @@ export const CheckboxFieldNode: FC<NodeProps> = ({ node }) => {
 
   if (!f.visible) return null
 
+  // MuiFormControl — inline-flex и по умолчанию сжимается до содержимого. В
+  // блочном контейнере (содержимое TAB рендерится без flex-обёртки) пустое
+  // перечисление схлопывается до ~40px и обрезает подпись. Тема задаёт fullWidth
+  // только для MuiTextField/MuiPickersTextField, поэтому прочие поля не страдают
+  // — они стоят на TextField. Растягиваем контейнер поля, а не сам контрол.
   return (
     <FormControl
+      fullWidth
       error={!!f.error}
       required={f.required}
       sx={{ flex: f.flex !== undefined ? f.flex : undefined }}

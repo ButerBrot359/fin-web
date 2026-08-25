@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import { useSduiDispatch } from '../../../lib/dispatch'
+import { useListSelection } from '../../../lib/stores/selection-store'
 import type { NodeProps } from '../../../types/view'
 
 interface OutputColumn {
@@ -50,6 +51,10 @@ export const ListOutputDialogNode: FC<NodeProps> = ({ node }) => {
   const cancelCommand = node.props?.listOutputCancelCommand as
     | string
     | undefined
+  const sourceListId = node.props?.listOutputSourceListId as string | undefined
+  const supportsSelectedRows =
+    node.props?.listOutputSelectedRowsSupported === true && !!sourceListId
+  const selectedRows = useListSelection(sourceListId ?? null)
   const columnIds = useMemo(() => columns.map((column) => column.id), [columns])
   const selectionKey = `${node.id}:${columnIds.join('|')}`
   const [selection, setSelection] = useState(() => ({
@@ -62,6 +67,7 @@ export const ListOutputDialogNode: FC<NodeProps> = ({ node }) => {
   const setSelectedIds = (ids: string[]) => {
     setSelection({ key: selectionKey, ids })
   }
+  const [onlySelected, setOnlySelected] = useState(false)
 
   const allSelected =
     columnIds.length > 0 && selectedIds.length === columnIds.length
@@ -106,6 +112,20 @@ export const ListOutputDialogNode: FC<NodeProps> = ({ node }) => {
           />
         ))}
       </FormGroup>
+      {supportsSelectedRows && (
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={onlySelected}
+              disabled={selectedRows.length === 0}
+              onChange={(_, checked) => {
+                setOnlySelected(checked)
+              }}
+            />
+          }
+          label={t('sdui.listOutput.onlySelected')}
+        />
+      )}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
         <Button
           onClick={() => {
@@ -128,7 +148,11 @@ export const ListOutputDialogNode: FC<NodeProps> = ({ node }) => {
               void dispatch({
                 type: 'COMMAND',
                 command: confirmCommand,
-                value: selectedIds,
+                value: {
+                  columnIds: selectedIds,
+                  onlySelected,
+                  selectedRowIds: onlySelected ? selectedRows : [],
+                },
                 sourceNodeId: node.id,
               })
             }

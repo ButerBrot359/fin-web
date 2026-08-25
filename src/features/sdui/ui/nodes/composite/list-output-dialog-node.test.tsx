@@ -14,6 +14,10 @@ vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => dispatch,
 }))
 
+vi.mock('../../../lib/stores/selection-store', () => ({
+  useListSelection: () => [42, 77],
+}))
+
 const node = {
   id: 'list.output.Tabel',
   type: 'PAGE',
@@ -25,6 +29,8 @@ const node = {
     ],
     listOutputConfirmCommand: 'list.exportList:download',
     listOutputCancelCommand: 'list.exportList:cancel',
+    listOutputSourceListId: 'list.Tabel.list',
+    listOutputSelectedRowsSupported: true,
   },
 } as ViewNode
 
@@ -44,7 +50,29 @@ describe('ListOutputDialogNode', () => {
     expect(dispatch).toHaveBeenCalledWith({
       type: 'COMMAND',
       command: 'list.exportList:download',
-      value: ['Data'],
+      value: {
+        columnIds: ['Data'],
+        onlySelected: false,
+        selectedRowIds: [],
+      },
+      sourceNodeId: 'list.output.Tabel',
+    })
+  })
+
+  it('forwards the current list selection only when selected-only output is checked', () => {
+    render(<ListOutputDialogNode node={node} />)
+
+    fireEvent.click(screen.getByLabelText('sdui.listOutput.onlySelected'))
+    fireEvent.click(screen.getByRole('button', { name: 'actions.confirm' }))
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'list.exportList:download',
+      value: {
+        columnIds: ['Data', 'Nomer'],
+        onlySelected: true,
+        selectedRowIds: [42, 77],
+      },
       sourceNodeId: 'list.output.Tabel',
     })
   })

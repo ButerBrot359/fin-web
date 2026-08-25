@@ -25,20 +25,31 @@ vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => dispatchMock,
 }))
 
-const { setSelectionMock, clearSelectionMock } = vi.hoisted(() => ({
+const {
+  setSelectionMock,
+  clearSelectionMock,
+  setListSelectionMock,
+  clearListSelectionMock,
+} = vi.hoisted(() => ({
   setSelectionMock: vi.fn(),
   clearSelectionMock: vi.fn(),
+  setListSelectionMock: vi.fn(),
+  clearListSelectionMock: vi.fn(),
 }))
 vi.mock('../../../lib/stores/selection-store', () => ({
   useSelectionStore: (
     selector: (s: {
       setSelection: typeof setSelectionMock
       clearSelection: typeof clearSelectionMock
+      setListSelection: typeof setListSelectionMock
+      clearListSelection: typeof clearListSelectionMock
     }) => unknown
   ) =>
     selector({
       setSelection: setSelectionMock,
       clearSelection: clearSelectionMock,
+      setListSelection: setListSelectionMock,
+      clearListSelection: clearListSelectionMock,
     }),
 }))
 vi.mock('../../../api/reference-options', () => ({ fetchListPage: vi.fn() }))
@@ -195,6 +206,8 @@ describe('ListNode — транспорт', () => {
     })
     setSelectionMock.mockReset()
     clearSelectionMock.mockReset()
+    setListSelectionMock.mockReset()
+    clearListSelectionMock.mockReset()
     dispatchMock.mockReset()
   })
 
@@ -303,6 +316,28 @@ describe('ListNode — M5: сброс выделения при смене sourc
 
     expect(isRowSelected(container)).toBe(true)
     expect(setSelectionMock).toHaveBeenLastCalledWith('listSelect', 1)
+  })
+
+  it('publishes checkbox row selection for an output-selectable list', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: { pages: [pageWithRow(1)] },
+    })
+    const outputSelectableNode = {
+      ...selectableNode,
+      props: {
+        ...selectableNode.props,
+        listOutputSelectedRowsSupported: true,
+      },
+    }
+
+    render(<ListNode node={outputSelectableNode} />)
+
+    fireEvent.click(screen.getByLabelText('Select row 1'))
+
+    expect(setListSelectionMock).toHaveBeenLastCalledWith('lst', [1])
   })
 
   it('смена идентичности source сбрасывает выделенную строку и публикацию null в сторе', () => {

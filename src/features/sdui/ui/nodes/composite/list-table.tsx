@@ -4,7 +4,7 @@
 // строк). Логика перенесена verbatim, без изменения поведения.
 import type { FC, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CircularProgress, Typography } from '@mui/material'
+import { Checkbox, CircularProgress, Typography } from '@mui/material'
 import { flexRender, type Table } from '@tanstack/react-table'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
@@ -33,6 +33,9 @@ export interface ListTableProps {
   pagedData: ListTablePagedData | undefined
   selectedRowId: number | null
   setSelectedRowId: (id: number) => void
+  selectedRowIds: number[]
+  supportsMultiSelection: boolean
+  toggleSelectedRowId: (id: number) => void
   activateAction: ListTableAction
   selectAction: ListTableAction
   dispatchSelect: (action: ListTableAction, rowId: number) => void
@@ -56,6 +59,9 @@ export const ListTable: FC<ListTableProps> = ({
   pagedData,
   selectedRowId,
   setSelectedRowId,
+  selectedRowIds,
+  supportsMultiSelection,
+  toggleSelectedRowId,
   activateAction,
   selectAction,
   dispatchSelect,
@@ -112,6 +118,7 @@ export const ListTable: FC<ListTableProps> = ({
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
+                    {supportsMultiSelection && <th aria-label="Select rows" />}
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
@@ -144,7 +151,13 @@ export const ListTable: FC<ListTableProps> = ({
               <tbody>
                 {paddingTop > 0 && (
                   <tr>
-                    <td style={{ height: paddingTop }} />
+                    <td
+                      colSpan={
+                        table.getVisibleLeafColumns().length +
+                        (supportsMultiSelection ? 1 : 0)
+                      }
+                      style={{ height: paddingTop }}
+                    />
                   </tr>
                 )}
                 {virtualRows.map((virtualRow) => {
@@ -183,6 +196,24 @@ export const ListTable: FC<ListTableProps> = ({
                             : ''
                       )}
                     >
+                      {supportsMultiSelection && (
+                        <td className="px-2 py-2">
+                          <Checkbox
+                            checked={selectedRowIds.includes(row.original.id)}
+                            slotProps={{
+                              input: {
+                                'aria-label': `Select row ${String(row.original.id)}`,
+                              },
+                            }}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                            }}
+                            onChange={() => {
+                              toggleSelectedRowId(row.original.id)
+                            }}
+                          />
+                        </td>
+                      )}
                       {row.getVisibleCells().map((cell, cellIndex) => (
                         <td
                           key={cell.id}
@@ -211,7 +242,13 @@ export const ListTable: FC<ListTableProps> = ({
                 })}
                 {paddingBottom > 0 && (
                   <tr>
-                    <td style={{ height: paddingBottom }} />
+                    <td
+                      colSpan={
+                        table.getVisibleLeafColumns().length +
+                        (supportsMultiSelection ? 1 : 0)
+                      }
+                      style={{ height: paddingBottom }}
+                    />
                   </tr>
                 )}
               </tbody>

@@ -619,7 +619,8 @@
       "destination": "Выводить в",
       "xlsx": "Файл Excel (.xlsx)",
       "columns": "Выберите колонки",
-      "selectAll": "Выбрать все"
+      "selectAll": "Выбрать все",
+      "onlySelected": "Только выделенные"
     },
     "loading": "Загрузка...",
     "requestError": "Ошибка запроса",

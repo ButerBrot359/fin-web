@@ -104,6 +104,9 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const [selectedRowId, setSelectedRowId] = useState<number | null>(
     serverSelectedId ?? null
   )
+  const supportsMultiSelection =
+    node.props?.listOutputSelectedRowsSupported === true
+  const [selectedRowIds, setSelectedRowIds] = useState<number[]>([])
 
   // Путь по папкам справочника; пустой — корневой уровень. Начальное значение —
   // с сервера: если запись из поля лежит внутри папки, панель открывается сразу там,
@@ -133,6 +136,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
       return
     }
     setSelectedRowId(null)
+    setSelectedRowIds([])
   }, [sourceKey])
 
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -221,6 +225,8 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const selectField = selectAction?.selectionField ?? undefined
   const setSelection = useSelectionStore((s) => s.setSelection)
   const clearSelection = useSelectionStore((s) => s.clearSelection)
+  const setListSelection = useSelectionStore((s) => s.setListSelection)
+  const clearListSelection = useSelectionStore((s) => s.clearListSelection)
   useEffect(() => {
     if (!selectField) return
     setSelection(selectField, selectedRowId)
@@ -228,6 +234,39 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
       clearSelection(selectField)
     }
   }, [selectField, selectedRowId, setSelection, clearSelection])
+
+  useEffect(() => {
+    if (!supportsMultiSelection) return
+    setListSelection(node.id, selectedRowIds)
+    return () => {
+      clearListSelection(node.id)
+    }
+  }, [
+    node.id,
+    supportsMultiSelection,
+    selectedRowIds,
+    setListSelection,
+    clearListSelection,
+  ])
+
+  const selectRow = (id: number) => {
+    setSelectedRowId(id)
+    if (!supportsMultiSelection) return
+    setSelectedRowIds((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    )
+  }
+
+  const toggleSelectedRow = (id: number) => {
+    setSelectedRowId(id)
+    setSelectedRowIds((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    )
+  }
 
   // Провал в папку: строка-группа — навигация внутрь, а не выбор значения.
   const drillInto = (row: ListRow) => {
@@ -386,7 +425,10 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         isFetchingNextPage={isFetchingNextPage}
         pagedData={pagedData}
         selectedRowId={selectedRowId}
-        setSelectedRowId={setSelectedRowId}
+        setSelectedRowId={selectRow}
+        selectedRowIds={selectedRowIds}
+        supportsMultiSelection={supportsMultiSelection}
+        toggleSelectedRowId={toggleSelectedRow}
         activateAction={activateAction}
         selectAction={selectAction}
         dispatchSelect={dispatchSelect}

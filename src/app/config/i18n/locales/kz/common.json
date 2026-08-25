@@ -619,7 +619,8 @@
       "destination": "Шығару орны",
       "xlsx": "Excel файлы (.xlsx)",
       "columns": "Бағандарды таңдаңыз",
-      "selectAll": "Барлығын таңдау"
+      "selectAll": "Барлығын таңдау",
+      "onlySelected": "Тек таңдалғандар"
     },
     "loading": "Жүктелуде...",
     "requestError": "Сұраныс қатесі",

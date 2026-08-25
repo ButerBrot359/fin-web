@@ -178,6 +178,50 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     expect(classNames[1]).toContain('border-t')
   })
 
+  // В ЯЧЕЙКЕ высота под-строки минимальная, а не жёсткая: перенесённое на вторую
+  // строку readonly-значение иначе легло бы поверх разделителя и соседней
+  // под-строки. В шапке высота остаётся жёсткой (тест выше).
+  it('под-строки ЯЧЕЙКИ держат minHeight, а не height', () => {
+    const defs = buildColumnDefs(
+      [
+        verticalGroup([
+          {
+            id: 'col.a',
+            type: 'TABLE_COLUMN',
+            binding: 'A',
+            props: { label: 'А', cellWidget: 'TEXT_FIELD' },
+          } as ViewNode,
+          {
+            id: 'col.b',
+            type: 'TABLE_COLUMN',
+            binding: 'B',
+            props: { label: 'Б', cellWidget: 'TEXT_FIELD' },
+          } as ViewNode,
+        ]),
+      ],
+      syncRef
+    )
+
+    const cell = defs[0].cell as (
+      info: CellContext<TableRow, unknown>
+    ) => ReactElement
+    // subRows ждёт render-функцию (как TanStack `header`), ячейке же контекст
+    // передаём сами — оборачиваем результат.
+    const rows = subRows(() =>
+      cell({
+        row: { original: { rowId: '1', A: 'a', B: 'b' } },
+      } as CellContext<TableRow, unknown>)
+    )
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      const style = row.props as {
+        style: { height?: number; minHeight?: number }
+      }
+      expect(style.style.minHeight).toBe(VERTICAL_SUB_ROW_HEIGHT)
+      expect(style.style.height).toBeUndefined()
+    }
+  })
+
   it('без подписей у под-колонок остаётся label группы — шапка не пустеет', () => {
     const defs = buildColumnDefs(
       [

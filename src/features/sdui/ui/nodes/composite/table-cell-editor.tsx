@@ -107,7 +107,22 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
 
   if (readonly) {
     return (
-      <span style={{ padding: '4px 8px', fontSize: 14, whiteSpace: 'nowrap' }}>
+      // Текст ПЕРЕНОСИТСЯ по ширине колонки, а не идёт одной строкой: ширины
+      // ячеек фиксированы (colgroup + table-layout: fixed), а ячейка ТЧ не
+      // обрезает содержимое, поэтому при `nowrap` длинное значение («Доплата за
+      // квалификационную категорию 100%») выезжало поверх соседней колонки.
+      // display:block — чтобы у переносимого текста работали собственные
+      // паддинги; overflowWrap:anywhere — чтобы рвался и длинный «неразрывный»
+      // токен (код/номер без пробелов), иначе он снова вылезет за границу.
+      <span
+        style={{
+          display: 'block',
+          padding: '4px 8px',
+          fontSize: 14,
+          whiteSpace: 'normal',
+          overflowWrap: 'anywhere',
+        }}
+      >
         {formatReadonlyValue(value, dataType, dateFormat)}
       </span>
     )

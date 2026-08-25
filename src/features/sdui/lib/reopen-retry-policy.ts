@@ -9,10 +9,16 @@ import type { ActionBehavior, ViewAction } from '../types/view'
  */
 export function isRetryableAfterReopen(
   action: ViewAction,
-  behavior?: ActionBehavior | null,
+  behavior?: ActionBehavior | null
 ): boolean {
   if (action.type === 'OPEN' || action.type === 'CLOSE') return false
-  if (action.type === 'COMMAND' && (behavior?.resetsDirty || behavior?.closeAfter)) {
+  // HYDRATE не повторяем: свежий OPEN приносит deferred-ноды заново, и их
+  // компоненты сами шлют HYDRATE на маунте — повтор был бы дублем (SCRUM-384).
+  if (action.type === 'HYDRATE') return false
+  if (
+    action.type === 'COMMAND' &&
+    (behavior?.resetsDirty || behavior?.closeAfter)
+  ) {
     return false
   }
   return true

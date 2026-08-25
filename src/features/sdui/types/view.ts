@@ -66,6 +66,9 @@ export interface ViewAction {
   // Маркер полноты снимка строк ТЧ на table-level EVENT (спека reference-cell §2.2):
   // true = полный массив, бэк может делать full-replace (включая пустой [] = удалить все)
   fullSnapshot?: boolean
+  // SCRUM-384 §3.3: id deferred-нод для догрузки. Читается бэком только на
+  // HYDRATE; рекомендованная стратегия — один nodeId на запрос, параллельно.
+  nodeIds?: string[]
 }
 
 export interface ViewRequest {

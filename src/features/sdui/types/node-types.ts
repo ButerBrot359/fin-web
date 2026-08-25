@@ -62,4 +62,6 @@ export type EffectType =
   | 'confirm'
   | 'replaceUrl'
 
-export type ActionType = 'OPEN' | 'EVENT' | 'COMMAND' | 'CLOSE'
+// HYDRATE — догрузка данных deferred-нод (SCRUM-384): ответ приходит в
+// существующем формате statePatch+patches, tree/state не возвращаются.
+export type ActionType = 'OPEN' | 'EVENT' | 'COMMAND' | 'CLOSE' | 'HYDRATE'

@@ -30,6 +30,10 @@ import { DocumentListSettingsDialog } from './document-list-settings-dialog'
 import { TABEL_LIST_PERIOD_FIELD } from '../lib/tabel-list-period'
 import { TabelListPeriodDialog } from './tabel-list-period-dialog'
 import { TabelSelectedBulkEditDialog } from './tabel-selected-bulk-edit-dialog'
+import {
+  selectedIdsForScope,
+  type ScopedRowSelection,
+} from '../lib/scoped-row-selection'
 
 // This is deliberately opt-in. Other legacy document lists do not yet have
 // evidence-backed multi-row commands, while 1C Табель uses row selection for
@@ -53,7 +57,8 @@ export const DocumentPage = () => {
   useFilterUrlSync(moduleCode)
 
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
-  const [selectedRowIds, setSelectedRowIds] = useState<number[]>([])
+  const [multiRowSelection, setMultiRowSelection] =
+    useState<ScopedRowSelection>({ scope: '', ids: [] })
   const [selectedRowIsPosted, setSelectedRowIsPosted] = useState(false)
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
@@ -80,6 +85,24 @@ export const DocumentPage = () => {
       q: debouncedSearch.trim() || undefined,
     }),
     [debouncedSearch, filterRequest]
+  )
+  // A selection belongs to the exact receiver query that produced it. Keeping
+  // the ids in state but exposing them only for that scope prevents a delayed
+  // search/filter/sort response from bulk-editing rows that are no longer in
+  // the user-visible list.
+  const multiRowSelectionScope = useMemo(
+    () =>
+      JSON.stringify({
+        moduleCode,
+        sortAttr,
+        sortDir,
+        filter: searchFilterRequest,
+      }),
+    [moduleCode, searchFilterRequest, sortAttr, sortDir]
+  )
+  const selectedRowIds = selectedIdsForScope(
+    multiRowSelection,
+    multiRowSelectionScope
   )
 
   const {
@@ -225,7 +248,9 @@ export const DocumentPage = () => {
         }}
         multiRowSelection={tabelListSupportsMultiRowSelection}
         selectedRowIds={selectedRowIds}
-        onSelectedRowIdsChange={setSelectedRowIds}
+        onSelectedRowIdsChange={(ids) => {
+          setMultiRowSelection({ scope: multiRowSelectionScope, ids })
+        }}
         listOutputSelectedRowsSupported={tabelListSupportsMultiRowSelection}
         selectedRowId={selectedRowId}
         onRowClick={handleSelectRow}

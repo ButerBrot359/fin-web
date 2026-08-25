@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type FC } from 'react'
+import { useCallback, useMemo, useRef, useState, type FC } from 'react'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
@@ -205,6 +205,8 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
     string | null
   >(null)
   const [search, setSearch] = useState('')
+  const matrixCommandInFlight = useRef(false)
+  const [matrixCommandPending, setMatrixCommandPending] = useState(false)
   const dates = useMemo(
     () => (payload ? datesInInterval(payload) : []),
     [payload]
@@ -218,6 +220,33 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
   const workKindPicker = useMemo(
     () => tabelManualWorkKindPickerConfig(payload?.manualWorkKinds ?? []),
     [payload?.manualWorkKinds]
+  )
+
+  /**
+   * The matrix generation is a server-side compare-and-set token. A second
+   * event sent before the first response updates the payload necessarily
+   * carries the previous generation and is rejected as stale. Keep one matrix
+   * mutation in flight so an ordinary double-click or an immediate follow-up
+   * selection cannot manufacture that conflict.
+   */
+  const dispatchMatrixCommand = useCallback(
+    async (value: unknown) => {
+      if (matrixCommandInFlight.current) return false
+      matrixCommandInFlight.current = true
+      setMatrixCommandPending(true)
+      try {
+        return await dispatch({
+          type: 'EVENT',
+          sourceNodeId: TABEL_MATRIX_EVENT_NODE_ID,
+          trigger: 'change',
+          value,
+        })
+      } finally {
+        matrixCommandInFlight.current = false
+        setMatrixCommandPending(false)
+      }
+    },
+    [dispatch]
   )
 
   // A server patch is authoritative: a new generation ignores drafts and expands the tree.
@@ -256,43 +285,33 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
           [employee.employeeNodeId]: updatedEmployee,
         },
       }))
-      void dispatch({
-        type: 'EVENT',
-        sourceNodeId: TABEL_MATRIX_EVENT_NODE_ID,
-        trigger: 'change',
-        value: {
-          type: 'REPLACE_EMPLOYEE',
-          operationId: operationId(),
-          baseGeneration: payload.generation,
-          employeeNodeId: employee.employeeNodeId,
-          employee: {
-            employeeRef: updatedEmployee.employeeRef,
-            workKinds: updatedEmployee.workKinds,
-          },
+      void dispatchMatrixCommand({
+        type: 'REPLACE_EMPLOYEE',
+        operationId: operationId(),
+        baseGeneration: payload.generation,
+        employeeNodeId: employee.employeeNodeId,
+        employee: {
+          employeeRef: updatedEmployee.employeeRef,
+          workKinds: updatedEmployee.workKinds,
         },
       })
     },
-    [dispatch, payload]
+    [dispatchMatrixCommand, payload]
   )
 
   const deleteWorkKind = useCallback(
     (employee: TabelMatrixEmployee, workTimeKindRef: number) => {
       if (!payload) return
-      void dispatch({
-        type: 'EVENT',
-        sourceNodeId: TABEL_MATRIX_EVENT_NODE_ID,
-        trigger: 'change',
-        value: {
-          type: 'DELETE_WORK_KIND',
-          operationId: operationId(),
-          baseGeneration: payload.generation,
-          employeeNodeId: employee.employeeNodeId,
-          employeeRef: employee.employeeRef,
-          workTimeKindRef,
-        },
+      void dispatchMatrixCommand({
+        type: 'DELETE_WORK_KIND',
+        operationId: operationId(),
+        baseGeneration: payload.generation,
+        employeeNodeId: employee.employeeNodeId,
+        employeeRef: employee.employeeRef,
+        workTimeKindRef,
       })
     },
-    [dispatch, payload]
+    [dispatchMatrixCommand, payload]
   )
 
   const addEmployee = useCallback(() => {
@@ -306,20 +325,15 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
         if (!option) return
         const employeeRef = Number(option.id)
         if (!Number.isSafeInteger(employeeRef) || employeeRef <= 0) return
-        void dispatch({
-          type: 'EVENT',
-          sourceNodeId: TABEL_MATRIX_EVENT_NODE_ID,
-          trigger: 'change',
-          value: {
-            type: 'ADD_EMPLOYEE',
-            operationId: operationId(),
-            baseGeneration: payload.generation,
-            employeeRef,
-          },
+        void dispatchMatrixCommand({
+          type: 'ADD_EMPLOYEE',
+          operationId: operationId(),
+          baseGeneration: payload.generation,
+          employeeRef,
         })
       },
     })
-  }, [dispatch, employeePicker, payload])
+  }, [dispatchMatrixCommand, employeePicker, payload])
 
   const selectEmployees = useCallback(() => {
     if (!payload || !employeePicker) return
@@ -345,32 +359,23 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
           baseGeneration: payload.generation,
           employeeRefs,
         }
-        void dispatch({
-          type: 'EVENT',
-          sourceNodeId: TABEL_MATRIX_EVENT_NODE_ID,
-          trigger: 'change',
-          value: command,
-        })
+        void dispatchMatrixCommand(command)
       },
     })
-  }, [dispatch, employeePicker, payload])
+  }, [dispatchMatrixCommand, employeePicker, payload])
 
   const selectEmployee = useCallback(
     (employeeRef: number) => {
       if (!payload) return
-      setSelectedEmployeeNodeId(`employee:${String(employeeRef)}`)
-      void dispatch({
-        type: 'EVENT',
-        sourceNodeId: TABEL_MATRIX_EVENT_NODE_ID,
-        trigger: 'change',
-        value: {
-          type: 'SELECT_EMPLOYEE',
-          baseGeneration: payload.generation,
-          employeeRef,
-        },
+      void dispatchMatrixCommand({
+        type: 'SELECT_EMPLOYEE',
+        baseGeneration: payload.generation,
+        employeeRef,
+      }).then((sent) => {
+        if (sent) setSelectedEmployeeNodeId(`employee:${String(employeeRef)}`)
       })
     },
-    [dispatch, payload]
+    [dispatchMatrixCommand, payload]
   )
 
   const addWorkKind = useCallback(() => {
@@ -425,13 +430,8 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
       employeeNodeId: employee.employeeNodeId,
       employeeRef: employee.employeeRef,
     }
-    void dispatch({
-      type: 'EVENT',
-      sourceNodeId: TABEL_MATRIX_EVENT_NODE_ID,
-      trigger: 'change',
-      value: command,
-    })
-  }, [activeEmployeeNodeId, dispatch, payload])
+    void dispatchMatrixCommand(command)
+  }, [activeEmployeeNodeId, dispatchMatrixCommand, payload])
 
   if (!payload) {
     return (
@@ -447,7 +447,7 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
         size="small"
         variant="outlined"
         onClick={addEmployee}
-        disabled={!employeePicker}
+        disabled={!employeePicker || matrixCommandPending}
         sx={{ mb: 1 }}
       >
         {TABEL_MATRIX_LABELS.addEmployee}
@@ -456,7 +456,7 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
         size="small"
         variant="outlined"
         onClick={selectEmployees}
-        disabled={!employeePicker}
+        disabled={!employeePicker || matrixCommandPending}
         sx={{ mb: 1, ml: 1 }}
       >
         {TABEL_MATRIX_LABELS.selectEmployees}
@@ -465,7 +465,9 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
         size="small"
         variant="outlined"
         onClick={addWorkKind}
-        disabled={!workKindPicker || !activeEmployeeNodeId}
+        disabled={
+          !workKindPicker || !activeEmployeeNodeId || matrixCommandPending
+        }
         sx={{ mb: 1, ml: 1 }}
       >
         {TABEL_MATRIX_LABELS.addWorkKind}
@@ -475,7 +477,7 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
         variant="text"
         color="error"
         onClick={deleteEmployee}
-        disabled={!activeEmployeeNodeId}
+        disabled={!activeEmployeeNodeId || matrixCommandPending}
         sx={{ mb: 1, ml: 1 }}
       >
         {TABEL_MATRIX_LABELS.delete}
@@ -547,6 +549,7 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
                   onCommit={commit}
                   onDeleteWorkKind={deleteWorkKind}
                   onSelectEmployee={selectEmployee}
+                  commandPending={matrixCommandPending}
                   expanded={
                     !collapsedEmployeeNodeIds.has(employee.employeeNodeId)
                   }
@@ -585,6 +588,7 @@ const TabelEmployeeRows: FC<{
     workTimeKindRef: number
   ) => void
   onSelectEmployee: (employeeRef: number) => void
+  commandPending: boolean
   expanded: boolean
   onToggleExpanded: () => void
 }> = ({
@@ -593,13 +597,14 @@ const TabelEmployeeRows: FC<{
   onCommit,
   onDeleteWorkKind,
   onSelectEmployee,
+  commandPending,
   expanded,
   onToggleExpanded,
 }) => (
   <>
     <TableRow
       onClick={() => {
-        onSelectEmployee(employee.employeeRef)
+        if (!commandPending) onSelectEmployee(employee.employeeRef)
       }}
       sx={{
         '& > td': { bgcolor: 'action.hover', fontWeight: 700 },
@@ -648,7 +653,7 @@ const TabelEmployeeRows: FC<{
               <IconButton
                 aria-label="Удалить вид времени"
                 size="small"
-                disabled={kind.protected}
+                disabled={kind.protected || commandPending}
                 onClick={() => {
                   onDeleteWorkKind(employee, kind.workTimeKindRef)
                 }}
@@ -663,7 +668,7 @@ const TabelEmployeeRows: FC<{
                 key={`${kind.kindNodeId}:${date}:${kind.cells[date] ?? ''}`}
                 variant="standard"
                 defaultValue={kind.cells[date] ?? ''}
-                disabled={kind.protected}
+                disabled={kind.protected || commandPending}
                 slotProps={{
                   htmlInput: {
                     'aria-label': `${String(employee.employeeRef)}-${String(kind.workTimeKindRef)}-${date}`,

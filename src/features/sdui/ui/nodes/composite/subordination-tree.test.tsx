@@ -105,8 +105,11 @@ beforeEach(() => {
   vi.mocked(useSelectionStore).mockImplementation((selector) =>
     selector({
       selection: {},
+      listSelections: {},
       setSelection: setSelectionMock,
       clearSelection: clearSelectionMock,
+      setListSelection: vi.fn(),
+      clearListSelection: vi.fn(),
     })
   )
   vi.mocked(useSelection).mockReturnValue(null)

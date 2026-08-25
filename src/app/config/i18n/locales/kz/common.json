@@ -730,7 +730,16 @@
       "cycleLength": "Цикл ұзақтығы",
       "dayN": "{{n}}-күн",
       "fillSchedule": "Кестені толтыру",
-      "schedule": "Кесте"
+      "schedule": "Кесте",
+      "invalidTime": "Дұрыс уақытты көрсетіңіз",
+      "invalidInterval": "Аяқталу уақыты басталу уақытынан кейін болуы керек",
+      "overlappingIntervals": "Аралықтар қиылыспауы керек",
+      "start": "Басталуы",
+      "end": "Аяқталуы",
+      "deleteInterval": "Аралықты жою",
+      "addInterval": "Аралықты қосу",
+      "cancel": "Бас тарту",
+      "apply": "Қолдану"
     },
     "notFound": {
       "title": "Бет табылмады",

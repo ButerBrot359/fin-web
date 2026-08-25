@@ -43,6 +43,10 @@ import {
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import { omitServiceRowKeys } from '../../../lib/utils/service-row-keys'
 import {
+  parseRowAppearance,
+  resolveRowBackground,
+} from '../../../lib/utils/row-appearance'
+import {
   findSelectedMasterRow,
   filterDetailRows,
   rowContentSignature,
@@ -93,6 +97,14 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // notify. Правило авторитетно на сервере, активная кнопка данные не портит
   // (frontend-spec-table-row-activate §3.4/§6).
   const showAdd = allowAdd || isMasterDetail
+
+  // Правила условной заливки строк (1С `УсловноеОформление`): разбираются один
+  // раз на раскладку, а сработавшее правило ищется на каждой строке — признак
+  // живёт в данных и меняется патчами.
+  const rowAppearance = useMemo(
+    () => parseRowAppearance(node.props),
+    [node.props]
+  )
 
   // Memoize columns by node.children — critical for preserving input focus
   const flatColumns = useMemo(
@@ -556,7 +568,19 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     onDoubleClick={(event) => {
                       openRow(row.id, event)
                     }}
-                    sx={{ cursor: 'pointer', height: ROW_HEIGHT }}
+                    // Заливка идёт ПРОСТЫМ `backgroundColor` в sx — у выделения
+                    // и ховера MUI селекторы с классом-модификатором
+                    // (`.MuiTableRow-root.Mui-selected`), они специфичнее и
+                    // остаются видимыми поверх условного фона. Иначе выделенная
+                    // зелёная строка была бы неотличима от невыделенной.
+                    sx={{
+                      cursor: 'pointer',
+                      height: ROW_HEIGHT,
+                      backgroundColor: resolveRowBackground(
+                        rowAppearance,
+                        row.original
+                      ),
+                    }}
                   >
                     {showRowNumbers && (
                       <TableCell

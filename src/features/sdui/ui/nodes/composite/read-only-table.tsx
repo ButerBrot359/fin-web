@@ -27,6 +27,10 @@ import {
   type HeaderCell,
   type ReadOnlyColumnDef,
 } from '../../../lib/utils/read-only-header-model'
+import {
+  parseRowAppearance,
+  resolveRowBackground,
+} from '../../../lib/utils/row-appearance'
 import { useManualColumnResize } from '../../../lib/hooks/use-manual-column-resize'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { ColumnResizeHandle } from './column-resize-handle'
@@ -66,6 +70,12 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
   const headerModel = useMemo(
     () => buildHeaderModel(node.children),
     [node.children]
+  )
+
+  // Правила условной заливки строк — см. row-appearance.ts.
+  const rowAppearance = useMemo(
+    () => parseRowAppearance(node.props),
+    [node.props]
   )
 
   const sizing = useSduiColumnSizing(node)
@@ -237,6 +247,11 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                     key={row.rowId}
                     data-index={isVirtualized ? index : undefined}
                     ref={measureRow}
+                    // Условная заливка строки (см. row-appearance.ts): правило
+                    // живёт на узле таблицы, признак — в данных строки.
+                    sx={{
+                      backgroundColor: resolveRowBackground(rowAppearance, row),
+                    }}
                   >
                     {showRowNumbers && (
                       <TableCell align="center">{index + 1}</TableCell>

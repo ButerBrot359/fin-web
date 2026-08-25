@@ -35,6 +35,10 @@ import { useTableValidation } from '../../../lib/hooks/use-table-validation'
 import { resolveCellState } from '../../../lib/utils/resolve-cell-state'
 import { isColumnVisible } from '../../../lib/utils/column-visibility'
 import { omitServiceRowKeys } from '../../../lib/utils/service-row-keys'
+import {
+  parseRowAppearance,
+  resolveRowBackground,
+} from '../../../lib/utils/row-appearance'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { columnSizeProps } from '../../../lib/utils/column-sizing'
 import { EditableTableHead } from './editable-table-head'
@@ -59,6 +63,12 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const tableCommands = node.props?.tableCommands as
     | TableCommandDescriptor[]
     | undefined
+
+  // Правила условной заливки строк — см. row-appearance.ts.
+  const rowAppearance = useMemo(
+    () => parseRowAppearance(node.props),
+    [node.props]
+  )
 
   // Колонки СИНХРОНИЗАЦИИ — все, включая скрытые: на них держатся ключи
   // master-detail и служебные значения, они обязаны попадать в новую строку и
@@ -325,7 +335,16 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                     onDoubleClick={(event) => {
                       openRow(row.id, event)
                     }}
-                    sx={{ cursor: 'pointer' }}
+                    // Условная заливка (см. row-appearance.ts): простой
+                    // backgroundColor, чтобы выделение и ховер MUI со своими
+                    // более специфичными селекторами оставались видны поверх.
+                    sx={{
+                      cursor: 'pointer',
+                      backgroundColor: resolveRowBackground(
+                        rowAppearance,
+                        row.original
+                      ),
+                    }}
                   >
                     {showRowNumbers && (
                       <TableCell

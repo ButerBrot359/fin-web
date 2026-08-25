@@ -644,3 +644,87 @@ describe('ComplexEditableTable — двойной клик по строке (ta
     expect(openCalls()).toHaveLength(1)
   })
 })
+
+// Условная заливка строк (перенос `УсловноеОформление` из 1С): эталон
+// Тарификации подсвечивает светло-зелёным работников с «РаботникРассчитан».
+describe('ComplexEditableTable — условная заливка строк (rowAppearance)', () => {
+  const GREEN = 'rgb(200, 255, 210)'
+
+  const itogiNode = {
+    id: 'table.itogiPoRabotnikam',
+    type: 'TABLE',
+    binding: 'ItogiPoRabotnikam',
+    props: {
+      editable: true,
+      rowAppearance: [
+        {
+          binding: 'RabotnikRasschitan',
+          equals: true,
+          backgroundColor: GREEN,
+        },
+      ],
+    },
+    children: [
+      {
+        id: 'col-rabotnik',
+        type: 'TABLE_COLUMN',
+        binding: 'Rabotnik',
+        props: { label: 'Работник' },
+      },
+    ],
+  } as ViewNode
+
+  /**
+   * Фон строки по тексту её ячейки. Читается через getComputedStyle, а НЕ через
+   * element.style: заливка идёт через `sx`, а он кладёт правило в класс emotion,
+   * инлайнового стиля в DOM нет (тот же приём, что в subordination-tree.test).
+   */
+  const rowBg = (text: string): string => {
+    const row = screen.getByText(text).closest('tr')!
+    return getComputedStyle(row).backgroundColor
+  }
+
+  it('зелёная только строка с признаком; признак — из скрытой колонки', () => {
+    state.ItogiPoRabotnikam = [
+      { rowId: '0', Rabotnik: 'Иванов', RabotnikRasschitan: true },
+      { rowId: '1', Rabotnik: 'Петров', RabotnikRasschitan: false },
+    ]
+    render(<ComplexEditableTable node={itogiNode} />)
+
+    expect(rowBg('Иванов')).toBe(GREEN)
+    // Негатив — «не зелёная»: дефолт фона в jsdom зависит от его таблицы
+    // стилей, и сверять его с конкретной строкой значило бы тестировать jsdom.
+    expect(rowBg('Петров')).not.toBe(GREEN)
+  })
+
+  // Приёмка: «после „Рассчитать работника“ строка зеленеет без переоткрытия».
+  // Признак приезжает патчем на ТЧ — заливка пересчитывается из данных строки,
+  // отдельного построчного «оформления» с сервера не требуется.
+  it('строка зеленеет после патча признака, без переоткрытия', () => {
+    state.ItogiPoRabotnikam = [
+      { rowId: '0', Rabotnik: 'Иванов', RabotnikRasschitan: false },
+    ]
+    const { rerender } = render(<ComplexEditableTable node={itogiNode} />)
+    expect(rowBg('Иванов')).not.toBe(GREEN)
+
+    state.ItogiPoRabotnikam = [
+      { rowId: '0', Rabotnik: 'Иванов', RabotnikRasschitan: true },
+    ]
+    rerender(<ComplexEditableTable node={itogiNode} />)
+
+    expect(rowBg('Иванов')).toBe(GREEN)
+  })
+
+  it('без пропа rowAppearance строки остаются без заливки', () => {
+    state.ItogiPoRabotnikam = [
+      { rowId: '0', Rabotnik: 'Иванов', RabotnikRasschitan: true },
+    ]
+    render(
+      <ComplexEditableTable
+        node={{ ...itogiNode, props: { editable: true } } as ViewNode}
+      />
+    )
+
+    expect(rowBg('Иванов')).not.toBe(GREEN)
+  })
+})

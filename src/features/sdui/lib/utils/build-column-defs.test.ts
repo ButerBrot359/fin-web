@@ -205,12 +205,14 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     const cell = defs[0].cell as (
       info: CellContext<TableRow, unknown>
     ) => ReactElement
+    // Строка — с явным типом TableRow: у литерала в месте приведения тип узкий
+    // ({rowId; A; B}), и `as CellContext` на него уже не проходит — перекрытия
+    // с CellContext нет ни в одну сторону.
+    const original: TableRow = { rowId: '1', A: 'a', B: 'b' }
     // subRows ждёт render-функцию (как TanStack `header`), ячейке же контекст
     // передаём сами — оборачиваем результат.
     const rows = subRows(() =>
-      cell({
-        row: { original: { rowId: '1', A: 'a', B: 'b' } },
-      } as CellContext<TableRow, unknown>)
+      cell({ row: { original } } as CellContext<TableRow, unknown>)
     )
     expect(rows).toHaveLength(2)
     for (const row of rows) {

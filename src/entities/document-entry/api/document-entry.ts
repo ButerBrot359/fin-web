@@ -7,6 +7,17 @@ import type {
   PrintCommand,
 } from '../types/document-entry'
 
+export interface TabelSelectedBulkEditRequest {
+  selectedEntryIds: number[]
+  commentEnabled: boolean
+  comment: string
+}
+
+export interface TabelSelectedBulkEditResult {
+  selectedCount: number
+  changedCount: number
+}
+
 export const getDocumentEntries = (
   typeCode: string,
   params: { page: number; size: number; sortAttr?: string; sortDir?: string }
@@ -80,5 +91,14 @@ export const unpostDocumentEntry = (id: number) =>
 export const postDocumentEntry = (id: number) =>
   apiService.post<DocumentEntryResponseData>({
     url: `/api/document-entries/${String(id)}/post`,
+    timeout: LONG_OPERATION_TIMEOUT_MS,
+  })
+
+export const bulkEditSelectedTabelEntries = (
+  payload: TabelSelectedBulkEditRequest
+) =>
+  apiService.post<{ data: TabelSelectedBulkEditResult }>({
+    url: '/api/document-entries/Tabel/bulk-edit',
+    data: payload,
     timeout: LONG_OPERATION_TIMEOUT_MS,
   })

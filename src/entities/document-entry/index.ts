@@ -6,6 +6,7 @@ export {
   updateDocumentEntry,
   unpostDocumentEntry,
   postDocumentEntry,
+  bulkEditSelectedTabelEntries,
   getPrintCommands,
   printDocumentEntry,
 } from './api/document-entry'
@@ -18,3 +19,7 @@ export type {
   DocumentEntryResponseData,
   PrintCommand,
 } from './types/document-entry'
+export type {
+  TabelSelectedBulkEditRequest,
+  TabelSelectedBulkEditResult,
+} from './api/document-entry'

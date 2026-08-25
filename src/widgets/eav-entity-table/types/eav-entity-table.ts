@@ -20,6 +20,11 @@ export interface EavColumnMetaExtra {
   metaCode?: string
 }
 
+export interface ListOutputColumn {
+  id: string
+  label: string
+}
+
 export interface EavEntityTableProps<T extends { id: number }> {
   /**
    * Namespace для table-filter стора. `undefined` ⇒ фильтрация отключена
@@ -58,6 +63,15 @@ export interface EavEntityTableProps<T extends { id: number }> {
   onRowDoubleClick?: (row: T) => void
 
   /**
+   * Optional checkbox selection for list actions which genuinely support a
+   * set of rows. It is opt-in so ordinary legacy lists keep their current
+   * single-row behaviour.
+   */
+  multiRowSelection?: boolean
+  selectedRowIds?: number[]
+  onSelectedRowIdsChange?: (ids: number[]) => void
+
+  /**
    * Имя для выгрузки в Excel (имя листа и файла). Если задано — в подвале
    * таблицы появляется кнопка «Выгрузить в Excel». `undefined` ⇒ кнопки нет.
    */
@@ -78,6 +92,15 @@ export interface EavEntityTableProps<T extends { id: number }> {
    * (префетч ссылок). Если не задан — данные собираются из таблицы автоматически.
    */
   buildExportData?: (rows: T[]) => TableExportData | Promise<TableExportData>
+
+  /**
+   * Columns offered by the 1C-style "Output list" dialog. Omit this to keep
+   * the table's existing direct Excel export only.
+   */
+  listOutputColumns?: ListOutputColumn[]
+  listOutputOpen?: boolean
+  onListOutputClose?: () => void
+  listOutputSelectedRowsSupported?: boolean
 
   /**
    * Дополнительные строки перед виртуализированным телом (например,

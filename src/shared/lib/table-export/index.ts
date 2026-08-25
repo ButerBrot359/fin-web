@@ -1,4 +1,7 @@
-export { extractTableExport } from './extract-table-export'
+export {
+  extractTableExport,
+  filterExportRowsById,
+} from './extract-table-export'
 export type {
   TableExportData,
   TableExportColumnMeta,

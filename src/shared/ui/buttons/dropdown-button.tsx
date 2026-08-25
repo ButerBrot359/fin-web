@@ -8,7 +8,7 @@ interface DropdownButtonProps {
   className?: string
   disabled?: boolean
   loading?: boolean
-  onClick?: () => void
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
 }
 
 export const DropdownButton = ({

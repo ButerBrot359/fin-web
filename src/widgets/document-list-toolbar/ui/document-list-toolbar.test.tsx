@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { DocumentListToolbar } from './document-list-toolbar'
@@ -22,6 +22,7 @@ vi.mock('@/entities/document-entry', () => ({
 vi.mock('@/features/sdui', () => ({ openMovementsForEntry: vi.fn() }))
 vi.mock('@/shared/lib/query/invalidate-entities', () => ({
   invalidateDocumentQueries: vi.fn(),
+  invalidateDocumentListQueries: vi.fn(),
 }))
 vi.mock('@/shared/ui/toast/show-toast', () => ({ showToast: vi.fn() }))
 vi.mock('@/shared/api/api', () => ({ apiService: { get: vi.fn() } }))
@@ -54,9 +55,23 @@ vi.mock('@/shared/ui/buttons', () => ({
       {children}
     </button>
   ),
-  DropdownButton: () => null,
+  DropdownButton: ({
+    label,
+    onClick,
+  }: {
+    label: string
+    onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
+  }) => <button onClick={onClick}>{label}</button>,
 }))
-vi.mock('@/shared/ui/inputs', () => ({ SearchInput: () => null }))
+vi.mock('@/shared/ui/inputs', () => ({
+  SearchInput: ({
+    value,
+    onChange,
+  }: {
+    value: string
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => void
+  }) => <input aria-label="search" value={value} onChange={onChange} />,
+}))
 vi.mock('@/shared/assets/icons/copy-doc.svg', () => ({ default: () => null }))
 vi.mock('@/shared/assets/icons/debet-kredit.svg', () => ({
   default: () => null,
@@ -71,8 +86,13 @@ vi.mock('react-router-dom', () => ({
   useParams: () => ({ pageCode: 'P', moduleCode: 'PriemNaRabotuSpiskom' }),
 }))
 vi.mock('@tanstack/react-query', () => ({
-  useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-  useQueryClient: () => ({}),
+  useMutation: ({ mutationFn }: { mutationFn: (id: number) => unknown }) => ({
+    mutate: (id: number) => {
+      void mutationFn(id)
+    },
+    isPending: false,
+  }),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }))
 
 describe('DocumentListToolbar: interactiveCreationForbidden (SCRUM-265 FE-4)', () => {
@@ -128,5 +148,84 @@ describe('DocumentListToolbar: interactiveCreationForbidden (SCRUM-265 FE-4)', (
     expect(
       screen.getByText('documentFormToolbar.post').hasAttribute('disabled')
     ).toBe(true)
+  })
+
+  it('opens 1C-equivalent refresh and list-settings actions from More', async () => {
+    const { invalidateDocumentListQueries } =
+      await import('@/shared/lib/query/invalidate-entities')
+    const onOpenListSettings = vi.fn()
+    render(<DocumentListToolbar onOpenListSettings={onOpenListSettings} />)
+
+    fireEvent.click(screen.getByText('documentListToolbar.more'))
+    fireEvent.click(screen.getByText('documentListToolbar.refresh'))
+    expect(invalidateDocumentListQueries).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(screen.getByText('documentListToolbar.more'))
+    fireEvent.click(screen.getByText('documentListToolbar.configureList'))
+    expect(onOpenListSettings).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens the 1C-style list-output dialog from More', () => {
+    const onOpenListOutput = vi.fn()
+    render(<DocumentListToolbar onOpenListOutput={onOpenListOutput} />)
+
+    fireEvent.click(screen.getByText('documentListToolbar.more'))
+    fireEvent.click(screen.getByText('documentListToolbar.outputList'))
+
+    expect(onOpenListOutput).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows Edit selected only for the list that explicitly provides the receiver', () => {
+    const onEditSelected = vi.fn()
+    render(<DocumentListToolbar onEditSelected={onEditSelected} />)
+
+    fireEvent.click(screen.getByText('documentListToolbar.more'))
+    fireEvent.click(screen.getByText('documentListToolbar.editSelected'))
+
+    expect(onEditSelected).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the period command only for a list that explicitly supports it', () => {
+    const onOpenPeriod = vi.fn()
+    const { rerender } = render(<DocumentListToolbar />)
+
+    fireEvent.click(screen.getByText('documentListToolbar.more'))
+    expect(screen.queryByText('documentListToolbar.setPeriod')).toBeNull()
+
+    rerender(<DocumentListToolbar onOpenPeriod={onOpenPeriod} />)
+    fireEvent.click(screen.getByText('documentListToolbar.more'))
+    fireEvent.click(screen.getByText('documentListToolbar.setPeriod'))
+    expect(onOpenPeriod).toHaveBeenCalledTimes(1)
+  })
+
+  it('forwards quick search text and lets More cancel it', () => {
+    const onSearchChange = vi.fn()
+    const onClearSearch = vi.fn()
+    render(
+      <DocumentListToolbar
+        searchValue="табель"
+        onSearchChange={onSearchChange}
+        onClearSearch={onClearSearch}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText('search'), {
+      target: { value: 'август' },
+    })
+    expect(onSearchChange).toHaveBeenCalledWith('август')
+
+    fireEvent.click(screen.getByText('documentListToolbar.more'))
+    fireEvent.click(screen.getByText('documentListToolbar.cancelSearch'))
+    expect(onClearSearch).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens the selected-document movements report from Reports', async () => {
+    const { openMovementsForEntry } = await import('@/features/sdui')
+    render(<DocumentListToolbar selectedRowId={42} />)
+
+    fireEvent.click(screen.getByText('documentListToolbar.reports'))
+    fireEvent.click(screen.getByText('documentListToolbar.movementsReport'))
+
+    expect(openMovementsForEntry).toHaveBeenCalledWith('42')
   })
 })

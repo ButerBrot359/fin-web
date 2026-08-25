@@ -6,7 +6,18 @@ import {
   flexRender,
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { Button, CircularProgress, Typography } from '@mui/material'
+import {
+  Button,
+  Checkbox,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  FormGroup,
+  Typography,
+} from '@mui/material'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 
 import { ColumnFilterTrigger } from '@/features/table-filter'
@@ -14,6 +25,7 @@ import type { ColumnMetaDto } from '@/shared/lib/eav'
 import {
   extractTableExport,
   exportTableToXlsx,
+  filterExportRowsById,
 } from '@/shared/lib/table-export'
 import { useAutoFitColumnsByContent } from '@/shared/lib/table-autofit/use-auto-fit-columns'
 
@@ -46,13 +58,37 @@ export const EavEntityTable = <T extends { id: number }>({
   selectedRowId,
   onRowClick,
   onRowDoubleClick,
+  multiRowSelection = false,
+  selectedRowIds = [],
+  onSelectedRowIdsChange,
   extraRowsAbove,
   exportFileName,
   fetchAllEntries,
   buildExportData,
+  listOutputColumns,
+  listOutputOpen = false,
+  onListOutputClose,
+  listOutputSelectedRowsSupported = false,
 }: EavEntityTableProps<T>) => {
   const { t } = useTranslation()
   const [isExporting, setIsExporting] = useState(false)
+  const listOutputKey = (listOutputColumns ?? [])
+    .map((column) => column.id)
+    .join('|')
+  const [outputSelection, setOutputSelection] = useState(() => ({
+    key: listOutputKey,
+    ids: (listOutputColumns ?? []).map((column) => column.id),
+  }))
+  const [onlySelectedOutput, setOnlySelectedOutput] = useState(false)
+
+  useEffect(() => {
+    if (!listOutputOpen) return
+    setOutputSelection({
+      key: listOutputKey,
+      ids: (listOutputColumns ?? []).map((column) => column.id),
+    })
+    setOnlySelectedOutput(false)
+  }, [listOutputOpen, listOutputColumns, listOutputKey])
 
   const metaByCode = useMemo(() => {
     const map = new Map<string, ColumnMetaDto>()
@@ -133,25 +169,69 @@ export const EavEntityTable = <T extends { id: number }>({
 
   const canExport = !!exportFileName && entries.length > 0
 
-  const handleExport = async () => {
-    if (!exportFileName || isExporting) return
+  const handleExport = async (
+    columnIds?: string[],
+    rowIds?: number[]
+  ): Promise<boolean> => {
+    if (!exportFileName || isExporting) return false
     setIsExporting(true)
     try {
       const rows = fetchAllEntries ? await fetchAllEntries() : entries
+      const selectedRows = filterExportRowsById(rows, rowIds)
       const data = buildExportData
-        ? await buildExportData(rows)
-        : await extractTableExport(table, fetchAllEntries ? rows : undefined)
+        ? await buildExportData(selectedRows)
+        : await extractTableExport(
+            table,
+            fetchAllEntries || rowIds ? selectedRows : undefined,
+            { columnIds }
+          )
       if (data.rows.length === 0) {
         showToast('info', t('table.exportEmpty'))
-        return
+        return false
       }
       exportTableToXlsx(exportFileName, data)
+      return true
     } catch (e) {
       const description = e instanceof Error ? e.message : undefined
       showToast('error', t('table.exportError'), description)
+      return false
     } finally {
       setIsExporting(false)
     }
+  }
+
+  const selectedOutputIds =
+    outputSelection.key === listOutputKey
+      ? outputSelection.ids
+      : (listOutputColumns ?? []).map((column) => column.id)
+  const allOutputColumnsSelected =
+    (listOutputColumns?.length ?? 0) > 0 &&
+    selectedOutputIds.length === listOutputColumns?.length
+  const selectedRowIdSet = useMemo(
+    () => new Set(selectedRowIds),
+    [selectedRowIds]
+  )
+  const allLoadedRowsSelected =
+    entries.length > 0 &&
+    entries.every((entry) => selectedRowIdSet.has(entry.id))
+
+  const toggleRowSelection = (id: number, checked: boolean) => {
+    if (!onSelectedRowIdsChange) return
+    onSelectedRowIdsChange(
+      checked
+        ? [...selectedRowIds.filter((selectedId) => selectedId !== id), id]
+        : selectedRowIds.filter((selectedId) => selectedId !== id)
+    )
+  }
+
+  const toggleLoadedRowSelection = (checked: boolean) => {
+    if (!onSelectedRowIdsChange) return
+    const loadedIds = new Set(entries.map((entry) => entry.id))
+    onSelectedRowIdsChange(
+      checked
+        ? [...new Set([...selectedRowIds, ...loadedIds])]
+        : selectedRowIds.filter((id) => !loadedIds.has(id))
+    )
   }
 
   const rowVirtualizer = useVirtualizer({
@@ -187,6 +267,25 @@ export const EavEntityTable = <T extends { id: number }>({
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
+                {multiRowSelection && (
+                  <th className="sticky top-0 z-10 w-12 border-b-2 border-ui-06 bg-white px-2 py-2 text-center">
+                    <Checkbox
+                      size="small"
+                      checked={allLoadedRowsSelected}
+                      indeterminate={
+                        selectedRowIds.length > 0 && !allLoadedRowsSelected
+                      }
+                      slotProps={{
+                        input: {
+                          'aria-label': t('sdui.listOutput.selectAll'),
+                        },
+                      }}
+                      onChange={(_, checked) => {
+                        toggleLoadedRowSelection(checked)
+                      }}
+                    />
+                  </th>
+                )}
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort()
                   const sorted = header.column.getIsSorted()
@@ -272,14 +371,20 @@ export const EavEntityTable = <T extends { id: number }>({
 
             {isLoading && (
               <tr>
-                <td colSpan={columns.length} className="py-16 text-center">
+                <td
+                  colSpan={columns.length + (multiRowSelection ? 1 : 0)}
+                  className="py-16 text-center"
+                >
                   <CircularProgress size={24} />
                 </td>
               </tr>
             )}
             {!isLoading && rows.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="py-16 text-center">
+                <td
+                  colSpan={columns.length + (multiRowSelection ? 1 : 0)}
+                  className="py-16 text-center"
+                >
                   <div className="flex flex-col items-center gap-4">
                     <img src={emptyImage} alt="" className="h-50 w-50" />
                     <Typography variant="subtitle1" fontWeight={600}>
@@ -330,6 +435,25 @@ export const EavEntityTable = <T extends { id: number }>({
                         : ''
                   )}
                 >
+                  {multiRowSelection && (
+                    <td className="px-2 py-2 text-center">
+                      <Checkbox
+                        size="small"
+                        checked={selectedRowIdSet.has(entry.id)}
+                        slotProps={{
+                          input: {
+                            'aria-label': `${t('sdui.listOutput.onlySelected')}: ${String(entry.id)}`,
+                          },
+                        }}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                        }}
+                        onChange={(_, checked) => {
+                          toggleRowSelection(entry.id, checked)
+                        }}
+                      />
+                    </td>
+                  )}
                   {row.getVisibleCells().map((cell) => {
                     const cellExtra = cell.column.columnDef.meta as
                       | EavColumnMetaExtra
@@ -397,6 +521,94 @@ export const EavEntityTable = <T extends { id: number }>({
           </Button>
         )}
       </div>
+
+      <Dialog
+        open={listOutputOpen}
+        onClose={onListOutputClose}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>{t('documentListToolbar.outputList')}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            {t('sdui.listOutput.destination')}: {t('sdui.listOutput.xlsx')}
+          </Typography>
+          <Typography variant="subtitle2">
+            {t('sdui.listOutput.columns')}
+          </Typography>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={allOutputColumnsSelected}
+                indeterminate={
+                  selectedOutputIds.length > 0 && !allOutputColumnsSelected
+                }
+                onChange={(_, checked) => {
+                  setOutputSelection({
+                    key: listOutputKey,
+                    ids: checked
+                      ? (listOutputColumns ?? []).map((column) => column.id)
+                      : [],
+                  })
+                }}
+              />
+            }
+            label={t('sdui.listOutput.selectAll')}
+          />
+          <FormGroup>
+            {(listOutputColumns ?? []).map((column) => (
+              <FormControlLabel
+                key={column.id}
+                control={
+                  <Checkbox
+                    checked={selectedOutputIds.includes(column.id)}
+                    onChange={(_, checked) => {
+                      setOutputSelection({
+                        key: listOutputKey,
+                        ids: checked
+                          ? [...selectedOutputIds, column.id]
+                          : selectedOutputIds.filter((id) => id !== column.id),
+                      })
+                    }}
+                  />
+                }
+                label={column.label}
+              />
+            ))}
+          </FormGroup>
+          {listOutputSelectedRowsSupported && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={onlySelectedOutput}
+                  disabled={selectedRowIds.length === 0}
+                  onChange={(_, checked) => {
+                    setOnlySelectedOutput(checked)
+                  }}
+                />
+              }
+              label={t('sdui.listOutput.onlySelected')}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onListOutputClose}>{t('actions.cancel')}</Button>
+          <Button
+            variant="contained"
+            disabled={selectedOutputIds.length === 0 || isExporting}
+            onClick={() => {
+              void handleExport(
+                selectedOutputIds,
+                onlySelectedOutput ? selectedRowIds : undefined
+              ).then((exported) => {
+                if (exported) onListOutputClose?.()
+              })
+            }}
+          >
+            {t('actions.confirm')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   )
 }

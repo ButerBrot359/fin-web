@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Menu, MenuItem } from '@mui/material'
 
 import {
   postDocumentEntry,
@@ -9,7 +10,10 @@ import {
 } from '@/entities/document-entry'
 import { useDocumentType } from '@/entities/document-type'
 import { openMovementsForEntry } from '@/features/sdui'
-import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
+import {
+  invalidateDocumentListQueries,
+  invalidateDocumentQueries,
+} from '@/shared/lib/query/invalidate-entities'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import { apiService } from '@/shared/api/api'
@@ -45,6 +49,12 @@ interface DocumentListToolbarProps {
   selectedRowIsPosted?: boolean
   onSelectedRowPostedChange?: (isPosted: boolean) => void
   onOpenListSettings?: () => void
+  onOpenListOutput?: () => void
+  onOpenPeriod?: () => void
+  onEditSelected?: () => void
+  searchValue?: string
+  onSearchChange?: (value: string) => void
+  onClearSearch?: () => void
 }
 
 export const DocumentListToolbar = ({
@@ -52,11 +62,21 @@ export const DocumentListToolbar = ({
   selectedRowIsPosted = false,
   onSelectedRowPostedChange,
   onOpenListSettings,
+  onOpenListOutput,
+  onOpenPeriod,
+  onEditSelected,
+  searchValue = '',
+  onSearchChange,
+  onClearSearch,
 }: DocumentListToolbarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { pageCode = '', moduleCode = '' } = useParams()
-  const [search, setSearch] = useState('')
+  const [moreAnchorEl, setMoreAnchorEl] = useState<HTMLButtonElement | null>(
+    null
+  )
+  const [reportsAnchorEl, setReportsAnchorEl] =
+    useState<HTMLButtonElement | null>(null)
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [operations, setOperations] = useState<EnumsValue[]>([])
@@ -157,6 +177,37 @@ export const DocumentListToolbar = ({
   const handleMovements = () => {
     if (selectedRowId == null) return
     movementsMutation.mutate(selectedRowId)
+    setReportsAnchorEl(null)
+  }
+
+  const handleRefresh = () => {
+    invalidateDocumentListQueries(queryClient)
+    setMoreAnchorEl(null)
+  }
+
+  const handleOpenListSettings = () => {
+    onOpenListSettings?.()
+    setMoreAnchorEl(null)
+  }
+
+  const handleOpenListOutput = () => {
+    onOpenListOutput?.()
+    setMoreAnchorEl(null)
+  }
+
+  const handleOpenPeriod = () => {
+    onOpenPeriod?.()
+    setMoreAnchorEl(null)
+  }
+
+  const handleEditSelected = () => {
+    onEditSelected?.()
+    setMoreAnchorEl(null)
+  }
+
+  const handleClearSearch = () => {
+    onClearSearch?.()
+    setMoreAnchorEl(null)
   }
 
   return (
@@ -233,22 +284,82 @@ export const DocumentListToolbar = ({
             loading={isPrintLoading}
             onPrint={handlePrint}
           />
-          <DropdownButton label={t('documentListToolbar.reports')} />
+          <DropdownButton
+            label={t('documentListToolbar.reports')}
+            onClick={(event) => {
+              setReportsAnchorEl((current) =>
+                current === event.currentTarget ? null : event.currentTarget
+              )
+            }}
+          />
         </div>
 
         <div className="flex items-center gap-2">
           <SearchInput
             placeholder={t('pageToolbar.search')}
-            value={search}
+            value={searchValue}
             className="w-64 bg-ui-01"
             onChange={(e) => {
-              setSearch(e.target.value)
+              onSearchChange?.(e.target.value)
             }}
             startIcon={<SearchIcon className="h-5 w-5 text-ui-05" />}
           />
-          <DropdownButton label={t('documentListToolbar.more')} />
+          <DropdownButton
+            label={t('documentListToolbar.more')}
+            onClick={(event) => {
+              setMoreAnchorEl((current) =>
+                current === event.currentTarget ? null : event.currentTarget
+              )
+            }}
+          />
         </div>
       </div>
+
+      <Menu
+        anchorEl={moreAnchorEl}
+        open={Boolean(moreAnchorEl)}
+        onClose={() => {
+          setMoreAnchorEl(null)
+        }}
+      >
+        <MenuItem onClick={handleRefresh}>
+          {t('documentListToolbar.refresh')}
+        </MenuItem>
+        <MenuItem onClick={handleOpenListSettings}>
+          {t('documentListToolbar.configureList')}
+        </MenuItem>
+        <MenuItem onClick={handleOpenListOutput}>
+          {t('documentListToolbar.outputList')}
+        </MenuItem>
+        {onOpenPeriod && (
+          <MenuItem onClick={handleOpenPeriod}>
+            {t('documentListToolbar.setPeriod')}
+          </MenuItem>
+        )}
+        {onEditSelected && (
+          <MenuItem onClick={handleEditSelected}>
+            {t('documentListToolbar.editSelected')}
+          </MenuItem>
+        )}
+        <MenuItem disabled={!searchValue.trim()} onClick={handleClearSearch}>
+          {t('documentListToolbar.cancelSearch')}
+        </MenuItem>
+      </Menu>
+
+      <Menu
+        anchorEl={reportsAnchorEl}
+        open={Boolean(reportsAnchorEl)}
+        onClose={() => {
+          setReportsAnchorEl(null)
+        }}
+      >
+        <MenuItem
+          disabled={selectedRowId == null || movementsMutation.isPending}
+          onClick={handleMovements}
+        >
+          {t('documentListToolbar.movementsReport')}
+        </MenuItem>
+      </Menu>
 
       <SelectOperationDialog
         open={dialogOpen}

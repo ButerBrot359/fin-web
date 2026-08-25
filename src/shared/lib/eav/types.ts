@@ -26,6 +26,11 @@ export interface FilterCondition {
 export interface FilterRequest {
   filters: FilterCondition[]
   logic: LogicOperator
+  /**
+   * Fast text search applied by the backend together with every structured
+   * filter. Empty text is intentionally omitted from the request.
+   */
+  q?: string
 }
 
 export interface ColumnMetaDto {

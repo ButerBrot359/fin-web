@@ -42,6 +42,28 @@ export interface TableExportColumnMeta {
   exportHeader?: string
 }
 
+/**
+ * Optional constraints supplied by a list-output form.  Column ids are the
+ * TanStack ids already used by the rendered table, so the dialog cannot
+ * request a value which the current list does not expose.
+ */
+export interface TableExportOptions {
+  columnIds?: string[]
+}
+
+/**
+ * Keeps the list's current order while applying its explicit row selection.
+ * An undefined selection means the caller intentionally requested all rows.
+ */
+export const filterExportRowsById = <T extends { id: number }>(
+  rows: T[],
+  ids?: number[]
+): T[] => {
+  if (!ids) return rows
+  const selected = new Set(ids)
+  return rows.filter((row) => selected.has(row.id))
+}
+
 const htmlToText = (html: string): string =>
   html
     .replace(/<[^>]*>/g, '')
@@ -101,7 +123,8 @@ const toCell = (value: unknown): XlsxCell => {
  */
 export const extractTableExport = async <T>(
   table: Table<T>,
-  data?: T[]
+  data?: T[],
+  options?: TableExportOptions
 ): Promise<TableExportData> => {
   const leafHeaders = table.getHeaderGroups().at(-1)?.headers ?? []
 
@@ -110,6 +133,9 @@ export const extractTableExport = async <T>(
       | TableExportColumnMeta
       | undefined
     if (meta?.exportExclude) return false
+    if (options?.columnIds && !options.columnIds.includes(header.column.id)) {
+      return false
+    }
     // Без аксессора колонка не несёт данных (чисто визуальная) — пропускаем.
     return header.column.accessorFn != null
   })

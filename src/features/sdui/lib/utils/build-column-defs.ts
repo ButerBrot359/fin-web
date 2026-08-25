@@ -53,7 +53,9 @@ export const VERTICAL_SUB_ROW_HEIGHT = 36
  *                 подпись, не влезшая в ширину, не должна вылезать на соседнюю
  *                 под-строку. В ЯЧЕЙКЕ обрезать нельзя — у редакторов есть то,
  *                 что законно выходит за их 36px (рамка обязательного поля,
- *                 focus-ring), и `overflow:hidden` срезал бы её
+ *                 focus-ring), и `overflow:hidden` срезал бы её. Этим же флагом
+ *                 различается высота под-строки: жёсткая в шапке, минимальная в
+ *                 ячейке (перенос текста readonly-значения)
  */
 function verticalSubRows(
   items: { key: string; content: ReactNode }[],
@@ -70,7 +72,14 @@ function verticalSubRows(
           key: item.key,
           className: index > 0 ? 'border-t border-ui-03' : undefined,
           style: {
-            height: VERTICAL_SUB_ROW_HEIGHT,
+            // В ШАПКЕ высота жёсткая (подпись обрезается многоточием, расти ей
+            // не с чего), в ЯЧЕЙКЕ — минимальная: readonly-значение переносится
+            // по ширине колонки, и второй строкой оно легло бы поверх
+            // разделителя и соседней под-строки. Пока значение в одну строку —
+            // обычный случай — сетка та же, ровно VERTICAL_SUB_ROW_HEIGHT.
+            ...(clip
+              ? { height: VERTICAL_SUB_ROW_HEIGHT }
+              : { minHeight: VERTICAL_SUB_ROW_HEIGHT }),
             display: 'grid',
             // minmax(0, 1fr), а не дефолтный auto-трек: auto-трек не сжимается
             // ниже ширины содержимого, поэтому длинная подпись растягивала бы

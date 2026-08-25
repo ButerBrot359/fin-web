@@ -105,3 +105,20 @@ describe('TableCellEditor — формат даты колонки', () => {
     expect(container.textContent).toBe('12.08.2026')
   })
 })
+
+// Длинное readonly-значение («Доплата за квалификационную категорию 100%») не
+// уходит одной строкой поверх соседней колонки, а переносится по её ширине.
+describe('TableCellEditor — перенос текста readonly-значения', () => {
+  it('readonly-значение переносится, а не идёт nowrap одной строкой', () => {
+    const { container } = render(
+      <TableCellEditor
+        {...base}
+        readonly
+        value="Доплата за квалификационную категорию 100%"
+      />
+    )
+    const span = container.querySelector('span')!
+    expect(span.style.whiteSpace).toBe('normal')
+    expect(span.style.overflowWrap).toBe('anywhere')
+  })
+})

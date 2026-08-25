@@ -8,6 +8,8 @@ import {
   memberKey,
   findMemberByKey,
   resolveSelectedMemberKey,
+  membersSignature,
+  isValueAllowed,
   type AllowedType,
 } from './object-field-logic'
 
@@ -219,5 +221,72 @@ describe('члены без targetTypeCode (примитивы)', () => {
     it('пустой allowedTypes → undefined', () => {
       expect(resolveSelectedMemberKey([], null, undefined)).toBeUndefined()
     })
+  })
+})
+
+describe('membersSignature', () => {
+  const kontragenty: AllowedType = {
+    position: 1,
+    domainKind: 'DICTIONARY',
+    targetTypeCode: 'Kontragenty',
+  }
+  const fizLitsa: AllowedType = {
+    position: 2,
+    domainKind: 'DICTIONARY',
+    targetTypeCode: 'FizicheskieLitsa',
+  }
+
+  it('тот же состав в новом массиве — отпечаток совпадает', () => {
+    expect(membersSignature([kontragenty, fizLitsa])).toBe(
+      membersSignature([{ ...kontragenty }, { ...fizLitsa }])
+    )
+  })
+
+  it('другой набор членов — отпечаток другой', () => {
+    expect(membersSignature([kontragenty, fizLitsa])).not.toBe(
+      membersSignature([kontragenty])
+    )
+  })
+
+  it('примитивные члены различаются позицией, а не кодом', () => {
+    const str: AllowedType = { position: 1, domainKind: 'STRING' }
+    const bool: AllowedType = { position: 2, domainKind: 'BOOLEAN' }
+    expect(membersSignature([str, bool])).not.toBe(membersSignature([str]))
+  })
+})
+
+describe('isValueAllowed', () => {
+  const types: AllowedType[] = [
+    { position: 1, domainKind: 'DICTIONARY', targetTypeCode: 'Kontragenty' },
+    {
+      position: 2,
+      domainKind: 'DICTIONARY',
+      targetTypeCode: 'FizicheskieLitsa',
+    },
+  ]
+
+  it('значение своего вида допустимо', () => {
+    expect(
+      isValueAllowed(types, {
+        id: 1,
+        presentation: 'ТОО',
+        targetTypeCode: 'Kontragenty',
+      })
+    ).toBe(true)
+  })
+
+  it('значение вида, которого больше нет в наборе, недопустимо', () => {
+    expect(
+      isValueAllowed(types, {
+        id: 3346,
+        presentation: 'Движение',
+        targetTypeCode: 'DvizheniyaFinansirovaniya',
+      })
+    ).toBe(false)
+  })
+
+  it('пустое значение и значение без targetTypeCode не трогаем', () => {
+    expect(isValueAllowed(types, null)).toBe(true)
+    expect(isValueAllowed(types, { id: 1, presentation: 'Строка' })).toBe(true)
   })
 })

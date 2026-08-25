@@ -601,6 +601,9 @@
       "loadError": "Деректерді жүктеу мүмкін болмады",
       "retry": "Қайталау"
     },
+    "pagination": {
+      "showMore": "Тағы көрсету"
+    },
     "refSelectStale": "Форма ескі, таңдау қолданылмады",
     "error": "Қате",
     "objectField": {

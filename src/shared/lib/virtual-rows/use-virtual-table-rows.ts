@@ -51,6 +51,12 @@ const measureScrollMargin = (
   scroller.clientTop +
   scroller.scrollTop
 
+/**
+ * Override виртуализации с бэка (SCRUM-368 §3.3, props.virtualization):
+ * AUTO — эвристика по числу строк (дефолт), ON/OFF — форс для исключений.
+ */
+export type VirtualizationMode = 'AUTO' | 'ON' | 'OFF'
+
 export interface VirtualTableRows {
   /** Виртуализация активна (строк много и найден прокручиваемый предок). */
   isVirtualized: boolean
@@ -82,7 +88,10 @@ export interface VirtualTableRows {
  * невидимые строки заменяются двумя `<tr>`-распорками, суммарная высота таблицы
  * (а значит и высота страницы, и позиция скроллбара) остаётся прежней.
  */
-export const useVirtualTableRows = (rowCount: number): VirtualTableRows => {
+export const useVirtualTableRows = (
+  rowCount: number,
+  mode: VirtualizationMode = 'AUTO'
+): VirtualTableRows => {
   const bodyNodeRef = useRef<HTMLTableSectionElement | null>(null)
   const containerNodeRef = useRef<HTMLDivElement | null>(null)
 
@@ -131,7 +140,15 @@ export const useVirtualTableRows = (rowCount: number): VirtualTableRows => {
     }
   }, [scroller])
 
-  const isVirtualized = rowCount > VIRTUALIZE_FROM_ROWS && scroller !== null
+  // ON форсит виртуализацию независимо от порога (скролл-предок всё равно
+  // обязателен — без него окно считать не от чего), OFF выключает совсем.
+  const wantVirtual =
+    mode === 'OFF'
+      ? false
+      : mode === 'ON'
+        ? rowCount > 0
+        : rowCount > VIRTUALIZE_FROM_ROWS
+  const isVirtualized = wantVirtual && scroller !== null
 
   const virtualizer = useVirtualizer<HTMLElement, HTMLTableRowElement>({
     enabled: isVirtualized,

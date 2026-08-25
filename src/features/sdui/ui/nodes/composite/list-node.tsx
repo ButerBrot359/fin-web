@@ -30,6 +30,7 @@ import {
 } from './list-hierarchy'
 
 import type { NodeProps } from '../../../types/view'
+import { readPagination } from '../../../lib/utils/pagination'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useSelectionStore } from '../../../lib/stores/selection-store'
@@ -42,6 +43,9 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
   const source = node.props?.source as ListSource | undefined
   const searchable = (node.props?.searchable as boolean | undefined) ?? false
+  // SCRUM-368: размер страницы задаёт бэк (props.pagination.pageSize);
+  // старый фронтовый хардкод 25 — фолбэк для ответов без контракта
+  const pageSize = readPagination(node)?.pageSize ?? PAGE_SIZE
 
   const columnNodes = useMemo(
     () => (node.children ?? []).filter((c) => c.type === 'TABLE_COLUMN'),
@@ -146,6 +150,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
       source?.method,
       source?.body,
       search,
+      pageSize,
     ],
     queryFn: async ({ pageParam, signal }) => {
       if (!source) throw new Error('LIST node: source is required')
@@ -155,7 +160,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         method: source.method,
         body: source.body,
         page: pageParam,
-        size: PAGE_SIZE,
+        size: pageSize,
         search,
         signal,
       })

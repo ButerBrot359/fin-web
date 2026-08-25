@@ -29,6 +29,7 @@ import {
   isSearchHit,
 } from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
+import { readVirtualization } from '../../../lib/utils/pagination'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
@@ -96,7 +97,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
 
   // Виртуализация строк (SCRUM-368): в DOM — только видимое окно. Ниже порога
   // хука рендер прежний (все строки).
-  const virt = useVirtualTableRows(sync.rows.length)
+  const virt = useVirtualTableRows(sync.rows.length, readVirtualization(node))
   const setContainerRef = (node: HTMLDivElement | null) => {
     containerRef.current = node
     virt.setContainerRef(node)

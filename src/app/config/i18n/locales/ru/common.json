@@ -601,6 +601,9 @@
       "loadError": "Не удалось загрузить данные",
       "retry": "Повторить"
     },
+    "pagination": {
+      "showMore": "Показать ещё"
+    },
     "refSelectStale": "Форма устарела, выбор не применён",
     "error": "Ошибка",
     "objectField": {

@@ -7,6 +7,7 @@ import { apiService } from '@/shared/api/api'
 import { Button } from '@/shared/ui/buttons'
 
 import type { NodeProps, ViewEffect } from '../../../types/view'
+import { readPagination } from '../../../lib/utils/pagination'
 import { getReportResultGateway } from '../../../lib/report-result-gateway'
 import { useSduiEffects } from '../../../lib/use-sdui-effects'
 
@@ -55,7 +56,12 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
 
   const reportCode = node.props?.reportCode as string | undefined
   const reportLayout = node.props?.reportLayout as string | undefined
-  const pageSize = (node.props?.pageSize as number | undefined) ?? 200
+  // SCRUM-368: pageSize из контракта пагинации; легаси props.pageSize и
+  // хардкод 200 — фолбэки для старых ответов
+  const pageSize =
+    readPagination(node)?.pageSize ??
+    (node.props?.pageSize as number | undefined) ??
+    200
   const printSource = node.props?.printSource as
     | { url: string; method?: string }
     | undefined

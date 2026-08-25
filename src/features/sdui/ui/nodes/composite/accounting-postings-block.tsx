@@ -1,11 +1,13 @@
 import { useTranslation } from 'react-i18next'
-import { Typography } from '@mui/material'
+import { Button, Typography } from '@mui/material'
 
 import { cn } from '@/shared/lib/utils/cn'
 import { useVirtualBlocks } from '@/shared/lib/virtual-rows/use-virtual-blocks'
+import { ShimmerBlock } from '@/shared/ui/page-skeleton/page-skeleton'
 
 import type { NodeProps } from '../../../types/view'
-import { useSduiSession } from '../../../lib/sdui-session-context'
+import { usePagedTableRows } from '../../../lib/hooks/use-paged-table-rows'
+import { readVirtualization } from '../../../lib/utils/pagination'
 import {
   type AccountingRow,
   type BlockRowDef,
@@ -40,9 +42,19 @@ const Val = ({ value, numeric }: { value: string; numeric?: boolean }) => (
 
 export const AccountingPostingsBlock = ({ node }: NodeProps) => {
   const { t } = useTranslation()
-  const { getValue } = useSduiSession()
 
-  const rows = (getValue(node.binding) as AccountingRow[] | undefined) ?? []
+  // SCRUM-368: журнал проводок — первая волна PAGED (страницы из source.url);
+  // без props.pagination — прежний INLINE-путь из state.
+  const {
+    paged,
+    rows,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    loadTrigger,
+    fetchNextPage,
+    attachSentinel,
+  } = usePagedTableRows<AccountingRow>(node)
   const labels = collectColumnLabels(node)
   const groups = collectGroupLabels(node)
   // SCRUM-362 B-3: сетка блока и биндинги внесеточных колонок — из ролей
@@ -63,7 +75,7 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
     paddingBottom,
     setScrollerRef,
     measureBlock,
-  } = useVirtualBlocks(rows.length)
+  } = useVirtualBlocks(rows.length, { mode: readVirtualization(node) })
   const renderedRows = virtualItems
     ? virtualItems.map((item) => ({ row: rows[item.index], idx: item.index }))
     : rows.map((row, idx) => ({ row, idx }))
@@ -160,6 +172,26 @@ export const AccountingPostingsBlock = ({ node }: NodeProps) => {
           </tbody>
         )}
       </table>
+      {isLoading && rows.length === 0 && <ShimmerBlock className="m-3 h-24" />}
+      {paged && (hasNextPage || isFetchingNextPage) && (
+        <div className="flex flex-col items-center py-2">
+          {loadTrigger === 'INFINITE_SCROLL' && hasNextPage && (
+            <div ref={attachSentinel} aria-hidden="true" />
+          )}
+          {isFetchingNextPage && (
+            <Typography variant="body2" className="text-ui-05">
+              {t('sdui.loading')}
+            </Typography>
+          )}
+          {loadTrigger !== 'INFINITE_SCROLL' &&
+            hasNextPage &&
+            !isFetchingNextPage && (
+              <Button size="small" onClick={fetchNextPage}>
+                {t('sdui.pagination.showMore')}
+              </Button>
+            )}
+        </div>
+      )}
     </div>
   )
 }

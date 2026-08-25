@@ -12,9 +12,11 @@ import {
 } from '@mui/material'
 
 import { useVirtualTableRows } from '@/shared/lib/virtual-rows/use-virtual-table-rows'
+import { ShimmerBlock } from '@/shared/ui/page-skeleton/page-skeleton'
 
 import type { NodeProps } from '../../../types/view'
-import { useSduiSession } from '../../../lib/sdui-session-context'
+import { usePagedTableRows } from '../../../lib/hooks/use-paged-table-rows'
+import { readVirtualization } from '../../../lib/utils/pagination'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import {
   SDUI_DEFAULT_COLUMN_WIDTH,
@@ -31,6 +33,7 @@ import { useManualColumnResize } from '../../../lib/hooks/use-manual-column-resi
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { ColumnResizeHandle } from './column-resize-handle'
 import { ColumnHeaderLabel } from './column-header-label'
+import { PagedTableFooter } from './paged-table-footer'
 
 interface SimpleTableRow {
   rowId: string
@@ -56,8 +59,10 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
   const label = node.props?.label as string | undefined
   const showRowNumbers = node.props?.showRowNumbers === true
 
-  const { getValue } = useSduiSession()
-  const rows = (getValue(node.binding) as SimpleTableRow[] | undefined) ?? []
+  // SCRUM-368: INLINE — строки из state, PAGED (движения/журналы) — страницы
+  // из source.url с догрузкой сентинелом/кнопкой (футер внизу таблицы).
+  const paged = usePagedTableRows<SimpleTableRow>(node)
+  const rows = paged.rows
 
   const columns = useMemo(
     () => extractReadOnlyColumns(node.children),
@@ -147,7 +152,7 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
     setContainerRef,
     setBodyRef,
     measureRow,
-  } = useVirtualTableRows(rows.length)
+  } = useVirtualTableRows(rows.length, readVirtualization(node))
   const renderedRows = virtualItems
     ? virtualItems.map((item) => ({
         row: rows[item.index],
@@ -215,13 +220,29 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
           </TableHead>
           <TableBody ref={setBodyRef}>
             {rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={spacerColSpan} align="center">
-                  <Typography variant="body2" color="text.secondary">
-                    {t('table.empty')}
-                  </Typography>
-                </TableCell>
-              </TableRow>
+              paged.isLoading ? (
+                // Первая страница PAGED-таблицы в полёте — шиммер-строки
+                Array.from({ length: 6 }).map((_, rowIdx) => (
+                  <TableRow key={rowIdx}>
+                    {showRowNumbers && <TableCell />}
+                    {columns.map((col) => (
+                      <TableCell key={col.id}>
+                        <ShimmerBlock className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={spacerColSpan} align="center">
+                    <Typography variant="body2" color="text.secondary">
+                      {paged.isError
+                        ? t('sdui.requestError')
+                        : t('table.empty')}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )
             ) : (
               <>
                 {paddingTop > 0 && (
@@ -261,6 +282,7 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                     />
                   </TableRow>
                 )}
+                <PagedTableFooter state={paged} colSpan={spacerColSpan} />
               </>
             )}
           </TableBody>

@@ -19,9 +19,13 @@ const ESTIMATED_BLOCK_HEIGHT = 105
  */
 const OVERSCAN_BLOCKS = 6
 
+import type { VirtualizationMode } from './use-virtual-table-rows'
+
 export interface VirtualBlocksOptions {
   /** Оценка высоты блока до замера; по умолчанию — блок проводки из 3 строк. */
   estimatedSize?: number
+  /** Override с бэка (SCRUM-368 §3.3): ON/OFF — форс, AUTO/отсутствие — порог. */
+  mode?: VirtualizationMode
 }
 
 export interface VirtualBlocks {
@@ -58,7 +62,13 @@ export const useVirtualBlocks = (
     setScroller(node)
   }, [])
 
-  const isVirtualized = blockCount > VIRTUALIZE_FROM_BLOCKS
+  const mode = options?.mode ?? 'AUTO'
+  const isVirtualized =
+    mode === 'OFF'
+      ? false
+      : mode === 'ON'
+        ? blockCount > 0
+        : blockCount > VIRTUALIZE_FROM_BLOCKS
   const estimatedSize = options?.estimatedSize ?? ESTIMATED_BLOCK_HEIGHT
 
   const virtualizer = useVirtualizer<HTMLDivElement, HTMLElement>({

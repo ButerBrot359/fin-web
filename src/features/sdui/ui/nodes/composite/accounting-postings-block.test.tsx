@@ -1,8 +1,16 @@
-import { render, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
+import { render as rtlRender, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
 import { AccountingPostingsBlock } from './accounting-postings-block'
+
+// usePagedTableRows (SCRUM-368) внутри журнала требует QueryClient
+const render = (ui: ReactElement) =>
+  rtlRender(
+    <QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>
+  )
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k }),

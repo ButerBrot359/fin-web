@@ -1,7 +1,15 @@
-import { cleanup, render } from '@testing-library/react'
+import type { ReactElement } from 'react'
+import { cleanup, render as rtlRender } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
+
+// usePagedTableRows (SCRUM-368) внутри таблиц требует QueryClient
+const render = (ui: ReactElement) =>
+  rtlRender(
+    <QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>
+  )
 
 // Окно виртуализатора детерминировано: индексы 5..14 (высота строки 30) —
 // так проверяются обе распорки и абсолютная нумерация строк.

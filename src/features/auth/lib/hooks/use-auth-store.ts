@@ -51,10 +51,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   signIn: async (login, password) => {
     const tokens = await requestLogin({ login, password })
     saveSession(tokens.accessToken, tokens.refreshToken, tokens.user)
-    // Запоминаем логин в том написании, в каком его ВВЕЛИ, а не как он лежит в базе:
-    // человек в следующий раз узнает своё собственное написание. Сервер всё равно
-    // нормализует его при поиске, так что на вход это не влияет.
-    saveLastLogin(login)
+    // Запоминаем КАНОНИЧЕСКОЕ написание логина — то, что вернул сервер, а не то, что
+    // набрали. Иначе введённое «  АЙБАС   Сара » осело бы в предзаполнении поля и в
+    // выпадашке ровно в таком виде: на вход это не влияет (сервер нормализует), но
+    // человек каждый раз видел бы собственную опечатку вместо «Айбас Сара».
+    // Запасной вариант — введённое значение: без него пустой ответ сервера стёр бы память.
+    saveLastLogin(tokens.user.login || login)
     set({ status: 'authenticated', user: tokens.user })
     return tokens.user
   },

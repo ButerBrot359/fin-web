@@ -287,6 +287,12 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                         sx={{
                           overflowWrap: 'anywhere',
                           ...(isResizable ? { overflow: 'hidden' } : {}),
+                          // Постоянная заливка колонки (column-background.ts).
+                          // Уступает условной заливке строки: та сообщает о
+                          // состоянии записи и не должна теряться под фоном.
+                          ...(resolveRowBackground(rowAppearance, row)
+                            ? {}
+                            : { backgroundColor: col.backgroundColor }),
                         }}
                       >
                         {col.binding !== undefined

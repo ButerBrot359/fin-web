@@ -47,6 +47,7 @@ import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { TableCellEditor } from './table-cell-editor'
 import { ColumnHeaderLabel } from './column-header-label'
 import { SearchHitCell } from './table-search-cell'
+import { buildColumnBackgroundMap } from '../../../lib/utils/column-background'
 import { TableToolbar } from './table-toolbar'
 
 interface EditableTableProps {
@@ -64,6 +65,13 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const tableCommands = node.props?.tableCommands as
     | TableCommandDescriptor[]
     | undefined
+
+  // Постоянная заливка колонок (column-background.ts): ячейка на TanStack знает
+  // только id колонки, props остались в исходном описании.
+  const columnBackgrounds = useMemo(
+    () => buildColumnBackgroundMap(columns),
+    [columns]
+  )
 
   // Правила условной заливки строк — см. row-appearance.ts.
   const rowAppearance = useMemo(
@@ -364,6 +372,13 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                           row.original.rowId,
                           cell.column.id
                         )}
+                        backgroundColor={
+                          // Условная заливка строки перекрывает постоянную
+                          // заливку колонки — см. column-background.ts.
+                          resolveRowBackground(rowAppearance, row.original)
+                            ? undefined
+                            : columnBackgrounds.get(cell.column.id)
+                        }
                       >
                         {flexRender(
                           cell.column.columnDef.cell,

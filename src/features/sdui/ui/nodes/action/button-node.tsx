@@ -134,14 +134,24 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
             setMenuAnchor(null)
           }}
         >
-          {/* FE-5: свёрнутые по ширине кнопки — верхней секцией перед штатными пунктами. */}
-          {overflowNodes.map((c) => (
-            <NodeRenderer key={c.id} node={c} />
-          ))}
-          {overflowNodes.length > 0 && <Divider />}
-          {node.children?.map((c) => (
-            <NodeRenderer key={c.id} node={c} />
-          ))}
+          {/* SCRUM-276 spec v1 §6: закрыть меню ДО обработки клика пункта —
+              иначе backdrop меню перекрывает серверный confirm-диалог.
+              Capture-фаза: setMenuAnchor батчится, onClick пункта успевает
+              задиспатчить команду до размонтирования. */}
+          <div
+            onClickCapture={() => {
+              setMenuAnchor(null)
+            }}
+          >
+            {/* FE-5: свёрнутые по ширине кнопки — верхней секцией перед штатными пунктами. */}
+            {overflowNodes.map((c) => (
+              <NodeRenderer key={c.id} node={c} />
+            ))}
+            {overflowNodes.length > 0 && <Divider />}
+            {node.children?.map((c) => (
+              <NodeRenderer key={c.id} node={c} />
+            ))}
+          </div>
         </Menu>
       )}
     </>

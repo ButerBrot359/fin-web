@@ -130,6 +130,11 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
         <Menu
           anchorEl={menuAnchor}
           open={Boolean(menuAnchor)}
+          // A child command may synchronously open a confirmation dialog.  Close
+          // this popover first so its modal backdrop cannot intercept the dialog.
+          onClick={() => {
+            setMenuAnchor(null)
+          }}
           onClose={() => {
             setMenuAnchor(null)
           }}

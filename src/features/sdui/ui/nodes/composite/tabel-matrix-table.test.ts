@@ -4,11 +4,16 @@ import {
   addManualWorkKind,
   collapseAllEmployees,
   datesInInterval,
+  formatTabelHours,
+  formatTabelDayHeader,
+  formatTabelWorkKindTotal,
   filterTabelMatrixEmployees,
   replaceWorkKindCell,
   TABEL_MATRIX_LABELS,
   tabelEmployeePickerConfig,
   tabelManualWorkKindPickerConfig,
+  tabelWorkKindCode,
+  isTabelWeekend,
   toggleCollapsedEmployee,
 } from './tabel-matrix-table'
 import {
@@ -28,6 +33,28 @@ describe('TabelMatrixTable helpers', () => {
       expandTree: 'Развернуть дерево',
       collapseTree: 'Свернуть дерево',
     })
+  })
+
+  it('renders attendance values and totals in the observed compact 1C form', () => {
+    expect(formatTabelHours('8.0000')).toBe('8')
+    expect(tabelWorkKindCode('Явка')).toBe('Я')
+    expect(
+      formatTabelWorkKindTotal({
+        kindNodeId: 'work-kind:7:1',
+        workTimeKindRef: 1,
+        workTimeKindPresentation: 'Явка',
+        protected: false,
+        cells: { '2026-08-01': '8.0000', '2026-08-02': '8' },
+        total: '16.0000',
+      })
+    ).toBe('Я 2 д. 16 ч.')
+  })
+
+  it('renders 1C weekday headers and marks weekend columns', () => {
+    expect(formatTabelDayHeader('2026-08-12')).toBe('12 Ср')
+    expect(formatTabelDayHeader('2026-08-15')).toBe('15 Сб')
+    expect(isTabelWeekend('2026-08-15')).toBe(true)
+    expect(isTabelWeekend('2026-08-12')).toBe(false)
   })
 
   it('uses interval dates and replaces only the addressed semantic work-kind cell', () => {

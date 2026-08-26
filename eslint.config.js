@@ -9,6 +9,7 @@ export default tseslint.config(
   { ignores: ['dist', 'node_modules'] },
   {
     files: ['**/*.{ts,tsx}'],
+    ignores: ['e2e/**/*.ts', 'playwright.config.ts'],
     extends: [
       js.configs.recommended,
       ...tseslint.configs.strictTypeChecked,
@@ -50,6 +51,18 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
       'react-hooks/incompatible-library': 'off',
+    },
+  },
+  {
+    files: ['e2e/**/*.ts', 'playwright.config.ts'],
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      eslintConfigPrettier,
+    ],
+    languageOptions: {
+      ecmaVersion: 2024,
+      globals: { ...globals.browser, ...globals.node },
     },
   }
 )

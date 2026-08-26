@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 
 import type { ViewNode } from '../../../types/view'
 import { TabelMatrixTable } from './tabel-matrix-table'
@@ -66,37 +73,39 @@ describe('TabelMatrixTable', () => {
 
   afterEach(cleanup)
 
-  it('dispatches a versioned employee replacement from an edited rendered cell', () => {
+  it('dispatches a versioned employee replacement from an edited rendered cell', async () => {
     render(<TabelMatrixTable node={node} />)
 
     const cell = screen.getByLabelText('7-3-2026-02-01')
     fireEvent.change(cell, { target: { value: '7' } })
     fireEvent.blur(cell)
 
-    expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'EVENT',
-        sourceNodeId: 'table.uchetRabochegoVremeni.matrix',
-        trigger: 'change',
-        value: expect.objectContaining({
-          type: 'REPLACE_EMPLOYEE',
-          baseGeneration: 8,
-          employeeNodeId: 'employee:7',
-          employee: {
-            employeeRef: 7,
-            workKinds: [
-              expect.objectContaining({
-                kindNodeId: 'work-kind:7:3',
-                cells: { '2026-02-01': '7' },
-              }),
-            ],
-          },
-        }),
-      })
-    )
+    await waitFor(() => {
+      expect(dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'EVENT',
+          sourceNodeId: 'table.uchetRabochegoVremeni.matrix',
+          trigger: 'change',
+          value: expect.objectContaining({
+            type: 'REPLACE_EMPLOYEE',
+            baseGeneration: 8,
+            employeeNodeId: 'employee:7',
+            employee: {
+              employeeRef: 7,
+              workKinds: [
+                expect.objectContaining({
+                  kindNodeId: 'work-kind:7:3',
+                  cells: { '2026-02-01': '7' },
+                }),
+              ],
+            },
+          }),
+        })
+      )
+    })
   })
 
-  it('serializes matrix events until the authoritative generation returns', () => {
+  it('queues matrix events until the authoritative generation returns', async () => {
     let resolveDispatch: ((result: boolean) => void) | undefined
     dispatch.mockImplementation(
       () =>
@@ -110,10 +119,18 @@ describe('TabelMatrixTable', () => {
     fireEvent.click(employee)
     fireEvent.click(employee)
 
-    expect(dispatch).toHaveBeenCalledTimes(1)
+    await waitFor(() => {
+      expect(dispatch).toHaveBeenCalledTimes(1)
+    })
 
-    act(() => {
+    await act(async () => {
       resolveDispatch?.(true)
+      await Promise.resolve()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    await waitFor(() => {
+      expect(dispatch).toHaveBeenCalledTimes(2)
     })
   })
 })

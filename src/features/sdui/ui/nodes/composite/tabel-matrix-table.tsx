@@ -1,4 +1,11 @@
-import { useCallback, useMemo, useRef, useState, type FC } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FC,
+} from 'react'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
@@ -40,6 +47,47 @@ export const TABEL_MATRIX_LABELS = {
   expandTree: 'Развернуть дерево',
   collapseTree: 'Свернуть дерево',
 } as const
+
+/** 1C renders matrix hours compactly; storage precision must not leak into the grid. */
+export function formatTabelHours(value: string | undefined): string {
+  if (!value) return ''
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return value
+  return String(numeric)
+}
+
+/** The live classifier presentation is authoritative; known 1C attendance is rendered by code. */
+export function tabelWorkKindCode(presentation: string | undefined): string {
+  if (!presentation) return ''
+  return presentation === 'Явка' ? 'Я' : presentation
+}
+
+export function formatTabelWorkKindTotal(
+  kind: TabelMatrixEmployee['workKinds'][number]
+): string {
+  const days = Object.values(kind.cells).filter(
+    (value) => Number(value) > 0
+  ).length
+  const code = tabelWorkKindCode(kind.workTimeKindPresentation)
+  const hours = formatTabelHours(kind.total)
+  return days > 0 && hours ? `${code} ${String(days)} д. ${hours} ч.` : ''
+}
+
+const TABEL_WEEKDAY_LABELS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'] as const
+
+/** 1C labels each generated day with both its day number and weekday. */
+export function formatTabelDayHeader(date: string): string {
+  const parsed = new Date(`${date}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) return date.slice(-2)
+  return `${date.slice(-2)} ${TABEL_WEEKDAY_LABELS[parsed.getDay()]}`
+}
+
+/** Weekend color is observable 1C matrix presentation; holiday data remains server-owned. */
+export function isTabelWeekend(date: string): boolean {
+  const parsed = new Date(`${date}T00:00:00`)
+  const day = parsed.getDay()
+  return day === 0 || day === 6
+}
 
 export interface TabelEmployeePickerConfig {
   domain: string
@@ -205,7 +253,11 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
     string | null
   >(null)
   const [search, setSearch] = useState('')
-  const matrixCommandInFlight = useRef(false)
+  const latestMatrixPayload = useRef<TabelMatrixPayload | null>(payload)
+  const matrixCommandQueue = useRef<Promise<boolean>>(Promise.resolve(true))
+  useEffect(() => {
+    latestMatrixPayload.current = payload
+  }, [payload])
   const [matrixCommandPending, setMatrixCommandPending] = useState(false)
   const dates = useMemo(
     () => (payload ? datesInInterval(payload) : []),
@@ -225,26 +277,36 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
   /**
    * The matrix generation is a server-side compare-and-set token. A second
    * event sent before the first response updates the payload necessarily
-   * carries the previous generation and is rejected as stale. Keep one matrix
-   * mutation in flight so an ordinary double-click or an immediate follow-up
-   * selection cannot manufacture that conflict.
+   * carries the previous generation and is rejected as stale. Serialize every
+   * mutation and build it only when it reaches the head of the queue, using
+   * the latest server generation rather than the click-time snapshot.
    */
   const dispatchMatrixCommand = useCallback(
-    async (value: unknown) => {
-      if (matrixCommandInFlight.current) return false
-      matrixCommandInFlight.current = true
+    (
+      buildValue: (current: TabelMatrixPayload) => unknown
+    ): Promise<boolean> => {
       setMatrixCommandPending(true)
-      try {
-        return await dispatch({
-          type: 'EVENT',
-          sourceNodeId: TABEL_MATRIX_EVENT_NODE_ID,
-          trigger: 'change',
-          value,
+      const queued = matrixCommandQueue.current
+        .catch(() => false)
+        .then(async () => {
+          // Store patches are applied before the next browser task. Yield once
+          // so React can publish the authoritative payload into the ref.
+          await new Promise<void>((resolve) => setTimeout(resolve, 0))
+          const current = latestMatrixPayload.current
+          if (!current) return false
+          return dispatch({
+            type: 'EVENT',
+            sourceNodeId: TABEL_MATRIX_EVENT_NODE_ID,
+            trigger: 'change',
+            value: buildValue(current),
+          })
         })
-      } finally {
-        matrixCommandInFlight.current = false
-        setMatrixCommandPending(false)
-      }
+      matrixCommandQueue.current = queued
+      void queued.finally(() => {
+        if (matrixCommandQueue.current === queued)
+          setMatrixCommandPending(false)
+      })
+      return queued
     },
     [dispatch]
   )
@@ -285,16 +347,16 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
           [employee.employeeNodeId]: updatedEmployee,
         },
       }))
-      void dispatchMatrixCommand({
+      void dispatchMatrixCommand((current) => ({
         type: 'REPLACE_EMPLOYEE',
         operationId: operationId(),
-        baseGeneration: payload.generation,
+        baseGeneration: current.generation,
         employeeNodeId: employee.employeeNodeId,
         employee: {
           employeeRef: updatedEmployee.employeeRef,
           workKinds: updatedEmployee.workKinds,
         },
-      })
+      }))
     },
     [dispatchMatrixCommand, payload]
   )
@@ -302,14 +364,14 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
   const deleteWorkKind = useCallback(
     (employee: TabelMatrixEmployee, workTimeKindRef: number) => {
       if (!payload) return
-      void dispatchMatrixCommand({
+      void dispatchMatrixCommand((current) => ({
         type: 'DELETE_WORK_KIND',
         operationId: operationId(),
-        baseGeneration: payload.generation,
+        baseGeneration: current.generation,
         employeeNodeId: employee.employeeNodeId,
         employeeRef: employee.employeeRef,
         workTimeKindRef,
-      })
+      }))
     },
     [dispatchMatrixCommand, payload]
   )
@@ -325,12 +387,12 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
         if (!option) return
         const employeeRef = Number(option.id)
         if (!Number.isSafeInteger(employeeRef) || employeeRef <= 0) return
-        void dispatchMatrixCommand({
+        void dispatchMatrixCommand((current) => ({
           type: 'ADD_EMPLOYEE',
           operationId: operationId(),
-          baseGeneration: payload.generation,
+          baseGeneration: current.generation,
           employeeRef,
-        })
+        }))
       },
     })
   }, [dispatchMatrixCommand, employeePicker, payload])
@@ -353,13 +415,14 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
           (employeeRef) => Number.isSafeInteger(employeeRef) && employeeRef > 0
         )
         if (employeeRefs.length === 0) return
-        const command: TabelMatrixAddEmployeesCommand = {
-          type: 'ADD_EMPLOYEES',
-          operationId: operationId(),
-          baseGeneration: payload.generation,
-          employeeRefs,
-        }
-        void dispatchMatrixCommand(command)
+        void dispatchMatrixCommand(
+          (current): TabelMatrixAddEmployeesCommand => ({
+            type: 'ADD_EMPLOYEES',
+            operationId: operationId(),
+            baseGeneration: current.generation,
+            employeeRefs,
+          })
+        )
       },
     })
   }, [dispatchMatrixCommand, employeePicker, payload])
@@ -367,11 +430,11 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
   const selectEmployee = useCallback(
     (employeeRef: number) => {
       if (!payload) return
-      void dispatchMatrixCommand({
+      void dispatchMatrixCommand((current) => ({
         type: 'SELECT_EMPLOYEE',
-        baseGeneration: payload.generation,
+        baseGeneration: current.generation,
         employeeRef,
-      }).then((sent) => {
+      })).then((sent) => {
         if (sent) setSelectedEmployeeNodeId(`employee:${String(employeeRef)}`)
       })
     },
@@ -423,14 +486,15 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
       (candidate) => candidate.employeeNodeId === activeEmployeeNodeId
     )
     if (!employee) return
-    const command: TabelMatrixDeleteEmployeeCommand = {
-      type: 'DELETE_EMPLOYEE',
-      operationId: operationId(),
-      baseGeneration: payload.generation,
-      employeeNodeId: employee.employeeNodeId,
-      employeeRef: employee.employeeRef,
-    }
-    void dispatchMatrixCommand(command)
+    void dispatchMatrixCommand(
+      (current): TabelMatrixDeleteEmployeeCommand => ({
+        type: 'DELETE_EMPLOYEE',
+        operationId: operationId(),
+        baseGeneration: current.generation,
+        employeeNodeId: employee.employeeNodeId,
+        employeeRef: employee.employeeRef,
+      })
+    )
   }, [activeEmployeeNodeId, dispatchMatrixCommand, payload])
 
   if (!payload) {
@@ -530,11 +594,18 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
                 Сотрудник / вид времени
               </TableCell>
               {dates.map((date) => (
-                <TableCell key={date} align="center" sx={{ minWidth: 64 }}>
-                  {date.slice(-2)}
+                <TableCell
+                  key={date}
+                  align="center"
+                  sx={{
+                    minWidth: 64,
+                    color: isTabelWeekend(date) ? 'error.main' : undefined,
+                  }}
+                >
+                  {formatTabelDayHeader(date)}
                 </TableCell>
               ))}
-              <TableCell align="right">Total</TableCell>
+              <TableCell align="right">Итого</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -604,7 +675,7 @@ const TabelEmployeeRows: FC<{
   <>
     <TableRow
       onClick={() => {
-        if (!commandPending) onSelectEmployee(employee.employeeRef)
+        onSelectEmployee(employee.employeeRef)
       }}
       sx={{
         '& > td': { bgcolor: 'action.hover', fontWeight: 700 },
@@ -630,10 +701,10 @@ const TabelEmployeeRows: FC<{
       </TableCell>
       {dates.map((date) => (
         <TableCell key={date} align="center">
-          {employee.dayTotals[date] ?? ''}
+          {formatTabelHours(employee.dayTotals[date])}
         </TableCell>
       ))}
-      <TableCell align="right">{employee.total}</TableCell>
+      <TableCell align="right">{formatTabelHours(employee.total)}</TableCell>
     </TableRow>
     {expanded &&
       employee.workKinds.map((kind) => (
@@ -664,25 +735,44 @@ const TabelEmployeeRows: FC<{
           </TableCell>
           {dates.map((date) => (
             <TableCell key={date} align="center" sx={{ p: 0.5 }}>
-              <TextField
-                key={`${kind.kindNodeId}:${date}:${kind.cells[date] ?? ''}`}
-                variant="standard"
-                defaultValue={kind.cells[date] ?? ''}
-                disabled={kind.protected || commandPending}
-                slotProps={{
-                  htmlInput: {
-                    'aria-label': `${String(employee.employeeRef)}-${String(kind.workTimeKindRef)}-${date}`,
-                    inputMode: 'decimal',
-                  },
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'center',
+                  gap: 0.25,
                 }}
-                onBlur={(event) => {
-                  onCommit(employee, kind.kindNodeId, date, event.target.value)
-                }}
-                sx={{ width: 52 }}
-              />
+              >
+                {kind.cells[date] && (
+                  <Typography variant="caption" color="success.main">
+                    {tabelWorkKindCode(kind.workTimeKindPresentation)}
+                  </Typography>
+                )}
+                <TextField
+                  key={`${kind.kindNodeId}:${date}:${kind.cells[date] ?? ''}`}
+                  variant="standard"
+                  defaultValue={formatTabelHours(kind.cells[date])}
+                  disabled={kind.protected || commandPending}
+                  slotProps={{
+                    htmlInput: {
+                      'aria-label': `${String(employee.employeeRef)}-${String(kind.workTimeKindRef)}-${date}`,
+                      inputMode: 'decimal',
+                    },
+                  }}
+                  onBlur={(event) => {
+                    onCommit(
+                      employee,
+                      kind.kindNodeId,
+                      date,
+                      event.target.value
+                    )
+                  }}
+                  sx={{ width: 36 }}
+                />
+              </Box>
             </TableCell>
           ))}
-          <TableCell align="right">{kind.total}</TableCell>
+          <TableCell align="right">{formatTabelWorkKindTotal(kind)}</TableCell>
         </TableRow>
       ))}
   </>

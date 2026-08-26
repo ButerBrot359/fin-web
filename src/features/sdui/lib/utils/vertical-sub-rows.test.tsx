@@ -98,45 +98,44 @@ const renderTable = (ui: ReactElement) =>
 afterEach(cleanup)
 
 describe('под-строки вертикальной группы колонок', () => {
-  it('высота под-строки одинакова при длинном и коротком значении', () => {
+  it('под-строка не ниже общего пола и не режет перенесённый текст', () => {
     const { container } = renderTable(<TableNode node={node()} />)
     const subRows = container.querySelectorAll<HTMLElement>(
-      'tbody .flex.flex-col > div'
+      'tbody td > div > div'
     )
     // три группы × две под-строки
     expect(subRows).toHaveLength(6)
     for (const row of subRows) {
-      expect(row.style.height).toBe(`${String(VERTICAL_SUB_ROW_HEIGHT)}px`)
-      expect(row.style.minHeight).toBe('')
+      expect(row.style.minHeight).toBe(`${String(VERTICAL_SUB_ROW_HEIGHT)}px`)
+      expect(row.style.height).toBe('')
     }
   })
 
-  it('длинное значение обрезается многоточием, а не переносится', () => {
+  it('длинное значение переносится, как во вкладке без вертикальных групп', () => {
     const { container } = renderTable(<TableNode node={node()} />)
     const longText = Array.from(
       container.querySelectorAll<HTMLElement>('tbody span')
     ).find((el) => el.textContent.startsWith('ГЛАВНЫЙ ЭКОНОМИСТ'))
     expect(longText).toBeTruthy()
-    expect(longText?.style.whiteSpace).toBe('nowrap')
-    expect(longText?.style.textOverflow).toBe('ellipsis')
-    expect(longText?.style.overflow).toBe('hidden')
+    expect(longText?.style.whiteSpace).toBe('normal')
+    expect(longText?.style.overflowWrap).toBe('anywhere')
   })
 })
 
 describe('редакторы в под-строке вертикальной группы', () => {
-  it('текстовый редактор однострочный — textarea переносила бы значение', () => {
+  it('текстовый редактор — textarea: значение переносится по ширине колонки', () => {
     const { container } = renderTable(<TableNode node={node()} />)
-    const textareas = container.querySelectorAll('tbody textarea')
-    expect(textareas).toHaveLength(0)
-    expect(container.querySelectorAll('tbody input').length).toBeGreaterThan(0)
+    expect(container.querySelectorAll('tbody textarea').length).toBeGreaterThan(
+      0
+    )
   })
 
-  it('подпись перечисления не переносится', () => {
+  it('подпись перечисления переносится, а не обрезается', () => {
     const { container } = renderTable(<TableNode node={node()} />)
     const select = container.querySelector<HTMLElement>(
       'tbody .MuiSelect-select'
     )
     expect(select).toBeTruthy()
-    expect(getComputedStyle(select!).whiteSpace).toBe('nowrap')
+    expect(getComputedStyle(select!).whiteSpace).toBe('normal')
   })
 })

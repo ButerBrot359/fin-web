@@ -23,8 +23,6 @@ import {
   enumCellSx,
   dateCellSx,
   readonlyCellTextStyle,
-  readonlyCellTextTruncatedStyle,
-  singleLineCellSx,
 } from './table-cell-editor-styles'
 import { RequiredCellFrame } from './required-cell-frame'
 
@@ -36,11 +34,6 @@ interface TableCellEditorProps {
   required?: boolean
   revealErrors?: boolean
   props?: Record<string, unknown>
-  /**
-   * Обрезать значение без редактора многоточием вместо переноса. Ставится в
-   * под-строках вертикальной группы: там высота жёсткая (общая сетка строки).
-   */
-  truncate?: boolean
   onChange: (value: unknown) => void
   onCommit: () => void
   extraParams?: Record<string, string>
@@ -106,7 +99,6 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   required,
   revealErrors,
   props,
-  truncate,
   onChange,
   onCommit,
   extraParams,
@@ -121,13 +113,8 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   if (readonly) {
     return (
       // Перенос текста по ширине колонки — общий стиль всех ячеек без
-      // редактора (readonlyCellTextStyle); в вертикальной группе вместо переноса
-      // обрезка многоточием, см. truncate.
-      <span
-        style={
-          truncate ? readonlyCellTextTruncatedStyle : readonlyCellTextStyle
-        }
-      >
+      // редактора (readonlyCellTextStyle).
+      <span style={readonlyCellTextStyle}>
         {formatReadonlyValue(value, dataType, dateFormat)}
       </span>
     )
@@ -144,9 +131,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             // колонки фиксирована, и <input> длинный текст прокручивает вместо
             // переноса. Enter по-прежнему КОММИТИТ ячейку, а не добавляет
             // строку, поэтому событие гасится.
-            // В вертикальной группе перенос запрещён — высота под-строки
-            // жёсткая; в обычной колонке остаётся прежний multiline.
-            multiline={!truncate}
+            multiline
             onChange={(e) => {
               onChange(e.target.value)
             }}
@@ -158,7 +143,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
               }
             }}
             size="small"
-            sx={truncate ? { ...cellSx, ...singleLineCellSx } : cellSx}
+            sx={cellSx}
           />
         )
       }
@@ -182,7 +167,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
               if (e.key === 'Enter') handleCommit()
             }}
             size="small"
-            sx={truncate ? { ...cellSx, ...singleLineCellSx } : cellSx}
+            sx={cellSx}
           />
         )
       }
@@ -197,7 +182,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             value={value}
             dateOnly={cellWidget === 'DATE_FIELD'}
             dateFormat={dateFormat}
-            sx={truncate ? { ...dateCellSx, ...singleLineCellSx } : dateCellSx}
+            sx={dateCellSx}
             onChange={onChange}
             onCommit={handleCommit}
           />
@@ -241,7 +226,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             size="small"
             fullWidth
             variant="standard"
-            sx={truncate ? { ...enumCellSx, ...singleLineCellSx } : enumCellSx}
+            sx={enumCellSx}
           >
             {options.map((o) => (
               <MenuItem key={o.value} value={o.value}>
@@ -257,7 +242,6 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
           <ReferenceCellEditor
             colProps={props ?? {}}
             value={value}
-            truncate={truncate}
             onChange={onChange}
             onCommit={handleCommit}
             extraParams={extraParams}
@@ -282,13 +266,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
         // у readonly-ячейки, иначе последняя ветка редактора осталась бы
         // единственной, где длинное значение вылезает за колонку.
         return (
-          <span
-            style={
-              truncate ? readonlyCellTextTruncatedStyle : readonlyCellTextStyle
-            }
-          >
-            {renderCellValue(value)}
-          </span>
+          <span style={readonlyCellTextStyle}>{renderCellValue(value)}</span>
         )
     }
   }

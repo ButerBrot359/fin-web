@@ -140,6 +140,39 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     expect(renderedLabels(defs[0].header)).toEqual(['Предоставлять вычет'])
   })
 
+  it('стопка тянется во всю высоту ячейки равными треками — общая линия', () => {
+    const defs = buildColumnDefs(
+      [
+        verticalGroup([
+          {
+            id: 'col.a',
+            type: 'TABLE_COLUMN',
+            binding: 'A',
+            props: { label: 'А' },
+          } as ViewNode,
+          {
+            id: 'col.b',
+            type: 'TABLE_COLUMN',
+            binding: 'B',
+            props: { label: 'Б' },
+          } as ViewNode,
+        ]),
+      ],
+      syncRef
+    )
+
+    // Именно этой парой (высота во всю ячейку + равные треки) разделитель
+    // под-строк встаёт на одной высоте во всех колонках строки, даже когда в
+    // одной из них значение перенеслось на две строки.
+    const style = (
+      (defs[0].header as () => ReactElement)().props as {
+        style: { height: string; gridAutoRows: string }
+      }
+    ).style
+    expect(style.height).toBe('100%')
+    expect(style.gridAutoRows).toBe('1fr')
+  })
+
   it('под-строки одной высоты, разделитель — между ними, а не сверху первой', () => {
     const defs = buildColumnDefs(
       [
@@ -162,12 +195,12 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     )
 
     const rows = subRows(defs[0].header)
-    // Одинаковая высота под-строк в шапке и в ячейке — за счёт неё i-я подпись
+    // Общий пол высоты под-строк в шапке и в ячейке — за счёт него i-я подпись
     // встаёт над i-м редактором (сетка общая, VERTICAL_SUB_ROW_HEIGHT).
     for (const row of rows) {
-      expect((row.props as { style: { height: number } }).style.height).toBe(
-        VERTICAL_SUB_ROW_HEIGHT
-      )
+      expect(
+        (row.props as { style: { minHeight: number } }).style.minHeight
+      ).toBe(VERTICAL_SUB_ROW_HEIGHT)
     }
     // Линия-разделитель как в 1С: только у второй под-строки, иначе получилась бы
     // лишняя черта под шапкой таблицы.
@@ -178,12 +211,11 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     expect(classNames[1]).toContain('border-t')
   })
 
-  // Высота под-строки ЖЁСТКАЯ и в ячейке — она задаёт общую сетку СТРОКИ
-  // таблицы. Прежнее правило (minHeight в ячейке ради переноса длинного
-  // readonly-значения) давало разъехавшиеся разделители: колонка с переносом
-  // росла, соседняя с коротким числом — нет. Теперь длинное значение обрезается
-  // многоточием на самом тексте (truncate у TableCellEditor).
-  it('под-строки ЯЧЕЙКИ держат жёсткую height — общая сетка строки', () => {
+  // Высота под-строки в ячейке — НЕ жёсткая: значения переносятся по ширине
+  // колонки, и жёсткая высота резала бы вторую строку текста. Общую сетку
+  // строки держат равные треки грида (gridAutoRows: 1fr) при высоте контейнера
+  // во всю ячейку — см. verticalSubRows.
+  it('под-строки ЯЧЕЙКИ растут под содержимое, но не ниже общего пола', () => {
     const defs = buildColumnDefs(
       [
         verticalGroup([
@@ -221,8 +253,8 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
       const style = row.props as {
         style: { height?: number; minHeight?: number }
       }
-      expect(style.style.height).toBe(VERTICAL_SUB_ROW_HEIGHT)
-      expect(style.style.minHeight).toBeUndefined()
+      expect(style.style.minHeight).toBe(VERTICAL_SUB_ROW_HEIGHT)
+      expect(style.style.height).toBeUndefined()
     }
   })
 

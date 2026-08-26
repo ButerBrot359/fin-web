@@ -24,24 +24,6 @@ export const readonlyCellTextStyle: CSSProperties = {
   overflowWrap: 'anywhere',
 }
 
-/**
- * Тот же текст, но ОДНОЙ строкой с многоточием — для под-строк вертикальной
- * группы колонок. Там высота под-строки жёсткая (общая сетка строки таблицы), и
- * перенос вылез бы поверх разделителя и соседней под-строки. Эталон 1С в этом
- * месте тоже обрезает: «ГЛАВНЫЙ ЭКОНОМИ…», «Основное подразделе…».
- *
- * Обрезка живёт на САМОМ тексте, а не на контейнере под-строки: `overflow:hidden`
- * у контейнера срезал бы рамку обязательного поля и focus-ring соседнего
- * редактора, которые законно выходят за 36px.
- */
-export const readonlyCellTextTruncatedStyle: CSSProperties = {
-  ...readonlyCellTextStyle,
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  overflowWrap: 'normal',
-}
-
 export const cellSx: SystemStyleObject<Theme> = {
   mb: 0,
   position: 'static',
@@ -88,6 +70,12 @@ export const dateCellSx: SystemStyleObject<Theme> = {
   },
   '& .MuiPickersInputBase-root': {
     position: 'relative',
+    // Ширина — строго по ячейке. Без неё поле пикера берёт СВОЮ ширину по
+    // содержимому: контейнер разрядов у MUI объявлен `width: 182px`, и в узкой
+    // колонке («Начало периода») поле вылезало за границу ячейки вместе с
+    // прижатой к его правому краю иконкой календаря — она ложилась на соседнюю
+    // колонку.
+    width: '100%',
     backgroundColor: 'transparent !important',
     border: 'none !important',
     borderRadius: '0 !important',
@@ -100,6 +88,10 @@ export const dateCellSx: SystemStyleObject<Theme> = {
     minHeight: '28px !important',
     height: '28px !important',
     fontSize: '14px !important',
+    // Сбрасываем те самые 182px: контейнер разрядов — flex-элемент поля, и
+    // собственная ширина мешала бы ему сжиматься до ширины колонки.
+    width: 'auto',
+    minWidth: 0,
   },
   // Иконка календаря прижимается к правому краю СВОЕГО поля ввода
   // (`.MuiPickersInputBase-root` выше — `position: relative`), а не смещается на
@@ -122,27 +114,4 @@ export const dateCellSx: SystemStyleObject<Theme> = {
   },
   '& .MuiInputAdornment-root .MuiIconButton-root': { p: '2px' },
   '& .MuiInputAdornment-root .MuiSvgIcon-root': { fontSize: 16 },
-}
-
-/**
- * Однострочный режим содержимого ячейки — для под-строк ВЕРТИКАЛЬНОЙ группы
- * колонок. Высота под-строки там жёсткая (общая сетка строки таблицы), поэтому
- * переносить нельзя ничему: не только readonly-тексту, но и редакторам. Текст
- * ссылки и подпись перечисления иначе ложатся на разделитель и на соседнюю
- * под-строку — «Алдамжарова… / ЗАМЕСТИТЕЛЬ ДИРЕКТОРА…» наезжали друг на друга.
- *
- * Перекрывает `overflowWrap: anywhere` и `whiteSpace: normal !important` из
- * `cellSx`/`enumCellSx`/`wrapperSx` ссылочной ячейки — там перенос включён
- * намеренно для ОБЫЧНЫХ (невертикальных) колонок, где ячейка растёт свободно.
- */
-export const singleLineCellSx: SystemStyleObject<Theme> = {
-  '& .MuiInputBase-input, & .MuiAutocomplete-input, & .MuiSelect-select': {
-    whiteSpace: 'nowrap !important',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    overflowWrap: 'normal !important',
-  },
-  // Значение снова в одну строку — кнопки ссылки возвращаются на середину
-  // (в многострочном режиме они прижаты к верху, см. wrapperSx).
-  '& .MuiFilledInput-root': { alignItems: 'center' },
 }

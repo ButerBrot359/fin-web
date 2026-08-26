@@ -6,7 +6,6 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { useTranslation } from 'react-i18next'
 
 import { AutocompleteInput } from '@/shared/ui/inputs'
-import { singleLineCellSx } from './table-cell-editor-styles'
 import type { SelectOption } from '@/shared/types/select-option'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
 import { fetchReferenceOptions } from '../../../api/reference-options'
@@ -20,8 +19,6 @@ import {
 interface ReferenceCellEditorProps {
   colProps: Record<string, unknown>
   value: unknown
-  /** Однострочный режим: под-строка вертикальной группы не даёт ячейке расти. */
-  truncate?: boolean
   onChange: (value: unknown) => void
   onCommit: () => void
   extraParams?: Record<string, string>
@@ -102,7 +99,6 @@ function toSelectOption(value: unknown): SelectOption | null {
 export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   colProps,
   value,
-  truncate,
   onChange,
   onCommit,
   extraParams,
@@ -214,7 +210,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
       : null
 
   return (
-    <Box sx={truncate ? { ...wrapperSx, ...singleLineCellSx } : wrapperSx}>
+    <Box sx={wrapperSx}>
       <AutocompleteInput
         value={selectedOption}
         inputValue={inputValue}
@@ -223,7 +219,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
         fullWidth
         // Ширина колонки ТЧ фиксирована, а <input> длинное наименование не
         // переносит, а прокручивает: «Надбавка за ос…» вместо полного значения.
-        multilineInput={!truncate}
+        multilineInput
         loading={loading}
         onInputChange={(_e, val, reason) => {
           setInputValue(val)

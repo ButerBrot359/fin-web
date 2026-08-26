@@ -262,10 +262,11 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
         )
 
       default:
+        // Неизвестный виджет — показываем значение текстом; перенос тот же, что
+        // у readonly-ячейки, иначе последняя ветка редактора осталась бы
+        // единственной, где длинное значение вылезает за колонку.
         return (
-          <span style={{ padding: '4px 8px', fontSize: 14 }}>
-            {renderCellValue(value)}
-          </span>
+          <span style={readonlyCellTextStyle}>{renderCellValue(value)}</span>
         )
     }
   }

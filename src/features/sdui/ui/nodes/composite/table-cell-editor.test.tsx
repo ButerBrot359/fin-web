@@ -117,8 +117,10 @@ describe('TableCellEditor — перенос текста readonly-значен�
         value="Доплата за квалификационную категорию 100%"
       />
     )
-    const span = container.querySelector('span')!
-    expect(span.style.whiteSpace).toBe('normal')
-    expect(span.style.overflowWrap).toBe('anywhere')
+    // getPropertyValue, а не camelCase-геттер: `overflow-wrap` реализован в
+    // jsdom не как именованное свойство, и `style.overflowWrap` вернул бы ''.
+    const style = container.querySelector('span')!.style
+    expect(style.getPropertyValue('white-space')).toBe('normal')
+    expect(style.getPropertyValue('overflow-wrap')).toBe('anywhere')
   })
 })

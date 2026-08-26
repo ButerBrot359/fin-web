@@ -2,6 +2,8 @@ import { useState, type SyntheticEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
+import { Typography } from '@mui/material'
+
 import { REDIRECT_PARAM, useAuthStore } from '@/features/auth'
 import { getLastLogin } from '@/shared/api/auth/token-storage'
 import { Button } from '@/shared/ui/buttons/button'
@@ -24,6 +26,7 @@ export const LoginForm = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const signIn = useAuthStore((state) => state.signIn)
+  const sessionExpired = useAuthStore((state) => state.sessionExpired)
 
   // Логин предзаполняется значением последнего успешного входа НА ЭТОМ УСТРОЙСТВЕ
   // (ТЗ §А1). Это единственный источник: серверного эндпоинта «кто заходил последним»
@@ -68,6 +71,22 @@ export const LoginForm = () => {
       className="flex w-full flex-col items-center gap-4"
       noValidate
     >
+      {/*
+        Объяснение, почему человек здесь оказался. Без него обрыв сессии посреди работы
+        выглядит как случайный выброс на форму входа: поля пусты, ошибки нет, причины нет.
+        Показываем только пока не было своей ошибки входа — та конкретнее и важнее.
+      */}
+      {sessionExpired && !error && (
+        <Typography
+          role="status"
+          variant="body2"
+          color="text.secondary"
+          className="w-full"
+        >
+          {t('auth.sessionExpired')}
+        </Typography>
+      )}
+
       <div className="flex w-full flex-col gap-4">
         <LoginNameField
           value={login}

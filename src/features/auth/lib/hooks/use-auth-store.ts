@@ -21,6 +21,14 @@ export type AuthStatus = 'unknown' | 'authenticated' | 'anonymous'
 interface AuthState {
   status: AuthStatus
   user: CurrentUser | null
+  /**
+   * Сессия оборвалась сама, а не по кнопке «выход».
+   *
+   * Нужен, потому что гвард различить эти случаи не может: и «никогда не входил», и
+   * «истекло по бездействию» — одинаковый `anonymous`. Без флага человек оказывался бы на
+   * пустой форме входа посреди работы без единого объяснения, почему.
+   */
+  sessionExpired: boolean
   /** Восстановление сессии из localStorage при старте приложения. */
   restore: () => void
   /** @throws ошибку axios с телом `ApiErrorBody` — текст отказа показывает форма входа. */
@@ -33,6 +41,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   status: 'unknown',
   user: null,
+  sessionExpired: false,
 
   restore: () => {
     const token = getAccessToken()
@@ -57,7 +66,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     // человек каждый раз видел бы собственную опечатку вместо «Айбас Сара».
     // Запасной вариант — введённое значение: без него пустой ответ сервера стёр бы память.
     saveLastLogin(tokens.user.login || login)
-    set({ status: 'authenticated', user: tokens.user })
+    set({ status: 'authenticated', user: tokens.user, sessionExpired: false })
     return tokens.user
   },
 
@@ -67,7 +76,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     // при недоступном бэкенде, иначе пользователь остаётся в системе на чужой машине.
     // Отзыв refresh-токена на сервере — попытка; провалилась — токен умрёт по своему TTL.
     clearSession()
-    set({ status: 'anonymous', user: null })
+    // Осознанный выход — не «истекла»: сообщать человеку, что его выкинуло, когда он сам
+    // нажал «выйти», значит врать.
+    set({ status: 'anonymous', user: null, sessionExpired: false })
     if (!refreshToken) return
     try {
       await requestLogout(refreshToken)
@@ -78,6 +89,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   handleSessionExpired: () => {
     clearSession()
-    set({ status: 'anonymous', user: null })
+    set({ status: 'anonymous', user: null, sessionExpired: true })
   },
 }))

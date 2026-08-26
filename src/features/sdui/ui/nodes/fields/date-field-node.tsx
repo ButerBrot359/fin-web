@@ -11,7 +11,7 @@ export const DateFieldNode: FC<NodeProps> = ({ node }) => {
   if (!f.visible) return null
 
   return (
-    <div style={{ flex: f.flex !== undefined ? f.flex : undefined }}>
+    <div>
       <DateTimeInput
         label={f.label}
         value={value}

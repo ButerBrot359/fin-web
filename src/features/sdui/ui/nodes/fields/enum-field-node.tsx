@@ -34,7 +34,6 @@ export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
       error={!!f.error}
       required={f.required}
       disabled={!f.enabled}
-      sx={{ flex: f.flex !== undefined ? f.flex : undefined }}
     >
       {f.label && <InputLabel id={labelId}>{f.label}</InputLabel>}
       <Select

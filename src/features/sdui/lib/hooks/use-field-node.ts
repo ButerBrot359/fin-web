@@ -9,7 +9,6 @@ export interface FieldNodeCommon {
   visible: boolean
   enabled: boolean
   error?: string
-  flex?: number | string
   value: unknown
   setValue: (v: unknown) => void
   fireServerEvent: (trigger: string, newValue: unknown) => void
@@ -31,7 +30,11 @@ export function useFieldNode(node: ViewNode): FieldNodeCommon {
     visible: node.props?.visible === true,
     enabled: node.props?.enabled === true,
     error: node.props?.error as string | undefined,
-    flex: node.props?.flex as number | string | undefined,
+    // props.flex виджету не отдаём: за раскладку в строке отвечает контейнер.
+    // HSTACK уже оборачивает каждого ребёнка в <div style={{flex}}> (hstack-node),
+    // а повторное применение того же flex внутри этой обёртки читается уже как
+    // ВЫСОТА — обёртка колоночная, и flex-basis в ней вертикальный. Строковый
+    // basis вида "0 1 240px" давал полосу пустоты на 240px под контролом.
     value,
     setValue: (v) => {
       if (node.binding) setValue(node.binding, v)

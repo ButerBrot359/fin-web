@@ -345,3 +345,27 @@ describe('ReferenceCellEditor', () => {
     })
   })
 })
+
+// Ширина колонки ТЧ фиксирована, а <input> длинное наименование не переносит, а
+// прокручивает: в ячейке видно «Надбавка за ос…» вместо полного значения.
+describe('ReferenceCellEditor — перенос значения по ширине колонки', () => {
+  afterEach(cleanup)
+
+  it('поле ячейки — textarea (multiline), а не однострочный input', () => {
+    const { container } = render(
+      <ReferenceCellEditor
+        colProps={{ optionsSource: { url: '/x' } }}
+        value={{ id: 5, presentation: 'Надбавка за особые условия труда 10%' }}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />
+    )
+    const field = screen.getByRole('combobox')
+    expect(field.tagName).toBe('TEXTAREA')
+    expect((field as HTMLTextAreaElement).value).toBe(
+      'Надбавка за особые условия труда 10%'
+    )
+    // Однострочного input в ячейке не остаётся — иначе значение снова обрежется.
+    expect(container.querySelector('input')).toBeNull()
+  })
+})

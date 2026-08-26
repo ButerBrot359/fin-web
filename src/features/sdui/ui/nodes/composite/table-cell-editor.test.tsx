@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, fireEvent } from '@testing-library/react'
+import { render, fireEvent, createEvent } from '@testing-library/react'
 import { TableCellEditor } from './table-cell-editor'
 
 // Настоящий пикер здесь не нужен (он покрыт в datetime-input.test.tsx) — важно,
@@ -24,13 +24,19 @@ const base = {
 // (MUI sx → CSS-класс, инлайн-стиля outline в DOM нет — селектор по style не годится).
 const ERR = '[data-required-error="true"]'
 
+// Текстовая ячейка ТЧ — multiline, то есть <textarea>, а не <input>: значение
+// переносится по ширине колонки (см. table-cell-editor.tsx). MUI рисует ещё и
+// теневую textarea автосайза — берём первую, видимую.
+const editor = (container: HTMLElement): HTMLTextAreaElement =>
+  container.querySelector('textarea')!
+
 describe('TableCellEditor required validation', () => {
   it('пустая обязательная: до blur рамки нет, после blur — есть', () => {
     const { container } = render(
       <TableCellEditor {...base} value="" required />
     )
     expect(container.querySelector(ERR)).toBeNull()
-    fireEvent.blur(container.querySelector('input')!)
+    fireEvent.blur(editor(container))
     expect(container.querySelector(ERR)).toBeTruthy()
   })
 
@@ -45,21 +51,22 @@ describe('TableCellEditor required validation', () => {
     const { container } = render(
       <TableCellEditor {...base} value="x" required />
     )
-    fireEvent.blur(container.querySelector('input')!)
+    fireEvent.blur(editor(container))
     expect(container.querySelector(ERR)).toBeNull()
   })
 
   it('необязательная ячейка не оборачивается рамкой', () => {
     const { container } = render(<TableCellEditor {...base} value="" />)
-    fireEvent.blur(container.querySelector('input')!)
+    fireEvent.blur(editor(container))
     expect(container.querySelector(ERR)).toBeNull()
   })
 
-  it('readonly обязательная — span без input и без рамки', () => {
+  it('readonly обязательная — span без редактора и без рамки', () => {
     const { container } = render(
       <TableCellEditor {...base} value="" required readonly />
     )
     expect(container.querySelector('input')).toBeNull()
+    expect(container.querySelector('textarea')).toBeNull()
     expect(container.querySelector(ERR)).toBeNull()
   })
 })
@@ -122,5 +129,31 @@ describe('TableCellEditor — перенос текста readonly-значен�
     const style = container.querySelector('span')!.style
     expect(style.getPropertyValue('white-space')).toBe('normal')
     expect(style.getPropertyValue('overflow-wrap')).toBe('anywhere')
+  })
+})
+
+// Редактируемая ячейка ТЧ тоже переносит текст: <input> длинное значение не
+// переносит, а прокручивает, показывая обрезок («Надбавка за ос…»).
+describe('TableCellEditor — перенос текста в редакторе', () => {
+  it('TEXT_FIELD рендерится textarea, а не однострочным input', () => {
+    const { container } = render(
+      <TableCellEditor {...base} value="Надбавка за особые условия труда 10%" />
+    )
+    expect(container.querySelector('textarea')).toBeTruthy()
+    expect(container.querySelector('input')).toBeNull()
+  })
+
+  it('Enter коммитит ячейку и НЕ добавляет перенос строки', () => {
+    const onCommit = vi.fn()
+    const { container } = render(
+      <TableCellEditor {...base} value="x" onCommit={onCommit} />
+    )
+    const event = createEvent.keyDown(container.querySelector('textarea')!, {
+      key: 'Enter',
+    })
+    fireEvent(container.querySelector('textarea')!, event)
+
+    expect(onCommit).toHaveBeenCalledTimes(1)
+    expect(event.defaultPrevented).toBe(true)
   })
 })

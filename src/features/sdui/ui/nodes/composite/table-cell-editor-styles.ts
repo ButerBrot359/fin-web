@@ -35,6 +35,10 @@ export const cellSx: SxProps<Theme> = {
   '& .MuiInputBase-input': {
     padding: '4px 8px !important',
     fontSize: '14px !important',
+    // Текстовая ячейка — multiline (textarea): переносим по ширине колонки и
+    // убираем ручку изменения размера, в ТЧ она неуместна.
+    resize: 'none',
+    overflowWrap: 'anywhere',
   },
 }
 
@@ -46,6 +50,10 @@ export const enumCellSx: SxProps<Theme> = {
     minHeight: '28px',
     display: 'flex',
     alignItems: 'center',
+    // MUI держит подпись выбранного значения в одну строку — в ячейке ТЧ с
+    // фиксированной шириной длинное значение перечисления так обрезается.
+    whiteSpace: 'normal !important',
+    overflowWrap: 'anywhere',
   },
 }
 

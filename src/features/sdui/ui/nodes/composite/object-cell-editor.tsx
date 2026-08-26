@@ -260,6 +260,9 @@ const ObjectCellValuePicker: FC<ObjectCellValuePickerProps> = ({
       options={options}
       size="small"
       fullWidth
+      // Та же ячейка ТЧ, что и у ссылочной колонки: значение переносится по
+      // ширине, а не прокручивается в однострочном input.
+      multilineInput
       loading={loading}
       onInputChange={(_e, val, reason) => {
         setInputValue(val)

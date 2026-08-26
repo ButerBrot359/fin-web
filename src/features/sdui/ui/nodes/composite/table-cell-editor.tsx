@@ -127,12 +127,20 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
         return (
           <TextInput
             value={strValue}
+            // multiline — тот же перенос, что у readonly-значения: ширина
+            // колонки фиксирована, и <input> длинный текст прокручивает вместо
+            // переноса. Enter по-прежнему КОММИТИТ ячейку, а не добавляет
+            // строку, поэтому событие гасится.
+            multiline
             onChange={(e) => {
               onChange(e.target.value)
             }}
             onBlur={handleCommit}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleCommit()
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleCommit()
+              }
             }}
             size="small"
             sx={cellSx}

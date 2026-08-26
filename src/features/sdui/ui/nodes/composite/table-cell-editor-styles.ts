@@ -112,6 +112,19 @@ export const dateCellSx: SystemStyleObject<Theme> = {
   '& .MuiPickersInputBase-sectionsContainer, & .MuiInputBase-input': {
     paddingRight: '22px !important',
   },
-  '& .MuiInputAdornment-root .MuiIconButton-root': { p: '2px' },
+  // `marginRight: 0` СНИМАЕТ отрицательный отступ кнопки календаря: пикер отдаёт её с
+  // `edge="end"`, а MUI по этому признаку сдвигает кнопку на `margin-right: -12px`
+  // (IconButton, вариант edge=end). Расчёт заточен под поле формы с его
+  // паддингом 20px — там сдвиг остаётся внутри. В ячейке ТЧ паддинг 8px, и
+  // кнопка вылезала за правую границу колонки ровно на половину иконки: в
+  // «Начислениях» она садилась верхом на линию сетки между «Началом периода» и
+  // «Норм. нагрузкой». Прижатие самого адорнмента (`right: 2px` выше) этого не
+  // лечило — отступ висит на кнопке ВНУТРИ него. `!important`, а не расчёт на
+  // специфичность: правило MUI приезжает из styled-компонента, и порядок вставки
+  // классов emotion зависит от порядка монтирования — на него не закладываемся.
+  '& .MuiInputAdornment-root .MuiIconButton-root': {
+    p: '2px',
+    marginRight: '0 !important',
+  },
   '& .MuiInputAdornment-root .MuiSvgIcon-root': { fontSize: 16 },
 }

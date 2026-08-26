@@ -2,21 +2,22 @@ import { useState, type SyntheticEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
-import { TextField, Typography } from '@mui/material'
-
-import { useAuthStore, REDIRECT_PARAM } from '@/features/auth'
-import { clearLastLogin, getLastLogin } from '@/shared/api/auth/token-storage'
+import { REDIRECT_PARAM, useAuthStore } from '@/features/auth'
+import { getLastLogin } from '@/shared/api/auth/token-storage'
 import { Button } from '@/shared/ui/buttons/button'
 
 import { extractAuthError } from '../lib/extract-auth-error'
+import { LoginNameField } from './login-name-field'
+import { LoginPasswordField } from './login-password-field'
 
 /**
- * Форма входа: логин, пароль, отказ.
+ * Форма входа: логин, пароль, отказ, кнопка.
  *
- * ⚠️ Оформление временное. Вёрстка по макету Figma (нода 545:22859) — отдельный шаг:
- * на момент написания доступ к Dev Mode файла отсутствовал. Разметка намеренно плоская,
- * чтобы её замена не задела поведение: состояние, отправка и обработка ошибок живут здесь
- * и от оформления не зависят.
+ * Текст отказа берётся с сервера и показывается дословно. В макете под полем пароля стоит
+ * «Неверный пароль», но сервер на «нет такого логина» и «пароль неверен» отвечает ОДНИМ
+ * текстом — «Неверный логин или пароль» (ТЗ §А1). Это не небрежность бэкенда: различающиеся
+ * ответы позволяют перебором выяснить, какие учётные записи существуют, поэтому подставлять
+ * здесь более конкретную формулировку нельзя.
  */
 export const LoginForm = () => {
   const { t } = useTranslation()
@@ -48,17 +49,11 @@ export const LoginForm = () => {
       void navigate(from ? decodeURIComponent(from) : '/', { replace: true })
     } catch (submitError) {
       setError(extractAuthError(submitError, t('auth.unavailable')))
+      // Пароль стираем, логин оставляем: повторяют обычно только пароль.
       setPassword('')
     } finally {
       setSubmitting(false)
     }
-  }
-
-  const handleUseAnotherAccount = () => {
-    clearLastLogin()
-    setLogin('')
-    setPassword('')
-    setError(null)
   }
 
   const isSubmitDisabled = isSubmitting || !login.trim() || !password
@@ -70,51 +65,41 @@ export const LoginForm = () => {
         // иначе повисший промис остаётся без обработчика отказа.
         void handleSubmit(event)
       }}
-      className="flex w-full flex-col gap-4"
+      className="flex w-full flex-col items-center gap-4"
+      noValidate
     >
-      <TextField
-        label={t('auth.loginLabel')}
-        value={login}
-        onChange={(event) => {
-          setLogin(event.target.value)
-        }}
-        autoComplete="username"
-        autoFocus={!login}
-        error={!!error}
-        // Подсказка про пробелы не косметика: логин в 1С — это «Фамилия Имя», и без неё
-        // человек пытается ввести одно слово или латиницу.
-        helperText={t('auth.loginHint')}
-        disabled={isSubmitting}
-      />
+      <div className="flex w-full flex-col gap-4">
+        <LoginNameField
+          value={login}
+          onChange={(next) => {
+            setLogin(next)
+            setError(null)
+          }}
+          hasError={!!error}
+          disabled={isSubmitting}
+          autoFocus={!login}
+        />
 
-      <TextField
-        label={t('auth.passwordLabel')}
-        type="password"
-        value={password}
-        onChange={(event) => {
-          setPassword(event.target.value)
-        }}
-        autoComplete="current-password"
-        autoFocus={!!login}
-        error={!!error}
-        disabled={isSubmitting}
-      />
+        <LoginPasswordField
+          value={password}
+          onChange={(next) => {
+            setPassword(next)
+            setError(null)
+          }}
+          error={error}
+          disabled={isSubmitting}
+          autoFocus={!!login}
+        />
+      </div>
 
-      {error && (
-        <Typography role="alert" color="error" variant="body2">
-          {error}
-        </Typography>
-      )}
-
-      <Button type="submit" variant="primary" disabled={isSubmitDisabled}>
+      <Button
+        type="submit"
+        variant="primary"
+        disabled={isSubmitDisabled}
+        className="mt-4"
+      >
         {isSubmitting ? t('auth.submitting') : t('auth.submit')}
       </Button>
-
-      {!!getLastLogin() && (
-        <Button variant="tertiary" onClick={handleUseAnotherAccount}>
-          {t('auth.useAnotherAccount')}
-        </Button>
-      )}
     </form>
   )
 }

@@ -30,6 +30,21 @@ const USER_KEY = 'webbuh.auth.user'
  */
 const LAST_LOGIN_KEY = 'webbuh.auth.lastLogin'
 
+/**
+ * Логины, под которыми на ЭТОМ устройстве уже входили, — список для выпадашки поля
+ * «Пользователь» на экране входа.
+ *
+ * <b>Это не список пользователей системы.</b> В макете у поля есть стрелка выбора, но
+ * серверного перечня учётных записей не существует и появиться не должно (ТЗ §А1): он
+ * раскрыл бы, кто заведён в базе, любому, кто открыл страницу входа. Здесь же браузер
+ * помнит ровно то, что и так знает, — логины, набранные на нём самом. Общая машина
+ * покажет тех, кто на ней работал, и никого больше.
+ */
+const KNOWN_LOGINS_KEY = 'webbuh.auth.knownLogins'
+
+/** Больше пяти в выпадашке бесполезно, а список растёт с каждым входом. */
+const KNOWN_LOGINS_LIMIT = 5
+
 const read = (key: string): string | null => {
   try {
     return window.localStorage.getItem(key)
@@ -100,8 +115,36 @@ export const clearSession = (): void => {
 
 export const getLastLogin = (): string => read(LAST_LOGIN_KEY) ?? ''
 
+export const getKnownLogins = (): string[] => {
+  const raw = read(KNOWN_LOGINS_KEY)
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string')
+      : []
+  } catch {
+    remove(KNOWN_LOGINS_KEY)
+    return []
+  }
+}
+
+/**
+ * Запоминает логин последнего входа и добавляет его в список известных этому устройству.
+ * Совпадения ищутся без учёта регистра и краевых пробелов — иначе «Иванов Иван» и
+ * «иванов иван » осели бы в списке двумя строками, хотя это один человек.
+ */
 export const saveLastLogin = (login: string): void => {
   write(LAST_LOGIN_KEY, login)
+
+  const normalized = login.trim().toLowerCase()
+  const rest = getKnownLogins().filter(
+    (known) => known.trim().toLowerCase() !== normalized
+  )
+  write(
+    KNOWN_LOGINS_KEY,
+    JSON.stringify([login, ...rest].slice(0, KNOWN_LOGINS_LIMIT))
+  )
 }
 
 /** «Войти под другим пользователем» — очищает предзаполнение логина. */

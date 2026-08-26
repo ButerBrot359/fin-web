@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { buildCommonEffectDeps } from './build-effect-deps'
 import { createEffectHandler } from './effect-handler'
+import { openDialogAsPanel } from './open-dialog-panel'
 import { relaySelectionToParent } from './relay-selection'
 import { useSduiSession } from './sdui-session-context'
 import { useConfirmStore } from './stores/confirm-store'
@@ -31,6 +32,24 @@ export function useSduiEffects() {
         handler.playAll(effects)
       })
     },
+    replaceDialog: (closes, open) => {
+      // Пересборка панели одной транзакцией — тот же путь, что в dispatch:
+      // без него closeDialog+openDialog из одного ответа дают кадр без панели
+      // и повторную анимацию появления («окно мигает»).
+      const closeIds = closes
+        .map((e) => e.id)
+        .filter((id): id is string => typeof id === 'string')
+      openDialogAsPanel(
+        open,
+        session.getSession().formSessionId ?? undefined,
+        closeIds
+      )
+      for (const close of closes) {
+        relaySelectionToParent(close, (effects) => {
+          handler.playAll(effects)
+        })
+      }
+    },
     confirm: (effect) => {
       void useConfirmStore
         .getState()
@@ -40,6 +59,13 @@ export function useSduiEffects() {
             void handler.executeActionRequest(effect.confirmRequest)
           }
         })
+    },
+    // Вопрос «Сохранить изменения?» задаёт форма с СЕССИЕЙ (её несохранённое
+    // лежит в этой сессии), а ответы — команды в неё же. У session-less нод
+    // диспатчить их некуда, поэтому здесь эффект осознанно не поддержан:
+    // сервер его сюда и не шлёт.
+    unsavedChanges: () => {
+      console.warn('[sdui] эффект unsavedChanges вне form-сессии — игнорируем')
     },
   })
   return handler

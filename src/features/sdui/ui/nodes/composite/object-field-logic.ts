@@ -127,3 +127,30 @@ export function buildObjectValue(
     targetTypeCode: member.targetTypeCode,
   }
 }
+
+/**
+ * Отпечаток набора членов — признак «сервер перерешил, каким бывает это поле».
+ *
+ * Смена счёта в шапке/строке перестраивает вид субконто: приходит патч props с
+ * другим `allowedTypes`. Ручной выбор члена и уже выбранное значение к новому
+ * набору отношения не имеют — прежнего члена в нём может не быть вовсе, поэтому
+ * оба сбрасываются. Сравниваем по составу, а не по ссылке: патч пересобирает
+ * массив даже когда набор тот же, и сброс на каждый чужой патч был бы шумом.
+ */
+export function membersSignature(types: AllowedType[]): string {
+  return types.map(memberKey).join('|')
+}
+
+/**
+ * Значение всё ещё принадлежит одному из членов?
+ *
+ * Значение без `targetTypeCode` (примитивные члены) не трогаем: различать их в
+ * значении нечем, а бэк такие на запись и не принимает — чистить нечего.
+ */
+export function isValueAllowed(
+  allowedTypes: AllowedType[],
+  value: ObjectValue | null | undefined
+): boolean {
+  if (!value?.targetTypeCode) return true
+  return findAllowedType(allowedTypes, value.targetTypeCode) !== undefined
+}

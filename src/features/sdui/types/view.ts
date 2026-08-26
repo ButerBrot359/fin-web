@@ -45,6 +45,19 @@ export interface ViewNodeAction {
 // SCRUM-302: дескриптор доменной кнопки командной панели ТЧ (props.tableCommands
 // TABLE-узла). command — непрозрачная строка, фронт её не разбирает; behavior —
 // единственный источник поведения (никаких списков мутирующих команд).
+// Условная заливка строки таблицы (props.rowAppearance TABLE-узла) — перенос
+// `УсловноеОформление` формы из 1С. Правило: «в колонке `binding` значение
+// `equals` ⇒ фон строки `backgroundColor`». Разбор и применение —
+// lib/utils/row-appearance.ts.
+export interface RowAppearanceRule {
+  /** Код колонки, по значению которой идёт отбор. Колонка может быть скрытой. */
+  binding: string
+  /** Искомое значение. Отсутствует в контракте ⇒ `true` (булев признак). */
+  equals?: unknown
+  /** CSS-цвет фона строки, как его прислал бэк («rgb(200, 255, 210)»). */
+  backgroundColor: string
+}
+
 export interface TableCommandDescriptor {
   command: string
   label: string
@@ -143,6 +156,13 @@ export interface ViewEffect {
   confirmRequest?: ActionRequest | null
   // SCRUM-288 §2.4: behavior подтверждённой команды (resetsDirty и пр.).
   confirmBehavior?: ActionBehavior | null
+  // unsavedChanges: ответы «Да, сохранить» и «Нет, не сохранять». Обе —
+  // КОМАНДЫ в ту же сессию: несохранённое дочерней формы лежит на сервере, и
+  // «не сохранять» одним лишь закрытием панели его не выбросить.
+  saveCommand?: string
+  saveBehavior?: ActionBehavior | null
+  discardCommand?: string
+  discardBehavior?: ActionBehavior | null
   sessionId?: string
   childRevision?: number
   childState?: Record<string, unknown>

@@ -1,4 +1,9 @@
-import { type HTMLAttributes, type ReactNode, useMemo } from 'react'
+import {
+  type HTMLAttributes,
+  type KeyboardEvent,
+  type ReactNode,
+  useMemo,
+} from 'react'
 import {
   Autocomplete,
   Paper,
@@ -100,6 +105,17 @@ interface AutocompleteInputBaseProps {
    * потере фокуса — подставлял бы значение, которого пользователь не выбирал.
    */
   autoHighlight?: boolean
+  /**
+   * Значение ПЕРЕНОСИТСЯ по ширине поля: TextField рендерится `<textarea>`
+   * вместо `<input>`. Нужен ячейке ТЧ — ширина колонки фиксирована, а `<input>`
+   * длинное наименование («Надбавка за особые условия труда 10%») по природе
+   * своей не переносит, а прокручивает, показывая обрезок.
+   *
+   * <p>Опция, а не поведение по умолчанию: компонент общий для SDUI и легаси, и
+   * в полях формы (шапка документа, параметры отчётов) однострочность — не
+   * дефект, а нужная компактность.
+   */
+  multilineInput?: boolean
 }
 
 export interface AutocompleteInputSingleProps extends AutocompleteInputBaseProps {
@@ -138,6 +154,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
     size,
     fullWidth,
     autoHighlight = false,
+    multilineInput = false,
   } = props
   const { t } = useTranslation()
 
@@ -200,32 +217,53 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
       : []),
   ]
 
-  const renderInput = (params: AutocompleteRenderInputParams) => (
-    <TextField
-      {...params}
-      label={label}
-      required={required}
-      error={error}
-      helperText={helperText}
-      slotProps={{
-        ...slotProps,
-        input: {
-          ...params.InputProps,
-          ...(slotProps?.input as object),
-          endAdornment: (
-            <>
-              {params.InputProps.endAdornment}
-              {!disabled && endAction}
-            </>
-          ),
-        },
-        htmlInput: {
-          ...params.inputProps,
-          ...(slotProps?.htmlInput as object),
-        },
-      }}
-    />
-  )
+  /**
+   * Enter в `<textarea>` вставил бы перенос строки прямо в строку поиска.
+   * Гасим — но ТОЛЬКО после обработчика MUI и только если он сам событие не
+   * забрал: при открытом списке Enter выбирает подсвеченную опцию
+   * (`useAutocomplete` зовёт `preventDefault`), и перехватывать это нельзя.
+   */
+  const guardEnter =
+    (inner?: (event: KeyboardEvent<HTMLInputElement>) => void) =>
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      inner?.(event)
+      if (event.key === 'Enter' && !event.defaultPrevented) {
+        event.preventDefault()
+      }
+    }
+
+  const renderInput = (params: AutocompleteRenderInputParams) => {
+    const htmlInput = {
+      ...params.inputProps,
+      ...(slotProps?.htmlInput as object),
+    } as AutocompleteRenderInputParams['inputProps']
+    return (
+      <TextField
+        {...params}
+        multiline={multilineInput}
+        label={label}
+        required={required}
+        error={error}
+        helperText={helperText}
+        slotProps={{
+          ...slotProps,
+          input: {
+            ...params.InputProps,
+            ...(slotProps?.input as object),
+            endAdornment: (
+              <>
+                {params.InputProps.endAdornment}
+                {!disabled && endAction}
+              </>
+            ),
+          },
+          htmlInput: multilineInput
+            ? { ...htmlInput, onKeyDown: guardEnter(htmlInput.onKeyDown) }
+            : htmlInput,
+        }}
+      />
+    )
+  }
 
   if (props.multiple) {
     return (

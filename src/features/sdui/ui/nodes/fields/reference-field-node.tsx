@@ -232,7 +232,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   }
 
   return (
-    <div style={{ flex: f.flex !== undefined ? f.flex : undefined }}>
+    <div>
       {multiple ? (
         <AutocompleteInput
           multiple

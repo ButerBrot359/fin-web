@@ -23,12 +23,17 @@ export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
 
   const labelId = `enum-field-${node.id}-label`
 
+  // MuiFormControl — inline-flex и по умолчанию сжимается до содержимого. В
+  // блочном контейнере (содержимое TAB рендерится без flex-обёртки) пустое
+  // перечисление схлопывается до ~40px и обрезает подпись. Тема задаёт fullWidth
+  // только для MuiTextField/MuiPickersTextField, поэтому прочие поля не страдают
+  // — они стоят на TextField. Растягиваем контейнер поля, а не сам контрол.
   return (
     <FormControl
+      fullWidth
       error={!!f.error}
       required={f.required}
       disabled={!f.enabled}
-      sx={{ flex: f.flex !== undefined ? f.flex : undefined }}
     >
       {f.label && <InputLabel id={labelId}>{f.label}</InputLabel>}
       <Select

@@ -61,6 +61,9 @@ export type EffectType =
   | 'refresh'
   | 'confirm'
   | 'replaceUrl'
+  // Диалог «Сохранить изменения?» с тремя ответами — тот же, что у карточки
+  // документа. Эксклюзивен, как confirm.
+  | 'unsavedChanges'
 
 // HYDRATE — догрузка данных deferred-нод (SCRUM-384): ответ приходит в
 // существующем формате statePatch+patches, tree/state не возвращаются.

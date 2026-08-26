@@ -45,6 +45,14 @@ export interface EffectHandlerDeps {
   // SCRUM-288 §2.3/§2.4: мост получает ВЕСЬ эффект (confirmCommand ИЛИ confirmRequest,
   // + confirmBehavior). Диалог и ветвление — в реализации (dispatch / use-sdui-effects).
   confirm: (effect: ViewEffect) => void
+  // Замена панели: closeDialog(ы) + openDialog из ОДНОГО ответа исполняются
+  // одной транзакцией стора, без анимации появления. Необязательный: без него
+  // playAll играет ту же пару по очереди, как раньше (session-less путь).
+  replaceDialog?: (closes: ViewEffect[], open: ViewEffect) => void
+  // Диалог «Сохранить изменения?» с тремя ответами (эффект unsavedChanges).
+  // Мост получает весь эффект: пара команд save/discard и их behavior —
+  // серверные, фронт их не выводит. Реализация в dispatch, как у confirm.
+  unsavedChanges: (effect: ViewEffect) => void
   // navigate с openInNewTab: маршрут открывается ОТДЕЛЬНОЙ рабочей вкладкой,
   // вкладка-источник остаётся жить. Реализация в dispatch.
   openRouteInNewTab: (route: string) => void
@@ -53,6 +61,28 @@ export interface EffectHandlerDeps {
   // БЕЗ ремаунта экрана, БЕЗ повторного OPEN сессии. В отличие от navigate,
   // сессию не трогает. Реализация в dispatch.
   replaceUrl: (route: string) => void
+}
+
+/**
+ * Пара «закрыть панель(и) → открыть панель» в ОДНОМ ответе — признак того, что
+ * сервер пересобрал то же окно, а не открыл новое (смена режима формы строки,
+ * переключение работника, пересчёт).
+ *
+ * Условия намеренно узкие: ровно один `openDialog`, и он идёт ПОСЛЕ закрытий.
+ * Всё прочее (одиночное закрытие, одиночное открытие, открытие до закрытия)
+ * остаётся на прежнем последовательном пути — swap там ничего не улучшает, а
+ * порядок эффектов ломать нельзя.
+ */
+function planDialogSwap(
+  effects: ViewEffect[]
+): { closes: ViewEffect[]; open: ViewEffect } | null {
+  const opens = effects.filter((e) => e.type === 'openDialog')
+  if (opens.length !== 1) return null
+  const open = opens[0]
+  const closes = effects
+    .slice(0, effects.indexOf(open))
+    .filter((e) => e.type === 'closeDialog' && typeof e.id === 'string')
+  return closes.length > 0 ? { closes, open } : null
 }
 
 export function createEffectHandler(deps: EffectHandlerDeps) {
@@ -105,6 +135,12 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
         deps.confirm(effect)
         break
 
+      case 'unsavedChanges':
+        // Текста у эффекта нет: вопрос один и тот же во всех формах, поэтому
+        // формулировки живут в i18n клиента (как у карточки документа).
+        deps.unsavedChanges(effect)
+        break
+
       case 'download': {
         // SCRUM-288 §3.1: есть request — исполняем его; иначе прежний GET по url.
         // SCRUM-362 B-7: метод читается из request.method (не «всегда POST»),
@@ -139,12 +175,25 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
   }
 
   function playAll(effects: ViewEffect[]): void {
+    // Пересборка окна приезжает парой «закрыть старую панель + открыть новую»
+    // (у формы строки id несёт режим и поколение, поэтому он ДРУГОЙ). Играть их
+    // по очереди — значит на кадр остаться без панели и заново проиграть
+    // анимацию появления: пользователь видит, как окно закрывается и
+    // открывается. Поэтому пара исполняется одним swap'ом.
+    const swap = deps.replaceDialog ? planDialogSwap(effects) : null
+
     for (const effect of effects) {
+      if (swap?.closes.includes(effect)) continue // сыграет replaceDialog
+      if (effect === swap?.open) {
+        deps.replaceDialog?.(swap.closes, effect)
+        continue
+      }
       play(effect)
       // confirm эксклюзивен (SCRUM-244 v3 §1.3): сервер обязан слать его
       // единственным, но обрываем массив на первом сами — двойная гарантия,
       // что за модальным подтверждением не сыграет второй эффект.
-      if (effect.type === 'confirm') break
+      // unsavedChanges — тот же контракт эксклюзивности (EffectType javadoc).
+      if (effect.type === 'confirm' || effect.type === 'unsavedChanges') break
     }
   }
 

@@ -61,7 +61,6 @@ export const NumberFieldNode: FC<NodeProps> = ({ node }) => {
       }}
       onFocus={changeOnBlur.onFocus}
       onBlur={changeOnBlur.onBlur}
-      sx={{ flex: f.flex !== undefined ? f.flex : undefined }}
     />
   )
 }

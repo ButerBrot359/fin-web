@@ -61,11 +61,20 @@ const wrapperSx: SxProps<Theme> = {
     borderRadius: '0 !important',
     minHeight: '28px !important',
     padding: '0 8px !important',
+    // Кнопки (стрелка списка, «открыть карточку») прижаты к ВЕРХУ, а не к
+    // середине: значение многострочное, и на двух строках центрированные
+    // иконки уезжали бы к середине текста.
+    alignItems: 'flex-start',
   },
   '& .MuiAutocomplete-input': {
     padding: '4px 0 !important',
     fontSize: '14px !important',
+    // Значение поля — textarea (multilineInput), перенос по ширине колонки.
+    // resize: none — ручка изменения размера в ячейке ТЧ неуместна.
+    resize: 'none',
+    overflowWrap: 'anywhere',
   },
+  '& .MuiAutocomplete-endAdornment': { top: 2 },
 }
 
 interface CellReferenceValue {
@@ -207,6 +216,9 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
         options={options}
         size="small"
         fullWidth
+        // Ширина колонки ТЧ фиксирована, а <input> длинное наименование не
+        // переносит, а прокручивает: «Надбавка за ос…» вместо полного значения.
+        multilineInput
         loading={loading}
         onInputChange={(_e, val, reason) => {
           setInputValue(val)

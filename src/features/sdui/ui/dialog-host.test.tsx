@@ -29,6 +29,10 @@ vi.mock('./node-renderer', () => ({
 }))
 
 vi.mock('./confirm-dialog-host', () => ({ ConfirmDialogHost: () => null }))
+vi.mock('./unsaved-changes-host', () => ({ UnsavedChangesHost: () => null }))
+// PanelCloseCommand — мост крестика к серверной команде: тянет весь стек
+// dispatch (router + query-client). Хост стека панелей проверяется без него.
+vi.mock('./panel-close-command', () => ({ PanelCloseCommand: () => null }))
 
 const panel = (id: string, sessionId: string): PanelEntry => ({
   panelId: id,

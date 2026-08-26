@@ -1,4 +1,27 @@
+import type { CSSProperties } from 'react'
 import type { SxProps, Theme } from '@mui/material'
+
+/**
+ * Текст ячейки ТЧ, у которой нет редактора (readonly-значение, заглушка
+ * составного типа): ПЕРЕНОСИТСЯ по ширине колонки.
+ *
+ * <p>Ширины колонок ТЧ фиксированы (`<colgroup>` + `tableLayout: fixed`), а сама
+ * ячейка содержимое не обрезает — при `white-space: nowrap` длинное значение
+ * («Доплата за квалификационную категорию 100%») выезжало поверх соседней
+ * колонки. `display: block` — чтобы у переносимого текста работали собственные
+ * паддинги, `overflowWrap: anywhere` — чтобы рвался и «неразрывный» токен (код
+ * или номер без пробелов), иначе он снова вылезет за границу.
+ *
+ * <p>Общий стиль, а не копия в каждом редакторе: правило одно для всех ячеек без
+ * редактора, и расходиться им нельзя.
+ */
+export const readonlyCellTextStyle: CSSProperties = {
+  display: 'block',
+  padding: '4px 8px',
+  fontSize: 14,
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
+}
 
 export const cellSx: SxProps<Theme> = {
   mb: 0,
@@ -12,6 +35,10 @@ export const cellSx: SxProps<Theme> = {
   '& .MuiInputBase-input': {
     padding: '4px 8px !important',
     fontSize: '14px !important',
+    // Текстовая ячейка — multiline (textarea): переносим по ширине колонки и
+    // убираем ручку изменения размера, в ТЧ она неуместна.
+    resize: 'none',
+    overflowWrap: 'anywhere',
   },
 }
 
@@ -23,6 +50,10 @@ export const enumCellSx: SxProps<Theme> = {
     minHeight: '28px',
     display: 'flex',
     alignItems: 'center',
+    // MUI держит подпись выбранного значения в одну строку — в ячейке ТЧ с
+    // фиксированной шириной длинное значение перечисления так обрезается.
+    whiteSpace: 'normal !important',
+    overflowWrap: 'anywhere',
   },
 }
 

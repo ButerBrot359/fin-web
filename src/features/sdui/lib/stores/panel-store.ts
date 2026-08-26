@@ -21,6 +21,11 @@ export interface PanelEntry {
   // живёт до закрытия вкладки (переживает reset() при размонтировании формы).
   openInWorkspaceTab?: boolean
   tabKey?: string
+  // Панель приехала ЗАМЕНОЙ предыдущей (`replace`), а не самостоятельным
+  // открытием: сервер пересобрал то же окно под новый id. Хост по этому
+  // признаку показывает её без анимации появления — иначе смена режима формы
+  // строки читается как «окно закрылось и открылось заново» (мигание).
+  swappedIn?: boolean
 }
 
 interface PanelStore {
@@ -28,6 +33,7 @@ interface PanelStore {
   push: (p: PanelEntry) => void
   pop: () => void
   remove: (panelId: string) => void
+  replace: (closePanelIds: string[], entry: PanelEntry) => void
   updateSession: (panelId: string, revision: number) => void
   findBySessionId: (sessionId: string) => PanelEntry | undefined
   reset: () => void
@@ -73,22 +79,39 @@ export const usePanelStore = create<PanelStore>((set, get) => ({
       return { panels: [...s.panels, p] }
     })
   },
-  pop: () => set((s) => ({ panels: s.panels.slice(0, -1) })),
-  remove: (panelId) =>
-    set((s) => ({ panels: withoutPanelAndAbove(s.panels, panelId) })),
-  updateSession: (panelId, revision) =>
+  pop: () => {
+    set((s) => ({ panels: s.panels.slice(0, -1) }))
+  },
+  remove: (panelId) => {
+    set((s) => ({ panels: withoutPanelAndAbove(s.panels, panelId) }))
+  },
+  // Закрытие старых панелей и открытие новой ОДНОЙ транзакцией — так стек ни на
+  // один кадр не остаётся без панели. Раздельные remove+push давали именно то
+  // «мигание», из-за которого смена режима формы строки выглядела как
+  // повторное открытие окна: сервер на такую смену присылает closeDialog старой
+  // панели и openDialog новой (id несёт режим и поколение — он ДРУГОЙ).
+  replace: (closePanelIds, entry) => {
+    set((s) => {
+      let panels = s.panels
+      for (const id of closePanelIds) panels = withoutPanelAndAbove(panels, id)
+      return { panels: [...panels, { ...entry, swappedIn: true }] }
+    })
+  },
+  updateSession: (panelId, revision) => {
     set((s) => ({
       panels: s.panels.map((p) =>
         p.panelId === panelId && p.session
           ? { ...p, session: { ...p.session, revision } }
           : p
       ),
-    })),
+    }))
+  },
   findBySessionId: (sessionId) =>
     get().panels.find((p) => p.session?.formSessionId === sessionId),
   // reset зовётся при размонтировании SduiScreen (sdui-screen.tsx): диалоги
   // умирают вместе с формой, а панели workspace-вкладок самодостаточны
   // (childState) и живут до закрытия своей вкладки.
-  reset: () =>
-    set((s) => ({ panels: s.panels.filter((p) => p.openInWorkspaceTab) })),
+  reset: () => {
+    set((s) => ({ panels: s.panels.filter((p) => p.openInWorkspaceTab) }))
+  },
 }))

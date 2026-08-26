@@ -178,6 +178,52 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     expect(classNames[1]).toContain('border-t')
   })
 
+  // В ЯЧЕЙКЕ высота под-строки минимальная, а не жёсткая: перенесённое на вторую
+  // строку readonly-значение иначе легло бы поверх разделителя и соседней
+  // под-строки. В шапке высота остаётся жёсткой (тест выше).
+  it('под-строки ЯЧЕЙКИ держат minHeight, а не height', () => {
+    const defs = buildColumnDefs(
+      [
+        verticalGroup([
+          {
+            id: 'col.a',
+            type: 'TABLE_COLUMN',
+            binding: 'A',
+            props: { label: 'А', cellWidget: 'TEXT_FIELD' },
+          } as ViewNode,
+          {
+            id: 'col.b',
+            type: 'TABLE_COLUMN',
+            binding: 'B',
+            props: { label: 'Б', cellWidget: 'TEXT_FIELD' },
+          } as ViewNode,
+        ]),
+      ],
+      syncRef
+    )
+
+    const cell = defs[0].cell as (
+      info: CellContext<TableRow, unknown>
+    ) => ReactElement
+    // Строка — с явным типом TableRow: у литерала в месте приведения тип узкий
+    // ({rowId; A; B}), и `as CellContext` на него уже не проходит — перекрытия
+    // с CellContext нет ни в одну сторону.
+    const original: TableRow = { rowId: '1', A: 'a', B: 'b' }
+    // subRows ждёт render-функцию (как TanStack `header`), ячейке же контекст
+    // передаём сами — оборачиваем результат.
+    const rows = subRows(() =>
+      cell({ row: { original } } as CellContext<TableRow, unknown>)
+    )
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      const style = row.props as {
+        style: { height?: number; minHeight?: number }
+      }
+      expect(style.style.minHeight).toBe(VERTICAL_SUB_ROW_HEIGHT)
+      expect(style.style.height).toBeUndefined()
+    }
+  })
+
   it('без подписей у под-колонок остаётся label группы — шапка не пустеет', () => {
     const defs = buildColumnDefs(
       [
@@ -278,7 +324,9 @@ describe('nodeToTableColumnDef / columnSizeProps — ширины', () => {
   })
 
   it('buildColumnDefs прокидывает ширины в ColumnDef листовой колонки', () => {
-    const syncRef = { current: null } as unknown as RefObject<UseTableSyncResult>
+    const syncRef = {
+      current: null,
+    } as unknown as RefObject<UseTableSyncResult>
     const [def] = buildColumnDefs(
       [node({ label: 'A', width: 240, minWidth: 80, resizable: false })],
       syncRef
@@ -329,13 +377,13 @@ describe('buildColumnDefs — условное состояние ячейки',
       KodPlatnykhUslug: '',
       __requiredCells: ['KodPlatnykhUslug'],
     })
-    fireEvent.blur(container.querySelector('input')!)
+    fireEvent.blur(container.querySelector('input, textarea')!)
     expect(container.querySelector(ERR)).toBeTruthy()
   })
 
   it('соседняя строка без ключа → та же колонка не обязательна', () => {
     const { container } = renderCell({ rowId: '2', KodPlatnykhUslug: '' })
-    fireEvent.blur(container.querySelector('input')!)
+    fireEvent.blur(container.querySelector('input, textarea')!)
     expect(container.querySelector(ERR)).toBeNull()
   })
 
@@ -352,7 +400,7 @@ describe('buildColumnDefs — условное состояние ячейки',
       KodPlatnykhUslug: 'Услуга',
       __readonlyCells: ['KodPlatnykhUslug'],
     })
-    expect(container.querySelector('input')).toBeNull()
+    expect(container.querySelector('input, textarea')).toBeNull()
     expect(container.textContent).toContain('Услуга')
   })
 
@@ -362,7 +410,7 @@ describe('buildColumnDefs — условное состояние ячейки',
       KodPlatnykhUslug: '',
       __rowReadonly: true,
     })
-    expect(container.querySelector('input')).toBeNull()
+    expect(container.querySelector('input, textarea')).toBeNull()
   })
 
   // §3.3: взаимоисключающих комбинаций бэк не присылает, но правило должно
@@ -374,12 +422,12 @@ describe('buildColumnDefs — условное состояние ячейки',
       __requiredCells: ['KodPlatnykhUslug'],
       __readonlyCells: ['KodPlatnykhUslug'],
     })
-    expect(container.querySelector('input')).toBeNull()
+    expect(container.querySelector('input, textarea')).toBeNull()
     expect(container.querySelector(ERR)).toBeNull()
   })
 
   it('соседняя строка без ключей остаётся редактируемой', () => {
     const { container } = renderCell({ rowId: '2', KodPlatnykhUslug: '' })
-    expect(container.querySelector('input')).toBeTruthy()
+    expect(container.querySelector('input, textarea')).toBeTruthy()
   })
 })

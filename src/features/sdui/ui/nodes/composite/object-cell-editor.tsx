@@ -1,4 +1,4 @@
-import { useState, type FC } from 'react'
+import { useEffect, useState, type FC } from 'react'
 import { Box, MenuItem, Select } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material'
 import { useTranslation } from 'react-i18next'
@@ -13,10 +13,13 @@ import {
   memberKey,
   findMemberByKey,
   resolveSelectedMemberKey,
+  membersSignature,
+  isValueAllowed,
   buildObjectValue,
   type AllowedType,
   type ObjectValue,
 } from './object-field-logic'
+import { readonlyCellTextStyle } from './table-cell-editor-styles'
 
 interface ObjectCellEditorProps {
   colProps: Record<string, unknown>
@@ -99,16 +102,35 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
     undefined
   )
 
+  // Смена «Свойства»/счёта перестраивает набор членов колонки: ручной выбор от
+  // прежнего набора не переносим (см. membersSignature).
+  const signature = membersSignature(allowedTypes)
+  const [seenSignature, setSeenSignature] = useState(signature)
+  if (seenSignature !== signature) {
+    setSeenSignature(signature)
+    setUserMemberKey(undefined)
+  }
+
+  // Значение недопустимого теперь вида гасим — иначе оно уедет в запись строки и
+  // сервер отклонит её целиком. Пустой allowedTypes значит «сервер про типы
+  // ничего не сказал» (graceful-ветка ниже), это не повод чистить значение.
+  const staleValue =
+    allowedTypes.length > 0 && !isValueAllowed(allowedTypes, objectValue)
+  useEffect(() => {
+    // Не в фазе рендера: onChange/onCommit правят стейт таблицы-родителя.
+    if (staleValue) {
+      onChange(null)
+      onCommit()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [staleValue])
+
   // Graceful-деградация: у части OBJECT-атрибутов в метаданных нет строк
   // allowedTypes (известный хвост — атрибуты без FK на целевой тип), бэк тогда
   // осознанно не кладёт props.allowedTypes. Предлагать пустой селектор нельзя —
   // показываем значение как есть, а не имитацию рабочего пикера.
   if (allowedTypes.length === 0) {
-    return (
-      <span style={{ padding: '4px 8px', fontSize: 14 }}>
-        {renderCellValue(value)}
-      </span>
-    )
+    return <span style={readonlyCellTextStyle}>{renderCellValue(value)}</span>
   }
 
   const selectedKey = resolveSelectedMemberKey(
@@ -131,27 +153,31 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
 
   return (
     <Box sx={wrapperSx}>
-      <Select
-        value={selectedKey ?? ''}
-        onChange={(e) => {
-          handleMemberChange(e.target.value)
-        }}
-        size="small"
-        variant="standard"
-        sx={memberSelectSx}
-      >
-        {allowedTypes.map((tp) => (
-          <MenuItem key={memberKey(tp)} value={memberKey(tp)}>
-            {/* У примитивных членов бэк presentation не присылает — подписываем
+      {/* Один член — выбирать не из чего, селектор только съедал бы ширину
+          ячейки (см. тот же случай в шапке). */}
+      {allowedTypes.length > 1 && (
+        <Select
+          value={selectedKey ?? ''}
+          onChange={(e) => {
+            handleMemberChange(e.target.value)
+          }}
+          size="small"
+          variant="standard"
+          sx={memberSelectSx}
+        >
+          {allowedTypes.map((tp) => (
+            <MenuItem key={memberKey(tp)} value={memberKey(tp)}>
+              {/* У примитивных членов бэк presentation не присылает — подписываем
                 по domainKind именами типов 1С («Строка», «Число», «Булево»,
                 «Дата»), иначе четыре пункта из семи были бы пустыми. */}
-            {tp.presentation ??
-              t(`sdui.objectField.primitive.${tp.domainKind}`, {
-                defaultValue: tp.domainKind,
-              })}
-          </MenuItem>
-        ))}
-      </Select>
+              {tp.presentation ??
+                t(`sdui.objectField.primitive.${tp.domainKind}`, {
+                  defaultValue: tp.domainKind,
+                })}
+            </MenuItem>
+          ))}
+        </Select>
+      )}
       {member && (
         // key: смена члена перемонтирует пикер — чистые inputValue и кэш опций
         <ObjectCellValuePicker
@@ -209,7 +235,7 @@ const ObjectCellValuePicker: FC<ObjectCellValuePickerProps> = ({
   // составного типа = отдельная задача на БЭК, не косметика фронта.
   if (!optionsSource) {
     return (
-      <span style={{ padding: '4px 8px', fontSize: 14, opacity: 0.6 }}>
+      <span style={{ ...readonlyCellTextStyle, opacity: 0.6 }}>
         {placeholder}
       </span>
     )
@@ -232,6 +258,9 @@ const ObjectCellValuePicker: FC<ObjectCellValuePickerProps> = ({
       options={options}
       size="small"
       fullWidth
+      // Та же ячейка ТЧ, что и у ссылочной колонки: значение переносится по
+      // ширине, а не прокручивается в однострочном input.
+      multilineInput
       loading={loading}
       onInputChange={(_e, val, reason) => {
         setInputValue(val)

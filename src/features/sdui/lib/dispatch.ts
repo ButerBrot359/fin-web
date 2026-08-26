@@ -19,9 +19,11 @@ import { isRetryableAfterReopen } from './reopen-retry-policy'
 import { useSduiSession } from './sdui-session-context'
 import { usePanelStore } from './stores/panel-store'
 import { useConfirmStore } from './stores/confirm-store'
+import { useUnsavedChangesStore } from './stores/unsaved-changes-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { revealAllTableErrors } from './table-validation-registry'
 import { shouldRevealTableErrors } from './utils/reveal-policy'
+import { openDialogAsPanel } from './open-dialog-panel'
 import { relaySelectionToParent } from './relay-selection'
 import { buildCommonEffectDeps } from './build-effect-deps'
 
@@ -84,6 +86,26 @@ export function useSduiDispatch() {
             effectHandler.playAll(effects)
           })
         },
+        replaceDialog: (closes, open) => {
+          // Одна транзакция стора вместо remove+push: панель не исчезает ни на
+          // кадр, и хост не проигрывает анимацию появления (см. panel-store).
+          const closeIds = closes
+            .map((e) => e.id)
+            .filter((id): id is string => typeof id === 'string')
+          openDialogAsPanel(
+            open,
+            session.getSession().formSessionId ?? undefined,
+            closeIds
+          )
+          // Ретрансляция выбора родителю к анимации отношения не имеет, но
+          // живёт на ЗАКРЫВАЕМОМ эффекте — пропустить её здесь значило бы
+          // потерять её в паре (SCRUM-265: выбор из дочерней панели).
+          for (const close of closes) {
+            relaySelectionToParent(close, (effects) => {
+              effectHandler.playAll(effects)
+            })
+          }
+        },
         confirm: (effect) => {
           // SCRUM-288 §2.3/§2.4: session-less подтверждение (панель) исполняет
           // confirmRequest; иначе — форм-сессионный COMMAND с confirmBehavior.
@@ -99,6 +121,25 @@ export function useSduiDispatch() {
               void dispatchAction(
                 { type: 'COMMAND', command: effect.confirmCommand ?? '' },
                 effect.confirmBehavior
+              )
+            })
+        },
+        unsavedChanges: (effect) => {
+          // Три ответа — три исхода: «Да» и «Нет» уходят серверными командами в
+          // ТУ ЖЕ сессию, «Отмена» не шлёт ничего (форма остаётся открытой).
+          // «Нет» — тоже команда, а не локальное закрытие: несохранённое лежит
+          // в серверной сессии, и без неё оно всплыло бы при следующем открытии.
+          void useUnsavedChangesStore
+            .getState()
+            .ask()
+            .then((answer) => {
+              if (answer === 'cancel') return
+              const command =
+                answer === 'save' ? effect.saveCommand : effect.discardCommand
+              if (!command) return
+              void dispatchAction(
+                { type: 'COMMAND', command },
+                answer === 'save' ? effect.saveBehavior : effect.discardBehavior
               )
             })
         },

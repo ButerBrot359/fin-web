@@ -7,7 +7,9 @@
     }
   },
   "topBar": {
-    "userName": "Пайдаланушы аты"
+    "userName": "Пайдаланушы аты",
+    "logout": "Шығу",
+    "userMenu": "Пайдаланушы мәзірі"
   },
   "pageToolbar": {
     "search": "Іздеу"

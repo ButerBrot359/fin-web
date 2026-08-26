@@ -7,7 +7,9 @@
     }
   },
   "topBar": {
-    "userName": "Имя пользователя"
+    "userName": "Имя пользователя",
+    "logout": "Выход",
+    "userMenu": "Меню пользователя"
   },
   "pageToolbar": {
     "search": "Поиск"

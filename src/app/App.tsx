@@ -3,10 +3,12 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 import { MainPage } from '@/pages/main'
+import { LoginPage } from '@/pages/login'
 
 import { TopBar } from '@/widgets/top-bar'
 import { Sidebar } from '@/widgets/sidebar'
 
+import { AuthGuard, LOGIN_ROUTE } from '@/features/auth'
 import { DictSidebarDrawer, useDictSidebarStore } from '@/features/dict-sidebar'
 import {
   ShellSidebarHost,
@@ -232,13 +234,29 @@ function App() {
   return (
     <BrowserRouter>
       <WorkspaceTabSync />
-      <Layout
-        sidebar={<ShellSidebarHost fallback={<Sidebar />} />}
-        header={<TopBar />}
-      >
-        <AppRoutes />
-      </Layout>
-      <DictSidebarDrawer />
+      <Routes>
+        {/*
+          Экран входа рендерится ВНЕ Layout: боковое меню и верхняя панель на нём
+          не нужны и наполняются данными, которых у невошедшего пользователя нет.
+          Остальное приложение живёт под splat-маршрутом — вложенный <Routes> в
+          AppRoutes матчится относительно «/», то есть дерево маршрутов не меняется.
+        */}
+        <Route path={LOGIN_ROUTE} element={<LoginPage />} />
+        <Route
+          path="*"
+          element={
+            <AuthGuard>
+              <Layout
+                sidebar={<ShellSidebarHost fallback={<Sidebar />} />}
+                header={<TopBar />}
+              >
+                <AppRoutes />
+              </Layout>
+              <DictSidebarDrawer />
+            </AuthGuard>
+          }
+        />
+      </Routes>
       <Toaster />
     </BrowserRouter>
   )

@@ -1,6 +1,8 @@
 import axios from 'axios'
 import i18n from 'i18next'
 
+import { attachAuthInterceptors } from '@/shared/api/auth/attach-auth-interceptors'
+
 import type { ViewRequest, ViewResponse, ConflictError } from '../types/view'
 import { normalizeConflictBody } from './normalize-conflict'
 import { parseViewError } from './parse-view-error'
@@ -11,6 +13,11 @@ const instance = axios.create({
   headers: { 'Content-Type': 'application/json' },
   timeout: 30000,
 })
+
+// SDUI ходит в тот же webbuh, что и общий клиент, поэтому токен нужен и здесь (SCRUM-373).
+// Инстанс отдельный по историческим причинам — забыть его значит получить экраны SDUI,
+// молча отваливающиеся в 401, когда бэкенд включит проверку доступа.
+attachAuthInterceptors(instance)
 
 export class ViewConflictError extends Error {
   constructor(public data: ConflictError) {

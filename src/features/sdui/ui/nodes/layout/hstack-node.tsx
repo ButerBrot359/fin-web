@@ -2,8 +2,19 @@ import type { FC } from 'react'
 
 import type { NodeProps } from '../../../types/view'
 import { NodeRenderer } from '../../node-renderer'
+import {
+  FILL_METHOD_SETTINGS_NODE_ID,
+  KalendariFillMethodSettings,
+} from '../composite/kalendari-fill-method-settings'
 
 export const HStackNode: FC<NodeProps> = ({ node }) => {
+  // Узкий node-id-диспатч (SCRUM-278 v4): способ заполнения Kalendari —
+  // one-off композиция (радио + длина цикла + дата отсчёта в строку).
+  // Остальные HSTACK рендерятся генериком.
+  if (node.id === FILL_METHOD_SETTINGS_NODE_ID) {
+    return <KalendariFillMethodSettings node={node} />
+  }
+
   const gap = (node.props?.gap as number | undefined) ?? 0
   const justify = (node.props?.justify as string | undefined) ?? 'flex-start'
   const align = (node.props?.align as string | undefined) ?? 'stretch'

@@ -25,6 +25,9 @@ export const NumberFieldNode: FC<NodeProps> = ({ node }) => {
   const stringValue =
     rawValue === null || rawValue === undefined ? '' : String(rawValue)
 
+  // SCRUM-278 v4: пояснение поля (14px, вторичный цвет) — только без ошибки
+  const helperText = f.error ?? (node.props?.helperText as string | undefined)
+
   return (
     <NumberInput
       label={f.label}
@@ -33,7 +36,19 @@ export const NumberFieldNode: FC<NodeProps> = ({ node }) => {
       readOnly={f.readonly}
       disabled={!f.enabled}
       error={!!f.error}
-      helperText={f.error}
+      helperText={helperText}
+      slotProps={{
+        formHelperText: f.error
+          ? undefined
+          : {
+              sx: {
+                fontSize: 14,
+                lineHeight: 1.35,
+                color: 'text.secondary',
+                ml: 0,
+              },
+            },
+      }}
       decimal={allowDecimal}
       precision={precision}
       onChange={(e) => {

@@ -7,13 +7,32 @@ import { useSduiDispatch } from '../../../lib/dispatch'
 
 export const LabelNode: FC<NodeProps> = ({ node }) => {
   const text = (node.props?.text as string | undefined) ?? ''
-  const variant = (node.props?.variant as 'default' | 'link' | 'heading' | undefined) ?? 'default'
+  const variant =
+    (node.props?.variant as
+      | 'default'
+      | 'link'
+      | 'heading'
+      | 'comment'
+      | undefined) ?? 'default'
   const dispatch = useSduiDispatch()
   const theme = useTheme()
 
   if (variant === 'heading') {
     return (
       <Typography variant="subtitle1" fontWeight={700}>
+        {text}
+      </Typography>
+    )
+  }
+
+  // SCRUM-278 v4: пояснительный текст — вторичный цвет, единый размер 14px,
+  // читабельный межстрочный. Семантически отличен от лейблов и обычного текста.
+  if (variant === 'comment') {
+    return (
+      <Typography
+        variant="body2"
+        sx={{ color: 'text.secondary', fontSize: 14, lineHeight: 1.35 }}
+      >
         {text}
       </Typography>
     )

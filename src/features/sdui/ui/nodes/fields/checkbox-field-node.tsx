@@ -1,5 +1,10 @@
 import type { FC } from 'react'
-import { Checkbox, FormControlLabel, FormHelperText, FormControl } from '@mui/material'
+import {
+  Checkbox,
+  FormControlLabel,
+  FormHelperText,
+  FormControl,
+} from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
@@ -7,6 +12,7 @@ import { useFieldNode } from '../../../lib/hooks/use-field-node'
 export const CheckboxFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
   const value = (f.value as boolean | undefined) ?? false
+  const helperText = node.props?.helperText as string | undefined
 
   if (!f.visible) return null
 
@@ -31,6 +37,21 @@ export const CheckboxFieldNode: FC<NodeProps> = ({ node }) => {
         }
       />
       {f.error && <FormHelperText>{f.error}</FormHelperText>}
+      {/* SCRUM-278 v4: пояснение под лейблом чекбокса с видимым отступом,
+          не в line-box лейбла; показывается только без ошибки валидации */}
+      {!f.error && helperText && (
+        <FormHelperText
+          sx={{
+            ml: 0,
+            mt: 0.5,
+            fontSize: 14,
+            lineHeight: 1.35,
+            color: 'text.secondary',
+          }}
+        >
+          {helperText}
+        </FormHelperText>
+      )}
     </FormControl>
   )
 }

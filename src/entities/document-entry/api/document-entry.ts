@@ -76,3 +76,29 @@ export const unpostDocumentEntry = (id: number) =>
   apiService.post<DocumentEntryResponseData>({
     url: `/api/document-entries/${String(id)}/unpost`,
   })
+
+export const postDocumentEntry = (id: number) =>
+  apiService.post<DocumentEntryResponseData>({
+    url: `/api/document-entries/${String(id)}/post`,
+    timeout: LONG_OPERATION_TIMEOUT_MS,
+  })
+
+export interface TabelBulkEditPayload {
+  selectedEntryIds: number[]
+  commentEnabled: boolean
+  comment: string
+}
+
+export interface TabelBulkEditResult {
+  selectedCount: number
+  changedCount: number
+}
+
+// SCRUM-276 spec v2 §2.3: атомарная массовая смена комментария у выделенных
+// непроведённых Табелей. Один невалидный id откатывает всю операцию.
+// Ответ — в стандартной оболочке ApiDataResponse.data.
+export const bulkEditTabelEntries = (payload: TabelBulkEditPayload) =>
+  apiService.post<{ data: TabelBulkEditResult }>({
+    url: '/api/document-entries/Tabel/bulk-edit',
+    data: payload,
+  })

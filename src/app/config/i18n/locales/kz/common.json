@@ -86,7 +86,19 @@
     "unpost": "Өткізуді болдырмау",
     "unpostSuccess": "Өткізу болдырмалды",
     "unpostError": "Өткізуді болдырмау қатесі",
-    "movementsError": "Құжат қозғалыстарын жүктеу мүмкін болмады"
+    "movementsError": "Құжат қозғалыстарын жүктеу мүмкін болмады",
+    "documentMovements": "Құжат қозғалыстары",
+    "editEntry": "Өзгерту",
+    "post": "Өткізу",
+    "postSuccess": "Құжат өткізілді",
+    "postError": "Құжатты өткізу мүмкін болмады",
+    "refresh": "Жаңарту",
+    "bulkEditTitle": "Таңдалғандарды өзгерту",
+    "bulkEditCount": "Таңдалған құжаттар: {{count}}",
+    "bulkEditCommentSwitch": "Түсініктемені өзгерту",
+    "bulkEditCommentPlaceholder": "Жаңа түсініктеме (бос — тазарту)",
+    "bulkEditSuccess": "Өзгертілген құжаттар: {{selected}} ішінен {{changed}}",
+    "bulkEditError": "Таңдалған құжаттарды өзгерту мүмкін болмады"
   },
   "documentFormToolbar": {
     "postAndClose": "Өткізу және жабу",

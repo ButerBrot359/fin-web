@@ -86,7 +86,19 @@
     "unpost": "Отменить проведение",
     "unpostSuccess": "Проведение отменено",
     "unpostError": "Ошибка отмены проведения",
-    "movementsError": "Не удалось загрузить движения документа"
+    "movementsError": "Не удалось загрузить движения документа",
+    "documentMovements": "Движения документа",
+    "editEntry": "Изменить",
+    "post": "Провести",
+    "postSuccess": "Документ проведён",
+    "postError": "Не удалось провести документ",
+    "refresh": "Обновить",
+    "bulkEditTitle": "Изменить выделенные",
+    "bulkEditCount": "Выбрано документов: {{count}}",
+    "bulkEditCommentSwitch": "Изменить комментарий",
+    "bulkEditCommentPlaceholder": "Новый комментарий (пусто — очистить)",
+    "bulkEditSuccess": "Изменено документов: {{changed}} из {{selected}}",
+    "bulkEditError": "Не удалось изменить выделенные документы"
   },
   "documentFormToolbar": {
     "postAndClose": "Провести и закрыть",

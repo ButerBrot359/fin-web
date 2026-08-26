@@ -24,6 +24,7 @@ import {
   dateCellSx,
   readonlyCellTextStyle,
   readonlyCellTextTruncatedStyle,
+  singleLineCellSx,
 } from './table-cell-editor-styles'
 import { RequiredCellFrame } from './required-cell-frame'
 
@@ -143,7 +144,9 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             // колонки фиксирована, и <input> длинный текст прокручивает вместо
             // переноса. Enter по-прежнему КОММИТИТ ячейку, а не добавляет
             // строку, поэтому событие гасится.
-            multiline
+            // В вертикальной группе перенос запрещён — высота под-строки
+            // жёсткая; в обычной колонке остаётся прежний multiline.
+            multiline={!truncate}
             onChange={(e) => {
               onChange(e.target.value)
             }}
@@ -155,7 +158,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
               }
             }}
             size="small"
-            sx={cellSx}
+            sx={truncate ? { ...cellSx, ...singleLineCellSx } : cellSx}
           />
         )
       }
@@ -179,7 +182,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
               if (e.key === 'Enter') handleCommit()
             }}
             size="small"
-            sx={cellSx}
+            sx={truncate ? { ...cellSx, ...singleLineCellSx } : cellSx}
           />
         )
       }
@@ -194,7 +197,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             value={value}
             dateOnly={cellWidget === 'DATE_FIELD'}
             dateFormat={dateFormat}
-            sx={dateCellSx}
+            sx={truncate ? { ...dateCellSx, ...singleLineCellSx } : dateCellSx}
             onChange={onChange}
             onCommit={handleCommit}
           />
@@ -238,7 +241,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             size="small"
             fullWidth
             variant="standard"
-            sx={enumCellSx}
+            sx={truncate ? { ...enumCellSx, ...singleLineCellSx } : enumCellSx}
           >
             {options.map((o) => (
               <MenuItem key={o.value} value={o.value}>
@@ -254,6 +257,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
           <ReferenceCellEditor
             colProps={props ?? {}}
             value={value}
+            truncate={truncate}
             onChange={onChange}
             onCommit={handleCommit}
             extraParams={extraParams}

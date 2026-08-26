@@ -1,10 +1,12 @@
 import { useState, type FC } from 'react'
 import { Box, IconButton } from '@mui/material'
-import type { SxProps, Theme } from '@mui/material'
+import type { Theme } from '@mui/material'
+import type { SystemStyleObject } from '@mui/system'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { useTranslation } from 'react-i18next'
 
 import { AutocompleteInput } from '@/shared/ui/inputs'
+import { singleLineCellSx } from './table-cell-editor-styles'
 import type { SelectOption } from '@/shared/types/select-option'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
 import { fetchReferenceOptions } from '../../../api/reference-options'
@@ -18,6 +20,8 @@ import {
 interface ReferenceCellEditorProps {
   colProps: Record<string, unknown>
   value: unknown
+  /** Однострочный режим: под-строка вертикальной группы не даёт ячейке расти. */
+  truncate?: boolean
   onChange: (value: unknown) => void
   onCommit: () => void
   extraParams?: Record<string, string>
@@ -52,7 +56,7 @@ function readReferenceCellProps(
 
 // Компактная стилизация под ячейку ТЧ — по образцу cellSx/dateCellSx
 // из table-cell-editor.tsx (прозрачный фон, без рамки, высота 28px).
-const wrapperSx: SxProps<Theme> = {
+const wrapperSx: SystemStyleObject<Theme> = {
   width: '100%',
   '& .MuiFormControl-root': { mb: 0, position: 'static' },
   '& .MuiFilledInput-root': {
@@ -98,6 +102,7 @@ function toSelectOption(value: unknown): SelectOption | null {
 export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   colProps,
   value,
+  truncate,
   onChange,
   onCommit,
   extraParams,
@@ -209,7 +214,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
       : null
 
   return (
-    <Box sx={wrapperSx}>
+    <Box sx={truncate ? { ...wrapperSx, ...singleLineCellSx } : wrapperSx}>
       <AutocompleteInput
         value={selectedOption}
         inputValue={inputValue}
@@ -218,7 +223,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
         fullWidth
         // Ширина колонки ТЧ фиксирована, а <input> длинное наименование не
         // переносит, а прокручивает: «Надбавка за ос…» вместо полного значения.
-        multilineInput
+        multilineInput={!truncate}
         loading={loading}
         onInputChange={(_e, val, reason) => {
           setInputValue(val)

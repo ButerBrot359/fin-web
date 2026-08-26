@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
-import type { SxProps, Theme } from '@mui/material'
+import type { Theme } from '@mui/material'
+import type { SystemStyleObject } from '@mui/system'
 
 /**
  * Текст ячейки ТЧ, у которой нет редактора (readonly-значение, заглушка
@@ -41,7 +42,7 @@ export const readonlyCellTextTruncatedStyle: CSSProperties = {
   overflowWrap: 'normal',
 }
 
-export const cellSx: SxProps<Theme> = {
+export const cellSx: SystemStyleObject<Theme> = {
   mb: 0,
   position: 'static',
   '& .MuiInputBase-root': {
@@ -60,7 +61,7 @@ export const cellSx: SxProps<Theme> = {
   },
 }
 
-export const enumCellSx: SxProps<Theme> = {
+export const enumCellSx: SystemStyleObject<Theme> = {
   fontSize: '14px',
   '&::before, &::after': { display: 'none' },
   '& .MuiSelect-select': {
@@ -75,7 +76,7 @@ export const enumCellSx: SxProps<Theme> = {
   },
 }
 
-export const dateCellSx: SxProps<Theme> = {
+export const dateCellSx: SystemStyleObject<Theme> = {
   '& .MuiFormControl-root': { mb: 0, position: 'static', width: '100%' },
   '& .MuiInputBase-root': {
     backgroundColor: 'transparent !important',
@@ -121,4 +122,27 @@ export const dateCellSx: SxProps<Theme> = {
   },
   '& .MuiInputAdornment-root .MuiIconButton-root': { p: '2px' },
   '& .MuiInputAdornment-root .MuiSvgIcon-root': { fontSize: 16 },
+}
+
+/**
+ * Однострочный режим содержимого ячейки — для под-строк ВЕРТИКАЛЬНОЙ группы
+ * колонок. Высота под-строки там жёсткая (общая сетка строки таблицы), поэтому
+ * переносить нельзя ничему: не только readonly-тексту, но и редакторам. Текст
+ * ссылки и подпись перечисления иначе ложатся на разделитель и на соседнюю
+ * под-строку — «Алдамжарова… / ЗАМЕСТИТЕЛЬ ДИРЕКТОРА…» наезжали друг на друга.
+ *
+ * Перекрывает `overflowWrap: anywhere` и `whiteSpace: normal !important` из
+ * `cellSx`/`enumCellSx`/`wrapperSx` ссылочной ячейки — там перенос включён
+ * намеренно для ОБЫЧНЫХ (невертикальных) колонок, где ячейка растёт свободно.
+ */
+export const singleLineCellSx: SystemStyleObject<Theme> = {
+  '& .MuiInputBase-input, & .MuiAutocomplete-input, & .MuiSelect-select': {
+    whiteSpace: 'nowrap !important',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    overflowWrap: 'normal !important',
+  },
+  // Значение снова в одну строку — кнопки ссылки возвращаются на середину
+  // (в многострочном режиме они прижаты к верху, см. wrapperSx).
+  '& .MuiFilledInput-root': { alignItems: 'center' },
 }

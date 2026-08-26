@@ -53,9 +53,14 @@ export const VERTICAL_SUB_ROW_HEIGHT = 36
  *                 подпись, не влезшая в ширину, не должна вылезать на соседнюю
  *                 под-строку. В ЯЧЕЙКЕ обрезать нельзя — у редакторов есть то,
  *                 что законно выходит за их 36px (рамка обязательного поля,
- *                 focus-ring), и `overflow:hidden` срезал бы её. Этим же флагом
- *                 различается высота под-строки: жёсткая в шапке, минимальная в
- *                 ячейке (перенос текста readonly-значения)
+ *                 focus-ring), и `overflow:hidden` срезал бы её. Длинное
+ *                 readonly-значение вместо этого обрезается многоточием на
+ *                 самом тексте (`truncate` у TableCellEditor)
+ *
+ * Высота под-строки ЖЁСТКАЯ и в шапке, и в ячейке: она задаёт общую сетку СТРОКИ
+ * таблицы. При `minHeight` колонка с переносящимся значением (длинное ФИО)
+ * растягивалась, а соседняя с однострочным числом — нет, и разделитель под-строк
+ * вставал в каждой колонке на своей высоте (эталон 1С — единая линия).
  */
 function verticalSubRows(
   items: { key: string; content: ReactNode }[],
@@ -72,14 +77,9 @@ function verticalSubRows(
           key: item.key,
           className: index > 0 ? 'border-t border-ui-03' : undefined,
           style: {
-            // В ШАПКЕ высота жёсткая (подпись обрезается многоточием, расти ей
-            // не с чего), в ЯЧЕЙКЕ — минимальная: readonly-значение переносится
-            // по ширине колонки, и второй строкой оно легло бы поверх
-            // разделителя и соседней под-строки. Пока значение в одну строку —
-            // обычный случай — сетка та же, ровно VERTICAL_SUB_ROW_HEIGHT.
-            ...(clip
-              ? { height: VERTICAL_SUB_ROW_HEIGHT }
-              : { minHeight: VERTICAL_SUB_ROW_HEIGHT }),
+            // Высота одинаковая у всех колонок строки — иначе разделители
+            // под-строк расходятся по высоте (см. док-комментарий выше).
+            height: VERTICAL_SUB_ROW_HEIGHT,
             display: 'grid',
             // minmax(0, 1fr), а не дефолтный auto-трек: auto-трек не сжимается
             // ниже ширины содержимого, поэтому длинная подпись растягивала бы
@@ -234,6 +234,9 @@ export function buildColumnDefs(
                     dataType: childCol.dataType,
                     value: info.row.original[childCol.binding],
                     readonly: state.readonly,
+                    // Под-строка не растёт: длинное значение обрезается
+                    // многоточием, как в 1С («ГЛАВНЫЙ ЭКОНОМИ…»).
+                    truncate: true,
                     required: state.required,
                     revealErrors: validationRef?.current.revealErrors ?? false,
                     props: childCol.props,

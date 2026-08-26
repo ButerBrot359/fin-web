@@ -23,6 +23,7 @@ import {
   enumCellSx,
   dateCellSx,
   readonlyCellTextStyle,
+  readonlyCellTextTruncatedStyle,
 } from './table-cell-editor-styles'
 import { RequiredCellFrame } from './required-cell-frame'
 
@@ -34,6 +35,11 @@ interface TableCellEditorProps {
   required?: boolean
   revealErrors?: boolean
   props?: Record<string, unknown>
+  /**
+   * Обрезать значение без редактора многоточием вместо переноса. Ставится в
+   * под-строках вертикальной группы: там высота жёсткая (общая сетка строки).
+   */
+  truncate?: boolean
   onChange: (value: unknown) => void
   onCommit: () => void
   extraParams?: Record<string, string>
@@ -99,6 +105,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   required,
   revealErrors,
   props,
+  truncate,
   onChange,
   onCommit,
   extraParams,
@@ -113,8 +120,13 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   if (readonly) {
     return (
       // Перенос текста по ширине колонки — общий стиль всех ячеек без
-      // редактора, см. readonlyCellTextStyle.
-      <span style={readonlyCellTextStyle}>
+      // редактора (readonlyCellTextStyle); в вертикальной группе вместо переноса
+      // обрезка многоточием, см. truncate.
+      <span
+        style={
+          truncate ? readonlyCellTextTruncatedStyle : readonlyCellTextStyle
+        }
+      >
         {formatReadonlyValue(value, dataType, dateFormat)}
       </span>
     )
@@ -266,7 +278,13 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
         // у readonly-ячейки, иначе последняя ветка редактора осталась бы
         // единственной, где длинное значение вылезает за колонку.
         return (
-          <span style={readonlyCellTextStyle}>{renderCellValue(value)}</span>
+          <span
+            style={
+              truncate ? readonlyCellTextTruncatedStyle : readonlyCellTextStyle
+            }
+          >
+            {renderCellValue(value)}
+          </span>
         )
     }
   }

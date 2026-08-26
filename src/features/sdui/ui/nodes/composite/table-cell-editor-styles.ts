@@ -23,6 +23,24 @@ export const readonlyCellTextStyle: CSSProperties = {
   overflowWrap: 'anywhere',
 }
 
+/**
+ * Тот же текст, но ОДНОЙ строкой с многоточием — для под-строк вертикальной
+ * группы колонок. Там высота под-строки жёсткая (общая сетка строки таблицы), и
+ * перенос вылез бы поверх разделителя и соседней под-строки. Эталон 1С в этом
+ * месте тоже обрезает: «ГЛАВНЫЙ ЭКОНОМИ…», «Основное подразделе…».
+ *
+ * Обрезка живёт на САМОМ тексте, а не на контейнере под-строки: `overflow:hidden`
+ * у контейнера срезал бы рамку обязательного поля и focus-ring соседнего
+ * редактора, которые законно выходят за 36px.
+ */
+export const readonlyCellTextTruncatedStyle: CSSProperties = {
+  ...readonlyCellTextStyle,
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  overflowWrap: 'normal',
+}
+
 export const cellSx: SxProps<Theme> = {
   mb: 0,
   position: 'static',
@@ -82,11 +100,24 @@ export const dateCellSx: SxProps<Theme> = {
     height: '28px !important',
     fontSize: '14px !important',
   },
+  // Иконка календаря прижимается к правому краю СВОЕГО поля ввода
+  // (`.MuiPickersInputBase-root` выше — `position: relative`), а не смещается на
+  // фиксированные 24px. Прежний сдвиг был рассчитан на раскладку обычной ячейки;
+  // в под-строке вертикальной группы контейнер другой (grid, свои паддинги), и
+  // та же константа уводила иконку за границу колонки — в парах «Начало периода
+  // / Окончание периода» она налезала на соседнее значение.
   '& .MuiInputAdornment-root': {
-    width: 0,
-    overflow: 'visible',
+    position: 'absolute',
+    right: '2px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    height: 'auto',
+    maxHeight: 'none',
     ml: 0,
-    transform: 'translateX(-24px)',
+  },
+  // Место под иконку — чтобы она не легла поверх последних цифр даты.
+  '& .MuiPickersInputBase-sectionsContainer, & .MuiInputBase-input': {
+    paddingRight: '22px !important',
   },
   '& .MuiInputAdornment-root .MuiIconButton-root': { p: '2px' },
   '& .MuiInputAdornment-root .MuiSvgIcon-root': { fontSize: 16 },

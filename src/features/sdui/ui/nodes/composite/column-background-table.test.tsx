@@ -1,4 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactElement } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
@@ -46,6 +48,12 @@ const table = (props: Record<string, unknown> = {}): ViewNode =>
 
 const cells = () => screen.getAllByRole('cell')
 
+// usePagedTableRows (SCRUM-368) внутри таблицы требует QueryClient
+const renderTable = (ui: ReactElement) =>
+  render(
+    <QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>
+  )
+
 beforeEach(() => {
   cleanup()
   state.rows = [{ rowId: 'r1', period: 'Январь', summa: '100' }]
@@ -53,7 +61,7 @@ beforeEach(() => {
 
 describe('backgroundColor колонки ТЧ', () => {
   it('залита только колонка с пропом', () => {
-    render(<TableNode node={table()} />)
+    renderTable(<TableNode node={table()} />)
     const [period, summa] = cells()
     expect(getComputedStyle(summa).backgroundColor).toBe('rgb(204, 255, 204)')
     // прозрачный — собственного фона у ячейки нет
@@ -62,7 +70,7 @@ describe('backgroundColor колонки ТЧ', () => {
 
   it('условная заливка строки перекрывает заливку колонки', () => {
     state.rows = [{ rowId: 'r1', period: 'Январь', summa: '100', flag: true }]
-    render(
+    renderTable(
       <TableNode
         node={table({
           rowAppearance: [

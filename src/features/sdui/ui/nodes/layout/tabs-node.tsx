@@ -32,30 +32,72 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
     }
   }
 
+  // «ОтображениеСтраниц = TabsOnLeftHorizontal» в 1С: список разделов слева от
+  // содержимого. Единственный такой узел в конфигурации — 15 разделов ЭСФ, и
+  // сверху они не помещаются. Отсутствие пропа = прежнее поведение (сверху).
+  const isLeft = node.props?.tabsPlacement === 'LEFT'
+
   // Клампим индекс: условная вкладка могла исчезнуть и сдвинуть длину списка.
   const safeIndex =
     tabs.length === 0 ? 0 : Math.min(activeIndex, tabs.length - 1)
   const activeTab = tabs[safeIndex] as ViewNode | undefined
 
-  return (
-    <div>
-      <Tabs value={safeIndex} onChange={handleChange}>
-        {tabs.map((tab, idx) => (
-          <Tab
-            key={tab.id}
-            label={
-              (tab.props?.title as string | undefined) ??
-              (tab.props?.label as string | undefined) ??
-              `Tab ${String(idx + 1)}`
+  const tabList = (
+    <Tabs
+      value={safeIndex}
+      onChange={handleChange}
+      orientation={isLeft ? 'vertical' : 'horizontal'}
+      // scrollable: 15 разделов ЭСФ не помещаются в высоту без прокрутки, а
+      // горизонтальные вкладки прокручиваются и сейчас по ширине окна.
+      variant="scrollable"
+      scrollButtons="auto"
+      sx={
+        isLeft
+          ? {
+              borderRight: 1,
+              borderColor: 'divider',
+              flex: '0 0 auto',
+              // Подписи разделов длинные («A. Общий раздел») — выравниваем по
+              // левому краю, иначе список читается как набор центрированных
+              // обрывков.
+              '& .MuiTab-root': { alignItems: 'flex-start', textAlign: 'left' },
             }
-          />
-        ))}
-      </Tabs>
-      <div style={{ paddingTop: 16 }}>
-        {activeTab?.children?.map((c) => (
-          <NodeRenderer key={c.id} node={c} />
-        ))}
-      </div>
+          : undefined
+      }
+    >
+      {tabs.map((tab, idx) => (
+        <Tab
+          key={tab.id}
+          label={
+            (tab.props?.title as string | undefined) ??
+            (tab.props?.label as string | undefined) ??
+            `Tab ${String(idx + 1)}`
+          }
+        />
+      ))}
+    </Tabs>
+  )
+
+  const content = (
+    <div
+      style={
+        isLeft
+          ? { paddingLeft: 16, flex: '1 1 0%', minWidth: 0 }
+          : { paddingTop: 16 }
+      }
+    >
+      {activeTab?.children?.map((c) => (
+        <NodeRenderer key={c.id} node={c} />
+      ))}
+    </div>
+  )
+
+  return (
+    <div
+      style={isLeft ? { display: 'flex', alignItems: 'flex-start' } : undefined}
+    >
+      {tabList}
+      {content}
     </div>
   )
 }

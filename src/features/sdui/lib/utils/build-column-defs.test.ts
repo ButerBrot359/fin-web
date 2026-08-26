@@ -178,10 +178,12 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     expect(classNames[1]).toContain('border-t')
   })
 
-  // В ЯЧЕЙКЕ высота под-строки минимальная, а не жёсткая: перенесённое на вторую
-  // строку readonly-значение иначе легло бы поверх разделителя и соседней
-  // под-строки. В шапке высота остаётся жёсткой (тест выше).
-  it('под-строки ЯЧЕЙКИ держат minHeight, а не height', () => {
+  // Высота под-строки ЖЁСТКАЯ и в ячейке — она задаёт общую сетку СТРОКИ
+  // таблицы. Прежнее правило (minHeight в ячейке ради переноса длинного
+  // readonly-значения) давало разъехавшиеся разделители: колонка с переносом
+  // росла, соседняя с коротким числом — нет. Теперь длинное значение обрезается
+  // многоточием на самом тексте (truncate у TableCellEditor).
+  it('под-строки ЯЧЕЙКИ держат жёсткую height — общая сетка строки', () => {
     const defs = buildColumnDefs(
       [
         verticalGroup([
@@ -219,8 +221,8 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
       const style = row.props as {
         style: { height?: number; minHeight?: number }
       }
-      expect(style.style.minHeight).toBe(VERTICAL_SUB_ROW_HEIGHT)
-      expect(style.style.height).toBeUndefined()
+      expect(style.style.height).toBe(VERTICAL_SUB_ROW_HEIGHT)
+      expect(style.style.minHeight).toBeUndefined()
     }
   })
 

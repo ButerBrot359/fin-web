@@ -47,6 +47,8 @@ import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { TableCellEditor } from './table-cell-editor'
 import { ColumnHeaderLabel } from './column-header-label'
 import { SearchHitCell } from './table-search-cell'
+import { TABLE_GRID_SX } from './table-grid-sx'
+import { tableTextColorSx } from '../../../lib/utils/table-text-color'
 import { buildColumnBackgroundMap } from '../../../lib/utils/column-background'
 import { TableToolbar } from './table-toolbar'
 
@@ -210,15 +212,24 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     onColumnSizingChange: sizing.onColumnSizingChange,
   })
 
-  // Фиксированные ширины включаем ТОЛЬКО при ресайзе: без columnsResizable
-  // раскладка таблицы остаётся авто-шириной MUI, как до задачи.
-  const tableSx = sizing.isResizable
-    ? {
-        tableLayout: 'fixed' as const,
-        width: table.getTotalSize() + (showRowNumbers ? ROW_NUMBER_WIDTH : 0),
-        minWidth: '100%',
-      }
-    : undefined
+  // Сетка — всегда и во всех ТЧ: она не зависит ни от ресайза, ни от того, есть
+  // ли среди детей COLUMN_GROUP. Раньше TABLE_GRID_SX стоял только в
+  // complex-editable-table, а выбор компонента (table-node) завязан на наличие
+  // группы — поэтому «Вычеты ИПН» с плоским списком колонок оставались без
+  // вертикальных границ, а «Начисления» с группами их имели.
+  // Фиксированные ширины — только при ресайзе: без columnsResizable раскладка
+  // остаётся авто-шириной MUI, как до задачи.
+  const tableSx = {
+    ...TABLE_GRID_SX,
+    ...tableTextColorSx(node.props),
+    ...(sizing.isResizable
+      ? {
+          tableLayout: 'fixed' as const,
+          width: table.getTotalSize() + (showRowNumbers ? ROW_NUMBER_WIDTH : 0),
+          minWidth: '100%',
+        }
+      : {}),
+  }
 
   const handleAdd = () => {
     sync.addRow(columns)

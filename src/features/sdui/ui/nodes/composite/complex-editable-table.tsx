@@ -55,6 +55,7 @@ import {
 import { ColumnResizeHandle } from './column-resize-handle'
 import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { TABLE_GRID_SX } from './table-grid-sx'
+import { tableTextColorSx } from '../../../lib/utils/table-text-color'
 import { SearchHitCell } from './table-search-cell'
 import { buildColumnBackgroundMap } from '../../../lib/utils/column-background'
 import { TableToolbar } from './table-toolbar'
@@ -287,6 +288,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // прежней авто-шириной MUI (важно для многоуровневых шапок и футера).
   const tableSx = {
     ...TABLE_GRID_SX,
+    ...tableTextColorSx(node.props),
     ...(sizing.isResizable
       ? {
           tableLayout: 'fixed' as const,

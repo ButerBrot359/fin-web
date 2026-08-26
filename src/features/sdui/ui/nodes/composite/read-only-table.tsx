@@ -33,6 +33,8 @@ import {
   parseRowAppearance,
   resolveRowBackground,
 } from '../../../lib/utils/row-appearance'
+import { TABLE_GRID_SX } from './table-grid-sx'
+import { tableTextColorSx } from '../../../lib/utils/table-text-color'
 import { useManualColumnResize } from '../../../lib/hooks/use-manual-column-resize'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { ColumnResizeHandle } from './column-resize-handle'
@@ -190,15 +192,19 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
       <TableContainer component={Paper} ref={setContainerRef}>
         <Table
           size="small"
-          sx={
-            isResizable
+          // Сетка одинакова во всех ТЧ и не зависит от ресайза — см. коммент в
+          // editable-table.tsx.
+          sx={{
+            ...TABLE_GRID_SX,
+            ...tableTextColorSx(node.props),
+            ...(isResizable
               ? {
-                  tableLayout: 'fixed',
+                  tableLayout: 'fixed' as const,
                   width: totalWidth,
                   minWidth: '100%',
                 }
-              : undefined
-          }
+              : {}),
+          }}
         >
           {/* Ширины — через <col>, а не через ячейки шапки: при двухрядной
               шапке первая строка занята группами с colSpan и ширин листовых

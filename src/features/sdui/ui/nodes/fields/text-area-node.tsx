@@ -31,7 +31,6 @@ export const TextAreaNode: FC<NodeProps> = ({ node }) => {
       }}
       onFocus={changeOnBlur.onFocus}
       onBlur={changeOnBlur.onBlur}
-      sx={{ flex: f.flex !== undefined ? f.flex : undefined }}
       slotProps={{
         input: { readOnly: f.readonly },
         htmlInput: maxLength !== undefined ? { maxLength } : undefined,

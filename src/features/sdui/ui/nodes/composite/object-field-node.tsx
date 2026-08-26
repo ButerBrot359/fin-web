@@ -89,10 +89,7 @@ export const ObjectFieldNode: FC<NodeProps> = ({ node }) => {
   }
 
   return (
-    <div
-      className="flex gap-2"
-      style={{ flex: f.flex !== undefined ? f.flex : undefined }}
-    >
+    <div className="flex gap-2">
       {/* Один член — выбирать не из чего: селектор был бы обманом, вид субконто
           однозначен. Ширину поля значения он при этом съедал бы. */}
       {allowedTypes.length > 1 && (

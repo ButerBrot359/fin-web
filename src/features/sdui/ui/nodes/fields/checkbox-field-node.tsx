@@ -21,12 +21,7 @@ export const CheckboxFieldNode: FC<NodeProps> = ({ node }) => {
   // только для MuiTextField/MuiPickersTextField, поэтому прочие поля не страдают
   // — они стоят на TextField. Растягиваем контейнер поля, а не сам контрол.
   return (
-    <FormControl
-      fullWidth
-      error={!!f.error}
-      required={f.required}
-      sx={{ flex: f.flex !== undefined ? f.flex : undefined }}
-    >
+    <FormControl fullWidth error={!!f.error} required={f.required}>
       <FormControlLabel
         label={f.label ?? ''}
         control={

@@ -259,7 +259,14 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                     {columns.map((col) => (
                       <TableCell
                         key={col.id}
-                        sx={isResizable ? { overflow: 'hidden' } : undefined}
+                        // overflowWrap:anywhere — безусловно: ширины колонок
+                        // фиксированы, и «неразрывное» значение (код, счёт,
+                        // номер без пробелов) без него не переносится, а при
+                        // включённом ресайзе ещё и срезается overflow:hidden.
+                        sx={{
+                          overflowWrap: 'anywhere',
+                          ...(isResizable ? { overflow: 'hidden' } : {}),
+                        }}
                       >
                         {col.binding !== undefined
                           ? renderCellValue(row[col.binding])

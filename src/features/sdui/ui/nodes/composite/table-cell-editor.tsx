@@ -18,7 +18,12 @@ import {
 import { ReferenceCellEditor } from './reference-cell-editor'
 import { DateCellEditor } from './date-cell-editor'
 import { ObjectCellEditor } from './object-cell-editor'
-import { cellSx, enumCellSx, dateCellSx } from './table-cell-editor-styles'
+import {
+  cellSx,
+  enumCellSx,
+  dateCellSx,
+  readonlyCellTextStyle,
+} from './table-cell-editor-styles'
 import { RequiredCellFrame } from './required-cell-frame'
 
 interface TableCellEditorProps {
@@ -107,22 +112,9 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
 
   if (readonly) {
     return (
-      // Текст ПЕРЕНОСИТСЯ по ширине колонки, а не идёт одной строкой: ширины
-      // ячеек фиксированы (colgroup + table-layout: fixed), а ячейка ТЧ не
-      // обрезает содержимое, поэтому при `nowrap` длинное значение («Доплата за
-      // квалификационную категорию 100%») выезжало поверх соседней колонки.
-      // display:block — чтобы у переносимого текста работали собственные
-      // паддинги; overflowWrap:anywhere — чтобы рвался и длинный «неразрывный»
-      // токен (код/номер без пробелов), иначе он снова вылезет за границу.
-      <span
-        style={{
-          display: 'block',
-          padding: '4px 8px',
-          fontSize: 14,
-          whiteSpace: 'normal',
-          overflowWrap: 'anywhere',
-        }}
-      >
+      // Перенос текста по ширине колонки — общий стиль всех ячеек без
+      // редактора, см. readonlyCellTextStyle.
+      <span style={readonlyCellTextStyle}>
         {formatReadonlyValue(value, dataType, dateFormat)}
       </span>
     )

@@ -140,3 +140,22 @@ describe('ReadOnlyTable ресайз колонок', () => {
     expect((cols[0] as HTMLElement).style.width).toBe('180px')
   })
 })
+
+// Ширины колонок фиксированы, а значение бывает «неразрывным» (счёт, код,
+// номер без пробелов) — без overflow-wrap оно вылезало бы за границу колонки
+// либо, при включённом ресайзе, срезалось overflow:hidden.
+describe('ReadOnlyTable — перенос текста в ячейке', () => {
+  it('ячейка переносит длинное значение, а не обрезает его', () => {
+    state.rows = [{ rowId: 'r1', a: 'Доплата за квалификационную категорию' }]
+    render(<TableNode node={makeTable({})} />)
+
+    const cell = screen
+      .getByText('Доплата за квалификационную категорию')
+      .closest('td')!
+    // getPropertyValue, а не camelCase-геттер: `overflow-wrap` реализован в
+    // jsdom не как именованное свойство, и `style.overflowWrap` вернул бы ''.
+    const style = getComputedStyle(cell)
+    expect(style.getPropertyValue('overflow-wrap')).toBe('anywhere')
+    expect(style.getPropertyValue('white-space')).not.toBe('nowrap')
+  })
+})

@@ -19,6 +19,7 @@ import {
   type AllowedType,
   type ObjectValue,
 } from './object-field-logic'
+import { readonlyCellTextStyle } from './table-cell-editor-styles'
 
 interface ObjectCellEditorProps {
   colProps: Record<string, unknown>
@@ -130,9 +131,7 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
   // показываем значение как есть, а не имитацию рабочего пикера.
   if (allowedTypes.length === 0) {
     return (
-      <span style={{ padding: '4px 8px', fontSize: 14 }}>
-        {renderCellValue(value)}
-      </span>
+      <span style={readonlyCellTextStyle}>{renderCellValue(value)}</span>
     )
   }
 
@@ -238,7 +237,7 @@ const ObjectCellValuePicker: FC<ObjectCellValuePickerProps> = ({
   // составного типа = отдельная задача на БЭК, не косметика фронта.
   if (!optionsSource) {
     return (
-      <span style={{ padding: '4px 8px', fontSize: 14, opacity: 0.6 }}>
+      <span style={{ ...readonlyCellTextStyle, opacity: 0.6 }}>
         {placeholder}
       </span>
     )

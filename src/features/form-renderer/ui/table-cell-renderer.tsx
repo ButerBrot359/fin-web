@@ -787,7 +787,10 @@ const TableCell = ({
       : formatCellValue(value, column)
     return (
       <div
-        className="flex min-h-[28px] cursor-text items-center truncate border-b-2 border-transparent px-2 py-1 text-body2 text-ui-06 hover:bg-ui-04"
+        // whitespace-normal + break-words вместо truncate: ширины колонок ТЧ
+        // фиксированы (tableLayout: fixed), и длинное значение обрезалось
+        // многоточием вместо переноса на вторую строку.
+        className="flex min-h-[28px] cursor-text items-center whitespace-normal break-words border-b-2 border-transparent px-2 py-1 text-body2 text-ui-06 hover:bg-ui-04"
         style={appearance?.color ? { color: appearance.color } : undefined}
         onClick={() => {
           setEditing(true)

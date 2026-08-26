@@ -12,6 +12,7 @@ import type {
 } from '@/shared/types/api.types'
 
 import { ApiTransportError, classifyTransportFailure } from './api-error'
+import { attachAuthInterceptors } from './auth/attach-auth-interceptors'
 
 /**
  * Таймаут обычного запроса. Без него axios ждёт БЕСКОНЕЧНО: если соединение
@@ -50,6 +51,11 @@ instance.interceptors.request.use((config) => {
   config.headers.set('Accept-Language', i18n.language)
   return config
 })
+
+// Bearer-токен на каждый запрос и автопродление сессии по 401 (SCRUM-373). Навешивается
+// ПОСЛЕ Accept-Language: интерсепторы запроса выполняются в порядке регистрации, и токен
+// подставляется последним — на уже сформированный конфиг.
+attachAuthInterceptors(instance)
 
 const makeRequest = <T>(
   config: AxiosRequestConfig

@@ -133,6 +133,9 @@ export const KalendariTemplateTable: FC<NodeProps> = ({ node }) => {
   const cyclicDateLabel = (index: number): string =>
     referenceValid ? format(addDays(referenceDate, index), 'd.MM') : ''
 
+  // Текст-действия — без MUI-капса: подписи как в 1С («7.2 ч.», не «7.2 Ч.»)
+  const textActionSx = { textTransform: 'none', textAlign: 'left' } as const
+
   // Ячейка «Рабочее время» дня day (NomerDnya): нет валидных интервалов →
   // текст-действие «Заполнить расписание», есть → кликабельное саммари.
   const workTimeCell = (day: number, disabled = false) => {
@@ -142,13 +145,25 @@ export const KalendariTemplateTable: FC<NodeProps> = ({ node }) => {
     }
     if (!summary) {
       return (
-        <Button variant="text" size="small" disabled={disabled} onClick={open}>
+        <Button
+          variant="text"
+          size="small"
+          disabled={disabled}
+          onClick={open}
+          sx={textActionSx}
+        >
           {t('sdui.kalendari.fillSchedule')}
         </Button>
       )
     }
     return (
-      <Button variant="text" size="small" disabled={disabled} onClick={open}>
+      <Button
+        variant="text"
+        size="small"
+        disabled={disabled}
+        onClick={open}
+        sx={textActionSx}
+      >
         {t('sdui.kalendari.daySummary', {
           hours: summary.hours,
           intervals: summary.intervals

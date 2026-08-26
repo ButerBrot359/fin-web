@@ -38,10 +38,13 @@ export const CheckboxFieldNode: FC<NodeProps> = ({ node }) => {
       />
       {f.error && <FormHelperText>{f.error}</FormHelperText>}
       {/* SCRUM-278 v4: пояснение под лейблом чекбокса с видимым отступом,
-          не в line-box лейбла; показывается только без ошибки валидации */}
+          не в line-box лейбла; показывается только без ошибки валидации.
+          position static ОБЯЗАТЕЛЕН: тема глобально абсолютит FormHelperText
+          (bottom: -18), из-за чего следующий элемент формы его перекрывает */}
       {!f.error && helperText && (
         <FormHelperText
           sx={{
+            position: 'static',
             ml: 0,
             mt: 0.5,
             fontSize: 14,

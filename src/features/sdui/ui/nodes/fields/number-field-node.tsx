@@ -42,6 +42,9 @@ export const NumberFieldNode: FC<NodeProps> = ({ node }) => {
           ? undefined
           : {
               sx: {
+                // Тема абсолютит FormHelperText — comment-пояснение должно
+                // занимать место в потоке, иначе его перекроет соседнее поле
+                position: 'static',
                 fontSize: 14,
                 lineHeight: 1.35,
                 color: 'text.secondary',

@@ -18,7 +18,7 @@ const state: Record<string, unknown> = {
       rowId: 'r1',
       // «Сотрудник / Должность»: длинная должность и короткое число рядом —
       // на коротких значениях расхождение высот незаметно.
-      sotrudnik: 'Иванов Иван Иванович',
+      sotrudnik: 'Алдамжароваааааа Динара Жуанышевна',
       dolzhnost: 'ГЛАВНЫЙ ЭКОНОМИСТ ОТДЕЛА ПЛАНИРОВАНИЯ И БЮДЖЕТА',
       normaDney: '21',
       otrabotano: '21',
@@ -33,12 +33,17 @@ vi.mock('../../lib/sdui-session-context', () => ({
 }))
 vi.mock('../../lib/dispatch', () => ({ useSduiDispatch: () => vi.fn() }))
 
-const col = (id: string, binding: string, label: string): ViewNode =>
+const col = (
+  id: string,
+  binding: string,
+  label: string,
+  props: Record<string, unknown> = { readonly: true }
+): ViewNode =>
   ({
     id,
     type: 'TABLE_COLUMN',
     binding,
-    props: { label, readonly: true },
+    props: { label, ...props },
   }) as ViewNode
 
 const group = (id: string, children: ViewNode[]): ViewNode =>
@@ -64,6 +69,24 @@ const node = (): ViewNode =>
         col('col.normaDney', 'normaDney', 'Норма дней'),
         col('col.otrabotano', 'otrabotano', 'Отработано'),
       ]),
+      // Редактируемая пара: «Вид начисления / График работы» в эталоне —
+      // перечисления, их подписи тоже не должны переноситься.
+      group('grp.nachislenie', [
+        col('col.vidNachisleniya', 'vidNachisleniya', 'Вид начисления', {
+          cellWidget: 'ENUM_FIELD',
+          options: [
+            {
+              value: 'oklad',
+              label: 'Оклад по дням',
+              id: 1,
+              code: 'OkladPoDnyam',
+            },
+          ],
+        }),
+        col('col.grafikRaboty', 'grafikRaboty', 'График работы', {
+          cellWidget: 'TEXT_FIELD',
+        }),
+      ]),
     ],
   }) as ViewNode
 
@@ -80,8 +103,8 @@ describe('под-строки вертикальной группы колоно
     const subRows = container.querySelectorAll<HTMLElement>(
       'tbody .flex.flex-col > div'
     )
-    // две группы × две под-строки
-    expect(subRows).toHaveLength(4)
+    // три группы × две под-строки
+    expect(subRows).toHaveLength(6)
     for (const row of subRows) {
       expect(row.style.height).toBe(`${String(VERTICAL_SUB_ROW_HEIGHT)}px`)
       expect(row.style.minHeight).toBe('')
@@ -97,5 +120,23 @@ describe('под-строки вертикальной группы колоно
     expect(longText?.style.whiteSpace).toBe('nowrap')
     expect(longText?.style.textOverflow).toBe('ellipsis')
     expect(longText?.style.overflow).toBe('hidden')
+  })
+})
+
+describe('редакторы в под-строке вертикальной группы', () => {
+  it('текстовый редактор однострочный — textarea переносила бы значение', () => {
+    const { container } = renderTable(<TableNode node={node()} />)
+    const textareas = container.querySelectorAll('tbody textarea')
+    expect(textareas).toHaveLength(0)
+    expect(container.querySelectorAll('tbody input').length).toBeGreaterThan(0)
+  })
+
+  it('подпись перечисления не переносится', () => {
+    const { container } = renderTable(<TableNode node={node()} />)
+    const select = container.querySelector<HTMLElement>(
+      'tbody .MuiSelect-select'
+    )
+    expect(select).toBeTruthy()
+    expect(getComputedStyle(select!).whiteSpace).toBe('nowrap')
   })
 })

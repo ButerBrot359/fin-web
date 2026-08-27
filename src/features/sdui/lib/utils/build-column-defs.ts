@@ -13,7 +13,7 @@ import type { UseTableValidationResult } from '../hooks/use-table-validation'
 import { resolveRowFilterParams } from './resolve-row-filter-params'
 import { resolveCellState } from './resolve-cell-state'
 import { columnSizeProps, toColumnWidth } from './column-sizing'
-import { isNoWrapBinding } from './nowrap-columns'
+import { isNoWrapColumn } from './nowrap-columns'
 
 /**
  * Кастомные поля в `ColumnDef.meta`. Читаются приведением типа на месте
@@ -246,7 +246,7 @@ function buildColumnDefsInner(
             value: info.row.original[col.binding],
             readonly: state.readonly,
             required: state.required,
-            noWrap: isNoWrapBinding(col.binding),
+            noWrap: isNoWrapColumn(col.binding, col.label),
             revealErrors: validationRef?.current.revealErrors ?? false,
             props: col.props,
             extraParams: resolveRowFilterParams(col, info.row.original),
@@ -323,7 +323,7 @@ function buildColumnDefsInner(
                     value: info.row.original[childCol.binding],
                     readonly: state.readonly,
                     required: state.required,
-                    noWrap: isNoWrapBinding(childCol.binding),
+                    noWrap: isNoWrapColumn(childCol.binding, childCol.label),
                     revealErrors: validationRef?.current.revealErrors ?? false,
                     props: childCol.props,
                     extraParams: resolveRowFilterParams(

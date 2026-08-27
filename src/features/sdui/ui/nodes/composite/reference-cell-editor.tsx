@@ -26,7 +26,7 @@ interface ReferenceCellEditorProps {
   onChange: (value: unknown) => void
   onCommit: () => void
   extraParams?: Record<string, string>
-  /** Колонка исключена из переноса текста (см. `isNoWrapBinding`). */
+  /** Колонка исключена из переноса текста (см. `isNoWrapColumn`). */
   noWrap?: boolean
 }
 
@@ -248,7 +248,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
         fullWidth
         // Ширина колонки ТЧ фиксирована, а <input> длинное наименование не
         // переносит, а прокручивает: «Надбавка за ос…» вместо полного значения.
-        // Исключение — колонки из isNoWrapBinding: там однострочность нужна.
+        // Исключение — колонки из isNoWrapColumn: там однострочность нужна.
         multilineInput={!noWrap}
         loading={loading}
         onInputChange={(_e, val, reason) => {

@@ -6,8 +6,26 @@ const col = (code1C: string, code = ''): DocumentAttribute =>
   ({ code1C, code, dataType: 'STRING' }) as DocumentAttribute
 
 describe('isNoWrapColumn', () => {
-  it('«Источник финансирования» по 1С-имени исключён из переноса', () => {
-    expect(isNoWrapColumn(col('ИсточникФинансирования'))).toBe(true)
+  it.each([
+    'ИсточникФинансирования',
+    'Сотрудник',
+    'ПериодРегистрации',
+    'ПодразделениеОрганизации',
+    'Должность',
+    'ВидНачисления',
+    'ПлановыйОклад',
+    'ГрафикРаботы',
+    'НормаДней',
+    'НормаЧасов',
+    'ОтработаноДней',
+    'ОтработаноЧасов',
+    'НачалоПериода',
+    'ОкончаниеПериода',
+    'НормативнаяНагрузка',
+    'НедельнаяНагрузка',
+    'Размер',
+  ])('%s исключён из переноса', (code1C) => {
+    expect(isNoWrapColumn(col(code1C))).toBe(true)
   })
 
   // Тот же реквизит в ТЧ движений бухрегистра и разделений по шаблонам.
@@ -22,15 +40,13 @@ describe('isNoWrapColumn', () => {
   // Часть типов приезжает без code1C — тогда работает фолбэк по code.
   it('без 1С-имени опознаётся по транслитерированному code', () => {
     expect(isNoWrapColumn(col('', 'istochnikFinansirovaniya'))).toBe(true)
-    expect(isNoWrapColumn(col('', 'IstochnikFinansirovaniyaDt'))).toBe(true)
+    expect(isNoWrapColumn(col('', 'OtrabotanoDney'))).toBe(true)
   })
 
   it('остальные колонки ТЧ переносят текст как прежде', () => {
-    expect(isNoWrapColumn(col('ВидНачисления', 'vidNachisleniya'))).toBe(false)
+    expect(isNoWrapColumn(col('КодПлатныхУслуг', 'kodPlatnykhUslug'))).toBe(
+      false
+    )
     expect(isNoWrapColumn(col('Сумма', 'summa'))).toBe(false)
-  })
-
-  it('чужое имя с другим началом под правило не попадает', () => {
-    expect(isNoWrapColumn(col('ВидИсточникаФинансирования'))).toBe(false)
   })
 })

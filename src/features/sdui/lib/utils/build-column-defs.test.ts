@@ -532,7 +532,7 @@ describe('buildColumnDefs — условное состояние ячейки',
 })
 
 // Правило переноса текста в ТЧ выключается по биндингу колонки
-// (isNoWrapBinding) — проверяем, что признак доезжает до ячейки.
+// (isNoWrapColumn) — проверяем, что признак доезжает до ячейки.
 describe('buildColumnDefs — колонка без переноса текста', () => {
   afterEach(cleanup)
 
@@ -560,14 +560,21 @@ describe('buildColumnDefs — колонка без переноса текст�
     )
   }
 
-  it('«Источник финансирования» — однострочный input', () => {
-    const { container } = renderCell('IstochnikFinansirovaniya')
+  it.each([
+    'IstochnikFinansirovaniya',
+    'Sotrudnik',
+    'Dolzhnost',
+    'PodrazdelenieOrganizatsii',
+    'VidNachisleniya',
+    'OtrabotanoDney',
+  ])('%s — однострочный input', (binding) => {
+    const { container } = renderCell(binding)
     expect(container.querySelector('input')).toBeTruthy()
     expect(container.querySelector('textarea')).toBeNull()
   })
 
   it('обычная колонка по-прежнему переносит текст (textarea)', () => {
-    const { container } = renderCell('VidNachisleniya')
+    const { container } = renderCell('KodPlatnykhUslug')
     expect(container.querySelector('textarea')).toBeTruthy()
   })
 })

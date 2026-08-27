@@ -33,7 +33,7 @@ import {
   parseRowAppearance,
   resolveRowBackground,
 } from '../../../lib/utils/row-appearance'
-import { isNoWrapBinding } from '../../../lib/utils/nowrap-columns'
+import { isNoWrapColumn } from '../../../lib/utils/nowrap-columns'
 import { TABLE_GRID_SX } from './table-grid-sx'
 import { tableTextColorSx } from '../../../lib/utils/table-text-color'
 import { useManualColumnResize } from '../../../lib/hooks/use-manual-column-resize'
@@ -291,11 +291,12 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                         // фиксированы, и «неразрывное» значение (код, счёт,
                         // номер без пробелов) без него не переносится, а при
                         // включённом ресайзе ещё и срезается overflow:hidden.
-                        // Исключение — колонки isNoWrapBinding («Источник
-                        // финансирования»): там перенос раздувает каждую строку,
-                        // и значение держится в одну строку с многоточием.
+                        // Исключение — колонки isNoWrapColumn (шапка ТЧ
+                        // «Начисления» в эталоне 1С): там перенос раздувает
+                        // каждую строку, и значение держится в одну строку с
+                        // многоточием.
                         sx={{
-                          ...(isNoWrapBinding(col.binding ?? '')
+                          ...(isNoWrapColumn(col.binding ?? '', col.label)
                             ? {
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',

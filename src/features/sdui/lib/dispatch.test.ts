@@ -415,6 +415,39 @@ describe('useSduiDispatch: эффект confirm (SCRUM-244 v3)', () => {
     await Promise.resolve()
     expect(post).toHaveBeenCalledTimes(1)
   })
+
+  // SCRUM-276: правка «Номера» — сервер даёт cancelCommand (field.rollback:Nomer),
+  // и «Нет» обязан его отправить, иначе отменённое значение остаётся в сессии.
+  it('по «Нет» с cancelCommand шлётся COMMAND с cancelCommand дословно', async () => {
+    const cancelResponse = {
+      ...confirmResponse,
+      effects: [
+        {
+          type: 'confirm',
+          message:
+            'Номер будет заполнен автоматически при записи. Продолжить редактирование?',
+          confirmCommand: 'field.confirm:Nomer',
+          cancelCommand: 'field.rollback:Nomer',
+        },
+      ],
+    } as unknown as ViewResponse
+    const post = vi
+      .spyOn(viewTransport, 'post')
+      .mockResolvedValueOnce(cancelResponse)
+      .mockResolvedValue(commandResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'COMMAND', command: 'nav.open:X' })
+
+    useConfirmStore.getState().answer(false)
+    await vi.waitFor(() => {
+      expect(post).toHaveBeenCalledTimes(2)
+    })
+    expect(post).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: { type: 'COMMAND', command: 'field.rollback:Nomer' },
+      })
+    )
+  })
 })
 
 // Confirm-мост (SCRUM-288 §2.3/§2.4): confirmRequest исполняется мимо сессии

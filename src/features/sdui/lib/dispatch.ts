@@ -113,7 +113,18 @@ export function useSduiDispatch() {
             .getState()
             .ask(effect.message ?? '')
             .then((ok) => {
-              if (!ok) return
+              if (!ok) {
+                // SCRUM-276: «Нет» — тоже серверный исход, когда бэк дал
+                // cancelCommand (field.rollback:Nomer): без него отменённое
+                // значение оставалось бы в серверной сессии.
+                if (effect.cancelCommand) {
+                  void dispatchAction({
+                    type: 'COMMAND',
+                    command: effect.cancelCommand,
+                  })
+                }
+                return
+              }
               if (effect.confirmRequest) {
                 void effectHandler.executeActionRequest(effect.confirmRequest)
                 return

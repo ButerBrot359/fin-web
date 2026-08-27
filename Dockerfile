@@ -4,8 +4,14 @@ WORKDIR /app
 
 ARG VITE_API_BASE_URL
 ARG VITE_FORM_CONFIGS_URL
+# Требовать вход (SCRUM-373). Значение ЗАПЕКАЕТСЯ В БАНДЛ: Vite подставляет
+# import.meta.env.* на этапе `npm run build`, поэтому на работающем поде флаг не
+# выставить — переключение требует пересборки образа, а не рестарта.
+# Пусто или что угодно кроме 'true' — выключено (см. features/auth/lib/consts/auth-config.ts).
+ARG VITE_AUTH_ENABLED
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_FORM_CONFIGS_URL=$VITE_FORM_CONFIGS_URL
+ENV VITE_AUTH_ENABLED=$VITE_AUTH_ENABLED
 
 COPY package.json package-lock.json* ./
 RUN npm ci

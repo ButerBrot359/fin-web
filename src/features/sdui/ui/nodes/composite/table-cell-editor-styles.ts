@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
-import type { SxProps, Theme } from '@mui/material'
+import type { Theme } from '@mui/material'
+import type { SystemStyleObject } from '@mui/system'
 
 /**
  * Текст ячейки ТЧ, у которой нет редактора (readonly-значение, заглушка
@@ -23,7 +24,21 @@ export const readonlyCellTextStyle: CSSProperties = {
   overflowWrap: 'anywhere',
 }
 
-export const cellSx: SxProps<Theme> = {
+/**
+ * То же значение без редактора, но в колонке, ИСКЛЮЧЁННОЙ из переноса
+ * (`isNoWrapBinding` — «Источник финансирования»): одна строка, лишнее срезается
+ * многоточием. Обрезка обязательна: без неё nowrap-текст снова вылез бы на
+ * соседнюю колонку — ровно то, ради чего перенос и вводился.
+ */
+export const nowrapCellTextStyle: CSSProperties = {
+  ...readonlyCellTextStyle,
+  whiteSpace: 'nowrap',
+  overflowWrap: 'normal',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+}
+
+export const cellSx: SystemStyleObject<Theme> = {
   mb: 0,
   position: 'static',
   '& .MuiInputBase-root': {
@@ -42,14 +57,18 @@ export const cellSx: SxProps<Theme> = {
   },
 }
 
-export const enumCellSx: SxProps<Theme> = {
+const enumSelectBase = {
+  padding: '4px 8px !important',
+  minHeight: '28px',
+  display: 'flex',
+  alignItems: 'center',
+}
+
+export const enumCellSx: SystemStyleObject<Theme> = {
   fontSize: '14px',
   '&::before, &::after': { display: 'none' },
   '& .MuiSelect-select': {
-    padding: '4px 8px !important',
-    minHeight: '28px',
-    display: 'flex',
-    alignItems: 'center',
+    ...enumSelectBase,
     // MUI держит подпись выбранного значения в одну строку — в ячейке ТЧ с
     // фиксированной шириной длинное значение перечисления так обрезается.
     whiteSpace: 'normal !important',
@@ -57,7 +76,19 @@ export const enumCellSx: SxProps<Theme> = {
   },
 }
 
-export const dateCellSx: SxProps<Theme> = {
+/** Перечисление в колонке без переноса: одна строка + многоточие. */
+export const nowrapEnumCellSx: SystemStyleObject<Theme> = {
+  fontSize: '14px',
+  '&::before, &::after': { display: 'none' },
+  '& .MuiSelect-select': {
+    ...enumSelectBase,
+    whiteSpace: 'nowrap !important',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+}
+
+export const dateCellSx: SystemStyleObject<Theme> = {
   '& .MuiFormControl-root': { mb: 0, position: 'static', width: '100%' },
   '& .MuiInputBase-root': {
     backgroundColor: 'transparent !important',
@@ -69,6 +100,12 @@ export const dateCellSx: SxProps<Theme> = {
   },
   '& .MuiPickersInputBase-root': {
     position: 'relative',
+    // Ширина — строго по ячейке. Без неё поле пикера берёт СВОЮ ширину по
+    // содержимому: контейнер разрядов у MUI объявлен `width: 182px`, и в узкой
+    // колонке («Начало периода») поле вылезало за границу ячейки вместе с
+    // прижатой к его правому краю иконкой календаря — она ложилась на соседнюю
+    // колонку.
+    width: '100%',
     backgroundColor: 'transparent !important',
     border: 'none !important',
     borderRadius: '0 !important',
@@ -81,13 +118,43 @@ export const dateCellSx: SxProps<Theme> = {
     minHeight: '28px !important',
     height: '28px !important',
     fontSize: '14px !important',
+    // Сбрасываем те самые 182px: контейнер разрядов — flex-элемент поля, и
+    // собственная ширина мешала бы ему сжиматься до ширины колонки.
+    width: 'auto',
+    minWidth: 0,
   },
+  // Иконка календаря прижимается к правому краю СВОЕГО поля ввода
+  // (`.MuiPickersInputBase-root` выше — `position: relative`), а не смещается на
+  // фиксированные 24px. Прежний сдвиг был рассчитан на раскладку обычной ячейки;
+  // в под-строке вертикальной группы контейнер другой (grid, свои паддинги), и
+  // та же константа уводила иконку за границу колонки — в парах «Начало периода
+  // / Окончание периода» она налезала на соседнее значение.
   '& .MuiInputAdornment-root': {
-    width: 0,
-    overflow: 'visible',
+    position: 'absolute',
+    right: '2px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    height: 'auto',
+    maxHeight: 'none',
     ml: 0,
-    transform: 'translateX(-24px)',
   },
-  '& .MuiInputAdornment-root .MuiIconButton-root': { p: '2px' },
+  // Место под иконку — чтобы она не легла поверх последних цифр даты.
+  '& .MuiPickersInputBase-sectionsContainer, & .MuiInputBase-input': {
+    paddingRight: '22px !important',
+  },
+  // `marginRight: 0` СНИМАЕТ отрицательный отступ кнопки календаря: пикер отдаёт её с
+  // `edge="end"`, а MUI по этому признаку сдвигает кнопку на `margin-right: -12px`
+  // (IconButton, вариант edge=end). Расчёт заточен под поле формы с его
+  // паддингом 20px — там сдвиг остаётся внутри. В ячейке ТЧ паддинг 8px, и
+  // кнопка вылезала за правую границу колонки ровно на половину иконки: в
+  // «Начислениях» она садилась верхом на линию сетки между «Началом периода» и
+  // «Норм. нагрузкой». Прижатие самого адорнмента (`right: 2px` выше) этого не
+  // лечило — отступ висит на кнопке ВНУТРИ него. `!important`, а не расчёт на
+  // специфичность: правило MUI приезжает из styled-компонента, и порядок вставки
+  // классов emotion зависит от порядка монтирования — на него не закладываемся.
+  '& .MuiInputAdornment-root .MuiIconButton-root': {
+    p: '2px',
+    marginRight: '0 !important',
+  },
   '& .MuiInputAdornment-root .MuiSvgIcon-root': { fontSize: 16 },
 }

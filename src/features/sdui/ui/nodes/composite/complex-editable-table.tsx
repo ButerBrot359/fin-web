@@ -55,7 +55,9 @@ import {
 import { ColumnResizeHandle } from './column-resize-handle'
 import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { TABLE_GRID_SX } from './table-grid-sx'
+import { tableTextColorSx } from '../../../lib/utils/table-text-color'
 import { SearchHitCell } from './table-search-cell'
+import { buildColumnBackgroundMap } from '../../../lib/utils/column-background'
 import { TableToolbar } from './table-toolbar'
 
 // Единая высота строки для master-detail пары (SCRUM-282 #3): в ячейках VERTICAL-групп
@@ -112,6 +114,13 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     () => extractAllLeafColumns(node.children),
 
     [node.children]
+  )
+
+  // Постоянная заливка колонок (column-background.ts): ячейка на TanStack знает
+  // только id колонки, props остались в исходном описании.
+  const columnBackgrounds = useMemo(
+    () => buildColumnBackgroundMap(flatColumns),
+    [flatColumns]
   )
 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
@@ -279,6 +288,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // прежней авто-шириной MUI (важно для многоуровневых шапок и футера).
   const tableSx = {
     ...TABLE_GRID_SX,
+    ...tableTextColorSx(node.props),
     ...(sizing.isResizable
       ? {
           tableLayout: 'fixed' as const,
@@ -600,6 +610,13 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                           row.original.rowId,
                           cell.column.id
                         )}
+                        backgroundColor={
+                          // Условная заливка строки перекрывает постоянную
+                          // заливку колонки — см. column-background.ts.
+                          resolveRowBackground(rowAppearance, row.original)
+                            ? undefined
+                            : columnBackgrounds.get(cell.column.id)
+                        }
                       >
                         {flexRender(
                           cell.column.columnDef.cell,

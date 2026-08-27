@@ -1,6 +1,7 @@
 import { useState, type FC } from 'react'
 import { Box, IconButton } from '@mui/material'
-import type { SxProps, Theme } from '@mui/material'
+import type { Theme } from '@mui/material'
+import type { SystemStyleObject } from '@mui/system'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { useTranslation } from 'react-i18next'
 
@@ -14,6 +15,10 @@ import {
   resolveOptionsParams,
   type OptionsParamValue,
 } from '../../../lib/utils/resolve-options-params'
+import {
+  readonlyCellTextStyle,
+  nowrapCellTextStyle,
+} from './table-cell-editor-styles'
 
 interface ReferenceCellEditorProps {
   colProps: Record<string, unknown>
@@ -21,6 +26,8 @@ interface ReferenceCellEditorProps {
   onChange: (value: unknown) => void
   onCommit: () => void
   extraParams?: Record<string, string>
+  /** Колонка исключена из переноса текста (см. `isNoWrapBinding`). */
+  noWrap?: boolean
 }
 
 /**
@@ -52,15 +59,19 @@ function readReferenceCellProps(
 
 // Компактная стилизация под ячейку ТЧ — по образцу cellSx/dateCellSx
 // из table-cell-editor.tsx (прозрачный фон, без рамки, высота 28px).
-const wrapperSx: SxProps<Theme> = {
+const inputBase = {
+  backgroundColor: 'transparent !important',
+  border: 'none !important',
+  borderRadius: '0 !important',
+  minHeight: '28px !important',
+  padding: '0 8px !important',
+}
+
+const wrapperSx: SystemStyleObject<Theme> = {
   width: '100%',
   '& .MuiFormControl-root': { mb: 0, position: 'static' },
   '& .MuiFilledInput-root': {
-    backgroundColor: 'transparent !important',
-    border: 'none !important',
-    borderRadius: '0 !important',
-    minHeight: '28px !important',
-    padding: '0 8px !important',
+    ...inputBase,
     // Кнопки (стрелка списка, «открыть карточку») прижаты к ВЕРХУ, а не к
     // середине: значение многострочное, и на двух строках центрированные
     // иконки уезжали бы к середине текста.
@@ -73,6 +84,24 @@ const wrapperSx: SxProps<Theme> = {
     // resize: none — ручка изменения размера в ячейке ТЧ неуместна.
     resize: 'none',
     overflowWrap: 'anywhere',
+  },
+  '& .MuiAutocomplete-endAdornment': { top: 2 },
+}
+
+/**
+ * Тот же пикер в колонке БЕЗ переноса («Источник финансирования»): значение —
+ * однострочный <input> (multilineInput={false}), поэтому кнопки центрируются по
+ * высоте поля, а не прижимаются к верху, а не влезший «хвост» наименования
+ * срезается многоточием.
+ */
+const nowrapWrapperSx: SystemStyleObject<Theme> = {
+  width: '100%',
+  '& .MuiFormControl-root': { mb: 0, position: 'static' },
+  '& .MuiFilledInput-root': { ...inputBase, alignItems: 'center' },
+  '& .MuiAutocomplete-input': {
+    padding: '4px 0 !important',
+    fontSize: '14px !important',
+    textOverflow: 'ellipsis',
   },
   '& .MuiAutocomplete-endAdornment': { top: 2 },
 }
@@ -101,6 +130,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   onChange,
   onCommit,
   extraParams,
+  noWrap,
 }) => {
   const { t } = useTranslation()
 
@@ -144,7 +174,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   // (известный бэкенд-gap resolveEnumOptions, спека §1.3(d)).
   if (!url) {
     return (
-      <span style={{ padding: '4px 8px', fontSize: 14 }}>
+      <span style={noWrap ? nowrapCellTextStyle : readonlyCellTextStyle}>
         {renderCellValue(value)}
       </span>
     )
@@ -209,7 +239,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
       : null
 
   return (
-    <Box sx={wrapperSx}>
+    <Box sx={noWrap ? nowrapWrapperSx : wrapperSx}>
       <AutocompleteInput
         value={selectedOption}
         inputValue={inputValue}
@@ -218,7 +248,8 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
         fullWidth
         // Ширина колонки ТЧ фиксирована, а <input> длинное наименование не
         // переносит, а прокручивает: «Надбавка за ос…» вместо полного значения.
-        multilineInput
+        // Исключение — колонки из isNoWrapBinding: там однострочность нужна.
+        multilineInput={!noWrap}
         loading={loading}
         onInputChange={(_e, val, reason) => {
           setInputValue(val)

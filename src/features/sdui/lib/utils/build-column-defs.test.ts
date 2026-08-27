@@ -140,6 +140,39 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     expect(renderedLabels(defs[0].header)).toEqual(['Предоставлять вычет'])
   })
 
+  it('стопка тянется во всю высоту ячейки равными треками — общая линия', () => {
+    const defs = buildColumnDefs(
+      [
+        verticalGroup([
+          {
+            id: 'col.a',
+            type: 'TABLE_COLUMN',
+            binding: 'A',
+            props: { label: 'А' },
+          } as ViewNode,
+          {
+            id: 'col.b',
+            type: 'TABLE_COLUMN',
+            binding: 'B',
+            props: { label: 'Б' },
+          } as ViewNode,
+        ]),
+      ],
+      syncRef
+    )
+
+    // Именно этой парой (высота во всю ячейку + равные треки) разделитель
+    // под-строк встаёт на одной высоте во всех колонках строки, даже когда в
+    // одной из них значение перенеслось на две строки.
+    const style = (
+      (defs[0].header as () => ReactElement)().props as {
+        style: { height: string; gridAutoRows: string }
+      }
+    ).style
+    expect(style.height).toBe('100%')
+    expect(style.gridAutoRows).toBe('1fr')
+  })
+
   it('под-строки одной высоты, разделитель — между ними, а не сверху первой', () => {
     const defs = buildColumnDefs(
       [
@@ -162,12 +195,12 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     )
 
     const rows = subRows(defs[0].header)
-    // Одинаковая высота под-строк в шапке и в ячейке — за счёт неё i-я подпись
+    // Общий пол высоты под-строк в шапке и в ячейке — за счёт него i-я подпись
     // встаёт над i-м редактором (сетка общая, VERTICAL_SUB_ROW_HEIGHT).
     for (const row of rows) {
-      expect((row.props as { style: { height: number } }).style.height).toBe(
-        VERTICAL_SUB_ROW_HEIGHT
-      )
+      expect(
+        (row.props as { style: { minHeight: number } }).style.minHeight
+      ).toBe(VERTICAL_SUB_ROW_HEIGHT)
     }
     // Линия-разделитель как в 1С: только у второй под-строки, иначе получилась бы
     // лишняя черта под шапкой таблицы.
@@ -178,10 +211,11 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     expect(classNames[1]).toContain('border-t')
   })
 
-  // В ЯЧЕЙКЕ высота под-строки минимальная, а не жёсткая: перенесённое на вторую
-  // строку readonly-значение иначе легло бы поверх разделителя и соседней
-  // под-строки. В шапке высота остаётся жёсткой (тест выше).
-  it('под-строки ЯЧЕЙКИ держат minHeight, а не height', () => {
+  // Высота под-строки в ячейке — НЕ жёсткая: значения переносятся по ширине
+  // колонки, и жёсткая высота резала бы вторую строку текста. Общую сетку
+  // строки держат равные треки грида (gridAutoRows: 1fr) при высоте контейнера
+  // во всю ячейку — см. verticalSubRows.
+  it('под-строки ЯЧЕЙКИ растут под содержимое, но не ниже общего пола', () => {
     const defs = buildColumnDefs(
       [
         verticalGroup([
@@ -429,5 +463,46 @@ describe('buildColumnDefs — условное состояние ячейки',
   it('соседняя строка без ключей остаётся редактируемой', () => {
     const { container } = renderCell({ rowId: '2', KodPlatnykhUslug: '' })
     expect(container.querySelector('input, textarea')).toBeTruthy()
+  })
+})
+
+// Правило переноса текста в ТЧ выключается по биндингу колонки
+// (isNoWrapBinding) — проверяем, что признак доезжает до ячейки.
+describe('buildColumnDefs — колонка без переноса текста', () => {
+  afterEach(cleanup)
+
+  const syncRef = {
+    current: { updateCell: () => undefined, commitCell: () => undefined },
+  } as unknown as RefObject<UseTableSyncResult>
+
+  const column = (binding: string): ViewNode =>
+    ({
+      id: `col.${binding}`,
+      type: 'TABLE_COLUMN',
+      binding,
+      props: { label: binding, cellWidget: 'TEXT_FIELD' },
+    }) as ViewNode
+
+  const renderCell = (binding: string) => {
+    const defs = buildColumnDefs([column(binding)], syncRef)
+    const cell = defs[0].cell as (
+      info: CellContext<TableRow, unknown>
+    ) => ReactElement
+    return render(
+      cell({
+        row: { original: { rowId: '1', [binding]: 'Значение' } },
+      } as unknown as CellContext<TableRow, unknown>)
+    )
+  }
+
+  it('«Источник финансирования» — однострочный input', () => {
+    const { container } = renderCell('IstochnikFinansirovaniya')
+    expect(container.querySelector('input')).toBeTruthy()
+    expect(container.querySelector('textarea')).toBeNull()
+  })
+
+  it('обычная колонка по-прежнему переносит текст (textarea)', () => {
+    const { container } = renderCell('VidNachisleniya')
+    expect(container.querySelector('textarea')).toBeTruthy()
   })
 })

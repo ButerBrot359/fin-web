@@ -157,3 +157,30 @@ describe('TableCellEditor — перенос текста в редакторе'
     expect(event.defaultPrevented).toBe(true)
   })
 })
+
+// Колонка «Источник финансирования» из общего правила переноса исключена:
+// наименования источников длинные, и перенос раздувал каждую строку ТЧ.
+describe('TableCellEditor — колонка без переноса (noWrap)', () => {
+  it('readonly-значение идёт одной строкой и обрезается многоточием', () => {
+    const { container } = render(
+      <TableCellEditor
+        {...base}
+        readonly
+        noWrap
+        value="Целевые текущие трансферты из областного бюджета"
+      />
+    )
+    const style = container.querySelector('span')!.style
+    expect(style.getPropertyValue('white-space')).toBe('nowrap')
+    expect(style.getPropertyValue('text-overflow')).toBe('ellipsis')
+    expect(style.getPropertyValue('overflow')).toBe('hidden')
+  })
+
+  it('TEXT_FIELD остаётся однострочным input, а не textarea', () => {
+    const { container } = render(
+      <TableCellEditor {...base} noWrap value="Республиканский бюджет" />
+    )
+    expect(container.querySelector('input')).toBeTruthy()
+    expect(container.querySelector('textarea')).toBeNull()
+  })
+})

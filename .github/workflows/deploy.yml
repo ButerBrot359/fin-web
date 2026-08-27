@@ -54,6 +54,10 @@ jobs:
             VITE_FORM_CONFIGS_URL=${{ env.DEV_FORM_CONFIGS_URL }}
             ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
             DOCUMENT_TYPES_API_BASE_URL=${{ env.DEV_API_URL }}
+            # Выключено, пока переменная репозитория не поднята: включение до выдачи
+            # паролей закрывает приложение целиком. Поднимать одновременно с серверным
+            # WEBBUH_AUTH_ENABLED — по отдельности любой из флагов бесполезен.
+            VITE_AUTH_ENABLED=${{ vars.VITE_AUTH_ENABLED || 'false' }}
 
   deploy:
     runs-on: ubuntu-latest

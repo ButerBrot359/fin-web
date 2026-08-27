@@ -1,7 +1,6 @@
 import { Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
-import UserIcon from '@/shared/assets/icons/user.svg'
 import MenuIcon from '@/shared/assets/icons/menu.svg'
 import { BackgroundTasksIndicator } from '@/features/background-tasks'
 import { Button } from '@/shared/ui/buttons'
@@ -9,6 +8,7 @@ import { ConfirmDialog } from '@/shared/ui/confirm-dialog/confirm-dialog'
 
 import { TOOLBAR_ACTIONS } from '../lib/consts/toolbar-actions'
 import { useLanguageSwitch } from '../lib/hooks/use-language-switch'
+import { TopBarUser } from './top-bar-user'
 
 const LANGUAGE_LABELS: Record<string, string> = {
   ru: 'РУС',
@@ -58,12 +58,7 @@ export const TopBar = () => {
 
         <div className="mx-1 h-5 w-px bg-ui-04" aria-hidden="true" />
 
-        <div className="flex items-center gap-2 mx-1">
-          <UserIcon className="h-5 w-5 text-ui-03" />
-          <Typography variant="body2" className="text-ui-06">
-            {t('topBar.userName')}
-          </Typography>
-        </div>
+        <TopBarUser />
 
         <div className="mx-1 h-5 w-px bg-ui-04" aria-hidden="true" />
 

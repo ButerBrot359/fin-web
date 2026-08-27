@@ -7,3 +7,4 @@ export {
 } from './lib/hooks/use-table-filter-store'
 export { useFilterUrlSync } from './lib/hooks/use-filter-url-sync'
 export { useDebouncedValue } from './lib/hooks/use-debounced-value'
+export { useDictionarySearch } from './lib/hooks/use-dictionary-search'

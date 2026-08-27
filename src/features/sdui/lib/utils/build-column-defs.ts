@@ -13,6 +13,7 @@ import type { UseTableValidationResult } from '../hooks/use-table-validation'
 import { resolveRowFilterParams } from './resolve-row-filter-params'
 import { resolveCellState } from './resolve-cell-state'
 import { columnSizeProps, toColumnWidth } from './column-sizing'
+import { isNoWrapBinding } from './nowrap-columns'
 
 /**
  * Кастомные поля в `ColumnDef.meta`. Читаются приведением типа на месте
@@ -34,28 +35,39 @@ export interface SduiColumnMetaExtra {
 }
 
 /**
- * Высота одной под-строки VERTICAL-группы. Единая сетка для шапки и ячейки:
- * i-я подпись стоит ровно над i-м редактором (эталон 1С — две «под-строки» в
- * одной колонке). Пара с ROW_HEIGHT в `complex-editable-table.tsx`, который
- * считает высоту строки как 2 × это значение.
+ * Минимальная высота одной под-строки VERTICAL-группы. Единая сетка для шапки и
+ * ячейки: i-я подпись стоит ровно над i-м редактором (эталон 1С — две
+ * «под-строки» в одной колонке). Пара с ROW_HEIGHT в
+ * `complex-editable-table.tsx`, который считает минимальную высоту строки как
+ * 2 × это значение.
  */
 export const VERTICAL_SUB_ROW_HEIGHT = 36
 
 /**
- * Стопка под-строк VERTICAL-группы: фиксированная высота каждой + разделитель
- * между ними (как линия сетки в 1С). `display:grid` + `alignContent:center`
- * центрирует содержимое по вертикали, не отбирая у него ширину — редакторы
- * остаются во всю ячейку, как при прежнем `flex flex-col`.
+ * Стопка под-строк VERTICAL-группы: равные по высоте под-строки + разделитель
+ * между ними (как линия сетки в 1С).
  *
  * @param paddingX горизонтальный отступ под-строки: 16px в шапке (совпасть с
  *                 остальными заголовками MUI), 0 в ячейке (у редакторов свой)
  * @param clip     обрезать содержимое по границам под-строки. Только для ШАПКИ:
  *                 подпись, не влезшая в ширину, не должна вылезать на соседнюю
  *                 под-строку. В ЯЧЕЙКЕ обрезать нельзя — у редакторов есть то,
- *                 что законно выходит за их 36px (рамка обязательного поля,
- *                 focus-ring), и `overflow:hidden` срезал бы её. Этим же флагом
- *                 различается высота под-строки: жёсткая в шапке, минимальная в
- *                 ячейке (перенос текста readonly-значения)
+ *                 что законно выходит за их границы (рамка обязательного поля,
+ *                 focus-ring), и `overflow:hidden` срезал бы её
+ *
+ * КАК ДЕРЖИТСЯ ОБЩАЯ СЕТКА СТРОКИ. Значения в ТЧ переносятся по ширине колонки
+ * (как во вкладке «Вычеты ИПН», где вертикальных групп нет), поэтому жёсткой
+ * высоты у под-строки быть не может: длинное ФИО занимает две строки текста.
+ * Вместо неё:
+ *   1) контейнер стопки тянется во всю высоту ячейки (`height: 100%`), а ячейки
+ *      строки таблицы по природе `<tr>` одной высоты;
+ *   2) под-строки — треки грида `1fr` (то есть `minmax(auto, 1fr)`): при
+ *      измерении контента трек не меньше своего содержимого И все треки
+ *      выравниваются по самому высокому, а при готовой высоте ячейки делят её
+ *      поровну.
+ * Отсюда: разделитель под-строк во ВСЕХ колонках строки встаёт на одной высоте
+ * (эталон 1С — единая линия), а содержимое при этом не обрезается. Прежняя
+ * жёсткая `height` тот же результат давала ценой обрезки значений многоточием.
  */
 function verticalSubRows(
   items: { key: string; content: ReactNode }[],
@@ -64,7 +76,18 @@ function verticalSubRows(
 ): ReactNode {
   return createElement(
     'div',
-    { className: 'flex flex-col' },
+    {
+      style: {
+        height: '100%',
+        display: 'grid',
+        // minmax(0, 1fr), а не дефолтный auto-трек: auto-трек не сжимается ниже
+        // ширины содержимого, поэтому длинная подпись растягивала бы его и
+        // вылезала за границы колонки вместо обрезки многоточием. Редакторы при
+        // этом по-прежнему занимают всю ширину ячейки (1fr).
+        gridTemplateColumns: 'minmax(0, 1fr)',
+        gridAutoRows: '1fr',
+      },
+    },
     ...items.map((item, index) =>
       createElement(
         'div',
@@ -72,19 +95,10 @@ function verticalSubRows(
           key: item.key,
           className: index > 0 ? 'border-t border-ui-03' : undefined,
           style: {
-            // В ШАПКЕ высота жёсткая (подпись обрезается многоточием, расти ей
-            // не с чего), в ЯЧЕЙКЕ — минимальная: readonly-значение переносится
-            // по ширине колонки, и второй строкой оно легло бы поверх
-            // разделителя и соседней под-строки. Пока значение в одну строку —
-            // обычный случай — сетка та же, ровно VERTICAL_SUB_ROW_HEIGHT.
-            ...(clip
-              ? { height: VERTICAL_SUB_ROW_HEIGHT }
-              : { minHeight: VERTICAL_SUB_ROW_HEIGHT }),
+            // Пол высоты — общий для всех колонок: строка с короткими
+            // значениями не должна схлопываться (см. док-комментарий выше).
+            minHeight: VERTICAL_SUB_ROW_HEIGHT,
             display: 'grid',
-            // minmax(0, 1fr), а не дефолтный auto-трек: auto-трек не сжимается
-            // ниже ширины содержимого, поэтому длинная подпись растягивала бы
-            // его и вылезала за границы колонки вместо обрезки многоточием.
-            // Редакторы при этом по-прежнему занимают всю ширину ячейки (1fr).
             gridTemplateColumns: 'minmax(0, 1fr)',
             alignContent: 'center',
             ...(clip ? { overflow: 'hidden' } : {}),
@@ -160,6 +174,7 @@ export function buildColumnDefs(
             value: info.row.original[col.binding],
             readonly: state.readonly,
             required: state.required,
+            noWrap: isNoWrapBinding(col.binding),
             revealErrors: validationRef?.current.revealErrors ?? false,
             props: col.props,
             extraParams: resolveRowFilterParams(col, info.row.original),
@@ -235,6 +250,7 @@ export function buildColumnDefs(
                     value: info.row.original[childCol.binding],
                     readonly: state.readonly,
                     required: state.required,
+                    noWrap: isNoWrapBinding(childCol.binding),
                     revealErrors: validationRef?.current.revealErrors ?? false,
                     props: childCol.props,
                     extraParams: resolveRowFilterParams(

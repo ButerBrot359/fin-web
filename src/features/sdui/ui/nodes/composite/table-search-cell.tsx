@@ -10,13 +10,21 @@ import { TableCell } from '@mui/material'
 
 interface SearchHitCellProps {
   isHit: boolean
+  /** Постоянная заливка колонки (column-background.ts), если она задана. */
+  backgroundColor?: string
   children: ReactNode
 }
 
-export const SearchHitCell = ({ isHit, children }: SearchHitCellProps) => (
+export const SearchHitCell = ({
+  isHit,
+  backgroundColor,
+  children,
+}: SearchHitCellProps) => (
   <TableCell
     data-search-hit={isHit || undefined}
-    sx={{ p: 0, bgcolor: isHit ? 'action.focus' : undefined }}
+    // Подсветка текущего совпадения поиска важнее постоянной заливки: она
+    // временная и отвечает на действие пользователя прямо сейчас.
+    sx={{ p: 0, bgcolor: isHit ? 'action.focus' : backgroundColor }}
   >
     {children}
   </TableCell>

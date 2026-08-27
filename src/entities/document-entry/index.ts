@@ -5,9 +5,12 @@ export {
   createDocumentEntry,
   updateDocumentEntry,
   unpostDocumentEntry,
+  postDocumentEntry,
+  bulkEditDocumentEntries,
   getPrintCommands,
   printDocumentEntry,
 } from './api/document-entry'
+export type { BulkEditPayload, BulkEditResult } from './api/document-entry'
 export { useDocumentEntryPrint } from './lib/hooks/use-document-entry-print'
 export type {
   CreateDocumentEntryPayload,

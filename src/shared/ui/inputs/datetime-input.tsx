@@ -54,7 +54,17 @@ export const DateTimeInput = ({
 
   const spec = dateFormat ? resolveDateFormatSpec(dateFormat) : null
 
+  const fieldRef = useRef<FieldRef<PickerValidDate | null> | null>(null)
+
   const handleChange = (newValue: Date | null) => {
+    // Недодата посекционного набора (месяц «0_» по пути от «06» к «07», разряд,
+    // стёртый Backspace на середине правки) — транзиент, а не значение: наружу
+    // она уходила пустой строкой, и SDUI слал серверу мусорный EVENT «""» перед
+    // настоящим. Пикер отдаёт её как null/Invalid Date с тем же context, что у
+    // настоящей очистки, поэтому здесь транзиенты глушатся целиком, а явная
+    // очистка идёт своими путями: крестик — onClear, пустое поле — commit на
+    // blur (см. slotProps ниже).
+    if (!newValue || !isValid(newValue)) return
     // Разряды мельче формата пикер берёт из текущего значения или сегодняшнего
     // дня — их нужно обнулить ДО сериализации, иначе выбранный месяц уехал бы
     // на сервер с посторонним днём (см. snapToGranularity).
@@ -65,7 +75,13 @@ export const DateTimeInput = ({
     onChange(serializeDateInput(snapped, dateOnly))
   }
 
-  const fieldRef = useRef<FieldRef<PickerValidDate | null> | null>(null)
+  // Пустое поле при уходе фокуса — это уже решение пользователя, а не транзиент:
+  // очистка коммитится, как это делает 1С по факту выхода из поля.
+  const handleBlur = () => {
+    if (!value) return
+    const sections = fieldRef.current?.getSections()
+    if (sections?.every((section) => section.value === '')) onChange('')
+  }
 
   /**
    * Backspace идёт по разрядам справа налево сам, без мыши.
@@ -98,9 +114,15 @@ export const DateTimeInput = ({
     textField: { error, helperText, required, size, fullWidth },
     // `clearable` — крестик «стереть всё сразу», альтернатива поразрядному
     // Backspace. Пикер сам прячет его, пока на поле нет курсора или фокуса.
+    // `onClear` — единственный синхронно-достоверный сигнал явной очистки:
+    // в onChange она неотличима от транзиента набора (см. handleChange).
     field: {
       clearable: true,
+      onClear: () => {
+        onChange('')
+      },
       onKeyDown: handleKeyDown,
+      onBlur: handleBlur,
       unstableFieldRef: fieldRef,
     },
   }

@@ -97,6 +97,23 @@ describe('buildObjectValue', () => {
       targetTypeCode: 'Organizacii',
     })
   })
+
+  // SCRUM-388, ТЧ «Ведущие виды расчёта» карточки ПВР: составная ссылка на ДВА
+  // плана ОДНОГО домена (CALCULATION_PLAN). Инвариант бэка: голый id без
+  // targetTypeCode для same-domain членов отклоняется с HTTP 400
+  // (ValueFieldHelper.isSameDomainAmbiguous) — targetTypeCode ОБЯЗАН уехать.
+  it('same-domain члены (два ПВР-плана): targetTypeCode выбранного члена уходит в значение', () => {
+    const uderzhaniya = {
+      position: 2,
+      domainKind: 'CALCULATION_PLAN',
+      targetTypeCode: 'VidyUderzhaniyOrganizatsii',
+      presentation: 'Виды удержаний организации',
+    }
+    const v = buildObjectValue(uderzhaniya, { id: 999, label: 'Алименты' })
+    expect(v.targetTypeCode).toBe('VidyUderzhaniyOrganizatsii')
+    expect(v.type).toBe('CALCULATION_PLAN')
+    expect(v.id).toBe(999)
+  })
 })
 
 // ── Примитивные члены составного типа: SCRUM-279 ──

@@ -21,6 +21,8 @@ export const useUniversalDomainType = (domain: string, typeCode: string) => {
   return {
     title,
     attributes: data?.attributes ?? [],
+    // SCRUM-388: гейт SDUI-карточки записи (по образцу dictionary-entry-page)
+    newView: data?.newView ?? false,
     isLoading,
   }
 }

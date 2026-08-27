@@ -3,10 +3,12 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 import { MainPage } from '@/pages/main'
+import { LoginPage } from '@/pages/login'
 
 import { TopBar } from '@/widgets/top-bar'
 import { Sidebar } from '@/widgets/sidebar'
 
+import { AuthGuard, LOGIN_ROUTE } from '@/features/auth'
 import { DictSidebarDrawer, useDictSidebarStore } from '@/features/dict-sidebar'
 import {
   ShellSidebarHost,
@@ -71,6 +73,11 @@ const AccountPlanEntryPage = lazy(() =>
 const AccountCardPage = lazy(() =>
   import('@/pages/account-card').then((m) => ({
     default: m.AccountCardPage,
+  }))
+)
+const UniversalDomainEntryPage = lazy(() =>
+  import('@/pages/universal-domain/universal-domain-entry').then((m) => ({
+    default: m.UniversalDomainEntryPage,
   }))
 )
 const TreasuryExportPage = lazy(() =>
@@ -170,6 +177,12 @@ const AppRoutes = () => {
             path="/modules/:pageCode/account-card"
             element={<AccountCardPage />}
           />
+          {/* SCRUM-388: SDUI-карточка записи универсального домена (ПВР).
+              Список остаётся на catch-all (422 → легаси UniversalDomainPage). */}
+          <Route
+            path="/modules/:pageCode/calculationplan/:moduleCode/:entryId"
+            element={<UniversalDomainEntryPage />}
+          />
           <Route path="*" element={<SduiCatchAllPage />} />
         </Routes>
       </Suspense>
@@ -232,13 +245,29 @@ function App() {
   return (
     <BrowserRouter>
       <WorkspaceTabSync />
-      <Layout
-        sidebar={<ShellSidebarHost fallback={<Sidebar />} />}
-        header={<TopBar />}
-      >
-        <AppRoutes />
-      </Layout>
-      <DictSidebarDrawer />
+      <Routes>
+        {/*
+          Экран входа рендерится ВНЕ Layout: боковое меню и верхняя панель на нём
+          не нужны и наполняются данными, которых у невошедшего пользователя нет.
+          Остальное приложение живёт под splat-маршрутом — вложенный <Routes> в
+          AppRoutes матчится относительно «/», то есть дерево маршрутов не меняется.
+        */}
+        <Route path={LOGIN_ROUTE} element={<LoginPage />} />
+        <Route
+          path="*"
+          element={
+            <AuthGuard>
+              <Layout
+                sidebar={<ShellSidebarHost fallback={<Sidebar />} />}
+                header={<TopBar />}
+              >
+                <AppRoutes />
+              </Layout>
+              <DictSidebarDrawer />
+            </AuthGuard>
+          }
+        />
+      </Routes>
       <Toaster />
     </BrowserRouter>
   )

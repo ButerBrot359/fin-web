@@ -134,7 +134,18 @@ export function useSduiDispatch() {
             .getState()
             .ask(effect.message ?? '')
             .then((ok) => {
-              if (!ok) return
+              if (!ok) {
+                // SCRUM-276: «Нет» — тоже серверный исход, когда бэк дал
+                // cancelCommand (field.rollback:Nomer): без него отменённое
+                // значение оставалось бы в серверной сессии.
+                if (effect.cancelCommand) {
+                  void dispatchAction({
+                    type: 'COMMAND',
+                    command: effect.cancelCommand,
+                  })
+                }
+                return
+              }
               if (effect.confirmRequest) {
                 void effectHandler.executeActionRequest(effect.confirmRequest)
                 return
@@ -253,12 +264,14 @@ export function useSduiDispatch() {
           // (включая false с LIST/REPORT). null/undefined — «решай сам».
           if (res.dirty != null) setDirty(res.dirty)
           effectHandler.playAll(res.effects ?? []) // navigate играет здесь…
+          // SCRUM-277 §3.1: commandFailed=true — неуспех команды на 200-ответе.
+          // Патчи/эффекты уже применены (бэк ими показывает причину), но
+          // resetsDirty/closeAfter выполнять нельзя, и вызывающий код обязан
+          // увидеть неуспех (false) — например, save → god.open не продолжается.
+          // SCRUM-276 v7: касается и EVENT — отклонённая matrix-команда (stale
+          // generation) возвращает false, чтобы ячейка откатила локальный буфер.
+          if (res.commandFailed === true) return false
           if (action.type === 'COMMAND') {
-            // SCRUM-277 §3.1: commandFailed=true — неуспех команды на 200-ответе.
-            // Патчи/эффекты уже применены (бэк ими показывает причину), но
-            // resetsDirty/closeAfter выполнять нельзя, и вызывающий код обязан
-            // увидеть неуспех (false) — например, save → god.open не продолжается.
-            if (res.commandFailed === true) return false
             if (shouldReset) resetDirty()
             // Уже ли сервер увёл (эффект navigate)? Хост по этому флагу решает,
             // навигировать ли самому: закрытие вкладки (save+closeAfter, без

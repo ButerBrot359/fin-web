@@ -4,6 +4,7 @@ import { MenuItem, Tooltip } from '@mui/material'
 import type { ActionBehavior, NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useSduiEffects } from '../../../lib/use-sdui-effects'
+import { useMenuClose } from './menu-close-context'
 
 export const MenuItemNode: FC<NodeProps> = ({ node }) => {
   const label = node.props?.label as string | undefined
@@ -27,9 +28,13 @@ export const MenuItemNode: FC<NodeProps> = ({ node }) => {
 
   const dispatch = useSduiDispatch()
   const effects = useSduiEffects()
+  const closeMenu = useMenuClose()
 
   const handleClick = () => {
     if (!enabled) return
+    // SCRUM-276 spec v1 §6: закрыть меню ДО диспатча — серверный confirm
+    // не должен оказаться под backdrop'ом меню.
+    closeMenu?.()
     if (requestAction) {
       void effects.executeActionRequest(requestAction)
       return

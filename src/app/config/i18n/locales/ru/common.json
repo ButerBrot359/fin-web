@@ -7,7 +7,9 @@
     }
   },
   "topBar": {
-    "userName": "Имя пользователя"
+    "userName": "Имя пользователя",
+    "logout": "Выход",
+    "userMenu": "Меню пользователя"
   },
   "pageToolbar": {
     "search": "Поиск"
@@ -86,7 +88,19 @@
     "unpost": "Отменить проведение",
     "unpostSuccess": "Проведение отменено",
     "unpostError": "Ошибка отмены проведения",
-    "movementsError": "Не удалось загрузить движения документа"
+    "movementsError": "Не удалось загрузить движения документа",
+    "documentMovements": "Движения документа",
+    "editEntry": "Изменить",
+    "post": "Провести",
+    "postSuccess": "Документ проведён",
+    "postError": "Не удалось провести документ",
+    "refresh": "Обновить",
+    "bulkEditTitle": "Изменить выделенные",
+    "bulkEditCount": "Выбрано документов: {{count}}",
+    "bulkEditCommentSwitch": "Изменить комментарий",
+    "bulkEditCommentPlaceholder": "Новый комментарий (пусто — очистить)",
+    "bulkEditSuccess": "Изменено документов: {{changed}} из {{selected}}",
+    "bulkEditError": "Не удалось изменить выделенные документы"
   },
   "documentFormToolbar": {
     "postAndClose": "Провести и закрыть",
@@ -581,6 +595,9 @@
     "failed": "Ошибка",
     "cancelled": "Отменено"
   },
+  "universalDomain": {
+    "cardUnavailable": "Карточка записи пока недоступна — тип ещё не переведён на новую форму"
+  },
   "sdui": {
     "conflict": {
       "staleRevision": "Синхронизирую...",
@@ -716,6 +733,31 @@
     "notFound": {
       "title": "Страница не найдена",
       "description": "Проверьте адрес или вернитесь на главную."
+    },
+    "tabel": {
+      "employeeColumn": "Сотрудник / вид времени",
+      "totalColumn": "Итого",
+      "addEmployee": "Добавить сотрудника",
+      "podbor": "Подбор",
+      "podborTitle": "Подбор сотрудников",
+      "podborAdd": "Добавить ({{count}})",
+      "addWorkKind": "Добавить вид времени",
+      "selectEmployeeFirst": "Сначала выберите сотрудника",
+      "alreadyAdded": "Сотрудник уже есть в табеле",
+      "kindAlreadyAdded": "Этот вид времени уже добавлен",
+      "deleteEmployee": "Удалить сотрудника",
+      "deleteEmployeeConfirm": "Удалить сотрудника «{{name}}» из табеля?",
+      "deleteWorkKind": "Удалить вид времени",
+      "deleteWorkKindConfirm": "Удалить вид времени «{{name}}»?",
+      "invalidHours": "В ячейке должно быть указано число от 1 до 24",
+      "protectedKind": "Вид времени контролируется кадровыми документами",
+      "kindSummary": "{{days}} дн., {{hours}} ч.",
+      "expandAll": "Развернуть всех",
+      "collapseAll": "Свернуть всех",
+      "expand": "Развернуть",
+      "collapse": "Свернуть",
+      "payloadError": "Не удалось отобразить данные табеля",
+      "pickerUnavailable": "Подбор сотрудников недоступен: сервер не прислал контракт выбора"
     }
   },
   "tarifikatsiya": {
@@ -746,5 +788,21 @@
     "loadFailed": "Не удалось проверить документы",
     "savedToFolder": "Файл сохранён в выбранную папку",
     "saveFailed": "Не удалось сохранить файл"
+  },
+  "auth": {
+    "title": "Вход",
+    "loginLabel": "Пользователь",
+    "passwordLabel": "Пароль",
+    "submit": "Войти",
+    "submitting": "Вход…",
+    "unavailable": "Сервер недоступен. Проверьте соединение и повторите попытку",
+    "sessionExpired": "Сессия истекла, войдите заново",
+    "mustChangePassword": "Требуется сменить пароль. Обратитесь к администратору — форма смены пароля появится позже",
+    "loginPlaceholder": "Иванов Иван",
+    "instanceLabel": "Имя ИБ",
+    "showPassword": "Показать пароль",
+    "hidePassword": "Скрыть пароль",
+    "knownLoginsToggle": "Выбрать из сохранённых на этом устройстве",
+    "knownLoginsEmpty": "На этом устройстве ещё никто не входил"
   }
 }

@@ -158,6 +158,10 @@ export interface ViewEffect {
   confirmRequest?: ActionRequest | null
   // SCRUM-288 §2.4: behavior подтверждённой команды (resetsDirty и пр.).
   confirmBehavior?: ActionBehavior | null
+  // SCRUM-276: серверный откат по «Нет» (например, field.rollback:Nomer после
+  // правки номера). Без него «Нет» — локальный no-op, и введённое значение
+  // осталось бы и в поле, и в серверной сессии.
+  cancelCommand?: string
   // unsavedChanges: ответы «Да, сохранить» и «Нет, не сохранять». Обе —
   // КОМАНДЫ в ту же сессию: несохранённое дочерней формы лежит на сервере, и
   // «не сохранять» одним лишь закрытием панели его не выбросить.

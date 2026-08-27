@@ -264,6 +264,29 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
     expect(sessionMock.closeAfter).not.toHaveBeenCalled()
   })
 
+  // SCRUM-276 v7: отклонённая matrix-команда (stale generation) — EVENT с
+  // commandFailed: true. Патчи (refresh-payload) применяются, но результат
+  // false, чтобы ячейка/очередь увидели отказ и откатили локальный буфер.
+  it('EVENT + commandFailed: true → false, патчи применены', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValue({
+      ...commandResponse,
+      patches: [
+        { op: 'setValue', binding: 'tabel.matrix', value: { generation: 4 } },
+      ],
+      commandFailed: true,
+    } as unknown as ViewResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const ok = await result.current({
+      type: 'EVENT',
+      sourceNodeId: 'table.uchetRabochegoVremeni.matrix',
+      trigger: 'change',
+    })
+    expect(ok).toBe(false)
+    expect(sessionMock.setFromServer).toHaveBeenCalledWith('tabel.matrix', {
+      generation: 4,
+    })
+  })
+
   it('closeAfter: true, без navigate-эффекта → closeAfter(false) (SCRUM-283 v2)', async () => {
     // commandResponse.effects = [] → сервер не навигировал → хост сядет на соседнюю
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
@@ -416,6 +439,39 @@ describe('useSduiDispatch: эффект confirm (SCRUM-244 v3)', () => {
     await Promise.resolve()
     await Promise.resolve()
     expect(post).toHaveBeenCalledTimes(1)
+  })
+
+  // SCRUM-276: правка «Номера» — сервер даёт cancelCommand (field.rollback:Nomer),
+  // и «Нет» обязан его отправить, иначе отменённое значение остаётся в сессии.
+  it('по «Нет» с cancelCommand шлётся COMMAND с cancelCommand дословно', async () => {
+    const cancelResponse = {
+      ...confirmResponse,
+      effects: [
+        {
+          type: 'confirm',
+          message:
+            'Номер будет заполнен автоматически при записи. Продолжить редактирование?',
+          confirmCommand: 'field.confirm:Nomer',
+          cancelCommand: 'field.rollback:Nomer',
+        },
+      ],
+    } as unknown as ViewResponse
+    const post = vi
+      .spyOn(viewTransport, 'post')
+      .mockResolvedValueOnce(cancelResponse)
+      .mockResolvedValue(commandResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'COMMAND', command: 'nav.open:X' })
+
+    useConfirmStore.getState().answer(false)
+    await vi.waitFor(() => {
+      expect(post).toHaveBeenCalledTimes(2)
+    })
+    expect(post).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: { type: 'COMMAND', command: 'field.rollback:Nomer' },
+      })
+    )
   })
 })
 

@@ -7,7 +7,9 @@
     }
   },
   "topBar": {
-    "userName": "Пайдаланушы аты"
+    "userName": "Пайдаланушы аты",
+    "logout": "Шығу",
+    "userMenu": "Пайдаланушы мәзірі"
   },
   "pageToolbar": {
     "search": "Іздеу"
@@ -86,7 +88,19 @@
     "unpost": "Өткізуді болдырмау",
     "unpostSuccess": "Өткізу болдырмалды",
     "unpostError": "Өткізуді болдырмау қатесі",
-    "movementsError": "Құжат қозғалыстарын жүктеу мүмкін болмады"
+    "movementsError": "Құжат қозғалыстарын жүктеу мүмкін болмады",
+    "documentMovements": "Құжат қозғалыстары",
+    "editEntry": "Өзгерту",
+    "post": "Өткізу",
+    "postSuccess": "Құжат өткізілді",
+    "postError": "Құжатты өткізу мүмкін болмады",
+    "refresh": "Жаңарту",
+    "bulkEditTitle": "Таңдалғандарды өзгерту",
+    "bulkEditCount": "Таңдалған құжаттар: {{count}}",
+    "bulkEditCommentSwitch": "Түсініктемені өзгерту",
+    "bulkEditCommentPlaceholder": "Жаңа түсініктеме (бос — тазарту)",
+    "bulkEditSuccess": "Өзгертілген құжаттар: {{selected}} ішінен {{changed}}",
+    "bulkEditError": "Таңдалған құжаттарды өзгерту мүмкін болмады"
   },
   "documentFormToolbar": {
     "postAndClose": "Өткізу және жабу",
@@ -581,6 +595,9 @@
     "failed": "Қате",
     "cancelled": "Болдырылмады"
   },
+  "universalDomain": {
+    "cardUnavailable": "Жазба карточкасы әзірше қолжетімсіз — түр жаңа пішінге әлі көшірілмеген"
+  },
   "sdui": {
     "conflict": {
       "staleRevision": "Синхрондау...",
@@ -716,6 +733,31 @@
     "notFound": {
       "title": "Бет табылмады",
       "description": "Мекенжайды тексеріңіз немесе басты бетке оралыңыз."
+    },
+    "tabel": {
+      "employeeColumn": "Қызметкер / уақыт түрі",
+      "totalColumn": "Барлығы",
+      "addEmployee": "Қызметкер қосу",
+      "podbor": "Іріктеу",
+      "podborTitle": "Қызметкерлерді іріктеу",
+      "podborAdd": "Қосу ({{count}})",
+      "addWorkKind": "Уақыт түрін қосу",
+      "selectEmployeeFirst": "Алдымен қызметкерді таңдаңыз",
+      "alreadyAdded": "Қызметкер табельде бар",
+      "kindAlreadyAdded": "Бұл уақыт түрі қосылып қойған",
+      "deleteEmployee": "Қызметкерді жою",
+      "deleteEmployeeConfirm": "«{{name}}» қызметкерін табельден жою керек пе?",
+      "deleteWorkKind": "Уақыт түрін жою",
+      "deleteWorkKindConfirm": "«{{name}}» уақыт түрін жою керек пе?",
+      "invalidHours": "Ұяшықта 1-ден 24-ке дейінгі сан көрсетілуі керек",
+      "protectedKind": "Уақыт түрі кадр құжаттарымен бақыланады",
+      "kindSummary": "{{days}} күн, {{hours}} сағ.",
+      "expandAll": "Барлығын жазу",
+      "collapseAll": "Барлығын жию",
+      "expand": "Жазу",
+      "collapse": "Жию",
+      "payloadError": "Табель деректерін көрсету мүмкін болмады",
+      "pickerUnavailable": "Қызметкерлерді іріктеу қолжетімсіз: сервер таңдау келісімшартын жіберген жоқ"
     }
   },
   "tarifikatsiya": {
@@ -746,5 +788,21 @@
     "loadFailed": "Құжаттарды тексеру мүмкін болмады",
     "savedToFolder": "Файл таңдалған қалтаға сақталды",
     "saveFailed": "Файлды сақтау мүмкін болмады"
+  },
+  "auth": {
+    "title": "Кіру",
+    "loginLabel": "Пайдаланушы",
+    "passwordLabel": "Құпиясөз",
+    "submit": "Кіру",
+    "submitting": "Кіру…",
+    "unavailable": "Сервер қолжетімсіз. Байланысты тексеріп, қайталап көріңіз",
+    "sessionExpired": "Сеанс мерзімі бітті, қайта кіріңіз",
+    "mustChangePassword": "Құпиясөзді ауыстыру қажет. Әкімшіге хабарласыңыз — ауыстыру нысаны кейінірек қосылады",
+    "loginPlaceholder": "Иванов Иван",
+    "instanceLabel": "АБ атауы",
+    "showPassword": "Құпиясөзді көрсету",
+    "hidePassword": "Құпиясөзді жасыру",
+    "knownLoginsToggle": "Осы құрылғыда сақталғандардан таңдау",
+    "knownLoginsEmpty": "Бұл құрылғыда әлі ешкім кірмеген"
   }
 }

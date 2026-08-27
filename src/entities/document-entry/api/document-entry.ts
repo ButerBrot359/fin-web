@@ -76,3 +76,33 @@ export const unpostDocumentEntry = (id: number) =>
   apiService.post<DocumentEntryResponseData>({
     url: `/api/document-entries/${String(id)}/unpost`,
   })
+
+export const postDocumentEntry = (id: number) =>
+  apiService.post<DocumentEntryResponseData>({
+    url: `/api/document-entries/${String(id)}/post`,
+    timeout: LONG_OPERATION_TIMEOUT_MS,
+  })
+
+export interface BulkEditPayload {
+  selectedEntryIds: number[]
+  commentEnabled: boolean
+  comment: string
+}
+
+export interface BulkEditResult {
+  selectedCount: number
+  changedCount: number
+}
+
+// SCRUM-276 spec v2 §2.3: атомарная массовая смена комментария у выделенных
+// непроведённых документов. Один невалидный id откатывает всю операцию.
+// Ответ — в стандартной оболочке ApiDataResponse.data. Тип документа знает
+// вызывающая сторона — entities-слой per-type кодов не хардкодит.
+export const bulkEditDocumentEntries = (
+  typeCode: string,
+  payload: BulkEditPayload
+) =>
+  apiService.post<{ data: BulkEditResult }>({
+    url: `/api/document-entries/${typeCode}/bulk-edit`,
+    data: payload,
+  })

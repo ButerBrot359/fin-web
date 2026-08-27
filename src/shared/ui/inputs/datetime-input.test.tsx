@@ -152,28 +152,28 @@ describe('DateTimeInput — очистка значения', () => {
     expect(clearButton()).toBeTruthy()
   })
 
-  it('крестик отдаёт наружу пустую строку', () => {
+  it('крестик отдаёт наружу пустую строку', async () => {
     const onChange = vi.fn<(v: string) => void>()
     renderInput({ onChange })
     fireEvent.click(clearButton()!)
-    expect(onChange).toHaveBeenCalledWith('')
+    // Очистка отложена на макрозадачу (см. handleChange): в момент события
+    // крестик ещё не успел опустошить разряды.
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('')
+    })
   })
 
   it('Backspace стирает текущий разряд и сам переводит каретку на предыдущий', async () => {
-    // Поле контролируемое: без стейта наверху пикер пересинхронизировал бы
-    // разряды обратно из неизменившегося `value`.
-    const onChange = vi.fn<(v: string) => void>()
-    renderControlledInput(onChange)
+    // Стирание — предмет пикера; наш вклад — только перевод каретки, его и
+    // проверяем. Видимая пустота разряда в jsdom недостоверна: без эха значения
+    // наверх пикер тут же пересинхронизирует разряды из неизменившегося `value`
+    // (в браузере сфокусированное поле держит свой ввод само).
+    renderControlledInput()
     const [day, month, year] = sections()
 
     focusSection(year)
     pressBackspace(year)
-    await waitFor(() => {
-      expect(year.getAttribute('aria-valuenow')).toBeNull()
-    })
-    // Дата стала неполной — наружу уходит пустая строка, как при любой правке.
-    expect(onChange).toHaveBeenLastCalledWith('')
-    // Главное: каретка сама переехала на месяц, мышь не понадобилась.
+    // Каретка сама переехала на месяц, мышь не понадобилась.
     await waitFor(() => {
       expect(document.activeElement).toBe(month)
     })
@@ -182,14 +182,20 @@ describe('DateTimeInput — очистка значения', () => {
     await waitFor(() => {
       expect(document.activeElement).toBe(day)
     })
+  })
 
-    // Три нажатия — и от «12.08.2026» не осталось ни одного разряда.
-    pressBackspace(day)
-    await waitFor(() => {
-      expect(sections().every((s) => !s.getAttribute('aria-valuenow'))).toBe(
-        true
-      )
-    })
+  it('недодата при наборе не отдаёт наружу пустую строку (SCRUM-276)', async () => {
+    const onChange = vi.fn<(v: string) => void>()
+    renderControlledInput(onChange)
+    const [, month] = sections()
+
+    // Стереть только месяц: «12.__.2026» — невалидная, недонабранная дата.
+    // Раньше каждый такой шаг слал наружу «""» — и SDUI гнал серверу мусорный
+    // EVENT перед настоящим значением.
+    focusSection(month)
+    pressBackspace(month)
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(onChange).not.toHaveBeenCalled()
   })
 
   it('на первом разряде каретка не уезжает за границу поля', async () => {

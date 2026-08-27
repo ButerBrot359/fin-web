@@ -39,10 +39,24 @@ const buildAttributeColumns = (
       ),
     }))
 
+interface DocumentColumnsOptions {
+  /** SCRUM-276 §3.2: явный 1С-порядок кодов атрибутов; неизвестные — после. */
+  columnOrder?: string[]
+  /** SCRUM-276 §3.2: скрыть статус-колонку («Проведён» вне эталона 1С). */
+  hideStatus?: boolean
+}
+
+const orderIndex = (order: string[], code: string): number => {
+  const idx = order.indexOf(code)
+  return idx === -1 ? order.length : idx
+}
+
 export const useDocumentColumns = (
-  attributes: DocumentAttribute[]
+  attributes: DocumentAttribute[],
+  options?: DocumentColumnsOptions
 ): ColumnDef<DocumentEntry>[] => {
   const { t, i18n } = useTranslation()
+  const { columnOrder, hideStatus } = options ?? {}
 
   return useMemo(() => {
     const statusColumn: ColumnDef<DocumentEntry> = {
@@ -63,10 +77,20 @@ export const useDocumentColumns = (
       cell: (info) => <CellText>{info.getValue() as string}</CellText>,
     }
 
+    let attributeColumns = buildAttributeColumns(attributes, i18n.language)
+    if (columnOrder) {
+      // Стабильная сортировка сохраняет metadata-порядок внутри «неизвестных»
+      attributeColumns = [...attributeColumns].sort(
+        (a, b) =>
+          orderIndex(columnOrder, a.id ?? '') -
+          orderIndex(columnOrder, b.id ?? '')
+      )
+    }
+
     return [
-      statusColumn,
-      ...buildAttributeColumns(attributes, i18n.language),
+      ...(hideStatus ? [] : [statusColumn]),
+      ...attributeColumns,
       nameColumn,
     ]
-  }, [attributes, i18n.language, t])
+  }, [attributes, columnOrder, hideStatus, i18n.language, t])
 }

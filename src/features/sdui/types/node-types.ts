@@ -64,6 +64,10 @@ export type EffectType =
   // Диалог «Сохранить изменения?» с тремя ответами — тот же, что у карточки
   // документа. Эксклюзивен, как confirm.
   | 'unsavedChanges'
+  // Фоновая операция запущена командой (SCRUM-330 §3.3): в эффекте — полный
+  // объект задачи (effect.task). Фронт поллит GET /api/tasks/{id} и по
+  // терминальному статусу шлёт COMMAND task.finished:<id> в ту же сессию.
+  | 'taskStarted'
 
 // HYDRATE — догрузка данных deferred-нод (SCRUM-384): ответ приходит в
 // существующем формате statePatch+patches, tree/state не возвращаются.

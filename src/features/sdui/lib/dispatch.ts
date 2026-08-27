@@ -26,6 +26,13 @@ import { shouldRevealTableErrors } from './utils/reveal-policy'
 import { openDialogAsPanel } from './open-dialog-panel'
 import { relaySelectionToParent } from './relay-selection'
 import { buildCommonEffectDeps } from './build-effect-deps'
+import { useCommandInflightStore } from './stores/command-inflight-store'
+import {
+  clearFormSession,
+  readFormSession,
+  saveFormSession,
+} from './form-session-storage'
+import { useAsyncTaskStore } from '@/entities/async-task'
 
 export function useSduiDispatch() {
   const location = useLocation()
@@ -50,6 +57,20 @@ export function useSduiDispatch() {
       }
     ): Promise<boolean> {
       const { formSessionId, revision } = session.getSession()
+
+      // SCRUM-330 Работа 1: in-flight-гард от двойного клика. Повторный COMMAND,
+      // пока предыдущий той же сессии не отвечен, дропается молча: раньше он ждал
+      // блокировку на бэке 20 с и падал 409 LOCK_CONFLICT. isRetry пропускаем —
+      // retry конфликт-хендлера стартует, пока флаг исходной команды ещё держится.
+      const inflightKey =
+        action.type === 'COMMAND' && !isRetry ? formSessionId : null
+      if (inflightKey) {
+        if (inflightKey in useCommandInflightStore.getState().sessions) {
+          return false
+        }
+        useCommandInflightStore.getState().begin(inflightKey)
+      }
+
       const {
         replaceAll,
         merge,
@@ -124,6 +145,17 @@ export function useSduiDispatch() {
               )
             })
         },
+        taskStarted: (effect) => {
+          // SCRUM-330 §3.3: фоновая операция запущена — задача приезжает в
+          // эффекте целиком (иначе до первого опроса показывать было бы нечего).
+          // Кладём в стор с привязкой к сессии; поллинг и рапорт task.finished —
+          // на вотчере экрана (use-task-watcher). Сессию читаем в момент
+          // эффекта: на OPEN-ответе setSession уже отработал.
+          const sid = session.getSession().formSessionId
+          if (effect.task && sid) {
+            useAsyncTaskStore.getState().track(effect.task, sid)
+          }
+        },
         unsavedChanges: (effect) => {
           // Три ответа — три исхода: «Да» и «Нет» уходят серверными командами в
           // ТУ ЖЕ сессию, «Отмена» не шлёт ничего (форма остаётся открытой).
@@ -177,18 +209,24 @@ export function useSduiDispatch() {
           revealAllTableErrors()
         }
 
+        const route = location.pathname + location.search
         const res = await viewTransport.post({
-          formSessionId: action.type === 'OPEN' ? null : formSessionId,
+          // SCRUM-330 Работа 2: на OPEN шлём formSessionId, переживший F5 в
+          // sessionStorage. Сейчас бэк его игнорирует (резюм отложен — v2 §2);
+          // включение резюма будет односторонним, серверным, без правок фронта.
+          formSessionId:
+            action.type === 'OPEN' ? readFormSession(route) : formSessionId,
           revision: action.type === 'OPEN' ? null : revision,
           ...(action.type === 'OPEN' && action.layoutCode
             ? { layoutCode: action.layoutCode }
             : {}),
-          route: location.pathname + location.search,
+          route,
           action,
         })
 
         if (action.type === 'OPEN') {
           setSession(res.formSessionId, res.revision)
+          saveFormSession(route, res.formSessionId)
           session.setLayoutCode?.(action.layoutCode ?? null)
           if (res.tree) setRoot(res.tree)
           setOnDirtyClose?.(res.onDirtyClose ?? null)
@@ -201,6 +239,8 @@ export function useSduiDispatch() {
           effectHandler.playAll(res.effects ?? [])
         } else if (action.type === 'CLOSE') {
           // reset is done by SduiScreen on unmount
+          // Сессия закрыта штатно — резюмить после F5 больше нечего (SCRUM-330)
+          clearFormSession(route)
         } else {
           // EVENT or COMMAND — order is critical: revision → clear old errors → tree patches → value patches → effects
           bumpRevision(res.revision)
@@ -265,6 +305,8 @@ export function useSduiDispatch() {
           showToast('error', message)
         }
         return false
+      } finally {
+        if (inflightKey) useCommandInflightStore.getState().end(inflightKey)
       }
     },
     [

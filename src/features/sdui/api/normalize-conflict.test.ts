@@ -33,4 +33,17 @@ describe('normalizeConflictBody', () => {
     expect(normalizeConflictBody(null).code).toBe('')
     expect(normalizeConflictBody('oops').code).toBe('')
   })
+
+  // SCRUM-330: OBJECT_LOCKED/LOCK_CONFLICT несут пользовательский текст в
+  // стандартном поле message — он должен доехать до conflict-handler
+  it('переносит message стандартного тела ошибки', () => {
+    const result = normalizeConflictBody({
+      error: 'OBJECT_LOCKED',
+      message: 'Не удалось заблокировать «Больничный лист (id=1)»',
+    })
+    expect(result.code).toBe('OBJECT_LOCKED')
+    expect(result.message).toBe(
+      'Не удалось заблокировать «Больничный лист (id=1)»'
+    )
+  })
 })

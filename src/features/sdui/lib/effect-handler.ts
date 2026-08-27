@@ -61,6 +61,11 @@ export interface EffectHandlerDeps {
   // БЕЗ ремаунта экрана, БЕЗ повторного OPEN сессии. В отличие от navigate,
   // сессию не трогает. Реализация в dispatch.
   replaceUrl: (route: string) => void
+  // taskStarted (SCRUM-330 §3.3): фоновая операция запущена — регистрация
+  // задачи под поллинг. Реализация в dispatch (нужен formSessionId сессии);
+  // session-less путь (use-sdui-effects) деп не даёт — эффект туда прийти
+  // не должен, отсутствие = warn.
+  taskStarted?: (effect: ViewEffect) => void
 }
 
 /**
@@ -139,6 +144,14 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
         // Текста у эффекта нет: вопрос один и тот же во всех формах, поэтому
         // формулировки живут в i18n клиента (как у карточки документа).
         deps.unsavedChanges(effect)
+        break
+
+      case 'taskStarted':
+        if (deps.taskStarted) {
+          deps.taskStarted(effect)
+        } else {
+          console.warn('[sdui] эффект taskStarted вне форм-сессии', effect)
+        }
         break
 
       case 'download': {

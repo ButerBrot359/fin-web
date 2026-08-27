@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import UserIcon from '@/shared/assets/icons/user.svg'
 import MenuIcon from '@/shared/assets/icons/menu.svg'
+import { BackgroundTasksIndicator } from '@/features/background-tasks'
 import { Button } from '@/shared/ui/buttons'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog/confirm-dialog'
 
@@ -22,6 +23,11 @@ export const TopBar = () => {
   return (
     <div className="flex justify-end">
       <nav className="flex items-center bg-ui-01 rounded-md">
+        {/* SCRUM-330: индикатор фоновых операций с поповером «Мои операции» */}
+        <BackgroundTasksIndicator />
+
+        <div className="mx-1 h-5 w-px bg-ui-04" aria-hidden="true" />
+
         <div className="flex items-center">
           {TOOLBAR_ACTIONS.map((action, index) => (
             <div key={action.id} className="flex items-center">

@@ -339,3 +339,35 @@ describe('executeActionRequest на хэндлере (SCRUM-288 §2.1)', () => {
     expect(deps.invalidateLists).toHaveBeenCalledTimes(1)
   })
 })
+
+// SCRUM-330 §3.3: фоновая операция запущена — эффект несёт задачу целиком,
+// регистрация под поллинг уходит в мост (реализация в dispatch).
+describe('effect taskStarted (SCRUM-330)', () => {
+  it('вызывает деп с целым эффектом', () => {
+    const taskStarted = vi.fn()
+    const deps = { ...makeDeps(), taskStarted }
+    const effect: ViewEffect = {
+      type: 'taskStarted',
+      task: {
+        id: 't1',
+        kind: 'DOCUMENT_POST',
+        title: 'Проведение: Регламентная операция',
+        status: 'QUEUED',
+      },
+    }
+    createEffectHandler(deps).play(effect)
+    expect(taskStarted).toHaveBeenCalledWith(effect)
+  })
+
+  it('без депа (session-less путь) — warn, не бросает', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    expect(() => {
+      createEffectHandler(makeDeps()).play({
+        type: 'taskStarted',
+        task: { id: 't1', kind: 'DOCUMENT_POST', title: 'x', status: 'QUEUED' },
+      })
+    }).not.toThrow()
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+})

@@ -45,7 +45,7 @@ import { columnSizeProps } from '../../../lib/utils/column-sizing'
 import { EditableTableHead } from './editable-table-head'
 import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { TableCellEditor } from './table-cell-editor'
-import { isNoWrapBinding } from '../../../lib/utils/nowrap-columns'
+import { isNoWrapColumn } from '../../../lib/utils/nowrap-columns'
 import { ColumnHeaderLabel } from './column-header-label'
 import { SearchHitCell } from './table-search-cell'
 import { TABLE_GRID_SX } from './table-grid-sx'
@@ -186,7 +186,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
               readonly={state.readonly}
               props={col.props}
               required={state.required}
-              noWrap={isNoWrapBinding(col.binding)}
+              noWrap={isNoWrapColumn(col.binding, col.label)}
               revealErrors={validationRef.current.revealErrors}
               onChange={(val) => {
                 syncRef.current.updateCell(row.original.rowId, col.binding, val)

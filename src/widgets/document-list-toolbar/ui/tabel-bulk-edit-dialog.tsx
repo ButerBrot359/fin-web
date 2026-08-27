@@ -12,13 +12,15 @@ import {
   Typography,
 } from '@mui/material'
 
-import { bulkEditTabelEntries } from '@/entities/document-entry'
+import { bulkEditDocumentEntries } from '@/entities/document-entry'
 import { invalidateDocumentListQueries } from '@/shared/lib/query/invalidate-entities'
 import { getApiErrorMessage } from '@/shared/lib/utils/get-api-error-message'
 import { Button } from '@/shared/ui/buttons'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 interface TabelBulkEditButtonProps {
+  /** Код типа документа — уходит в per-type bulk-edit endpoint. */
+  typeCode: string
   selectedIds: number[]
 }
 
@@ -29,6 +31,7 @@ interface TabelBulkEditButtonProps {
  * показывает ложный успех; успех перезапрашивает текущий list-state.
  */
 export const TabelBulkEditButton = ({
+  typeCode,
   selectedIds,
 }: TabelBulkEditButtonProps) => {
   const { t } = useTranslation()
@@ -39,7 +42,7 @@ export const TabelBulkEditButton = ({
 
   const mutation = useMutation({
     mutationFn: () =>
-      bulkEditTabelEntries({
+      bulkEditDocumentEntries(typeCode, {
         selectedEntryIds: selectedIds,
         commentEnabled,
         comment,

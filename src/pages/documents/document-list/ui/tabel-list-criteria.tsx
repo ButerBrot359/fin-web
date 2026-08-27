@@ -1,16 +1,15 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import type { AxiosResponse } from 'axios'
 
 import { getDocumentType } from '@/entities/document-type'
 import type { DocumentAttribute } from '@/entities/document-type'
 import {
   useDebouncedValue,
+  useDictionarySearch,
   useTableFilterStore,
   useTableFilters,
 } from '@/features/table-filter'
-import { apiService } from '@/shared/api/api'
 import {
   getUniversalSearchUrl,
   resolveAttributeDomain,
@@ -20,18 +19,6 @@ import type { SelectOption } from '@/shared/types/select-option'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 
 import { TABEL_CRITERIA, TABEL_ROW_TYPE_CODE } from '../lib/consts/tabel-list'
-
-interface DictEntryDto {
-  id: number
-  code: string
-  displayName?: string
-  nameRu?: string
-  nameKz?: string
-}
-
-interface DictSearchResponse {
-  data: { content: DictEntryDto[] }
-}
 
 interface CriterionContract {
   field: string
@@ -50,36 +37,17 @@ const CriterionControl = ({
   value,
   onChange,
 }: CriterionControlProps) => {
-  const { i18n } = useTranslation()
   const [opened, setOpened] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const debounced = useDebouncedValue(inputValue, 300)
 
   // Тот же серверный поиск, что у DictionaryControl фильтров (SCRUM-360):
   // клиент не строит собственного сопоставления id → name (§3.1)
-  const { data: options = [], isFetching } = useQuery<
-    AxiosResponse<DictSearchResponse>,
-    unknown,
-    SelectOption[]
-  >({
-    queryKey: ['tabel-criterion-search', contract.url, debounced],
-    queryFn: () =>
-      apiService.get<DictSearchResponse>({
-        url: contract.url ?? '',
-        params: { q: debounced, size: 30 },
-      }),
-    enabled: !!contract.url && opened,
-    select: (response) =>
-      response.data.data.content.map(
-        (entry): SelectOption => ({
-          id: entry.id,
-          code: entry.code,
-          label:
-            (entry.displayName ?? getLocalizedName(entry, i18n.language)) ||
-            entry.code,
-        })
-      ),
-  })
+  const { data: options = [], isFetching } = useDictionarySearch(
+    contract.url,
+    opened,
+    debounced
+  )
 
   return (
     <div className="w-64">

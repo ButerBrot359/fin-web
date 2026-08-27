@@ -1,16 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import {
-  unpostDocumentEntry,
-  type DocumentEntry,
-} from '@/entities/document-entry'
+import type { DocumentEntry } from '@/entities/document-entry'
 import { useDocumentType } from '@/entities/document-type'
-import { openMovementsForEntry } from '@/features/sdui'
-import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
-import { showToast } from '@/shared/ui/toast/show-toast'
 
 import { apiService } from '@/shared/api/api'
 import type { ApiResponse } from '@/shared/types/api.types'
@@ -24,6 +17,7 @@ import { SearchInput } from '@/shared/ui/inputs'
 import { useDocumentEntryPrint } from '@/entities/document-entry'
 import { PrintDropdownButton } from '@/widgets/document-form-toolbar'
 
+import { useToolbarMutations } from '../lib/hooks/use-toolbar-mutations'
 import { SelectOperationDialog } from './select-operation-dialog'
 import { TabelBulkEditButton } from './tabel-bulk-edit-dialog'
 import { TabelMoreDropdown, TabelReportsDropdown } from './tabel-toolbar-menus'
@@ -85,27 +79,8 @@ export const DocumentListToolbar = ({
   // Тип уже в suspense-кеше — страница списка грузит его тем же ключом (SCRUM-265 FE-4).
   const { interactiveCreationForbidden } = useDocumentType(moduleCode)
 
-  const queryClient = useQueryClient()
-
-  const unpostMutation = useMutation({
-    mutationFn: (id: number) => unpostDocumentEntry(id),
-    onSuccess: () => {
-      invalidateDocumentQueries(queryClient)
-      showToast('success', t('documentListToolbar.unpostSuccess'))
-    },
-    onError: () => {
-      showToast('error', t('documentListToolbar.unpostError'))
-    },
-  })
-
-  // ДтКт: движения открываются SDUI workspace-вкладкой (паритет с формой),
-  // legacy-роут .../movements больше не используется.
-  const movementsMutation = useMutation({
-    mutationFn: (id: number) => openMovementsForEntry(String(id)),
-    onError: () => {
-      showToast('error', t('documentListToolbar.movementsError'))
-    },
-  })
+  const { unpost: unpostMutation, movements: movementsMutation } =
+    useToolbarMutations()
 
   const handleCreate = async () => {
     if (!pageCode || !moduleCode) return
@@ -216,7 +191,12 @@ export const DocumentListToolbar = ({
             </Button>
           )}
 
-          {tabel && <TabelBulkEditButton selectedIds={tabel.selectedIds} />}
+          {tabel && (
+            <TabelBulkEditButton
+              typeCode={moduleCode}
+              selectedIds={tabel.selectedIds}
+            />
+          )}
 
           <PrintDropdownButton
             commands={printCommands}

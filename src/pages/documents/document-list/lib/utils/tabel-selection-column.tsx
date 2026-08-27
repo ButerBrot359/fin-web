@@ -46,21 +46,26 @@ export const buildTabelSelectionColumn = ({
       />
     ),
     cell: ({ row }) => (
-      <Checkbox
-        size="small"
-        sx={{ p: 0 }}
-        checked={selectedIds.has(row.original.id)}
-        onChange={(e) => {
-          onToggle(row.original.id, e.target.checked)
-        }}
+      // Обёртка на всю ячейку: промах на пару пикселей мимо чекбокса не
+      // должен превращаться в клик по строке (сброс мультивыбора)
+      <div
+        style={{ display: 'flex', alignItems: 'center', padding: '4px 6px' }}
         onClick={(e) => {
-          // Клик по чекбоксу не должен превращаться в выбор строки/даблклик
           e.stopPropagation()
         }}
         onDoubleClick={(e) => {
           e.stopPropagation()
         }}
-      />
+      >
+        <Checkbox
+          size="small"
+          sx={{ p: 0 }}
+          checked={selectedIds.has(row.original.id)}
+          onChange={(e) => {
+            onToggle(row.original.id, e.target.checked)
+          }}
+        />
+      </div>
     ),
   }
 }

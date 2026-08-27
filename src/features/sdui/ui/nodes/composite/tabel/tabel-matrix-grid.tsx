@@ -37,7 +37,7 @@ interface TabelMatrixGridProps {
   onCommitCell: (
     employeeNodeId: string,
     workTimeKindRef: number
-  ) => (date: string, raw: string) => boolean
+  ) => (date: string, raw: string) => boolean | Promise<boolean>
 }
 
 const draftToKind = (draft: TabelManualWorkKind): TabelWorkKind => ({
@@ -94,7 +94,9 @@ export const TabelMatrixGrid: FC<TabelMatrixGridProps> = ({
                 }}
               >
                 <div style={{ lineHeight: 1.1 }}>
-                  <div>{d.dayNum}</div>
+                  <Typography component="div" variant="body2">
+                    {d.dayNum}
+                  </Typography>
                   <Typography variant="caption" sx={{ opacity: 0.7 }}>
                     {d.weekday}
                   </Typography>

@@ -93,7 +93,8 @@ export const DocumentPage = () => {
 
   // Выбор без эффектов: id, выпавшие из списка после перезапроса, отсекаются
   // на выводе — в state могут остаться, но никуда не передаются
-  const knownIds = new Set(entries.map((e) => e.id))
+  const entryIds = entries.map((e) => e.id)
+  const knownIds = new Set(entryIds)
   const effectiveSelected = isTabel
     ? new Set([...selectedIds].filter((id) => knownIds.has(id)))
     : selectedIds
@@ -110,7 +111,7 @@ export const DocumentPage = () => {
     ? [
         buildTabelSelectionColumn({
           selectedIds: effectiveSelected,
-          loadedIds: entries.map((e) => e.id),
+          loadedIds: entryIds,
           onToggle: (id, checked) => {
             setSelectedIds((prev) => {
               const next = new Set(prev)
@@ -120,9 +121,7 @@ export const DocumentPage = () => {
             })
           },
           onToggleAll: (checked) => {
-            setSelectedIds(
-              checked ? new Set(entries.map((e) => e.id)) : new Set()
-            )
+            setSelectedIds(checked ? new Set(entryIds) : new Set())
           },
         }),
         ...columns,
@@ -131,6 +130,10 @@ export const DocumentPage = () => {
 
   const handleSelectRow = (row: DocumentEntry) => {
     if (isTabel) {
+      // Клик по телу строки выбирает одну строку (1С-паттерн), но собранный
+      // чекбоксами мультивыбор (2+) молча не рушит — иначе промах мимо
+      // чекбокса незаметно сжимает цель bulk-edit до одной записи
+      if (effectiveSelected.size > 1) return
       setSelectedIds(new Set([row.id]))
       return
     }

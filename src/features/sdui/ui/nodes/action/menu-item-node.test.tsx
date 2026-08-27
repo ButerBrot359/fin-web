@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
+import { MenuCloseContext } from './menu-close-context'
 import { MenuItemNode } from './menu-item-node'
 
 const dispatch = vi.fn()
@@ -89,6 +90,42 @@ describe('MenuItemNode: enabled/disabled (SCRUM-265 FE-2)', () => {
     )
     fireEvent.click(screen.getByRole('menuitem', { name: 'Пункт' }))
     expect(executeActionRequest).toHaveBeenCalledWith(request)
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('активация пункта закрывает меню через MenuCloseContext ДО confirm (SCRUM-276 §6)', () => {
+    const closeMenu = vi.fn()
+    render(
+      <MenuCloseContext.Provider value={closeMenu}>
+        <MenuItemNode
+          node={item({
+            label: 'Заполнить',
+            command: 'zapolnit',
+            enabled: true,
+          })}
+        />
+      </MenuCloseContext.Provider>
+    )
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Заполнить' }))
+    expect(closeMenu).toHaveBeenCalled()
+    expect(dispatch).toHaveBeenCalled()
+  })
+
+  it('клик по disabled-пункту меню НЕ закрывает', () => {
+    const closeMenu = vi.fn()
+    render(
+      <MenuCloseContext.Provider value={closeMenu}>
+        <MenuItemNode
+          node={item({
+            label: 'Заполнить',
+            command: 'zapolnit',
+            enabled: false,
+          })}
+        />
+      </MenuCloseContext.Provider>
+    )
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Заполнить' }))
+    expect(closeMenu).not.toHaveBeenCalled()
     expect(dispatch).not.toHaveBeenCalled()
   })
 

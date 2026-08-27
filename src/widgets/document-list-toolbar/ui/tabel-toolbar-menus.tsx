@@ -1,19 +1,12 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Menu, MenuItem } from '@mui/material'
 
-import {
-  postDocumentEntry,
-  unpostDocumentEntry,
-  type DocumentEntry,
-} from '@/entities/document-entry'
-import { openMovementsForEntry } from '@/features/sdui'
-import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
-import { getApiErrorMessage } from '@/shared/lib/utils/get-api-error-message'
+import type { DocumentEntry } from '@/entities/document-entry'
 import { DropdownButton } from '@/shared/ui/buttons'
-import { showToast } from '@/shared/ui/toast/show-toast'
+
+import { useToolbarMutations } from '../lib/hooks/use-toolbar-mutations'
 
 interface TabelReportsDropdownProps {
   selectedId: number | null
@@ -27,13 +20,7 @@ export const TabelReportsDropdown = ({
   const { t } = useTranslation()
   const anchorRef = useRef<HTMLDivElement | null>(null)
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
-
-  const movements = useMutation({
-    mutationFn: (id: number) => openMovementsForEntry(String(id)),
-    onError: () => {
-      showToast('error', t('documentListToolbar.movementsError'))
-    },
-  })
+  const { movements } = useToolbarMutations()
 
   return (
     <div ref={anchorRef} className="inline-flex">
@@ -88,42 +75,13 @@ export const TabelMoreDropdown = ({
 }: TabelMoreDropdownProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const anchorRef = useRef<HTMLDivElement | null>(null)
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
-
-  const post = useMutation({
-    mutationFn: (id: number) => postDocumentEntry(id),
-    onSuccess: () => {
-      invalidateDocumentQueries(queryClient)
-      showToast('success', t('documentListToolbar.postSuccess'))
-    },
-    onError: (error) => {
-      showToast(
-        'error',
-        getApiErrorMessage(error) ?? t('documentListToolbar.postError')
-      )
-    },
-  })
-
-  const unpost = useMutation({
-    mutationFn: (id: number) => unpostDocumentEntry(id),
-    onSuccess: () => {
-      invalidateDocumentQueries(queryClient)
-      showToast('success', t('documentListToolbar.unpostSuccess'))
-    },
-    onError: (error) => {
-      showToast(
-        'error',
-        getApiErrorMessage(error) ?? t('documentListToolbar.unpostError')
-      )
-    },
-  })
+  const { post, unpost } = useToolbarMutations()
 
   const close = () => {
     setAnchor(null)
   }
-  const single = selectedEntry
 
   return (
     <div ref={anchorRef} className="inline-flex">
@@ -135,12 +93,12 @@ export const TabelMoreDropdown = ({
       />
       <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={close}>
         <MenuItem
-          disabled={!single}
+          disabled={!selectedEntry}
           onClick={() => {
             close()
-            if (single) {
+            if (selectedEntry) {
               void navigate(
-                `/modules/${pageCode}/document/${moduleCode}/${String(single.id)}`
+                `/modules/${pageCode}/document/${moduleCode}/${String(selectedEntry.id)}`
               )
             }
           }}
@@ -148,23 +106,23 @@ export const TabelMoreDropdown = ({
           {t('documentListToolbar.editEntry')}
         </MenuItem>
         {/* Проведение/отмена — по фактическому состоянию документа (§3.3) */}
-        {single && !single.isPosted && (
+        {selectedEntry && !selectedEntry.isPosted && (
           <MenuItem
             disabled={post.isPending}
             onClick={() => {
               close()
-              post.mutate(single.id)
+              post.mutate(selectedEntry.id)
             }}
           >
             {t('documentListToolbar.post')}
           </MenuItem>
         )}
-        {single?.isPosted && (
+        {selectedEntry?.isPosted && (
           <MenuItem
             disabled={unpost.isPending}
             onClick={() => {
               close()
-              unpost.mutate(single.id)
+              unpost.mutate(selectedEntry.id)
             }}
           >
             {t('documentListToolbar.unpost')}

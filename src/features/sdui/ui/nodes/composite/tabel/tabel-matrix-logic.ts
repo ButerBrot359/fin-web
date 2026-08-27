@@ -1,5 +1,6 @@
 import { addDays, format, getDay, parseISO } from 'date-fns'
-import { ru } from 'date-fns/locale'
+
+import { formatDate } from '@/shared/lib/utils/date'
 
 import type {
   ReplaceEmployeeCommand,
@@ -33,11 +34,12 @@ export interface DayHeader {
   weekend: boolean
 }
 
-/** Заголовок дня `12 Ср`; суббота/воскресенье помечаются weekend (§5). */
+/** Заголовок дня `12 Ср`; суббота/воскресенье помечаются weekend (§5).
+ * Локаль дня недели — из i18n (ru/kk) через общий formatDate. */
 export function dayHeader(iso: string): DayHeader {
   const date = parseISO(iso)
   const dow = getDay(date)
-  const weekday = format(date, 'EEEEEE', { locale: ru })
+  const weekday = formatDate(date, 'EEEEEE')
   return {
     iso,
     dayNum: format(date, 'd'),
@@ -133,6 +135,30 @@ export function buildReplaceEmployee(
     employeeNodeId,
     employee: { employeeRef: employee.employeeRef, workKinds },
   }
+}
+
+/**
+ * Фолбэк подписей видов времени: сервер может не прислать
+ * `workTimeKindPresentation` (наблюдалось после REPLACE/ADD) — подставляем
+ * презентацию из `manualWorkKinds` по ref, чтобы не показывать голый id.
+ */
+export function withKindPresentations(
+  payload: TabelMatrixPayload
+): TabelMatrixPayload {
+  const names = new Map(
+    payload.manualWorkKinds.map((k) => [k.workTimeKindRef, k.presentation])
+  )
+  const employees = payload.employees.map((employee) => {
+    const workKinds = employee.workKinds.map((kind) => {
+      const name = names.get(kind.workTimeKindRef)
+      if (kind.workTimeKindPresentation || name === undefined) return kind
+      return { ...kind, workTimeKindPresentation: name }
+    })
+    const changed = workKinds.some((k, i) => k !== employee.workKinds[i])
+    return changed ? { ...employee, workKinds } : employee
+  })
+  const changed = employees.some((e, i) => e !== payload.employees[i])
+  return changed ? { ...payload, employees } : payload
 }
 
 /** Сотрудники, отфильтрованные локальным поиском по presentation (§5). */

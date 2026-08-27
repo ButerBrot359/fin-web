@@ -4,7 +4,7 @@ import type { ViewNode } from '../../../../types/view'
 // UchetRabochegoVremeni семантической матрицей сотрудник → вид времени → дни;
 // packed-строки хранения (rowId, Chasy1..31) в браузер не попадают.
 
-export const TABEL_MATRIX_WIRE_VERSION = 'tabel-matrix/v1'
+const TABEL_MATRIX_WIRE_VERSION = 'tabel-matrix/v1'
 const TABEL_MATRIX_PRESENTATION = 'TABEL_MATRIX'
 const TABEL_MATRIX_SOURCE_BINDING = 'UchetRabochegoVremeni'
 
@@ -59,7 +59,7 @@ export interface ReplaceEmployeeCommand {
   }
 }
 
-export interface DeleteWorkKindCommand {
+interface DeleteWorkKindCommand {
   type: 'DELETE_WORK_KIND'
   baseGeneration: number
   employeeNodeId: string
@@ -67,25 +67,25 @@ export interface DeleteWorkKindCommand {
   workTimeKindRef: number
 }
 
-export interface AddEmployeeCommand {
+interface AddEmployeeCommand {
   type: 'ADD_EMPLOYEE'
   baseGeneration: number
   employeeRef: number
 }
 
-export interface AddEmployeesCommand {
+interface AddEmployeesCommand {
   type: 'ADD_EMPLOYEES'
   baseGeneration: number
   employeeRefs: number[]
 }
 
-export interface SelectEmployeeCommand {
+interface SelectEmployeeCommand {
   type: 'SELECT_EMPLOYEE'
   baseGeneration: number
   employeeRef: number
 }
 
-export interface DeleteEmployeeCommand {
+interface DeleteEmployeeCommand {
   type: 'DELETE_EMPLOYEE'
   baseGeneration: number
   employeeNodeId: string

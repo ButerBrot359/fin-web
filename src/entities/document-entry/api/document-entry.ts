@@ -83,22 +83,26 @@ export const postDocumentEntry = (id: number) =>
     timeout: LONG_OPERATION_TIMEOUT_MS,
   })
 
-export interface TabelBulkEditPayload {
+export interface BulkEditPayload {
   selectedEntryIds: number[]
   commentEnabled: boolean
   comment: string
 }
 
-export interface TabelBulkEditResult {
+export interface BulkEditResult {
   selectedCount: number
   changedCount: number
 }
 
 // SCRUM-276 spec v2 §2.3: атомарная массовая смена комментария у выделенных
-// непроведённых Табелей. Один невалидный id откатывает всю операцию.
-// Ответ — в стандартной оболочке ApiDataResponse.data.
-export const bulkEditTabelEntries = (payload: TabelBulkEditPayload) =>
-  apiService.post<{ data: TabelBulkEditResult }>({
-    url: '/api/document-entries/Tabel/bulk-edit',
+// непроведённых документов. Один невалидный id откатывает всю операцию.
+// Ответ — в стандартной оболочке ApiDataResponse.data. Тип документа знает
+// вызывающая сторона — entities-слой per-type кодов не хардкодит.
+export const bulkEditDocumentEntries = (
+  typeCode: string,
+  payload: BulkEditPayload
+) =>
+  apiService.post<{ data: BulkEditResult }>({
+    url: `/api/document-entries/${typeCode}/bulk-edit`,
     data: payload,
   })

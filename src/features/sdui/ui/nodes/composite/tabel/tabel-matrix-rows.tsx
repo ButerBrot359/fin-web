@@ -106,9 +106,9 @@ export const TabelEmployeeRow: FC<EmployeeRowProps> = ({
       </TableCell>
       {days.map((d) => (
         <TableCell key={d.iso} sx={d.weekend ? weekendSx : dayCellSx}>
-          <span style={{ fontSize: 13 }}>
+          <Typography component="span" sx={{ fontSize: 13 }}>
             {formatHours(employee.dayTotals[d.iso])}
-          </span>
+          </Typography>
         </TableCell>
       ))}
       <TableCell sx={{ textAlign: 'center', minWidth: 90 }}>
@@ -124,7 +124,7 @@ interface KindRowProps {
   draft?: boolean
   days: DayHeader[]
   disabled: boolean
-  onCommitCell: (date: string, raw: string) => boolean
+  onCommitCell: (date: string, raw: string) => boolean | Promise<boolean>
   onDelete: () => void
 }
 
@@ -171,7 +171,7 @@ export const TabelKindRow: FC<KindRowProps> = ({
         <TableCell key={d.iso} sx={d.weekend ? weekendSx : dayCellSx}>
           <TabelMatrixCell
             value={kind.cells[d.iso]}
-            readOnly={kind.protected || disabled}
+            readOnly={kind.protected}
             weekend={d.weekend}
             onCommit={(raw) => onCommitCell(d.iso, raw)}
           />

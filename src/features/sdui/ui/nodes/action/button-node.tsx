@@ -5,6 +5,7 @@ import type { ActionBehavior, NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useOverflowCollapsed } from '../../../lib/overflow/overflow-context'
 import { useSelection } from '../../../lib/stores/selection-store'
+import { useCommandInFlight } from '../../../lib/stores/command-inflight-store'
 import { useSduiEffects } from '../../../lib/use-sdui-effects'
 import { NodeRenderer } from '../../node-renderer'
 import { resolveButtonIcon } from './button-icons'
@@ -60,7 +61,15 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
     variantProp,
     !!node.children?.length
   )
-  const disabled = !enabled || (requiresSelectedRow && selectedRowId == null)
+  // SCRUM-330 Работа 1: пока COMMAND сессии в полёте, командные кнопки
+  // дизейблятся — двойной клик не доходит до бэка (dispatch дропает его и сам,
+  // дизейбл — видимая половина гарда). request-кнопки не трогаем: их запрос
+  // идёт мимо форм-сессии и с блокировками не конфликтует.
+  const commandInFlight = useCommandInFlight()
+  const disabled =
+    !enabled ||
+    (requiresSelectedRow && selectedRowId == null) ||
+    (!!command && !requestAction && commandInFlight)
 
   const icon = resolveButtonIcon(iconName)
   const isIconOnly = !!icon && !label

@@ -11,6 +11,7 @@ import { usePanelStore } from '../lib/stores/panel-store'
 import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
 import { useSessionHeartbeat } from '../lib/hooks/use-session-heartbeat'
+import { useTaskWatcher } from '../lib/hooks/use-task-watcher'
 import {
   SduiSessionProvider,
   type SduiSessionValue,
@@ -64,6 +65,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   const dirty = useViewStateStore((s) => s.dirty)
   const formSessionId = useTreeStore((s) => s.formSessionId)
   useSessionHeartbeat(formSessionId)
+  // SCRUM-330: поллинг фоновых задач формы + рапорт task.finished в сессию
+  useTaskWatcher(formSessionId)
 
   const title = (tree?.props?.title as string | undefined) ?? ''
   useEffect(() => {

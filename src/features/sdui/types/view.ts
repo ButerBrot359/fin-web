@@ -1,3 +1,5 @@
+import type { AsyncTask } from '@/entities/async-task'
+
 import type { ActionType, EffectType, NodeType, PatchOp } from './node-types'
 
 export interface ViewNode {
@@ -167,6 +169,9 @@ export interface ViewEffect {
   saveBehavior?: ActionBehavior | null
   discardCommand?: string
   discardBehavior?: ActionBehavior | null
+  // taskStarted (SCRUM-330 §3.3): задача целиком, а не одним id — между
+  // командой и первым опросом панели уже есть что показать.
+  task?: AsyncTask | null
   sessionId?: string
   childRevision?: number
   childState?: Record<string, unknown>
@@ -188,4 +193,7 @@ export interface ConflictError {
   currentRevision?: number
   snapshot?: { state: Record<string, unknown> }
   reason?: string
+  // Пользовательский текст из стандартного тела ошибки (SCRUM-330: тексты
+  // OBJECT_LOCKED/LOCK_CONFLICT уже содержат имя объекта и владельца)
+  message?: string
 }

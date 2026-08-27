@@ -33,5 +33,16 @@ export function handleConflict(
     // draft свежим OPEN; retry намеренно не вызывается.
     showToast('warning', i18n.t('sdui.conflict.productionCalendarState'))
     void reopen()
+  } else if (err.code === 'OBJECT_LOCKED' || err.code === 'LOCK_CONFLICT') {
+    // SCRUM-330 Работа 1: объект занят (другой пользователь / конкурентная
+    // запись / фоновая задача). Запись НЕ выполнена, но правки целы: форму не
+    // сбрасываем и не переоткрываем, пользователь повторяет той же кнопкой.
+    // message бэка уже несёт имя объекта и владельца — показываем как есть;
+    // retry намеренно не вызывается (автоповтор уперся бы в ту же блокировку).
+    const fallback =
+      err.code === 'OBJECT_LOCKED'
+        ? i18n.t('sdui.conflict.objectLocked')
+        : i18n.t('sdui.conflict.lockConflict')
+    showToast('warning', err.message ?? fallback)
   }
 }

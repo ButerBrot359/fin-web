@@ -1,7 +1,7 @@
 import React from 'react'
 import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewResponse } from '../types/view'
 import {
@@ -12,6 +12,8 @@ import {
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import { useSduiDispatch } from './dispatch'
 import { useConfirmStore } from './stores/confirm-store'
+import { useCommandInflightStore } from './stores/command-inflight-store'
+import { useAsyncTaskStore } from '@/entities/async-task'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { apiService } from '@/shared/api/api'
 
@@ -706,5 +708,172 @@ describe('useSduiDispatch: гейт ошибок OPEN на 3 ветки (SCRUM-2
     await result.current({ type: 'OPEN' }, null, false, { onOpenNotFound })
 
     expect(onOpenNotFound).toHaveBeenCalledWith(undefined)
+  })
+})
+
+// SCRUM-330 Работа 1: in-flight-гард от двойного клика — повторный COMMAND
+// той же сессии дропается, пока первый не отвечен; EVENT не гардится.
+describe('useSduiDispatch: in-flight-гард COMMAND (SCRUM-330)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+  const originalGetSession = sessionMock.getSession
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    sessionStorage.clear()
+    useCommandInflightStore.setState({ sessions: {} })
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  afterEach(() => {
+    sessionMock.getSession = originalGetSession
+  })
+
+  it('второй COMMAND во время полёта первого дропается, после ответа гард снят', async () => {
+    sessionMock.getSession = () => ({ formSessionId: 'fs-guard', revision: 1 })
+    let resolvePost: ((v: ViewResponse) => void) | undefined
+    const post = vi.spyOn(viewTransport, 'post').mockImplementation(
+      () =>
+        new Promise<ViewResponse>((res) => {
+          resolvePost = res
+        })
+    )
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const first = result.current({ type: 'COMMAND', command: 'save' })
+    const second = await result.current({ type: 'COMMAND', command: 'save' })
+
+    expect(second).toBe(false)
+    expect(post).toHaveBeenCalledTimes(1)
+
+    resolvePost?.(commandResponse)
+    await expect(first).resolves.toBe(true)
+
+    post.mockResolvedValue(commandResponse)
+    const third = await result.current({ type: 'COMMAND', command: 'save' })
+    expect(third).toBe(true)
+    expect(post).toHaveBeenCalledTimes(2)
+  })
+
+  it('EVENT не гардится: уходит, пока COMMAND в полёте', async () => {
+    sessionMock.getSession = () => ({ formSessionId: 'fs-guard2', revision: 1 })
+    const post = vi
+      .spyOn(viewTransport, 'post')
+      .mockImplementation(() => new Promise<ViewResponse>(() => undefined))
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    void result.current({ type: 'COMMAND', command: 'save' })
+    void result.current({ type: 'EVENT', sourceNodeId: 'n1', trigger: 'blur' })
+
+    // COMMAND доходит до post после await flush — ждём микротаски
+    await vi.waitFor(() => {
+      expect(post).toHaveBeenCalledTimes(2)
+    })
+  })
+})
+
+// SCRUM-330 Работа 2: formSessionId переживает F5 в sessionStorage
+describe('useSduiDispatch: formSessionId в sessionStorage (SCRUM-330)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    sessionStorage.clear()
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  it('OPEN сохраняет formSessionId по роуту и шлёт его на повторном OPEN', async () => {
+    const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+
+    await result.current({ type: 'OPEN' })
+    expect(
+      sessionStorage.getItem('sdui-form-session:/documents/SchetKOplate/new')
+    ).toBe('fs-1')
+
+    await result.current({ type: 'OPEN' })
+    expect(post.mock.calls.at(-1)?.[0]).toEqual(
+      expect.objectContaining({ formSessionId: 'fs-1' })
+    )
+  })
+
+  it('CLOSE чистит сохранённый formSessionId роута', async () => {
+    sessionStorage.setItem(
+      'sdui-form-session:/documents/SchetKOplate/new',
+      'fs-old'
+    )
+    vi.spyOn(viewTransport, 'post').mockResolvedValue(commandResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+
+    await result.current({ type: 'CLOSE' })
+    expect(
+      sessionStorage.getItem('sdui-form-session:/documents/SchetKOplate/new')
+    ).toBeNull()
+  })
+})
+
+// SCRUM-330 §3.3: эффект taskStarted регистрирует задачу с сессией-источником
+describe('useSduiDispatch: эффект taskStarted (SCRUM-330)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+  const originalGetSession = sessionMock.getSession
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    sessionStorage.clear()
+    useAsyncTaskStore.setState({ entries: {} })
+    useCommandInflightStore.setState({ sessions: {} })
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  afterEach(() => {
+    sessionMock.getSession = originalGetSession
+  })
+
+  it('кладёт задачу из эффекта в стор с formSessionId сессии', async () => {
+    sessionMock.getSession = () => ({ formSessionId: 'fs-task', revision: 1 })
+    vi.spyOn(viewTransport, 'post').mockResolvedValue({
+      ...commandResponse,
+      effects: [
+        {
+          type: 'taskStarted',
+          task: {
+            id: 't1',
+            kind: 'DOCUMENT_POST',
+            title: 'Проведение',
+            status: 'QUEUED',
+          },
+        },
+      ],
+    } as never)
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'COMMAND', command: 'post' })
+
+    const entry = useAsyncTaskStore.getState().entries.t1
+    expect(entry.formSessionId).toBe('fs-task')
+    expect(entry.task.status).toBe('QUEUED')
   })
 })

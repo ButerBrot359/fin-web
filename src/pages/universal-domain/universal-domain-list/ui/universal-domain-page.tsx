@@ -39,6 +39,9 @@ export const UniversalDomainPage = () => {
   useTabMeta(title)
 
   const [sorting, setSorting] = useState<SortingState>([])
+  // SCRUM-388: выделение строки + открытие карточки записи двойным кликом
+  // (по образцу DictionaryPage.handleDoubleClick)
+  const [selectedRowId, setSelectedRowId] = useState<number | null>(null)
   const sortAttr = sorting[0]?.id
   const sortDir = sorting[0] ? (sorting[0].desc ? 'DESC' : 'ASC') : undefined
 
@@ -62,6 +65,15 @@ export const UniversalDomainPage = () => {
     void navigate(`/modules/${pageCode}`)
   }
 
+  // Маршрут карточки — модульный, той же формы, что список + /:entryId.
+  // Бэк резолвит его напрямую (проверено: OPEN отвечает kind=CALCULATION_PLAN,
+  // не ROUTE_UNKNOWN), маппинг в плоский /dictionaries/... не нужен.
+  const handleRowDoubleClick = (entry: UniversalDomainEntry) => {
+    void navigate(
+      `/modules/${pageCode}/calculationplan/${moduleCode}/${String(entry.id)}?domain=${domain}`
+    )
+  }
+
   if (isLoadingType) return null
 
   return (
@@ -80,6 +92,11 @@ export const UniversalDomainPage = () => {
         fetchNextPage={fetchNextPage}
         sorting={sorting}
         onSortingChange={setSorting}
+        selectedRowId={selectedRowId}
+        onRowClick={(entry) => {
+          setSelectedRowId(entry.id)
+        }}
+        onRowDoubleClick={handleRowDoubleClick}
         exportFileName={title}
         fetchAllEntries={fetchAllEntries}
       />

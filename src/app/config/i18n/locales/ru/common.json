@@ -584,6 +584,9 @@
     "regenerate": "Перегенерировать",
     "generateError": "Ошибка генерации конфигурации"
   },
+  "universalDomain": {
+    "cardUnavailable": "Карточка записи пока недоступна — тип ещё не переведён на новую форму"
+  },
   "sdui": {
     "conflict": {
       "staleRevision": "Синхронизирую...",

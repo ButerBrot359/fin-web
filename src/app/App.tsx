@@ -75,6 +75,11 @@ const AccountCardPage = lazy(() =>
     default: m.AccountCardPage,
   }))
 )
+const UniversalDomainEntryPage = lazy(() =>
+  import('@/pages/universal-domain/universal-domain-entry').then((m) => ({
+    default: m.UniversalDomainEntryPage,
+  }))
+)
 const TreasuryExportPage = lazy(() =>
   import('@/features/treasury-export').then((m) => ({
     default: m.TreasuryExportPage,
@@ -171,6 +176,12 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/account-card"
             element={<AccountCardPage />}
+          />
+          {/* SCRUM-388: SDUI-карточка записи универсального домена (ПВР).
+              Список остаётся на catch-all (422 → легаси UniversalDomainPage). */}
+          <Route
+            path="/modules/:pageCode/calculationplan/:moduleCode/:entryId"
+            element={<UniversalDomainEntryPage />}
           />
           <Route path="*" element={<SduiCatchAllPage />} />
         </Routes>

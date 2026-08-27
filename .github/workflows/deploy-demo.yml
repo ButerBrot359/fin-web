@@ -98,16 +98,6 @@ jobs:
             --from-literal=ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Verify basic-auth secret exists
-        run: |
-          if ! kubectl -n demo get secret basic-auth >/dev/null 2>&1; then
-            echo "::error::secret 'basic-auth' missing in namespace 'demo'."
-            echo "Создай вручную на сервере:"
-            echo "  htpasswd -cb auth <user> <password>"
-            echo "  kubectl -n demo create secret generic basic-auth --from-file=auth"
-            exit 1
-          fi
-
       - name: Apply service and ingress
         run: |
           kubectl apply -f k8s/demo/service.yaml

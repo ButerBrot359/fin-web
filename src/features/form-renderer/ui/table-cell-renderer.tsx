@@ -16,6 +16,7 @@ import { apiService } from '@/shared/api/api'
 import type { SelectOption } from '@/shared/types/select-option'
 import { resolveSelectValue } from '@/shared/lib/utils/resolve-select-value'
 import { formatCellValue } from '@/shared/lib/utils/format-cell-value'
+import { cn } from '@/shared/lib/utils/cn'
 import { TextInput } from '@/shared/ui/inputs/text-input'
 import { NumberInput } from '@/shared/ui/inputs/number-input'
 import { DateTimeInput } from '@/shared/ui/inputs/datetime-input'
@@ -33,6 +34,7 @@ import { useRowFilter } from '../lib/hooks/use-row-filter'
 import { useParentFilter } from '../lib/hooks/use-parent-filter'
 import { mergeSearchParams } from '../lib/utils/field-filter-params'
 import { evaluateAppearance } from '../lib/utils/conditional-appearance'
+import { isNoWrapColumn } from '../lib/utils/nowrap-columns'
 
 interface TableCellRendererProps {
   name: string
@@ -789,14 +791,27 @@ const TableCell = ({
       <div
         // whitespace-normal + break-words вместо truncate: ширины колонок ТЧ
         // фиксированы (tableLayout: fixed), и длинное значение обрезалось
-        // многоточием вместо переноса на вторую строку.
-        className="flex min-h-[28px] cursor-text items-center whitespace-normal break-words border-b-2 border-transparent px-2 py-1 text-body2 text-ui-06 hover:bg-ui-04"
+        // многоточием вместо переноса на вторую строку. Исключение —
+        // «Источник финансирования» (isNoWrapColumn): там перенос раздувает
+        // каждую строку ТЧ, и значение остаётся в одну строку.
+        className={cn(
+          'flex min-h-[28px] cursor-text items-center border-b-2 border-transparent px-2 py-1 text-body2 text-ui-06 hover:bg-ui-04',
+          !isNoWrapColumn(column) && 'whitespace-normal break-words'
+        )}
         style={appearance?.color ? { color: appearance.color } : undefined}
         onClick={() => {
           setEditing(true)
         }}
       >
-        {displayText || '\u00A0'}
+        {/* Многоточие вешаем на СОДЕРЖИМОЕ, а не на flex-контейнер: у него
+            обрезка текста не работает. overflow:hidden внутри `truncate`
+            заодно снимает min-width:auto flex-элемента — иначе он не сжался бы
+            до ширины колонки. */}
+        {isNoWrapColumn(column) ? (
+          <span className="truncate">{displayText || '\u00A0'}</span>
+        ) : (
+          displayText || '\u00A0'
+        )}
       </div>
     )
   }

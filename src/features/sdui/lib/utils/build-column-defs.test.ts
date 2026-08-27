@@ -465,3 +465,44 @@ describe('buildColumnDefs — условное состояние ячейки',
     expect(container.querySelector('input, textarea')).toBeTruthy()
   })
 })
+
+// Правило переноса текста в ТЧ выключается по биндингу колонки
+// (isNoWrapBinding) — проверяем, что признак доезжает до ячейки.
+describe('buildColumnDefs — колонка без переноса текста', () => {
+  afterEach(cleanup)
+
+  const syncRef = {
+    current: { updateCell: () => undefined, commitCell: () => undefined },
+  } as unknown as RefObject<UseTableSyncResult>
+
+  const column = (binding: string): ViewNode =>
+    ({
+      id: `col.${binding}`,
+      type: 'TABLE_COLUMN',
+      binding,
+      props: { label: binding, cellWidget: 'TEXT_FIELD' },
+    }) as ViewNode
+
+  const renderCell = (binding: string) => {
+    const defs = buildColumnDefs([column(binding)], syncRef)
+    const cell = defs[0].cell as (
+      info: CellContext<TableRow, unknown>
+    ) => ReactElement
+    return render(
+      cell({
+        row: { original: { rowId: '1', [binding]: 'Значение' } },
+      } as unknown as CellContext<TableRow, unknown>)
+    )
+  }
+
+  it('«Источник финансирования» — однострочный input', () => {
+    const { container } = renderCell('IstochnikFinansirovaniya')
+    expect(container.querySelector('input')).toBeTruthy()
+    expect(container.querySelector('textarea')).toBeNull()
+  })
+
+  it('обычная колонка по-прежнему переносит текст (textarea)', () => {
+    const { container } = renderCell('VidNachisleniya')
+    expect(container.querySelector('textarea')).toBeTruthy()
+  })
+})

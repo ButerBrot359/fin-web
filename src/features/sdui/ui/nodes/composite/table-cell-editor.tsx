@@ -21,8 +21,10 @@ import { ObjectCellEditor } from './object-cell-editor'
 import {
   cellSx,
   enumCellSx,
+  nowrapEnumCellSx,
   dateCellSx,
   readonlyCellTextStyle,
+  nowrapCellTextStyle,
 } from './table-cell-editor-styles'
 import { RequiredCellFrame } from './required-cell-frame'
 
@@ -32,6 +34,11 @@ interface TableCellEditorProps {
   value: unknown
   readonly?: boolean
   required?: boolean
+  /**
+   * Колонка исключена из переноса текста (см. `isNoWrapBinding`): значение
+   * держится в одну строку и обрезается многоточием.
+   */
+  noWrap?: boolean
   revealErrors?: boolean
   props?: Record<string, unknown>
   onChange: (value: unknown) => void
@@ -97,6 +104,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   value,
   readonly,
   required,
+  noWrap,
   revealErrors,
   props,
   onChange,
@@ -110,11 +118,13 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   }
   const dateFormat = props?.dateFormat as string | undefined
 
+  const textStyle = noWrap ? nowrapCellTextStyle : readonlyCellTextStyle
+
   if (readonly) {
     return (
       // Перенос текста по ширине колонки — общий стиль всех ячеек без
-      // редактора (readonlyCellTextStyle).
-      <span style={readonlyCellTextStyle}>
+      // редактора (readonlyCellTextStyle); в исключённой колонке — одна строка.
+      <span style={textStyle}>
         {formatReadonlyValue(value, dataType, dateFormat)}
       </span>
     )
@@ -129,9 +139,10 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             value={strValue}
             // multiline — тот же перенос, что у readonly-значения: ширина
             // колонки фиксирована, и <input> длинный текст прокручивает вместо
-            // переноса. Enter по-прежнему КОММИТИТ ячейку, а не добавляет
-            // строку, поэтому событие гасится.
-            multiline
+            // переноса. В исключённой колонке перенос не нужен, поэтому там
+            // остаётся однострочный <input>. Enter по-прежнему КОММИТИТ ячейку,
+            // а не добавляет строку, поэтому событие гасится.
+            multiline={!noWrap}
             onChange={(e) => {
               onChange(e.target.value)
             }}
@@ -226,7 +237,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             size="small"
             fullWidth
             variant="standard"
-            sx={enumCellSx}
+            sx={noWrap ? nowrapEnumCellSx : enumCellSx}
           >
             {options.map((o) => (
               <MenuItem key={o.value} value={o.value}>
@@ -245,6 +256,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             onChange={onChange}
             onCommit={handleCommit}
             extraParams={extraParams}
+            noWrap={noWrap}
           />
         )
 
@@ -265,9 +277,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
         // Неизвестный виджет — показываем значение текстом; перенос тот же, что
         // у readonly-ячейки, иначе последняя ветка редактора осталась бы
         // единственной, где длинное значение вылезает за колонку.
-        return (
-          <span style={readonlyCellTextStyle}>{renderCellValue(value)}</span>
-        )
+        return <span style={textStyle}>{renderCellValue(value)}</span>
     }
   }
 

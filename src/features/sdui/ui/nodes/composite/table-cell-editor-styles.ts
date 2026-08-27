@@ -24,6 +24,20 @@ export const readonlyCellTextStyle: CSSProperties = {
   overflowWrap: 'anywhere',
 }
 
+/**
+ * То же значение без редактора, но в колонке, ИСКЛЮЧЁННОЙ из переноса
+ * (`isNoWrapBinding` — «Источник финансирования»): одна строка, лишнее срезается
+ * многоточием. Обрезка обязательна: без неё nowrap-текст снова вылез бы на
+ * соседнюю колонку — ровно то, ради чего перенос и вводился.
+ */
+export const nowrapCellTextStyle: CSSProperties = {
+  ...readonlyCellTextStyle,
+  whiteSpace: 'nowrap',
+  overflowWrap: 'normal',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+}
+
 export const cellSx: SystemStyleObject<Theme> = {
   mb: 0,
   position: 'static',
@@ -43,18 +57,34 @@ export const cellSx: SystemStyleObject<Theme> = {
   },
 }
 
+const enumSelectBase = {
+  padding: '4px 8px !important',
+  minHeight: '28px',
+  display: 'flex',
+  alignItems: 'center',
+}
+
 export const enumCellSx: SystemStyleObject<Theme> = {
   fontSize: '14px',
   '&::before, &::after': { display: 'none' },
   '& .MuiSelect-select': {
-    padding: '4px 8px !important',
-    minHeight: '28px',
-    display: 'flex',
-    alignItems: 'center',
+    ...enumSelectBase,
     // MUI держит подпись выбранного значения в одну строку — в ячейке ТЧ с
     // фиксированной шириной длинное значение перечисления так обрезается.
     whiteSpace: 'normal !important',
     overflowWrap: 'anywhere',
+  },
+}
+
+/** Перечисление в колонке без переноса: одна строка + многоточие. */
+export const nowrapEnumCellSx: SystemStyleObject<Theme> = {
+  fontSize: '14px',
+  '&::before, &::after': { display: 'none' },
+  '& .MuiSelect-select': {
+    ...enumSelectBase,
+    whiteSpace: 'nowrap !important',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
 }
 

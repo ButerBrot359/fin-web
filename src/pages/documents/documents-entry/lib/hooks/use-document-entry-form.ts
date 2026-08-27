@@ -12,6 +12,17 @@ import {
   markRestoring,
   unmarkRestoring,
 } from '@/features/workspace-tabs/lib/hooks/use-form-cache-store'
+import { serializeDateInput } from '@/shared/ui/inputs/serialize-date-input'
+
+/**
+ * «Сейчас» для реквизита «Дата» нового документа — той же воронкой, что и ввод
+ * в пикере (serializeDateInput). Прежний `toISOString()` уводил время в UTC, а
+ * сервер offset отрезает, не конвертируя: у документа, созданного в 02:00 по
+ * Астане, дата уезжала на предыдущие сутки.
+ */
+function nowForServer(): string {
+  return serializeDateInput(new Date())
+}
 
 function hasChanges(
   cached: Record<string, unknown>,
@@ -86,8 +97,8 @@ export const useDocumentEntryForm = () => {
       defaults = existingEntry.attributes
     } else if (isNew && copyFromData?.attributes) {
       const { Nomer: _, Kod: _k, ...rest } = copyFromData.attributes
-      const copiedValues = { ...rest, Data: new Date().toISOString() }
-      const emptyDefaults = { Data: new Date().toISOString() }
+      const copiedValues = { ...rest, Data: nowForServer() }
+      const emptyDefaults = { Data: nowForServer() }
 
       form.reset(emptyDefaults)
       for (const [key, value] of Object.entries(copiedValues)) {
@@ -96,9 +107,9 @@ export const useDocumentEntryForm = () => {
       restoredRef.current = true
       return
     } else if (isNew && newEntryData?.attributes) {
-      defaults = { Data: new Date().toISOString(), ...newEntryData.attributes }
+      defaults = { Data: nowForServer(), ...newEntryData.attributes }
     } else if (isNew && !vidOperatsii && !copyFrom && !basisId) {
-      defaults = { Data: new Date().toISOString() }
+      defaults = { Data: nowForServer() }
     }
 
     if (!defaults) return

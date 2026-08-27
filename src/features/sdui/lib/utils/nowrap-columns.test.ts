@@ -2,15 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { isNoWrapBinding } from './nowrap-columns'
 
 describe('isNoWrapBinding', () => {
-  it.each([
-    'IstochnikFinansirovaniya',
-    'Sotrudnik',
-    'Dolzhnost',
-    'PodrazdelenieOrganizatsii',
-    'Podrazdelenie',
-    'VidNachisleniya',
-  ])('%s исключён из переноса', (binding) => {
-    expect(isNoWrapBinding(binding)).toBe(true)
+  it('«Источник финансирования» исключён из переноса', () => {
+    expect(isNoWrapBinding('IstochnikFinansirovaniya')).toBe(true)
   })
 
   it('регистр биндинга не важен', () => {
@@ -18,7 +11,7 @@ describe('isNoWrapBinding', () => {
   })
 
   it('остальные колонки ТЧ переносят текст как прежде', () => {
-    expect(isNoWrapBinding('GrafikRaboty')).toBe(false)
+    expect(isNoWrapBinding('VidNachisleniya')).toBe(false)
     expect(isNoWrapBinding('KodPlatnykhUslug')).toBe(false)
   })
 

@@ -1,13 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { unpostDocumentEntry } from '@/entities/document-entry'
+import type { DocumentEntry } from '@/entities/document-entry'
 import { useDocumentType } from '@/entities/document-type'
-import { openMovementsForEntry } from '@/features/sdui'
-import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
-import { showToast } from '@/shared/ui/toast/show-toast'
 
 import { apiService } from '@/shared/api/api'
 import type { ApiResponse } from '@/shared/types/api.types'
@@ -21,7 +17,10 @@ import { SearchInput } from '@/shared/ui/inputs'
 import { useDocumentEntryPrint } from '@/entities/document-entry'
 import { PrintDropdownButton } from '@/widgets/document-form-toolbar'
 
+import { useToolbarMutations } from '../lib/hooks/use-toolbar-mutations'
 import { SelectOperationDialog } from './select-operation-dialog'
+import { TabelBulkEditButton } from './tabel-bulk-edit-dialog'
+import { TabelMoreDropdown, TabelReportsDropdown } from './tabel-toolbar-menus'
 
 interface EnumsValue {
   id: number
@@ -37,18 +36,31 @@ interface OnGetFormField {
   elements: EnumsValue[]
 }
 
+// SCRUM-276 spec v2 §3.3: Tabel-режим тулбара — команды по числу выбранных
+// строк. Прочие document types проп не передают и не меняют поведения.
+export interface TabelToolbarState {
+  selectedIds: number[]
+  /** Ровно одна выбранная строка — или null (для команд «ровно 1»). */
+  selectedEntry: DocumentEntry | null
+  hasCriteria: boolean
+  onRefresh: () => void
+  onCancelSearch: () => void
+}
+
 interface DocumentListToolbarProps {
   selectedRowId?: number | null
   // SCRUM-360 §2: поиск контролируется страницей — значение уходит в
   // FilterRequest.q (по образцу account-plan-list-toolbar).
   searchValue: string
   onSearchChange: (value: string) => void
+  tabel?: TabelToolbarState
 }
 
 export const DocumentListToolbar = ({
   selectedRowId,
   searchValue,
   onSearchChange,
+  tabel,
 }: DocumentListToolbarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -67,27 +79,8 @@ export const DocumentListToolbar = ({
   // Тип уже в suspense-кеше — страница списка грузит его тем же ключом (SCRUM-265 FE-4).
   const { interactiveCreationForbidden } = useDocumentType(moduleCode)
 
-  const queryClient = useQueryClient()
-
-  const unpostMutation = useMutation({
-    mutationFn: (id: number) => unpostDocumentEntry(id),
-    onSuccess: () => {
-      invalidateDocumentQueries(queryClient)
-      showToast('success', t('documentListToolbar.unpostSuccess'))
-    },
-    onError: () => {
-      showToast('error', t('documentListToolbar.unpostError'))
-    },
-  })
-
-  // ДтКт: движения открываются SDUI workspace-вкладкой (паритет с формой),
-  // legacy-роут .../movements больше не используется.
-  const movementsMutation = useMutation({
-    mutationFn: (id: number) => openMovementsForEntry(String(id)),
-    onError: () => {
-      showToast('error', t('documentListToolbar.movementsError'))
-    },
-  })
+  const { unpost: unpostMutation, movements: movementsMutation } =
+    useToolbarMutations()
 
   const handleCreate = async () => {
     if (!pageCode || !moduleCode) return
@@ -166,30 +159,44 @@ export const DocumentListToolbar = ({
             />
           )}
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              aria-label={t('actions.debitCredit')}
-              startIcon={<DebetKreditIcon className="h-5 w-5" />}
-              disabled={selectedRowId == null || movementsMutation.isPending}
-              onClick={handleMovements}
-            />
-            <Button
-              variant="secondary"
-              aria-label={t('actions.layers')}
-              startIcon={<LayersIcon className="h-5 w-5" />}
-            />
-          </div>
+          {/* SCRUM-276 §3.2/§3.3: у Табеля вне 1С-эталона нет ДтКт-иконки,
+              «Слоёв» и отдельной кнопки отмены проведения — проведение живёт
+              в «Ещё», движения — в «Отчётах» */}
+          {!tabel && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                aria-label={t('actions.debitCredit')}
+                startIcon={<DebetKreditIcon className="h-5 w-5" />}
+                disabled={selectedRowId == null || movementsMutation.isPending}
+                onClick={handleMovements}
+              />
+              <Button
+                variant="secondary"
+                aria-label={t('actions.layers')}
+                startIcon={<LayersIcon className="h-5 w-5" />}
+              />
+            </div>
+          )}
 
-          <Button
-            variant="secondary"
-            disabled={selectedRowId == null || unpostMutation.isPending}
-            onClick={() => {
-              if (selectedRowId) unpostMutation.mutate(selectedRowId)
-            }}
-          >
-            {t('documentListToolbar.unpost')}
-          </Button>
+          {!tabel && (
+            <Button
+              variant="secondary"
+              disabled={selectedRowId == null || unpostMutation.isPending}
+              onClick={() => {
+                if (selectedRowId) unpostMutation.mutate(selectedRowId)
+              }}
+            >
+              {t('documentListToolbar.unpost')}
+            </Button>
+          )}
+
+          {tabel && (
+            <TabelBulkEditButton
+              typeCode={moduleCode}
+              selectedIds={tabel.selectedIds}
+            />
+          )}
 
           <PrintDropdownButton
             commands={printCommands}
@@ -197,7 +204,11 @@ export const DocumentListToolbar = ({
             loading={isPrintLoading}
             onPrint={handlePrint}
           />
-          <DropdownButton label={t('documentListToolbar.reports')} />
+          {tabel ? (
+            <TabelReportsDropdown selectedId={selectedRowId ?? null} />
+          ) : (
+            <DropdownButton label={t('documentListToolbar.reports')} />
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -210,7 +221,18 @@ export const DocumentListToolbar = ({
             }}
             startIcon={<SearchIcon className="h-5 w-5 text-ui-05" />}
           />
-          <DropdownButton label={t('documentListToolbar.more')} />
+          {tabel ? (
+            <TabelMoreDropdown
+              pageCode={pageCode}
+              moduleCode={moduleCode}
+              selectedEntry={tabel.selectedEntry}
+              hasCriteria={tabel.hasCriteria}
+              onRefresh={tabel.onRefresh}
+              onCancelSearch={tabel.onCancelSearch}
+            />
+          ) : (
+            <DropdownButton label={t('documentListToolbar.more')} />
+          )}
         </div>
       </div>
 

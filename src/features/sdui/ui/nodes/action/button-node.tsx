@@ -9,6 +9,7 @@ import { useSduiEffects } from '../../../lib/use-sdui-effects'
 import { NodeRenderer } from '../../node-renderer'
 import { resolveButtonIcon } from './button-icons'
 import { resolveButtonPresentation } from './button-presentation'
+import { MenuCloseContext, useMenuClose } from './menu-close-context'
 
 export const ButtonNode: FC<NodeProps> = ({ node }) => {
   const label = node.props?.label as string | undefined
@@ -33,6 +34,10 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
   const dispatch = useSduiDispatch()
   const effects = useSduiEffects()
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
+  // Кнопка может лежать внутри чужого dropdown-меню (overflow «Ещё»):
+  // активация команды закрывает и его (spec v1 §6), а раскрытие собственного
+  // подменю родительское меню не трогает.
+  const closeParentMenu = useMenuClose()
 
   // FE-5: свёрнутые по ширине кнопки командной панели читаются только
   // кнопкой-хозяином «Ещё» — остальные кнопки контекст игнорируют (default
@@ -78,6 +83,7 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
       setMenuAnchor(e.currentTarget)
       return
     }
+    closeParentMenu?.()
     // SCRUM-288 §2.1: панель связей — исполнение готового request (не COMMAND в сессию).
     if (requestAction) {
       void effects.executeActionRequest(
@@ -134,14 +140,26 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
             setMenuAnchor(null)
           }}
         >
-          {/* FE-5: свёрнутые по ширине кнопки — верхней секцией перед штатными пунктами. */}
-          {overflowNodes.map((c) => (
-            <NodeRenderer key={c.id} node={c} />
-          ))}
-          {overflowNodes.length > 0 && <Divider />}
-          {node.children?.map((c) => (
-            <NodeRenderer key={c.id} node={c} />
-          ))}
+          {/* SCRUM-276 spec v1 §6: пункт закрывает меню сам через
+              MenuCloseContext ДО диспатча команды — backdrop меню не
+              перекрывает серверный confirm. Провайдер составляет цепочку с
+              родительским меню: активация конечного пункта закрывает все
+              уровни; DOM-обёрток нет — клавиатурная навигация MenuList жива. */}
+          <MenuCloseContext.Provider
+            value={() => {
+              setMenuAnchor(null)
+              closeParentMenu?.()
+            }}
+          >
+            {/* FE-5: свёрнутые по ширине кнопки — верхней секцией перед штатными пунктами. */}
+            {overflowNodes.map((c) => (
+              <NodeRenderer key={c.id} node={c} />
+            ))}
+            {overflowNodes.length > 0 && <Divider />}
+            {node.children?.map((c) => (
+              <NodeRenderer key={c.id} node={c} />
+            ))}
+          </MenuCloseContext.Provider>
         </Menu>
       )}
     </>

@@ -9,6 +9,8 @@ import { AccountingPostingsBlock } from './accounting-postings-block'
 import { ReadOnlyTable } from './read-only-table'
 import { SubordinationTree } from './subordination-tree'
 import { KalendariTemplateTable } from './kalendari-template-table'
+import { isTabelMatrixNode } from './tabel/tabel-matrix-contract'
+import { TabelMatrixTable } from './tabel/tabel-matrix-table'
 
 /**
  * Дискриминатор kalendari-таблиц по binding (v2-back §1). Спец-пропа нет —
@@ -32,6 +34,10 @@ export function extractEditableColumns(
 }
 
 export const TableNode: FC<NodeProps> = ({ node }) => {
+  // Матрица Табеля (SCRUM-276): все три признака дискриминатора обязаны
+  // совпасть, иначе обычный рендер — без декодирования packed-строк.
+  if (isTabelMatrixNode(node)) return <TabelMatrixTable node={node} />
+
   const editable = node.props?.editable === true
 
   if (editable) {

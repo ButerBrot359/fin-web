@@ -15,7 +15,6 @@ import { apiService } from '@/shared/api/api'
 import { DateTimeInput } from '@/shared/ui/inputs/datetime-input'
 import { NumberInput } from '@/shared/ui/inputs/number-input'
 import { AutocompleteInput } from '@/shared/ui/inputs/autocomplete-input'
-import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import {
   REFERENCE_DOMAIN_KINDS,
   getUniversalSearchUrl,
@@ -24,6 +23,7 @@ import type { SelectOption } from '@/shared/types/select-option'
 import type { EnumsValue } from '@/entities/document-type'
 
 import { useDebouncedValue } from '../lib/hooks/use-debounced-value'
+import { useDictionarySearch } from '../lib/hooks/use-dictionary-search'
 import { normalizeDateForBackend } from '../lib/utils/normalize-date-value'
 import { getEdgeForOp } from '../lib/utils/edge-for-op'
 
@@ -77,7 +77,13 @@ const NumberControl = ({ value, onChange, column }: ValueControlProps) => {
       fullWidth
       label={t('tableFilter.value')}
       decimal={column.dataType === 'DECIMAL'}
-      value={typeof value === 'number' ? String(value) : typeof value === 'string' ? value : ''}
+      value={
+        typeof value === 'number'
+          ? String(value)
+          : typeof value === 'string'
+            ? value
+            : ''
+      }
       onChange={(e) => {
         const v = (e.target as HTMLInputElement).value
         onChange(v === '' ? null : Number(v))
@@ -179,20 +185,8 @@ const BooleanControl = ({ value, onChange }: ValueControlProps) => {
   )
 }
 
-interface DictionaryEntry {
-  id: number
-  code: string
-  displayName?: string
-  nameRu?: string
-  nameKz?: string
-}
-interface DictionarySearchResponse {
-  data: { content: DictionaryEntry[] }
-  success: boolean
-}
-
 const DictionaryControl = ({ value, onChange, column }: ValueControlProps) => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const [opened, setOpened] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const debounced = useDebouncedValue(inputValue, 300)
@@ -204,30 +198,11 @@ const DictionaryControl = ({ value, onChange, column }: ValueControlProps) => {
       ? getUniversalSearchUrl(domain, typeCode)
       : null
 
-  const { data: options = [], isFetching } = useQuery<
-    AxiosResponse<DictionarySearchResponse>,
-    unknown,
-    SelectOption[]
-  >({
-    queryKey: ['filter-dict-search', url, debounced],
-    queryFn: () =>
-      apiService.get<DictionarySearchResponse>({
-        url: url!,
-        params: { q: debounced, size: 30 },
-      }),
-    enabled: !!url && opened,
-    select: (response) =>
-      response.data.data.content.map(
-        (entry): SelectOption => ({
-          id: entry.id,
-          code: entry.code,
-          label:
-            (entry.displayName ?? getLocalizedName(entry, i18n.language)) ||
-            entry.code,
-          raw: entry as unknown as Record<string, unknown>,
-        })
-      ),
-  })
+  const { data: options = [], isFetching } = useDictionarySearch(
+    url,
+    opened,
+    debounced
+  )
 
   const currentValue: SelectOption | null =
     value && typeof value === 'object' && 'id' in value
@@ -321,7 +296,11 @@ export const ValueControl = (props: ValueControlProps) => {
   switch (column.dataType) {
     case 'STRING':
     case 'TEXT':
-      return isList ? <StringListControl {...props} /> : <StringControl {...props} />
+      return isList ? (
+        <StringListControl {...props} />
+      ) : (
+        <StringControl {...props} />
+      )
 
     case 'INTEGER':
     case 'DECIMAL':
@@ -331,7 +310,11 @@ export const ValueControl = (props: ValueControlProps) => {
 
     case 'DATE':
     case 'DATETIME':
-      return isRange ? <DateRangeControl {...props} /> : <DateControl {...props} />
+      return isRange ? (
+        <DateRangeControl {...props} />
+      ) : (
+        <DateControl {...props} />
+      )
 
     case 'BOOLEAN':
       return <BooleanControl {...props} />

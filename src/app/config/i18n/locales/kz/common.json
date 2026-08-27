@@ -86,7 +86,19 @@
     "unpost": "Өткізуді болдырмау",
     "unpostSuccess": "Өткізу болдырмалды",
     "unpostError": "Өткізуді болдырмау қатесі",
-    "movementsError": "Құжат қозғалыстарын жүктеу мүмкін болмады"
+    "movementsError": "Құжат қозғалыстарын жүктеу мүмкін болмады",
+    "documentMovements": "Құжат қозғалыстары",
+    "editEntry": "Өзгерту",
+    "post": "Өткізу",
+    "postSuccess": "Құжат өткізілді",
+    "postError": "Құжатты өткізу мүмкін болмады",
+    "refresh": "Жаңарту",
+    "bulkEditTitle": "Таңдалғандарды өзгерту",
+    "bulkEditCount": "Таңдалған құжаттар: {{count}}",
+    "bulkEditCommentSwitch": "Түсініктемені өзгерту",
+    "bulkEditCommentPlaceholder": "Жаңа түсініктеме (бос — тазарту)",
+    "bulkEditSuccess": "Өзгертілген құжаттар: {{selected}} ішінен {{changed}}",
+    "bulkEditError": "Таңдалған құжаттарды өзгерту мүмкін болмады"
   },
   "documentFormToolbar": {
     "postAndClose": "Өткізу және жабу",
@@ -703,6 +715,31 @@
     "notFound": {
       "title": "Бет табылмады",
       "description": "Мекенжайды тексеріңіз немесе басты бетке оралыңыз."
+    },
+    "tabel": {
+      "employeeColumn": "Қызметкер / уақыт түрі",
+      "totalColumn": "Барлығы",
+      "addEmployee": "Қызметкер қосу",
+      "podbor": "Іріктеу",
+      "podborTitle": "Қызметкерлерді іріктеу",
+      "podborAdd": "Қосу ({{count}})",
+      "addWorkKind": "Уақыт түрін қосу",
+      "selectEmployeeFirst": "Алдымен қызметкерді таңдаңыз",
+      "alreadyAdded": "Қызметкер табельде бар",
+      "kindAlreadyAdded": "Бұл уақыт түрі қосылып қойған",
+      "deleteEmployee": "Қызметкерді жою",
+      "deleteEmployeeConfirm": "«{{name}}» қызметкерін табельден жою керек пе?",
+      "deleteWorkKind": "Уақыт түрін жою",
+      "deleteWorkKindConfirm": "«{{name}}» уақыт түрін жою керек пе?",
+      "invalidHours": "Ұяшықта 1-ден 24-ке дейінгі сан көрсетілуі керек",
+      "protectedKind": "Уақыт түрі кадр құжаттарымен бақыланады",
+      "kindSummary": "{{days}} күн, {{hours}} сағ.",
+      "expandAll": "Барлығын жазу",
+      "collapseAll": "Барлығын жию",
+      "expand": "Жазу",
+      "collapse": "Жию",
+      "payloadError": "Табель деректерін көрсету мүмкін болмады",
+      "pickerUnavailable": "Қызметкерлерді іріктеу қолжетімсіз: сервер таңдау келісімшартын жіберген жоқ"
     }
   },
   "tarifikatsiya": {

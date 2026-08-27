@@ -166,11 +166,76 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
     // одной из них значение перенеслось на две строки.
     const style = (
       (defs[0].header as () => ReactElement)().props as {
-        style: { height: string; gridAutoRows: string }
+        style: { height: string; gridTemplateRows: string }
       }
     ).style
     expect(style.height).toBe('100%')
-    expect(style.gridAutoRows).toBe('1fr')
+    // Треков ровно столько, сколько под-колонок у самой большой вертикальной
+    // группы таблицы (здесь — две), и все они равны.
+    expect(style.gridTemplateRows).toBe('repeat(2, 1fr)')
+  })
+
+  // Группы с РАЗНЫМ числом под-колонок («Сотрудник / Вид занятости / Вид
+  // деятельности» и «Подразделение / Должность» в ТЧ «Отпуска»): равные треки
+  // делили высоту строки на 3 и на 2, и линии сетки шли по строке ступеньками.
+  describe('общая сетка под-строк у групп разного размера', () => {
+    const col = (id: string): ViewNode =>
+      ({
+        id,
+        type: 'TABLE_COLUMN',
+        binding: id,
+        props: { label: id },
+      }) as ViewNode
+
+    const group = (id: string, count: number): ViewNode =>
+      ({
+        id,
+        type: 'COLUMN_GROUP',
+        props: { orientation: 'VERTICAL', label: id },
+        children: Array.from({ length: count }, (_, i) =>
+          col(`${id}.${String(i)}`)
+        ),
+      }) as ViewNode
+
+    const gridRows = (header: unknown): string =>
+      (
+        (header as () => ReactElement)().props as {
+          style: { gridTemplateRows: string }
+        }
+      ).style.gridTemplateRows
+
+    it('число треков — по самой большой группе таблицы, у всех одинаковое', () => {
+      const defs = buildColumnDefs([group('g3', 3), group('g2', 2)], syncRef)
+
+      expect(gridRows(defs[0].header)).toBe('repeat(3, 1fr)')
+      expect(gridRows(defs[1].header)).toBe('repeat(3, 1fr)')
+    })
+
+    it('у меньшей группы хвостовой трек пустой, но с той же линией', () => {
+      const defs = buildColumnDefs([group('g3', 3), group('g2', 2)], syncRef)
+
+      const rows = subRows(defs[1].header)
+      expect(rows).toHaveLength(3)
+      expect((rows[2].props as { children: unknown }).children).toBeNull()
+      // Линия обязана продолжиться и на пустом треке — иначе она обрывалась бы
+      // на колонке с меньшим числом под-колонок.
+      expect((rows[2].props as { className?: string }).className).toContain(
+        'border-t'
+      )
+    })
+
+    it('вертикальная группа внутри горизонтальной берёт ту же сетку', () => {
+      const horizontal = {
+        id: 'grp.h',
+        type: 'COLUMN_GROUP',
+        props: { orientation: 'HORIZONTAL', label: 'Шапка' },
+        children: [group('g2', 2)],
+      } as ViewNode
+      const defs = buildColumnDefs([group('g3', 3), horizontal], syncRef)
+
+      const nested = (defs[1] as { columns: { header: unknown }[] }).columns[0]
+      expect(gridRows(nested.header)).toBe('repeat(3, 1fr)')
+    })
   })
 
   it('под-строки одной высоты, разделитель — между ними, а не сверху первой', () => {
@@ -467,7 +532,7 @@ describe('buildColumnDefs — условное состояние ячейки',
 })
 
 // Правило переноса текста в ТЧ выключается по биндингу колонки
-// (isNoWrapBinding) — проверяем, что признак доезжает до ячейки.
+// (isNoWrapColumn) — проверяем, что признак доезжает до ячейки.
 describe('buildColumnDefs — колонка без переноса текста', () => {
   afterEach(cleanup)
 
@@ -495,14 +560,21 @@ describe('buildColumnDefs — колонка без переноса текст�
     )
   }
 
-  it('«Источник финансирования» — однострочный input', () => {
-    const { container } = renderCell('IstochnikFinansirovaniya')
+  it.each([
+    'IstochnikFinansirovaniya',
+    'Sotrudnik',
+    'Dolzhnost',
+    'PodrazdelenieOrganizatsii',
+    'VidNachisleniya',
+    'OtrabotanoDney',
+  ])('%s — однострочный input', (binding) => {
+    const { container } = renderCell(binding)
     expect(container.querySelector('input')).toBeTruthy()
     expect(container.querySelector('textarea')).toBeNull()
   })
 
   it('обычная колонка по-прежнему переносит текст (textarea)', () => {
-    const { container } = renderCell('VidNachisleniya')
+    const { container } = renderCell('KodPlatnykhUslug')
     expect(container.querySelector('textarea')).toBeTruthy()
   })
 })

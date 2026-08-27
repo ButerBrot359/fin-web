@@ -35,7 +35,7 @@ interface TableCellEditorProps {
   readonly?: boolean
   required?: boolean
   /**
-   * Колонка исключена из переноса текста (см. `isNoWrapBinding`): значение
+   * Колонка исключена из переноса текста (см. `isNoWrapColumn`): значение
    * держится в одну строку и обрезается многоточием.
    */
   noWrap?: boolean

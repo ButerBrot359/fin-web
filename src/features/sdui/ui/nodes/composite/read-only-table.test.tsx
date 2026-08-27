@@ -34,14 +34,22 @@ vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => vi.fn(),
 }))
 
-const makeTable = (props: Record<string, unknown>): ViewNode =>
+const makeTable = (
+  props: Record<string, unknown>,
+  columnBinding = 'a'
+): ViewNode =>
   ({
     id: 'tbl',
     type: 'TABLE',
     binding: 'rows',
     props: { editable: false, ...props },
     children: [
-      { id: 'c.a', type: 'TABLE_COLUMN', binding: 'a', props: { label: 'A' } },
+      {
+        id: 'c.a',
+        type: 'TABLE_COLUMN',
+        binding: columnBinding,
+        props: { label: 'A' },
+      },
     ],
   }) as ViewNode
 
@@ -170,5 +178,30 @@ describe('ReadOnlyTable — перенос текста в ячейке', () => 
     const style = getComputedStyle(cell)
     expect(style.getPropertyValue('overflow-wrap')).toBe('anywhere')
     expect(style.getPropertyValue('white-space')).not.toBe('nowrap')
+  })
+})
+
+// «Источник финансирования» из правила переноса исключён (isNoWrapColumn):
+// наименования источников длинные, и перенос раздувает каждую строку ТЧ.
+describe('ReadOnlyTable — колонка без переноса', () => {
+  const LONG = 'Целевые текущие трансферты из областного бюджета'
+
+  it('«Источник финансирования» — одна строка с многоточием', () => {
+    state.rows = [{ rowId: 'r1', IstochnikFinansirovaniya: LONG }]
+    render(<TableNode node={makeTable({}, 'IstochnikFinansirovaniya')} />)
+
+    const style = getComputedStyle(screen.getByText(LONG).closest('td')!)
+    expect(style.getPropertyValue('white-space')).toBe('nowrap')
+    expect(style.getPropertyValue('text-overflow')).toBe('ellipsis')
+    expect(style.getPropertyValue('overflow')).toBe('hidden')
+  })
+
+  // Дт/Кт-вариант той же колонки в ТЧ движений бухрегистра.
+  it('суффиксный биндинг колонки подчиняется тому же правилу', () => {
+    state.rows = [{ rowId: 'r1', IstochnikFinansirovaniyaDt: LONG }]
+    render(<TableNode node={makeTable({}, 'IstochnikFinansirovaniyaDt')} />)
+
+    const style = getComputedStyle(screen.getByText(LONG).closest('td')!)
+    expect(style.getPropertyValue('white-space')).toBe('nowrap')
   })
 })

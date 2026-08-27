@@ -9,9 +9,24 @@ describe('serializeDateInput', () => {
     expect(serializeDateInput(localMidnight, true)).toBe('2026-07-01')
   })
 
-  it('datetime: сериализуется как ISO Z-строка (политика UTC-на-проводе не тронута)', () => {
-    const d = new Date(2026, 6, 1, 12, 30, 0, 0)
-    expect(serializeDateInput(d, false)).toBe(d.toISOString())
+  // Репро аналитика: ввели «30.08.2026 00:00:00» — после записи в документе
+  // стояло «29.08.2026 19:00». toISOString() переводил локальное время в UTC
+  // (Астана +05), а сервер offset отрезает, не конвертируя.
+  it('datetime: сериализуется как ЛОКАЛЬНОЕ время без зоны', () => {
+    const d = new Date(2026, 7, 30, 0, 0, 0, 0)
+    expect(serializeDateInput(d, false)).toBe('2026-08-30T00:00:00')
+  })
+
+  it('datetime: время суток сохраняется как набрано', () => {
+    expect(serializeDateInput(new Date(2026, 6, 1, 12, 30, 45, 0), false)).toBe(
+      '2026-07-01T12:30:45'
+    )
+  })
+
+  it('datetime: миллисекунды на провод не уходят', () => {
+    expect(
+      serializeDateInput(new Date(2026, 6, 1, 12, 30, 0, 777), false)
+    ).toBe('2026-07-01T12:30:00')
   })
 
   it('null и невалидная дата → пустая строка', () => {
@@ -63,8 +78,9 @@ describe('serializeDateInput', () => {
     })
 
     it('datetime-поля достраиваются той же воронкой', () => {
-      const serialized = serializeDateInput(dateWithYear(26, 0, 1), false)
-      expect(new Date(serialized).getFullYear()).toBe(2026)
+      expect(serializeDateInput(dateWithYear(26, 0, 1), false)).toBe(
+        '2026-01-01T00:00:00'
+      )
     })
   })
 })

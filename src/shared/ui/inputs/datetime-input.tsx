@@ -71,7 +71,8 @@ export const DateTimeInput = ({
     const snapped = spec
       ? snapToGranularity(newValue, spec.granularity)
       : newValue
-    // DATE-поля (dateOnly) уходят как локальный yyyy-MM-dd, datetime — как ISO Z.
+    // Оба вида полей уходят ЛОКАЛЬНЫМ временем (см. serializeDateInput):
+    // DATE — yyyy-MM-dd, DATETIME — yyyy-MM-ddTHH:mm:ss без зоны.
     onChange(serializeDateInput(snapped, dateOnly))
   }
 

@@ -68,12 +68,36 @@ export const VERTICAL_SUB_ROW_HEIGHT = 36
  * Отсюда: разделитель под-строк во ВСЕХ колонках строки встаёт на одной высоте
  * (эталон 1С — единая линия), а содержимое при этом не обрезается. Прежняя
  * жёсткая `height` тот же результат давала ценой обрезки значений многоточием.
+ *
+ * ОДИНАКОВОЕ ЧИСЛО ТРЕКОВ ВО ВСЕХ КОЛОНКАХ (`subRowCount`). Треков всегда
+ * столько, сколько под-колонок у САМОЙ БОЛЬШОЙ вертикальной группы таблицы, а
+ * не сколько их у этой группы. Иначе равные `1fr`-треки делят одну и ту же
+ * высоту строки на разное число частей: в «Сотрудник / Вид занятости / Вид
+ * деятельности» разделители встают на 1/3 и 2/3 высоты, а в соседнем
+ * «Подразделение / Должность» — на 1/2, и линии сетки идут по строке
+ * ступеньками. Группа с меньшим числом под-колонок занимает ПЕРВЫЕ треки
+ * общей сетки, хвост остаётся пустым — так же, как в эталоне 1С.
+ *
+ * <p>Пустые треки рисуются наравне с заполненными (и с тем же разделителем):
+ * иначе линия сетки обрывалась бы на колонке, у которой под-колонок меньше.
  */
+interface SubRowItem {
+  key: string
+  content: ReactNode
+}
+
 function verticalSubRows(
-  items: { key: string; content: ReactNode }[],
+  items: SubRowItem[],
   paddingX: number,
-  clip: boolean
+  clip: boolean,
+  subRowCount: number
 ): ReactNode {
+  // Хвостовые слоты пустые — у группы с меньшим числом под-колонок (тип шире
+  // элемента массива: индекс за пределами items даёт undefined).
+  const slots: (SubRowItem | undefined)[] = Array.from(
+    { length: Math.max(subRowCount, items.length) },
+    (_, index) => items[index]
+  )
   return createElement(
     'div',
     {
@@ -85,14 +109,14 @@ function verticalSubRows(
         // вылезала за границы колонки вместо обрезки многоточием. Редакторы при
         // этом по-прежнему занимают всю ширину ячейки (1fr).
         gridTemplateColumns: 'minmax(0, 1fr)',
-        gridAutoRows: '1fr',
+        gridTemplateRows: `repeat(${String(slots.length)}, 1fr)`,
       },
     },
-    ...items.map((item, index) =>
+    ...slots.map((item, index) =>
       createElement(
         'div',
         {
-          key: item.key,
+          key: item?.key ?? `empty-${String(index)}`,
           className: index > 0 ? 'border-t border-ui-03' : undefined,
           style: {
             // Пол высоты — общий для всех колонок: строка с короткими
@@ -107,10 +131,42 @@ function verticalSubRows(
             boxSizing: 'border-box' as const,
           },
         },
-        item.content
+        item?.content ?? null
       )
     )
   )
+}
+
+/**
+ * Сколько под-строк у самой большой VERTICAL-группы поддерева. Ноль — если
+ * вертикальных групп нет вовсе.
+ *
+ * <p>Считается по ВСЕЙ таблице и раздаётся всем группам: общая сетка под-строк
+ * — единственное, что держит линии разделителей на одной высоте по всей строке
+ * (см. док-комментарий verticalSubRows).
+ */
+function maxVerticalSubRows(children: ViewNode[] | undefined): number {
+  if (!children) return 0
+
+  let max = 0
+  for (const node of children) {
+    if (node.props?.visible === false) continue
+    if ((node.type as string) !== 'COLUMN_GROUP') continue
+
+    const orientation =
+      (node.props?.orientation as string | undefined) ?? 'HORIZONTAL'
+    if (orientation === 'VERTICAL') {
+      const visible = (node.children ?? []).filter(
+        (child) => child.props?.visible !== false
+      )
+      max = Math.max(max, visible.length)
+      continue
+    }
+    // HORIZONTAL-группа — многоуровневая шапка: вертикальные группы могут
+    // лежать внутри неё, и их сетка та же самая.
+    max = Math.max(max, maxVerticalSubRows(node.children))
+  }
+  return max
 }
 
 /**
@@ -144,6 +200,22 @@ export function buildColumnDefs(
   children: ViewNode[] | undefined,
   syncRef: RefObject<UseTableSyncResult>,
   validationRef?: RefObject<UseTableValidationResult>
+): ColumnDef<TableRow>[] {
+  // Число под-строк считается по ВСЕЙ таблице и одно на все вертикальные
+  // группы — иначе их разделители встают на разной высоте (см. verticalSubRows).
+  return buildColumnDefsInner(
+    children,
+    syncRef,
+    validationRef,
+    maxVerticalSubRows(children)
+  )
+}
+
+function buildColumnDefsInner(
+  children: ViewNode[] | undefined,
+  syncRef: RefObject<UseTableSyncResult>,
+  validationRef: RefObject<UseTableValidationResult> | undefined,
+  subRowCount: number
 ): ColumnDef<TableRow>[] {
   if (!children) return []
 
@@ -234,7 +306,8 @@ export function buildColumnDefs(
                       content: columnHeaderContent(col),
                     })),
                     16,
-                    true
+                    true,
+                    subRowCount
                   )
               : () => createElement(ColumnHeaderLabel, { label: groupLabel }),
           cell: (info: CellContext<TableRow, unknown>) =>
@@ -271,7 +344,8 @@ export function buildColumnDefs(
                 }
               }),
               0,
-              false
+              false,
+              subRowCount
             ),
         }
         result.push(colDef)
@@ -280,7 +354,12 @@ export function buildColumnDefs(
         const colDef: ColumnDef<TableRow> = {
           id: groupId,
           header: () => createElement(ColumnHeaderLabel, { label: groupLabel }),
-          columns: buildColumnDefs(node.children, syncRef, validationRef),
+          columns: buildColumnDefsInner(
+            node.children,
+            syncRef,
+            validationRef,
+            subRowCount
+          ),
         }
         result.push(colDef)
       }

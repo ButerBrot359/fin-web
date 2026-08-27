@@ -495,14 +495,20 @@ describe('buildColumnDefs — колонка без переноса текст�
     )
   }
 
-  it('«Источник финансирования» — однострочный input', () => {
-    const { container } = renderCell('IstochnikFinansirovaniya')
+  it.each([
+    'IstochnikFinansirovaniya',
+    'Sotrudnik',
+    'Dolzhnost',
+    'PodrazdelenieOrganizatsii',
+    'VidNachisleniya',
+  ])('%s — однострочный input', (binding) => {
+    const { container } = renderCell(binding)
     expect(container.querySelector('input')).toBeTruthy()
     expect(container.querySelector('textarea')).toBeNull()
   })
 
   it('обычная колонка по-прежнему переносит текст (textarea)', () => {
-    const { container } = renderCell('VidNachisleniya')
+    const { container } = renderCell('GrafikRaboty')
     expect(container.querySelector('textarea')).toBeTruthy()
   })
 })

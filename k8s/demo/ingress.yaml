@@ -5,11 +5,6 @@ metadata:
   namespace: demo
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    # Basic-auth, как и на dev. Секрет basic-auth создаётся workflow'ом
-    # из GitHub Secret DEMO_BASIC_AUTH (формат htpasswd: user:$apr1$...).
-    nginx.ingress.kubernetes.io/auth-type: basic
-    nginx.ingress.kubernetes.io/auth-secret: basic-auth
-    nginx.ingress.kubernetes.io/auth-realm: "Restricted - demo environment"
 spec:
   ingressClassName: nginx
   tls:

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/shared/lib/utils/cn'
 
+import { callSounds } from '../lib/call-sounds'
 import type { SupportCall, SupportCallSession } from '../model/types'
 import { useJoinSupportCall, useSupportQueue } from '../model/use-support-call'
 import { SupportDialog } from './support-dialog'
@@ -84,6 +85,7 @@ export const SupportQueueDialog = ({
               type="button"
               disabled={isPending}
               onClick={() => {
+                callSounds.answer()
                 mutate(call.id, { onSuccess: onConnected })
               }}
               className={cn(

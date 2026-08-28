@@ -10,6 +10,9 @@ import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/shared/lib/utils/cn'
 
+import { callSounds } from '../lib/call-sounds'
+import { CallDeviceMenu } from './call-device-menu'
+
 /**
  * Кнопка панели разговора.
  *
@@ -86,6 +89,13 @@ export const CallControls = ({ onHangUp }: { onHangUp: () => void }) => {
         active={mic.enabled}
         disabled={mic.pending}
         onClick={() => {
+          // Звук берётся по будущему состоянию, а не по текущему: подтверждать надо то,
+          // что произойдёт от нажатия, иначе включение микрофона звучало бы выключением.
+          if (mic.enabled) {
+            callSounds.micOff()
+          } else {
+            callSounds.micOn()
+          }
           void mic.toggle()
         }}
       />
@@ -102,9 +112,16 @@ export const CallControls = ({ onHangUp }: { onHangUp: () => void }) => {
         active={screen.enabled}
         disabled={screen.pending}
         onClick={() => {
+          if (screen.enabled) {
+            callSounds.screenOff()
+          } else {
+            callSounds.screenOn()
+          }
           void screen.toggle()
         }}
       />
+
+      <CallDeviceMenu />
 
       <div className="flex-1" />
 
@@ -113,6 +130,7 @@ export const CallControls = ({ onHangUp }: { onHangUp: () => void }) => {
         label={t('support.leave')}
         danger
         onClick={() => {
+          callSounds.hangUp()
           // Сначала объявляем намерение, потом рвём соединение: обработчик разрыва читает
           // именно этот признак, чтобы отличить «положил трубку» от любого другого отключения.
           onHangUp()

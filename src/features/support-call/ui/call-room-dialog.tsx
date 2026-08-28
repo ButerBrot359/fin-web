@@ -20,6 +20,7 @@ import { cn } from '@/shared/lib/utils/cn'
 
 import type { SupportCallSession } from '../model/types'
 import { ActiveCallBar } from './active-call-bar'
+import { callSounds, startRingback } from '../lib/call-sounds'
 import { CallControls } from './call-controls'
 import { ScreenShareBadge } from './screen-share-badge'
 import { SupportDialog } from './support-dialog'
@@ -183,6 +184,7 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
             </span>
           }
           onMinimize={() => {
+            callSounds.minimize()
             setMinimized(true)
           }}
           footer={
@@ -215,7 +217,7 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
             data-lk-theme="default"
             style={STAGE_THEME as CSSProperties}
           >
-            <RoomStage />
+            <RoomStage isCaller={session.role === 'CALLER'} />
           </div>
         </SupportDialog>
       )}
@@ -249,9 +251,22 @@ const RoomStatusLine = () => {
  * участников рядом нет — камеру в этом контуре включить нечем, так что рядом с экраном стояли бы
  * два прямоугольника с именами, а имена и так написаны в шапке окна.
  */
-const RoomStage = () => {
+const RoomStage = ({ isCaller }: { isCaller: boolean }) => {
   const { t } = useTranslation()
   const peers = useRemoteParticipants()
+  const alone = peers.length === 0
+
+  // Гудок ожидания — только у звонящего и только пока он в комнате один. Без него человек
+  // смотрит в тишину и не понимает, идёт вызов или всё сломалось; смолкает гудок ровно в тот
+  // момент, когда поддержка подключилась, и это единственный сигнал «вас взяли», который
+  // слышно, не глядя в экран. Агенту он не положен: агент никого не вызывает — если он остался
+  // один, значит собеседник ушёл, и гудок сказал бы ровно обратное правде.
+  useEffect(() => {
+    if (!alone || !isCaller) {
+      return undefined
+    }
+    return startRingback()
+  }, [alone, isCaller])
 
   // Камера остаётся в списке с заглушкой, хотя включить её нечем: именно заглушка рисует
   // плитку участника с именем. Без неё собеседник, который ничего не показывает, исчезал бы
@@ -282,7 +297,7 @@ const RoomStage = () => {
           </span>
         </span>
         <span className="text-body1 text-ui-03">
-          {t('support.waitingForAgent')}
+          {t(isCaller ? 'support.waitingForAgent' : 'support.peerLeft')}
         </span>
       </div>
     )

@@ -1,8 +1,10 @@
 import CloseIcon from '@mui/icons-material/Close'
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk'
 import { Grow } from '@mui/material'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { callSounds, startIncomingRing } from '../lib/call-sounds'
 import type { SupportCall } from '../model/types'
 
 interface IncomingCallCardProps {
@@ -38,6 +40,10 @@ export const IncomingCallCard = ({
 }: IncomingCallCardProps) => {
   const { t, i18n } = useTranslation()
 
+  // Трель звучит, пока карточка на экране, и смолкает вместе с ней: свернул — значит увидел,
+  // ответил — значит взял. Звонок без способа его унять раздражает сильнее, чем помогает.
+  useEffect(() => startIncomingRing(), [call.id])
+
   const time = new Date(call.startedAt).toLocaleTimeString(
     i18n.language === 'kz' ? 'kk-KZ' : 'ru-RU',
     { hour: '2-digit', minute: '2-digit' }
@@ -54,7 +60,10 @@ export const IncomingCallCard = ({
           <span className="text-body2 opacity-80">{time}</span>
           <button
             type="button"
-            onClick={onCollapse}
+            onClick={() => {
+              callSounds.minimize()
+              onCollapse()
+            }}
             aria-label={t('support.incomingCollapse')}
             className="-mr-1 shrink-0 cursor-pointer rounded-sm p-1 transition-colors hover:bg-white/20"
           >
@@ -96,7 +105,10 @@ export const IncomingCallCard = ({
         <div className="flex gap-2 px-5 py-5">
           <button
             type="button"
-            onClick={onAnswer}
+            onClick={() => {
+              callSounds.answer()
+              onAnswer()
+            }}
             className="flex-1 cursor-pointer rounded-md bg-accent-01 py-2.5 text-body2 text-ui-06 transition-all hover:bg-accent-01-hover hover:shadow-primary-hover active:bg-accent-01-pressed active:shadow-none"
           >
             {t('support.answer')}

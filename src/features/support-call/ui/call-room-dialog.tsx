@@ -1,42 +1,60 @@
-import CallEndIcon from '@mui/icons-material/CallEnd'
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
-import CloseIcon from '@mui/icons-material/Close'
+import HeadsetMicIcon from '@mui/icons-material/HeadsetMic'
 import {
-  Alert,
-  Box,
-  Chip,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-  Stack,
-  Typography,
-} from '@mui/material'
-import {
-  DisconnectButton,
   GridLayout,
   LiveKitRoom,
   ParticipantTile,
   RoomAudioRenderer,
-  TrackToggle,
+  isTrackReference,
+  useConnectionState,
+  useRemoteParticipants,
   useTracks,
 } from '@livekit/components-react'
 import '@livekit/components-styles'
-import { DisconnectReason, Track } from 'livekit-client'
-import { useState } from 'react'
+import { ConnectionState, Track } from 'livekit-client'
+import type { CSSProperties } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { cn } from '@/shared/lib/utils/cn'
+
 import type { SupportCallSession } from '../model/types'
+import { CallControls } from './call-controls'
+import { SupportDialog } from './support-dialog'
+
+/**
+ * Тёмная сцена разговора в палитре webbuh.
+ *
+ * <p>LiveKit красит свои примитивы собственными переменными, и по умолчанию это чужая тёмно-серая
+ * тема. Переопределяем их на цвета сайта — тогда плитки участников, подписи и рамки выглядят
+ * частью webbuh, а не встроенным виджетом.
+ */
+const STAGE_THEME = {
+  '--lk-bg': '#222124',
+  '--lk-bg2': '#2f2e33',
+  '--lk-bg3': '#3b3a40',
+  '--lk-fg': '#ffffff',
+  '--lk-fg2': '#c3cee0',
+  '--lk-fg3': '#9fa9ba',
+  '--lk-accent-bg': '#2a75f4',
+  '--lk-accent-fg': '#ffffff',
+  '--lk-danger': '#f4482a',
+  '--lk-success': '#daf449',
+  '--lk-border-color': 'rgba(255, 255, 255, 0.08)',
+  '--lk-border-radius': '12px',
+  '--lk-grid-gap': '12px',
+  '--lk-font-family': '"Google Sans", system-ui, sans-serif',
+} as const
 
 interface CallRoomDialogProps {
   session: SupportCallSession
   /**
    * Разговор закончился.
    *
-   * @param byUser закончил сам человек — нажал «Завершить» или закрыл окно. `false`, когда
-   *   отключил медиасервер: так приходит конец разговора, завершённого собеседником, и так же
-   *   выглядит потерянная связь. Разница важна: завершать обращение на сервере должна та
-   *   сторона, которая этого захотела, а не та, у которой отвалилась сеть.
+   * @param byUser человек сам положил трубку — нажал «Завершить» или закрыл окно. `false` для
+   *   любого другого разрыва: разговор завершил собеседник, пропала связь, размонтировался
+   *   компонент. Разница существенная: `true` закрывает обращение на сервере и рвёт комнату у
+   *   обеих сторон, поэтому ошибиться здесь — значит завершить чужой разговор.
    */
   onClose: (byUser: boolean) => void
 }
@@ -44,101 +62,162 @@ interface CallRoomDialogProps {
 /**
  * Комната разговора (ADR-0050).
  *
- * <p>Раскладка собрана из примитивов LiveKit, а не из готового `VideoConference`: тот
- * зашивает англоязычные подписи кнопок, а интерфейс webbuh двуязычный. Из примитивов
- * берётся ровно то же поведение, но подписи наши.
+ * <p>Раскладка собрана из примитивов LiveKit, а не из готового `VideoConference`: тот приносит
+ * англоязычные подписи и собственную тему, а окно поддержки должно выглядеть как остальной
+ * webbuh — человек попадает сюда в момент, когда у него уже что-то не работает.
  *
- * <p>Камера при входе НЕ включается, микрофон включается. Так устроен звонок в поддержку:
- * человеку нужно, чтобы услышали и посмотрели на его экран, а не разглядывали его самого.
+ * <p>Камера не включается и включить её нечем: звонок в поддержку — это «послушайте и посмотрите
+ * на мой экран». Микрофон включается сразу, показ экрана — отдельной кнопкой, по решению самого
+ * человека.
  *
- * <p><b>Окно закрывается только явным действием</b> — кнопкой «Завершить» или крестиком.
- * Ни щелчок мимо окна, ни Esc разговор не обрывают: закрытие окна теперь заканчивает звонок
- * у обеих сторон, и случайное движение мышью не должно стоить собеседнику разговора.
+ * <p><b>Окно закрывается только явным действием</b> — кнопкой «Завершить» или крестиком. Ни
+ * щелчок мимо окна, ни Esc разговор не обрывают: закрытие заканчивает звонок у обеих сторон,
+ * и случайное движение мышью не должно стоить собеседнику разговора.
  */
 export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
   const { t } = useTranslation()
   const [error, setError] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
+
+  /**
+   * Человек нажал «Завершить».
+   *
+   * <p>Признак хранится отдельно, а не выводится из причины разрыва: LiveKit помечает как
+   * {@code CLIENT_INITIATED} любое отключение с нашей стороны, включая то, что случается при
+   * размонтировании компонента. Из-за этого перезагрузка модуля или пересборка дерева React
+   * выглядели как «положил трубку» и закрывали живое обращение — разговор шёл, показ экрана
+   * работал, а звонок при этом считался завершённым.
+   */
+  const hangUpRequested = useRef(false)
+
+  /**
+   * Разговор уже закрыт этим окном.
+   *
+   * <p>Крестик закрывает окно сам, а следом размонтирование рвёт соединение и снова зовёт
+   * обработчик разрыва. Без этого признака обращение закрывалось бы на сервере дважды.
+   */
+  const closed = useRef(false)
+
+  const finish = (byUser: boolean) => {
+    if (closed.current) {
+      return
+    }
+    closed.current = true
+    onClose(byUser)
+  }
 
   return (
-    <Dialog open fullWidth maxWidth="lg">
-      <DialogTitle
-        sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1 }}
-      >
-        <Typography variant="h6" component="span" sx={{ flexGrow: 1 }}>
-          {session.role === 'AGENT'
+    // Провайдер комнаты снаружи диалога: строка состояния и панель управления живут в шапке и
+    // подвале окна, а хуки LiveKit работают по положению в дереве React, а не в DOM.
+    <LiveKitRoom
+      serverUrl={session.serverUrl}
+      token={session.accessToken}
+      connect
+      audio
+      video={false}
+      onError={(e) => {
+        setError(e.message)
+      }}
+      onDisconnected={() => {
+        finish(hangUpRequested.current)
+      }}
+      style={{ display: 'contents' }}
+    >
+      <SupportDialog
+        maxWidth="lg"
+        dismissable={false}
+        expanded={expanded}
+        onToggleExpanded={() => {
+          setExpanded((value) => !value)
+        }}
+        title={
+          session.role === 'AGENT'
             ? t('support.roomTitleAgent')
-            : t('support.roomTitleCaller')}
-        </Typography>
-
-        {/* Индикатор записи виден ВЕСЬ разговор, а не только в момент согласия:
-            человек должен в любой момент знать, что его пишут. */}
-        {session.recording && (
-          <Chip
-            size="small"
-            color="error"
-            variant="outlined"
-            icon={<FiberManualRecordIcon />}
-            label={t('support.recording')}
-          />
-        )}
-
-        <IconButton
-          onClick={() => {
-            onClose(true)
-          }}
-          aria-label={t('support.leave')}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent sx={{ p: 0, height: '70vh' }}>
-        {error && (
-          <Alert severity="error" sx={{ m: 2 }}>
+            : t('support.roomTitleCaller')
+        }
+        subtitle={<RoomStatusLine />}
+        headerSlot={
+          // Индикатор записи виден ВЕСЬ разговор, а не только в момент согласия:
+          // человек должен в любой момент знать, что его пишут.
+          session.recording ? (
+            <span className="mt-1 flex shrink-0 items-center gap-1.5 rounded-md bg-support-01/10 px-3 py-1.5 text-body2 text-support-01">
+              <FiberManualRecordIcon sx={{ fontSize: 12 }} />
+              {t('support.recording')}
+            </span>
+          ) : undefined
+        }
+        onClose={() => {
+          hangUpRequested.current = true
+          finish(true)
+        }}
+        footer={
+          <div className="flex flex-col gap-4">
+            <CallControls
+              onHangUp={() => {
+                hangUpRequested.current = true
+              }}
+            />
+            {!expanded && (
+              <p className="text-body2 text-ui-05">{t('support.shareHint')}</p>
+            )}
+          </div>
+        }
+        contentClassName="flex flex-col"
+      >
+        {error !== null && (
+          <div className="mb-4 rounded-lg bg-support-01/10 px-4 py-3 text-body2 text-support-01">
             {error}
-          </Alert>
+          </div>
         )}
 
-        <Box sx={{ height: '100%' }} data-lk-theme="default">
-          <LiveKitRoom
-            serverUrl={session.serverUrl}
-            token={session.accessToken}
-            connect
-            audio
-            video={false}
-            onError={(e) => {
-              setError(e.message)
-            }}
-            // Кнопка «Завершить» отключает нас саму — отсюда CLIENT_INITIATED. Всё
-            // остальное (ROOM_DELETED от завершившего собеседника, обрыв связи) — не наше
-            // решение, и закрывать обращение на сервере в этих случаях не нужно.
-            onDisconnected={(reason) => {
-              onClose(reason === DisconnectReason.CLIENT_INITIATED)
-            }}
-            style={{ height: '100%' }}
-          >
-            <RoomStage />
-            {/* Звук участников: без него собеседника видно, но не слышно. */}
-            <RoomAudioRenderer />
-          </LiveKitRoom>
-        </Box>
-      </DialogContent>
+        <div
+          className={cn(
+            'overflow-hidden rounded-lg bg-ui-06 p-3',
+            expanded ? 'min-h-0 flex-1' : 'h-[58vh] min-h-[280px]'
+          )}
+          data-lk-theme="default"
+          style={STAGE_THEME as CSSProperties}
+        >
+          <RoomStage />
+        </div>
 
-      <Box sx={{ px: 3, pb: 2 }}>
-        <Typography variant="caption" color="text.secondary">
-          {t('support.shareHint')}
-        </Typography>
-      </Box>
-    </Dialog>
+        {/* Звук участников: без него собеседника видно, но не слышно. */}
+        <RoomAudioRenderer />
+      </SupportDialog>
+    </LiveKitRoom>
   )
 }
 
-/** Видео участников и локализованная панель управления. */
+/** Что происходит с соединением — строкой под заголовком, а не молчанием в чёрном прямоугольнике. */
+const RoomStatusLine = () => {
+  const { t } = useTranslation()
+  const state = useConnectionState()
+  const peers = useRemoteParticipants()
+
+  if (state !== ConnectionState.Connected) {
+    return t('support.connecting')
+  }
+  if (peers.length === 0) {
+    return t('support.waitingForAgent')
+  }
+  return peers.map((peer) => peer.name ?? peer.identity).join(', ')
+}
+
+/**
+ * Сцена разговора.
+ *
+ * <p><b>Показанный экран занимает её целиком.</b> Ради экрана звонок и затевается: на нём мелкий
+ * бухгалтерский текст, суммы и коды счетов, и в трети окна разобрать их невозможно. Плиток
+ * участников рядом нет — камеру в этом контуре включить нечем, так что рядом с экраном стояли бы
+ * два прямоугольника с именами, а имена и так написаны в шапке окна.
+ */
 const RoomStage = () => {
   const { t } = useTranslation()
+  const peers = useRemoteParticipants()
 
-  // Камера и демонстрация экрана в одной сетке: показ экрана в WebRTC — это обычная
-  // видеодорожка, и отдельной раскладки под неё не нужно.
+  // Камера остаётся в списке с заглушкой, хотя включить её нечем: именно заглушка рисует
+  // плитку участника с именем. Без неё собеседник, который ничего не показывает, исчезал бы
+  // из окна совсем.
   const tracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: true },
@@ -147,35 +226,33 @@ const RoomStage = () => {
     { onlySubscribed: false }
   )
 
-  return (
-    <Stack sx={{ height: '100%' }}>
-      <Box sx={{ flexGrow: 1, minHeight: 0 }}>
-        <GridLayout tracks={tracks} style={{ height: '100%' }}>
-          <ParticipantTile />
-        </GridLayout>
-      </Box>
+  const screenShare = tracks
+    .filter(isTrackReference)
+    .find((track) => track.source === Track.Source.ScreenShare)
 
-      <Stack
-        direction="row"
-        spacing={1}
-        justifyContent="center"
-        sx={{ p: 1.5, flexWrap: 'wrap' }}
-        className="lk-control-bar"
-      >
-        <TrackToggle source={Track.Source.Microphone}>
-          {t('support.micOff')}
-        </TrackToggle>
-        <TrackToggle source={Track.Source.Camera}>
-          {t('support.cameraOn')}
-        </TrackToggle>
-        <TrackToggle source={Track.Source.ScreenShare}>
-          {t('support.screenOn')}
-        </TrackToggle>
-        <DisconnectButton>
-          <CallEndIcon fontSize="small" style={{ marginRight: 4 }} />
-          {t('support.leave')}
-        </DisconnectButton>
-      </Stack>
-    </Stack>
+  if (screenShare) {
+    return <ParticipantTile trackRef={screenShare} className="h-full w-full" />
+  }
+
+  if (peers.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+        <span className="relative flex h-14 w-14 items-center justify-center">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-02/30" />
+          <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-accent-02">
+            <HeadsetMicIcon sx={{ fontSize: 22, color: '#ffffff' }} />
+          </span>
+        </span>
+        <span className="text-body1 text-ui-03">
+          {t('support.waitingForAgent')}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <GridLayout tracks={tracks} style={{ height: '100%' }}>
+      <ParticipantTile />
+    </GridLayout>
   )
 }

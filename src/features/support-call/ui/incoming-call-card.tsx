@@ -1,26 +1,9 @@
 import CloseIcon from '@mui/icons-material/Close'
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk'
-import {
-  Avatar,
-  Box,
-  Button,
-  Grow,
-  IconButton,
-  Paper,
-  Stack,
-  Typography,
-  keyframes,
-} from '@mui/material'
+import { Grow } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import type { SupportCall } from '../model/types'
-
-/** Пульсация аватара — тот же смысл, что у кнопки: «звонок ждёт ответа». */
-const pulse = keyframes`
-  0%   { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.6); }
-  70%  { box-shadow: 0 0 0 14px rgba(211, 47, 47, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
-`
 
 interface IncomingCallCardProps {
   /** Обращение, которое показываем крупно, — самое давнее из ожидающих. */
@@ -38,6 +21,10 @@ interface IncomingCallCardProps {
  * <p>Разворачивается на месте кнопки, когда кто-то ждёт ответа. Кнопка со счётчиком говорит
  * только «есть обращения» — а агенту важно решить, брать ли трубку прямо сейчас, и для этого
  * нужно видеть, кто звонит и с чем. Поэтому здесь имя, тема и раздел, из которого позвонили.
+ *
+ * <p>Красный — только сигнал: шапка и пульс аватара. Само действие «Ответить» остаётся фирменным
+ * лаймом, как любая главная кнопка webbuh; красная кнопка на красной карточке читалась бы как
+ * «отменить», а не «взять трубку».
  *
  * <p>Карточку можно свернуть обратно в кнопку: агент бывает занят разговором или документом,
  * и держать перед ним несворачиваемый блок — значит мешать работать.
@@ -58,107 +45,73 @@ export const IncomingCallCard = ({
 
   return (
     <Grow in appear>
-      <Paper
-        elevation={8}
-        sx={{ width: 320, borderRadius: 3, overflow: 'hidden' }}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={1}
-          sx={{
-            px: 2,
-            py: 1,
-            bgcolor: 'error.main',
-            color: 'error.contrastText',
-          }}
-        >
-          <PhoneInTalkIcon fontSize="small" />
-          <Typography variant="subtitle2" sx={{ flexGrow: 1, fontWeight: 600 }}>
+      <div className="w-80 overflow-hidden rounded-[20px] bg-ui-01 shadow-[0px_3px_24px_0px_rgba(42,117,244,0.4)]">
+        <div className="flex items-center gap-2 bg-support-01 px-5 py-3 text-ui-01">
+          <PhoneInTalkIcon sx={{ fontSize: 18 }} />
+          <span className="flex-1 text-body2">
             {t('support.incomingTitle')}
-          </Typography>
-          <Typography variant="caption" sx={{ opacity: 0.9 }}>
-            {time}
-          </Typography>
-          <IconButton
-            size="small"
+          </span>
+          <span className="text-body2 opacity-80">{time}</span>
+          <button
+            type="button"
             onClick={onCollapse}
             aria-label={t('support.incomingCollapse')}
-            sx={{ color: 'inherit' }}
+            className="-mr-1 shrink-0 cursor-pointer rounded-sm p-1 transition-colors hover:bg-white/20"
           >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Stack>
+            <CloseIcon sx={{ fontSize: 18 }} />
+          </button>
+        </div>
 
-        <Stack direction="row" spacing={2} sx={{ p: 2 }}>
-          <Avatar
-            sx={{
-              bgcolor: 'error.main',
-              animation: `${pulse} 1.4s ease-out infinite`,
-            }}
-          >
-            {call.callerLogin.slice(0, 1).toUpperCase()}
-          </Avatar>
+        <div className="flex gap-4 px-5 pt-5">
+          <span className="relative flex h-11 w-11 shrink-0 items-center justify-center">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-support-01/30" />
+            <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-support-01 text-body1 text-ui-01">
+              {call.callerLogin.slice(0, 1).toUpperCase()}
+            </span>
+          </span>
 
-          <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-            <Typography
-              variant="body1"
-              fontWeight={600}
-              noWrap
+          <div className="min-w-0 flex-1">
+            <p
+              className="truncate text-body1 text-ui-06"
               title={call.callerLogin}
             >
               {call.callerLogin}
-            </Typography>
+            </p>
 
             {call.subject && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}
+              <p
+                className="mt-1 line-clamp-2 text-body2 text-ui-05"
                 title={call.subject}
               >
                 {call.subject}
-              </Typography>
+              </p>
             )}
 
             {call.page && (
-              <Typography
-                variant="caption"
-                color="text.disabled"
-                noWrap
-                display="block"
-              >
-                {call.page}
-              </Typography>
+              <p className="mt-1 truncate text-body2 text-ui-03">{call.page}</p>
             )}
-          </Box>
-        </Stack>
+          </div>
+        </div>
 
-        <Stack direction="row" spacing={1} sx={{ px: 2, pb: 2 }}>
-          <Button
-            variant="contained"
-            color="error"
-            fullWidth
+        <div className="flex gap-2 px-5 py-5">
+          <button
+            type="button"
             onClick={onAnswer}
+            className="flex-1 cursor-pointer rounded-md bg-accent-01 py-2.5 text-body2 text-ui-06 transition-all hover:bg-accent-01-hover hover:shadow-primary-hover active:bg-accent-01-pressed active:shadow-none"
           >
             {t('support.answer')}
-          </Button>
+          </button>
           {moreWaiting > 0 && (
-            <Button
-              variant="outlined"
+            <button
+              type="button"
               onClick={onOpenQueue}
-              sx={{ whiteSpace: 'nowrap' }}
+              className="cursor-pointer rounded-md bg-ui-02 px-4 py-2.5 text-body2 whitespace-nowrap text-ui-06 transition-colors hover:bg-ui-04"
             >
               {t('support.incomingMore', { count: moreWaiting })}
-            </Button>
+            </button>
           )}
-        </Stack>
-      </Paper>
+        </div>
+      </div>
     </Grow>
   )
 }

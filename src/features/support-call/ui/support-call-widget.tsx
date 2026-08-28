@@ -1,63 +1,92 @@
 import HeadsetMicIcon from '@mui/icons-material/HeadsetMic'
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk'
 import SupportAgentIcon from '@mui/icons-material/SupportAgent'
-import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Checkbox,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Fab,
-  FormControlLabel,
-  List,
-  ListItemButton,
-  ListItemText,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-  keyframes,
-} from '@mui/material'
+import { Tooltip } from '@mui/material'
+import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 import { useAuthStore } from '@/features/auth/lib/hooks/use-auth-store'
+import { cn } from '@/shared/lib/utils/cn'
 
-import type { SupportCall, SupportCallSession } from '../model/types'
+import type { SupportCallSession } from '../model/types'
 import {
   useActiveSupportSession,
   useEndSupportCall,
   useJoinSupportCall,
-  useStartSupportCall,
   useSupportQueue,
 } from '../model/use-support-call'
 import { CallRoomDialog } from './call-room-dialog'
+import { CallerDialog } from './caller-dialog'
 import { IncomingCallCard } from './incoming-call-card'
+import { SupportQueueDialog } from './support-queue-dialog'
+
+type FabTone = 'brand' | 'alert' | 'live'
+
+const TONE_CLASSES: Record<FabTone, string> = {
+  brand: 'bg-accent-01 text-ui-06 hover:bg-accent-01-hover',
+  alert: 'bg-support-01 text-ui-01 hover:brightness-95',
+  live: 'bg-accent-02 text-ui-01 hover:brightness-95',
+}
+
+const RING_CLASSES: Record<FabTone, string> = {
+  brand: 'bg-accent-01/40',
+  alert: 'bg-support-01/40',
+  live: 'bg-accent-02/40',
+}
 
 /**
- * Пульсация кнопки при входящем звонке.
+ * Круглая кнопка виджета.
  *
- * <p>Одного счётчика мало: агент смотрит в документ, а не на угол экрана, и статичный бейдж
- * замечают не сразу. Движение видно боковым зрением — это и есть смысл сигнала.
+ * <p>Три оттенка вместо трёх разных элементов: обычное состояние — фирменный лайм, как у любой
+ * главной кнопки webbuh; ждущий ответа звонок — красный; возврат в идущий разговор — синий.
+ * Пульсация привязана только к ожиданию ответа: она означает «нужно ответить», а не «что-то
+ * происходит».
  */
-const ring = keyframes`
-  0%   { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7); }
-  70%  { box-shadow: 0 0 0 18px rgba(211, 47, 47, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
-`
-
-/** То же для возврата в разговор — тень под цвет кнопки, иначе зелёное светится красным. */
-const ringBack = keyframes`
-  0%   { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
-  70%  { box-shadow: 0 0 0 18px rgba(46, 125, 50, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
-`
+const SupportFab = ({
+  tone,
+  label,
+  badge,
+  pulsing,
+  onClick,
+  children,
+}: {
+  tone: FabTone
+  label: string
+  badge?: number
+  pulsing?: boolean
+  onClick: () => void
+  children: ReactNode
+}) => (
+  <Tooltip title={label} placement="left">
+    <span className="relative inline-flex">
+      {pulsing && (
+        <span
+          className={cn(
+            'absolute inset-0 animate-ping rounded-full',
+            RING_CLASSES[tone]
+          )}
+        />
+      )}
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={label}
+        className={cn(
+          'relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full shadow-[0px_3px_16px_0px_rgba(42,117,244,0.35)] transition-all',
+          TONE_CLASSES[tone]
+        )}
+      >
+        {children}
+        {badge !== undefined && badge > 0 && (
+          <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-ui-06 px-1 text-[11px] font-medium text-ui-01">
+            {badge}
+          </span>
+        )}
+      </button>
+    </span>
+  </Tooltip>
+)
 
 /**
  * Живая поддержка (ADR-0050).
@@ -89,30 +118,21 @@ export const SupportCallWidget = () => {
 
   return (
     <>
-      <Box
-        sx={{
-          position: 'fixed',
-          right: 24,
-          bottom: 80,
-          zIndex: (theme) => theme.zIndex.speedDial,
-        }}
-      >
+      <div className="fixed right-6 bottom-20 z-[1050]">
         {/* Возврат в разговор — состояние ТОЙ ЖЕ кнопки, а не вторая плашка рядом.
             Отдельный элемент выглядел чужеродно и занимал место постоянно, хотя нужен
             в редком случае: вкладку перезагрузили посреди звонка. */}
         {restoreAvailable && restored ? (
-          <Tooltip title={t('support.restoring')} placement="left">
-            <Fab
-              color="success"
-              size="medium"
-              onClick={() => {
-                setSession(restored)
-              }}
-              sx={{ animation: `${ringBack} 1.4s ease-out infinite` }}
-            >
-              <PhoneInTalkIcon />
-            </Fab>
-          </Tooltip>
+          <SupportFab
+            tone="live"
+            pulsing
+            label={t('support.restoring')}
+            onClick={() => {
+              setSession(restored)
+            }}
+          >
+            <PhoneInTalkIcon />
+          </SupportFab>
         ) : isAgent ? (
           <SupportQueueButton
             onOpen={() => {
@@ -121,19 +141,17 @@ export const SupportCallWidget = () => {
             onAnswer={setSession}
           />
         ) : (
-          <Tooltip title={t('support.fabCall')} placement="left">
-            <Fab
-              color="primary"
-              size="medium"
-              onClick={() => {
-                setCallerOpen(true)
-              }}
-            >
-              <HeadsetMicIcon />
-            </Fab>
-          </Tooltip>
+          <SupportFab
+            tone="brand"
+            label={t('support.fabCall')}
+            onClick={() => {
+              setCallerOpen(true)
+            }}
+          >
+            <HeadsetMicIcon />
+          </SupportFab>
         )}
-      </Box>
+      </div>
 
       {callerOpen && (
         <CallerDialog
@@ -185,10 +203,9 @@ export const SupportCallWidget = () => {
 /**
  * Кнопка агента.
  *
- * <p>Три состояния, а не два: нет обращений — обычная кнопка; кто-то ждёт — красная,
- * пульсирующая, с иконкой звонка и счётчиком; разговоры идут, но никто не ждёт — спокойная
- * кнопка со счётчиком активных. Пульсация привязана именно к ОЖИДАЮЩИМ: она означает
- * «нужно ответить», а не «что-то происходит».
+ * <p>Пока кто-то ждёт — на её месте разворачивается карточка входящего: счётчик говорит только
+ * «есть обращения», а решение брать трубку требует знать, кто звонит и с чем. Без ожидающих —
+ * обычная кнопка со счётчиком идущих разговоров.
  */
 const SupportQueueButton = ({
   onOpen,
@@ -230,183 +247,14 @@ const SupportQueueButton = ({
   }
 
   return (
-    <Tooltip
-      title={ringing ? t('support.fabIncoming') : t('support.fabQueue')}
-      placement="left"
+    <SupportFab
+      tone={ringing ? 'alert' : 'brand'}
+      pulsing={ringing}
+      badge={waiting || calls.length}
+      label={ringing ? t('support.fabIncoming') : t('support.fabQueue')}
+      onClick={onOpen}
     >
-      <Badge
-        badgeContent={waiting || calls.length}
-        color="error"
-        overlap="circular"
-      >
-        <Fab
-          color={ringing ? 'error' : 'primary'}
-          size="medium"
-          onClick={onOpen}
-          sx={
-            ringing
-              ? { animation: `${ring} 1.4s ease-out infinite` }
-              : undefined
-          }
-        >
-          {ringing ? <PhoneInTalkIcon /> : <SupportAgentIcon />}
-        </Fab>
-      </Badge>
-    </Tooltip>
-  )
-}
-
-interface DialogProps {
-  onClose: () => void
-  onConnected: (session: SupportCallSession) => void
-}
-
-/**
- * Звонок пользователя.
- *
- * <p>Согласие на запись спрашивается ДО звонка: сервер без него отвечает 400, когда запись
- * включена, — и это правильный порядок, потому что в записи оказываются персональные данные.
- */
-const CallerDialog = ({ onClose, onConnected }: DialogProps) => {
-  const { t } = useTranslation()
-  const location = useLocation()
-  const [subject, setSubject] = useState('')
-  const [consent, setConsent] = useState(false)
-  const { mutate, isPending, error } = useStartSupportCall()
-
-  const call = () => {
-    mutate(
-      {
-        subject: subject.trim() || undefined,
-        recordingConsent: consent,
-        page: location.pathname,
-      },
-      { onSuccess: onConnected }
-    )
-  }
-
-  return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{t('support.dialogTitle')}</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
-          {Boolean(error) && (
-            <Alert severity="error">{t('support.error')}</Alert>
-          )}
-
-          <TextField
-            label={t('support.subject')}
-            placeholder={t('support.subjectPlaceholder')}
-            value={subject}
-            onChange={(event) => {
-              setSubject(event.target.value)
-            }}
-            multiline
-            minRows={2}
-            fullWidth
-          />
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={consent}
-                onChange={(event) => {
-                  setConsent(event.target.checked)
-                }}
-              />
-            }
-            label={t('support.consent')}
-          />
-
-          <Typography variant="caption" color="text.secondary">
-            {t('support.privacyNote')}
-          </Typography>
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('actions.cancel')}</Button>
-        <Button
-          variant="contained"
-          onClick={call}
-          disabled={isPending || !consent}
-        >
-          {isPending ? t('support.connecting') : t('support.callAction')}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  )
-}
-
-/**
- * Очередь обращений.
- *
- * <p>Ожидающие идут первыми — их отдаёт сервер в этом порядке. Уже взятые обращения из списка
- * не исчезают: агенту нужно видеть, что происходит у смены, и вернуться в свой разговор,
- * если он закрыл вкладку.
- */
-const SupportQueueDialog = ({ onClose, onConnected }: DialogProps) => {
-  const { t, i18n } = useTranslation()
-  const { data, isLoading } = useSupportQueue(true)
-  const { mutate, isPending, error } = useJoinSupportCall()
-  const calls = data ?? []
-
-  const secondary = (call: SupportCall) => {
-    if (call.status === 'WAITING') {
-      // Локаль берётся из языка интерфейса, а не из системы: иначе в русской версии время
-      // показывается американским «8:23 PM», что тут читается как ошибка.
-      const time = new Date(call.startedAt).toLocaleTimeString(
-        i18n.language === 'kz' ? 'kk-KZ' : 'ru-RU',
-        { hour: '2-digit', minute: '2-digit' }
-      )
-      return (
-        t('support.waitingSince', { time }) +
-        (call.page ? ` · ${call.page}` : '')
-      )
-    }
-    return call.agentLogin
-      ? t('support.takenBy', { agent: call.agentLogin })
-      : t('support.inCall')
-  }
-
-  return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{t('support.queueTitle')}</DialogTitle>
-      <DialogContent>
-        {Boolean(error) && <Alert severity="error">{t('support.error')}</Alert>}
-
-        {isLoading && (
-          <Typography variant="body2">{t('support.queueLoading')}</Typography>
-        )}
-
-        {!isLoading && calls.length === 0 && (
-          <Typography variant="body2" color="text.secondary">
-            {t('support.queueEmpty')}
-          </Typography>
-        )}
-
-        <List>
-          {calls.map((call) => (
-            <ListItemButton
-              key={call.id}
-              disabled={isPending}
-              onClick={() => {
-                mutate(call.id, { onSuccess: onConnected })
-              }}
-            >
-              <ListItemText
-                primary={`${call.callerLogin}${call.subject ? ` — ${call.subject}` : ''}`}
-                secondary={secondary(call)}
-              />
-              {call.status === 'WAITING' && (
-                <Chip size="small" color="error" label={t('support.answer')} />
-              )}
-            </ListItemButton>
-          ))}
-        </List>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('actions.close')}</Button>
-      </DialogActions>
-    </Dialog>
+      {ringing ? <PhoneInTalkIcon /> : <SupportAgentIcon />}
+    </SupportFab>
   )
 }

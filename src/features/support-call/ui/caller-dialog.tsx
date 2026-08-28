@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/shared/ui/buttons'
 
+import { callSounds } from '../lib/call-sounds'
 import type { SupportCallSession } from '../model/types'
 import { useStartSupportCall } from '../model/use-support-call'
 import { SupportDialog } from './support-dialog'
@@ -28,6 +29,7 @@ export const CallerDialog = ({ onClose, onConnected }: CallerDialogProps) => {
   const { mutate, isPending, error } = useStartSupportCall()
 
   const call = () => {
+    callSounds.call()
     mutate(
       {
         subject: subject.trim() || undefined,

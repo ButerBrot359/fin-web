@@ -10,6 +10,7 @@ import {
 import { Track } from 'livekit-client'
 import { useTranslation } from 'react-i18next'
 
+import { callSounds } from '../lib/call-sounds'
 import { ScreenShareBadge } from './screen-share-badge'
 
 /** Секунды в «мм:сс». Часы не нужны: разговор с поддержкой такой длины — сам по себе новость. */
@@ -88,6 +89,11 @@ export const ActiveCallBar = ({
           <button
             type="button"
             onClick={() => {
+              if (mic.enabled) {
+                callSounds.micOff()
+              } else {
+                callSounds.micOn()
+              }
               void mic.toggle()
             }}
             disabled={mic.pending}
@@ -104,7 +110,10 @@ export const ActiveCallBar = ({
 
           <button
             type="button"
-            onClick={onRestore}
+            onClick={() => {
+              callSounds.restore()
+              onRestore()
+            }}
             className="flex-1 cursor-pointer rounded-md bg-accent-01 py-2 text-body2 text-ui-06 transition-all hover:bg-accent-01-hover hover:shadow-primary-hover active:bg-accent-01-pressed active:shadow-none"
           >
             {t('support.miniRestore')}
@@ -113,6 +122,7 @@ export const ActiveCallBar = ({
           <button
             type="button"
             onClick={() => {
+              callSounds.hangUp()
               // Порядок тот же, что и в панели разговора: сначала намерение, потом разрыв —
               // иначе обработчик отключения не отличит «положил трубку» от любого другого.
               onHangUp()

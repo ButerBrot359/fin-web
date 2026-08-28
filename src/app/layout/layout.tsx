@@ -2,7 +2,12 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { WorkspacePanelHost } from '@/features/sdui'
-import { performTabBack, performTabClose, useWorkspaceTabsStore } from '@/features/workspace-tabs'
+import { SupportCallWidget } from '@/features/support-call'
+import {
+  performTabBack,
+  performTabClose,
+  useWorkspaceTabsStore,
+} from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { WorkspaceTabBar } from '@/widgets/workspace-tab-bar'
 
@@ -57,6 +62,8 @@ export const Layout = ({ sidebar, header, children }: LayoutProps) => {
         </main>
         <WorkspaceTabBar />
       </div>
+      {/* Живая поддержка (ADR-0050): доступна с любой страницы. */}
+      <SupportCallWidget />
     </div>
   )
 }

@@ -13,13 +13,15 @@ import {
 import '@livekit/components-styles'
 import { ConnectionState, Track } from 'livekit-client'
 import type { CSSProperties } from 'react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/shared/lib/utils/cn'
 
 import type { SupportCallSession } from '../model/types'
+import { ActiveCallBar } from './active-call-bar'
 import { CallControls } from './call-controls'
+import { ScreenShareBadge } from './screen-share-badge'
 import { SupportDialog } from './support-dialog'
 
 /**
@@ -70,14 +72,34 @@ interface CallRoomDialogProps {
  * на мой экран». Микрофон включается сразу, показ экрана — отдельной кнопкой, по решению самого
  * человека.
  *
- * <p><b>Окно закрывается только явным действием</b> — кнопкой «Завершить» или крестиком. Ни
- * щелчок мимо окна, ни Esc разговор не обрывают: закрытие заканчивает звонок у обеих сторон,
- * и случайное движение мышью не должно стоить собеседнику разговора.
+ * <p><b>Закрыть окно нельзя — только свернуть или завершить разговор.</b> Крестик убран
+ * намеренно: нажать его слишком легко, а стоит это обеим сторонам сразу. Сворачивание же
+ * ничего не прерывает — комната остаётся подключённой, звук идёт, показ экрана продолжается,
+ * а человек получает интерфейс обратно и может показывать поддержке свою проблему в webbuh.
+ * Единственный способ положить трубку — кнопка «Завершить».
  */
 export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
   const { t } = useTranslation()
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
+  const [minimized, setMinimized] = useState(false)
+
+  /**
+   * Секунды разговора — счётчик живёт здесь, а не в свёрнутой плашке.
+   *
+   * <p>Плашка появляется и исчезает при каждом сворачивании, и её собственный счётчик обнулялся
+   * бы вместе с ней. Это окно живёт весь разговор, поэтому и время считает оно.
+   */
+  const [seconds, setSeconds] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSeconds((value) => value + 1)
+    }, 1000)
+    return () => {
+      clearInterval(timer)
+    }
+  }, [])
 
   /**
    * Человек нажал «Завершить».
@@ -123,67 +145,83 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
       }}
       style={{ display: 'contents' }}
     >
-      <SupportDialog
-        maxWidth="lg"
-        dismissable={false}
-        expanded={expanded}
-        onToggleExpanded={() => {
-          setExpanded((value) => !value)
-        }}
-        title={
-          session.role === 'AGENT'
-            ? t('support.roomTitleAgent')
-            : t('support.roomTitleCaller')
-        }
-        subtitle={<RoomStatusLine />}
-        headerSlot={
-          // Индикатор записи виден ВЕСЬ разговор, а не только в момент согласия:
-          // человек должен в любой момент знать, что его пишут.
-          session.recording ? (
-            <span className="mt-1 flex shrink-0 items-center gap-1.5 rounded-md bg-support-01/10 px-3 py-1.5 text-body2 text-support-01">
-              <FiberManualRecordIcon sx={{ fontSize: 12 }} />
-              {t('support.recording')}
+      {minimized ? (
+        <ActiveCallBar
+          seconds={seconds}
+          onRestore={() => {
+            setMinimized(false)
+          }}
+          onHangUp={() => {
+            hangUpRequested.current = true
+          }}
+        />
+      ) : (
+        <SupportDialog
+          maxWidth="lg"
+          dismissable={false}
+          expanded={expanded}
+          onToggleExpanded={() => {
+            setExpanded((value) => !value)
+          }}
+          title={
+            session.role === 'AGENT'
+              ? t('support.roomTitleAgent')
+              : t('support.roomTitleCaller')
+          }
+          subtitle={<RoomStatusLine />}
+          headerSlot={
+            <span className="mt-1 flex shrink-0 items-center gap-2">
+              <ScreenShareBadge />
+              {/* Индикатор записи виден ВЕСЬ разговор, а не только в момент согласия:
+                  человек должен в любой момент знать, что его пишут. */}
+              {session.recording && (
+                <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-support-01/10 px-3 py-1.5 text-body2 text-support-01">
+                  <FiberManualRecordIcon sx={{ fontSize: 12 }} />
+                  {t('support.recording')}
+                </span>
+              )}
             </span>
-          ) : undefined
-        }
-        onClose={() => {
-          hangUpRequested.current = true
-          finish(true)
-        }}
-        footer={
-          <div className="flex flex-col gap-4">
-            <CallControls
-              onHangUp={() => {
-                hangUpRequested.current = true
-              }}
-            />
-            {!expanded && (
-              <p className="text-body2 text-ui-05">{t('support.shareHint')}</p>
-            )}
-          </div>
-        }
-        contentClassName="flex flex-col"
-      >
-        {error !== null && (
-          <div className="mb-4 rounded-lg bg-support-01/10 px-4 py-3 text-body2 text-support-01">
-            {error}
-          </div>
-        )}
-
-        <div
-          className={cn(
-            'overflow-hidden rounded-lg bg-ui-06 p-3',
-            expanded ? 'min-h-0 flex-1' : 'h-[58vh] min-h-[280px]'
-          )}
-          data-lk-theme="default"
-          style={STAGE_THEME as CSSProperties}
+          }
+          onMinimize={() => {
+            setMinimized(true)
+          }}
+          footer={
+            <div className="flex flex-col gap-4">
+              <CallControls
+                onHangUp={() => {
+                  hangUpRequested.current = true
+                }}
+              />
+              {!expanded && (
+                <p className="text-body2 text-ui-05">
+                  {t('support.shareHint')}
+                </p>
+              )}
+            </div>
+          }
+          contentClassName="flex flex-col"
         >
-          <RoomStage />
-        </div>
+          {error !== null && (
+            <div className="mb-4 rounded-lg bg-support-01/10 px-4 py-3 text-body2 text-support-01">
+              {error}
+            </div>
+          )}
 
-        {/* Звук участников: без него собеседника видно, но не слышно. */}
-        <RoomAudioRenderer />
-      </SupportDialog>
+          <div
+            className={cn(
+              'overflow-hidden rounded-lg bg-ui-06 p-3',
+              expanded ? 'min-h-0 flex-1' : 'h-[58vh] min-h-[280px]'
+            )}
+            data-lk-theme="default"
+            style={STAGE_THEME as CSSProperties}
+          >
+            <RoomStage />
+          </div>
+        </SupportDialog>
+      )}
+
+      {/* Звук участников — вне окна: свёрнутый разговор обязан оставаться слышимым. */}
+      <RoomAudioRenderer />
     </LiveKitRoom>
   )
 }

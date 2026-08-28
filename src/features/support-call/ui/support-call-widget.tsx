@@ -118,40 +118,44 @@ export const SupportCallWidget = () => {
 
   return (
     <>
-      <div className="fixed right-6 bottom-20 z-[1050]">
-        {/* Возврат в разговор — состояние ТОЙ ЖЕ кнопки, а не вторая плашка рядом.
+      {/* Во время разговора кнопки нет: её угол занимает свёрнутая плашка разговора, а звать
+          поддержку, уже разговаривая с ней, незачем. */}
+      {!session && (
+        <div className="fixed right-6 bottom-20 z-[1050]">
+          {/* Возврат в разговор — состояние ТОЙ ЖЕ кнопки, а не вторая плашка рядом.
             Отдельный элемент выглядел чужеродно и занимал место постоянно, хотя нужен
             в редком случае: вкладку перезагрузили посреди звонка. */}
-        {restoreAvailable && restored ? (
-          <SupportFab
-            tone="live"
-            pulsing
-            label={t('support.restoring')}
-            onClick={() => {
-              setSession(restored)
-            }}
-          >
-            <PhoneInTalkIcon />
-          </SupportFab>
-        ) : isAgent ? (
-          <SupportQueueButton
-            onOpen={() => {
-              setQueueOpen(true)
-            }}
-            onAnswer={setSession}
-          />
-        ) : (
-          <SupportFab
-            tone="brand"
-            label={t('support.fabCall')}
-            onClick={() => {
-              setCallerOpen(true)
-            }}
-          >
-            <HeadsetMicIcon />
-          </SupportFab>
-        )}
-      </div>
+          {restoreAvailable && restored ? (
+            <SupportFab
+              tone="live"
+              pulsing
+              label={t('support.restoring')}
+              onClick={() => {
+                setSession(restored)
+              }}
+            >
+              <PhoneInTalkIcon />
+            </SupportFab>
+          ) : isAgent ? (
+            <SupportQueueButton
+              onOpen={() => {
+                setQueueOpen(true)
+              }}
+              onAnswer={setSession}
+            />
+          ) : (
+            <SupportFab
+              tone="brand"
+              label={t('support.fabCall')}
+              onClick={() => {
+                setCallerOpen(true)
+              }}
+            >
+              <HeadsetMicIcon />
+            </SupportFab>
+          )}
+        </div>
+      )}
 
       {callerOpen && (
         <CallerDialog

@@ -1,4 +1,5 @@
 import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen'
+import MinimizeIcon from '@mui/icons-material/Minimize'
 import OpenInFullIcon from '@mui/icons-material/OpenInFull'
 import { Dialog } from '@mui/material'
 import type { ReactNode } from 'react'
@@ -15,9 +16,15 @@ interface SupportDialogProps {
   headerSlot?: ReactNode
   children: ReactNode
   footer?: ReactNode
-  /** `false` для окна разговора: закрытие завершает звонок и не должно срабатывать случайно. */
+  /** `false`, когда окно не должно закрываться щелчком мимо и по Esc. */
   dismissable?: boolean
-  onClose: () => void
+  /** Крестик. Не задаётся у окна разговора: закрыть его нельзя, можно только свернуть. */
+  onClose?: () => void
+  /**
+   * Свернуть окно, не трогая его содержимое. Задаётся у окна разговора: соединение при этом
+   * живёт дальше, поэтому сворачивание — не закрытие и не должно им выглядеть.
+   */
+  onMinimize?: () => void
   maxWidth?: 'sm' | 'lg'
   /** Окно растянуто на всё окно браузера. Кнопка разворота появляется только вместе с обработчиком. */
   expanded?: boolean
@@ -36,6 +43,9 @@ interface SupportDialogProps {
  * <p>В развёрнутом виде окно занимает всё окно браузера, но остаётся окном: полноэкранный режим
  * ОС прячет вкладки и адресную строку, а человеку в разговоре с поддержкой обычно нужно
  * оставаться в webbuh, а не выпадать из него.
+ *
+ * <p>Крестик и сворачивание — разные вещи и рисуются раздельно. У окна разговора крестика нет
+ * вовсе: закрыть разговор нажатием на «х» слишком легко, а стоит это обеим сторонам.
  */
 export const SupportDialog = ({
   title,
@@ -45,6 +55,7 @@ export const SupportDialog = ({
   footer,
   dismissable = true,
   onClose,
+  onMinimize,
   maxWidth = 'sm',
   expanded = false,
   onToggleExpanded,
@@ -57,7 +68,9 @@ export const SupportDialog = ({
       open
       fullWidth
       maxWidth={expanded ? false : maxWidth}
-      onClose={dismissable ? onClose : undefined}
+      // Щелчок мимо и Esc сворачивают окно разговора, а не закрывают его: разговор при этом
+      // не прерывается, так что случайное движение мышью ничего не стоит.
+      onClose={onMinimize ?? (dismissable ? onClose : undefined)}
       slotProps={{
         paper: {
           sx: {
@@ -90,6 +103,18 @@ export const SupportDialog = ({
 
           {headerSlot}
 
+          {onMinimize && (
+            <button
+              type="button"
+              onClick={onMinimize}
+              aria-label={t('support.minimize')}
+              title={t('support.minimize')}
+              className="mt-1 shrink-0 cursor-pointer rounded-md p-1 text-ui-06 transition-colors hover:bg-ui-04"
+            >
+              <MinimizeIcon sx={{ fontSize: 20 }} />
+            </button>
+          )}
+
           {onToggleExpanded && (
             <button
               type="button"
@@ -106,14 +131,16 @@ export const SupportDialog = ({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t('actions.close')}
-            className="mt-1 shrink-0 cursor-pointer rounded-md p-1 transition-colors hover:bg-ui-04"
-          >
-            <CrossIcon className="h-5 w-5" />
-          </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('actions.close')}
+              className="mt-1 shrink-0 cursor-pointer rounded-md p-1 transition-colors hover:bg-ui-04"
+            >
+              <CrossIcon className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
         <div

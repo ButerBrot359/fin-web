@@ -50,6 +50,13 @@ const ring = keyframes`
   100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
 `
 
+/** То же для возврата в разговор — тень под цвет кнопки, иначе зелёное светится красным. */
+const ringBack = keyframes`
+  0%   { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
+  70%  { box-shadow: 0 0 0 18px rgba(46, 125, 50, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
+`
+
 /**
  * Живая поддержка (ADR-0050).
  *
@@ -86,7 +93,23 @@ export const SupportCallWidget = () => {
           zIndex: (theme) => theme.zIndex.speedDial,
         }}
       >
-        {isAgent ? (
+        {/* Возврат в разговор — состояние ТОЙ ЖЕ кнопки, а не вторая плашка рядом.
+            Отдельный элемент выглядел чужеродно и занимал место постоянно, хотя нужен
+            в редком случае: вкладку перезагрузили посреди звонка. */}
+        {restoreAvailable && restored ? (
+          <Tooltip title={t('support.restoring')} placement="left">
+            <Fab
+              color="success"
+              size="medium"
+              onClick={() => {
+                setSession(restored)
+              }}
+              sx={{ animation: `${ringBack} 1.4s ease-out infinite` }}
+            >
+              <PhoneInTalkIcon />
+            </Fab>
+          </Tooltip>
+        ) : isAgent ? (
           <SupportQueueButton
             onOpen={() => {
               setQueueOpen(true)
@@ -106,29 +129,6 @@ export const SupportCallWidget = () => {
           </Tooltip>
         )}
       </Box>
-
-      {restoreAvailable && restored && (
-        <Box
-          sx={{
-            position: 'fixed',
-            right: 24,
-            bottom: 148,
-            zIndex: (theme) => theme.zIndex.speedDial,
-          }}
-        >
-          <Chip
-            color="success"
-            icon={<PhoneInTalkIcon />}
-            label={t('support.restoring')}
-            onClick={() => {
-              setSession(restored)
-            }}
-            onDelete={() => {
-              setDismissedRestore(true)
-            }}
-          />
-        </Box>
-      )}
 
       {callerOpen && (
         <CallerDialog
@@ -159,6 +159,10 @@ export const SupportCallWidget = () => {
           session={session}
           onClose={() => {
             setSession(null)
+            // Разговор закрыт осознанно — предлагать вернуться в него больше не нужно.
+            // Без этого кнопка «вернуться» появлялась снова сразу после выхода: ответ
+            // сервера про активный разговор лежит в кеше и сам по себе не пересматривается.
+            setDismissedRestore(true)
           }}
         />
       )}

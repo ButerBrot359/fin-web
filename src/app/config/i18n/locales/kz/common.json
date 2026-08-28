@@ -837,6 +837,11 @@
     "screenOff": "Көрсетуді тоқтату",
     "leave": "Аяқтау",
     "waitingForAgent": "Қолдау қызметінің жауабын күтудеміз…",
-    "participants": "Қатысушылар: {{count}}"
+    "participants": "Қатысушылар: {{count}}",
+    "incomingTitle": "Кіріс қоңырау",
+    "incomingFrom": "Кімнен",
+    "incomingMore": "Тағы өтініштер: {{count}}",
+    "incomingCollapse": "Жию",
+    "incomingOpenQueue": "Барлық кезек"
   }
 }

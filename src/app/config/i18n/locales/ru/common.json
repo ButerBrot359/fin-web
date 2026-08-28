@@ -837,6 +837,11 @@
     "screenOff": "Прекратить показ",
     "leave": "Завершить",
     "waitingForAgent": "Ждём ответа поддержки…",
-    "participants": "Участников: {{count}}"
+    "participants": "Участников: {{count}}",
+    "incomingTitle": "Входящий звонок",
+    "incomingFrom": "От кого",
+    "incomingMore": "Ещё обращений: {{count}}",
+    "incomingCollapse": "Свернуть",
+    "incomingOpenQueue": "Вся очередь"
   }
 }

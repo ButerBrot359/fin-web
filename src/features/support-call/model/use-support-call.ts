@@ -4,6 +4,7 @@ import { supportCallApi } from '../api/support-call-api'
 import type { SupportCallStartRequest } from './types'
 
 export const SUPPORT_QUEUE_KEY = ['support', 'queue'] as const
+export const SUPPORT_ACTIVE_KEY = ['support', 'active'] as const
 
 /**
  * Очередь обращений для смены поддержки.
@@ -36,7 +37,7 @@ export const useSupportQueue = (enabled: boolean) =>
  */
 export const useActiveSupportSession = (enabled: boolean) =>
   useQuery({
-    queryKey: ['support', 'active'],
+    queryKey: SUPPORT_ACTIVE_KEY,
     queryFn: ({ signal }) => supportCallApi.active(signal),
     enabled,
     refetchOnWindowFocus: false,
@@ -60,12 +61,21 @@ export const useJoinSupportCall = () => {
   })
 }
 
-/** Завершение обращения. */
+/**
+ * Завершение обращения.
+ *
+ * Сервер вслед за этим рвёт комнату у обеих сторон, поэтому собеседник узнает о конце разговора
+ * от медиасервера, а не опросом. Здесь остаётся подчистить кеш: очередь поддержки, чтобы
+ * закрытое обращение перестало мигать как ждущее ответа, и ответ про «мой активный разговор»,
+ * иначе он воскресит кнопку возврата в разговор, которого уже нет.
+ */
 export const useEndSupportCall = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (callId: number) => supportCallApi.end(callId),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: SUPPORT_QUEUE_KEY }),
+    onSettled: () => {
+      queryClient.setQueryData(SUPPORT_ACTIVE_KEY, null)
+      return queryClient.invalidateQueries({ queryKey: SUPPORT_QUEUE_KEY })
+    },
   })
 }

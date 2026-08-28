@@ -32,6 +32,7 @@ import { useAuthStore } from '@/features/auth/lib/hooks/use-auth-store'
 import type { SupportCall, SupportCallSession } from '../model/types'
 import {
   useActiveSupportSession,
+  useEndSupportCall,
   useJoinSupportCall,
   useStartSupportCall,
   useSupportQueue,
@@ -81,6 +82,8 @@ export const SupportCallWidget = () => {
   // моменту чаще всего истёк.
   const { data: restored } = useActiveSupportSession(Boolean(user))
   const restoreAvailable = Boolean(restored) && !session && !dismissedRestore
+
+  const { mutate: endCall } = useEndSupportCall()
 
   if (!user) return null
 
@@ -159,11 +162,18 @@ export const SupportCallWidget = () => {
       {session && (
         <CallRoomDialog
           session={session}
-          onClose={() => {
+          onClose={(byUser) => {
+            // Разговор заканчивает тот, кто этого захотел: сервер закрывает обращение и
+            // рвёт комнату, поэтому у собеседника звонок обрывается тем же движением.
+            // Без этого закрытое с одной стороны обращение оставалось в очереди поддержки
+            // и продолжало мигать входящим — разговора уже нет, а звонок как будто идёт.
+            if (byUser) {
+              endCall(session.callId)
+            }
             setSession(null)
-            // Разговор закрыт осознанно — предлагать вернуться в него больше не нужно.
-            // Без этого кнопка «вернуться» появлялась снова сразу после выхода: ответ
-            // сервера про активный разговор лежит в кеше и сам по себе не пересматривается.
+            // Предлагать вернуться в законченный разговор больше не нужно. Без этого кнопка
+            // «вернуться» появлялась снова сразу после выхода: ответ сервера про активный
+            // разговор лежит в кеше и сам по себе не пересматривается.
             setDismissedRestore(true)
           }}
         />

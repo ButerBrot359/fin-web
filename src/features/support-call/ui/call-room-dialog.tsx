@@ -22,7 +22,7 @@ import {
   useTracks,
 } from '@livekit/components-react'
 import '@livekit/components-styles'
-import { Track } from 'livekit-client'
+import { DisconnectReason, Track } from 'livekit-client'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -30,7 +30,15 @@ import type { SupportCallSession } from '../model/types'
 
 interface CallRoomDialogProps {
   session: SupportCallSession
-  onClose: () => void
+  /**
+   * Разговор закончился.
+   *
+   * @param byUser закончил сам человек — нажал «Завершить» или закрыл окно. `false`, когда
+   *   отключил медиасервер: так приходит конец разговора, завершённого собеседником, и так же
+   *   выглядит потерянная связь. Разница важна: завершать обращение на сервере должна та
+   *   сторона, которая этого захотела, а не та, у которой отвалилась сеть.
+   */
+  onClose: (byUser: boolean) => void
 }
 
 /**
@@ -42,13 +50,17 @@ interface CallRoomDialogProps {
  *
  * <p>Камера при входе НЕ включается, микрофон включается. Так устроен звонок в поддержку:
  * человеку нужно, чтобы услышали и посмотрели на его экран, а не разглядывали его самого.
+ *
+ * <p><b>Окно закрывается только явным действием</b> — кнопкой «Завершить» или крестиком.
+ * Ни щелчок мимо окна, ни Esc разговор не обрывают: закрытие окна теперь заканчивает звонок
+ * у обеих сторон, и случайное движение мышью не должно стоить собеседнику разговора.
  */
 export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
   const { t } = useTranslation()
   const [error, setError] = useState<string | null>(null)
 
   return (
-    <Dialog open fullWidth maxWidth="lg" onClose={onClose}>
+    <Dialog open fullWidth maxWidth="lg">
       <DialogTitle
         sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1 }}
       >
@@ -70,7 +82,12 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
           />
         )}
 
-        <IconButton onClick={onClose} aria-label={t('actions.close')}>
+        <IconButton
+          onClick={() => {
+            onClose(true)
+          }}
+          aria-label={t('support.leave')}
+        >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -92,7 +109,12 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
             onError={(e) => {
               setError(e.message)
             }}
-            onDisconnected={onClose}
+            // Кнопка «Завершить» отключает нас саму — отсюда CLIENT_INITIATED. Всё
+            // остальное (ROOM_DELETED от завершившего собеседника, обрыв связи) — не наше
+            // решение, и закрывать обращение на сервере в этих случаях не нужно.
+            onDisconnected={(reason) => {
+              onClose(reason === DisconnectReason.CLIENT_INITIATED)
+            }}
             style={{ height: '100%' }}
           >
             <RoomStage />

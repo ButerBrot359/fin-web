@@ -36,8 +36,12 @@ import {
   createDictEntry,
   updateDictEntry,
   type DictEntry,
-  type DictEntryCreatePayload,
 } from '@/features/dict-sidebar/api/dict-sidebar-api'
+import { buildEntryPayload } from '@/features/dict-sidebar/lib/utils/build-entry-payload'
+import {
+  isSaveConfirmed,
+  showSaveError,
+} from '@/features/dict-sidebar/lib/utils/save-result'
 import { buildFallbackConfig } from '@/pages/documents/documents-entry/lib/utils/build-fallback-config'
 import { invalidateDictionaryQueries } from '@/shared/lib/query/invalidate-entities'
 import { PageHeader } from '@/widgets/page-header'
@@ -209,19 +213,11 @@ export const LegacyDictionaryEntryPage = () => {
 
   useTabMeta(baseTitle)
 
-  const buildPayload = (
-    data: Record<string, unknown>
-  ): DictEntryCreatePayload => {
-    const { nameRu, nameKz, code, parentId, sortOrder, ...attributes } = data
-    return {
-      nameRu: (nameRu as string) || '',
-      nameKz: nameKz as string | undefined,
-      code: code as string | undefined,
-      parentId: parentId as number | null | undefined,
-      sortOrder: sortOrder as number | undefined,
-      attributes,
-    }
-  }
+  // Строки ТЧ нормализуются по метаданным ТИПА (см. buildEntryPayload): без
+  // `rowId` добавленная строка на сервере не сохраняется, а пустой массив
+  // отправлять нельзя вовсе.
+  const buildPayload = (data: Record<string, unknown>) =>
+    buildEntryPayload(data, typeData.attributes)
 
   const invalidateEntries = () => {
     // Свежие список справочника (страница), сайдбар и ссылочные пикеры сразу
@@ -237,6 +233,12 @@ export const LegacyDictionaryEntryPage = () => {
     mutationFn: (data) =>
       createDictEntry(domain, moduleCode, buildPayload(data)),
     onSuccess: (res, data) => {
+      // Неподтверждённый ответ — не успех: ни «чистой» формы, ни навигации на
+      // карточку записи, ни тоста об успехе.
+      if (!isSaveConfirmed(res)) {
+        showSaveError(res.data, t('dictSidebar.saveError'))
+        return
+      }
       form.reset(data)
       const entry = res.data.data
       setSavedEntryId(entry.id)
@@ -247,8 +249,8 @@ export const LegacyDictionaryEntryPage = () => {
         { replace: true }
       )
     },
-    onError: () => {
-      showToast('error', t('dictSidebar.saveError'))
+    onError: (error) => {
+      showSaveError(error, t('dictSidebar.saveError'))
     },
   })
 
@@ -259,13 +261,17 @@ export const LegacyDictionaryEntryPage = () => {
   >({
     mutationFn: (data) =>
       updateDictEntry(domain, savedEntryId!, buildPayload(data)),
-    onSuccess: (_res, data) => {
+    onSuccess: (res, data) => {
+      if (!isSaveConfirmed(res)) {
+        showSaveError(res.data, t('dictSidebar.saveError'))
+        return
+      }
       form.reset(data)
       invalidateEntries()
       showToast('success', t('dictSidebar.saved'))
     },
-    onError: () => {
-      showToast('error', t('dictSidebar.saveError'))
+    onError: (error) => {
+      showSaveError(error, t('dictSidebar.saveError'))
     },
   })
 
@@ -286,25 +292,25 @@ export const LegacyDictionaryEntryPage = () => {
   }
 
   const handleSaveAndClose = form.handleSubmit((data) => {
-    const onDone = () => {
+    // Вкладка закрывается ТОЛЬКО по подтверждённой записи — иначе правки
+    // пропали бы вместе с вкладкой.
+    const onDone = (res: AxiosResponse<ApiResponse<DictEntry>>) => {
+      if (!isSaveConfirmed(res)) {
+        showSaveError(res.data, t('dictSidebar.saveError'))
+        return
+      }
       invalidateEntries()
       closeCurrentTab()
       void navigate(listPath)
     }
 
-    if (savedEntryId) {
-      void updateDictEntry(domain, savedEntryId, buildPayload(data))
-        .then(onDone)
-        .catch(() => {
-          showToast('error', t('dictSidebar.saveError'))
-        })
-    } else {
-      void createDictEntry(domain, moduleCode, buildPayload(data))
-        .then(onDone)
-        .catch(() => {
-          showToast('error', t('dictSidebar.saveError'))
-        })
-    }
+    const request = savedEntryId
+      ? updateDictEntry(domain, savedEntryId, buildPayload(data))
+      : createDictEntry(domain, moduleCode, buildPayload(data))
+
+    void request.then(onDone).catch((error: unknown) => {
+      showSaveError(error, t('dictSidebar.saveError'))
+    })
   })
 
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)

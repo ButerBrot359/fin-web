@@ -18,6 +18,8 @@ import { invalidateDictionaryQueries } from '@/shared/lib/query/invalidate-entit
 
 import { buildFallbackConfig } from '@/pages/documents/documents-entry/lib/utils/build-fallback-config'
 import { moveTablesLast } from '../lib/utils/move-tables-last'
+import { buildEntryPayload } from '../lib/utils/build-entry-payload'
+import { isSaveConfirmed, showSaveError } from '../lib/utils/save-result'
 
 import type { DictSidebarPanel } from '../types/dict-sidebar'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
@@ -26,7 +28,6 @@ import {
   createDictEntry,
   updateDictEntry,
   type DictEntry,
-  type DictEntryCreatePayload,
 } from '../api/dict-sidebar-api'
 
 /** Домен плана счетов — карточка счёта (а не обычный справочник). */
@@ -98,7 +99,7 @@ export const DictSidebarFormView = ({
 
   useEffect(() => {
     if (!copyFromData || savedEntryId) return
-    const { Nomer: _, Kod: _k, ...restAttrs } = (copyFromData.attributes ?? {})
+    const { Nomer: _, Kod: _k, ...restAttrs } = copyFromData.attributes ?? {}
     const values: Record<string, unknown> = { ...restAttrs }
     values.nameRu = copyFromData.nameRu
     values.nameKz = copyFromData.nameKz
@@ -155,19 +156,12 @@ export const DictSidebarFormView = ({
     [formAttributes]
   )
 
-  const buildPayload = (
-    data: Record<string, unknown>
-  ): DictEntryCreatePayload => {
-    const { nameRu, nameKz, code, parentId, sortOrder, ...attributes } = data
-    return {
-      nameRu: (nameRu as string) || '',
-      nameKz: nameKz as string | undefined,
-      code: code as string | undefined,
-      parentId: parentId as number | null | undefined,
-      sortOrder: sortOrder as number | undefined,
-      attributes,
-    }
-  }
+  // Строки ТЧ собираются по метаданным ТИПА, а не по видимым полям формы:
+  // скрытая (showInForm=false) ТЧ в payload всё равно не попадёт — её значения
+  // в форме нет, — а вот TABLE-атрибут, спрятанный правилом плана счетов,
+  // остался бы без нормализации строк.
+  const buildPayload = (data: Record<string, unknown>) =>
+    buildEntryPayload(data, typeData.attributes)
 
   const invalidateEntries = () => {
     // Свежие сайдбар-список, страница-список справочника и ссылочные пикеры
@@ -190,6 +184,12 @@ export const DictSidebarFormView = ({
     mutationFn: (data) =>
       createDictEntry(panel.domain, panel.typeCode, buildPayload(data)),
     onSuccess: (res, data) => {
+      // Неподтверждённый ответ — не успех: форму «чистой» не помечаем и тост
+      // об успехе не показываем (иначе правки выглядят сохранёнными).
+      if (!isSaveConfirmed(res)) {
+        showSaveError(res.data, t('dictSidebar.saveError'))
+        return
+      }
       form.reset(data)
       const entry = res.data.data
       setSavedEntryId(entry.id)
@@ -204,8 +204,8 @@ export const DictSidebarFormView = ({
         })
       )
     },
-    onError: () => {
-      showToast('error', t('dictSidebar.saveError'))
+    onError: (error) => {
+      showSaveError(error, t('dictSidebar.saveError'))
     },
   })
 
@@ -217,13 +217,17 @@ export const DictSidebarFormView = ({
     mutationFn: (data) =>
       updateDictEntry(panel.domain, savedEntryId!, buildPayload(data)),
     onSuccess: (res, data) => {
+      if (!isSaveConfirmed(res)) {
+        showSaveError(res.data, t('dictSidebar.saveError'))
+        return
+      }
       form.reset(data)
       invalidateEntries()
       panel.onSelect?.(buildSelectOption(res.data.data))
       showToast('success', t('dictSidebar.saved'))
     },
-    onError: () => {
-      showToast('error', t('dictSidebar.saveError'))
+    onError: (error) => {
+      showSaveError(error, t('dictSidebar.saveError'))
     },
   })
 
@@ -238,29 +242,25 @@ export const DictSidebarFormView = ({
   })
 
   const handleSaveAndClose = form.handleSubmit((data) => {
-    const onDone = (entry: DictEntry) => {
+    // Панель закрывается ТОЛЬКО по подтверждённой записи: неподтверждённый
+    // ответ оставляет карточку открытой с правками пользователя.
+    const onDone = (res: AxiosResponse<ApiResponse<DictEntry>>) => {
+      if (!isSaveConfirmed(res)) {
+        showSaveError(res.data, t('dictSidebar.saveError'))
+        return
+      }
       invalidateEntries()
-      panel.onSelect?.(buildSelectOption(entry))
+      panel.onSelect?.(buildSelectOption(res.data.data))
       pop()
     }
 
-    if (isEdit) {
-      void updateDictEntry(panel.domain, savedEntryId, buildPayload(data))
-        .then((res) => {
-          onDone(res.data.data)
-        })
-        .catch(() => {
-          showToast('error', t('dictSidebar.saveError'))
-        })
-    } else {
-      void createDictEntry(panel.domain, panel.typeCode, buildPayload(data))
-        .then((res) => {
-          onDone(res.data.data)
-        })
-        .catch(() => {
-          showToast('error', t('dictSidebar.saveError'))
-        })
-    }
+    const request = isEdit
+      ? updateDictEntry(panel.domain, savedEntryId, buildPayload(data))
+      : createDictEntry(panel.domain, panel.typeCode, buildPayload(data))
+
+    void request.then(onDone).catch((error: unknown) => {
+      showSaveError(error, t('dictSidebar.saveError'))
+    })
   })
 
   return (
@@ -298,7 +298,9 @@ export const DictSidebarFormView = ({
                 EAV-атрибут «Kod» (внутренний код 000000013). */}
             {isAccountPlan && (
               <label className="mb-4 flex flex-col gap-1 text-sm">
-                <span className="text-ui-05">{t('accountPlan.field.code')}</span>
+                <span className="text-ui-05">
+                  {t('accountPlan.field.code')}
+                </span>
                 <input
                   className="rounded-md border border-ui-03 bg-ui-01 px-3 py-1.5 text-ui-06"
                   {...form.register('code')}

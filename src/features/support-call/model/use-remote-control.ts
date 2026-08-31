@@ -1,4 +1,5 @@
-import { useDataChannel } from '@livekit/components-react'
+import { useDataChannel, useRoomContext } from '@livekit/components-react'
+import { Track } from 'livekit-client'
 import { useCallback, useRef, useState } from 'react'
 
 import {
@@ -6,6 +7,7 @@ import {
   applyKey,
   applyMove,
   applyScroll,
+  hideRemoteCursor,
 } from '../lib/remote-control-apply'
 import type { RemoteControlMessage } from '../lib/remote-control-protocol'
 import {
@@ -27,6 +29,8 @@ export type RemoteControlState = 'idle' | 'requested' | 'active' | 'denied'
 
 interface UseRemoteControl {
   state: RemoteControlState
+  /** Что показывает собеседник: `browser` — вкладку. Известно агенту после согласия. */
+  peerSurface: string | null
   /** Агент: попросить управление. */
   request: () => void
   /** Обратившийся: ответить на просьбу. */
@@ -55,6 +59,8 @@ interface UseRemoteControl {
  */
 export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
   const [state, setState] = useState<RemoteControlState>('idle')
+  const [peerSurface, setPeerSurface] = useState<string | null>(null)
+  const room = useRoomContext()
 
   // Состояние читается внутри обработчика сообщений, который живёт дольше рендера: без ссылки
   // он видел бы состояние на момент подписки и исполнял бы команды после отзыва управления.
@@ -62,6 +68,11 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
   const move = (next: RemoteControlState) => {
     stateRef.current = next
     setState(next)
+    if (next !== 'active') {
+      // Курсор агента обязан исчезнуть вместе с правом управлять: чужая стрелка на экране
+      // после отзыва означала бы, что за тобой всё ещё следят.
+      hideRemoteCursor()
+    }
   }
 
   const handle = useCallback(
@@ -82,6 +93,7 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
 
         case 'decision':
           if (!isCaller) {
+            setPeerSurface(parsed.surface ?? null)
             move(parsed.granted ? 'active' : 'denied')
           }
           return
@@ -122,10 +134,20 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
 
   const { send: sendRaw } = useDataChannel(REMOTE_CONTROL_TOPIC, handle)
 
+  /**
+   * Отправка сообщения.
+   *
+   * <p><b>Всегда по надёжному каналу.</b> Движения курсора сперва шли по ненадёжному — их много,
+   * и потерянный кадр движения ничего не значит. Но LiveKit роняет этот канал сам
+   * (`DATA_TRACK_LOSSY closed unexpectedly`), и вместе с ним молча пропадали ВСЕ движения:
+   * со стороны это выглядело как «управление не работает, мышь не двигается». Экономия
+   * ненадёжного канала не стоит механизма, который перестаёт работать без единой ошибки.
+   * Частоту ограничивает отправитель — см. поверхность перехвата.
+   */
   const post = useCallback(
-    (message: RemoteControlMessage, reliable = true) => {
+    (message: RemoteControlMessage) => {
       void sendRaw(encodeControl(message), {
-        reliable,
+        reliable: true,
         topic: REMOTE_CONTROL_TOPIC,
       })
     },
@@ -140,9 +162,16 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
   const decide = useCallback(
     (granted: boolean) => {
       move(granted ? 'active' : 'idle')
-      post({ kind: 'decision', granted })
+      // Тип показываемой поверхности берём из собственного трека: только сама вкладка даёт
+      // точное совпадение картинки у агента с областью просмотра здесь.
+      const share = room.localParticipant.getTrackPublication(
+        Track.Source.ScreenShare
+      )
+      const surface =
+        share?.track?.mediaStreamTrack.getSettings().displaySurface
+      post({ kind: 'decision', granted, surface })
     },
-    [post]
+    [post, room]
   )
 
   const revoke = useCallback(() => {
@@ -157,12 +186,10 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
       if (stateRef.current !== 'active') {
         return
       }
-      // Движение курсора идёт ненадёжной доставкой: его много, а потерянный кадр движения
-      // не значит ничего. Щелчки и ввод — только надёжной: потерянный щелчок значит всё.
-      post({ kind: 'action', ...action }, action.action !== 'move')
+      post({ kind: 'action', ...action })
     },
     [post]
   )
 
-  return { state, request, decide, revoke, send }
+  return { state, peerSurface, request, decide, revoke, send }
 }

@@ -19,6 +19,9 @@ const FORWARDED_KEYS = new Set([
   'PageDown',
 ])
 
+/** Не чаще тридцати движений в секунду: канал делится с голосом и показом экрана. */
+const MOVE_INTERVAL_MS = 30
+
 interface Action {
   action: 'move' | 'click' | 'dblclick' | 'scroll' | 'key'
   x: number
@@ -43,10 +46,13 @@ interface Action {
 export const RemoteControlSurface = ({
   stageRef,
   onAction,
+  peerSurface,
 }: {
   /** Контейнер сцены: внутри него ищется элемент `video` с показанным экраном. */
   stageRef: RefObject<HTMLElement | null>
   onAction: (action: Action) => void
+  /** Что показывает собеседник. Всё, кроме `browser`, означает промах указателя. */
+  peerSurface: string | null
 }) => {
   const { t } = useTranslation()
   const surfaceRef = useRef<HTMLDivElement>(null)
@@ -55,6 +61,15 @@ export const RemoteControlSurface = ({
   // ищется по точке, а не по фокусу — фокус живёт в браузере агента и о чужой странице
   // не знает ничего.
   const lastPoint = useRef({ x: 0, y: 0 })
+
+  /**
+   * Когда последний раз отправляли движение.
+   *
+   * <p>Мышь даёт события чаще ста раз в секунду, и слать столько по каналу разговора незачем:
+   * глаз не различает движение чаще тридцати, а канал делится с голосом и экраном. Тридцать
+   * миллисекунд — примерно тридцать кадров в секунду.
+   */
+  const lastMoveAt = useRef(0)
 
   // Фокус нужен, чтобы ловить клавиатуру: без него нажатия уходят в документ агента.
   useEffect(() => {
@@ -94,6 +109,10 @@ export const RemoteControlSurface = ({
       className="absolute inset-0 z-10 cursor-crosshair outline-none"
       onPointerMove={(event) => {
         lastPoint.current = { x: event.clientX, y: event.clientY }
+        if (event.timeStamp - lastMoveAt.current < MOVE_INTERVAL_MS) {
+          return
+        }
+        lastMoveAt.current = event.timeStamp
         const point = at(event)
         if (point) {
           onAction({ action: 'move', ...point })
@@ -143,6 +162,14 @@ export const RemoteControlSurface = ({
         lastPoint.current = { x: event.clientX, y: event.clientY }
         surfaceRef.current?.focus()
       }}
-    />
+    >
+      {/* Известно, что показана не вкладка — предупреждаем сразу. Управление при этом работает,
+          но целиться приходится с поправкой, и знать об этом надо ДО первого щелчка. */}
+      {peerSurface !== null && peerSurface !== 'browser' && (
+        <span className="pointer-events-none absolute inset-x-3 top-3 rounded-md bg-support-01 px-3 py-2 text-body2 text-ui-01">
+          {t('support.controlSurfaceWarning')}
+        </span>
+      )}
+    </div>
   )
 }

@@ -4,6 +4,7 @@ import type { RemoteControlState } from './use-remote-control'
 
 export interface RemoteControlValue {
   state: RemoteControlState
+  peerSurface: string | null
   request: () => void
   decide: (granted: boolean) => void
   revoke: () => void

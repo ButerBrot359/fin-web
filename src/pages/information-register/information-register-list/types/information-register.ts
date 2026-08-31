@@ -3,11 +3,19 @@ export interface InformationRegisterEntry {
   /** ISO datetime / date — системное поле регистра. */
   period?: string | null
   /**
-   * Reference на DocumentEntry, но без конкретного typeCode (бэк отдаёт
-   * только ID). UI поиска документа по ID — gap, см. TODO(phase-3-frontend)
-   * в `value-controls.tsx`.
+   * Готовое представление документа-регистратора «Тип №Номер от Дата» — то, что
+   * показывает колонка «Регистратор». null у ручной корректировки без
+   * регистратора: тогда ячейка пустая, а не «#id».
+   */
+  recorderDocumentName?: string | null
+  /**
+   * ID и тип документа-регистратора: показывать их не нужно (для этого есть
+   * recorderDocumentName), но по ним открывается карточка документа.
    */
   recorderDocumentEntryId?: number | null
+  recorderDocumentTypeCode?: string | null
+  /** Номер документа-регистратора отдельным полем (часть представления). */
+  recorderDocumentNumber?: string | null
   isActive?: boolean
   attributes: Record<string, unknown> | null
 }

@@ -183,7 +183,7 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
                 ? t('support.roomTitleAgent')
                 : t('support.roomTitleCaller')
             }
-            subtitle={<RoomStatusLine />}
+            subtitle={<RoomStatusLine isCaller={session.role === 'CALLER'} />}
             headerSlot={
               <span className="mt-1 flex shrink-0 items-center gap-2">
                 <ScreenShareBadge />
@@ -303,7 +303,7 @@ const RemoteControlLayer = ({
 }
 
 /** Что происходит с соединением — строкой под заголовком, а не молчанием в чёрном прямоугольнике. */
-const RoomStatusLine = () => {
+const RoomStatusLine = ({ isCaller }: { isCaller: boolean }) => {
   const { t } = useTranslation()
   const state = useConnectionState()
   const peers = useRemoteParticipants()
@@ -312,7 +312,9 @@ const RoomStatusLine = () => {
     return t('support.connecting')
   }
   if (peers.length === 0) {
-    return t('support.waitingForAgent')
+    // Роль решает так же, как на сцене: агенту не может «отвечать поддержка» — он ею и является,
+    // и если он остался один, значит собеседник ушёл.
+    return t(isCaller ? 'support.waitingForAgent' : 'support.peerLeft')
   }
   return peers.map((peer) => peer.name ?? peer.identity).join(', ')
 }

@@ -2,6 +2,7 @@ import CallEndIcon from '@mui/icons-material/CallEnd'
 import MicIcon from '@mui/icons-material/Mic'
 import MicOffIcon from '@mui/icons-material/MicOff'
 import ScreenShareIcon from '@mui/icons-material/ScreenShare'
+import TouchAppIcon from '@mui/icons-material/TouchApp'
 import StopScreenShareIcon from '@mui/icons-material/StopScreenShare'
 import { useRoomContext, useTrackToggle } from '@livekit/components-react'
 import { Track } from 'livekit-client'
@@ -11,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/shared/lib/utils/cn'
 
 import { callSounds } from '../lib/call-sounds'
+import { useRemoteControlContext } from '../model/remote-control-context'
 import { CallDeviceMenu } from './call-device-menu'
 
 /**
@@ -68,8 +70,15 @@ const ControlButton = ({
  * <p>Завершение разговора не рвёт соединение здесь, а зовёт {@code onHangUp}: положить трубку —
  * решение человека, и оно должно отличаться от любого другого разрыва соединения.
  */
-export const CallControls = ({ onHangUp }: { onHangUp: () => void }) => {
+export const CallControls = ({
+  onHangUp,
+  isAgent,
+}: {
+  onHangUp: () => void
+  isAgent: boolean
+}) => {
   const { t } = useTranslation()
+  const control = useRemoteControlContext()
 
   const mic = useTrackToggle({ source: Track.Source.Microphone })
   const screen = useTrackToggle({ source: Track.Source.ScreenShare })
@@ -120,6 +129,32 @@ export const CallControls = ({ onHangUp }: { onHangUp: () => void }) => {
           void screen.toggle()
         }}
       />
+
+      {/* Управление просит только поддержка: обратная просьба — от обратившегося к агенту —
+          бессмысленна, на экране агента нет бухгалтерии обратившегося. */}
+      {isAgent && (
+        <ControlButton
+          icon={<TouchAppIcon fontSize="small" />}
+          label={
+            control.state === 'requested'
+              ? t('support.controlWaiting')
+              : control.state === 'active'
+                ? t('support.controlStop')
+                : t('support.controlAsk')
+          }
+          active={control.state === 'active'}
+          disabled={control.state === 'requested'}
+          onClick={() => {
+            if (control.state === 'active') {
+              callSounds.screenOff()
+              control.revoke()
+            } else {
+              callSounds.screenOn()
+              control.request()
+            }
+          }}
+        />
+      )}
 
       <CallDeviceMenu />
 

@@ -78,6 +78,7 @@ describe('SduiCardScreen', () => {
 
   it('list-kind → PageHeader отсутствует', () => {
     renderAt('/modules/kazna/document/RKO', false)
+    expect(screen.getByText('SDUI-ЭКРАН')).toBeTruthy()
     expect(screen.queryByTestId('page-header')).toBeNull()
   })
 

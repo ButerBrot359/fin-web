@@ -24,10 +24,31 @@ const CARD_KINDS = new Set([
   'DICTIONARY_NEW',
 ])
 
+// Восстановление dirty-сессии из sdui-кэша (SduiScreen restore-ветка,
+// src/features/sdui/ui/sdui-screen.tsx) не шлёт OPEN и не зовёт onTab — без
+// сида serverKind остаётся null до следующей навигации, и карточка на
+// начальном рендере рисуется без PageHeader/диалога несохранённых. Сидируем
+// из workspace-таба текущего маршрута (id таба = pathname, см.
+// activateOrCreate в use-workspace-tabs-store.ts): pageType таба однозначно
+// говорит «карточный экран или нет» — точный serverKind (DOCUMENT vs
+// DOCUMENT_NEW и т.п.) для showCardChrome не важен, обе метки из CARD_KINDS
+// равнозначны.
+function seedServerKind(
+  pathname: string,
+  tabs: { id: string; pageType: string }[]
+): string | null {
+  const tab = tabs.find((t) => t.id === pathname)
+  if (tab?.pageType === 'document-entry') return 'DOCUMENT'
+  if (tab?.pageType === 'dictionary-entry') return 'DICTIONARY'
+  return null
+}
+
 export const SduiCatchAllPage: FC = () => {
   const location = useLocation()
   const [mode, setMode] = useState<Mode>({ kind: 'sdui' })
-  const [serverKind, setServerKind] = useState<string | null>(null)
+  const [serverKind, setServerKind] = useState<string | null>(() =>
+    seedServerKind(location.pathname, useWorkspaceTabsStore.getState().tabs)
+  )
 
   const authorTab = (tab: ViewTabMeta | null) => {
     setServerKind(tab?.kind ?? null)

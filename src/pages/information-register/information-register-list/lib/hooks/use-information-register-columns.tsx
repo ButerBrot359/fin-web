@@ -34,14 +34,13 @@ export const useInformationRegisterColumns = (
       },
     }
 
+    // Регистратор — ГОТОВОЕ представление документа из строки, а не «#id»
+    // (см. тот же комментарий в use-accumulation-register-columns).
     const recorderColumn: ColumnDef<InformationRegisterEntry> = {
-      id: 'recorderDocumentEntryId',
-      accessorFn: (row) => row.recorderDocumentEntryId ?? null,
+      id: 'recorderDocumentName',
+      accessorFn: (row) => row.recorderDocumentName ?? null,
       header: () => <span>{t('informationRegister.recorder')}</span>,
-      cell: ({ getValue }) => {
-        const v = getValue() as number | null | undefined
-        return cellText(v == null ? '' : `#${String(v)}`)
-      },
+      cell: ({ getValue }) => cellText((getValue() as string | null) ?? ''),
     }
 
     const attributeColumns: ColumnDef<InformationRegisterEntry>[] = [
@@ -64,7 +63,10 @@ export const useInformationRegisterColumns = (
     const metaCodes = new Set(columnsMeta.map((c) => c.code))
     const systemColumns: ColumnDef<InformationRegisterEntry>[] = []
     if (metaCodes.has('period')) systemColumns.push(periodColumn)
-    if (metaCodes.has('recorderDocumentEntryId')) {
+    // Гейт — по коду ИЗ КОНТРАКТА /columns: системная колонка регистратора
+    // приезжает как `recorderDocumentName`. По старому коду
+    // (`recorderDocumentEntryId`) колонка просто не рендерилась бы.
+    if (metaCodes.has('recorderDocumentName')) {
       systemColumns.push(recorderColumn)
     }
 

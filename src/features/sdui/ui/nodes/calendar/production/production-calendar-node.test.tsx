@@ -199,13 +199,29 @@ describe('ProductionCalendarNode', () => {
     })
   })
 
-  it('перенос заблокирован при двух выбранных датах', () => {
+  it('перенос при мультивыборе: источник — первая выбранная дата (v5 §2.3)', async () => {
     render(<ProductionCalendarNode node={node()} />)
     fireEvent.click(cell15())
     fireEvent.click(cell16())
-    expect(
-      button('sdui.productionCalendar.transferDay').hasAttribute('disabled')
-    ).toBe(true)
+    const transferButton = button('sdui.productionCalendar.transferDay')
+    expect(transferButton.hasAttribute('disabled')).toBe(false)
+    fireEvent.click(transferButton)
+    fireEvent.change(screen.getByLabelText('destination'), {
+      target: { value: '2030-01-20' },
+    })
+    fireEvent.click(button('sdui.productionCalendar.transferConfirm'))
+    await waitFor(() => {
+      expect(dispatch).toHaveBeenCalledWith({
+        type: 'COMMAND',
+        command: 'proizvkalendar.den.perenesti',
+        sourceNodeId: 'proizvkalendar.dniKalendarya',
+        value: {
+          ...ENVELOPE,
+          firstDate: '2030-01-15',
+          secondDate: '2030-01-20',
+        },
+      })
+    })
   })
 
   it('перенос: дата вне года невалидна', () => {

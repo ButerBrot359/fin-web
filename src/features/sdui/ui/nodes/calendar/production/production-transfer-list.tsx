@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next'
 
 import type { ProductionCalendarTransferRow } from '../../../../lib/calendar/production-calendar-types'
 
-// Список переносов (§5.1): presentation уже подготовлен бэком — фронт не
-// строит русский текст переноса из дат.
+// Список переносов (v5 §2.5): presentation уже подготовлен бэком — фронт не
+// строит русский текст переноса из дат. Семантическая таблица, одна текстовая
+// строка на перенос.
 export const ProductionTransferList: FC<{
   transfers: ProductionCalendarTransferRow[]
 }> = ({ transfers }) => {
@@ -18,13 +19,15 @@ export const ProductionTransferList: FC<{
       <Typography variant="subtitle2">
         {t('sdui.productionCalendar.transfersTitle')}
       </Typography>
-      <ul className="list-disc pl-5 text-sm">
-        {transfers.map((row) => (
-          <li key={`${row.sourceDate}:${row.destinationDate}`}>
-            {row.presentation}
-          </li>
-        ))}
-      </ul>
+      <table className="text-sm">
+        <tbody>
+          {transfers.map((row) => (
+            <tr key={`${row.sourceDate}:${row.destinationDate}`}>
+              <td className="py-0.5">{row.presentation}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

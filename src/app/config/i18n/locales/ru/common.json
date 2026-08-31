@@ -669,7 +669,7 @@
       "transferDestination": "Дата назначения",
       "transferConfirm": "Перенести",
       "transferInvalidDate": "Дата должна быть в {{year}} году и отличаться от исходной",
-      "transfersTitle": "Переносы дней",
+      "transfersTitle": "Переносы выходных дней:",
       "baseCalendar": "Базовый календарь",
       "baseSelectRequired": "Выберите базовый календарь",
       "baseNoCandidates": "Нет доступных базовых календарей",

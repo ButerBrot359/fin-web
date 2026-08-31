@@ -669,7 +669,7 @@
       "transferDestination": "Тағайындау күні",
       "transferConfirm": "Ауыстыру",
       "transferInvalidDate": "Күн {{year}} жылда болуы және бастапқыдан өзгеше болуы керек",
-      "transfersTitle": "Күн ауыстырулары",
+      "transfersTitle": "Демалыс күндерінің ауыстырулары:",
       "baseCalendar": "Базалық күнтізбе",
       "baseSelectRequired": "Базалық күнтізбені таңдаңыз",
       "baseNoCandidates": "Қолжетімді базалық күнтізбелер жоқ",

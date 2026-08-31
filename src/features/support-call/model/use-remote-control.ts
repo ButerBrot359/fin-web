@@ -1,4 +1,5 @@
-import { useDataChannel } from '@livekit/components-react'
+import { useDataChannel, useRoomContext } from '@livekit/components-react'
+import { Track } from 'livekit-client'
 import { useCallback, useRef, useState } from 'react'
 
 import {
@@ -28,6 +29,8 @@ export type RemoteControlState = 'idle' | 'requested' | 'active' | 'denied'
 
 interface UseRemoteControl {
   state: RemoteControlState
+  /** Что показывает собеседник: `browser` — вкладку. Известно агенту после согласия. */
+  peerSurface: string | null
   /** Агент: попросить управление. */
   request: () => void
   /** Обратившийся: ответить на просьбу. */
@@ -56,6 +59,8 @@ interface UseRemoteControl {
  */
 export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
   const [state, setState] = useState<RemoteControlState>('idle')
+  const [peerSurface, setPeerSurface] = useState<string | null>(null)
+  const room = useRoomContext()
 
   // Состояние читается внутри обработчика сообщений, который живёт дольше рендера: без ссылки
   // он видел бы состояние на момент подписки и исполнял бы команды после отзыва управления.
@@ -88,6 +93,7 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
 
         case 'decision':
           if (!isCaller) {
+            setPeerSurface(parsed.surface ?? null)
             move(parsed.granted ? 'active' : 'denied')
           }
           return
@@ -156,9 +162,16 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
   const decide = useCallback(
     (granted: boolean) => {
       move(granted ? 'active' : 'idle')
-      post({ kind: 'decision', granted })
+      // Тип показываемой поверхности берём из собственного трека: только сама вкладка даёт
+      // точное совпадение картинки у агента с областью просмотра здесь.
+      const share = room.localParticipant.getTrackPublication(
+        Track.Source.ScreenShare
+      )
+      const surface =
+        share?.track?.mediaStreamTrack.getSettings().displaySurface
+      post({ kind: 'decision', granted, surface })
     },
-    [post]
+    [post, room]
   )
 
   const revoke = useCallback(() => {
@@ -178,5 +191,5 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
     [post]
   )
 
-  return { state, request, decide, revoke, send }
+  return { state, peerSurface, request, decide, revoke, send }
 }

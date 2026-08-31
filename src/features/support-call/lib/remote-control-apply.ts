@@ -99,10 +99,13 @@ const cursorElement = (): HTMLElement => {
     'z-index:2147483647',
     // Не перехватывает события: иначе курсор закрывал бы собой то, по чему кликает.
     'pointer-events:none',
-    'width:18px',
-    'height:18px',
-    'margin:-2px 0 0 -2px',
-    'border-radius:50% 50% 50% 2px',
+    'width:16px',
+    'height:16px',
+    // ОСТРИЁ В ЛЕВОМ ВЕРХНЕМ УГЛУ — там же, где left/top, то есть ровно в точке действия.
+    // С острым углом снизу (и отрицательным отступом) стрелка рисовалась на полтора десятка
+    // пикселей ниже настоящей точки: агент целился верно, а указатель показывал мимо.
+    'margin:0',
+    'border-radius:2px 50% 50% 50%',
     'background:#2a75f4',
     'box-shadow:0 0 0 2px #ffffff, 0 2px 8px rgba(0,0,0,0.35)',
     'transition:left 60ms linear, top 60ms linear',

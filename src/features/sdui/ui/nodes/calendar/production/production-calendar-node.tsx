@@ -101,11 +101,13 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
 
   const canChangeDay = editable && ops.has('CHANGE_DAY')
   const canTransferSelected =
-    editable && ops.has('TRANSFER_DAY') && selectedDates.size === 1
+    editable && ops.has('TRANSFER_DAY') && selectedDates.size > 0
   const canFillYear = editable && ops.has('FILL_YEAR')
   const canPrint = draftReady && ops.has('PRINT')
 
-  const sourceDate = selectedDates.size === 1 ? [...selectedDates][0] : null
+  // Мультивыбор допустим (v5 §2.3): источником переноса становится первая
+  // выбранная дата, остальные в request не входят.
+  const sourceDate = selectedDates.size > 0 ? [...selectedDates][0] : null
   // Неполный год: у source-даты может не быть физической строки в days
   const sourceDay = sourceDate
     ? (daysByDate.get(sourceDate) ?? { date: sourceDate, kind: null })

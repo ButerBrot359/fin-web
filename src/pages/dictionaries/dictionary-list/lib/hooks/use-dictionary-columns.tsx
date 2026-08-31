@@ -42,6 +42,11 @@ export const useDictionaryColumns = (
 
   return useMemo(() => {
     const attrColumns = buildAttributeColumns(attributes, i18n.language)
+    // SCRUM-277 v5 §2.6: если metadata уже прислала видимый list-атрибут
+    // «Наименование», системную колонку с тем же содержимым не добавляем.
+    const hasServerNameColumn = attributes.some(
+      (attr) => attr.code === 'Naimenovaniya' && attr.showInList
+    )
 
     if (isHierarchical) {
       const indent = (depth ?? 0) * 24
@@ -80,7 +85,9 @@ export const useDictionaryColumns = (
         cell: (info) => cellText(info.getValue() as string),
       }
 
-      return [hierarchyColumn, ...attrColumns, nameColumn]
+      return hasServerNameColumn
+        ? [hierarchyColumn, ...attrColumns]
+        : [hierarchyColumn, ...attrColumns, nameColumn]
     }
 
     const nameColumn: ColumnDef<DictEntry> = {
@@ -90,6 +97,6 @@ export const useDictionaryColumns = (
       cell: (info) => cellText(info.getValue() as string),
     }
 
-    return [...attrColumns, nameColumn]
+    return hasServerNameColumn ? attrColumns : [...attrColumns, nameColumn]
   }, [attributes, i18n.language, t, isHierarchical, depth])
 }

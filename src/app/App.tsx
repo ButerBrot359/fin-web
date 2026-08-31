@@ -38,32 +38,12 @@ import { ReportSettingsPanel } from './providers/report-settings-panel'
 const ModulePage = lazy(() =>
   import('@/pages/module').then((m) => ({ default: m.ModulePage }))
 )
-const DocumentEntryPage = lazy(() =>
-  import('@/pages/documents/documents-entry').then((m) => ({
-    default: m.DocumentEntryPage,
-  }))
-)
-const DocumentRedirect = lazy(() =>
-  import('@/pages/documents/document-redirect').then((m) => ({
-    default: m.DocumentRedirect,
-  }))
-)
-const DictionaryRedirect = lazy(() =>
-  import('@/pages/dictionaries/dictionary-redirect').then((m) => ({
-    default: m.DictionaryRedirect,
-  }))
-)
 const InformationRegisterRedirect = lazy(() =>
   import('@/pages/information-register/information-register-redirect').then(
     (m) => ({
       default: m.InformationRegisterRedirect,
     })
   )
-)
-const DictionaryEntryPage = lazy(() =>
-  import('@/pages/dictionaries/dictionary-entry').then((m) => ({
-    default: m.DictionaryEntryPage,
-  }))
 )
 const AccountPlanEntryPage = lazy(() =>
   import('@/pages/account-plan/account-plan-entry').then((m) => ({
@@ -105,40 +85,6 @@ const AppRoutes = () => {
           */}
           <Route path="/treasury-export" element={<TreasuryExportPage />} />
           <Route path="/modules/:pageCode" element={<ModulePage />} />
-          <Route
-            path="/modules/:pageCode/document/:moduleCode/new"
-            element={<DocumentEntryPage />}
-          />
-          <Route
-            path="/modules/:pageCode/document/:moduleCode/:entryId"
-            element={<DocumentEntryPage />}
-          />
-          {/*
-            SCRUM-268 §3.6: плоские ссылки с бэка /documents/:typeCode[/new] —
-            фронт резолвит раздел по метаданным модулей и редиректит в
-            /modules/:pageCode/document/:typeCode. Временный мост до
-            server-driven shell (отклонение D-1, ревизия SDUI раздел 9).
-          */}
-          <Route
-            path="/documents/:typeCode"
-            element={<DocumentRedirect mode="list" />}
-          />
-          <Route
-            path="/documents/:typeCode/new"
-            element={<DocumentRedirect mode="new" />}
-          />
-          <Route
-            path="/documents/:typeCode/:entryId"
-            element={<DocumentRedirect mode="entry" />}
-          />
-          <Route
-            path="/dictionaries/:typeCode"
-            element={<DictionaryRedirect mode="list" />}
-          />
-          <Route
-            path="/dictionaries/:typeCode/:entryId"
-            element={<DictionaryRedirect mode="entry" />}
-          />
           {/*
             SCRUM-45: плоские ссылки с бэка /information-registers/:typeCode…
             (navigate из list.rowOpen, list.create, «Записать и закрыть»).
@@ -155,14 +101,6 @@ const AppRoutes = () => {
           <Route
             path="/information-registers/:typeCode/:entryId"
             element={<InformationRegisterRedirect mode="entry" />}
-          />
-          <Route
-            path="/modules/:pageCode/dictionary/:moduleCode/new"
-            element={<DictionaryEntryPage />}
-          />
-          <Route
-            path="/modules/:pageCode/dictionary/:moduleCode/:entryId"
-            element={<DictionaryEntryPage />}
           />
           <Route
             path="/modules/:pageCode/accountplan/:moduleCode/new"

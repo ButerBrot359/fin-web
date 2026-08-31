@@ -6,6 +6,7 @@ import {
   applyKey,
   applyMove,
   applyScroll,
+  hideRemoteCursor,
 } from '../lib/remote-control-apply'
 import type { RemoteControlMessage } from '../lib/remote-control-protocol'
 import {
@@ -62,6 +63,11 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
   const move = (next: RemoteControlState) => {
     stateRef.current = next
     setState(next)
+    if (next !== 'active') {
+      // Курсор агента обязан исчезнуть вместе с правом управлять: чужая стрелка на экране
+      // после отзыва означала бы, что за тобой всё ещё следят.
+      hideRemoteCursor()
+    }
   }
 
   const handle = useCallback(
@@ -122,10 +128,20 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
 
   const { send: sendRaw } = useDataChannel(REMOTE_CONTROL_TOPIC, handle)
 
+  /**
+   * Отправка сообщения.
+   *
+   * <p><b>Всегда по надёжному каналу.</b> Движения курсора сперва шли по ненадёжному — их много,
+   * и потерянный кадр движения ничего не значит. Но LiveKit роняет этот канал сам
+   * (`DATA_TRACK_LOSSY closed unexpectedly`), и вместе с ним молча пропадали ВСЕ движения:
+   * со стороны это выглядело как «управление не работает, мышь не двигается». Экономия
+   * ненадёжного канала не стоит механизма, который перестаёт работать без единой ошибки.
+   * Частоту ограничивает отправитель — см. поверхность перехвата.
+   */
   const post = useCallback(
-    (message: RemoteControlMessage, reliable = true) => {
+    (message: RemoteControlMessage) => {
       void sendRaw(encodeControl(message), {
-        reliable,
+        reliable: true,
         topic: REMOTE_CONTROL_TOPIC,
       })
     },
@@ -157,9 +173,7 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
       if (stateRef.current !== 'active') {
         return
       }
-      // Движение курсора идёт ненадёжной доставкой: его много, а потерянный кадр движения
-      // не значит ничего. Щелчки и ввод — только надёжной: потерянный щелчок значит всё.
-      post({ kind: 'action', ...action }, action.action !== 'move')
+      post({ kind: 'action', ...action })
     },
     [post]
   )

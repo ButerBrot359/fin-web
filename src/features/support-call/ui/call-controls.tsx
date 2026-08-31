@@ -1,10 +1,17 @@
 import CallEndIcon from '@mui/icons-material/CallEnd'
 import MicIcon from '@mui/icons-material/Mic'
 import MicOffIcon from '@mui/icons-material/MicOff'
+import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt'
 import ScreenShareIcon from '@mui/icons-material/ScreenShare'
+import TabIcon from '@mui/icons-material/Tab'
 import TouchAppIcon from '@mui/icons-material/TouchApp'
 import StopScreenShareIcon from '@mui/icons-material/StopScreenShare'
-import { useRoomContext, useTrackToggle } from '@livekit/components-react'
+import {
+  isTrackReference,
+  useRoomContext,
+  useTrackToggle,
+  useTracks,
+} from '@livekit/components-react'
 import { Track } from 'livekit-client'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -16,6 +23,22 @@ import { useRemoteControlContext } from '../model/remote-control-context'
 import { CallDeviceMenu } from './call-device-menu'
 
 /**
+ * Умеет ли браузер предлагать текущую вкладку первой.
+ *
+ * <p>Только Chromium. Совсем без спроса поделиться нельзя ни в одном браузере — захват экрана
+ * всегда требует подтверждения человека, — но с этим флагом в окне выбора остаётся ровно один
+ * пункт: сама вкладка. Один щелчок вместо поиска нужного окна среди десятка.
+ */
+const CAN_PREFER_CURRENT_TAB =
+  typeof navigator !== 'undefined' &&
+  navigator.userAgent.includes('Chrome') &&
+  !navigator.userAgent.includes('Firefox')
+
+/** Умеет ли браузер выносить видео в отдельное окно поверх остальных. */
+const CAN_PICTURE_IN_PICTURE =
+  typeof document !== 'undefined' && document.pictureInPictureEnabled
+
+/**
  * Кнопка панели разговора.
  *
  * <p>Своя, а не `TrackToggle` из LiveKit: тот приносит собственную тёмную тему и подпись,
@@ -25,6 +48,7 @@ import { CallDeviceMenu } from './call-device-menu'
 const ControlButton = ({
   icon,
   label,
+  title,
   active,
   danger,
   disabled,
@@ -32,6 +56,8 @@ const ControlButton = ({
 }: {
   icon: ReactNode
   label: string
+  /** Подсказка при наведении, когда подписи мало. По умолчанию — сама подпись. */
+  title?: string
   /** Действие сейчас включено — кнопка горит фирменным лаймом. */
   active?: boolean
   /** Разрушающее действие: завершить разговор. */
@@ -43,7 +69,7 @@ const ControlButton = ({
     type="button"
     onClick={onClick}
     disabled={disabled}
-    title={label}
+    title={title ?? label}
     className={cn(
       'flex cursor-pointer items-center gap-2 rounded-md py-2.5 pl-3 pr-4 text-body2 whitespace-nowrap transition-all',
       'disabled:cursor-not-allowed disabled:opacity-60',
@@ -83,6 +109,14 @@ export const CallControls = ({
   const mic = useTrackToggle({ source: Track.Source.Microphone })
   const screen = useTrackToggle({ source: Track.Source.ScreenShare })
   const room = useRoomContext()
+
+  // Чужой показанный экран — по нему работает вынос в отдельное окно.
+  const peerScreen = useTracks(
+    [{ source: Track.Source.ScreenShare, withPlaceholder: false }],
+    { onlySubscribed: false }
+  )
+    .filter(isTrackReference)
+    .find((track) => !track.participant.isLocal)
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -152,6 +186,47 @@ export const CallControls = ({
               callSounds.screenOn()
               control.request()
             }
+          }}
+        />
+      )}
+
+      {/* Показ именно этой вкладки. Нужен не только ради удобства: координаты удалённого
+          управления пересчитываются в область просмотра страницы, и совпадают они с картинкой
+          ровно тогда, когда показана сама вкладка, а не окно или экран целиком. */}
+      {!screen.enabled && CAN_PREFER_CURRENT_TAB && (
+        <ControlButton
+          icon={<TabIcon fontSize="small" />}
+          label={t('support.shareThisTab')}
+          title={t('support.shareThisTabHint')}
+          disabled={screen.pending}
+          onClick={() => {
+            callSounds.screenOn()
+            void room.localParticipant.setScreenShareEnabled(true, {
+              preferCurrentTab: true,
+              // Переключать показываемую поверхность на ходу нельзя: собеседник целится по
+              // картинке, и подмена её под ним означала бы щелчки не туда, куда он смотрит.
+              surfaceSwitching: 'exclude',
+            })
+          }}
+        />
+      )}
+
+      {/* Экран собеседника поверх остальных окон. Окно разговора живёт внутри вкладки браузера,
+          и стоит перейти в другую программу, как его закрывает собой; отдельное окно видно
+          всегда — можно смотреть на чужой экран, работая рядом. */}
+      {peerScreen && CAN_PICTURE_IN_PICTURE && (
+        <ControlButton
+          icon={<PictureInPictureAltIcon fontSize="small" />}
+          label={t('support.pictureInPicture')}
+          title={t('support.pictureInPictureHint')}
+          onClick={() => {
+            const video = peerScreen.publication.track?.attachedElements.find(
+              (element): element is HTMLVideoElement =>
+                element instanceof HTMLVideoElement
+            )
+            void video?.requestPictureInPicture().catch(() => {
+              // Браузер отказал (нет жеста, окно уже занято) — молча остаёмся как были.
+            })
           }}
         />
       )}

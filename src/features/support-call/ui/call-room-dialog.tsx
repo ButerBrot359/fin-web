@@ -305,7 +305,11 @@ const AgentControlSurface = ({
 }) => {
   const control = useRemoteControlContext()
   return control.state === 'active' ? (
-    <RemoteControlSurface stageRef={stageRef} onAction={control.send} />
+    <RemoteControlSurface
+      stageRef={stageRef}
+      onAction={control.send}
+      peerSurface={control.peerSurface}
+    />
   ) : null
 }
 

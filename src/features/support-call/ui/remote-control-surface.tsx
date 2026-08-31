@@ -46,10 +46,13 @@ interface Action {
 export const RemoteControlSurface = ({
   stageRef,
   onAction,
+  peerSurface,
 }: {
   /** Контейнер сцены: внутри него ищется элемент `video` с показанным экраном. */
   stageRef: RefObject<HTMLElement | null>
   onAction: (action: Action) => void
+  /** Что показывает собеседник. Всё, кроме `browser`, означает промах указателя. */
+  peerSurface: string | null
 }) => {
   const { t } = useTranslation()
   const surfaceRef = useRef<HTMLDivElement>(null)
@@ -159,6 +162,14 @@ export const RemoteControlSurface = ({
         lastPoint.current = { x: event.clientX, y: event.clientY }
         surfaceRef.current?.focus()
       }}
-    />
+    >
+      {/* Известно, что показана не вкладка — предупреждаем сразу. Управление при этом работает,
+          но целиться приходится с поправкой, и знать об этом надо ДО первого щелчка. */}
+      {peerSurface !== null && peerSurface !== 'browser' && (
+        <span className="pointer-events-none absolute inset-x-3 top-3 rounded-md bg-support-01 px-3 py-2 text-body2 text-ui-01">
+          {t('support.controlSurfaceWarning')}
+        </span>
+      )}
+    </div>
   )
 }

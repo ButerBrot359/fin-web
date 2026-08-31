@@ -14,9 +14,10 @@ const appTsx = readFileSync(
   'utf8'
 )
 
-// Точное совпадение с атрибутом path="..." (карточные пути с доп. сегментами
-// /new | /:entryId под это выражение не попадают — они остаются до этапа B).
-const REMOVED_LIST_PATHS = [
+// Точное совпадение с атрибутом path="..." — карточные и плоские пути тоже
+// сюда попали (SCRUM-360 этап B, задача 4): бэк резолвит плоские роуты
+// (PROBE-2 «да»), catch-all обслуживает и карточные kind (задачи 2/3).
+const REMOVED_PATHS = [
   '/modules/:pageCode/document/:moduleCode',
   '/modules/:pageCode/document/:moduleCode/:entryId/movements',
   '/modules/:pageCode/dictionary/:moduleCode',
@@ -29,10 +30,20 @@ const REMOVED_LIST_PATHS = [
   '/modules/:pageCode/reportalt/:moduleCode',
   '/modules/:pageCode/dataprocessor/:moduleCode',
   '/modules/:pageCode/calculationplan/:moduleCode',
+  '/modules/:pageCode/document/:moduleCode/new',
+  '/modules/:pageCode/document/:moduleCode/:entryId',
+  '/modules/:pageCode/dictionary/:moduleCode/new',
+  '/modules/:pageCode/dictionary/:moduleCode/:entryId',
+  // PROBE-2 «да»: бэк резолвит плоские роуты напрямую.
+  '/documents/:typeCode',
+  '/documents/:typeCode/new',
+  '/documents/:typeCode/:entryId',
+  '/dictionaries/:typeCode',
+  '/dictionaries/:typeCode/:entryId',
 ]
 
-describe('App.tsx не дублирует KIND_TO_LEGACY явными Route (SCRUM-360 этап A)', () => {
-  it.each(REMOVED_LIST_PATHS)('нет явного Route path="%s"', (p) => {
+describe('App.tsx не дублирует KIND_TO_LEGACY явными Route (SCRUM-360 этапы A+B)', () => {
+  it.each(REMOVED_PATHS)('нет явного Route path="%s"', (p) => {
     expect(appTsx.includes(`path="${p}"`)).toBe(false)
   })
 })

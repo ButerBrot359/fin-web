@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FC } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   useLocation,
   useNavigate,
@@ -7,7 +7,6 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 
 import {
-  SduiScreen,
   useViewStateStore,
   useTreeStore,
   useSduiDispatch,
@@ -18,20 +17,14 @@ import {
   useTabMeta,
 } from '@/features/workspace-tabs'
 
-import { PageHeader } from '@/widgets/page-header'
-
 import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
-import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
 
-import { useUnsavedChangesDialog } from '../lib/hooks/use-unsaved-changes-dialog'
-
-interface SduiDocumentPageProps {
-  moduleCode: string
-}
+import { useUnsavedChangesDialog } from '@/pages/documents/documents-entry/lib/hooks/use-unsaved-changes-dialog'
 
 // После закрытия вкладки садимся на соседнюю вкладку рабочего стола (или дефолт,
-// если вкладок не осталось) — сервер маршрут не даёт, сосед выбирается на клиенте
-// (SCRUM-283 v2 §2.3). Вызывать ПОСЛЕ closeTab, чтобы текущая уже была убрана.
+// если вкладок не осталось) — карточка универсальная (документ/справочник),
+// целевой list-путь неизвестен, сосед выбирается на клиенте (SCRUM-283 v2 §2.3;
+// перенесено из sdui-document-page.tsx для SCRUM-360 этап B).
 function navigateToNeighborTab(navigate: NavigateFunction): void {
   const { tabs } = useWorkspaceTabsStore.getState()
   if (tabs.length > 0) {
@@ -42,9 +35,11 @@ function navigateToNeighborTab(navigate: NavigateFunction): void {
   }
 }
 
-export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({
-  moduleCode: _moduleCode,
-}) => {
+// Обвязка карточки (документ/справочник) поверх catch-all SduiScreen: стабильный
+// tabsApi, dirty-заголовок, диалог несохранённых изменений, синхронизация
+// заголовка вкладки. Хук вызывается всегда (и для списковых kind — колбэки для
+// них безвредны), чтобы SduiScreen не размонтировался при смене serverKind.
+export function useSduiCardBinding() {
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useSduiDispatch()
@@ -52,10 +47,12 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({
 
   useEffect(() => {
     return () => {
-      // SDUI пишет мимо TanStack Query — при уходе со страницы сбрасываем кэши
-      // списков документов и ссылочных пикеров, чтобы показать свежие данные
-      // (ключи — из use-eav-entries: ['document','entries',…]).
+      // SDUI пишет мимо TanStack Query — при уходе с карточки сбрасываем кэши
+      // списков документов/справочников и ссылочных пикеров (объединение
+      // доноров sdui-document-page.tsx + sdui-dictionary-entry-page.tsx; лишняя
+      // инвалидация кэша безвредна).
       invalidateDocumentQueries(queryClient)
+      void queryClient.invalidateQueries({ queryKey: ['dict-type'] })
     }
   }, [queryClient])
 
@@ -82,8 +79,6 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({
       void dispatch({ type: 'COMMAND', command: desc.command }, desc.behavior)
     },
     onDiscard: () => {
-      // «Не сохранять»: команда не шлётся — закрываем вкладку и садимся на соседнюю
-      // сами, единообразно с onSave (SCRUM-283 v2 §2.3).
       closeCurrentTab()
       navigateToNeighborTab(navigate)
     },
@@ -102,6 +97,7 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({
     () => ({
       // Стабильные колбэки: SduiScreen подписан на них эффектами,
       // пересоздание на каждый рендер вызвало бы лишние срабатывания.
+      onTitleChange: setTabTitle,
       shouldPersistSession: (route: string) =>
         useWorkspaceTabsStore.getState().tabs.some((tab) => tab.id === route),
       onDirtyChange: (route: string, dirty: boolean) => {
@@ -109,6 +105,13 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({
       },
       consumePendingAction: (route: string) =>
         useFormCacheStore.getState().consumePendingAction(route),
+      // Успешный save-and-close: закрыть вкладку и сесть на соседнюю (listPath
+      // не знаем — универсальная карточка, вариант дедовки sdui-dictionary-entry-page).
+      onSavedAndClosed: (route: string) => {
+        useFormCacheStore.getState().removeTab(route)
+        useWorkspaceTabsStore.getState().closeTab(route)
+        navigateToNeighborTab(navigate)
+      },
       // closeAfter=true: закрыть вкладку. didNavigate=false (save+closeAfter, без
       // серверного navigate) → сесть на соседнюю; didNavigate=true (postAndClose
       // увёл в список) → только закрыть, не перебивая серверный переход (SCRUM-283 v2).
@@ -121,16 +124,5 @@ export const SduiDocumentPage: FC<SduiDocumentPageProps> = ({
     [navigate]
   )
 
-  return (
-    <div className="flex h-full flex-col gap-5 pt-5">
-      <PageHeader title={pageTitle} onClose={handleClose} />
-      <SduiScreen {...tabsApi} onTitleChange={setTabTitle} />
-      <UnsavedChangesDialog
-        open={unsavedDialog.isOpen}
-        onSave={unsavedDialog.handleSave}
-        onDiscard={unsavedDialog.handleDiscard}
-        onCancel={unsavedDialog.handleCancel}
-      />
-    </div>
-  )
+  return { tabsApi, pageTitle, unsavedDialog, handleClose }
 }

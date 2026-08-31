@@ -40,6 +40,46 @@ export const isApiTransportError = (
 ): error is ApiTransportError => error instanceof ApiTransportError
 
 /**
+ * HTTP 409 от бэкенда — конфликт блокировок (SCRUM-330): объект занят другим
+ * пользователем/фоновой задачей (`OBJECT_LOCKED`) либо доменная блокировка
+ * (`LOCK_CONFLICT`). `message` бэка — готовый русский текст «кем занято»,
+ * показывается пользователю как есть; операция НЕ выполнена, данные целы —
+ * корректная реакция UI: warning-тост и возможность повторить, не error.
+ */
+export class ApiConflictError extends Error {
+  readonly status = 409
+  /** `OBJECT_LOCKED` | `LOCK_CONFLICT` | '' (неопознанное тело). */
+  readonly code: string
+
+  constructor(code: string, message: string) {
+    super(message)
+    this.name = 'ApiConflictError'
+    this.code = code
+  }
+}
+
+export const isApiConflictError = (error: unknown): error is ApiConflictError =>
+  error instanceof ApiConflictError
+
+/**
+ * Тело 409 нормализуем по образцу SDUI (`normalize-conflict.ts`): код — из
+ * `code` либо `error`, текст — из стандартного `message`. Пустой message —
+ * забота вызывающего (i18n-фолбэк по коду).
+ */
+export const apiConflictErrorFromBody = (body: unknown): ApiConflictError => {
+  const b = (body && typeof body === 'object' ? body : {}) as Record<
+    string,
+    unknown
+  >
+  const code =
+    (typeof b.code === 'string' && b.code) ||
+    (typeof b.error === 'string' && b.error) ||
+    ''
+  const message = typeof b.message === 'string' ? b.message : ''
+  return new ApiConflictError(code, message)
+}
+
+/**
  * Статусы, которые в нашей инсталляции отдаёт ШЛЮЗ, а не приложение: тело такого
  * ответа — html-заглушка nginx, показывать её пользователю бессмысленно.
  * 503 сюда НЕ входит: это «сервис недоступен», запрос до приложения не дошёл и

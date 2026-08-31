@@ -13,7 +13,7 @@ export const TASKS_LIST_POLL_MS = 3000
 // открыт (компонент размонтируется вместе с ним).
 export const BackgroundTasksPanel = () => {
   const { t } = useTranslation()
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ['background-tasks', 'list'],
     queryFn: fetchTasks,
     refetchInterval: TASKS_LIST_POLL_MS,
@@ -34,8 +34,9 @@ export const BackgroundTasksPanel = () => {
           {t('backgroundTasks.empty')}
         </Typography>
       )}
+      {/* dataUpdatedAt — «часы» оценки остатка: тикают с каждым опросом */}
       {data?.map((task) => (
-        <TaskRow key={task.id} task={task} />
+        <TaskRow key={task.id} task={task} now={dataUpdatedAt} />
       ))}
     </div>
   )

@@ -10,3 +10,4 @@ export {
   useAsyncTaskStore,
   type TrackedTask,
 } from './lib/hooks/use-async-task-store'
+export { useTaskCompletionWatcher } from './lib/hooks/use-task-completion-watcher'

@@ -12,7 +12,7 @@ import {
 } from '@livekit/components-react'
 import '@livekit/components-styles'
 import { ConnectionState, Track } from 'livekit-client'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, RefObject } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -21,7 +21,12 @@ import { cn } from '@/shared/lib/utils/cn'
 import type { SupportCallSession } from '../model/types'
 import { ActiveCallBar } from './active-call-bar'
 import { callSounds, startRingback } from '../lib/call-sounds'
+import { useRemoteControlContext } from '../model/remote-control-context'
+import { RemoteControlProvider } from '../model/remote-control-provider'
 import { CallControls } from './call-controls'
+import { RemoteControlBanner } from './remote-control-banner'
+import { RemoteControlConsent } from './remote-control-consent'
+import { RemoteControlSurface } from './remote-control-surface'
 import { ScreenShareBadge } from './screen-share-badge'
 import { SupportDialog } from './support-dialog'
 
@@ -85,6 +90,9 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
   const [expanded, setExpanded] = useState(false)
   const [minimized, setMinimized] = useState(false)
 
+  /** Контейнер сцены: поверхность управления ищет внутри него видео с показанным экраном. */
+  const stageRef = useRef<HTMLDivElement>(null)
+
   /**
    * Секунды разговора — счётчик живёт здесь, а не в свёрнутой плашке.
    *
@@ -146,86 +154,152 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
       }}
       style={{ display: 'contents' }}
     >
-      {minimized ? (
-        <ActiveCallBar
-          seconds={seconds}
-          onRestore={() => {
-            setMinimized(false)
-          }}
-          onHangUp={() => {
-            hangUpRequested.current = true
-          }}
+      <RemoteControlProvider isCaller={session.role === 'CALLER'}>
+        <RemoteControlLayer
+          isCaller={session.role === 'CALLER'}
+          stageRef={stageRef}
         />
-      ) : (
-        <SupportDialog
-          maxWidth="lg"
-          dismissable={false}
-          expanded={expanded}
-          onToggleExpanded={() => {
-            setExpanded((value) => !value)
-          }}
-          title={
-            session.role === 'AGENT'
-              ? t('support.roomTitleAgent')
-              : t('support.roomTitleCaller')
-          }
-          subtitle={<RoomStatusLine />}
-          headerSlot={
-            <span className="mt-1 flex shrink-0 items-center gap-2">
-              <ScreenShareBadge />
-              {/* Индикатор записи виден ВЕСЬ разговор, а не только в момент согласия:
-                  человек должен в любой момент знать, что его пишут. */}
-              {session.recording && (
-                <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-support-01/10 px-3 py-1.5 text-body2 text-support-01">
-                  <FiberManualRecordIcon sx={{ fontSize: 12 }} />
-                  {t('support.recording')}
-                </span>
-              )}
-            </span>
-          }
-          onMinimize={() => {
-            callSounds.minimize()
-            setMinimized(true)
-          }}
-          footer={
-            <div className="flex flex-col gap-4">
-              <CallControls
-                onHangUp={() => {
-                  hangUpRequested.current = true
-                }}
-              />
-              {!expanded && (
-                <p className="text-body2 text-ui-05">
-                  {t('support.shareHint')}
-                </p>
-              )}
-            </div>
-          }
-          contentClassName="flex flex-col"
-        >
-          {error !== null && (
-            <div className="mb-4 rounded-lg bg-support-01/10 px-4 py-3 text-body2 text-support-01">
-              {error}
-            </div>
-          )}
 
-          <div
-            className={cn(
-              'overflow-hidden rounded-lg bg-ui-06 p-3',
-              expanded ? 'min-h-0 flex-1' : 'h-[58vh] min-h-[280px]'
-            )}
-            data-lk-theme="default"
-            style={STAGE_THEME as CSSProperties}
+        {minimized ? (
+          <ActiveCallBar
+            seconds={seconds}
+            onRestore={() => {
+              setMinimized(false)
+            }}
+            onHangUp={() => {
+              hangUpRequested.current = true
+            }}
+          />
+        ) : (
+          <SupportDialog
+            maxWidth="lg"
+            dismissable={false}
+            expanded={expanded}
+            onToggleExpanded={() => {
+              setExpanded((value) => !value)
+            }}
+            title={
+              session.role === 'AGENT'
+                ? t('support.roomTitleAgent')
+                : t('support.roomTitleCaller')
+            }
+            subtitle={<RoomStatusLine />}
+            headerSlot={
+              <span className="mt-1 flex shrink-0 items-center gap-2">
+                <ScreenShareBadge />
+                {/* Индикатор записи виден ВЕСЬ разговор, а не только в момент согласия:
+                  человек должен в любой момент знать, что его пишут. */}
+                {session.recording && (
+                  <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-support-01/10 px-3 py-1.5 text-body2 text-support-01">
+                    <FiberManualRecordIcon sx={{ fontSize: 12 }} />
+                    {t('support.recording')}
+                  </span>
+                )}
+              </span>
+            }
+            onMinimize={() => {
+              callSounds.minimize()
+              setMinimized(true)
+            }}
+            footer={
+              <div className="flex flex-col gap-4">
+                <CallControls
+                  isAgent={session.role === 'AGENT'}
+                  onHangUp={() => {
+                    hangUpRequested.current = true
+                  }}
+                />
+                {!expanded && (
+                  <p className="text-body2 text-ui-05">
+                    {t('support.shareHint')}
+                  </p>
+                )}
+              </div>
+            }
+            contentClassName="flex flex-col"
           >
-            <RoomStage isCaller={session.role === 'CALLER'} />
-          </div>
-        </SupportDialog>
-      )}
+            {error !== null && (
+              <div className="mb-4 rounded-lg bg-support-01/10 px-4 py-3 text-body2 text-support-01">
+                {error}
+              </div>
+            )}
+
+            <div
+              ref={stageRef}
+              className={cn(
+                'relative overflow-hidden rounded-lg bg-ui-06 p-3',
+                expanded ? 'min-h-0 flex-1' : 'h-[58vh] min-h-[280px]'
+              )}
+              data-lk-theme="default"
+              style={STAGE_THEME as CSSProperties}
+            >
+              <RoomStage isCaller={session.role === 'CALLER'} />
+            </div>
+          </SupportDialog>
+        )}
+      </RemoteControlProvider>
 
       {/* Звук участников — вне окна: свёрнутый разговор обязан оставаться слышимым. */}
       <RoomAudioRenderer />
     </LiveKitRoom>
   )
+}
+
+/** Как назвать агента в вопросе о согласии: имя из токена, иначе его identity в комнате. */
+const agentName = (peers: { name?: string; identity: string }[]): string => {
+  const peer = peers.at(0)
+  return peer?.name ?? peer?.identity ?? ''
+}
+
+/**
+ * Удалённое управление внутри комнаты (ADR-0050).
+ *
+ * <p>Отдельный компонент, потому что хук управления работает с data-каналом и обязан жить внутри
+ * провайдера комнаты. Здесь же сходятся обе роли: у обратившегося — вопрос о согласии и красная
+ * полоса, у агента — прозрачный слой поверх чужого экрана.
+ *
+ * <p>Кнопка «Запросить управление» стоит не здесь, а в панели разговора: она нужна агенту рядом
+ * с остальными кнопками, а не поверх картинки.
+ */
+const RemoteControlLayer = ({
+  isCaller,
+  stageRef,
+}: {
+  isCaller: boolean
+  stageRef: RefObject<HTMLDivElement | null>
+}) => {
+  const control = useRemoteControlContext()
+  const peers = useRemoteParticipants()
+
+  if (isCaller) {
+    return (
+      <>
+        {control.state === 'requested' && (
+          <RemoteControlConsent
+            agentName={agentName(peers)}
+            onDecide={(granted) => {
+              if (granted) {
+                callSounds.screenOn()
+              }
+              control.decide(granted)
+            }}
+          />
+        )}
+        {control.state === 'active' && (
+          <RemoteControlBanner
+            onRevoke={() => {
+              callSounds.screenOff()
+              control.revoke()
+            }}
+          />
+        )}
+      </>
+    )
+  }
+
+  return control.state === 'active' ? (
+    <RemoteControlSurface stageRef={stageRef} onAction={control.send} />
+  ) : null
 }
 
 /** Что происходит с соединением — строкой под заголовком, а не молчанием в чёрном прямоугольнике. */

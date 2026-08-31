@@ -10,7 +10,6 @@ import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 
 import type { AccountingRegisterEntry } from '../../types/accounting-register'
 import { DimensionCell } from '../../ui/dimension-cell'
-import { RecorderCell } from '../../ui/recorder-cell'
 import { SubkontoCell } from '../../ui/subkonto-cell'
 import { getSubkontoRef } from '../../utils/subkonto'
 
@@ -120,16 +119,6 @@ export const useAccountingRegisterColumns = (
             cell: ({ getValue }) =>
               cellText((getValue() as string | null) ?? ''),
           }
-        // Регистратор (1C: Recorder) — бэк отдаёт только ID; резолвим в имя.
-        case 'recorderDocumentEntryId':
-          return {
-            id: 'recorderDocumentEntryId',
-            accessorFn: (row) => row.recorderDocumentEntryId ?? null,
-            header: () => <span>{t('accountingRegister.recorder')}</span>,
-            cell: ({ getValue }) => (
-              <RecorderCell id={getValue() as number | null | undefined} />
-            ),
-          }
         case 'lineNo':
           return {
             id: 'lineNo',
@@ -154,7 +143,9 @@ export const useAccountingRegisterColumns = (
           header,
           enableSorting: false,
           cell: ({ getValue }) => (
-            <SubkontoCell subkonto={getValue() as ReturnType<typeof getSubkontoRef>} />
+            <SubkontoCell
+              subkonto={getValue() as ReturnType<typeof getSubkontoRef>}
+            />
           ),
         }
       }
@@ -168,7 +159,8 @@ export const useAccountingRegisterColumns = (
       if (isReference) {
         return {
           id: col.code,
-          accessorFn: (row) => (row[col.code] as number | null | undefined) ?? null,
+          accessorFn: (row) =>
+            (row[col.code] as number | null | undefined) ?? null,
           header,
           cell: ({ getValue }) => (
             <DimensionCell
@@ -194,7 +186,8 @@ export const useAccountingRegisterColumns = (
             return cellText(typeof v === 'string' ? formatDateTime(v) : '')
           }
           // Дальше ожидаем примитив (число/строка); объекты не выводим.
-          if (typeof v !== 'number' && typeof v !== 'string') return cellText('')
+          if (typeof v !== 'number' && typeof v !== 'string')
+            return cellText('')
           if (col.dataType === 'DECIMAL' || col.dataType === 'INTEGER') {
             return cellText(formatWithSpaces(String(v)))
           }

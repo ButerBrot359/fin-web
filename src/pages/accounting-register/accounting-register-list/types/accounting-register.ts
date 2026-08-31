@@ -3,9 +3,12 @@ export interface AccountingRegisterEntry {
   /** ISO datetime — период (дата) проводки. */
   period?: string | null
   /**
-   * Reference на DocumentEntry-регистратор (бэк отдаёт только ID).
-   * UI-разрешение по ID — см. TODO(phase-3-frontend) в `value-controls.tsx`.
+   * Готовое представление документа-регистратора «Тип №Номер от Дата». Именно
+   * его печатает колонка «Регистратор» (код колонки в /columns —
+   * `recorderDocumentName`), дозапрос за документом не нужен.
    */
+  recorderDocumentName?: string | null
+  /** ID документа-регистратора: не показывается, нужен для перехода в карточку. */
   recorderDocumentEntryId?: number | null
   /** Номер строки проводки внутри документа-регистратора. */
   lineNo?: number | null

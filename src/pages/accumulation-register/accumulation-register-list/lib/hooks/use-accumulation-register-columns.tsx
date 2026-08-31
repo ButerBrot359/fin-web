@@ -40,21 +40,26 @@ export const useAccumulationRegisterColumns = (
       accessorFn: (row) => row.movementKind ?? null,
       header: () => <span>{t('accumulationRegister.movementKind')}</span>,
       cell: ({ getValue }) => {
-        const v = getValue() as AccumulationRegisterMovementKind | null | undefined
+        const v = getValue() as
+          | AccumulationRegisterMovementKind
+          | null
+          | undefined
         return cellText(
           v == null ? '' : t(`accumulationRegister.movementKindValue.${v}`)
         )
       },
     }
 
+    // Регистратор — ГОТОВОЕ представление документа из строки
+    // («Начисление зарплаты сотрудникам AAY00-00001 от 31.07.2026 12:00:00»),
+    // как в журнале проводок регистра бухгалтерии. Раньше печатался «#id»
+    // документа: по такой строке нельзя понять, откуда движение. Дозапрос за
+    // документом не нужен — представление уже приходит в ответе search.
     const recorderColumn: ColumnDef<AccumulationRegisterEntry> = {
-      id: 'recorderDocumentEntryId',
-      accessorFn: (row) => row.recorderDocumentEntryId ?? null,
+      id: 'recorderDocumentName',
+      accessorFn: (row) => row.recorderDocumentName ?? null,
       header: () => <span>{t('accumulationRegister.recorder')}</span>,
-      cell: ({ getValue }) => {
-        const v = getValue() as number | null | undefined
-        return cellText(v == null ? '' : `#${String(v)}`)
-      },
+      cell: ({ getValue }) => cellText((getValue() as string | null) ?? ''),
     }
 
     const lineNoColumn: ColumnDef<AccumulationRegisterEntry> = {

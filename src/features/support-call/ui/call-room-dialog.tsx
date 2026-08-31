@@ -155,10 +155,7 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
       style={{ display: 'contents' }}
     >
       <RemoteControlProvider isCaller={session.role === 'CALLER'}>
-        <RemoteControlLayer
-          isCaller={session.role === 'CALLER'}
-          stageRef={stageRef}
-        />
+        <RemoteControlLayer isCaller={session.role === 'CALLER'} />
 
         {minimized ? (
           <ActiveCallBar
@@ -234,6 +231,10 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
               style={STAGE_THEME as CSSProperties}
             >
               <RoomStage isCaller={session.role === 'CALLER'} />
+              {/* Слой перехвата обязан лежать ВНУТРИ сцены: он позиционируется по ней. */}
+              {session.role === 'AGENT' && (
+                <AgentControlSurface stageRef={stageRef} />
+              )}
             </div>
           </SupportDialog>
         )}
@@ -254,49 +255,55 @@ const agentName = (peers: { name?: string; identity: string }[]): string => {
 /**
  * Удалённое управление внутри комнаты (ADR-0050).
  *
- * <p>Отдельный компонент, потому что хук управления работает с data-каналом и обязан жить внутри
- * провайдера комнаты. Здесь же сходятся обе роли: у обратившегося — вопрос о согласии и красная
- * полоса, у агента — прозрачный слой поверх чужого экрана.
- *
- * <p>Кнопка «Запросить управление» стоит не здесь, а в панели разговора: она нужна агенту рядом
- * с остальными кнопками, а не поверх картинки.
+ * <p>Только сторона обратившегося: вопрос о согласии и красная полоса. Слой перехвата у агента
+ * живёт внутри сцены — см. {@link AgentControlSurface}.
  */
-const RemoteControlLayer = ({
-  isCaller,
-  stageRef,
-}: {
-  isCaller: boolean
-  stageRef: RefObject<HTMLDivElement | null>
-}) => {
+const RemoteControlLayer = ({ isCaller }: { isCaller: boolean }) => {
   const control = useRemoteControlContext()
   const peers = useRemoteParticipants()
 
-  if (isCaller) {
-    return (
-      <>
-        {control.state === 'requested' && (
-          <RemoteControlConsent
-            agentName={agentName(peers)}
-            onDecide={(granted) => {
-              if (granted) {
-                callSounds.screenOn()
-              }
-              control.decide(granted)
-            }}
-          />
-        )}
-        {control.state === 'active' && (
-          <RemoteControlBanner
-            onRevoke={() => {
-              callSounds.screenOff()
-              control.revoke()
-            }}
-          />
-        )}
-      </>
-    )
+  if (!isCaller) {
+    return null
   }
 
+  return (
+    <>
+      {control.state === 'requested' && (
+        <RemoteControlConsent
+          agentName={agentName(peers)}
+          onDecide={(granted) => {
+            if (granted) {
+              callSounds.screenOn()
+            }
+            control.decide(granted)
+          }}
+        />
+      )}
+      {control.state === 'active' && (
+        <RemoteControlBanner
+          onRevoke={() => {
+            callSounds.screenOff()
+            control.revoke()
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+/**
+ * Слой перехвата у агента.
+ *
+ * <p>Живёт ВНУТРИ сцены, потому что позиционируется по ней. Раньше висел на уровне комнаты:
+ * `absolute inset-0` без опорного контейнера рядом, да ещё и под модальным окном — мышь агента
+ * до него не доходила вовсе, и управление выглядело нерабочим.
+ */
+const AgentControlSurface = ({
+  stageRef,
+}: {
+  stageRef: RefObject<HTMLDivElement | null>
+}) => {
+  const control = useRemoteControlContext()
   return control.state === 'active' ? (
     <RemoteControlSurface stageRef={stageRef} onAction={control.send} />
   ) : null

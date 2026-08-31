@@ -19,6 +19,9 @@ const FORWARDED_KEYS = new Set([
   'PageDown',
 ])
 
+/** Не чаще тридцати движений в секунду: канал делится с голосом и показом экрана. */
+const MOVE_INTERVAL_MS = 30
+
 interface Action {
   action: 'move' | 'click' | 'dblclick' | 'scroll' | 'key'
   x: number
@@ -55,6 +58,15 @@ export const RemoteControlSurface = ({
   // ищется по точке, а не по фокусу — фокус живёт в браузере агента и о чужой странице
   // не знает ничего.
   const lastPoint = useRef({ x: 0, y: 0 })
+
+  /**
+   * Когда последний раз отправляли движение.
+   *
+   * <p>Мышь даёт события чаще ста раз в секунду, и слать столько по каналу разговора незачем:
+   * глаз не различает движение чаще тридцати, а канал делится с голосом и экраном. Тридцать
+   * миллисекунд — примерно тридцать кадров в секунду.
+   */
+  const lastMoveAt = useRef(0)
 
   // Фокус нужен, чтобы ловить клавиатуру: без него нажатия уходят в документ агента.
   useEffect(() => {
@@ -94,6 +106,10 @@ export const RemoteControlSurface = ({
       className="absolute inset-0 z-10 cursor-crosshair outline-none"
       onPointerMove={(event) => {
         lastPoint.current = { x: event.clientX, y: event.clientY }
+        if (event.timeStamp - lastMoveAt.current < MOVE_INTERVAL_MS) {
+          return
+        }
+        lastMoveAt.current = event.timeStamp
         const point = at(event)
         if (point) {
           onAction({ action: 'move', ...point })

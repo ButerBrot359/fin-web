@@ -1,3 +1,4 @@
+import type { AsyncTask } from '@/entities/async-task'
 import type { ApiResponse, PagedResponse } from '@/shared/types/api.types'
 
 export interface DocumentEntry {
@@ -38,6 +39,18 @@ export type DocumentEntriesResponseData = ApiResponse<
 export type DocumentEntryNewResponseData = ApiResponse<DocumentEntry>
 
 export type DocumentEntryResponseData = ApiResponse<DocumentEntry>
+
+/**
+ * Ответ проведения (SCRUM-330, асинхронный тракт): поля идут плоско из
+ * Java-record. HTTP 200 → `async:false` + `document` (проведено синхронно);
+ * HTTP 202 → `async:true` + `task` (ушло в фон, следить вотчером задач).
+ * Исходы различаем по полю `async`, не по HTTP-статусу.
+ */
+export interface PostingResult {
+  async: boolean
+  document?: DocumentEntry | null
+  task?: AsyncTask | null
+}
 
 export interface PrintCommand {
   checkBeforePrint: boolean

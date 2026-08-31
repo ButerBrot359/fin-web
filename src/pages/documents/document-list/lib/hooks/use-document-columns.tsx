@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Typography } from '@mui/material'
+import { CircularProgress, Tooltip, Typography } from '@mui/material'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import type { DocumentEntry } from '@/entities/document-entry'
@@ -11,7 +11,24 @@ import DocPostedIcon from '@/shared/assets/icons/doc-posted.svg'
 import DocDraftIcon from '@/shared/assets/icons/doc-draft.svg'
 import DocDeletedIcon from '@/shared/assets/icons/doc-deleted.svg'
 
-const StatusIcon = ({ entry }: { entry: DocumentEntry }) => {
+const StatusIcon = ({
+  entry,
+  posting,
+}: {
+  entry: DocumentEntry
+  posting?: boolean
+}) => {
+  const { t } = useTranslation()
+  // SCRUM-330: по записи идёт фоновое проведение — крутящийся индикатор
+  // вместо статуса, с подсказкой; статусные значки вернутся, когда задача
+  // завершится и активный опрос перестанет отдавать эту запись
+  if (posting) {
+    return (
+      <Tooltip title={t('documentTable.postingInProgress')}>
+        <CircularProgress size={16} thickness={5} className="shrink-0" />
+      </Tooltip>
+    )
+  }
   if (entry.isPosted) return <DocPostedIcon className="h-4 w-4 shrink-0" />
   if (entry.isActive) return <DocDraftIcon className="h-4 w-4 shrink-0" />
   return <DocDeletedIcon className="h-4 w-4 shrink-0" />
@@ -44,6 +61,8 @@ interface DocumentColumnsOptions {
   columnOrder?: string[]
   /** SCRUM-276 §3.2: скрыть статус-колонку («Проведён» вне эталона 1С). */
   hideStatus?: boolean
+  /** SCRUM-330: записи с идущим фоновым проведением — спиннер вместо статуса. */
+  postingEntryIds?: Set<number>
 }
 
 const orderIndex = (order: string[], code: string): number => {
@@ -56,7 +75,7 @@ export const useDocumentColumns = (
   options?: DocumentColumnsOptions
 ): ColumnDef<DocumentEntry>[] => {
   const { t, i18n } = useTranslation()
-  const { columnOrder, hideStatus } = options ?? {}
+  const { columnOrder, hideStatus, postingEntryIds } = options ?? {}
 
   return useMemo(() => {
     const statusColumn: ColumnDef<DocumentEntry> = {
@@ -67,7 +86,12 @@ export const useDocumentColumns = (
       header: () => null,
       size: 24,
       enableSorting: false,
-      cell: ({ row }) => <StatusIcon entry={row.original} />,
+      cell: ({ row }) => (
+        <StatusIcon
+          entry={row.original}
+          posting={postingEntryIds?.has(row.original.id)}
+        />
+      ),
     }
 
     const nameColumn: ColumnDef<DocumentEntry> = {
@@ -92,5 +116,5 @@ export const useDocumentColumns = (
       ...attributeColumns,
       nameColumn,
     ]
-  }, [attributes, columnOrder, hideStatus, i18n.language, t])
+  }, [attributes, columnOrder, hideStatus, postingEntryIds, i18n.language, t])
 }

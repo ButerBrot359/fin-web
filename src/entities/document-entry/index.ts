@@ -18,5 +18,6 @@ export type {
   DocumentEntriesResponseData,
   DocumentEntryNewResponseData,
   DocumentEntryResponseData,
+  PostingResult,
   PrintCommand,
 } from './types/document-entry'

@@ -94,6 +94,8 @@
     "post": "Өткізу",
     "postSuccess": "Құжат өткізілді",
     "postError": "Құжатты өткізу мүмкін болмады",
+    "postQueued": "Өткізу фондық режимде орындалуда",
+    "postTaskCancelled": "Фондық өткізу болдырылмады",
     "refresh": "Жаңарту",
     "bulkEditTitle": "Таңдалғандарды өзгерту",
     "bulkEditCount": "Таңдалған құжаттар: {{count}}",
@@ -138,7 +140,8 @@
     "createdAt": "Күні",
     "number": "Нөмір",
     "link": "Сілтеме",
-    "linkKz": "Атауы (қаз.)"
+    "linkKz": "Атауы (қаз.)",
+    "postingInProgress": "Құжат фондық режимде өткізілуде"
   },
   "noContent": {
     "title": "Сәйкес нәтижелер жоқ",
@@ -593,7 +596,14 @@
     "cancel": "Болдырмау",
     "succeeded": "Орындалды",
     "failed": "Қате",
-    "cancelled": "Болдырылмады"
+    "cancelled": "Болдырылмады",
+    "remainingSeconds": "шамамен {{value}} сек қалды",
+    "remainingMinutes": "шамамен {{value}} мин қалды",
+    "remainingHoursMinutes": "шамамен {{hours}} сағ {{minutes}} мин қалды"
+  },
+  "apiConflict": {
+    "objectLocked": "Объектіні басқа пайдаланушы өңдеп жатыр. Босағанын күтіп, қайталаңыз",
+    "lockConflict": "Операция орындалмады: объект бос емес. Деректер сақталды — қайталап көріңіз"
   },
   "universalDomain": {
     "cardUnavailable": "Жазба карточкасы әзірше қолжетімсіз — түр жаңа пішінге әлі көшірілмеген"

@@ -4,6 +4,7 @@ import type {
   DocumentEntriesResponseData,
   DocumentEntryNewResponseData,
   DocumentEntryResponseData,
+  PostingResult,
   PrintCommand,
 } from '../types/document-entry'
 
@@ -77,10 +78,13 @@ export const unpostDocumentEntry = (id: number) =>
     url: `/api/document-entries/${String(id)}/unpost`,
   })
 
+// Проведение из списка (SCRUM-330, асинхронный тракт): сервер отвечает сразу —
+// 200 `{async:false, document}` (проведено синхронно) либо 202 `{async:true,
+// task}` (ушло в фон). Долгий таймаут больше не нужен; 409 (объект занят /
+// доменная блокировка) прилетает ApiConflictError из shared/api.
 export const postDocumentEntry = (id: number) =>
-  apiService.post<DocumentEntryResponseData>({
-    url: `/api/document-entries/${String(id)}/post`,
-    timeout: LONG_OPERATION_TIMEOUT_MS,
+  apiService.post<PostingResult>({
+    url: `/api/document-entries/id/${String(id)}/post`,
   })
 
 export interface BulkEditPayload {

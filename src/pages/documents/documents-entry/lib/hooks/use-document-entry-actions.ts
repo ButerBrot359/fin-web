@@ -9,8 +9,9 @@ import {
 } from '@/entities/document-entry'
 import type { CreateDocumentEntryPayload } from '@/entities/document-entry'
 import { useWorkspaceTabsStore } from '@/features/workspace-tabs'
-import { isApiTransportError } from '@/shared/api/api-error'
+import { isApiConflictError, isApiTransportError } from '@/shared/api/api-error'
 import { getApiErrorMessage } from '@/shared/lib/utils/get-api-error-message'
+import { getConflictErrorMessage } from '@/shared/lib/utils/get-conflict-error-message'
 import { invalidateDocumentListQueries } from '@/shared/lib/query/invalidate-entities'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
@@ -122,6 +123,15 @@ export const useDocumentEntryActions = ({
             }
           },
           onError: (error) => {
+            // 409 (SCRUM-330): объект занят другим пользователем/фоновой
+            // задачей либо доменная блокировка — POST/PUT с isPosted тоже её
+            // ловит. Правки целы, форма не сбрасывается — warning с текстом
+            // бэка «кем занято», пользователь повторяет той же кнопкой.
+            if (isApiConflictError(error)) {
+              showToast('warning', getConflictErrorMessage(error))
+              return
+            }
+
             // Обрыв транспорта ≠ отказ сервера: запись/проведение приняты и
             // ПРОДОЛЖАЮТСЯ в транзакции, документ может успешно провестись уже
             // после того, как ingress разорвал соединение. Показывать «Ошибка

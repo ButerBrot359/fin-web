@@ -94,6 +94,8 @@
     "post": "Провести",
     "postSuccess": "Документ проведён",
     "postError": "Не удалось провести документ",
+    "postQueued": "Проведение выполняется в фоне",
+    "postTaskCancelled": "Фоновое проведение отменено",
     "refresh": "Обновить",
     "bulkEditTitle": "Изменить выделенные",
     "bulkEditCount": "Выбрано документов: {{count}}",
@@ -138,7 +140,8 @@
     "createdAt": "Дата",
     "number": "Номер",
     "link": "Ссылка",
-    "linkKz": "Наименование (каз.)"
+    "linkKz": "Наименование (каз.)",
+    "postingInProgress": "Документ проводится в фоне"
   },
   "noContent": {
     "title": "Нет подходящих результатов",
@@ -593,7 +596,14 @@
     "cancel": "Отменить",
     "succeeded": "Выполнено",
     "failed": "Ошибка",
-    "cancelled": "Отменено"
+    "cancelled": "Отменено",
+    "remainingSeconds": "осталось ≈ {{value}} сек",
+    "remainingMinutes": "осталось ≈ {{value}} мин",
+    "remainingHoursMinutes": "осталось ≈ {{hours}} ч {{minutes}} мин"
+  },
+  "apiConflict": {
+    "objectLocked": "Объект редактируется другим пользователем. Дождитесь освобождения и повторите",
+    "lockConflict": "Не удалось выполнить операцию: объект занят. Данные целы — повторите попытку"
   },
   "universalDomain": {
     "cardUnavailable": "Карточка записи пока недоступна — тип ещё не переведён на новую форму"

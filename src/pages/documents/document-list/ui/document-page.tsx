@@ -24,6 +24,7 @@ import { DocumentListToolbar } from '@/widgets/document-list-toolbar'
 import { EavEntityTable } from '@/widgets/eav-entity-table'
 
 import { useDocumentColumns } from '../lib/hooks/use-document-columns'
+import { usePostingEntryIds } from '../lib/hooks/use-posting-entry-ids'
 import { TABEL_COLUMN_ORDER, TABEL_TYPE_CODE } from '../lib/consts/tabel-list'
 import { buildTabelSelectionColumn } from '../lib/utils/tabel-selection-column'
 import { TabelListCriteria } from './tabel-list-criteria'
@@ -84,9 +85,15 @@ export const DocumentPage = () => {
     filter,
   })
 
+  // SCRUM-330: активные фоновые задачи этого типа — значок «проводится» в
+  // статус-колонке (опрос живёт, пока открыта страница списка)
+  const postingEntryIds = usePostingEntryIds(moduleCode)
+
   const columns = useDocumentColumns(
     attributes,
-    isTabel ? { columnOrder: TABEL_COLUMN_ORDER, hideStatus: true } : undefined
+    isTabel
+      ? { columnOrder: TABEL_COLUMN_ORDER, hideStatus: true }
+      : { postingEntryIds }
   )
 
   const queryClient = useQueryClient()

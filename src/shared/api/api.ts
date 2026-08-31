@@ -11,7 +11,11 @@ import type {
   RequestWithDataConfig,
 } from '@/shared/types/api.types'
 
-import { ApiTransportError, classifyTransportFailure } from './api-error'
+import {
+  ApiTransportError,
+  apiConflictErrorFromBody,
+  classifyTransportFailure,
+} from './api-error'
 import { attachAuthInterceptors } from './auth/attach-auth-interceptors'
 
 /**
@@ -69,6 +73,13 @@ const makeRequest = <T>(
       const transportKind = classifyTransportFailure(error)
       if (transportKind) {
         throw new ApiTransportError(transportKind, error.response?.status)
+      }
+      // 409 — конфликт блокировок (SCRUM-330): «сырое» тело теряло HTTP-статус,
+      // и UI не мог отличить «объект занят, повторите» от ошибки валидации.
+      // Типизированная ошибка сохраняет code/message; остальные статусы летят
+      // телом ответа, как раньше.
+      if (error.response?.status === 409) {
+        throw apiConflictErrorFromBody(error.response.data)
       }
       throw error.response?.data
     }

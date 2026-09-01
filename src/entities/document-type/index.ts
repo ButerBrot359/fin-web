@@ -1,6 +1,11 @@
-export { getDocumentType, getOnGetForm, getFormEvents } from './api/document-type'
+export {
+  getDocumentType,
+  getOnGetForm,
+  getFormEvents,
+} from './api/document-type'
 export { useDocumentType } from './lib/hooks/use-document-type'
 export type {
+  AllowedType,
   DocumentType,
   DocumentTypeResponseData,
   DocumentAttribute,

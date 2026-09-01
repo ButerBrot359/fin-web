@@ -2,6 +2,11 @@ import i18n from '@/app/config/i18n'
 import type { SelectOption } from '@/shared/types/select-option'
 
 const resolveLabel = (obj: Record<string, unknown>): string => {
+  // SCRUM-70: presentation — серверное представление значения; предпочитаем
+  // его устаревшим displayName/name, иначе до загрузки options выбранная
+  // ссылка отображается без server presentation.
+  if (typeof obj.presentation === 'string' && obj.presentation)
+    return obj.presentation
   if (typeof obj.displayName === 'string' && obj.displayName)
     return obj.displayName
   if (typeof obj.name === 'string' && obj.name) return obj.name

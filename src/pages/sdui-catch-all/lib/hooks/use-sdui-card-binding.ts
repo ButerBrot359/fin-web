@@ -53,6 +53,11 @@ export function useSduiCardBinding() {
       // инвалидация кэша безвредна).
       invalidateDocumentQueries(queryClient)
       void queryClient.invalidateQueries({ queryKey: ['dict-type'] })
+      // SCRUM-353: карточка записи регистра сведений — список должен показать
+      // созданную/изменённую запись сразу (ключ use-eav-entries IR-домена).
+      void queryClient.invalidateQueries({
+        queryKey: ['information-register', 'entries'],
+      })
     }
   }, [queryClient])
 

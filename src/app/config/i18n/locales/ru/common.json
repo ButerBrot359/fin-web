@@ -220,6 +220,7 @@
     "filterActiveTitle": "Активные фильтры",
     "filterRemoveChip": "Удалить фильтр",
     "filterClearAll": "Сбросить все",
+    "selectRowFirst": "Сначала выберите строку в таблице",
     "resizeColumn": "Изменить ширину колонки"
   },
   "informationRegister": {

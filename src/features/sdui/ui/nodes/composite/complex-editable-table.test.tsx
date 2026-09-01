@@ -502,6 +502,26 @@ describe('ComplexEditableTable — сброс выделения при подм
     expect(isDeleteDisabled()).toBe(false)
   })
 
+  it('серверное дозаполнение строки в ответ на правку выделение не снимает', () => {
+    const { rerender } = render(<ComplexEditableTable node={defect2Node} />)
+
+    fireEvent.click(screen.getByText('B'))
+    fireEvent.change(screen.getByTestId('editor-VychetIPN-r2'), {
+      target: { value: 'B2' },
+    })
+
+    // Ответ сервера на эту правку: строка вернулась дозаполненной (сервер
+    // нормализовал/подставил значение) — это НЕ подмена записи.
+    state.Defect2Table = [
+      { rowId: 'r1', VychetIPN: 'A' },
+      { rowId: 'r2', VychetIPN: 'B2-сервер' },
+    ]
+    rerender(<ComplexEditableTable node={defect2Node} />)
+
+    expect(state['Defect2Table.__selectedRowId']).toBe('r2')
+    expect(isDeleteDisabled()).toBe(false)
+  })
+
   it('переход на другую строку подменой не считается', () => {
     render(<ComplexEditableTable node={defect2Node} />)
 

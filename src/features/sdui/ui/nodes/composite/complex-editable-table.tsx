@@ -146,6 +146,14 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     rowId: string
     signature: string
   } | null>(null)
+  // Правка пользователя в ВЫБРАННОЙ строке взводит одноразовое разрешение принять
+  // следующее серверное изменение её содержимого как ОТВЕТ на эту правку, а не как
+  // подмену записи. Иначе документ, где сервер дозаполняет строку по выбранной
+  // ссылке («Корректировка параметров учёта ОС»: выбрал ОС → приехали инв. номер,
+  // счёт и стоимости), снимал выделение сам, и следующая построчная команда
+  // («Удалить», «Скопировать») отвечала «Выберите строку». Разрешение одноразовое:
+  // перестройка ТЧ, не вызванная правкой, выделение по-прежнему снимает.
+  const serverEchoAllowedRef = useRef(false)
 
   const sync = useTableSync(node, flatColumns)
   // Stable ref for memoized cell callbacks — avoids stale closures.
@@ -161,6 +169,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     updateCell: (rowId: string, binding: string, value: unknown) => {
       if (rowId === selectedRowId) {
         selectedSignatureRef.current = null
+        serverEchoAllowedRef.current = true
       }
       sync.updateCell(rowId, binding, value)
     },
@@ -278,7 +287,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
       captured.rowId === selectedRowId &&
       captured.signature !== signature
 
-    if (substituted) {
+    if (substituted && serverEchoAllowedRef.current) {
+      // Ответ сервера на собственную правку пользователя — принимаем новую подпись.
+      serverEchoAllowedRef.current = false
+    } else if (substituted) {
       resetSelection()
       return
     }
@@ -346,6 +358,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
 
   // Publish selected rowId to session for detail tables
   const handleRowClick = (rowId: string) => {
+    if (rowId !== selectedRowId) serverEchoAllowedRef.current = false
     setSelectedRowId(rowId)
     if (node.binding) {
       setFromServer(node.binding + '.__selectedRowId', rowId)

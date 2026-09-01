@@ -34,6 +34,11 @@ export function extractEditableColumns(
 }
 
 export const TableNode: FC<NodeProps> = ({ node }) => {
+  // SCRUM-70: невидимая таблица ≠ пустая таблица (чек-лист ограничения
+  // скрыт, пока гейт-флаг выключен). Строго `=== false`: у большинства
+  // таблиц пропа нет вовсе — они рендерятся как раньше.
+  if ((node.props?.visible as boolean | undefined) === false) return null
+
   // Матрица Табеля (SCRUM-276): все три признака дискриминатора обязаны
   // совпасть, иначе обычный рендер — без декодирования packed-строк.
   if (isTabelMatrixNode(node)) return <TabelMatrixTable node={node} />

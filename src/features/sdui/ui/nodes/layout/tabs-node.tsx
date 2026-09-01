@@ -14,6 +14,12 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
   // SCRUM-362 B-4: visible эмитится бэком явно — строгая проверка вместо ?? true.
   const tabs = (node.children ?? []).filter((t) => t.props?.visible === true)
 
+  // SCRUM-70: disabled-вкладка остаётся в ленте, но недоступна (у группы
+  // доступа без видов доступа «Ограничения доступа» видимы, но заблокированы).
+  // disabled независим от visible: невидимая вкладка отфильтрована выше.
+  const isDisabled = (tab: ViewNode) =>
+    (tab.props?.disabled as boolean | undefined) === true
+
   const handleChange = (_: React.SyntheticEvent, newIndex: number) => {
     setActiveIndex(newIndex)
 
@@ -38,8 +44,18 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
   const isLeft = node.props?.tabsPlacement === 'LEFT'
 
   // Клампим индекс: условная вкладка могла исчезнуть и сдвинуть длину списка.
-  const safeIndex =
+  const clampedIndex =
     tabs.length === 0 ? 0 : Math.min(activeIndex, tabs.length - 1)
+  // SCRUM-70: клампнутая вкладка сама может быть disabled — контент берём с
+  // первой доступной. Если доступных нет вовсе, оставляем кламп: MUI блокирует
+  // взаимодействие, рендер стабилен.
+  const safeIndex =
+    tabs.length > 0 && isDisabled(tabs[clampedIndex])
+      ? (() => {
+          const firstEnabled = tabs.findIndex((tab) => !isDisabled(tab))
+          return firstEnabled === -1 ? clampedIndex : firstEnabled
+        })()
+      : clampedIndex
   const activeTab = tabs[safeIndex] as ViewNode | undefined
 
   const tabList = (
@@ -68,6 +84,7 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
       {tabs.map((tab, idx) => (
         <Tab
           key={tab.id}
+          disabled={isDisabled(tab)}
           label={
             (tab.props?.title as string | undefined) ??
             (tab.props?.label as string | undefined) ??

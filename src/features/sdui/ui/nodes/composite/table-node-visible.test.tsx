@@ -63,3 +63,17 @@ describe('TableNode props.visible (SCRUM-70)', () => {
     expect(container.innerHTML).toBe('')
   })
 })
+
+// SCRUM-363: потоковый ввод живёт в ComplexEditableTable — плоская редактируемая
+// таблица с autoAdvance:true уходит туда, без флага — остаётся на обычной ветке.
+describe('TableNode props.autoAdvance (SCRUM-363)', () => {
+  it('editable + autoAdvance:true → ComplexEditableTable', () => {
+    render(<TableNode node={node({ editable: true, autoAdvance: true })} />)
+    expect(screen.getByTestId('complex-editable-table')).toBeTruthy()
+  })
+
+  it('editable без флага → обычная EditableTable', () => {
+    render(<TableNode node={node({ editable: true })} />)
+    expect(screen.getByTestId('editable-table')).toBeTruthy()
+  })
+})

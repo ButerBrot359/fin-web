@@ -14,6 +14,28 @@ import { resolveRowFilterParams } from './resolve-row-filter-params'
 import { resolveCellState } from './resolve-cell-state'
 import { columnSizeProps, toColumnWidth } from './column-sizing'
 import { isNoWrapColumn } from './nowrap-columns'
+import type { AutoAdvanceTarget } from './table-auto-advance'
+
+/**
+ * Контекст потокового ввода (SCRUM-363), пробрасываемый в редакторы ячеек.
+ * Цель — в ref (а не в значении): колонки мемоизированы по node.children, и
+ * смена цели не должна пересобирать их (пересборка ремонтирует редактор и
+ * сбрасывает фокус).
+ */
+export interface AutoAdvanceColumnContext {
+  targetRef: RefObject<AutoAdvanceTarget | null>
+  onCellCommit: (rowId: string, binding: string) => void
+}
+
+/** Ячейка — текущая одноразовая цель автофокуса? */
+function isAutoOpenTarget(
+  ctx: AutoAdvanceColumnContext | undefined,
+  rowId: string,
+  binding: string
+): boolean {
+  const target = ctx?.targetRef.current
+  return !!target && target.rowId === rowId && target.binding === binding
+}
 
 /**
  * Кастомные поля в `ColumnDef.meta`. Читаются приведением типа на месте
@@ -199,7 +221,8 @@ function columnHeaderContent(col: TableColumnDef): ReactNode {
 export function buildColumnDefs(
   children: ViewNode[] | undefined,
   syncRef: RefObject<UseTableSyncResult>,
-  validationRef?: RefObject<UseTableValidationResult>
+  validationRef?: RefObject<UseTableValidationResult>,
+  autoAdvance?: AutoAdvanceColumnContext
 ): ColumnDef<TableRow>[] {
   // Число под-строк считается по ВСЕЙ таблице и одно на все вертикальные
   // группы — иначе их разделители встают на разной высоте (см. verticalSubRows).
@@ -207,7 +230,8 @@ export function buildColumnDefs(
     children,
     syncRef,
     validationRef,
-    maxVerticalSubRows(children)
+    maxVerticalSubRows(children),
+    autoAdvance
   )
 }
 
@@ -215,7 +239,8 @@ function buildColumnDefsInner(
   children: ViewNode[] | undefined,
   syncRef: RefObject<UseTableSyncResult>,
   validationRef: RefObject<UseTableValidationResult> | undefined,
-  subRowCount: number
+  subRowCount: number,
+  autoAdvance?: AutoAdvanceColumnContext
 ): ColumnDef<TableRow>[] {
   if (!children) return []
 
@@ -250,6 +275,12 @@ function buildColumnDefsInner(
             revealErrors: validationRef?.current.revealErrors ?? false,
             props: col.props,
             extraParams: resolveRowFilterParams(col, info.row.original),
+            binding: col.binding,
+            autoOpen: isAutoOpenTarget(
+              autoAdvance,
+              info.row.original.rowId,
+              col.binding
+            ),
             onChange: (val: unknown) => {
               syncRef.current.updateCell(
                 info.row.original.rowId,
@@ -259,6 +290,7 @@ function buildColumnDefsInner(
             },
             onCommit: () => {
               syncRef.current.commitCell()
+              autoAdvance?.onCellCommit(info.row.original.rowId, col.binding)
             },
           })
         },
@@ -330,6 +362,12 @@ function buildColumnDefsInner(
                       childCol,
                       info.row.original
                     ),
+                    binding: childCol.binding,
+                    autoOpen: isAutoOpenTarget(
+                      autoAdvance,
+                      info.row.original.rowId,
+                      childCol.binding
+                    ),
                     onChange: (val: unknown) => {
                       syncRef.current.updateCell(
                         info.row.original.rowId,
@@ -339,6 +377,10 @@ function buildColumnDefsInner(
                     },
                     onCommit: () => {
                       syncRef.current.commitCell()
+                      autoAdvance?.onCellCommit(
+                        info.row.original.rowId,
+                        childCol.binding
+                      )
                     },
                   }),
                 }
@@ -358,7 +400,8 @@ function buildColumnDefsInner(
             node.children,
             syncRef,
             validationRef,
-            subRowCount
+            subRowCount,
+            autoAdvance
           ),
         }
         result.push(colDef)

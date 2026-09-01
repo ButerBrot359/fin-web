@@ -42,8 +42,13 @@ import {
   buildColumnDefs,
   extractAllLeafColumns,
   VERTICAL_SUB_ROW_HEIGHT,
+  type AutoAdvanceColumnContext,
   type SduiColumnMetaExtra,
 } from '../../../lib/utils/build-column-defs'
+import {
+  findAutoAdvanceColumn,
+  type AutoAdvanceTarget,
+} from '../../../lib/utils/table-auto-advance'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import { omitServiceRowKeys } from '../../../lib/utils/service-row-keys'
 import {
@@ -85,6 +90,9 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const allowDelete = node.props?.allowDelete === true
   const allowReorder = node.props?.allowReorder === true
   const showRowNumbers = node.props?.showRowNumbers === true
+  // SCRUM-363: потоковый ввод строк «как в 1С». Строго по серверному флагу —
+  // без веток по коду документа/route (серверная SDUI-мета управляет областью).
+  const autoAdvance = node.props?.autoAdvance === true
 
   const tableCommands = node.props?.tableCommands as
     | TableCommandDescriptor[]
@@ -162,10 +170,36 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const validationRef = useRef(validation)
   validationRef.current = validation
 
-  const tableColumns = useMemo(
-    () => buildColumnDefs(node.children, syncRef, validationRef),
+  // ── SCRUM-363: потоковый ввод — одноразовая цель автофокуса ──
+  // Цель в ref (не в state): её смена не должна пересобирать колонки —
+  // пересборка ремонтирует активный редактор и сбрасывает фокус. Ре-рендер и
+  // активацию цели заказывает отдельный tick.
+  const autoAdvanceTargetRef = useRef<AutoAdvanceTarget | null>(null)
+  const autoAdvanceSeqRef = useRef(0)
+  const [autoAdvanceTick, setAutoAdvanceTick] = useState(0)
+  // Колбэк commit — через ref: колонки мемоизированы, а замыкание должно быть
+  // свежим (тот же приём, что syncRef выше).
+  const autoAdvanceCommitRef = useRef<(rowId: string, binding: string) => void>(
+    () => undefined
+  )
+  const autoAdvanceCtx = useMemo<AutoAdvanceColumnContext | undefined>(
+    () =>
+      autoAdvance
+        ? {
+            targetRef: autoAdvanceTargetRef,
+            onCellCommit: (rowId, binding) => {
+              autoAdvanceCommitRef.current(rowId, binding)
+            },
+          }
+        : undefined,
+    [autoAdvance]
+  )
 
-    [node.children]
+  const tableColumns = useMemo(
+    () =>
+      buildColumnDefs(node.children, syncRef, validationRef, autoAdvanceCtx),
+
+    [node.children, autoAdvanceCtx]
   )
 
   // ── Master-detail filtering ──
@@ -321,13 +355,74 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
 
   // Detail-таблица: новая строка сразу получает ключ связи выбранной master-строки;
   // без выбранной master-строки добавление заблокировано (canAdd ниже) — как в 1С.
-  const handleAdd = () => {
+  // Возвращает созданную строку (SCRUM-363: автофокусу нужен точный rowId).
+  const handleAdd = (): TableRow | null => {
     if (isMasterDetail && detailKey) {
-      if (masterKeyValue === undefined) return
-      sync.addRow(flatColumns, { [detailKey]: masterKeyValue })
-      return
+      if (masterKeyValue === undefined) return null
+      return sync.addRow(flatColumns, { [detailKey]: masterKeyValue })
     }
-    sync.addRow(flatColumns)
+    return sync.addRow(flatColumns)
+  }
+
+  // ── SCRUM-363: механика автоперехода (§4.2–§4.5 спеки) ──
+
+  // Ставит цель на первую подходящую ячейку строки (после afterBinding);
+  // false — подходящих справа нет.
+  const setAutoAdvanceTarget = (row: TableRow, afterBinding?: string) => {
+    const col = findAutoAdvanceColumn(flatColumns, row, afterBinding)
+    if (!col) return false
+    autoAdvanceTargetRef.current = {
+      rowId: row.rowId,
+      binding: col.binding,
+      cellWidget: col.cellWidget,
+      sequence: ++autoAdvanceSeqRef.current,
+    }
+    setAutoAdvanceTick((t) => t + 1)
+    return true
+  }
+
+  // Конец строки (§4.5): ровно одна новая строка через тот же addRow, что и
+  // кнопка; если и в ней подходящих ячеек нет — стоп, без рекурсии.
+  const activateAutoAdvance = (row: TableRow, afterBinding?: string) => {
+    if (setAutoAdvanceTarget(row, afterBinding)) return
+    if (afterBinding === undefined) return
+    const newRow = handleAdd()
+    if (newRow) setAutoAdvanceTarget(newRow)
+  }
+
+  // Переход после commit (§4.4): только если commit пришёл из ТЕКУЩЕЙ ячейки
+  // цепочки (посторонний blur-commit не должен воровать фокус, §4.6), и только
+  // после того, как EVENT/PATCH roundtrip завершён и рендер применил патчи —
+  // автозаполненные сервером поля (FizicheskoeLitso) уже не пустые и пропускаются.
+  const handleAutoAdvanceCommit = (rowId: string, binding: string) => {
+    const target = autoAdvanceTargetRef.current
+    if (target?.rowId !== rowId || target.binding !== binding) return
+    syncRef.current
+      .flushPending()
+      .then(
+        () =>
+          new Promise<void>((resolve) => {
+            requestAnimationFrame(() => {
+              resolve()
+            })
+          })
+      )
+      .then(() => {
+        const actualRow = syncRef.current.rows.find((r) => r.rowId === rowId)
+        if (!actualRow) return
+        activateAutoAdvance(actualRow, binding)
+      })
+      .catch(() => {
+        // Ошибка отправки снимка: цепочку не продолжаем, фокус не трогаем.
+      })
+  }
+  autoAdvanceCommitRef.current = handleAutoAdvanceCommit
+
+  // Кнопка «Добавить» (§4.3): в autoAdvance-таблице фокус сам встаёт в первую
+  // подходящую ячейку новой строки; обычные таблицы автофокус не получают.
+  const handleAddWithAutoAdvance = () => {
+    const row = handleAdd()
+    if (autoAdvance && row) setAutoAdvanceTarget(row)
   }
   // Удаляем по rowId из ПОЛНОГО массива sync.rows (SCRUM-282 C1): selectedVisibleIndex
   // указывает на позицию в отфильтрованном visibleRows и не годится для sync.deleteRow.
@@ -403,8 +498,53 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     [search.current?.rowId, search.current?.columnId]
   )
 
+  // Активация цели (§5.5): после render находим ячейку СТРОГО внутри своего
+  // контейнера (две таблицы на форме — общий document.querySelector нашёл бы
+  // чужую), фокусируем её ввод; ссылочной/enum-ячейке раскрываем список.
+  // consumed — одноразовость автооткрытия: повторный ручной фокус в той же
+  // ячейке список сам не раскрывает (§4.6), но commit по ней цепочку продолжает.
+  useEffect(() => {
+    if (autoAdvanceTick === 0) return
+    const target = autoAdvanceTargetRef.current
+    if (!target || target.consumed) return
+    const frame = requestAnimationFrame(() => {
+      target.consumed = true
+      const container = containerRef.current
+      if (!container) return
+      const cell = container.querySelector(
+        `[data-sdui-row-id="${CSS.escape(target.rowId)}"] ` +
+          `[data-sdui-cell-binding="${CSS.escape(target.binding)}"]`
+      )
+      if (!cell) return
+      const input = cell.querySelector<HTMLElement>(
+        'input, textarea, [role="combobox"]'
+      )
+      input?.focus()
+      if (target.cellWidget === 'REFERENCE_FIELD') {
+        // openOnFocus обычно раскрывает список сам; страховка кадром позже —
+        // штатный триггер (программный focus при пустых options может не
+        // открыть). Проверка aria-expanded защищает от повторного toggle.
+        requestAnimationFrame(() => {
+          if (input?.getAttribute('aria-expanded') !== 'true') {
+            cell
+              .querySelector<HTMLElement>('button[aria-label="Open"]')
+              ?.click()
+          }
+        })
+      } else if (target.cellWidget === 'ENUM_FIELD') {
+        // MUI Select открывается по mousedown на combobox-триггере.
+        cell
+          .querySelector<HTMLElement>('[role="combobox"]')
+          ?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      }
+    })
+    return () => {
+      cancelAnimationFrame(frame)
+    }
+  }, [autoAdvanceTick])
+
   const handleKeyDown = createTableHotkeysHandler({
-    onAdd: handleAdd,
+    onAdd: handleAddWithAutoAdvance,
     onCopy: handleCopy,
     onRemove: handleRemove,
     onMoveUp: handleMoveUp,
@@ -432,7 +572,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     >
       <div style={{ marginBottom: 8 }}>
         <TableToolbar
-          onAdd={handleAdd}
+          onAdd={handleAddWithAutoAdvance}
           onMoveUp={handleMoveUp}
           onMoveDown={handleMoveDown}
           onRemove={handleRemove}
@@ -585,6 +725,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     key={row.id}
                     hover
                     data-index={virt.isVirtualized ? row.index : undefined}
+                    data-sdui-row-id={row.original.rowId}
                     ref={virt.measureRow}
                     selected={row.id === selectedRowId}
                     onClick={() => {

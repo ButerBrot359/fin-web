@@ -28,6 +28,8 @@ interface ReferenceCellEditorProps {
   extraParams?: Record<string, string>
   /** Колонка исключена из переноса текста (см. `isNoWrapColumn`). */
   noWrap?: boolean
+  /** SCRUM-363: одноразовая цель автофокуса — раскрыть список на фокусе. */
+  openOnFocus?: boolean
 }
 
 /**
@@ -131,6 +133,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   onCommit,
   extraParams,
   noWrap,
+  openOnFocus,
 }) => {
   const { t } = useTranslation()
 
@@ -250,6 +253,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
         // переносит, а прокручивает: «Надбавка за ос…» вместо полного значения.
         // Исключение — колонки из isNoWrapColumn: там однострочность нужна.
         multilineInput={!noWrap}
+        openOnFocus={openOnFocus}
         loading={loading}
         onInputChange={(_e, val, reason) => {
           setInputValue(val)

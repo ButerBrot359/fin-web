@@ -116,6 +116,12 @@ interface AutocompleteInputBaseProps {
    * дефект, а нужная компактность.
    */
   multilineInput?: boolean
+  /**
+   * Раскрывать список при получении фокуса (SCRUM-363: одноразовая цель
+   * автоперехода по ячейкам ТЧ). Default `false` — обычный клик/фокус
+   * пользователя поведения не меняет.
+   */
+  openOnFocus?: boolean
 }
 
 export interface AutocompleteInputSingleProps extends AutocompleteInputBaseProps {
@@ -155,6 +161,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
     fullWidth,
     autoHighlight = false,
     multilineInput = false,
+    openOnFocus = false,
   } = props
   const { t } = useTranslation()
 
@@ -279,6 +286,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
         }}
         onInputChange={onInputChange}
         onOpen={onOpen}
+        openOnFocus={openOnFocus}
         autoHighlight={autoHighlight}
         filterOptions={onInputChange ? (x) => x : undefined}
         getOptionLabel={(option) => option.label}
@@ -325,6 +333,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
         }}
         onInputChange={onInputChange}
         onOpen={onOpen}
+        openOnFocus={openOnFocus}
         autoHighlight={autoHighlight}
         filterOptions={onInputChange ? (x) => x : undefined}
         getOptionLabel={(option) => option.label}

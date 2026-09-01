@@ -47,13 +47,22 @@ export interface UseTableSyncResult {
   rows: TableRow[]
   updateCell: (rowId: string, binding: string, value: unknown) => void
   commitCell: () => void
+  /**
+   * SCRUM-363: возвращает созданную строку — автопереходу нужен точный rowId,
+   * а не хрупкий индекс.
+   */
   addRow: (
     columns: TableColumnDef[],
     presetValues?: Record<string, unknown>
-  ) => void
+  ) => TableRow
   deleteRow: (index: number) => void
   moveRow: (from: number, to: number) => void
   replaceRows: (next: TableRow[]) => void
+  /**
+   * SCRUM-363: разрешается, когда очередь table EVENT дослана и серверные
+   * патчи применены к локальному состоянию (инвариант flush-before-save).
+   */
+  flushPending: () => Promise<void>
 }
 
 function buildEmptyRow(columns: TableColumnDef[]): TableRow {
@@ -370,6 +379,7 @@ export function useTableSync(
     } else {
       sendEvent(next)
     }
+    return newRow
   }
 
   const deleteRow = (index: number) => {
@@ -468,5 +478,8 @@ export function useTableSync(
     deleteRow,
     moveRow,
     replaceRows,
+    // Через ref: потребитель может захватить результат хука в замыкании
+    // произвольного рендера (автопереход зовёт flush из колбэка commit).
+    flushPending: () => flushPendingRef.current(),
   }
 }

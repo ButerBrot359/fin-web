@@ -44,6 +44,16 @@ interface TableCellEditorProps {
   onChange: (value: unknown) => void
   onCommit: () => void
   extraParams?: Record<string, string>
+  /**
+   * SCRUM-363: binding колонки — DOM-якорь `data-sdui-cell-binding`, по нему
+   * автопереход находит ячейку строго внутри своей таблицы.
+   */
+  binding?: string
+  /**
+   * SCRUM-363: ячейка — одноразовая цель автофокуса; ссылочный редактор
+   * раскрывает список на фокусе. Обычный клик пользователя поведения не меняет.
+   */
+  autoOpen?: boolean
 }
 
 /**
@@ -110,6 +120,8 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   onChange,
   onCommit,
   extraParams,
+  binding,
+  autoOpen,
 }) => {
   const [touched, setTouched] = useState(false)
   const handleCommit = () => {
@@ -120,11 +132,24 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
 
   const textStyle = noWrap ? nowrapCellTextStyle : readonlyCellTextStyle
 
+  // SCRUM-363: стабильный DOM-якорь ячейки для автоперехода. Ставится и на
+  // readonly-ячейку — искатель обязан находить её, чтобы корректно пропустить.
+  const anchored = (content: ReactNode): ReactNode =>
+    binding ? (
+      <span data-sdui-cell-binding={binding} style={{ display: 'block' }}>
+        {content}
+      </span>
+    ) : (
+      content
+    )
+
   if (readonly) {
     return (
       // Перенос текста по ширине колонки — общий стиль всех ячеек без
       // редактора (readonlyCellTextStyle); в исключённой колонке — одна строка.
-      <span style={textStyle}>
+      // Якорь binding — прямо на этом span (без обёртки): лишний уровень ломал
+      // бы поиск стилизованного узла по textContent в тестах и утилитах.
+      <span data-sdui-cell-binding={binding} style={textStyle}>
         {formatReadonlyValue(value, dataType, dateFormat)}
       </span>
     )
@@ -257,6 +282,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             onCommit={handleCommit}
             extraParams={extraParams}
             noWrap={noWrap}
+            openOnFocus={autoOpen}
           />
         )
 
@@ -282,9 +308,11 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   }
 
   const inner = renderWidget()
-  if (!required) return inner
+  if (!required) return anchored(inner)
 
   const showError =
     isCellEmpty(value, cellWidget) && (touched || !!revealErrors)
-  return <RequiredCellFrame show={showError}>{inner}</RequiredCellFrame>
+  return anchored(
+    <RequiredCellFrame show={showError}>{inner}</RequiredCellFrame>
+  )
 }

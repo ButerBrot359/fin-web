@@ -54,6 +54,9 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
     // время» и модалка внутри KalendariTemplateTable.
     if (kalendariKind === 'schedule') return null
 
+    // SCRUM-363: потоковый ввод (autoAdvance) живёт в ComplexEditableTable —
+    // плоская таблица с флагом тоже уходит туда.
+    const hasAutoAdvance = node.props?.autoAdvance === true
     // Route to complex table if COLUMN_GROUP children exist or master-detail props present
     const hasGroups = node.children?.some((c) => c.type === 'COLUMN_GROUP')
     const hasMasterDetail = !!(
@@ -71,7 +74,7 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
           c.children?.some((cc) => cc.props?.footer === true)
       )
 
-    if (hasGroups || hasMasterDetail || hasFooter) {
+    if (hasGroups || hasMasterDetail || hasFooter || hasAutoAdvance) {
       return <ComplexEditableTable node={node} />
     }
 

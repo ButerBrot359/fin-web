@@ -9,6 +9,7 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
   const text = node.props?.text as string | undefined
   const route = node.props?.route as string | undefined
   const external = node.props?.external as boolean | undefined
+  const variant = node.props?.variant as string | undefined
 
   const dispatch = useSduiDispatch()
 
@@ -23,7 +24,12 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
 
   if (external) {
     return (
-      <Link href={route} target="_blank" rel="noopener noreferrer" onClick={handleClick}>
+      <Link
+        href={route}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={handleClick}
+      >
         {text}
       </Link>
     )
@@ -42,8 +48,22 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
     )
   }
 
+  // SCRUM-181: module-link — навигационная ссылка страницы модуля: без
+  // подчёркивания, в цвете текста; акцент только на hover.
   return (
-    <Link component={RouterLink} to={route ?? '/'}>
+    <Link
+      component={RouterLink}
+      to={route ?? '/'}
+      underline={variant === 'module-link' ? 'none' : 'always'}
+      sx={
+        variant === 'module-link'
+          ? {
+              color: 'text.primary',
+              '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+            }
+          : undefined
+      }
+    >
       {text}
     </Link>
   )

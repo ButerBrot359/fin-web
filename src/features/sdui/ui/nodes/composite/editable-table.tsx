@@ -16,7 +16,10 @@ import {
 } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
-import { useVirtualTableRows } from '@/shared/lib/virtual-rows/use-virtual-table-rows'
+import {
+  HEAVY_ROW_VIRTUAL_OPTIONS,
+  useVirtualTableRows,
+} from '@/shared/lib/virtual-rows/use-virtual-table-rows'
 
 import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import {
@@ -118,7 +121,11 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
 
   // Виртуализация строк (SCRUM-368): в DOM — только видимое окно. Ниже порога
   // хука рендер прежний (все строки).
-  const virt = useVirtualTableRows(sync.rows.length, readVirtualization(node))
+  const virt = useVirtualTableRows(
+    sync.rows.length,
+    readVirtualization(node),
+    HEAVY_ROW_VIRTUAL_OPTIONS
+  )
   const setContainerRef = (node: HTMLDivElement | null) => {
     containerRef.current = node
     virt.setContainerRef(node)
@@ -334,7 +341,14 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                   <MuiTableRow aria-hidden="true">
                     <TableCell
                       colSpan={columns.length + (showRowNumbers ? 1 : 0)}
-                      sx={{ height: virt.paddingTop, p: 0, border: 0 }}
+                      sx={{
+                        height: virt.paddingTop,
+                        p: 0,
+                        border: 0,
+                        // SCRUM-368: фантомные линии строк вместо белого при быстром скролле
+                        background:
+                          'repeating-linear-gradient(to bottom, transparent 0 119px, #e5e7eb 119px 120px)',
+                      }}
                     />
                   </MuiTableRow>
                 )}
@@ -405,7 +419,13 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                   <MuiTableRow aria-hidden="true">
                     <TableCell
                       colSpan={columns.length + (showRowNumbers ? 1 : 0)}
-                      sx={{ height: virt.paddingBottom, p: 0, border: 0 }}
+                      sx={{
+                        height: virt.paddingBottom,
+                        p: 0,
+                        border: 0,
+                        background:
+                          'repeating-linear-gradient(to bottom, transparent 0 119px, #e5e7eb 119px 120px)',
+                      }}
                     />
                   </MuiTableRow>
                 )}

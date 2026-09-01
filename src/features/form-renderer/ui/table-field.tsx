@@ -39,7 +39,10 @@ import {
 import { TableCellRenderer } from './table-cell-renderer'
 import { TableFieldToolbar } from './table-field-toolbar'
 import { useFormRendererContext } from '../lib/hooks/use-form-renderer-context'
-import { useVirtualTableRows } from '@/shared/lib/virtual-rows/use-virtual-table-rows'
+import {
+  HEAVY_ROW_VIRTUAL_OPTIONS,
+  useVirtualTableRows,
+} from '@/shared/lib/virtual-rows/use-virtual-table-rows'
 
 interface TableFieldProps {
   attribute: DocumentAttribute
@@ -376,7 +379,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
     setContainerRef,
     setBodyRef,
     measureRow,
-  } = useVirtualTableRows(rows.length)
+  } = useVirtualTableRows(rows.length, 'AUTO', HEAVY_ROW_VIRTUAL_OPTIONS)
 
   // Обёртка ТЧ одновременно хранит горизонтальную прокрутку и служит точкой
   // отсчёта для поиска скролл-предка — совмещаем оба ref-колбэка.
@@ -496,7 +499,14 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
                   страницы) не зависит от того, какое окно строк сейчас в DOM. */}
               {paddingTop > 0 && (
                 <tr aria-hidden="true">
-                  <td style={{ height: paddingTop }} />
+                  <td
+                    // SCRUM-368: фантомные линии строк вместо белого при быстром скролле
+                    style={{
+                      height: paddingTop,
+                      background:
+                        'repeating-linear-gradient(to bottom, transparent 0 119px, #e5e7eb 119px 120px)',
+                    }}
+                  />
                 </tr>
               )}
               {renderedRows.map((row) => (
@@ -529,7 +539,13 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
               ))}
               {paddingBottom > 0 && (
                 <tr aria-hidden="true">
-                  <td style={{ height: paddingBottom }} />
+                  <td
+                    style={{
+                      height: paddingBottom,
+                      background:
+                        'repeating-linear-gradient(to bottom, transparent 0 119px, #e5e7eb 119px 120px)',
+                    }}
+                  />
                 </tr>
               )}
             </tbody>

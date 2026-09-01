@@ -15,6 +15,29 @@ const ESTIMATED_ROW_HEIGHT = 30
 /** Запас строк сверху/снизу окна — при вводе строка не должна уезжать из DOM. */
 const OVERSCAN_ROWS = 8
 
+/**
+ * Тюнинг под тяжёлые строки (SCRUM-368, замечание после теста): у редактируемых
+ * ТЧ строка с автокомплитами реально ~120px, а не 30. С заниженной оценкой
+ * виртуализатор при скролле в неизмеренную зону набирает окно по 30px —
+ * в разы больше тяжёлых строк, чем помещается на экран, — и рендер отстаёт
+ * (пользователь видит белую распорку). Оценка по факту + меньший overscan
+ * сокращают окно, белая зона при быстром скролле заметно короче.
+ */
+export interface VirtualTableRowsOptions {
+  estimatedRowHeight?: number
+  overscan?: number
+}
+
+/**
+ * Пресет для РЕДАКТИРУЕМЫХ ТЧ (SDUI editable/complex-editable, легаси
+ * table-field): двухэтажные ячейки с автокомплитами. Плотные read-only
+ * таблицы (движения, журналы) остаются на дефолтах.
+ */
+export const HEAVY_ROW_VIRTUAL_OPTIONS: VirtualTableRowsOptions = {
+  estimatedRowHeight: 120,
+  overscan: 4,
+}
+
 const SCROLLABLE_OVERFLOW = new Set(['auto', 'scroll', 'overlay'])
 
 /**
@@ -90,7 +113,8 @@ export interface VirtualTableRows {
  */
 export const useVirtualTableRows = (
   rowCount: number,
-  mode: VirtualizationMode = 'AUTO'
+  mode: VirtualizationMode = 'AUTO',
+  options?: VirtualTableRowsOptions
 ): VirtualTableRows => {
   const bodyNodeRef = useRef<HTMLTableSectionElement | null>(null)
   const containerNodeRef = useRef<HTMLDivElement | null>(null)
@@ -154,8 +178,8 @@ export const useVirtualTableRows = (
     enabled: isVirtualized,
     count: rowCount,
     getScrollElement: () => scroller ?? null,
-    estimateSize: () => ESTIMATED_ROW_HEIGHT,
-    overscan: OVERSCAN_ROWS,
+    estimateSize: () => options?.estimatedRowHeight ?? ESTIMATED_ROW_HEIGHT,
+    overscan: options?.overscan ?? OVERSCAN_ROWS,
     scrollMargin,
   })
 

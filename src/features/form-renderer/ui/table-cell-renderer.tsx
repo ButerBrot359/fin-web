@@ -6,7 +6,11 @@ import type { SxProps, Theme } from '@mui/material'
 import type { AxiosResponse } from 'axios'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 
-import type { DocumentAttribute, EnumsValue } from '@/entities/document-type'
+import type {
+  AllowedType,
+  DocumentAttribute,
+  EnumsValue,
+} from '@/entities/document-type'
 import {
   REFERENCE_DOMAIN_KINDS,
   getUniversalSearchUrl,
@@ -443,6 +447,28 @@ const parseSubkontoPosition = (code: string): number | undefined => {
   return match ? Number(match[1]) : undefined
 }
 
+/**
+ * SCRUM-70: у составного ссылочного значения бэк фиксирует фактический тип
+ * ссылки в самом значении (`targetTypeCode`; легаси-поля — `dictionaryTypeCode`
+ * и `_typeCode`). Полный составной тип обязан предпочесть его первому элементу
+ * allowedTypes — иначе выбранный участник-пользователь отображается значением
+ * чужого типа, а повторный выбор того же пользователя добавляет вторую строку.
+ */
+const matchAllowedTypeByValue = (
+  referenceTypes: AllowedType[],
+  value: unknown
+): AllowedType | undefined => {
+  if (!value || typeof value !== 'object') return undefined
+  const obj = value as Record<string, unknown>
+  for (const key of ['targetTypeCode', 'dictionaryTypeCode', '_typeCode']) {
+    const code = obj[key]
+    if (typeof code !== 'string' || !code) continue
+    const matched = referenceTypes.find((at) => at.typeCode === code)
+    if (matched) return matched
+  }
+  return undefined
+}
+
 interface SubkontoObjectCellProps {
   name: string
   column: DocumentAttribute
@@ -493,13 +519,21 @@ const SubkontoObjectCell = ({
   const { kinds } = useAccountSubkontoKinds(accountId ?? null)
   const position = parseSubkontoPosition(column.code)
 
-  // Полный составной тип колонки (первый ссылочный член) — прежнее поведение.
-  // Применяется, когда сузить нельзя: не субконто-колонка, счёт не выбран или
-  // вид субконто на позиции есть, но COMPOSITE/PRIMITIVE (однозначно не сужается).
+  // SCRUM-70: значение самой ячейки — чтобы при полном составном типе выбрать
+  // допустимый тип по server-stamped targetTypeCode, а не первый из списка.
+  const cellValue = useWatch({ control, name })
+
+  // Полный составной тип колонки — прежнее поведение с уточнением SCRUM-70:
+  // тип берём из значения ячейки (targetTypeCode → dictionaryTypeCode/_typeCode),
+  // и лишь без совпадения — первый ссылочный allowedTypes. Применяется, когда
+  // сузить по счёту нельзя: не субконто-колонка, счёт не выбран или вид
+  // субконто на позиции COMPOSITE/PRIMITIVE (однозначно не сужается).
   const renderFullType = () => {
-    const firstType = (column.allowedTypes ?? []).find((at) =>
+    const referenceTypes = (column.allowedTypes ?? []).filter((at) =>
       REFERENCE_DOMAIN_KINDS.has(at.domainKind)
     )
+    const firstType =
+      matchAllowedTypeByValue(referenceTypes, cellValue) ?? referenceTypes.at(0)
     if (firstType) {
       const objectColumn = {
         ...column,

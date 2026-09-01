@@ -101,6 +101,9 @@ export interface ViewRequest {
 // (оболочка `/` и все EVENT/COMMAND). §4.4/§5.6 бэк-спеки SCRUM-290.
 export interface ViewTabMeta {
   kind: string
+  // Локализованный серверный заголовок рабочей вкладки (SCRUM-181):
+  // фронт не переводит и не выводит его сам — только применяет.
+  title?: string
   icon?: string
   closable?: boolean
 }

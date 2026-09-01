@@ -12,10 +12,34 @@ export const LabelNode: FC<NodeProps> = ({ node }) => {
       | 'default'
       | 'link'
       | 'heading'
+      | 'module-title'
+      | 'module-section'
       | 'comment'
       | undefined) ?? 'default'
   const dispatch = useSduiDispatch()
   const theme = useTheme()
+
+  // SCRUM-181: серверные варианты страницы модуля — заголовок страницы
+  // и заголовок подраздела визуально различимы (h5 против subtitle1).
+  if (variant === 'module-title') {
+    return (
+      <Typography variant="h5" fontWeight={700} sx={{ color: 'text.primary' }}>
+        {text}
+      </Typography>
+    )
+  }
+
+  if (variant === 'module-section') {
+    return (
+      <Typography
+        variant="subtitle1"
+        fontWeight={700}
+        sx={{ color: 'primary.main' }}
+      >
+        {text}
+      </Typography>
+    )
+  }
 
   if (variant === 'heading') {
     return (

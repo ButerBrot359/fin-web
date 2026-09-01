@@ -62,6 +62,63 @@ const raschet: TableCommandDescriptor = {
   behavior: { flushPendingTables: true, resetsDirty: false, closeAfter: false },
 }
 
+const udalit: TableCommandDescriptor = {
+  command: 'table.deleteRow:SostavKomissii',
+  label: 'Удалить',
+  enabled: true,
+  disabledReason: null,
+  behavior: { flushPendingTables: true, resetsDirty: false, closeAfter: false },
+}
+
+describe('TableToolbar: построчные команды требуют выделенной строки', () => {
+  beforeEach(() => {
+    cleanup()
+    mockDispatch.mockClear()
+  })
+
+  it('без выделения «Удалить» серая и не диспатчит', () => {
+    render(<TableToolbar {...baseProps} commands={[udalit]} />)
+    const btn = screen.getByRole('button', { name: 'Удалить' })
+    expect(btn).toHaveProperty('disabled', true)
+    fireEvent.click(btn)
+    expect(mockDispatch).not.toHaveBeenCalled()
+  })
+
+  it('без выделения подсказка называет причину', async () => {
+    render(<TableToolbar {...baseProps} commands={[udalit]} />)
+    const btn = screen.getByRole('button', { name: 'Удалить' })
+    fireEvent.mouseOver(btn.parentElement!)
+    expect((await screen.findByRole('tooltip')).textContent).toBe(
+      'table.selectRowFirst'
+    )
+  })
+
+  it('с выделением кнопка активна и шлёт rowId', () => {
+    render(
+      <TableToolbar {...baseProps} commands={[udalit]} selectedRowId="r-7" />
+    )
+    const btn = screen.getByRole('button', { name: 'Удалить' })
+    expect(btn).toHaveProperty('disabled', false)
+    fireEvent.click(btn)
+    expect(mockDispatch).toHaveBeenCalledWith(
+      {
+        type: 'COMMAND',
+        command: 'table.deleteRow:SostavKomissii',
+        value: { rowId: 'r-7' },
+      },
+      { flushPendingTables: true, resetsDirty: false, closeAfter: false }
+    )
+  })
+
+  it('не построчная команда выделения не требует', () => {
+    render(<TableToolbar {...baseProps} commands={[podbor]} />)
+    expect(screen.getByRole('button', { name: 'Подбор' })).toHaveProperty(
+      'disabled',
+      false
+    )
+  })
+})
+
 describe('TableToolbar: доменные кнопки из tableCommands (SCRUM-302)', () => {
   beforeEach(() => {
     cleanup()

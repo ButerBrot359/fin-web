@@ -4,6 +4,7 @@ import { TextField } from '@mui/material'
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
 import { useChangeOnBlur } from '../../../lib/hooks/use-change-on-blur'
+import { useEditConfirm } from '../../../lib/hooks/use-edit-confirm'
 
 export const TextFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
@@ -11,6 +12,9 @@ export const TextFieldNode: FC<NodeProps> = ({ node }) => {
   const maxLength = node.props?.maxLength as number | undefined
   const value = (f.value as string | undefined) ?? ''
   const changeOnBlur = useChangeOnBlur(f, value)
+  const editConfirm = useEditConfirm(
+    f.readonly ? undefined : (node.props?.editConfirm as string | undefined)
+  )
 
   if (!f.visible) return null
 
@@ -26,7 +30,10 @@ export const TextFieldNode: FC<NodeProps> = ({ node }) => {
       onChange={(e) => {
         f.setValue(e.target.value)
       }}
-      onFocus={changeOnBlur.onFocus}
+      onFocus={(e) => {
+        changeOnBlur.onFocus()
+        editConfirm.onFocus(e)
+      }}
       onBlur={changeOnBlur.onBlur}
       slotProps={{
         input: { readOnly: f.readonly },

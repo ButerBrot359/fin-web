@@ -12,6 +12,8 @@ import { useSduiDispatch } from '../../../lib/dispatch'
 import type { TableSearchApi } from '../../../lib/hooks/use-table-search'
 import { TableMoreMenu } from './table-more-menu'
 
+const ROW_SCOPED_COMMANDS = ['table.deleteRow', 'table.copyRow']
+
 interface TableToolbarProps {
   onAdd: () => void
   onMoveUp: () => void
@@ -56,6 +58,11 @@ export const TableToolbar = ({
   const commandLabel = (cmd: TableCommandDescriptor) =>
     i18n.language.startsWith('kz') ? (cmd.labelKz ?? cmd.label) : cmd.label
 
+  // Команды панели ТЧ, которые сервер выполняет НАД ТЕКУЩЕЙ СТРОКОЙ: без выделения
+  // сервер отвечает «Выберите строку…», поэтому кнопка гасится заранее — как в 1С.
+  const rowScoped = (cmd: TableCommandDescriptor) =>
+    ROW_SCOPED_COMMANDS.some((prefix) => cmd.command.startsWith(prefix + ':'))
+
   const runCommand = (cmd: TableCommandDescriptor) => {
     void dispatch(
       {
@@ -94,10 +101,17 @@ export const TableToolbar = ({
         </>
       )}
       {commands.map((cmd) => {
+        const needsRow = rowScoped(cmd) && !selectedRowId
+        const disabled = !cmd.enabled || needsRow
+        const reason = !cmd.enabled
+          ? cmd.disabledReason
+          : needsRow
+            ? t('table.selectRowFirst')
+            : undefined
         const btn = (
           <Button
             variant="secondary"
-            disabled={!cmd.enabled}
+            disabled={disabled}
             onClick={() => {
               runCommand(cmd)
             }}
@@ -105,9 +119,9 @@ export const TableToolbar = ({
             {commandLabel(cmd)}
           </Button>
         )
-        return !cmd.enabled && cmd.disabledReason ? (
+        return disabled && reason ? (
           // span-обёртка обязательна: без неё tooltip не работает на disabled-кнопке
-          <Tooltip key={cmd.command} title={cmd.disabledReason}>
+          <Tooltip key={cmd.command} title={reason}>
             <span style={{ display: 'inline-flex' }}>{btn}</span>
           </Tooltip>
         ) : (

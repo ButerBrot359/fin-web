@@ -20,9 +20,14 @@ export const useInformationRegisterType = (
 
   const title = data ? getLocalizedName(data, i18n.language) : ''
 
+  // SCRUM-353: карточка записи (создание/правка) доступна только у регистра,
+  // раскатанного на SDUI-страницу (newView) и независимого от регистратора.
+  const canEdit = data?.newView === true && data.writeMode === 'INDEPENDENT'
+
   return {
     title,
     attributes: data?.attributes ?? [],
+    canEdit,
     isLoading,
   }
 }

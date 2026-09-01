@@ -15,6 +15,9 @@ export interface DocumentType {
   // 1С: форма списка исключает Create/Copy — интерактивное создание из списка
   // запрещено (SCRUM-265 FE-4). Optional: старый бэк поля не шлёт → undefined = false.
   interactiveCreationForbidden?: boolean
+  // Только у регистров сведений (SCRUM-353): SUBORDINATE_TO_RECORDER — записи
+  // пишет проведение документа, интерактивное создание/правка запрещены.
+  writeMode?: 'INDEPENDENT' | 'SUBORDINATE_TO_RECORDER'
   attributes: DocumentAttribute[]
 }
 

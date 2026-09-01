@@ -22,6 +22,8 @@ const CARD_KINDS = new Set([
   'DOCUMENT_NEW',
   'DICTIONARY',
   'DICTIONARY_NEW',
+  // SCRUM-353: карточка записи регистра сведений (создание и правка).
+  'REGISTER',
 ])
 
 // Восстановление dirty-сессии из sdui-кэша (SduiScreen restore-ветка,
@@ -40,6 +42,7 @@ function seedServerKind(
   const tab = tabs.find((t) => t.id === pathname)
   if (tab?.pageType === 'document-entry') return 'DOCUMENT'
   if (tab?.pageType === 'dictionary-entry') return 'DICTIONARY'
+  if (tab?.pageType === 'information-register-entry') return 'REGISTER'
   return null
 }
 

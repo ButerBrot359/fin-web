@@ -1,9 +1,5 @@
-import type { ReactNode } from 'react'
-import type {
-  ColumnDef,
-  OnChangeFn,
-  SortingState,
-} from '@tanstack/react-table'
+import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
+import type { ColumnDef, OnChangeFn, SortingState } from '@tanstack/react-table'
 
 import type { ColumnMetaDto } from '@/shared/lib/eav'
 import type { TableExportData } from '@/shared/lib/table-export'
@@ -51,6 +47,16 @@ export interface EavEntityTableProps<T extends { id: number }> {
   selectedRowId?: number | null
   onRowClick?: (row: T) => void
   onRowDoubleClick?: (row: T) => void
+
+  /**
+   * Правый клик по строке (SCRUM-353: контекстное меню 1С-стиля). Обработчик
+   * сам гасит нативное меню браузера (`e.preventDefault()`). Не задан ⇒
+   * поведение прежнее — всплывает нативное меню.
+   */
+  onRowContextMenu?: (
+    row: T,
+    event: ReactMouseEvent<HTMLTableRowElement>
+  ) => void
 
   /**
    * Имя для выгрузки в Excel (имя листа и файла). Если задано — в подвале

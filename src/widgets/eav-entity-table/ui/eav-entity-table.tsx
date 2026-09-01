@@ -11,7 +11,10 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 
 import { ColumnFilterTrigger } from '@/features/table-filter'
 import type { ColumnMetaDto } from '@/shared/lib/eav'
-import { extractTableExport, exportTableToXlsx } from '@/shared/lib/table-export'
+import {
+  extractTableExport,
+  exportTableToXlsx,
+} from '@/shared/lib/table-export'
 import { useAutoFitColumnsByContent } from '@/shared/lib/table-autofit/use-auto-fit-columns'
 
 import { cn } from '@/shared/lib/utils/cn'
@@ -41,6 +44,7 @@ export const EavEntityTable = <T extends { id: number }>({
   selectedRowId,
   onRowClick,
   onRowDoubleClick,
+  onRowContextMenu,
   extraRowsAbove,
   exportFileName,
   fetchAllEntries,
@@ -59,9 +63,10 @@ export const EavEntityTable = <T extends { id: number }>({
 
   useEffect(() => {
     if (!isError) return
-    const apiError = error as
-      | { message?: string; data?: { message?: string } }
-      | null
+    const apiError = error as {
+      message?: string
+      data?: { message?: string }
+    } | null
     const description =
       apiError?.data?.message ??
       apiError?.message ??
@@ -310,6 +315,13 @@ export const EavEntityTable = <T extends { id: number }>({
                     onRowDoubleClick
                       ? () => {
                           onRowDoubleClick(entry)
+                        }
+                      : undefined
+                  }
+                  onContextMenu={
+                    onRowContextMenu
+                      ? (e) => {
+                          onRowContextMenu(entry, e)
                         }
                       : undefined
                   }

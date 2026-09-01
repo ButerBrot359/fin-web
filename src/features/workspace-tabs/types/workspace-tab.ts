@@ -6,6 +6,7 @@ export type TabPageType =
   | 'dictionary-list'
   | 'dictionary-entry'
   | 'information-register-list'
+  | 'information-register-entry'
   | 'accounting-register-list'
   | 'osv-report-list'
   | 'report-list'

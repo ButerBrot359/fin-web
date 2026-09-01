@@ -7,6 +7,9 @@ const KIND_TO_PAGE_TYPE: Record<string, TabPageType> = {
   DOCUMENT_NEW: 'document-entry',
   DICTIONARY: 'dictionary-entry',
   DICTIONARY_NEW: 'dictionary-entry',
+  // SCRUM-353: карточка записи регистра сведений (создание и правка — один kind,
+  // бэк не разводит REGISTER_NEW).
+  REGISTER: 'information-register-entry',
 }
 
 export function mapKindToPageType(kind: string): TabPageType | null {

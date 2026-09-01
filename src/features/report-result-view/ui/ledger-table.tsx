@@ -34,6 +34,13 @@ interface LedgerTableProps {
    * (id записи документа с бэка); навигацию выполняет страница.
    */
   onOpenDocument?: (row: ReportRowDto) => void
+  /**
+   * Серверная расшифровка строки (SCRUM-370 блок В): двойной клик по строке
+   * данных с `rowRef`. Если переданы оба колбэка — приоритет у onDrilldown
+   * (`onOpenDocument` остаётся клиентской расшифровкой старого контура по
+   * `groupRefId` и не трогается).
+   */
+  onDrilldown?: (row: ReportRowDto) => void
 }
 
 const MIN_COL_WIDTH = 40
@@ -145,6 +152,7 @@ export const LedgerTable = ({
   result,
   columns,
   onOpenDocument,
+  onDrilldown,
 }: LedgerTableProps) => {
   const { t, i18n } = useTranslation()
   // Язык рендера = язык отчёта (result.language), иначе — язык приложения.
@@ -253,22 +261,29 @@ export const LedgerTable = ({
     highlight: boolean
   ) => {
     const isDataRow = (row.rowKind ?? 'DATA') === 'DATA'
+    // SCRUM-370 блок В: серверная расшифровка (rowRef) приоритетнее клиентской
+    // (groupRefId). Строка без rowRef при onDrilldown-режиме не кликабельна.
+    const canDrilldown = isDataRow && row.rowRef != null && onDrilldown != null
     const canOpen =
-      isDataRow && row.groupRefId != null && onOpenDocument != null
+      !onDrilldown &&
+      isDataRow &&
+      row.groupRefId != null &&
+      onOpenDocument != null
+    const openRow = canDrilldown ? onDrilldown : canOpen ? onOpenDocument : null
     return (
       <tr
         key={key}
         className={
           highlight
             ? ''
-            : `transition-colors hover:bg-ui-07 ${canOpen ? 'cursor-pointer' : ''}`
+            : `transition-colors hover:bg-ui-07 ${openRow ? 'cursor-pointer' : ''}`
         }
         onDoubleClick={
-          canOpen
+          openRow
             ? () => {
                 // Двойной клик выделяет текст ячейки — снимаем выделение.
                 window.getSelection()?.removeAllRanges()
-                onOpenDocument(row)
+                openRow(row)
               }
             : undefined
         }

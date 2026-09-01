@@ -7,7 +7,9 @@ import type { FC } from 'react'
 export interface ReportResultGatewayImpl {
   // Рисует результат отчёта. result структурно совместим с ReportResultDto/
   // ReportAltResultDto, но SDUI держит его как unknown — не разбирает, не мутирует.
-  Renderer: FC<{ result: unknown }>
+  // onDrilldown (SCRUM-370 блок В) — серверная расшифровка строки LEDGER; SDUI
+  // читает у строки ровно одно поле rowRef, остальное непрозрачно (§19.6).
+  Renderer: FC<{ result: unknown; onDrilldown?: (row: unknown) => void }>
   // Печать (опц.): POST по url от бэка (props.printSource.url; язык уже в url),
   // blob открывает impl.
   print?: (url: string, body: unknown) => Promise<void>

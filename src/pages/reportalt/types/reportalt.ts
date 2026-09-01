@@ -62,6 +62,13 @@ export interface ReportAltColumnDto {
  * Строка результата — рекурсивное дерево: `level` — глубина, `cells` —
  * значения по кодам колонок, `children` — вложенные строки.
  */
+/** Цель расшифровки строки (SCRUM-370 блок В) — зеркало ReportRowRefDto. */
+export interface ReportAltRowRefDto {
+  domain: 'DOCUMENT' | 'DICTIONARY'
+  typeCode: string
+  id: number
+}
+
 export interface ReportAltRowDto {
   level: number
   groupCode?: string
@@ -72,6 +79,8 @@ export interface ReportAltRowDto {
   rowKind?: ReportAltRowKind
   labelText?: string
   labelColSpan?: number
+  /** Цель расшифровки (SCRUM-370 блок В); часто отсутствует — строка не кликабельна. */
+  rowRef?: ReportAltRowRefDto
 }
 
 /** Блок гос-бланка над титулом (реквизиты приказа / организация). */

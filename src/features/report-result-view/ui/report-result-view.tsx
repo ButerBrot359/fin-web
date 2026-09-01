@@ -33,6 +33,8 @@ interface ReportResultViewProps {
    * документ-регистратор (drill-down, как в 1С). Навигацию выполняет страница.
    */
   onOpenDocument?: (row: ReportRowDto) => void
+  /** Серверная расшифровка строки LEDGER (SCRUM-370 блок В) — см. LedgerTable. */
+  onDrilldown?: (row: ReportRowDto) => void
 }
 
 /**
@@ -47,6 +49,7 @@ export const ReportResultView = ({
   hiddenColumns,
   appearance,
   onOpenDocument,
+  onDrilldown,
 }: ReportResultViewProps) => {
   // Скрываем колонки, выключенные настройками (показатели/группировка), и —
   // когда «Выделять отрицательные» выключено — гасим negativeRed на колонках
@@ -123,6 +126,7 @@ export const ReportResultView = ({
             result={result}
             columns={columns}
             onOpenDocument={onOpenDocument}
+            onDrilldown={onDrilldown}
           />
         ) : (
           <TreeTable result={result} columns={columns} indentPx={indentPx} />

@@ -30,6 +30,10 @@ const patterns: [RegExp, TabPageType][] = [
   [/^\/modules\/[^/]+\/accountingregister\/[^/]+$/, 'accounting-register-list'],
   [/^\/modules\/[^/]+\/accountingreport\/[^/]+$/, 'osv-report-list'],
   [/^\/modules\/[^/]+\/report\/[^/]+$/, 'report-list'],
+  // SCRUM-370 блок А: сегмент `reportalt` не покрывается регекспом `report`
+  // (тот матчит сегмент целиком) — без отдельной строки отчёт остаётся
+  // единственным экраном без вкладки рабочей области.
+  [/^\/modules\/[^/]+\/reportalt\/[^/]+$/, 'reportalt'],
   [/^\/modules\/[^/]+\/accountplan\/[^/]+$/, 'account-plan-list'],
   [/^\/modules\/[^/]+\/account-card$/, 'account-card'],
   [/^\/modules\/[^/]+$/, 'module'],

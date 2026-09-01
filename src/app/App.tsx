@@ -157,8 +157,11 @@ function App() {
       // ReportResultView типизирован своим ReportResultDto (не экспортирован
       // из барреля слайса) — gateway держит result как unknown (§ дизайн-док),
       // адаптер приводит на границе, без утечки типа наружу SDUI.
-      Renderer: ({ result }) => (
-        <ReportResultView result={result as ReportAltResultDto} />
+      Renderer: ({ result, onDrilldown }) => (
+        <ReportResultView
+          result={result as ReportAltResultDto}
+          onDrilldown={onDrilldown}
+        />
       ),
       print: (url, body) =>
         apiService.postFileBlob({ url, data: body }).then((res) => {

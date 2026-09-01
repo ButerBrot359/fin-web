@@ -10,6 +10,7 @@ export type TabPageType =
   | 'accounting-register-list'
   | 'osv-report-list'
   | 'report-list'
+  | 'reportalt'
   | 'account-plan-list'
   | 'account-card'
   | 'sdui-panel'

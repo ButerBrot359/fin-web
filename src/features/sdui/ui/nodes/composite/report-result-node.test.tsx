@@ -74,6 +74,13 @@ vi.mock('../../../lib/use-sdui-effects', () => ({
   }),
 }))
 
+// SCRUM-370: команды настроек (блок Б) и расшифровки (блок В) уходят через
+// useSduiDispatch — мокаем, чтобы не тянуть session-контекст и роутер.
+const dispatchMock = vi.fn()
+vi.mock('../../../lib/dispatch', () => ({
+  useSduiDispatch: () => dispatchMock,
+}))
+
 import { ReportResultNode } from './report-result-node'
 import type { ViewNode } from '../../../types/view'
 
@@ -127,6 +134,7 @@ describe('ReportResultNode', () => {
     getReportResultGateway.mockReturnValue(null)
     postMock.mockReset()
     playMock.mockReset()
+    dispatchMock.mockReset()
   })
 
   it('source=null → показывает placeholder, query выключен (enabled=false)', () => {
@@ -458,5 +466,140 @@ describe('ReportResultNode', () => {
         body: { parameters: {} },
       },
     })
+  })
+
+  // SCRUM-370 блок Б шаг 1: apply/reset дополнительно диспатчат серверные
+  // команды из пропов (по наличию), локальное наложение сохраняется.
+  it('settingsApplyCommand: apply диспатчит COMMAND с объектом настроек', () => {
+    const SettingsPanelStub: FC<SettingsPanelStubProps> = ({
+      open,
+      onApply,
+    }) =>
+      open ? (
+        <button
+          data-testid="apply-us"
+          onClick={() => {
+            onApply({ x: 1 })
+          }}
+        >
+          apply
+        </button>
+      ) : null
+    getReportResultGateway.mockReturnValue({
+      Renderer: () => null,
+      SettingsPanel: SettingsPanelStub,
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({
+          settingsEnabled: true,
+          settingsApplyCommand: 'report.settings.apply',
+        })}
+      />
+    )
+    fireEvent.click(screen.getByTestId('report-result-settings'))
+    fireEvent.click(screen.getByTestId('apply-us'))
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'report.settings.apply',
+      value: { x: 1 },
+    })
+  })
+
+  it('без settingsApplyCommand (старый бэк) — apply не диспатчит команду', () => {
+    const SettingsPanelStub: FC<SettingsPanelStubProps> = ({
+      open,
+      onApply,
+    }) =>
+      open ? (
+        <button
+          data-testid="apply-us"
+          onClick={() => {
+            onApply({ x: 1 })
+          }}
+        >
+          apply
+        </button>
+      ) : null
+    getReportResultGateway.mockReturnValue({
+      Renderer: () => null,
+      SettingsPanel: SettingsPanelStub,
+    })
+
+    render(
+      <ReportResultNode node={nodeWithSource({ settingsEnabled: true })} />
+    )
+    fireEvent.click(screen.getByTestId('report-result-settings'))
+    fireEvent.click(screen.getByTestId('apply-us'))
+
+    expect(dispatchMock).not.toHaveBeenCalled()
+  })
+
+  // SCRUM-370 блок В: drilldownCommand → Renderer получает onDrilldown,
+  // rowRef уходит эхом; строка без rowRef не шлётся; без пропа — колбэка нет.
+  it('drilldownCommand: строка с rowRef диспатчит COMMAND с эхом rowRef, без rowRef — ничего', () => {
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSV', rows: [] }] },
+    })
+    const rowRef = { domain: 'DOCUMENT', typeCode: 'VybytieTMZ', id: 4521 }
+    const RendererStub: FC<{
+      result: unknown
+      onDrilldown?: (row: unknown) => void
+    }> = ({ onDrilldown }) => (
+      <>
+        <button
+          data-testid="row-with-ref"
+          onClick={() => onDrilldown?.({ level: 0, rowRef })}
+        >
+          r1
+        </button>
+        <button
+          data-testid="row-without-ref"
+          onClick={() => onDrilldown?.({ level: 0 })}
+        >
+          r2
+        </button>
+      </>
+    )
+    getReportResultGateway.mockReturnValue({ Renderer: RendererStub })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({ drilldownCommand: 'report.drilldown' })}
+      />
+    )
+
+    fireEvent.click(screen.getByTestId('row-without-ref'))
+    expect(dispatchMock).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByTestId('row-with-ref'))
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'report.drilldown',
+      value: { rowRef },
+    })
+  })
+
+  it('без drilldownCommand — Renderer получает onDrilldown=undefined (строки не кликабельны)', () => {
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSV', rows: [] }] },
+    })
+    const seen: unknown[] = []
+    const RendererStub: FC<{
+      result: unknown
+      onDrilldown?: (row: unknown) => void
+    }> = ({ onDrilldown }) => {
+      seen.push(onDrilldown)
+      return null
+    }
+    getReportResultGateway.mockReturnValue({ Renderer: RendererStub })
+
+    render(<ReportResultNode node={nodeWithSource()} />)
+
+    expect(seen).toEqual([undefined])
   })
 })

@@ -9,6 +9,7 @@ import { Button } from '@/shared/ui/buttons'
 import type { NodeProps, ViewEffect } from '../../../types/view'
 import { readPagination } from '../../../lib/utils/pagination'
 import { getReportResultGateway } from '../../../lib/report-result-gateway'
+import { useSduiDispatch } from '../../../lib/dispatch'
 import { useSduiEffects } from '../../../lib/use-sdui-effects'
 
 interface ReportResultSource {
@@ -51,6 +52,7 @@ const mergeReportPages = (
 export const ReportResultNode: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
   const effects = useSduiEffects()
+  const dispatch = useSduiDispatch()
   const [userSettings, setUserSettings] = useState<unknown>(undefined)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -77,6 +79,33 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
   // (printSource/exportEnabled) не трогаем — ветвление строго по наличию.
   const printEffect = node.props?.printEffect as ViewEffect | undefined
   const exportEffect = node.props?.exportEffect as ViewEffect | undefined
+
+  // SCRUM-370 блок Б (шаг 1): команды настроек приходят готовыми строками.
+  // Ветвление — по НАЛИЧИЮ пропа (сервер понимает команду), не по флагу,
+  // которого фронт не знает: при выключенном флаге сервер команду игнорирует.
+  const settingsApplyCommand = node.props?.settingsApplyCommand as
+    | string
+    | undefined
+  const settingsResetCommand = node.props?.settingsResetCommand as
+    | string
+    | undefined
+
+  // SCRUM-370 блок В: наличие пропа = «переход разрешён». Нет пропа — строки
+  // не кликабельны, по двойному клику не уходит ничего.
+  const drilldownCommand = node.props?.drilldownCommand as string | undefined
+
+  // rowRef уходит эхом, как есть (§3.4) — не пересобирать, не дополнять.
+  // Строка без rowRef не шлётся вовсе — проверка до dispatch.
+  const handleDrilldown = (row: unknown) => {
+    if (!drilldownCommand) return
+    const rowRef = (row as { rowRef?: unknown } | null)?.rowRef
+    if (rowRef == null) return
+    void dispatch({
+      type: 'COMMAND',
+      command: drilldownCommand,
+      value: { rowRef },
+    })
+  }
 
   // §3.5 п.3: клиентское наложение userSettings сохраняется и для нового
   // пути — ADD ровно одно поле поверх request.body перед проигрыванием.
@@ -217,12 +246,24 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
             setSettingsOpen(false)
           }}
           onApply={(us) => {
+            // SCRUM-370 блок Б шаг 1: аддитивно шлём команду серверу (настройки
+            // в FormSession), локальное наложение сохраняется до шага 2.
             setUserSettings(us)
             setSettingsOpen(false)
+            if (settingsApplyCommand) {
+              void dispatch({
+                type: 'COMMAND',
+                command: settingsApplyCommand,
+                value: us,
+              })
+            }
           }}
           onReset={() => {
             setUserSettings(undefined)
             setSettingsOpen(false)
+            if (settingsResetCommand) {
+              void dispatch({ type: 'COMMAND', command: settingsResetCommand })
+            }
           }}
         />
       )}
@@ -232,7 +273,10 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
           <Typography className="text-ui-05">{t('sdui.loading')}</Typography>
         </div>
       ) : Renderer && result ? (
-        <Renderer result={result} />
+        <Renderer
+          result={result}
+          onDrilldown={drilldownCommand ? handleDrilldown : undefined}
+        />
       ) : (
         <div
           data-testid="report-result-gateway-missing"

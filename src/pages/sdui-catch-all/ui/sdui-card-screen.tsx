@@ -1,6 +1,6 @@
 import type { FC } from 'react'
 
-import { SduiScreen } from '@/features/sdui'
+import { SduiScreen, useTreeStore } from '@/features/sdui'
 import type { ViewTabMeta } from '@/features/sdui'
 
 import { PageHeader } from '@/widgets/page-header'
@@ -15,9 +15,6 @@ interface SduiCardScreenProps {
   // (условны только соседние элементы), чтобы список → карточка не приводил
   // к повторному OPEN (инвариант «SduiScreen монтируется один раз», SCRUM-360 этап B).
   showCardChrome: boolean
-  // Шапка экрана СПИСКА: тот же PageHeader (заголовок, «Закрыть»), но без диалога
-  // несохранённых — списку нечего сохранять.
-  showListChrome?: boolean
   onTab?: (tab: ViewTabMeta | null) => void
   onOpenFailed?: (info?: { kind?: string }) => void
   onRouteUnknown?: () => void
@@ -25,23 +22,24 @@ interface SduiCardScreenProps {
 
 export const SduiCardScreen: FC<SduiCardScreenProps> = ({
   showCardChrome,
-  showListChrome = false,
   onTab,
   onOpenFailed,
   onRouteUnknown,
 }) => {
   const { tabsApi, pageTitle, unsavedDialog, handleClose } =
     useSduiCardBinding()
+  // Экран списка опознаётся по САМОМУ дереву (PAGE с узлом LIST), а не по kind вкладки:
+  // kind у списков регистров и плана счетов совпадает с их же карточками (TabKind.REGISTER /
+  // ACCOUNT_PLAN), то есть различить по нему нельзя. Шапка со списком нужна ради заголовка,
+  // навигации и «Закрыть» — в 1С у формы списка всё это есть.
+  const isListScreen = useTreeStore((s) =>
+    (s.root?.children ?? []).some((child) => child.type === 'LIST')
+  )
 
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
-      {(showCardChrome || showListChrome) && (
-        // У экрана списка заголовок уже есть в самом дереве (LABEL под шапкой),
-        // поэтому в шапку он не дублируется — она нужна списку ради «Закрыть».
-        <PageHeader
-          title={showCardChrome ? pageTitle : ''}
-          onClose={handleClose}
-        />
+      {(showCardChrome || isListScreen) && (
+        <PageHeader title={pageTitle} onClose={handleClose} />
       )}
       <SduiScreen
         {...tabsApi}

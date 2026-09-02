@@ -48,21 +48,22 @@ vi.mock('@/widgets/page-header', () => ({
   ),
 }))
 
-const renderAt = (
-  path: string,
-  showCardChrome: boolean,
-  showListChrome = false
-) =>
+const renderAt = (path: string, showCardChrome: boolean) =>
   render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter initialEntries={[path]}>
-        <SduiCardScreen
-          showCardChrome={showCardChrome}
-          showListChrome={showListChrome}
-        />
+        <SduiCardScreen showCardChrome={showCardChrome} />
       </MemoryRouter>
     </QueryClientProvider>
   )
+
+/** Дерево экрана списка: PAGE с узлом LIST — по нему шапка и опознаёт список. */
+const listTree: ViewNode = {
+  id: 'list.RKO',
+  type: 'PAGE',
+  props: { title: 'Расходный кассовый ордер' },
+  children: [{ id: 'list.RKO.list', type: 'LIST' } as ViewNode],
+}
 
 describe('SduiCardScreen', () => {
   afterEach(() => {
@@ -90,25 +91,35 @@ describe('SduiCardScreen', () => {
   })
 
   /**
-   * У экрана списка легаси-версия имеет крестик «закрыть страницу», а SDUI-версия
-   * осталась без него (02.09.2026). Шапку списку даём ту же, но БЕЗ заголовка:
-   * заголовок у списка уже есть в самом дереве (LABEL), и в шапке он бы удвоился.
+   * У легаси-экрана списка есть шапка с названием, навигацией и крестиком «закрыть», а
+   * SDUI-версия обходилась заголовком в теле страницы и вовсе без крестика (02.09.2026).
+   * Список опознаётся по дереву, а не по kind вкладки: у списков регистров и плана счетов
+   * kind тот же, что у их карточек.
    */
-  it('list-kind → PageHeader есть (крестик), заголовок в шапке не дублируется', () => {
-    const root: ViewNode = {
-      id: 'list.RKO',
-      type: 'PAGE',
-      props: { title: 'Расходный кассовый ордер' },
-      children: [],
-    }
+  it('дерево списка → PageHeader с заголовком, даже без карточной обвязки', () => {
     act(() => {
-      useTreeStore.getState().setRoot(root)
+      useTreeStore.getState().setRoot(listTree)
     })
 
-    renderAt('/modules/kazna/document/RKO', false, true)
+    renderAt('/modules/kazna/document/RKO', false)
 
     expect(screen.getByTestId('page-header')).toBeTruthy()
-    expect(screen.queryByText('Расходный кассовый ордер')).toBeNull()
+    expect(screen.getByText('Расходный кассовый ордер')).toBeTruthy()
+  })
+
+  it('дерево карточки (без узла LIST) и без карточной обвязки → шапки нет', () => {
+    act(() => {
+      useTreeStore.getState().setRoot({
+        id: 'doc.RKO',
+        type: 'PAGE',
+        props: { title: 'РКО №5' },
+        children: [{ id: 'doc.RKO.tabs', type: 'TABS' } as ViewNode],
+      })
+    })
+
+    renderAt('/modules/kazna/document/RKO/5', false)
+
+    expect(screen.queryByTestId('page-header')).toBeNull()
   })
 
   it('dirty=true → заголовок с « *»', () => {

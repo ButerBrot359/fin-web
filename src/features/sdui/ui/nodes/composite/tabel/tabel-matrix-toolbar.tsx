@@ -99,6 +99,19 @@ export const TabelMatrixToolbar: FC<TabelMatrixToolbarProps> = ({
           </MenuItem>
         ))}
       </Menu>
+      {/* «Развернуть/Свернуть дерево» — в левой группе рядом с «Подбор»,
+          как в 1С (спека от 01.09 §2.2). Команды локальные: без запросов
+          и без изменения модифицированности. */}
+      <Tooltip title={t('sdui.tabel.expandAll')}>
+        <IconButton size="small" onClick={onExpandAll}>
+          <UnfoldMoreIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={t('sdui.tabel.collapseAll')}>
+        <IconButton size="small" onClick={onCollapseAll}>
+          <UnfoldLessIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+      </Tooltip>
       <div className="flex-1" />
       <TextField
         size="small"
@@ -131,16 +144,6 @@ export const TabelMatrixToolbar: FC<TabelMatrixToolbarProps> = ({
           },
         }}
       />
-      <Tooltip title={t('sdui.tabel.expandAll')}>
-        <IconButton size="small" onClick={onExpandAll}>
-          <UnfoldMoreIcon sx={{ fontSize: 18 }} />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title={t('sdui.tabel.collapseAll')}>
-        <IconButton size="small" onClick={onCollapseAll}>
-          <UnfoldLessIcon sx={{ fontSize: 18 }} />
-        </IconButton>
-      </Tooltip>
     </div>
   )
 }

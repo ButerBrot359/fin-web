@@ -4,6 +4,10 @@ import i18n from 'i18next'
 
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 
+import {
+  clearDiscardDraftClose,
+  consumeDiscardDraftClose,
+} from '../lib/close-intent'
 import { useTreeStore } from '../lib/stores/tree-store'
 import { useViewStateStore } from '../lib/stores/view-state-store'
 import { useSduiCacheStore } from '../lib/stores/sdui-cache-store'
@@ -79,6 +83,9 @@ export const SduiScreen: FC<SduiScreenProps> = ({
 
   useEffect(() => {
     const route = location.pathname
+    // Стейл-интент discardDraft (например, от закрытия одноимённой легаси-
+    // вкладки) не должен дожить до нашего CLOSE — снимаем на монтировании.
+    clearDiscardDraftClose(route)
 
     // Восстановление из кэша рабочей вкладки ТОЛЬКО при несохранённых изменениях
     // (чтобы не потерять правки при переключении вкладок) — тогда без повторного
@@ -123,7 +130,13 @@ export const SduiScreen: FC<SduiScreenProps> = ({
           dirty: useViewStateStore.getState().dirty,
         })
       } else {
-        void dispatch({ type: 'CLOSE' })
+        // SCRUM-276 (черновики): CLOSE при навигации черновик сохраняет;
+        // discardDraft=true уходит только по интенту «Не сохранять».
+        void dispatch(
+          consumeDiscardDraftClose(route)
+            ? { type: 'CLOSE', discardDraft: true }
+            : { type: 'CLOSE' }
+        )
         useSduiCacheStore.getState().remove(route)
         // Сбросить state+dirty: SDUI-экран размонтирован, стейл dirty
         // не должен триггерить confirm переключения языка

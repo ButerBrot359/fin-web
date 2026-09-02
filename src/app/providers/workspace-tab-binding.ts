@@ -1,8 +1,13 @@
 import { useEffect } from 'react'
 
-import { setWorkspaceTabGateway, usePanelStore } from '@/features/sdui'
+import {
+  discardTabSession,
+  setWorkspaceTabGateway,
+  usePanelStore,
+} from '@/features/sdui'
 import {
   onPanelTabClose,
+  onTabDiscardClose,
   useWorkspaceTabsStore,
 } from '@/features/workspace-tabs'
 
@@ -25,9 +30,13 @@ export function useWorkspaceTabGatewayBinding(): void {
     const unsubscribe = onPanelTabClose((panelId) => {
       usePanelStore.getState().remove(panelId)
     })
+    // SCRUM-276 (черновики): «Не сохранять» на закрытии вкладки → CLOSE с
+    // discardDraft (активная вкладка — интентом, кэшированная — транспортом).
+    const unsubscribeDiscard = onTabDiscardClose(discardTabSession)
     return () => {
       setWorkspaceTabGateway(null)
       unsubscribe()
+      unsubscribeDiscard()
     }
   }, [])
 }

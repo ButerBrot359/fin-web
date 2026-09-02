@@ -115,3 +115,31 @@ describe('setValue(tabel.matrix): полная замена payload/generation (
     expect(dispatched[0].baseGeneration).toBe(21)
   })
 })
+
+// Спека от 01.09 §3: раскрытие держится за свои generation; чужая generation
+// (серверная команда формы, напр. «Заполнить») — сигнал раскрыть дерево целиком.
+describe('isOwnGeneration: свои и чужие обновления payload', () => {
+  beforeEach(() => {
+    dispatched.length = 0
+    useViewStateStore.getState().replaceAll({ [BINDING]: { ...validPayload } })
+  })
+
+  it('generation ответа на свою мутацию — своя; серверный патч — чужая', async () => {
+    const { result } = renderHook(() =>
+      useTabelMatrixQueue('table.uchetRabochegoVremeni', BINDING)
+    )
+    // Начальная generation (OPEN) — чужая
+    expect(result.current.isOwnGeneration(17)).toBe(false)
+
+    await result.current.enqueue(() => ({
+      type: 'ADD_EMPLOYEE',
+      employeeRef: 99,
+    }))
+    // Мокнутый dispatch патчи не применяет — «ответная» generation осталась 17
+    expect(result.current.isOwnGeneration(17)).toBe(true)
+
+    // Патч серверной команды (Заполнить) приносит 21 — очередь её не помечала
+    applyValuePatches([matrixPatch], useViewStateStore.getState().setFromServer)
+    expect(result.current.isOwnGeneration(21)).toBe(false)
+  })
+})

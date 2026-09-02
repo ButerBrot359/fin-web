@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 
 import {
   SduiScreen,
+  markDiscardDraftClose,
   useSduiDispatch,
   useTreeStore,
   useViewStateStore,
@@ -87,6 +88,8 @@ export const UniversalDomainEntryPage = () => {
       void dispatch({ type: 'COMMAND', command: desc.command }, desc.behavior)
     },
     onDiscard: () => {
+      // «Не сохранять» → ближайший CLOSE уйдёт с discardDraft=true (SCRUM-276)
+      markDiscardDraftClose(location.pathname)
       closeCurrentTab()
       void navigate(listPath)
     },

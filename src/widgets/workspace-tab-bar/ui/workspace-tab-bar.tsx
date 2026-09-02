@@ -5,6 +5,7 @@ import {
   useWorkspaceTabsStore,
   useFormCacheStore,
   performTabClose,
+  notifyTabDiscardClose,
 } from '@/features/workspace-tabs'
 
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
@@ -71,6 +72,9 @@ export const WorkspaceTabBar = () => {
     const tabId = dirtyCloseTabId
     setDirtyCloseTabId(null)
 
+    // «Не сохранять» — владелец формы (SDUI) должен снять серверный черновик
+    // (CLOSE c discardDraft), иначе он всплывёт при следующем открытии (SCRUM-276)
+    notifyTabDiscardClose(tabId)
     performClose(tabId)
   }
 

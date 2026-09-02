@@ -39,3 +39,4 @@ export {
 export { openMovementsForEntry } from './lib/open-movements'
 export { mapKindToPageType } from './lib/tab-kind'
 export { ShellSidebarHost } from './ui/shell-sidebar-host'
+export { discardTabSession, markDiscardDraftClose } from './lib/close-intent'

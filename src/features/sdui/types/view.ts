@@ -84,6 +84,10 @@ export interface ViewAction {
   // SCRUM-384 §3.3: id deferred-нод для догрузки. Читается бэком только на
   // HYDRATE; рекомендованная стратегия — один nodeId на запрос, параллельно.
   nodeIds?: string[]
+  // SCRUM-276 (черновики форм): на CLOSE true = пользователь ответил
+  // «Не сохранять» — сервер снимает черновик. CLOSE без флага (навигация,
+  // размонтирование экрана) черновик сохраняет.
+  discardDraft?: boolean
 }
 
 export interface ViewRequest {
@@ -125,6 +129,11 @@ export interface ViewResponse {
   // SCRUM-277 §3.1: true ⇒ команда завершилась неуспехом на 200-ответе —
   // closeAfter применять нельзя (карточка остаётся открытой).
   commandFailed?: boolean | null
+  // SCRUM-276 (черновики форм): серверный «scratch отличается от снимка OPEN».
+  // Приходит на OPEN/EVENT/COMMAND; true поднимает клиентский dirty (латч),
+  // false его НЕ сбрасывает — вопрос «Сохранить изменения?» задаётся при
+  // клиентском dirty ИЛИ серверном formDirty. null — сессии больше нет.
+  formDirty?: boolean | null
 }
 
 export interface ViewPatch {

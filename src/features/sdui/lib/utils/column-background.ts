@@ -33,3 +33,19 @@ export function buildColumnBackgroundMap(
   }
   return map
 }
+
+/**
+ * Цвет ТЕКСТА ячеек колонки (`TABLE_COLUMN.props.textColor`) — порт
+ * «ЦветТекста» из УсловногоОформления СКД с пустым отбором, то есть заданного
+ * колонке безусловно (эталон — «К выплате» свода «Итоги», #0000FF).
+ *
+ * Отличие от `tableTextColor` (table-text-color.ts): тот красит ВСЮ таблицу,
+ * этот — одну колонку. Механизмы независимы; колоночный, как более точный,
+ * перекрывает табличный.
+ */
+export function columnTextColor(
+  props: Record<string, unknown> | undefined
+): string | undefined {
+  const raw = props?.textColor
+  return typeof raw === 'string' && raw.trim() !== '' ? raw : undefined
+}

@@ -221,6 +221,10 @@
     "filterRemoveChip": "Удалить фильтр",
     "filterClearAll": "Сбросить все",
     "selectRowFirst": "Сначала выберите строку в таблице",
+    "collapseAll": "Свернуть",
+    "expandAll": "Развернуть",
+    "collapseRow": "Свернуть группу",
+    "expandRow": "Развернуть группу",
     "resizeColumn": "Изменить ширину колонки"
   },
   "informationRegister": {

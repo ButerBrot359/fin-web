@@ -8,6 +8,10 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import SearchIcon from '@/shared/assets/icons/search.svg'
+// Импорт по прямому пути, а не через бочку @/features/table-filter: та тянет за собой
+// api/i18n-инициализацию ради одного 10-строчного хука (в этом же файле по той же причине
+// SearchInput берётся прямым путём).
+import { useDebouncedValue } from '@/features/table-filter/lib/hooks/use-debounced-value'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
 import { fetchListPage } from '../../../api/reference-options'
 import { ListFilterChips, type ListFilterChip } from './list-filter-chips'
@@ -34,6 +38,9 @@ import { readPagination } from '../../../lib/utils/pagination'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useSelectionStore } from '../../../lib/stores/selection-store'
+
+/** Пауза перед отправкой поиска, мс — как в пикере ссылочного поля и легаси-списках. */
+const SEARCH_DEBOUNCE_MS = 300
 
 const PAGE_SIZE = 25
 
@@ -99,6 +106,10 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const sortInFlightRef = useRef(false)
 
   const [search, setSearch] = useState('')
+  // Запрос уходит НЕ на каждое нажатие клавиши: у LIST-узла search сидит в queryKey, а смена
+  // ключа сбрасывает бесконечную прокрутку и перезапускает EAV-поиск. Пауза та же, что у
+  // пикера ссылочного поля (use-reference-options) и легаси-списков.
+  const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS)
   // Панель выбора открывается на записи, стоящей в поле: сервер кладёт её id в
   // props.selectedId (клиенту неоткуда его взять — панель приходит отдельным
   // поддеревом и связи с полем не имеет).
@@ -114,7 +125,10 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     parseSelectedPath(node.props?.selectedPath)
   )
   const isHierarchical = supportsHierarchy(source)
-  const isSearchMode = search.trim().length > 0
+  // Режим поиска считается по ОТЛОЖЕННОЙ строке — вместе с ней меняется и уровень папки
+  // (parent уходит из запроса), иначе на первом же символе улетал бы лишний запрос по всему
+  // дереву, ещё без самого поиска.
+  const isSearchMode = debouncedSearch.trim().length > 0
   // Непустой поиск уплощает уровни и ищет по всему справочнику (эталон 1С): `parent`
   // вместе с поисковой строкой бэк отвергает (HTTP 400 — поиск внутри папки не
   // поддержан). Путь при этом сохраняется: очистили поиск — вернулись на свой уровень.
@@ -154,7 +168,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
       levelParams,
       source?.method,
       source?.body,
-      search,
+      debouncedSearch,
       pageSize,
     ],
     queryFn: async ({ pageParam, signal }) => {
@@ -166,7 +180,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         body: source.body,
         page: pageParam,
         size: pageSize,
-        search,
+        search: debouncedSearch,
         signal,
       })
     },

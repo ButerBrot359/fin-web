@@ -142,10 +142,14 @@ export const ItogiHierarchyTable: FC<NodeProps> = ({ node }) => {
                       col.binding ? row[col.binding] : undefined
                     )
                     if (col.id !== firstColumn.id) {
-                      return <TableCell key={col.id}>{value}</TableCell>
+                      return (
+                        <TableCell key={col.id} sx={{ color: col.textColor }}>
+                          {value}
+                        </TableCell>
+                      )
                     }
                     return (
-                      <TableCell key={col.id}>
+                      <TableCell key={col.id} sx={{ color: col.textColor }}>
                         <Box
                           className="flex items-center gap-1"
                           style={{ paddingLeft: row.__level * LEVEL_INDENT }}

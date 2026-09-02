@@ -15,12 +15,16 @@ vi.mock('../../../lib/sdui-session-context', () => ({
   useSduiSession: () => ({ getValue: (k: string) => state[k] }),
 }))
 
-const column = (binding: string, label: string): ViewNode =>
+const column = (
+  binding: string,
+  label: string,
+  props: Record<string, unknown> = {}
+): ViewNode =>
   ({
     id: 'table.itogi.col.' + binding,
     type: 'TABLE_COLUMN',
     binding,
-    props: { label },
+    props: { label, ...props },
   }) as unknown as ViewNode
 
 const node = {
@@ -30,7 +34,7 @@ const node = {
   props: { hierarchical: true },
   children: [
     column('FizicheskoeLitso', 'Физическое лицо'),
-    column('Nachisleno', 'Начислено'),
+    column('Nachisleno', 'Начислено', { textColor: '#0000FF' }),
   ],
 } as unknown as ViewNode
 
@@ -104,5 +108,13 @@ describe('ItogiHierarchyTable — свод «Итоги»', () => {
     state.Itogi = []
     render(<ItogiHierarchyTable node={node} />)
     expect(screen.getByText('table.empty')).toBeTruthy()
+  })
+
+  it('колонка с props.textColor красит текст своих ячеек', () => {
+    render(<ItogiHierarchyTable node={node} />)
+    const cell = screen.getAllByText('167672')[0].closest('td')
+    expect(window.getComputedStyle(cell as Element).color).toBe(
+      'rgb(0, 0, 255)'
+    )
   })
 })

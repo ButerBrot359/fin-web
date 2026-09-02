@@ -1,6 +1,7 @@
-import { LinearProgress, Typography } from '@mui/material'
+import { LinearProgress, Link, Typography } from '@mui/material'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Link as RouterLink } from 'react-router-dom'
 
 import {
   cancelTask,
@@ -16,9 +17,27 @@ interface TaskRowProps {
   task: AsyncTask
   /** Момент последнего опроса панели (dataUpdatedAt) — «сейчас» для оценки остатка. */
   now: number
+  /** Сообщить панели о переходе — она закроет поповер. */
+  onNavigate?: () => void
 }
 
-export const TaskRow = ({ task, now }: TaskRowProps) => {
+/**
+ * Ссылка на объект задачи — плоский маршрут карточки документа
+ * (`ViewRoutes.documentCard` на бэке), раздел подставит редирект по typeCode.
+ *
+ * `null`, если у задачи нет объекта (например построение отчёта) или он не документ:
+ * у справочников и регистров свои маршруты, и вести туда этим путём нельзя.
+ */
+function taskTargetRoute(task: AsyncTask): string | null {
+  const isDocument =
+    task.targetDomainKind == null || task.targetDomainKind === 'DOCUMENT'
+  if (!isDocument || !task.targetTypeCode || task.targetEntryId == null) {
+    return null
+  }
+  return `/documents/${task.targetTypeCode}/${String(task.targetEntryId)}`
+}
+
+export const TaskRow = ({ task, now, onNavigate }: TaskRowProps) => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
@@ -40,9 +59,26 @@ export const TaskRow = ({ task, now }: TaskRowProps) => {
   // отмены оценку прячем — она уже ничего не обещает.
   const remaining = cancelling ? null : taskRemainingText(task, now)
 
+  // Заголовок — ссылка на сам объект. Без неё панель показывала, ЧТО документ не
+  // провёлся, но открыть его, чтобы разобраться, было нельзя: код в заголовке
+  // («Регламентная операция ABZ00-00001») приходилось искать руками через список.
+  const targetRoute = taskTargetRoute(task)
+
   return (
     <div className="border-t border-ui-04 py-2 first:border-t-0">
-      <Typography variant="body2">{task.title}</Typography>
+      {targetRoute ? (
+        <Link
+          component={RouterLink}
+          to={targetRoute}
+          variant="body2"
+          underline="hover"
+          onClick={onNavigate}
+        >
+          {task.title}
+        </Link>
+      ) : (
+        <Typography variant="body2">{task.title}</Typography>
+      )}
       {active && (
         <LinearProgress
           className="my-1"

@@ -104,6 +104,11 @@ export function useTabelMatrixQueue(
   return {
     enqueue,
     busy,
-    isOwnGeneration: (generation) => ownGenerationsRef.current.has(generation),
+    // pendingRef в условии закрывает гонку: патчи ответа применяются ДО того,
+    // как очередь успевает пометить свежую generation, и эффект таблицы может
+    // сработать в этом окне. Пока есть in-flight мутации, обновление своё
+    // (чужие команды при живой очереди невозможны — in-flight-гард сессии).
+    isOwnGeneration: (generation) =>
+      ownGenerationsRef.current.has(generation) || pendingRef.current > 0,
   }
 }

@@ -51,6 +51,22 @@ describe('ButtonNode: icon и tooltip', () => {
     expect(container.querySelector('svg')).toBeTruthy()
   })
 
+  /** «Скопировать» на панели списка — иконка, как в эталонной панели 1С (02.09.2026). */
+  it('icon-only «copy»: глиф зарегистрирован, кнопка не деградирует до текста команды', () => {
+    const { container } = render(
+      <ButtonNode
+        node={button({
+          command: 'list.copy:Zayavka',
+          icon: 'copy',
+          tooltip: 'Скопировать',
+        })}
+      />
+    )
+    expect(screen.getByRole('button', { name: 'Скопировать' })).toBeTruthy()
+    expect(container.querySelector('svg')).toBeTruthy()
+    expect(screen.queryByText('list.copy:Zayavka')).toBeNull()
+  })
+
   it('hover по кнопке с tooltip показывает role="tooltip"', async () => {
     render(
       <ButtonNode

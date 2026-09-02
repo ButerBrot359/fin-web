@@ -38,7 +38,13 @@ export const BackgroundTasksIndicator = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <BackgroundTasksPanel />
+        {/* Переход к объекту закрывает поповер: иначе он висел бы поверх только
+            что открытой карточки, ради которой пользователь и кликнул. */}
+        <BackgroundTasksPanel
+          onNavigate={() => {
+            setAnchor(null)
+          }}
+        />
       </Popover>
     </>
   )

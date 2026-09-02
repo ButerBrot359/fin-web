@@ -1,4 +1,5 @@
 import {
+  act,
   render,
   cleanup,
   screen,
@@ -1181,18 +1182,33 @@ describe('ListNode — навигация по уровням иерархиче
     expect(lastQueryParams()).toEqual({})
   })
 
-  it('поиск уплощает уровни: parent не шлётся (бэк отвечает 400)', () => {
-    withRows([{ id: 28485, nameRu: 'Блок B', isGroup: true }])
-    render(<ListNode node={dictNode()} />)
+  /**
+   * Поиск ищет по всему справочнику (эталон 1С), поэтому уровень папки из запроса уходит.
+   * Уходит он ВМЕСТЕ с отложенной строкой поиска: пока debounce не истёк, список остаётся на
+   * своём уровне — иначе на первом же символе улетал бы запрос по всему дереву ещё без поиска.
+   */
+  it('поиск уплощает уровни: после debounce parent не шлётся', () => {
+    vi.useFakeTimers()
+    try {
+      withRows([{ id: 28485, nameRu: 'Блок B', isGroup: true }])
+      render(<ListNode node={dictNode()} />)
 
-    fireEvent.click(screen.getByText('Блок B'))
-    expect(lastQueryParams()).toEqual({ parent: '28485' })
+      fireEvent.click(screen.getByText('Блок B'))
+      expect(lastQueryParams()).toEqual({ parent: '28485' })
 
-    fireEvent.change(screen.getByPlaceholderText('pageToolbar.search'), {
-      target: { value: 'Здрав' },
-    })
+      fireEvent.change(screen.getByPlaceholderText('pageToolbar.search'), {
+        target: { value: 'Здрав' },
+      })
+      expect(lastQueryParams()).toEqual({ parent: '28485' })
 
-    expect(lastQueryParams()).toEqual({})
+      act(() => {
+        vi.advanceTimersByTime(300)
+      })
+
+      expect(lastQueryParams()).toEqual({})
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('элемент (не папка) по-прежнему выбирается, а не проваливается', () => {
@@ -1309,5 +1325,70 @@ describe('ListNode — «Выгрузить в Excel» в подвале', () =>
     expect(
       screen.queryByRole('button', { name: 'table.exportExcel' })
     ).toBeNull()
+  })
+})
+
+/**
+ * Дебаунс строки поиска (02.09.2026). У LIST-узла `search` сидит в queryKey, поэтому каждое
+ * нажатие клавиши перезапускало EAV-поиск и сбрасывало бесконечную прокрутку — риск R19
+ * ADR-0025, принятый когда-то для справочников. С включением поиска у документов он стал
+ * массовым, поэтому пауза 300 мс, как в пикере ссылочного поля.
+ */
+describe('ListNode — дебаунс строки поиска', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  const searchableNode = {
+    id: 'lst',
+    type: 'LIST',
+    props: {
+      searchable: true,
+      source: { url: '/x/search', method: 'POST', body: { filters: [] } },
+    },
+    children: [],
+    actions: [],
+  } as unknown as ViewNode
+
+  const searchesSent = () =>
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    (useInfiniteQuery.mock.calls as { 0: { queryKey: unknown[] } }[]).map(
+      (call) => call[0].queryKey[5]
+    )
+
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReset()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({ ...baseQueryResult, isLoading: false })
+    vi.mocked(fetchListPage).mockReset()
+  })
+
+  it('набор текста не меняет поисковый ключ запроса, пока пауза не истекла', () => {
+    vi.useFakeTimers()
+    render(<ListNode node={searchableNode} />)
+    const input = screen.getByPlaceholderText('pageToolbar.search')
+
+    fireEvent.change(input, { target: { value: 'Х' } })
+    fireEvent.change(input, { target: { value: 'Ха' } })
+    fireEvent.change(input, { target: { value: 'Хал' } })
+
+    expect(searchesSent().filter(Boolean)).toEqual([])
+  })
+
+  it('после паузы уходит ОДИН запрос — с последней строкой, а не с каждой промежуточной', () => {
+    vi.useFakeTimers()
+    render(<ListNode node={searchableNode} />)
+    const input = screen.getByPlaceholderText('pageToolbar.search')
+
+    fireEvent.change(input, { target: { value: 'Х' } })
+    fireEvent.change(input, { target: { value: 'Ха' } })
+    fireEvent.change(input, { target: { value: 'Хал' } })
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+
+    expect(searchesSent().filter(Boolean)).toEqual(['Хал'])
   })
 })

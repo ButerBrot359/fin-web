@@ -26,11 +26,6 @@ const CARD_KINDS = new Set([
   'REGISTER',
 ])
 
-// Виды экрана СПИСКА: шапка нужна и им — ради заголовка и крестика «закрыть
-// страницу» (легаси-списки его имеют, SDUI-список остался без него). Диалога
-// несохранённых у списка нет: у list-сессии нет scratch, dirty всегда false.
-const LIST_KINDS = new Set(['DOCUMENT_LIST', 'DICTIONARY_LIST'])
-
 // Восстановление dirty-сессии из sdui-кэша (SduiScreen restore-ветка,
 // src/features/sdui/ui/sdui-screen.tsx) не шлёт OPEN и не зовёт onTab — без
 // сида serverKind остаётся null до следующей навигации, и карточка на
@@ -74,7 +69,6 @@ export const SduiCatchAllPage: FC = () => {
   return (
     <SduiCardScreen
       showCardChrome={serverKind !== null && CARD_KINDS.has(serverKind)}
-      showListChrome={serverKind !== null && LIST_KINDS.has(serverKind)}
       onTab={authorTab}
       onOpenFailed={(info) => {
         setMode({ kind: 'legacy', screenKind: info?.kind ?? null })

@@ -11,6 +11,7 @@ import { SubordinationTree } from './subordination-tree'
 import { KalendariTemplateTable } from './kalendari-template-table'
 import { isTabelMatrixNode } from './tabel/tabel-matrix-contract'
 import { TabelMatrixTable } from './tabel/tabel-matrix-table'
+import { ItogiHierarchyTable } from './itogi-hierarchy-table'
 
 /**
  * Дискриминатор kalendari-таблиц по binding (v2-back §1). Спец-пропа нет —
@@ -42,6 +43,11 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
   // Матрица Табеля (SCRUM-276): все три признака дискриминатора обязаны
   // совпасть, иначе обычный рендер — без декодирования packed-строк.
   if (isTabelMatrixNode(node)) return <TabelMatrixTable node={node} />
+
+  // Свод «Итоги» (Начисление зарплаты): строки приходят плоским списком с
+  // __level/__parentRowId, показ — дерево со сворачиванием, а не таблица ТЧ.
+  if (node.props?.hierarchical === true)
+    return <ItogiHierarchyTable node={node} />
 
   const editable = node.props?.editable === true
 

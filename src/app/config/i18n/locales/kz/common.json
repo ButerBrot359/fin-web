@@ -221,6 +221,10 @@
     "filterRemoveChip": "Сүзгіні жою",
     "filterClearAll": "Барлығын тазарту",
     "selectRowFirst": "Алдымен кестеден жолды таңдаңыз",
+    "collapseAll": "Жию",
+    "expandAll": "Жаю",
+    "collapseRow": "Топты жию",
+    "expandRow": "Топты жаю",
     "resizeColumn": "Баған енін өзгерту"
   },
   "informationRegister": {

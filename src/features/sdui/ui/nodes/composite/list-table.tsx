@@ -4,7 +4,7 @@
 // строк). Логика перенесена verbatim, без изменения поведения.
 import type { FC, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CircularProgress, Typography } from '@mui/material'
+import { Button, CircularProgress, Typography } from '@mui/material'
 import { flexRender, type Table } from '@tanstack/react-table'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
@@ -41,6 +41,11 @@ export interface ListTableProps {
   onDrillInto: (row: ListRow) => void
   /** Рисовать иконку папки самим — сервер не прислал колонку-иконку. */
   showFolderIcon: boolean
+  /**
+   * Выгрузка списка в XLSX одним кликом (кнопка подвала). Передаётся только если сервер прислал
+   * действие `export` с готовой командой — фронт её не сочиняет.
+   */
+  onExport?: () => void
 }
 
 export const ListTable: FC<ListTableProps> = ({
@@ -62,6 +67,7 @@ export const ListTable: FC<ListTableProps> = ({
   canDrillInto,
   onDrillInto,
   showFolderIcon,
+  onExport,
 }) => {
   const { t } = useTranslation()
 
@@ -228,6 +234,19 @@ export const ListTable: FC<ListTableProps> = ({
               )}
             </Typography>
             {isFetchingNextPage && <CircularProgress size={14} />}
+            {onExport && rows.length > 0 && (
+              // Легаси-экраны выгружали список кнопкой в подвале — на SDUI-списке
+              // тот же вход, но файл собирает сервер (все выводимые колонки, текущие
+              // отборы). Выбор колонок — у «Вывести список» в панели.
+              <Button
+                size="small"
+                variant="outlined"
+                className="ml-auto"
+                onClick={onExport}
+              >
+                {t('table.exportExcel')}
+              </Button>
+            )}
           </div>
         </>
       )}

@@ -73,6 +73,11 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const periodCommand = node.actions?.find(
     (a) => a.trigger === 'period'
   )?.command
+  // Кнопка «Выгрузить в Excel» в подвале: команда приходит готовой (list.exportList:all —
+  // прямая серверная выгрузка без диалога колонок). Нет действия — нет кнопки.
+  const exportCommand = node.actions?.find(
+    (a) => a.trigger === 'export'
+  )?.command
 
   const sortState = node.props?.sortState as ListSortState | undefined
   // SCRUM-291 2c: лейблы операторов воронки — с сервера (LIST.props.filterOpLabels),
@@ -372,6 +377,17 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         activateAction={activateAction}
         selectAction={selectAction}
         dispatchSelect={dispatchSelect}
+        onExport={
+          exportCommand
+            ? () => {
+                void dispatch({
+                  type: 'COMMAND',
+                  command: exportCommand,
+                  sourceNodeId: node.id,
+                })
+              }
+            : undefined
+        }
       />
     </div>
   )

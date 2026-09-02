@@ -1237,3 +1237,77 @@ describe('ListNode — навигация по уровням иерархиче
     )
   })
 })
+
+/**
+ * Кнопка «Выгрузить в Excel» в подвале списка (02.09.2026): в легаси-экранах она скачивала
+ * файл одним кликом, на SDUI-списке её не было — выгрузка жила только за «Вывести список» в
+ * панели. Команда приходит ГОТОВОЙ действием `export`, фронт её не собирает.
+ */
+describe('ListNode — «Выгрузить в Excel» в подвале', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  const pageWithRow = () => ({
+    data: {
+      content: [{ id: 1, name: 'Row 1' }],
+      last: true,
+      number: 0,
+      totalElements: 1,
+    },
+  })
+
+  const nodeWith = (actions: unknown[]) =>
+    ({
+      id: 'lst',
+      type: 'LIST',
+      props: {
+        source: { url: '/x/search', method: 'POST', body: { filters: [] } },
+      },
+      children: [],
+      actions,
+    }) as unknown as ViewNode
+
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReset()
+    vi.mocked(fetchListPage).mockReset()
+    dispatchMock.mockReset()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: { pages: [pageWithRow()] },
+    })
+  })
+
+  it('есть действие export → кнопка шлёт его команду как есть', () => {
+    render(
+      <ListNode
+        node={nodeWith([
+          {
+            trigger: 'export',
+            actionId: 'command',
+            command: 'list.exportList:all',
+          },
+        ])}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'table.exportExcel' }))
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'list.exportList:all',
+      sourceNodeId: 'lst',
+    })
+  })
+
+  it('действия export нет → кнопки нет (фронт команду не сочиняет)', () => {
+    render(<ListNode node={nodeWith([])} />)
+
+    expect(
+      screen.queryByRole('button', { name: 'table.exportExcel' })
+    ).toBeNull()
+  })
+})

@@ -877,3 +877,75 @@ describe('useSduiDispatch: эффект taskStarted (SCRUM-330)', () => {
     expect(entry.task.status).toBe('QUEUED')
   })
 })
+
+// SCRUM-276 (черновики форм): серверный formDirty латчит клиентский dirty
+// (true поднимает, false НЕ сбрасывает), CLOSE передаёт discardDraft как есть.
+describe('useSduiDispatch: formDirty и CLOSE discardDraft (SCRUM-276)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  it('OPEN с formDirty=true → setDirty(true) (черновик подмешан)', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValue({
+      ...openResponse,
+      formDirty: true,
+    } as never)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'OPEN' })
+    expect(sessionMock.setDirty).toHaveBeenCalledWith(true)
+  })
+
+  it('COMMAND с formDirty=true → setDirty(true)', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValue({
+      ...commandResponse,
+      formDirty: true,
+    } as never)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'COMMAND', command: 'fill' })
+    expect(sessionMock.setDirty).toHaveBeenCalledWith(true)
+  })
+
+  it('formDirty=false клиентский dirty НЕ сбрасывает (условие «ИЛИ»)', async () => {
+    vi.spyOn(viewTransport, 'post').mockResolvedValue({
+      ...commandResponse,
+      formDirty: false,
+    } as never)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'EVENT', sourceNodeId: 'n', trigger: 'blur' })
+    expect(sessionMock.setDirty).not.toHaveBeenCalled()
+  })
+
+  it('CLOSE с discardDraft=true уходит в transport дословно', async () => {
+    const post = vi
+      .spyOn(viewTransport, 'post')
+      .mockResolvedValue(commandResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'CLOSE', discardDraft: true })
+    expect(post).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: expect.objectContaining({ type: 'CLOSE', discardDraft: true }),
+      })
+    )
+  })
+
+  it('CLOSE без интента — без ключа discardDraft', async () => {
+    const post = vi
+      .spyOn(viewTransport, 'post')
+      .mockResolvedValue(commandResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'CLOSE' })
+    const action = (post.mock.calls[0][0] as { action: object }).action
+    expect('discardDraft' in action).toBe(false)
+  })
+})

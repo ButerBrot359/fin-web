@@ -163,11 +163,29 @@ export function useTabelMatrixActions(
           showToast('info', t('sdui.tabel.alreadyAdded'))
           return
         }
-        void queue.enqueue((p) =>
-          p.employees.some((e) => e.employeeRef === ref)
-            ? null
-            : { type: 'ADD_EMPLOYEE', employeeRef: ref }
-        )
+        void queue
+          .enqueue((p) =>
+            p.employees.some((e) => e.employeeRef === ref)
+              ? null
+              : { type: 'ADD_EMPLOYEE', employeeRef: ref }
+          )
+          .then((ok) => {
+            // 1С: добавленная строка становится текущей (спека 01.09 §3).
+            // Отдельный SELECT_EMPLOYEE в голове очереди: там свежий payload
+            // с nodeId новой строки.
+            if (!ok) return
+            let addedId: string | null = null
+            void queue
+              .enqueue((p) => {
+                const added = p.employees.find((e) => e.employeeRef === ref)
+                if (!added) return null
+                addedId = added.employeeNodeId
+                return { type: 'SELECT_EMPLOYEE', employeeRef: ref }
+              })
+              .then((selected) => {
+                if (selected && addedId) setActiveId(addedId)
+              })
+          })
       },
     })
   }

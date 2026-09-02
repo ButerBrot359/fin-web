@@ -26,13 +26,27 @@ const dayCellSx = {
 }
 const weekendSx = { ...dayCellSx, backgroundColor: 'rgba(211, 47, 47, 0.06)' }
 
+// Ширина фиксирована: «Итого» стоит второй sticky-колонкой на left: 260 —
+// плавающая ширина имени сдвинула бы её offset (спека от 01.09 §1).
 const nameCellSx = {
   position: 'sticky' as const,
   left: 0,
   zIndex: 1,
   backgroundColor: 'background.paper',
+  width: 260,
   minWidth: 260,
-  maxWidth: 340,
+  maxWidth: 260,
+}
+
+const totalCellSx = {
+  position: 'sticky' as const,
+  left: 260,
+  zIndex: 1,
+  backgroundColor: 'background.paper',
+  textAlign: 'center' as const,
+  minWidth: 90,
+  borderRight: '1px solid',
+  borderRightColor: 'divider',
 }
 
 interface EmployeeRowProps {
@@ -104,6 +118,7 @@ export const TabelEmployeeRow: FC<EmployeeRowProps> = ({
           </Tooltip>
         </div>
       </TableCell>
+      <TableCell sx={totalCellSx}>{formatHours(employee.total)}</TableCell>
       {days.map((d) => (
         <TableCell key={d.iso} sx={d.weekend ? weekendSx : dayCellSx}>
           <Typography component="span" sx={{ fontSize: 13 }}>
@@ -111,9 +126,6 @@ export const TabelEmployeeRow: FC<EmployeeRowProps> = ({
           </Typography>
         </TableCell>
       ))}
-      <TableCell sx={{ textAlign: 'center', minWidth: 90 }}>
-        {formatHours(employee.total)}
-      </TableCell>
     </TableRow>
   )
 }
@@ -167,6 +179,16 @@ export const TabelKindRow: FC<KindRowProps> = ({
           )}
         </div>
       </TableCell>
+      <TableCell sx={totalCellSx}>
+        {daysCount > 0 && (
+          <Typography variant="caption" noWrap>
+            {t('sdui.tabel.kindSummary', {
+              days: daysCount,
+              hours: formatHours(kind.total),
+            })}
+          </Typography>
+        )}
+      </TableCell>
       {days.map((d) => (
         <TableCell key={d.iso} sx={d.weekend ? weekendSx : dayCellSx}>
           <TabelMatrixCell
@@ -177,16 +199,6 @@ export const TabelKindRow: FC<KindRowProps> = ({
           />
         </TableCell>
       ))}
-      <TableCell sx={{ textAlign: 'center', minWidth: 90 }}>
-        {daysCount > 0 && (
-          <Typography variant="caption" noWrap>
-            {t('sdui.tabel.kindSummary', {
-              days: daysCount,
-              hours: formatHours(kind.total),
-            })}
-          </Typography>
-        )}
-      </TableCell>
     </TableRow>
   )
 }

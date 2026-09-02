@@ -23,6 +23,10 @@ export interface TabelMatrixQueue {
   enqueue: (build: TabelCommandBuilder) => Promise<boolean>
   /** true, пока хотя бы одна мутация в transport или в очереди. */
   busy: boolean
+  /** true, если generation порождена мутацией этой очереди. Чужая generation
+   * означает замену payload серверной командой формы («Заполнить» и т.п.) —
+   * по 1С дерево при этом раскрывается целиком (спека от 01.09 §3). */
+  isOwnGeneration: (generation: number) => boolean
 }
 
 /**
@@ -40,6 +44,7 @@ export function useTabelMatrixQueue(
   const [busy, setBusy] = useState(false)
   const chainRef = useRef<Promise<void>>(Promise.resolve())
   const pendingRef = useRef(0)
+  const ownGenerationsRef = useRef<Set<number>>(new Set())
 
   const enqueue = (build: TabelCommandBuilder) => {
     pendingRef.current += 1
@@ -70,6 +75,18 @@ export function useTabelMatrixQueue(
           trigger: 'change',
           value: { ...command, baseGeneration: payload.generation },
         })
+        if (ok) {
+          // Ответ уже применил патчи — читаем свежую generation и помечаем
+          // её «своей» (bounded-набор, чтобы не расти бесконечно).
+          const next = parseTabelMatrixPayload(session.getValue(binding))
+          if (next) {
+            const own = ownGenerationsRef.current
+            own.add(next.generation)
+            if (own.size > 100) {
+              own.delete(own.values().next().value!)
+            }
+          }
+        }
         resolveResult(ok)
       } catch {
         // Ошибку transport уже показал dispatch; очередь не рвём.
@@ -84,5 +101,9 @@ export function useTabelMatrixQueue(
     return result
   }
 
-  return { enqueue, busy }
+  return {
+    enqueue,
+    busy,
+    isOwnGeneration: (generation) => ownGenerationsRef.current.has(generation),
+  }
 }

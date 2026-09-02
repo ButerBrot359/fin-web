@@ -48,11 +48,18 @@ vi.mock('@/widgets/page-header', () => ({
   ),
 }))
 
-const renderAt = (path: string, showCardChrome: boolean) =>
+const renderAt = (
+  path: string,
+  showCardChrome: boolean,
+  showListChrome = false
+) =>
   render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter initialEntries={[path]}>
-        <SduiCardScreen showCardChrome={showCardChrome} />
+        <SduiCardScreen
+          showCardChrome={showCardChrome}
+          showListChrome={showListChrome}
+        />
       </MemoryRouter>
     </QueryClientProvider>
   )
@@ -76,10 +83,32 @@ describe('SduiCardScreen', () => {
     expect(screenState.lastProps.shouldPersistSession).toBeTypeOf('function')
   })
 
-  it('list-kind → PageHeader отсутствует', () => {
+  it('без обвязки (ни карточной, ни списковой) → PageHeader отсутствует', () => {
     renderAt('/modules/kazna/document/RKO', false)
     expect(screen.getByText('SDUI-ЭКРАН')).toBeTruthy()
     expect(screen.queryByTestId('page-header')).toBeNull()
+  })
+
+  /**
+   * У экрана списка легаси-версия имеет крестик «закрыть страницу», а SDUI-версия
+   * осталась без него (02.09.2026). Шапку списку даём ту же, но БЕЗ заголовка:
+   * заголовок у списка уже есть в самом дереве (LABEL), и в шапке он бы удвоился.
+   */
+  it('list-kind → PageHeader есть (крестик), заголовок в шапке не дублируется', () => {
+    const root: ViewNode = {
+      id: 'list.RKO',
+      type: 'PAGE',
+      props: { title: 'Расходный кассовый ордер' },
+      children: [],
+    }
+    act(() => {
+      useTreeStore.getState().setRoot(root)
+    })
+
+    renderAt('/modules/kazna/document/RKO', false, true)
+
+    expect(screen.getByTestId('page-header')).toBeTruthy()
+    expect(screen.queryByText('Расходный кассовый ордер')).toBeNull()
   })
 
   it('dirty=true → заголовок с « *»', () => {

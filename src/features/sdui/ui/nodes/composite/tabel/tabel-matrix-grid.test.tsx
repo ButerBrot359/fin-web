@@ -81,9 +81,13 @@ describe('TabelMatrixGrid: колонка «Итого» (SCRUM-276, после 
   })
 })
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: 'ru' },
-  }),
-}))
+vi.mock(import('react-i18next'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    useTranslation: (() => ({
+      t: (key: string) => key,
+      i18n: { language: 'ru' },
+    })) as unknown as typeof actual.useTranslation,
+  }
+})

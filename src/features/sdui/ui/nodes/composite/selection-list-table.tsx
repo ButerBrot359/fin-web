@@ -16,6 +16,7 @@ import { Button } from '@/shared/ui/buttons'
 
 import type { NodeProps } from '../../../types/view'
 import { useSduiSession } from '../../../lib/sdui-session-context'
+import { useSduiDispatch } from '../../../lib/dispatch'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import { extractReadOnlyColumns } from '../../../lib/utils/read-only-header-model'
 
@@ -38,6 +39,7 @@ interface SelectionRow {
 export const SelectionListTable: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
   const { getValue, setFromServer } = useSduiSession()
+  const dispatch = useSduiDispatch()
 
   const columns = useMemo(
     () => extractReadOnlyColumns(node.children),
@@ -51,10 +53,27 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
 
-  const publish = (rowId: string | null) => {
+  // Выбор публикуется дважды: в сессию — для клиентского отбора строк ТЧ
+  // (ОтборСтрокТабЧастей), и EVENT'ом на сервер — потому что от того же выбора
+  // зависят свод «Итоги» (набор ФизЛица) и подвалы «Итого» вкладок
+  // (ЗаполнитьПоляИтогиПоТабЧастям). Порт СписокСотрудниковВыбор :1103.
+  const publish = (row: SelectionRow | null) => {
+    const rowId = row?.rowId ?? null
     setSelectedRowId(rowId)
     if (node.binding) {
       setFromServer(node.binding + '.__selectedRowId', rowId)
+    }
+    if (
+      node.actions?.some(
+        (a) => a.trigger === 'change' && a.actionId === 'fieldEvent'
+      )
+    ) {
+      void dispatch({
+        type: 'EVENT',
+        sourceNodeId: node.id,
+        trigger: 'change',
+        value: row,
+      })
     }
   }
 
@@ -111,7 +130,7 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
                 selected={row.rowId === selectedRowId}
                 className="cursor-pointer"
                 onClick={() => {
-                  publish(row.rowId === selectedRowId ? null : row.rowId)
+                  publish(row.rowId === selectedRowId ? null : row)
                 }}
               >
                 {columns.map((col) => (

@@ -10,6 +10,11 @@ vi.mock('react-i18next', async (importOriginal) => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'ru' } }),
 }))
 
+const dispatch = vi.fn()
+vi.mock('../../../lib/dispatch', () => ({
+  useSduiDispatch: () => dispatch,
+}))
+
 const state: Record<string, unknown> = {}
 const setFromServer = vi.fn()
 vi.mock('../../../lib/sdui-session-context', () => ({
@@ -40,6 +45,7 @@ describe('список-отбор', () => {
   beforeEach(() => {
     cleanup()
     setFromServer.mockClear()
+    dispatch.mockClear()
     state.OtborSotrudnikov = [
       { rowId: '1', Sotrudnik: { id: 1, presentation: 'Иванов' } },
       { rowId: '2', Sotrudnik: { id: 2, presentation: 'Петров' } },
@@ -81,6 +87,33 @@ describe('список-отбор', () => {
       'OtborSotrudnikov.__selectedRowId',
       null
     )
+  })
+
+  it('выбор уходит EVENT-ом на сервер: от него зависят свод и подвалы «Итого»', () => {
+    const sSobytiem = {
+      ...node,
+      actions: [{ trigger: 'change', actionId: 'fieldEvent' }],
+    } as unknown as ViewNode
+    render(<SelectionListTable node={sSobytiem} />)
+
+    fireEvent.click(screen.getByText('Иванов'))
+
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'EVENT',
+        sourceNodeId: 'table.otborSotrudnikov',
+        trigger: 'change',
+        value: expect.objectContaining({ rowId: '1' }),
+      })
+    )
+  })
+
+  it('без объявленного действия EVENT не шлётся', () => {
+    render(<SelectionListTable node={node} />)
+
+    fireEvent.click(screen.getByText('Иванов'))
+
+    expect(dispatch).not.toHaveBeenCalled()
   })
 
   it('пустой список показывает заглушку, а не пустую таблицу', () => {

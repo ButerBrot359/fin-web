@@ -95,12 +95,25 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
     </Tabs>
   )
 
+  // props.flex — растяжка ленты вкладок на всю оставшуюся высоту карточки
+  // («Растягивать по вертикали» группы страниц 1С). Задаётся точечно раскладкой:
+  // без пропа лента остаётся высотой по содержимому, как была.
+  const stretch = node.props?.flex !== undefined
+
   const content = (
     <div
       style={
         isLeft
           ? { paddingLeft: 16, flex: '1 1 0%', minWidth: 0 }
-          : { paddingTop: 16 }
+          : stretch
+            ? {
+                paddingTop: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                flex: '1 1 0%',
+                minHeight: 0,
+              }
+            : { paddingTop: 16 }
       }
     >
       {activeTab?.children?.map((c) => (
@@ -111,7 +124,18 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
 
   return (
     <div
-      style={isLeft ? { display: 'flex', alignItems: 'flex-start' } : undefined}
+      style={
+        isLeft
+          ? { display: 'flex', alignItems: 'flex-start' }
+          : stretch
+            ? {
+                display: 'flex',
+                flexDirection: 'column',
+                flex: node.props?.flex as number | string,
+                minHeight: 0,
+              }
+            : undefined
+      }
     >
       {tabList}
       {content}

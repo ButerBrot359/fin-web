@@ -2,6 +2,11 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
 import { MAX_TABS } from '../consts/workspace-tabs-config'
+import {
+  claimFormInstanceId,
+  clearFormInstanceReservation,
+  newFormInstanceId,
+} from '../utils/form-instance-id'
 import { tabEntityKey } from '../utils/tab-entity-key'
 import type { WorkspaceTab, TabPageType } from '../../types/workspace-tab'
 
@@ -29,6 +34,14 @@ interface WorkspaceTabsStore {
   setActiveTab: (tabId: string) => void
   setTabTitle: (tabId: string, title: string) => void
   updateTabPath: (tabId: string, path: string, search: string) => void
+  /**
+   * Начать НОВЫЙ экземпляр формы на существующей вкладке — «Создать», копия, ввод на
+   * основании. Прежний черновик этой вкладки на сервере после этого недостижим (ключ
+   * сменился), поэтому новая форма создания открывается пустой.
+   */
+  rotateFormInstanceId: (tabId: string) => string | null
+  /** Идентификатор экземпляра вкладки; у вкладки из старого localStorage выдаётся лениво. */
+  ensureFormInstanceId: (tabId: string) => string | null
 }
 
 function updateTab(
@@ -81,6 +94,8 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
 
         const tab: WorkspaceTab = {
           id,
+          // Тот же идентификатор, что уже ушёл на сервер первым OPEN этого маршрута.
+          formInstanceId: claimFormInstanceId(path),
           path,
           search,
           title: '',
@@ -117,6 +132,7 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
 
         const tab: WorkspaceTab = {
           id,
+          formInstanceId: newFormInstanceId(),
           path: '',
           search: '',
           title,
@@ -163,6 +179,28 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
         set((state) => ({
           tabs: updateTab(state.tabs, tabId, (t) => ({ ...t, title })),
         }))
+      },
+
+      rotateFormInstanceId: (tabId) => {
+        const tab = get().tabs.find((t) => t.id === tabId)
+        if (!tab) return null
+        clearFormInstanceReservation(tab.path)
+        const formInstanceId = newFormInstanceId()
+        set((state) => ({
+          tabs: updateTab(state.tabs, tabId, (t) => ({ ...t, formInstanceId })),
+        }))
+        return formInstanceId
+      },
+
+      ensureFormInstanceId: (tabId) => {
+        const tab = get().tabs.find((t) => t.id === tabId)
+        if (!tab) return null
+        if (tab.formInstanceId) return tab.formInstanceId
+        const formInstanceId = newFormInstanceId()
+        set((state) => ({
+          tabs: updateTab(state.tabs, tabId, (t) => ({ ...t, formInstanceId })),
+        }))
+        return formInstanceId
       },
 
       updateTabPath: (tabId, path, search) => {

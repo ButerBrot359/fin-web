@@ -8,6 +8,8 @@ import type { EffectHandlerDeps } from './effect-handler'
 import { openDialogAsPanel } from './open-dialog-panel'
 import type { SduiSessionValue } from './sdui-session-context'
 import { armNewTab } from './workspace-tab-gateway'
+import { markFreshFormInstance } from '@/features/workspace-tabs/lib/fresh-form-instance-registry'
+import { isCreateRoute } from './fresh-form-instance'
 
 export interface EffectDepsCtx {
   navigate: NavigateFunction
@@ -24,7 +26,13 @@ export function buildCommonEffectDeps(
   ctx: EffectDepsCtx
 ): Omit<EffectHandlerDeps, 'confirm' | 'closeDialog' | 'unsavedChanges'> {
   return {
-    navigate: ctx.navigate,
+    // Переход на форму создания («Создать», копия, ввод на основании) начинает НОВЫЙ
+    // экземпляр формы: клиентский снимок вкладки снимается, а следующий OPEN уйдёт с новым
+    // formInstanceId — иначе в новом документе всплыли бы значения прошлого черновика.
+    navigate: ((to: Parameters<NavigateFunction>[0], opts?: unknown) => {
+      if (typeof to === 'string' && isCreateRoute(to)) markFreshFormInstance(to)
+      ;(ctx.navigate as (t: unknown, o?: unknown) => void)(to, opts)
+    }) as NavigateFunction,
     closeSession: async () => {
       const { formSessionId } = ctx.session.getSession()
       if (!formSessionId) return
@@ -52,6 +60,7 @@ export function buildCommonEffectDeps(
     openRouteInNewTab: (route) => {
       // armNewTab взводится ДО navigate — см. dispatch (редирект между OPEN и целью)
       armNewTab()
+      if (isCreateRoute(route)) markFreshFormInstance(route)
       void ctx.navigate(route)
     },
     replaceUrl: (route) => {

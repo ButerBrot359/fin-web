@@ -54,6 +54,12 @@ interface TableCellEditorProps {
    * раскрывает список на фокусе. Обычный клик пользователя поведения не меняет.
    */
   autoOpen?: boolean
+  /**
+   * ADR-0029 Phase 2b: server-driven аффордансы пикера ячейки. Пробрасываются в
+   * `ReferenceCellEditor`; `undefined` ⇒ там сработает легаси-пикер (двойной путь).
+   */
+  onServerShowAll?: () => void
+  onServerCreate?: () => void
 }
 
 /**
@@ -122,6 +128,8 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   extraParams,
   binding,
   autoOpen,
+  onServerShowAll,
+  onServerCreate,
 }) => {
   const [touched, setTouched] = useState(false)
   const handleCommit = () => {
@@ -283,6 +291,8 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             extraParams={extraParams}
             noWrap={noWrap}
             openOnFocus={autoOpen}
+            onServerShowAll={onServerShowAll}
+            onServerCreate={onServerCreate}
           />
         )
 

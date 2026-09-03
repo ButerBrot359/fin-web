@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-import type { ViewNode } from '../../types/view'
+import type { ViewNode, ViewNodeAction } from '../../types/view'
 import { useSduiSession, useBindingValue } from '../sdui-session-context'
 import { useSduiDispatch } from '../dispatch'
 import {
@@ -25,6 +25,12 @@ export interface TableColumnDef {
   readonly?: boolean
   required?: boolean
   props: Record<string, unknown>
+  /**
+   * ADR-0029 Phase 2b: серверные аффордансы пикера ячейки (`showAll`/`create`/`open`).
+   * Приходят с узла `TABLE_COLUMN`, когда на бэке включён `sdui.ref-picker.table-cell`
+   * И строка идёт трактом персистентного `rowId`. Пусто ⇒ легаси-путь пикера.
+   */
+  actions?: ViewNodeAction[]
 }
 
 export interface TableRow {

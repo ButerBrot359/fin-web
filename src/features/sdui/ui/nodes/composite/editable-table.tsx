@@ -28,6 +28,7 @@ import {
   type TableRow,
 } from '../../../lib/hooks/use-table-sync'
 import { useTableViewportMaxHeight } from '../../../lib/hooks/use-table-viewport-max-height'
+import { useSduiDispatch } from '../../../lib/dispatch'
 import {
   useTableSearch,
   isSearchHit,
@@ -65,6 +66,13 @@ interface EditableTableProps {
 
 export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const { t } = useTranslation()
+  // ADR-0029 Phase 2b. Через ref, а НЕ захватом в мемо-колонки: dispatch не
+  // референциально стабилен (deps location/navigate/session/queryClient), и его
+  // захват пересоздавал бы cell-рендер, роняя фокус в редактируемой ячейке —
+  // тот же приём и та же причина, что у syncRef ниже.
+  const dispatch = useSduiDispatch()
+  const dispatchRef = useRef(dispatch)
+  dispatchRef.current = dispatch
   const allowAdd = node.props?.allowAdd === true
   const allowDelete = node.props?.allowDelete === true
   const allowReorder = node.props?.allowReorder === true
@@ -191,6 +199,24 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           // Доступность и обязательность считаются на ЯЧЕЙКЕ, а не на колонке:
           // строка несёт собственное условное состояние (см. resolve-cell-state).
           const state = resolveCellState(col, row.original)
+          // ADR-0029 Phase 2b: команда в actions «голая» (один action на колонку,
+          // минтится при композиции, когда строка ещё неизвестна) — координату
+          // строки добавляем здесь, в момент клика. Нет action ⇒ undefined,
+          // и редактор ячейки уходит в легаси-пикер (двойной путь, BL-2).
+          const serverRefHandler = (trigger: 'showAll' | 'create') => {
+            const command = col.actions?.find(
+              (a) => a.trigger === trigger && a.actionId === 'command'
+            )?.command
+            if (!command) return undefined
+            return () => {
+              void dispatchRef.current({
+                type: 'COMMAND',
+                command,
+                sourceNodeId: col.id,
+                value: { rowId: row.original.rowId, row: row.original },
+              })
+            }
+          }
           return (
             <TableCellEditor
               cellWidget={col.cellWidget}
@@ -201,6 +227,8 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
               required={state.required}
               noWrap={isNoWrapColumn(col.binding, col.label)}
               revealErrors={validationRef.current.revealErrors}
+              onServerShowAll={serverRefHandler('showAll')}
+              onServerCreate={serverRefHandler('create')}
               onChange={(val) => {
                 syncRef.current.updateCell(row.original.rowId, col.binding, val)
               }}

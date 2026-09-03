@@ -21,6 +21,13 @@ export const PageNode: FC<NodeProps> = ({ node }) => {
   const isListPage = (node.children ?? []).some(
     (child) => child.type === 'LIST'
   )
+  // Карточка тянется на высоту, только если её раскладка об этом просит: props.flex
+  // на контейнере тела — порт «РастягиватьПоВертикали» 1С («Начисление зарплаты»,
+  // где таблица ТЧ должна доходить до подвала). Без пропа карточка остаётся ростом
+  // по содержимому и прокручивается страницей, как описано выше.
+  const isStretchedCard = (node.children ?? []).some(
+    (child) => child.props?.flex !== undefined
+  )
 
   useEffect(() => {
     if (title) {
@@ -33,7 +40,12 @@ export const PageNode: FC<NodeProps> = ({ node }) => {
   }
 
   return (
-    <div className={cn('flex flex-col gap-4', isListPage && 'min-h-0 flex-1')}>
+    <div
+      className={cn(
+        'flex flex-col gap-4',
+        (isListPage || isStretchedCard) && 'min-h-0 flex-1'
+      )}
+    >
       {node.children?.map((c) => (
         <NodeRenderer key={c.id} node={c} />
       ))}

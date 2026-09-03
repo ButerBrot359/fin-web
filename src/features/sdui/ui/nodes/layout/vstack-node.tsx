@@ -18,9 +18,12 @@ export const VStackNode: FC<NodeProps> = ({ node }) => {
         padding: padding * 4,
         alignItems: align,
         flex: flex !== undefined ? flex : undefined,
+        minHeight: flex !== undefined ? 0 : undefined,
       }}
     >
-      {node.children?.map((c) => <NodeRenderer key={c.id} node={c} />)}
+      {node.children?.map((c) => (
+        <NodeRenderer key={c.id} node={c} />
+      ))}
     </div>
   )
 }

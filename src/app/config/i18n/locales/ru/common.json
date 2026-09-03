@@ -225,6 +225,7 @@
     "expandAll": "Развернуть",
     "collapseRow": "Свернуть группу",
     "expandRow": "Развернуть группу",
+    "clearFilter": "Показать всех",
     "resizeColumn": "Изменить ширину колонки"
   },
   "informationRegister": {

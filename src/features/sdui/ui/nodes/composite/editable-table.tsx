@@ -44,6 +44,7 @@ import {
   parseRowAppearance,
   resolveRowBackground,
 } from '../../../lib/utils/row-appearance'
+import { useExternalRowFilter } from '../../../lib/hooks/use-external-row-filter'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { columnSizeProps } from '../../../lib/utils/column-sizing'
 import { EditableTableHead } from './editable-table-head'
@@ -215,8 +216,12 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
 
   const sizing = useSduiColumnSizing(node)
 
+  // Отбор по внешнему списку (панель сотрудников, порт 1С ОтборСтрок): при
+  // пустом отборе возвращает те же строки, поэтому ветку рендера не двоим.
+  const visibleRows = useExternalRowFilter(node, sync.rows)
+
   const table = useReactTable({
-    data: sync.rows,
+    data: visibleRows,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.rowId,

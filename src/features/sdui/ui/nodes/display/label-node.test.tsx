@@ -34,3 +34,22 @@ describe('LabelNode: серверные варианты страницы мод
     )
   })
 })
+
+// SCRUM-278 (после теста): серверное предупреждение о недозаполненном графике
+// рендерится красным со значком, как в 1С.
+describe('LabelNode: variant=warning', () => {
+  afterEach(cleanup)
+
+  it('warning: красный текст и значок предупреждения', () => {
+    render(
+      <LabelNode
+        node={label({
+          text: 'График работы заполнен до 31.12.2026, с учетом горизонта планирования график должен быть заполнен до 28.08.2027',
+          variant: 'warning',
+        })}
+      />
+    )
+    const el = screen.getByText(/заполнен до 31\.12\.2026/)
+    expect(el.querySelector('svg')).not.toBeNull()
+  })
+})

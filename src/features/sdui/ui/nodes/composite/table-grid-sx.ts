@@ -1,16 +1,18 @@
 import type { SxProps, Theme } from '@mui/material'
 
-/**
- * Цвет горизонтальных разделителей таблицы. Литерал, а не токен темы MUI: он
- * обязан совпадать с `border-ui-03` — классом Tailwind, которым
- * `verticalSubRows` (`lib/utils/build-column-defs.ts`) рисует разделитель
- * под-строк вертикальной группы. Значение — `colors.ui['03']` из
- * `tailwind.config.ts`.
- */
-const GRID_LINE_COLOR = '#c3cee0'
+import { cssVar, semantic } from '@/shared/design/tokens'
 
-/** `colors.ui['06']` — тёмная линия под шапкой из утверждённого макета. */
-const HEADER_LINE_COLOR = '#222124'
+/**
+ * Цвет горизонтальных разделителей таблицы — токен `semantic.divider`
+ * (`ui-03`). Совпадение с `border-ui-03` — классом Tailwind, которым
+ * `verticalSubRows` (`lib/utils/build-column-defs.ts`) рисует разделитель
+ * под-строк вертикальной группы, — теперь гарантировано общим токеном, а не
+ * дублированием литерала.
+ */
+const GRID_LINE_COLOR = cssVar(semantic.divider)
+
+/** Токен `semantic.headerLine` (`ui-06`) — тёмная линия под шапкой из утверждённого макета. */
+const HEADER_LINE_COLOR = cssVar(semantic.headerLine)
 
 /**
  * Стиль таблиц по утверждённому макету (SCRUM-312, Figma «Журнал проводок»,

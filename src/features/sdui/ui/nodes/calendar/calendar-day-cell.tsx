@@ -28,7 +28,9 @@ export const CalendarDayCell: FC<CalendarDayCellProps> = ({
       disabled
       className={[
         'w-full h-7 text-sm rounded',
-        active ? 'text-[#2a75f4] font-semibold' : 'text-gray-400',
+        // text-gray-400 НЕ переведён на text-ui-05: разное значение
+        // (#9ca3af vs #9fa9ba) — bit-perfect-сомнение, оставлено для аудита.
+        active ? 'text-accent-02 font-semibold' : 'text-gray-400',
         manual ? 'bg-amber-100' : '',
       ]
         .filter(Boolean)

@@ -16,6 +16,7 @@ import type { TabelEmployee, TabelWorkKind } from './tabel-matrix-contract'
 import type { DayHeader } from './tabel-matrix-logic'
 import { countKindDays, formatHours } from './tabel-matrix-logic'
 import { TabelMatrixCell } from './tabel-matrix-cell'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 const dayCellSx = {
   p: 0,
@@ -24,7 +25,10 @@ const dayCellSx = {
   borderLeftColor: 'divider',
   minWidth: 38,
 }
-const weekendSx = { ...dayCellSx, backgroundColor: 'rgba(211, 47, 47, 0.06)' }
+const weekendSx = {
+  ...dayCellSx,
+  backgroundColor: cssVar(palette.pendingWeekendBg),
+}
 
 // Ширина фиксирована: «Итого» стоит второй sticky-колонкой на left: 260 —
 // плавающая ширина имени сдвинула бы её offset (спека от 01.09 §1).

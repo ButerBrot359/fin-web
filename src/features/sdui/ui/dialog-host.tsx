@@ -27,8 +27,9 @@ import { UnsavedChangesHost } from './unsaved-changes-host'
 import { PanelCloseCommand } from './panel-close-command'
 import { requestPanelClose } from '../lib/panel-close-registry'
 import { panelZIndex } from '@/shared/lib/utils/overlay-z-index'
+import { cssVar, palette } from '@/shared/design/tokens'
 
-const PANEL_BG = '#F2F6FD'
+const PANEL_BG = cssVar(palette.ui02)
 const BACKDROP_BG = 'rgba(34, 33, 36, 0.6)'
 
 const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {

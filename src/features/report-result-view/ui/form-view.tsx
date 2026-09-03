@@ -20,8 +20,8 @@ import { ReportCell } from './report-cell'
  * Сетка бланка 1С: чёткая серая рамка каждой ячейки (официальная форма
  * печатается с выраженной сеткой, темнее аналитических отчётов), плотные ячейки.
  */
-const td = 'border border-[#808080] px-1.5 py-0.5 align-top'
-const th = 'border border-[#808080] px-1.5 py-1 text-center align-middle'
+const td = 'border border-pending-gray-6 px-1.5 py-0.5 align-top'
+const th = 'border border-pending-gray-6 px-1.5 py-1 text-center align-middle'
 
 /** Ширина одного символа колонки (`width` приходит в символах, как в 1С). */
 const CHAR_PX = 8

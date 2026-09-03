@@ -69,6 +69,7 @@ import { tableTextColorSx } from '../../../lib/utils/table-text-color'
 import { SearchHitCell } from './table-search-cell'
 import { buildColumnBackgroundMap } from '../../../lib/utils/column-background'
 import { TableToolbar } from './table-toolbar'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 // Единая высота строки для master-detail пары (SCRUM-282 #3): в ячейках VERTICAL-групп
 // стопки редакторов разной высоты (checkbox+text vs date+date), без общей высоты
@@ -747,8 +748,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                         p: 0,
                         border: 0,
                         // SCRUM-368: фантомные линии строк вместо белого при быстром скролле
-                        background:
-                          'repeating-linear-gradient(to bottom, transparent 0 119px, #e5e7eb 119px 120px)',
+                        background: `repeating-linear-gradient(to bottom, transparent 0 119px, ${cssVar(palette.pendingGray3)} 119px 120px)`,
                       }}
                     />
                   </MuiTableRow>
@@ -830,8 +830,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                         height: virt.paddingBottom,
                         p: 0,
                         border: 0,
-                        background:
-                          'repeating-linear-gradient(to bottom, transparent 0 119px, #e5e7eb 119px 120px)',
+                        background: `repeating-linear-gradient(to bottom, transparent 0 119px, ${cssVar(palette.pendingGray3)} 119px 120px)`,
                       }}
                     />
                   </MuiTableRow>

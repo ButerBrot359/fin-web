@@ -5776,5 +5776,10 @@
     },
     "dirty": null,
     "commandFailed": null
+  },
+  "POST /api/view#EVENT": {
+    "formSessionId": "939c68f5-c147-44b4-96b9-5db946a09827",
+    "revision": 1,
+    "formDirty": true
   }
 }

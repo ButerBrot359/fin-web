@@ -1,4 +1,10 @@
-import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as I18next from 'react-i18next'
 
@@ -89,7 +95,7 @@ describe('список-отбор', () => {
     )
   })
 
-  it('выбор уходит EVENT-ом на сервер: от него зависят свод и подвалы «Итого»', () => {
+  it('выбор уходит EVENT-ом на сервер: от него зависят свод и подвалы «Итого»', async () => {
     const sSobytiem = {
       ...node,
       actions: [{ trigger: 'change', actionId: 'fieldEvent' }],
@@ -98,12 +104,58 @@ describe('список-отбор', () => {
 
     fireEvent.click(screen.getByText('Иванов'))
 
-    expect(dispatch).toHaveBeenCalledWith(
+    // Отправка сериализована через очередь промисов (см. тест ниже) — dispatch
+    // вызывается на следующем микротаске, а не синхронно с кликом.
+    await waitFor(() => {
+      expect(dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'EVENT',
+          sourceNodeId: 'table.otborSotrudnikov',
+          trigger: 'change',
+          value: expect.objectContaining({ rowId: '1' }),
+        })
+      )
+    })
+  })
+
+  it('быстрые клики по разным строкам сериализуют EVENT — второй ждёт ответа на первый', async () => {
+    // Воспроизводит гонку со стенда 03.09.2026: dispatch.ts даёт in-flight-гард
+    // только action.type === 'COMMAND', EVENT им не защищён. Без сериализации
+    // оба запроса ушли бы сразу, и ответ на «Андосов» мог применить свои patches
+    // ПОСЛЕ ответа на «Аубакиров», откатив суммы подвалов на прошлого сотрудника.
+    const sSobytiem = {
+      ...node,
+      actions: [{ trigger: 'change', actionId: 'fieldEvent' }],
+    } as unknown as ViewNode
+    let resolveFirst: (() => void) | undefined
+    const firstResponse = new Promise<void>((resolve) => {
+      resolveFirst = resolve
+    })
+    dispatch.mockImplementationOnce(() => firstResponse)
+    dispatch.mockImplementationOnce(() => Promise.resolve())
+
+    render(<SelectionListTable node={sSobytiem} />)
+
+    fireEvent.click(screen.getByText('Иванов'))
+    fireEvent.click(screen.getByText('Петров'))
+
+    // Первый dispatch тоже уходит на следующем микротаске (см. тест выше).
+    await waitFor(() => {
+      expect(dispatch).toHaveBeenCalledTimes(1)
+    })
+    // Второй клик не отправлен, пока ответ на первый не пришёл — и не отправится
+    // без явного resolveFirst(), сколько микротасков ни жди.
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(dispatch).toHaveBeenCalledTimes(1)
+
+    resolveFirst?.()
+    await waitFor(() => {
+      expect(dispatch).toHaveBeenCalledTimes(2)
+    })
+    expect(dispatch).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        type: 'EVENT',
-        sourceNodeId: 'table.otborSotrudnikov',
-        trigger: 'change',
-        value: expect.objectContaining({ rowId: '1' }),
+        value: expect.objectContaining({ rowId: '2' }),
       })
     )
   })
@@ -119,6 +171,54 @@ describe('список-отбор', () => {
   it('пустой список показывает заглушку, а не пустую таблицу', () => {
     state.OtborSotrudnikov = []
     render(<SelectionListTable node={node} />)
+
+    expect(screen.getByText('table.empty')).toBeTruthy()
+  })
+
+  it('поиск сужает список по подстроке в любой видимой колонке, без учёта регистра', () => {
+    render(<SelectionListTable node={node} />)
+
+    fireEvent.change(screen.getByPlaceholderText('table.searchPlaceholder'), {
+      target: { value: 'иван' },
+    })
+
+    expect(screen.getByText('Иванов')).toBeTruthy()
+    expect(screen.queryByText('Петров')).toBeNull()
+  })
+
+  it('очистка поиска возвращает полный список', () => {
+    render(<SelectionListTable node={node} />)
+    const search = screen.getByPlaceholderText('table.searchPlaceholder')
+
+    fireEvent.change(search, { target: { value: 'Петров' } })
+    expect(screen.queryByText('Иванов')).toBeNull()
+
+    fireEvent.change(search, { target: { value: '' } })
+    expect(screen.getByText('Иванов')).toBeTruthy()
+    expect(screen.getByText('Петров')).toBeTruthy()
+  })
+
+  it('поиск — чисто клиентский: не публикует выбор и не шлёт EVENT', () => {
+    const sSobytiem = {
+      ...node,
+      actions: [{ trigger: 'change', actionId: 'fieldEvent' }],
+    } as unknown as ViewNode
+    render(<SelectionListTable node={sSobytiem} />)
+
+    fireEvent.change(screen.getByPlaceholderText('table.searchPlaceholder'), {
+      target: { value: 'Иванов' },
+    })
+
+    expect(setFromServer).not.toHaveBeenCalled()
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('нет совпадений по запросу — та же заглушка, что у пустого списка', () => {
+    render(<SelectionListTable node={node} />)
+
+    fireEvent.change(screen.getByPlaceholderText('table.searchPlaceholder'), {
+      target: { value: 'нет такого' },
+    })
 
     expect(screen.getByText('table.empty')).toBeTruthy()
   })

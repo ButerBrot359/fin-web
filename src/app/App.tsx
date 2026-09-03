@@ -22,14 +22,11 @@ import { WorkspaceTabSync } from '@/widgets/workspace-tab-bar'
 // легаси в SDUI запрещён (CLAUDE.md). Легаси-импорты живут ИСКЛЮЧИТЕЛЬНО
 // здесь, в app/.
 import { ReportResultView } from '@/features/report-result-view'
-import { buildReportAltExport } from '@/pages/reportalt/lib/utils/build-reportalt-export'
 import type { ReportAltResultDto } from '@/pages/reportalt/types/reportalt'
 
-import { apiService } from '@/shared/api/api'
 import { Toaster } from '@/shared/ui/toast/toast'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
-import { exportTableToXlsx } from '@/shared/lib/table-export'
 
 import { Layout } from './layout/layout'
 import { useWorkspaceTabGatewayBinding } from './providers/workspace-tab-binding'
@@ -163,19 +160,6 @@ function App() {
           onDrilldown={onDrilldown}
         />
       ),
-      print: (url, body) =>
-        apiService.postFileBlob({ url, data: body }).then((res) => {
-          window.open(URL.createObjectURL(res.data))
-        }),
-      exportXlsx: (result, reportName) => {
-        const data = buildReportAltExport(
-          result as ReportAltResultDto,
-          i18n.language === 'kz',
-          t('reportalt.group'),
-          t('reportalt.total')
-        )
-        exportTableToXlsx(reportName, data)
-      },
       SettingsPanel: (props) => <ReportSettingsPanel {...props} />,
     })
     return () => {

@@ -226,6 +226,7 @@
     "collapseRow": "Свернуть группу",
     "expandRow": "Развернуть группу",
     "clearFilter": "Показать всех",
+    "showAllEmployees": "Показать всех сотрудников",
     "resizeColumn": "Изменить ширину колонки"
   },
   "informationRegister": {

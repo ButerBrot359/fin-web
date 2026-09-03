@@ -21,6 +21,13 @@ vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => dispatch,
 }))
 
+const openPickerMock = vi.fn<(req: Record<string, unknown>) => void>()
+vi.mock('../../../lib/reference-picker-gateway', () => ({
+  openReferencePicker: (req: Record<string, unknown>) => {
+    openPickerMock(req)
+  },
+}))
+
 const state: Record<string, unknown> = {}
 const setFromServer = vi.fn()
 vi.mock('../../../lib/sdui-session-context', () => ({
@@ -52,6 +59,7 @@ describe('список-отбор', () => {
     cleanup()
     setFromServer.mockClear()
     dispatch.mockClear()
+    openPickerMock.mockClear()
     state.OtborSotrudnikov = [
       { rowId: '1', Sotrudnik: { id: 1, presentation: 'Иванов' } },
       { rowId: '2', Sotrudnik: { id: 2, presentation: 'Петров' } },
@@ -221,5 +229,90 @@ describe('список-отбор', () => {
     })
 
     expect(screen.getByText('table.empty')).toBeTruthy()
+  })
+
+  it('без domain/targetTypeCode в props кнопки «Показать всех сотрудников» нет', () => {
+    render(<SelectionListTable node={node} />)
+
+    expect(screen.queryByText('table.showAllEmployees')).toBeNull()
+  })
+
+  it('«Показать всех сотрудников» открывает справочник с фильтром по организации', () => {
+    const sDomenom = {
+      ...node,
+      props: {
+        ...node.props,
+        domain: 'DICTIONARY',
+        targetTypeCode: 'Sotrudniki',
+        filter: { Organizatsiya: 555 },
+      },
+    } as unknown as ViewNode
+    render(<SelectionListTable node={sDomenom} />)
+
+    fireEvent.click(screen.getByText('Иванов'))
+    fireEvent.click(screen.getByText('table.showAllEmployees'))
+
+    expect(openPickerMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'list',
+        domain: 'DICTIONARY',
+        typeCode: 'Sotrudniki',
+        searchParams: { Organizatsiya: '555' },
+        selectedId: '1',
+      })
+    )
+  })
+
+  it('«Показать всех сотрудников»: выбор уже видимой строки публикует её целиком (с FizicheskoeLitso)', () => {
+    state.OtborSotrudnikov = [
+      {
+        rowId: '1',
+        Sotrudnik: { id: 1, presentation: 'Иванов' },
+        FizicheskoeLitso: { id: 101, presentation: 'Иванов ФЛ' },
+      },
+    ]
+    const sDomenom = {
+      ...node,
+      props: {
+        ...node.props,
+        domain: 'DICTIONARY',
+        targetTypeCode: 'Sotrudniki',
+      },
+    } as unknown as ViewNode
+    render(<SelectionListTable node={sDomenom} />)
+
+    fireEvent.click(screen.getByText('table.showAllEmployees'))
+    const onSelect = openPickerMock.mock.calls[0][0].onSelect as (
+      opt: { id: number; code: string; label: string } | null
+    ) => void
+    onSelect({ id: 1, code: '1', label: 'Иванов' })
+
+    expect(setFromServer).toHaveBeenCalledWith(
+      'OtborSotrudnikov.__selectedRowId',
+      '1'
+    )
+  })
+
+  it('«Показать всех сотрудников»: выбор сотрудника вне ТЧ строит минимальную строку', () => {
+    const sDomenom = {
+      ...node,
+      props: {
+        ...node.props,
+        domain: 'DICTIONARY',
+        targetTypeCode: 'Sotrudniki',
+      },
+    } as unknown as ViewNode
+    render(<SelectionListTable node={sDomenom} />)
+
+    fireEvent.click(screen.getByText('table.showAllEmployees'))
+    const onSelect = openPickerMock.mock.calls[0][0].onSelect as (
+      opt: { id: number; code: string; label: string } | null
+    ) => void
+    onSelect({ id: 99, code: '99', label: 'Сидоров' })
+
+    expect(setFromServer).toHaveBeenCalledWith(
+      'OtborSotrudnikov.__selectedRowId',
+      '99'
+    )
   })
 })

@@ -20,6 +20,7 @@ import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import { extractReadOnlyColumns } from '../../../lib/utils/read-only-header-model'
+import { openReferencePicker } from '../../../lib/reference-picker-gateway'
 
 interface SelectionRow {
   rowId: string
@@ -53,6 +54,20 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
   }, [getValue, node.binding])
 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
+
+  // Порт «Отбор по сотруднику» → «Показать все» (1С: автодополнение поля отбора
+  // открывает справочник Сотрудники целиком). Панель по умолчанию видит только тех,
+  // кто уже попал в ТЧ документа — этого мало для организаций с большим штатом.
+  // domain/targetTypeCode/filter кладёт бэк (emitOtborSotrudnikovPickerProps), фронт
+  // их не синтезирует — тот же контракт, что у reference-field-node.
+  const pickerDomain = node.props?.domain as string | undefined
+  const pickerTypeCode = node.props?.targetTypeCode as string | undefined
+  const pickerFilter = node.props?.filter as Record<string, unknown> | undefined
+  const pickerSearchParams = pickerFilter
+    ? Object.fromEntries(
+        Object.entries(pickerFilter).map(([k, v]) => [k, String(v)])
+      )
+    : undefined
 
   // Список сотрудников документа может быть длинным (десятки строк), а панель
   // узкая — искать глазами неудобно. Фильтр чисто клиентский: строки уже
@@ -108,6 +123,32 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
     }
   }
 
+  const showAllFromDictionary = () => {
+    if (!pickerDomain || !pickerTypeCode) return
+    openReferencePicker({
+      mode: 'list',
+      domain: pickerDomain,
+      typeCode: pickerTypeCode,
+      searchParams: pickerSearchParams,
+      selectedId: selectedRowId ?? undefined,
+      onSelect: (opt) => {
+        if (!opt) return
+        // Выбранный уже виден в панели (есть в ТЧ документа) — публикуем ЕГО строку,
+        // с обоими ключами отбора (Sotrudnik + FizicheskoeLitso). Иначе строим
+        // минимальную: ФизЛицо сервер не пришлёт по голому справочнику Sotrudniki,
+        // отбор восьми налоговых ТЧ по такому сотруднику не сработает — деградация
+        // терпимая (нечего фильтровать, раз его нет ни в одной ТЧ), а не потеря данных.
+        const existing = rows.find((r) => r.rowId === String(opt.id))
+        publish(
+          existing ?? {
+            rowId: String(opt.id),
+            Sotrudnik: { id: Number(opt.id), presentation: opt.label },
+          }
+        )
+      },
+    })
+  }
+
   if ((node.props?.visible as boolean | undefined) === false) return null
 
   return (
@@ -125,6 +166,11 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
         >
           {t('table.clearFilter')}
         </Button>
+        {pickerDomain && pickerTypeCode && (
+          <Button variant="secondary" onClick={showAllFromDictionary}>
+            {t('table.showAllEmployees')}
+          </Button>
+        )}
       </Box>
 
       <TextField

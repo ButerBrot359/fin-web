@@ -29,6 +29,11 @@ form-configs-server/dist
 *.sw?
 
 .playwright-mcp
+
+# Playwright visual-regression артефакты прогонов
+/test-results/
+/playwright-report/
+/blob-report/
 # Личные инструкции Claude
 CLAUDE.local.md
 

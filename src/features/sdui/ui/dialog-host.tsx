@@ -76,6 +76,7 @@ const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
         setDirty(value)
       },
       tree,
+      getTree: () => tree,
       setRoot: setTree,
       setSession: (_id, rev) => {
         usePanelStore.getState().updateSession(panel.panelId, rev)

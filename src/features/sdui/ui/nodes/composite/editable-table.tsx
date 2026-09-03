@@ -289,7 +289,17 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   })
 
   return (
-    <div tabIndex={-1} style={{ outline: 'none' }} onKeyDown={handleKeyDown}>
+    <div
+      tabIndex={-1}
+      style={{
+        outline: 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        flexGrow: 1,
+        minHeight: 0,
+      }}
+      onKeyDown={handleKeyDown}
+    >
       <div style={{ marginBottom: 8 }}>
         <TableToolbar
           onAdd={handleAdd}
@@ -319,11 +329,11 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
         component={Paper}
         ref={setContainerRef}
         data-own-scroll="true"
-        sx={
-          viewport.maxHeight != null
-            ? { maxHeight: viewport.maxHeight, overflowY: 'auto' }
-            : undefined
-        }
+        sx={{
+          flex: '1 1 auto',
+          overflowY: 'auto',
+          ...(viewport.maxHeight != null && { maxHeight: viewport.maxHeight }),
+        }}
       >
         {/* Шапка колонок видима при внутреннем скролле (SCRUM-327) */}
         <Table size="small" stickyHeader sx={tableSx}>

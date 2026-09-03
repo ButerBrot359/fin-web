@@ -145,7 +145,14 @@ export const useVirtualTableRows = (
 
   const setContainerRef = useCallback((node: HTMLDivElement | null) => {
     containerNodeRef.current = node
-    if (node) setScroller(findScrollParent(node))
+    // SCRUM-327: обёртка с собственным вертикальным скроллом (maxHeight +
+    // overflowY:auto, помечена data-own-scroll) сама и есть скролл-предок —
+    // окно строк считается от неё, а не от прокрутки страницы.
+    if (node) {
+      setScroller(
+        node.dataset.ownScroll === 'true' ? node : findScrollParent(node)
+      )
+    }
   }, [])
 
   const setBodyRef = useCallback((node: HTMLTableSectionElement | null) => {
@@ -165,17 +172,26 @@ export const useVirtualTableRows = (
       setScrollMargin((prev) => (Math.abs(prev - next) < 1 ? prev : next))
     }
 
-    const observer = new ResizeObserver(remeasure)
-    observer.observe(scroller)
-    const container = containerNodeRef.current
-    if (container) observer.observe(container)
+    // jsdom (юнит-тесты) без ResizeObserver: с собственным скроллом контейнера
+    // (SCRUM-327) scroller существует и там — обходимся scroll-слушателем.
+    const observer =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(remeasure)
+        : null
+    if (observer) {
+      observer.observe(scroller)
+      const container = containerNodeRef.current
+      if (container) observer.observe(container)
+    } else {
+      remeasure()
+    }
     // Страховка на случай, когда вёрстка над таблицей сместилась без изменения
     // размеров наблюдаемых узлов: сверяемся при прокрутке (значение инвариантно,
     // поэтому setState почти всегда схлопывается в no-op).
     scroller.addEventListener('scroll', remeasure, { passive: true })
 
     return () => {
-      observer.disconnect()
+      observer?.disconnect()
       scroller.removeEventListener('scroll', remeasure)
     }
   }, [scroller])

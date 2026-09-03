@@ -27,6 +27,7 @@ import {
   type TableColumnDef,
   type TableRow,
 } from '../../../lib/hooks/use-table-sync'
+import { useTableViewportMaxHeight } from '../../../lib/hooks/use-table-viewport-max-height'
 import {
   useTableSearch,
   isSearchHit,
@@ -126,8 +127,12 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     readVirtualization(node),
     HEAVY_ROW_VIRTUAL_OPTIONS
   )
+  // SCRUM-327: вертикальный скролл живёт внутри ТЧ (maxHeight по вьюпорту),
+  // страница документа не растягивается; окно виртуализации — от контейнера.
+  const viewport = useTableViewportMaxHeight()
   const setContainerRef = (node: HTMLDivElement | null) => {
     containerRef.current = node
+    viewport.setNode(node)
     virt.setContainerRef(node)
   }
 
@@ -310,8 +315,18 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           }
         />
       </div>
-      <TableContainer component={Paper} ref={setContainerRef}>
-        <Table size="small" sx={tableSx}>
+      <TableContainer
+        component={Paper}
+        ref={setContainerRef}
+        data-own-scroll="true"
+        sx={
+          viewport.maxHeight != null
+            ? { maxHeight: viewport.maxHeight, overflowY: 'auto' }
+            : undefined
+        }
+      >
+        {/* Шапка колонок видима при внутреннем скролле (SCRUM-327) */}
+        <Table size="small" stickyHeader sx={tableSx}>
           {sizing.isResizable && (
             <TableSizingColgroup
               table={table}

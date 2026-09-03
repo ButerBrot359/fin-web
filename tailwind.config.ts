@@ -1,9 +1,6 @@
 import type { Config } from 'tailwindcss'
 
-import { palette, shadows } from './src/shared/design/tokens'
-
-const cssVarForConfig = (token: { cssVar: string }): string =>
-  `var(${token.cssVar})`
+import { cssVar, palette, shadows } from './src/shared/design/tokens'
 
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
@@ -33,49 +30,49 @@ export default {
         lg: '12px',
       },
       boxShadow: {
-        'primary-hover': cssVarForConfig(shadows.primaryHover),
-        'secondary-hover': cssVarForConfig(shadows.secondaryHover),
-        popup: cssVarForConfig(shadows.popup),
+        'primary-hover': cssVar(shadows.primaryHover),
+        'secondary-hover': cssVar(shadows.secondaryHover),
+        popup: cssVar(shadows.popup),
       },
       colors: {
         ui: {
-          '01': cssVarForConfig(palette.ui01),
-          '02': cssVarForConfig(palette.ui02),
-          '03': cssVarForConfig(palette.ui03),
-          '04': cssVarForConfig(palette.ui04),
-          '05': cssVarForConfig(palette.ui05),
-          '06': cssVarForConfig(palette.ui06),
-          '07': cssVarForConfig(palette.ui07),
-          '08': cssVarForConfig(palette.ui08),
+          '01': cssVar(palette.ui01),
+          '02': cssVar(palette.ui02),
+          '03': cssVar(palette.ui03),
+          '04': cssVar(palette.ui04),
+          '05': cssVar(palette.ui05),
+          '06': cssVar(palette.ui06),
+          '07': cssVar(palette.ui07),
+          '08': cssVar(palette.ui08),
         },
         accent: {
           '01': {
-            DEFAULT: cssVarForConfig(palette.accent01),
-            hover: cssVarForConfig(palette.accent01Hover),
-            pressed: cssVarForConfig(palette.accent01Pressed),
+            DEFAULT: cssVar(palette.accent01),
+            hover: cssVar(palette.accent01Hover),
+            pressed: cssVar(palette.accent01Pressed),
           },
           '02': {
-            DEFAULT: cssVarForConfig(palette.accent02),
-            hover: cssVarForConfig(palette.accent02Hover),
+            DEFAULT: cssVar(palette.accent02),
+            hover: cssVar(palette.accent02Hover),
           },
         },
-        support: { '01': cssVarForConfig(palette.support01) },
+        support: { '01': cssVar(palette.support01) },
         pending: {
-          'gray-1': cssVarForConfig(palette.pendingGray1),
-          'gray-2': cssVarForConfig(palette.pendingGray2),
-          'gray-3': cssVarForConfig(palette.pendingGray3),
-          'gray-4': cssVarForConfig(palette.pendingGray4),
-          'gray-5': cssVarForConfig(palette.pendingGray5),
-          'gray-6': cssVarForConfig(palette.pendingGray6),
-          'blue-bg': cssVarForConfig(palette.pendingBlueBg),
-          'warn-border': cssVarForConfig(palette.pendingWarnBorder),
-          'warn-bg': cssVarForConfig(palette.pendingWarnBg),
-          'warn-bg-2': cssVarForConfig(palette.pendingWarnBg2),
-          'yellow-1': cssVarForConfig(palette.pendingYellow1),
-          'yellow-2': cssVarForConfig(palette.pendingYellow2),
-          'yellow-3': cssVarForConfig(palette.pendingYellow3),
-          'weekend-red': cssVarForConfig(palette.pendingWeekendRed),
-          'weekend-bg': cssVarForConfig(palette.pendingWeekendBg),
+          'gray-1': cssVar(palette.pendingGray1),
+          'gray-2': cssVar(palette.pendingGray2),
+          'gray-3': cssVar(palette.pendingGray3),
+          'gray-4': cssVar(palette.pendingGray4),
+          'gray-5': cssVar(palette.pendingGray5),
+          'gray-6': cssVar(palette.pendingGray6),
+          'blue-bg': cssVar(palette.pendingBlueBg),
+          'warn-border': cssVar(palette.pendingWarnBorder),
+          'warn-bg': cssVar(palette.pendingWarnBg),
+          'warn-bg-2': cssVar(palette.pendingWarnBg2),
+          'yellow-1': cssVar(palette.pendingYellow1),
+          'yellow-2': cssVar(palette.pendingYellow2),
+          'yellow-3': cssVar(palette.pendingYellow3),
+          'weekend-red': cssVar(palette.pendingWeekendRed),
+          'weekend-bg': cssVar(palette.pendingWeekendBg),
         },
       },
     },

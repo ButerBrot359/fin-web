@@ -5,6 +5,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 
 import type { NodeProps } from '../../../types/view'
+import { resolveStackGap } from '../../../lib/utils/resolve-stack-gap'
 import { NodeRenderer } from '../../node-renderer'
 
 export const GroupNode: FC<NodeProps> = ({ node }) => {
@@ -45,7 +46,8 @@ export const GroupNode: FC<NodeProps> = ({ node }) => {
           style={{
             display: 'flex',
             alignItems: 'center',
-            marginBottom: collapsed ? 0 : 8,
+            // Figma (аудит Ф3): заголовок секции → контент = 16px
+            marginBottom: collapsed ? 0 : 16,
           }}
         >
           {title && (
@@ -70,19 +72,18 @@ export const GroupNode: FC<NodeProps> = ({ node }) => {
         </div>
       )}
       <Collapse in={!collapsed}>
-        {/* gap трактуется как у VSTACK (шаг 4px): группа, приезжающая GROUP'ом
-            вместо VSTACK ради заголовка, не должна терять отступы между детьми.
-            Флекс-обёртка появляется только когда проп задан — у групп без gap
-            раскладка детей остаётся ровно прежней. */}
-        {gap === undefined ? (
-          children
-        ) : (
-          <div
-            style={{ display: 'flex', flexDirection: 'column', gap: gap * 4 }}
-          >
-            {children}
-          </div>
-        )}
+        {/* gap трактуется как у VSTACK (нормализация resolveStackGap): группа,
+            приезжающая GROUP'ом вместо VSTACK ради заголовка, держит тот же
+            ритм 16px между детьми и без пропа с провода. */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: resolveStackGap(gap),
+          }}
+        >
+          {children}
+        </div>
       </Collapse>
     </Paper>
   )

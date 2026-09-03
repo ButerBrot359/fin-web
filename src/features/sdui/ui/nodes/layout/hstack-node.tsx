@@ -3,6 +3,7 @@ import type { FC } from 'react'
 import type { NodeProps } from '../../../types/view'
 import { NodeRenderer } from '../../node-renderer'
 import { isNodeVisible } from '../../../lib/utils/node-visibility'
+import { resolveStackGap } from '../../../lib/utils/resolve-stack-gap'
 import {
   FILL_METHOD_SETTINGS_NODE_ID,
   KalendariFillMethodSettings,
@@ -16,7 +17,7 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
     return <KalendariFillMethodSettings node={node} />
   }
 
-  const gap = (node.props?.gap as number | undefined) ?? 0
+  const gap = resolveStackGap(node.props?.gap as number | undefined)
   const justify = (node.props?.justify as string | undefined) ?? 'flex-start'
   const align = (node.props?.align as string | undefined) ?? 'stretch'
   const flex = node.props?.flex as number | string | undefined
@@ -26,7 +27,7 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
       style={{
         display: 'flex',
         flexDirection: 'row',
-        gap: gap * 4,
+        gap,
         justifyContent: justify,
         alignItems: align,
         flex: flex !== undefined ? flex : undefined,

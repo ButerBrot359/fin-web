@@ -133,6 +133,33 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
     )
   })
 
+  /**
+   * Требование владельца: форма создания пустая ВСЕГДА, а возврат на свою вкладку возвращает
+   * введённое. На проводе оба запроса — OPEN одного маршрута, различает их только идентификатор
+   * экземпляра формы, поэтому он обязан быть на КАЖДОМ OPEN (бэк читает его только там).
+   */
+  it('OPEN несёт formInstanceId вкладки', async () => {
+    router.search = ''
+    const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'OPEN' })
+
+    const action = post.mock.calls[0][0].action as { formInstanceId?: string }
+    expect(action.formInstanceId).toBeTruthy()
+  })
+
+  it('EVENT/COMMAND идентификатор экземпляра не несут — сервер читает его только на OPEN', async () => {
+    router.search = ''
+    const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'COMMAND', command: 'save' })
+
+    const action = post.mock.calls[0][0].action as { formInstanceId?: string }
+    expect(action.formInstanceId).toBeUndefined()
+  })
+
   it('OPEN без layoutCode: ключ layoutCode отсутствует в запросе', async () => {
     router.search = ''
     const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)

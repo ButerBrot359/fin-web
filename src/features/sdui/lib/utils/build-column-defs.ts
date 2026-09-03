@@ -464,5 +464,9 @@ export function nodeToTableColumnDef(node: ViewNode): TableColumnDef {
     readonly: (props.readonly as boolean | undefined) ?? false,
     required: (props.required as boolean | undefined) ?? false,
     props,
+    // ADR-0029 Phase 2b: аффордансы пикера ячейки. Бэк эмитит их на TABLE_COLUMN
+    // только под флагом и только для персистентного rowId — отсутствие поля здесь
+    // и есть штатный сигнал «работаем легаси-пикером».
+    actions: node.actions,
   }
 }

@@ -143,16 +143,6 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     })
   }
 
-  const openDictCreate = () => {
-    openReferencePicker({
-      mode: 'create',
-      domain: domain!,
-      typeCode: targetTypeCode!,
-      onSelect: applySelected,
-      searchParams: filterSearchParams,
-    })
-  }
-
   // SCRUM-291 §18.3: props.allow* — единственный источник видимости affordance'ов.
   // Асимметрия дефолтов не случайна и повторяет серверную (ReferenceAffordanceResolver):
   // allowShowAll открыт, пока явно не false; остальные три закрыты, пока явно не true.
@@ -218,6 +208,9 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
         : !showAllAction && (allowShowAll ?? canBrowse)
           ? openDictList
           : undefined,
+    // SCRUM-360 (v5-back): гейт RefActionsCompletenessIT (C1.4a) зелёный —
+    // props-only фолбэк `allowCreate ?? canBrowse` снят. Создание идёт только
+    // серверной командой create; без createAction кнопки «Добавить» нет.
     onAdd:
       createAction && allowCreate === true
         ? () =>
@@ -226,9 +219,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
               command: createAction.command!,
               sourceNodeId: node.id,
             })
-        : !createAction && (allowCreate ?? canBrowse)
-          ? openDictCreate
-          : undefined,
+        : undefined,
   }
 
   return (

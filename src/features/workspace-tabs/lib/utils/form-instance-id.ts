@@ -1,17 +1,19 @@
 /**
  * Идентификатор ЭКЗЕМПЛЯРА формы рабочей вкладки — то, что уходит на бэк в
- * `action.formInstanceId` на каждом OPEN.
+ * `action.formInstanceId` на каждом OPEN (фронт-спека 03.09.2026 §5.1).
  *
  * <p>Сервер по нему отличает «вернулся в свою форму» от «создаю новый документ»: на проводе
  * оба запроса — OPEN одного маршрута `/documents/<Type>/new`, и без идентификатора черновик
  * незаписанного документа всплывал бы в новой форме создания (бэк: DocumentFormDraftStore).
  *
- * <p><b>Резервирование.</b> Идентификатор нужен УЖЕ на первом OPEN, а вкладка рабочего стола
- * создаётся позже — из ответа того же OPEN (метаданные вкладки приходят только там). Поэтому
- * идентификатор сначала резервируется по маршруту, а созданная вкладка его забирает: сессия
- * и вкладка получают ОДИН идентификатор, и черновик первой же формы уже зеркалится.
+ * <p><b>Только в памяти.</b> Ни в localStorage, ни в persisted-сторе вкладок: иначе ДВЕ вкладки
+ * браузера получили бы один идентификатор и видели черновики друг друга (спека §5.1, приёмка
+ * п.5). Ценой служит F5 — после перезагрузки идентификатор новый и черновик незаписанной формы
+ * недостижим; это дешевле, чем чужие данные в форме.
+ *
+ * <p>Ключ — путь маршрута: рабочая вкладка адресуется им же (id вкладки = path).
  */
-const reserved = new Map<string, string>()
+const ids = new Map<string, string>()
 
 function generate(): string {
   if (
@@ -24,27 +26,23 @@ function generate(): string {
   return `fi-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 }
 
-export function newFormInstanceId(): string {
-  return generate()
-}
-
-/** Зарезервировать (или вернуть уже зарезервированный) идентификатор для маршрута. */
-export function reserveFormInstanceId(path: string): string {
-  const existing = reserved.get(path)
+/** Идентификатор экземпляра формы для маршрута; при первом обращении заводится. */
+export function formInstanceIdFor(path: string): string {
+  const existing = ids.get(path)
   if (existing) return existing
   const id = generate()
-  reserved.set(path, id)
+  ids.set(path, id)
   return id
 }
 
-/** Забрать резерв — вызывает вкладка при создании, чтобы взять ТОТ ЖЕ идентификатор. */
-export function claimFormInstanceId(path: string): string {
-  const id = reserveFormInstanceId(path)
-  reserved.delete(path)
+/** Начать НОВЫЙ экземпляр формы на этом маршруте («Создать», копия, ввод на основании). */
+export function rotateFormInstanceId(path: string): string {
+  const id = generate()
+  ids.set(path, id)
   return id
 }
 
-/** Снять резерв: следующий OPEN этого маршрута начнёт новый экземпляр формы. */
-export function clearFormInstanceReservation(path: string): void {
-  reserved.delete(path)
+/** Вкладку закрыли — следующее открытие того же маршрута начнёт новый экземпляр (§5.1). */
+export function forgetFormInstanceId(path: string): void {
+  ids.delete(path)
 }

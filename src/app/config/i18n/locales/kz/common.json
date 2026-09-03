@@ -221,6 +221,11 @@
     "filterRemoveChip": "Сүзгіні жою",
     "filterClearAll": "Барлығын тазарту",
     "selectRowFirst": "Алдымен кестеден жолды таңдаңыз",
+    "collapseAll": "Жию",
+    "expandAll": "Жаю",
+    "collapseRow": "Топты жию",
+    "expandRow": "Топты жаю",
+    "clearFilter": "Барлығын көрсету",
     "resizeColumn": "Баған енін өзгерту"
   },
   "informationRegister": {
@@ -770,6 +775,13 @@
       "collapse": "Жию",
       "payloadError": "Табель деректерін көрсету мүмкін болмады",
       "pickerUnavailable": "Қызметкерлерді іріктеу қолжетімсіз: сервер таңдау келісімшартын жіберген жоқ"
+    },
+    "listOutput": {
+      "columns": "Бағандар",
+      "all": "Барлығы",
+      "onlySelected": "Тек таңдалғандар",
+      "confirm": "Шығару",
+      "empty": "Шығаратын баған жоқ"
     }
   },
   "tarifikatsiya": {

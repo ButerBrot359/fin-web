@@ -12,6 +12,10 @@ import {
   ViewHttpError,
 } from '../api/view-transport'
 import { applyValuePatches } from './patch-applier'
+import {
+  DOCUMENT_VALIDATION_CODE,
+  buildValidationErrorPatches,
+} from './validation-highlight'
 import { validatePatches } from './validation'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
@@ -26,6 +30,7 @@ import { shouldRevealTableErrors } from './utils/reveal-policy'
 import { openDialogAsPanel } from './open-dialog-panel'
 import { relaySelectionToParent } from './relay-selection'
 import { buildCommonEffectDeps } from './build-effect-deps'
+import { currentFormInstanceId } from './form-instance'
 import { useCommandInflightStore } from './stores/command-inflight-store'
 import {
   clearFormSession,
@@ -33,7 +38,6 @@ import {
   saveFormSession,
 } from './form-session-storage'
 import { useAsyncTaskStore } from '@/entities/async-task'
-import { ensureFormInstanceId } from '@/features/workspace-tabs'
 
 export function useSduiDispatch() {
   const location = useLocation()
@@ -222,6 +226,16 @@ export function useSduiDispatch() {
         }
 
         const route = location.pathname + location.search
+        // Экземпляр формы этой вкладки — на КАЖДОМ OPEN (бэк: DocumentFormDraftStore).
+        // Он же остаётся прежним при реопене после 409 и при переходе новый → записанный:
+        // вкладка та же, значит и её черновик тот же.
+        const openAction =
+          action.type === 'OPEN'
+            ? {
+                ...action,
+                formInstanceId: currentFormInstanceId(location.pathname),
+              }
+            : action
         const res = await viewTransport.post({
           // SCRUM-330 Работа 2: на OPEN шлём formSessionId, переживший F5 в
           // sessionStorage. Сейчас бэк его игнорирует (резюм отложен — v2 §2);
@@ -233,18 +247,7 @@ export function useSduiDispatch() {
             ? { layoutCode: action.layoutCode }
             : {}),
           route,
-          // SCRUM-312: стабильный id вкладки рабочего стола на каждом OPEN —
-          // сервер по нему разводит «вернулась в свою форму создания»
-          // (восстановить черновик) и «создаю новый документ» (пустая форма).
-          // Вкладка ключуется pathname'ом; реопен после 409 идёт тем же путём
-          // и получает тот же id (вкладка жива).
-          action:
-            action.type === 'OPEN'
-              ? {
-                  ...action,
-                  formInstanceId: ensureFormInstanceId(location.pathname),
-                }
-              : action,
+          action: openAction,
         })
 
         if (action.type === 'OPEN') {
@@ -306,7 +309,20 @@ export function useSduiDispatch() {
         }
         return true
       } catch (error) {
-        if (error instanceof ViewConflictError) {
+        if (
+          error instanceof ViewHttpError &&
+          error.status === 422 &&
+          error.code === DOCUMENT_VALIDATION_CODE
+        ) {
+          clearAllErrors()
+          applyTreePatches(
+            buildValidationErrorPatches(
+              session.getTree?.() ?? session.tree,
+              error.errors
+            )
+          )
+          showToast('error', error.message || i18n.t('sdui.requestError'))
+        } else if (error instanceof ViewConflictError) {
           const retry =
             !isRetry && action.type !== 'OPEN'
               ? () => dispatchAction(action, behavior, true)

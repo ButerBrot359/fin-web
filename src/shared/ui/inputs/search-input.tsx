@@ -22,6 +22,11 @@ export const SearchInput = ({
   return (
     <TextField
       variant="standard"
+      // Тема ставит MuiTextField.fullWidth=true всем полям формы, а строка поиска —
+      // не поле формы: её ширину задаёт вызывающий классом (w-64 и т.п.). Без явного
+      // false emotion-стиль width:100% (без слоя) побеждает layered-утилиту Tailwind,
+      // и поиск растягивается на всю строку — так он и разъехался на экране списка.
+      fullWidth={false}
       placeholder={placeholder}
       value={value}
       onChange={onChange}

@@ -11,7 +11,14 @@ export const TASKS_LIST_POLL_MS = 3000
 // Содержимое поповера «Мои операции»: активные и недавно завершённые задачи
 // пользователя, свежие сверху (handoff §3.3). Поллинг живёт, пока поповер
 // открыт (компонент размонтируется вместе с ним).
-export const BackgroundTasksPanel = () => {
+interface BackgroundTasksPanelProps {
+  /** Вызывается после перехода к объекту задачи — чтобы закрыть поповер. */
+  onNavigate?: () => void
+}
+
+export const BackgroundTasksPanel = ({
+  onNavigate,
+}: BackgroundTasksPanelProps) => {
   const { t } = useTranslation()
   const { data, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ['background-tasks', 'list'],
@@ -36,7 +43,12 @@ export const BackgroundTasksPanel = () => {
       )}
       {/* dataUpdatedAt — «часы» оценки остатка: тикают с каждым опросом */}
       {data?.map((task) => (
-        <TaskRow key={task.id} task={task} now={dataUpdatedAt} />
+        <TaskRow
+          key={task.id}
+          task={task}
+          now={dataUpdatedAt}
+          onNavigate={onNavigate}
+        />
       ))}
     </div>
   )

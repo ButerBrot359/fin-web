@@ -14,9 +14,33 @@ const relatedHierarchyIcon: ReactNode = (
     aria-hidden="true"
     focusable="false"
   >
-    <rect x="7.25" y="2.25" width="5.5" height="4" rx="1" stroke="currentColor" strokeWidth="1.4" />
-    <rect x="2.25" y="13.75" width="5.5" height="4" rx="1" stroke="currentColor" strokeWidth="1.4" />
-    <rect x="12.25" y="13.75" width="5.5" height="4" rx="1" stroke="currentColor" strokeWidth="1.4" />
+    <rect
+      x="7.25"
+      y="2.25"
+      width="5.5"
+      height="4"
+      rx="1"
+      stroke="currentColor"
+      strokeWidth="1.4"
+    />
+    <rect
+      x="2.25"
+      y="13.75"
+      width="5.5"
+      height="4"
+      rx="1"
+      stroke="currentColor"
+      strokeWidth="1.4"
+    />
+    <rect
+      x="12.25"
+      y="13.75"
+      width="5.5"
+      height="4"
+      rx="1"
+      stroke="currentColor"
+      strokeWidth="1.4"
+    />
     <path
       d="M10 6.25v3.5M10 9.75H5v4M10 9.75h5v4"
       stroke="currentColor"
@@ -39,16 +63,80 @@ const dtktIcon: ReactNode = (
     aria-hidden="true"
     focusable="false"
   >
-    <rect x="1.75" y="1.75" width="16.5" height="16.5" rx="2.5" stroke="currentColor" strokeWidth="1.4" />
-    <line x1="2.5" y1="10" x2="17.5" y2="10" stroke="currentColor" strokeWidth="1" />
-    <text x="10" y="8.4" textAnchor="middle" fontSize="6.2" fontWeight="600" fill="currentColor">Дт</text>
-    <text x="10" y="16.4" textAnchor="middle" fontSize="6.2" fontWeight="600" fill="currentColor">Кт</text>
+    <rect
+      x="1.75"
+      y="1.75"
+      width="16.5"
+      height="16.5"
+      rx="2.5"
+      stroke="currentColor"
+      strokeWidth="1.4"
+    />
+    <line
+      x1="2.5"
+      y1="10"
+      x2="17.5"
+      y2="10"
+      stroke="currentColor"
+      strokeWidth="1"
+    />
+    <text
+      x="10"
+      y="8.4"
+      textAnchor="middle"
+      fontSize="6.2"
+      fontWeight="600"
+      fill="currentColor"
+    >
+      Дт
+    </text>
+    <text
+      x="10"
+      y="16.4"
+      textAnchor="middle"
+      fontSize="6.2"
+      fontWeight="600"
+      fill="currentColor"
+    >
+      Кт
+    </text>
+  </svg>
+)
+
+// «Скопировать» — два наложенных листа, привычная метафора копии. В эталонной панели
+// списка 1С эта команда тоже иконка, а не текст (02.09.2026).
+const copyIcon: ReactNode = (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="none"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <rect
+      x="7.25"
+      y="2.25"
+      width="10.5"
+      height="12.5"
+      rx="1.5"
+      stroke="currentColor"
+      strokeWidth="1.4"
+    />
+    <path
+      d="M12.75 17.75h-8.5a1.5 1.5 0 0 1-1.5-1.5V5.25"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 )
 
 const BUTTON_ICON_MAP: Record<string, ReactNode> = {
   'related-hierarchy': relatedHierarchyIcon,
   dtkt: dtktIcon,
+  copy: copyIcon,
 }
 
 /** Иконка по имени или null для неизвестного (кнопка деградирует до текста). */

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
+import { useSelectionStore } from '../../../lib/stores/selection-store'
 import { MenuCloseContext } from './menu-close-context'
 import { MenuItemNode } from './menu-item-node'
 
@@ -142,5 +143,87 @@ describe('MenuItemNode: enabled/disabled (SCRUM-265 FE-2)', () => {
     )
     fireEvent.mouseOver(screen.getByText('Заполнить'))
     expect(await screen.findByRole('tooltip')).toBeTruthy()
+  })
+})
+
+/**
+ * Пункты меню тулбара СПИСКА («Создать на основании», печатная форма, зеркала команд
+ * строки в «Ещё») работают с ВЫДЕЛЕННОЙ строкой. До 02.09.2026 MenuItemNode поля
+ * requiresSelectedRow/selectionField игнорировал и слал COMMAND без value — сервер
+ * отвечал «Не выбрана строка списка» даже тогда, когда строка была выбрана.
+ */
+describe('MenuItemNode: команда по выделенной строке', () => {
+  const LIST_ID = 'list.ZayavkaNaRegistratsiyuGPSdelki.list'
+
+  const rowItem = (command: string): ViewNode =>
+    item({ label: 'Счёт к оплате', command, enabled: true }, [
+      {
+        trigger: 'click',
+        actionId: 'command',
+        command,
+        requiresSelectedRow: true,
+        selectionField: LIST_ID,
+      },
+    ] as ViewNode['actions'])
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useSelectionStore.setState({ selection: {} })
+  })
+  afterEach(cleanup)
+
+  it('строка выделена → COMMAND несёт id строки', () => {
+    useSelectionStore.getState().setSelection(LIST_ID, 42)
+    render(
+      <MenuItemNode node={rowItem('list.createBasedOn:Zayavka:SchetKOplate')} />
+    )
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Счёт к оплате' }))
+
+    expect(dispatch).toHaveBeenCalledWith(
+      {
+        type: 'COMMAND',
+        command: 'list.createBasedOn:Zayavka:SchetKOplate',
+        value: { id: 42 },
+        sourceNodeId: 'mi1',
+      },
+      null
+    )
+  })
+
+  it('строка не выделена → пункт disabled и команда не уходит', () => {
+    render(<MenuItemNode node={rowItem('list.print:Zayavka:Zayavka')} />)
+
+    const mi = screen.getByRole('menuitem', { name: 'Счёт к оплате' })
+    expect(mi.getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(mi)
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('выделение ДРУГОГО списка пункт не активирует (ключ — selectionField)', () => {
+    useSelectionStore.getState().setSelection('list.Otpusk.list', 7)
+    render(<MenuItemNode node={rowItem('list.print:Zayavka:Zayavka')} />)
+
+    expect(
+      screen
+        .getByRole('menuitem', { name: 'Счёт к оплате' })
+        .getAttribute('aria-disabled')
+    ).toBe('true')
+  })
+
+  it('пункт без requiresSelectedRow шлёт COMMAND без value — прежнее поведение', () => {
+    useSelectionStore.getState().setSelection(LIST_ID, 42)
+    render(
+      <MenuItemNode
+        node={item({ label: 'Заполнить', command: 'zapolnit', enabled: true })}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Заполнить' }))
+
+    expect(dispatch).toHaveBeenCalledWith(
+      { type: 'COMMAND', command: 'zapolnit' },
+      null
+    )
   })
 })

@@ -42,6 +42,7 @@ const sessionMock = vi.hoisted(() => ({
   setDirty: vi.fn(),
   closeAfter: vi.fn(),
   setOnDirtyClose: vi.fn(),
+  getTree: (): unknown => null,
   getLayoutCode: (): string | null => null,
   setLayoutCode: vi.fn(),
 }))
@@ -131,6 +132,33 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
     expect(post).toHaveBeenCalledWith(
       expect.objectContaining({ route: '/documents/SchetKOplate/new' })
     )
+  })
+
+  /**
+   * Требование владельца: форма создания пустая ВСЕГДА, а возврат на свою вкладку возвращает
+   * введённое. На проводе оба запроса — OPEN одного маршрута, различает их только идентификатор
+   * экземпляра формы, поэтому он обязан быть на КАЖДОМ OPEN (бэк читает его только там).
+   */
+  it('OPEN несёт formInstanceId вкладки', async () => {
+    router.search = ''
+    const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'OPEN' })
+
+    const action = post.mock.calls[0][0].action as { formInstanceId?: string }
+    expect(action.formInstanceId).toBeTruthy()
+  })
+
+  it('EVENT/COMMAND идентификатор экземпляра не несут — сервер читает его только на OPEN', async () => {
+    router.search = ''
+    const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
+
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'COMMAND', command: 'save' })
+
+    const action = post.mock.calls[0][0].action as { formInstanceId?: string }
+    expect(action.formInstanceId).toBeUndefined()
   })
 
   it('OPEN без layoutCode: ключ layoutCode отсутствует в запросе', async () => {
@@ -957,7 +985,6 @@ describe('useSduiDispatch: formInstanceId на OPEN (SCRUM-312)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    sessionStorage.clear()
     router.search = ''
     queryClient = new QueryClient()
     wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -992,5 +1019,93 @@ describe('useSduiDispatch: formInstanceId на OPEN (SCRUM-312)', () => {
     for (const call of post.mock.calls) {
       expect('formInstanceId' in (call[0].action as object)).toBe(false)
     }
+  })
+})
+
+// SCRUM-410 (спека 422-highlight §3): патчей в теле 422 нет (ADR-0037 §B1) —
+// подсветку строит фронт по errors[], узел ищется по props.binding.
+describe('useSduiDispatch: 422 DOCUMENT_VALIDATION → подсветка по errors[]', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+  const tree = {
+    id: 'form',
+    type: 'FORM',
+    children: [
+      {
+        id: 'form.f.istochnik',
+        type: 'REFERENCE_FIELD',
+        binding: 'IstochnikFinansirovaniya',
+      },
+    ],
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    router.search = ''
+    useCommandInflightStore.setState({ sessions: {} })
+    sessionMock.getTree = () => tree
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  afterEach(() => {
+    sessionMock.getTree = () => null
+  })
+
+  it('поле подсвечено, старые ошибки сняты, тост показан, dispatch=false', async () => {
+    vi.spyOn(viewTransport, 'post').mockRejectedValue(
+      new ViewHttpError(
+        'Ошибки заполнения документа: …',
+        422,
+        'DOCUMENT_VALIDATION',
+        undefined,
+        [
+          {
+            attributeCode: 'IstochnikFinansirovaniya',
+            errorCode: 'COST_ANALYTICS_ISTOCHNIKFINANSIROVANIYA_NOT_FILLED',
+            message: 'Не заполнен реквизит шапки "Источник финансирования"',
+          },
+          {
+            attributeCode: null,
+            errorCode: 'HAS_SUBORDINATE_DOCUMENTS',
+            message: 'По документу есть подчинённые документы',
+          },
+        ]
+      )
+    )
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    const ok = await result.current({ type: 'COMMAND', command: 'post' })
+
+    expect(ok).toBe(false)
+    expect(sessionMock.clearAllErrors).toHaveBeenCalledTimes(1)
+    expect(sessionMock.applyTreePatches).toHaveBeenCalledWith([
+      {
+        op: 'setProp',
+        nodeId: 'form.f.istochnik',
+        key: 'error',
+        value: 'Не заполнен реквизит шапки "Источник финансирования"',
+      },
+    ])
+    expect(showToast).toHaveBeenCalledWith(
+      'error',
+      'Ошибки заполнения документа: …'
+    )
+  })
+
+  it('другой 422 (COMMAND_FAILED) подсветку не трогает — только тост', async () => {
+    vi.spyOn(viewTransport, 'post').mockRejectedValue(
+      new ViewHttpError('не вышло', 422, 'COMMAND_FAILED')
+    )
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'COMMAND', command: 'post' })
+
+    expect(sessionMock.clearAllErrors).not.toHaveBeenCalled()
+    expect(sessionMock.applyTreePatches).not.toHaveBeenCalled()
+    expect(showToast).toHaveBeenCalledWith('error', 'не вышло')
   })
 })

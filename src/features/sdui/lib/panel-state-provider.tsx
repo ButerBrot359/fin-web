@@ -51,6 +51,7 @@ export const PanelStateProvider = ({
     // eslint-disable-next-line @typescript-eslint/no-empty-function -- намеренный noop: панель read-only, флаг dirty формы не ведёт (SCRUM-288 §2.5)
     setDirty: () => {},
     tree: panel.node,
+    getTree: () => panel.node,
     setRoot: warnReadOnly,
     setSession: warnReadOnly,
     bumpRevision: warnReadOnly,

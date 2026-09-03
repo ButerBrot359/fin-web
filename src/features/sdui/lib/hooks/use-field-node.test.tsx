@@ -8,6 +8,7 @@ const mockDispatch = vi.fn(() => Promise.resolve(true))
 vi.mock('../dispatch', () => ({ useSduiDispatch: () => mockDispatch }))
 
 const state: Record<string, unknown> = { name: 'Иван' }
+const applyTreePatches = vi.fn()
 vi.mock('../sdui-session-context', () => ({
   useSduiSession: () => ({
     kind: 'panel',
@@ -16,6 +17,7 @@ vi.mock('../sdui-session-context', () => ({
     setValue: (b: string, v: unknown) => {
       state[b] = v
     },
+    applyTreePatches,
   }),
   useBindingValue: (b?: string) => (b ? state[b] : undefined),
 }))
@@ -67,5 +69,43 @@ describe('useFieldNode', () => {
     mockDispatch.mockClear()
     result.current.fireServerEvent('blur', 'x')
     expect(mockDispatch).not.toHaveBeenCalled()
+  })
+
+  it('правка значения снимает ошибку с этого поля (спека 422-highlight §3.3)', () => {
+    const node = {
+      id: 'f1',
+      type: 'TEXT_FIELD',
+      binding: 'name',
+      props: {
+        visible: true,
+        enabled: true,
+        error: 'Не заполнен реквизит шапки "Имя"',
+      },
+    } as ViewNode
+    const { result } = renderHook(() => useFieldNode(node))
+    expect(result.current.error).toBe('Не заполнен реквизит шапки "Имя"')
+
+    applyTreePatches.mockClear()
+    result.current.setValue('Пётр')
+
+    expect(applyTreePatches).toHaveBeenCalledWith([
+      { op: 'setProp', nodeId: 'f1', key: 'error', value: null },
+    ])
+    expect(state.name).toBe('Пётр')
+  })
+
+  it('поле без ошибки патч снятия не шлёт', () => {
+    const node = {
+      id: 'f1',
+      type: 'TEXT_FIELD',
+      binding: 'name',
+      props: { visible: true, enabled: true },
+    } as ViewNode
+    const { result } = renderHook(() => useFieldNode(node))
+
+    applyTreePatches.mockClear()
+    result.current.setValue('Сидор')
+
+    expect(applyTreePatches).not.toHaveBeenCalled()
   })
 })

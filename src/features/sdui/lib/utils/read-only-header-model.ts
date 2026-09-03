@@ -7,7 +7,7 @@
 import type { ViewNode } from '../../types/view'
 import { nodeToTableColumnDef } from './build-column-defs'
 import { isNodeVisible } from './column-visibility'
-import { columnBackground } from './column-background'
+import { columnBackground, columnTextColor } from './column-background'
 
 export interface ReadOnlyColumnDef {
   id: string
@@ -22,6 +22,8 @@ export interface ReadOnlyColumnDef {
   resizable?: boolean
   /** Постоянная заливка ячеек колонки (props.backgroundColor). */
   backgroundColor?: string
+  /** Постоянный цвет текста ячеек колонки (props.textColor). */
+  textColor?: string
 }
 
 /**
@@ -53,6 +55,7 @@ export function extractReadOnlyColumns(
       minWidth: col.minWidth,
       resizable: col.resizable,
       backgroundColor: columnBackground(col.props),
+      textColor: columnTextColor(col.props),
     }
   })
 }

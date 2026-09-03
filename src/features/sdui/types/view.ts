@@ -88,8 +88,9 @@ export interface ViewAction {
   // «Не сохранять» — сервер снимает черновик. CLOSE без флага (навигация,
   // размонтирование экрана) черновик сохраняет.
   discardDraft?: boolean
-  // SCRUM-312: стабильный id вкладки рабочего стола на OPEN — ключ серверного
-  // черновика формы создания. Без него форма создания всегда пустая.
+  // Экземпляр формы рабочей вкладки — уходит на КАЖДОМ OPEN. У незаписанного документа
+  // это единственный способ отличить «вернулся в свою форму» от «создаю новый»: маршрут
+  // /documents/<Type>/new у обоих одинаков (бэк: DocumentFormDraftStore).
   formInstanceId?: string
 }
 
@@ -198,6 +199,12 @@ export interface ViewEffect {
 
 export interface NodeProps {
   node: ViewNode
+}
+
+export interface ValidationErrorDetail {
+  attributeCode: string | null
+  errorCode?: string
+  message?: string
 }
 
 export interface ConflictError {

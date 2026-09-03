@@ -15,7 +15,7 @@ export interface FieldNodeCommon {
 }
 
 export function useFieldNode(node: ViewNode): FieldNodeCommon {
-  const { setValue } = useSduiSession()
+  const { setValue, applyTreePatches } = useSduiSession()
   const dispatch = useSduiDispatch()
   // Точечная подписка: нода ре-рендерится только при изменении своего значения (фикс M1).
   const value = useBindingValue(node.binding)
@@ -37,6 +37,11 @@ export function useFieldNode(node: ViewNode): FieldNodeCommon {
     // basis вида "0 1 240px" давал полосу пустоты на 240px под контролом.
     value,
     setValue: (v) => {
+      if (node.props?.error != null) {
+        applyTreePatches([
+          { op: 'setProp', nodeId: node.id, key: 'error', value: null },
+        ])
+      }
       if (node.binding) setValue(node.binding, v)
     },
     fireServerEvent: (trigger, newValue) => {

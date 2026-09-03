@@ -57,6 +57,14 @@ const renderAt = (path: string, showCardChrome: boolean) =>
     </QueryClientProvider>
   )
 
+/** Дерево экрана списка: PAGE с узлом LIST — по нему шапка и опознаёт список. */
+const listTree: ViewNode = {
+  id: 'list.RKO',
+  type: 'PAGE',
+  props: { title: 'Расходный кассовый ордер' },
+  children: [{ id: 'list.RKO.list', type: 'LIST' } as ViewNode],
+}
+
 describe('SduiCardScreen', () => {
   afterEach(() => {
     cleanup()
@@ -76,9 +84,41 @@ describe('SduiCardScreen', () => {
     expect(screenState.lastProps.shouldPersistSession).toBeTypeOf('function')
   })
 
-  it('list-kind → PageHeader отсутствует', () => {
+  it('без обвязки (ни карточной, ни списковой) → PageHeader отсутствует', () => {
     renderAt('/modules/kazna/document/RKO', false)
     expect(screen.getByText('SDUI-ЭКРАН')).toBeTruthy()
+    expect(screen.queryByTestId('page-header')).toBeNull()
+  })
+
+  /**
+   * У легаси-экрана списка есть шапка с названием, навигацией и крестиком «закрыть», а
+   * SDUI-версия обходилась заголовком в теле страницы и вовсе без крестика (02.09.2026).
+   * Список опознаётся по дереву, а не по kind вкладки: у списков регистров и плана счетов
+   * kind тот же, что у их карточек.
+   */
+  it('дерево списка → PageHeader с заголовком, даже без карточной обвязки', () => {
+    act(() => {
+      useTreeStore.getState().setRoot(listTree)
+    })
+
+    renderAt('/modules/kazna/document/RKO', false)
+
+    expect(screen.getByTestId('page-header')).toBeTruthy()
+    expect(screen.getByText('Расходный кассовый ордер')).toBeTruthy()
+  })
+
+  it('дерево карточки (без узла LIST) и без карточной обвязки → шапки нет', () => {
+    act(() => {
+      useTreeStore.getState().setRoot({
+        id: 'doc.RKO',
+        type: 'PAGE',
+        props: { title: 'РКО №5' },
+        children: [{ id: 'doc.RKO.tabs', type: 'TABS' } as ViewNode],
+      })
+    })
+
+    renderAt('/modules/kazna/document/RKO/5', false)
+
     expect(screen.queryByTestId('page-header')).toBeNull()
   })
 

@@ -221,6 +221,11 @@
     "filterRemoveChip": "Удалить фильтр",
     "filterClearAll": "Сбросить все",
     "selectRowFirst": "Сначала выберите строку в таблице",
+    "collapseAll": "Свернуть",
+    "expandAll": "Развернуть",
+    "collapseRow": "Свернуть группу",
+    "expandRow": "Развернуть группу",
+    "clearFilter": "Показать всех",
     "resizeColumn": "Изменить ширину колонки"
   },
   "informationRegister": {
@@ -770,6 +775,13 @@
       "collapse": "Свернуть",
       "payloadError": "Не удалось отобразить данные табеля",
       "pickerUnavailable": "Подбор сотрудников недоступен: сервер не прислал контракт выбора"
+    },
+    "listOutput": {
+      "columns": "Колонки",
+      "all": "Все",
+      "onlySelected": "Только выделенные",
+      "confirm": "Вывести",
+      "empty": "Нет колонок для вывода"
     }
   },
   "tarifikatsiya": {

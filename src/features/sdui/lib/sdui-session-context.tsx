@@ -18,6 +18,7 @@ export interface SduiSessionValue {
   // Авторитетный dirty от сервера (SCRUM-288 §2.5)
   setDirty: (value: boolean) => void
   tree: ViewNode | null
+  getTree?: () => ViewNode | null
   setRoot: (node: ViewNode) => void
   setSession: (id: string, rev: number) => void
   bumpRevision: (rev: number) => void
@@ -67,6 +68,7 @@ export const useSduiSession = (): SduiSessionValue => {
     resetDirty: useViewStateStore.getState().resetDirty,
     setDirty: useViewStateStore.getState().setDirty,
     tree,
+    getTree: () => useTreeStore.getState().root,
     setRoot: useTreeStore.getState().setRoot,
     setSession: useTreeStore.getState().setSession,
     bumpRevision: useTreeStore.getState().bumpRevision,

@@ -26,6 +26,52 @@ describe('parseViewError', () => {
     })
   })
 
+  it('422 DOCUMENT_VALIDATION: errors[] разбирается, attributeCode=null сохраняется', () => {
+    expect(
+      parseViewError({
+        error: 'DOCUMENT_VALIDATION',
+        message: 'Ошибки заполнения документа: …',
+        errors: [
+          {
+            attributeCode: 'IstochnikFinansirovaniya',
+            errorCode: 'COST_ANALYTICS_ISTOCHNIKFINANSIROVANIYA_NOT_FILLED',
+            message: 'Не заполнен реквизит шапки "Источник финансирования"',
+            code: 'COST_ANALYTICS_ISTOCHNIKFINANSIROVANIYA_NOT_FILLED',
+          },
+          {
+            attributeCode: null,
+            errorCode: 'HAS_SUBORDINATE_DOCUMENTS',
+            message: 'По документу есть подчинённые документы',
+          },
+        ],
+      })
+    ).toEqual({
+      code: 'DOCUMENT_VALIDATION',
+      message: 'Ошибки заполнения документа: …',
+      errors: [
+        {
+          attributeCode: 'IstochnikFinansirovaniya',
+          errorCode: 'COST_ANALYTICS_ISTOCHNIKFINANSIROVANIYA_NOT_FILLED',
+          message: 'Не заполнен реквизит шапки "Источник финансирования"',
+        },
+        {
+          attributeCode: null,
+          errorCode: 'HAS_SUBORDINATE_DOCUMENTS',
+          message: 'По документу есть подчинённые документы',
+        },
+      ],
+    })
+  })
+
+  it('errors[] пустой — ключ остаётся пустым массивом; не массив — ключа нет', () => {
+    expect(
+      parseViewError({ error: 'DOCUMENT_VALIDATION', errors: [] })
+    ).toEqual({ code: 'DOCUMENT_VALIDATION', errors: [] })
+    expect(parseViewError({ error: 'COMMAND_FAILED' })).toEqual({
+      code: 'COMMAND_FAILED',
+    })
+  })
+
   it('пустое/неизвестное тело — пустой объект', () => {
     expect(parseViewError(null)).toEqual({})
     expect(parseViewError('boom')).toEqual({})

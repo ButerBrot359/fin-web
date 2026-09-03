@@ -139,7 +139,15 @@ function verticalSubRows(
         'div',
         {
           key: item?.key ?? `empty-${String(index)}`,
-          className: index > 0 ? 'border-t border-ui-03' : undefined,
+          // SCRUM-312 (макет «Журнал проводок»): под-строки стопки разделены
+          // тонкой линией и зеброй ui-02 на чётных — вместо снятой сетки.
+          className:
+            [
+              index > 0 ? 'border-t border-ui-03' : '',
+              index % 2 === 1 ? 'bg-ui-02' : '',
+            ]
+              .filter(Boolean)
+              .join(' ') || undefined,
           style: {
             // Пол высоты — общий для всех колонок: строка с короткими
             // значениями не должна схлопываться (см. док-комментарий выше).

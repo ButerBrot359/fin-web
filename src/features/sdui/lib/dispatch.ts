@@ -33,6 +33,7 @@ import {
   saveFormSession,
 } from './form-session-storage'
 import { useAsyncTaskStore } from '@/entities/async-task'
+import { ensureFormInstanceId } from '@/features/workspace-tabs'
 
 export function useSduiDispatch() {
   const location = useLocation()
@@ -232,7 +233,18 @@ export function useSduiDispatch() {
             ? { layoutCode: action.layoutCode }
             : {}),
           route,
-          action,
+          // SCRUM-312: стабильный id вкладки рабочего стола на каждом OPEN —
+          // сервер по нему разводит «вернулась в свою форму создания»
+          // (восстановить черновик) и «создаю новый документ» (пустая форма).
+          // Вкладка ключуется pathname'ом; реопен после 409 идёт тем же путём
+          // и получает тот же id (вкладка жива).
+          action:
+            action.type === 'OPEN'
+              ? {
+                  ...action,
+                  formInstanceId: ensureFormInstanceId(location.pathname),
+                }
+              : action,
         })
 
         if (action.type === 'OPEN') {

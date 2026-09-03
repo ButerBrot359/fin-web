@@ -55,13 +55,14 @@ beforeEach(() => {
 })
 
 describe('сетка ТЧ', () => {
-  it('таблица без COLUMN_GROUP тоже получает сетку', () => {
+  // SCRUM-312 (макет «Журнал проводок»): вертикальных линий больше нет —
+  // колонки разделяет воздух, строки — горизонтальный разделитель ui-03.
+  it('таблица без COLUMN_GROUP получает горизонтальные разделители, без вертикалей', () => {
     renderTable(<TableNode node={flatTable()} />)
-    // TABLE_GRID_SX задаёт линии дескендант-селекторами на <table>
-    const cellBorder = getComputedStyle(
-      screen.getAllByRole('cell')[0]
-    ).borderRightColor
-    expect(cellBorder).toBe('rgb(195, 206, 224)')
+    const style = getComputedStyle(screen.getAllByRole('cell')[0])
+    expect(style.borderBottomColor).toBe('rgb(195, 206, 224)')
+    // borderRight не задаётся TABLE_GRID_SX вовсе (дефолт MUI — без правого борта)
+    expect(style.borderRightColor).not.toBe('rgb(195, 206, 224)')
   })
 })
 

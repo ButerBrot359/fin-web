@@ -19,10 +19,14 @@ export default {
         sans: ['Google Sans', 'system-ui', 'sans-serif'],
       },
       fontSize: {
-        h2: ['26px', { lineHeight: 'auto', fontWeight: '700' }],
-        h3: ['20px', { lineHeight: 'auto', fontWeight: '700' }],
-        body1: ['16px', { lineHeight: 'auto', fontWeight: '500' }],
-        body2: ['14px', { lineHeight: 'auto', fontWeight: '500' }],
+        // 'auto' — невалидный line-height (браузер падал в normal ≈1.48 и
+        // кнопки 40px превращались в 41). Явные значения: заголовки по Figma
+        // (line-height 100%), body — 20/24px, чтобы контролы попадали в
+        // сетку 40px (10+20+10).
+        h2: ['26px', { lineHeight: '26px', fontWeight: '700' }],
+        h3: ['20px', { lineHeight: '20px', fontWeight: '700' }],
+        body1: ['16px', { lineHeight: '24px', fontWeight: '500' }],
+        body2: ['14px', { lineHeight: '20px', fontWeight: '500' }],
       },
       borderRadius: {
         sm: '4px',

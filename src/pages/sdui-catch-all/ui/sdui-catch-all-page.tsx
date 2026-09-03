@@ -1,5 +1,5 @@
 import { useState, type FC } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { mapKindToPageType } from '@/features/sdui'
 import type { ViewTabMeta } from '@/features/sdui'
@@ -48,6 +48,7 @@ function seedServerKind(
 
 export const SduiCatchAllPage: FC = () => {
   const location = useLocation()
+  const navigate = useNavigate()
   const [mode, setMode] = useState<Mode>({ kind: 'sdui' })
   const [serverKind, setServerKind] = useState<string | null>(() =>
     seedServerKind(location.pathname, useWorkspaceTabsStore.getState().tabs)
@@ -58,9 +59,19 @@ export const SduiCatchAllPage: FC = () => {
     if (!tab) return
     const pageType = mapKindToPageType(tab.kind)
     if (!pageType) return
-    useWorkspaceTabsStore
+    const tabId = useWorkspaceTabsStore
       .getState()
       .activateOrCreate(location.pathname, location.search, pageType)
+    // SCRUM-386 фикс 2: та же сущность уже открыта под другим URL — вкладка
+    // активирована, адресную строку доводим до её пути (дубль не появляется).
+    if (tabId && tabId !== location.pathname) {
+      const existing = useWorkspaceTabsStore
+        .getState()
+        .tabs.find((t) => t.id === tabId)
+      if (existing && existing.pageType !== 'sdui-panel') {
+        void navigate(existing.path + existing.search, { replace: true })
+      }
+    }
   }
 
   if (mode.kind === 'not-found') return <NotFound />

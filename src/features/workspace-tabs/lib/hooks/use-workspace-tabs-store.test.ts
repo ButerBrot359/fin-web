@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { notifyPanelTabClose, onPanelTabClose } from '../panel-tab-close-registry'
+import {
+  notifyPanelTabClose,
+  onPanelTabClose,
+} from '../panel-tab-close-registry'
 import { useWorkspaceTabsStore } from './use-workspace-tabs-store'
 
 beforeEach(() => {
@@ -10,7 +13,9 @@ beforeEach(() => {
 
 describe('activateOrCreatePanel', () => {
   it('создаёт панельную вкладку без маршрута и активирует её', () => {
-    useWorkspaceTabsStore.getState().activateOrCreatePanel('movements:1', 'Движения', 'p1')
+    useWorkspaceTabsStore
+      .getState()
+      .activateOrCreatePanel('movements:1', 'Движения', 'p1')
     const s = useWorkspaceTabsStore.getState()
     expect(s.tabs).toHaveLength(1)
     expect(s.tabs[0]).toMatchObject({
@@ -25,9 +30,15 @@ describe('activateOrCreatePanel', () => {
   })
 
   it('повторный вызов с тем же tabKey переиспользует вкладку и обновляет panelId', () => {
-    useWorkspaceTabsStore.getState().activateOrCreatePanel('movements:1', 'Движения', 'p1')
-    useWorkspaceTabsStore.getState().activateOrCreate('/modules/x', '', 'module')
-    useWorkspaceTabsStore.getState().activateOrCreatePanel('movements:1', 'Движения', 'p2')
+    useWorkspaceTabsStore
+      .getState()
+      .activateOrCreatePanel('movements:1', 'Движения', 'p1')
+    useWorkspaceTabsStore
+      .getState()
+      .activateOrCreate('/modules/x', '', 'module')
+    useWorkspaceTabsStore
+      .getState()
+      .activateOrCreatePanel('movements:1', 'Движения', 'p2')
     const s = useWorkspaceTabsStore.getState()
     expect(s.tabs.filter((t) => t.id === 'movements:1')).toHaveLength(1)
     expect(s.tabs.find((t) => t.id === 'movements:1')?.panelId).toBe('p2')
@@ -37,8 +48,12 @@ describe('activateOrCreatePanel', () => {
 
 describe('персист панельных вкладок', () => {
   it('sdui-panel вкладки не попадают в снимок; activeTabId-панель сбрасывается в null', () => {
-    useWorkspaceTabsStore.getState().activateOrCreate('/modules/x', '', 'module')
-    useWorkspaceTabsStore.getState().activateOrCreatePanel('movements:1', 'Движения', 'p1')
+    useWorkspaceTabsStore
+      .getState()
+      .activateOrCreate('/modules/x', '', 'module')
+    useWorkspaceTabsStore
+      .getState()
+      .activateOrCreatePanel('movements:1', 'Движения', 'p1')
     const raw = sessionStorage.getItem('workspace-tabs')
     expect(raw).not.toBeNull()
     const persisted = JSON.parse(raw!) as {
@@ -58,5 +73,38 @@ describe('panel-tab-close-registry', () => {
     unsubscribe()
     notifyPanelTabClose('p2')
     expect(cb).toHaveBeenCalledTimes(1)
+  })
+})
+
+// SCRUM-386 фикс 2: одна сущность под модульным и плоским URL — одна вкладка.
+describe('activateOrCreate — дедуп по сущностному ключу', () => {
+  it('плоский путь той же записи активирует модульную вкладку, дубль не создаётся', () => {
+    const s = useWorkspaceTabsStore.getState()
+    s.activateOrCreate(
+      '/modules/Administrirovanie/document/Tabel/123',
+      '',
+      'document-entry'
+    )
+    const id = useWorkspaceTabsStore
+      .getState()
+      .activateOrCreate('/documents/Tabel/123', '', 'document-entry')
+
+    const state = useWorkspaceTabsStore.getState()
+    expect(id).toBe('/modules/Administrirovanie/document/Tabel/123')
+    expect(state.tabs.map((t) => t.id)).toEqual([
+      '/modules/Administrirovanie/document/Tabel/123',
+    ])
+    expect(state.activeTabId).toBe(
+      '/modules/Administrirovanie/document/Tabel/123'
+    )
+  })
+
+  it('разные записи одного типа остаются разными вкладками', () => {
+    const s = useWorkspaceTabsStore.getState()
+    s.activateOrCreate('/documents/Tabel/1', '', 'document-entry')
+    useWorkspaceTabsStore
+      .getState()
+      .activateOrCreate('/documents/Tabel/2', '', 'document-entry')
+    expect(useWorkspaceTabsStore.getState().tabs).toHaveLength(2)
   })
 })

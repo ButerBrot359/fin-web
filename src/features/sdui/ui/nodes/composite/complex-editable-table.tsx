@@ -24,6 +24,7 @@ import {
 
 import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import { useTableSync, type TableRow } from '../../../lib/hooks/use-table-sync'
+import { useTableViewportMaxHeight } from '../../../lib/hooks/use-table-viewport-max-height'
 import {
   useTableSearch,
   isSearchHit,
@@ -487,8 +488,12 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     readVirtualization(node),
     HEAVY_ROW_VIRTUAL_OPTIONS
   )
+  // SCRUM-327: вертикальный скролл живёт внутри ТЧ (maxHeight по вьюпорту),
+  // страница документа не растягивается; окно виртуализации — от контейнера.
+  const viewport = useTableViewportMaxHeight()
   const setContainerRef = (node: HTMLDivElement | null) => {
     containerRef.current = node
+    viewport.setNode(node)
     virt.setContainerRef(node)
   }
 
@@ -612,9 +617,23 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
       <TableContainer
         component={Paper}
         ref={setContainerRef}
-        sx={{ flex: '1 1 auto' }}
+        data-own-scroll="true"
+        sx={{
+          flex: '1 1 auto',
+          ...(viewport.maxHeight != null && {
+            maxHeight: viewport.maxHeight,
+            overflowY: 'auto',
+          }),
+        }}
       >
-        <Table size="small" sx={tableSx}>
+        <Table
+          size="small"
+          // Шапка колонок остаётся видимой при внутреннем скролле (SCRUM-327).
+          // Двухуровневые шапки (VERTICAL-группы) sticky не переживут — у MUI
+          // оба ряда прилипают к top:0 и накладываются; для них шапка обычная.
+          stickyHeader={table.getHeaderGroups().length === 1}
+          sx={tableSx}
+        >
           {sizing.isResizable && (
             <TableSizingColgroup
               table={table}

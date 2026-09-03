@@ -27,6 +27,7 @@ export const palette = {
   accent02: t('--accent-02', '#2a75f4'),
   accent02Hover: t('--accent-02-hover', '#1f66db'),
   support01: t('--support-01', '#f4482a'),
+  support02: t('--support-02', '#21d73b'),
   // pending: значения зафиксированы Ф1 как есть, судьба — аудит (Ф3)
   pendingGray1: t('--pending-gray-1', '#d9d9d9'),
   pendingGray2: t('--pending-gray-2', '#dcdcdc'),

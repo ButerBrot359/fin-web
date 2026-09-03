@@ -1,26 +1,31 @@
+export type SduiButtonVariant = 'primary' | 'secondary' | 'tertiary'
+
 export interface ButtonPresentation {
-  muiVariant: 'text' | 'outlined' | 'contained'
+  variant: SduiButtonVariant
   isDropdown: boolean
 }
 
 /**
- * Маппинг props.variant с бэка → MUI. text-dropdown — меню, выглядящее
- * ссылкой («Ещё...» в панели «Перейти» читается как продолжение ссылок-регистров,
- * а не как кнопка) — SCRUM-244 §2.5.
+ * Маппинг props.variant с бэка → варианты дизайн-системы (Figma, лист
+ * «button» 40:601): primary — салатовая, secondary — белая, tertiary —
+ * прозрачная с синим текстом; outlined-кнопок в макетах не существует,
+ * поэтому исторический variant='outlined' с провода читается как secondary.
+ * text-dropdown — меню, выглядящее ссылкой («Ещё...» в панели «Перейти»
+ * читается как продолжение ссылок-регистров, а не как кнопка) — SCRUM-244 §2.5.
  */
 export function resolveButtonPresentation(
   variant: string | undefined,
-  hasChildren: boolean,
+  hasChildren: boolean
 ): ButtonPresentation {
   const isDropdown =
     (variant === 'dropdown' || variant === 'text-dropdown') && hasChildren
 
-  const muiVariant =
+  const uiVariant: SduiButtonVariant =
     variant === 'contained' || variant === 'primary'
-      ? 'contained'
+      ? 'primary'
       : variant === 'text' || variant === 'text-dropdown'
-        ? 'text'
-        : 'outlined'
+        ? 'tertiary'
+        : 'secondary'
 
-  return { muiVariant, isDropdown }
+  return { variant: uiVariant, isDropdown }
 }

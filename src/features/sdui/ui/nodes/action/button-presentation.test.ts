@@ -5,32 +5,40 @@ import { resolveButtonPresentation } from './button-presentation'
 describe('resolveButtonPresentation', () => {
   it('text-dropdown: меню, выглядящее ссылкой («Ещё...» панели «Перейти»)', () => {
     expect(resolveButtonPresentation('text-dropdown', true)).toEqual({
-      muiVariant: 'text',
+      variant: 'tertiary',
       isDropdown: true,
     })
   })
 
-  it('dropdown: командное меню остаётся outlined', () => {
+  it('dropdown: командное меню — обычная secondary-кнопка с шевроном', () => {
     expect(resolveButtonPresentation('dropdown', true)).toEqual({
-      muiVariant: 'outlined',
+      variant: 'secondary',
       isDropdown: true,
     })
   })
 
   it('дропдаун без детей вырождается в кнопку', () => {
-    expect(resolveButtonPresentation('text-dropdown', false).isDropdown).toBe(false)
+    expect(resolveButtonPresentation('text-dropdown', false).isDropdown).toBe(
+      false
+    )
     expect(resolveButtonPresentation('dropdown', false).isDropdown).toBe(false)
   })
 
-  it('прямые MUI-варианты с бэка проходят как есть', () => {
-    expect(resolveButtonPresentation('text', false).muiVariant).toBe('text')
-    expect(resolveButtonPresentation('contained', false).muiVariant).toBe('contained')
-    expect(resolveButtonPresentation('outlined', false).muiVariant).toBe('outlined')
+  it('варианты с провода мапятся на дизайн-систему (outlined в Figma нет → secondary)', () => {
+    expect(resolveButtonPresentation('text', false).variant).toBe('tertiary')
+    expect(resolveButtonPresentation('contained', false).variant).toBe(
+      'primary'
+    )
+    expect(resolveButtonPresentation('outlined', false).variant).toBe(
+      'secondary'
+    )
   })
 
-  it('легаси primary → contained, неизвестное/пустое → outlined', () => {
-    expect(resolveButtonPresentation('primary', false).muiVariant).toBe('contained')
-    expect(resolveButtonPresentation(undefined, false).muiVariant).toBe('outlined')
-    expect(resolveButtonPresentation('weird', false).muiVariant).toBe('outlined')
+  it('легаси primary → primary, неизвестное/пустое → secondary', () => {
+    expect(resolveButtonPresentation('primary', false).variant).toBe('primary')
+    expect(resolveButtonPresentation(undefined, false).variant).toBe(
+      'secondary'
+    )
+    expect(resolveButtonPresentation('weird', false).variant).toBe('secondary')
   })
 })

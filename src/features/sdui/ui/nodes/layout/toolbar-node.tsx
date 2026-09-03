@@ -69,7 +69,7 @@ export const ToolbarNode: FC<NodeProps> = ({ node }) => {
     <OverflowContext.Provider value={{ collapsedNodes }}>
       <div
         ref={containerRef}
-        className={`flex items-center gap-1${overflowHostId ? '' : ' overflow-x-auto'}`}
+        className={`flex items-center gap-2${overflowHostId ? '' : ' overflow-x-auto'}`}
       >
         {children.map((c) => (
           <div

@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
 
-// Inline-SVG: строгий CSP панелей блокирует сетевые ассеты,
-// поэтому глифы вшиты в код. Неизвестное имя → null (кнопка
-// деградирует до текста, никогда не пустая). Глифы — статичные
-// ReactNode-константы, не компоненты: файл экспортирует только
-// функцию, и react-refresh не ругается на смешанный экспорт.
+import { figmaIcons } from '@/shared/ui/icons'
+
+// Глифы — из Figma-реестра (@/shared/ui/icons, лист «Icons/20»); вшиты в
+// бандл (строгий CSP панелей блокирует сетевые ассеты). Неизвестное имя →
+// null (кнопка деградирует до текста, никогда не пустая). related-hierarchy
+// остаётся рукодельным: в Figma нет глифа «иерархия связей» (ближайший
+// «layers» 40:238 — семантически список, не иерархия).
 const relatedHierarchyIcon: ReactNode = (
   <svg
     width="20"
@@ -51,92 +53,29 @@ const relatedHierarchyIcon: ReactNode = (
   </svg>
 )
 
-// «Дт/Кт» (движения документа) — как в 1С: квадрат с «Дт» над «Кт». Глиф несёт
-// смысл сам, т.к. в button-node content = icon ?? label → после регистрации label
-// «Дт/Кт» не рендерится (кнопка icon-only). SCRUM-265 FE-3.
-const dtktIcon: ReactNode = (
+// Шеврон dropdown-кнопок («Печать ⌄») — глиф arrow-down из Figma (40:220),
+// инлайном: svg-импорт не резолвится в vitest (svgr только в vite.config).
+export const dropdownChevronIcon: ReactNode = (
   <svg
-    width="20"
-    height="20"
-    viewBox="0 0 20 20"
+    width="13"
+    height="7"
+    viewBox="0 0 13 7"
     fill="none"
     aria-hidden="true"
     focusable="false"
   >
-    <rect
-      x="1.75"
-      y="1.75"
-      width="16.5"
-      height="16.5"
-      rx="2.5"
-      stroke="currentColor"
-      strokeWidth="1.4"
-    />
-    <line
-      x1="2.5"
-      y1="10"
-      x2="17.5"
-      y2="10"
-      stroke="currentColor"
-      strokeWidth="1"
-    />
-    <text
-      x="10"
-      y="8.4"
-      textAnchor="middle"
-      fontSize="6.2"
-      fontWeight="600"
-      fill="currentColor"
-    >
-      Дт
-    </text>
-    <text
-      x="10"
-      y="16.4"
-      textAnchor="middle"
-      fontSize="6.2"
-      fontWeight="600"
-      fill="currentColor"
-    >
-      Кт
-    </text>
-  </svg>
-)
-
-// «Скопировать» — два наложенных листа, привычная метафора копии. В эталонной панели
-// списка 1С эта команда тоже иконка, а не текст (02.09.2026).
-const copyIcon: ReactNode = (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 20 20"
-    fill="none"
-    aria-hidden="true"
-    focusable="false"
-  >
-    <rect
-      x="7.25"
-      y="2.25"
-      width="10.5"
-      height="12.5"
-      rx="1.5"
-      stroke="currentColor"
-      strokeWidth="1.4"
-    />
     <path
-      d="M12.75 17.75h-8.5a1.5 1.5 0 0 1-1.5-1.5V5.25"
+      d="M11.36 0.75 6.01 5.45 0.66 0.75"
       stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      strokeWidth="2"
     />
   </svg>
 )
 
 const BUTTON_ICON_MAP: Record<string, ReactNode> = {
   'related-hierarchy': relatedHierarchyIcon,
-  dtkt: dtktIcon,
-  copy: copyIcon,
+  dtkt: figmaIcons['debet-kredit'],
+  copy: figmaIcons.copy,
 }
 
 /** Иконка по имени или null для неизвестного (кнопка деградирует до текста). */

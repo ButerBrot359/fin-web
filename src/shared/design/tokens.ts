@@ -43,6 +43,13 @@ export const palette = {
   pendingYellow3: t('--pending-yellow-3', '#e3b93c'),
   pendingWeekendRed: t('--pending-weekend-red', '#d32f2f'),
   pendingWeekendBg: t('--pending-weekend-bg', 'rgba(211, 47, 47, 0.06)'),
+  pendingDark1: t('--pending-dark-1', '#2f2e33'),
+  pendingDark2: t('--pending-dark-2', '#3b3a40'),
+  pendingDark3: t('--pending-dark-3', '#1a1a1a'),
+  pendingText1: t('--pending-text-1', '#333'),
+  pendingText2: t('--pending-text-2', '#666'),
+  pendingViolet1: t('--pending-violet-1', '#6366f1'),
+  pendingViolet2: t('--pending-violet-2', '#8b5cf6'),
 } satisfies Record<string, DesignToken>
 
 // Семантические алиасы: код читает смысл, значение — ссылка на палитру.

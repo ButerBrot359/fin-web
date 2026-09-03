@@ -40,9 +40,8 @@ import { SupportDialog } from './support-dialog'
  */
 const STAGE_THEME = {
   '--lk-bg': cssVar(semantic.textPrimary),
-  // #2f2e33 / #3b3a40 не входят в mapping-таблицу дизайн-системы — оставлены как есть.
-  '--lk-bg2': '#2f2e33',
-  '--lk-bg3': '#3b3a40',
+  '--lk-bg2': cssVar(palette.pendingDark1),
+  '--lk-bg3': cssVar(palette.pendingDark2),
   '--lk-fg': cssVar(palette.ui01),
   '--lk-fg2': cssVar(semantic.divider),
   '--lk-fg3': cssVar(semantic.textSecondary),

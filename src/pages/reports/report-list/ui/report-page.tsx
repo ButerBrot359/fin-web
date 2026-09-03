@@ -911,8 +911,7 @@ const ReportPageContent = ({
             sx={{
               height: 48,
               bgcolor: cssVar(palette.pendingYellow1),
-              // #1a1a1a не входит в mapping-таблицу дизайн-системы — оставлен как есть.
-              color: '#1a1a1a',
+              color: cssVar(palette.pendingDark3),
               fontWeight: 700,
               border: `1px solid ${cssVar(palette.pendingYellow3)}`,
               '&:hover': { bgcolor: cssVar(palette.pendingYellow2) },
@@ -985,8 +984,7 @@ const ReportPageContent = ({
               <Typography
                 variant="body2"
                 className="rounded border border-pending-gray-1 bg-pending-warn-bg-2 px-4 py-2"
-                // #333 не входит в mapping-таблицу дизайн-системы — оставлен как есть.
-                sx={{ color: '#333' }}
+                sx={{ color: cssVar(palette.pendingText1) }}
               >
                 {t('reports.notGenerated')}
               </Typography>

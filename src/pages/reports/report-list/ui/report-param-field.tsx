@@ -22,7 +22,7 @@ import {
   TextInput,
 } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
-import { cssVar, semantic } from '@/shared/design/tokens'
+import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
 import type { ReportParameterDto } from '../types/report'
 
@@ -269,7 +269,7 @@ export const ReportParamField = ({
                       fontSize: 16,
                       fontWeight: 500,
                       lineHeight: 1.4,
-                      color: '#666',
+                      color: cssVar(palette.pendingText2),
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                     }}

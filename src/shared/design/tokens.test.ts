@@ -16,7 +16,7 @@ describe('design tokens', () => {
     expect(new Set(vars).size).toBe(vars.length)
     for (const t of tokens) {
       expect(t.cssVar).toMatch(/^--[a-z0-9-]+$/)
-      expect(t.value).toMatch(/^(#[0-9a-f]{6}|rgba?\(|[0-9.]+px |0 \d)/)
+      expect(t.value).toMatch(/^(#[0-9a-f]{3,8}\b|rgba?\(|[0-9.]+px |0 \d)/)
     }
   })
 

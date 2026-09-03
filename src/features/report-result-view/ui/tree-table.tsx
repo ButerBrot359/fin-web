@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-table'
 
 import ArrowDownIcon from '@/shared/assets/icons/arrow-down.svg'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 import type {
   ReportColumnDto,
@@ -364,7 +365,7 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
           sx={
             bold
               ? { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
-              : { color: '#333', fontSize: DATA_FS }
+              : { color: cssVar(palette.pendingText1), fontSize: DATA_FS }
           }
         >
           {label}

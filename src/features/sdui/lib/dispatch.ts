@@ -26,6 +26,7 @@ import { shouldRevealTableErrors } from './utils/reveal-policy'
 import { openDialogAsPanel } from './open-dialog-panel'
 import { relaySelectionToParent } from './relay-selection'
 import { buildCommonEffectDeps } from './build-effect-deps'
+import { currentFormInstanceId } from './form-instance'
 import { useCommandInflightStore } from './stores/command-inflight-store'
 import {
   clearFormSession,
@@ -221,6 +222,16 @@ export function useSduiDispatch() {
         }
 
         const route = location.pathname + location.search
+        // Экземпляр формы этой вкладки — на КАЖДОМ OPEN (бэк: DocumentFormDraftStore).
+        // Он же остаётся прежним при реопене после 409 и при переходе новый → записанный:
+        // вкладка та же, значит и её черновик тот же.
+        const openAction =
+          action.type === 'OPEN'
+            ? {
+                ...action,
+                formInstanceId: currentFormInstanceId(location.pathname),
+              }
+            : action
         const res = await viewTransport.post({
           // SCRUM-330 Работа 2: на OPEN шлём formSessionId, переживший F5 в
           // sessionStorage. Сейчас бэк его игнорирует (резюм отложен — v2 §2);
@@ -232,7 +243,7 @@ export function useSduiDispatch() {
             ? { layoutCode: action.layoutCode }
             : {}),
           route,
-          action,
+          action: openAction,
         })
 
         if (action.type === 'OPEN') {

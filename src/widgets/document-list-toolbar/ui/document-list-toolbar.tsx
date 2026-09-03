@@ -13,6 +13,7 @@ import LayersIcon from '@/shared/assets/icons/layers.svg'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
+import { markFreshFormInstance } from '@/features/workspace-tabs'
 
 import { useDocumentEntryPrint } from '@/entities/document-entry'
 import { PrintDropdownButton } from '@/widgets/document-form-toolbar'
@@ -108,19 +109,27 @@ export const DocumentListToolbar = ({
         setOperations(vidOperatsii.elements)
         setDialogOpen(true)
       } else {
-        void navigate(`/modules/${pageCode}/document/${moduleCode}/new`)
+        goToNewDocument(`/modules/${pageCode}/document/${moduleCode}/new`)
       }
     } catch {
-      void navigate(`/modules/${pageCode}/document/${moduleCode}/new`)
+      goToNewDocument(`/modules/${pageCode}/document/${moduleCode}/new`)
     } finally {
       setIsLoadingOperations(false)
     }
   }
 
+  // Переход на форму создания начинает НОВЫЙ экземпляр формы: прошлый черновик этого
+  // маршрута (свой на сервере и снимок вкладки) снимается, иначе новый документ открылся бы
+  // с чужими значениями. Владелец формы (SDUI) слушает реестр сам — прямой связи нет.
+  const goToNewDocument = (route: string) => {
+    markFreshFormInstance(route)
+    void navigate(route)
+  }
+
   const handleSelectOperation = (operationCode: string) => {
     if (!pageCode || !moduleCode) return
     setDialogOpen(false)
-    void navigate(
+    goToNewDocument(
       `/modules/${pageCode}/document/${moduleCode}/new?VidOperatsii=${operationCode}`
     )
   }
@@ -151,11 +160,11 @@ export const DocumentListToolbar = ({
               aria-label={t('actions.copy')}
               disabled={selectedRowId == null}
               startIcon={<CopyDocIcon className="h-5 w-5" />}
-              onClick={() =>
-                void navigate(
+              onClick={() => {
+                goToNewDocument(
                   `/modules/${pageCode}/document/${moduleCode}/new?copyFrom=${String(selectedRowId)}`
                 )
-              }
+              }}
             />
           )}
 

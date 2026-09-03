@@ -88,6 +88,10 @@ export interface ViewAction {
   // «Не сохранять» — сервер снимает черновик. CLOSE без флага (навигация,
   // размонтирование экрана) черновик сохраняет.
   discardDraft?: boolean
+  // Экземпляр формы рабочей вкладки — уходит на КАЖДОМ OPEN. У незаписанного документа
+  // это единственный способ отличить «вернулся в свою форму» от «создаю новый»: маршрут
+  // /documents/<Type>/new у обоих одинаков (бэк: DocumentFormDraftStore).
+  formInstanceId?: string
 }
 
 export interface ViewRequest {

@@ -16,3 +16,7 @@ export {
   notifyTabDiscardClose,
 } from './lib/tab-discard-registry'
 export type { WorkspaceTab, TabPageType } from './types/workspace-tab'
+export {
+  markFreshFormInstance,
+  onFreshFormInstance,
+} from './lib/fresh-form-instance-registry'

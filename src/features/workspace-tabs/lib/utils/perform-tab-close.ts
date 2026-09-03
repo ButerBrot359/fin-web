@@ -1,6 +1,7 @@
 import type { NavigateFunction } from 'react-router-dom'
 
 import { notifyPanelTabClose } from '../panel-tab-close-registry'
+import { forgetFormInstanceId } from './form-instance-id'
 import { useFormCacheStore } from '../hooks/use-form-cache-store'
 import { useWorkspaceTabsStore } from '../hooks/use-workspace-tabs-store'
 
@@ -10,7 +11,7 @@ import { useWorkspaceTabsStore } from '../hooks/use-workspace-tabs-store'
 // (layout: «назад»/крестик на странице движений).
 export function performTabClose(
   tabId: string,
-  navigate: NavigateFunction,
+  navigate: NavigateFunction
 ): void {
   const store = useWorkspaceTabsStore.getState()
   const tab = store.tabs.find((t) => t.id === tabId)
@@ -19,6 +20,9 @@ export function performTabClose(
   const isPanel = tab.pageType === 'sdui-panel'
   // У панельных вкладок нет кэша формы
   if (!isPanel) useFormCacheStore.getState().removeTab(tabId)
+  // Вкладку закрыли — её экземпляр формы забыт: открытая заново форма создания получит новый
+  // идентификатор и, значит, будет пустой (фронт-спека 03.09.2026 §5.1).
+  forgetFormInstanceId(tab.path)
 
   const wasActive = store.activeTabId === tabId
   const closed = store.closeTab(tabId)
@@ -26,9 +30,11 @@ export function performTabClose(
   if (!wasActive) return
 
   const remaining = useWorkspaceTabsStore.getState()
+  // .at(0) вместо [0]: тип честно допускает undefined (вкладок могло не остаться), и
+  // проверка ниже перестаёт быть «всегда ложной» для линтера.
   const nextTab =
     remaining.tabs.find((t) => t.id === remaining.activeTabId) ??
-    remaining.tabs[0]
+    remaining.tabs.at(0)
   if (!nextTab) {
     void navigate('/')
     return

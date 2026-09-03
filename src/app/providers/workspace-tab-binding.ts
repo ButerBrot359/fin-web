@@ -2,10 +2,12 @@ import { useEffect } from 'react'
 
 import {
   discardTabSession,
+  dropCachedScreensFor,
   setWorkspaceTabGateway,
   usePanelStore,
 } from '@/features/sdui'
 import {
+  onFreshFormInstance,
   onPanelTabClose,
   onTabDiscardClose,
   useWorkspaceTabsStore,
@@ -33,10 +35,14 @@ export function useWorkspaceTabGatewayBinding(): void {
     // SCRUM-276 (черновики): «Не сохранять» на закрытии вкладки → CLOSE с
     // discardDraft (активная вкладка — интентом, кэшированная — транспортом).
     const unsubscribeDiscard = onTabDiscardClose(discardTabSession)
+    // «Создать»/копия/ввод на основании: маршрут начинает новый экземпляр формы —
+    // снимок вкладки снимаем, иначе новая форма создания открылась бы заполненной.
+    const unsubscribeFresh = onFreshFormInstance(dropCachedScreensFor)
     return () => {
       setWorkspaceTabGateway(null)
       unsubscribe()
       unsubscribeDiscard()
+      unsubscribeFresh()
     }
   }, [])
 }

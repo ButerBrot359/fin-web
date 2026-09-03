@@ -24,7 +24,7 @@ export const PageNode: FC<NodeProps> = ({ node }) => {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       {node.children?.map((c) => (
         <NodeRenderer key={c.id} node={c} />
       ))}

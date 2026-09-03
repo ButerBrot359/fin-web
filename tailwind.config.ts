@@ -1,5 +1,10 @@
 import type { Config } from 'tailwindcss'
 
+import { palette, shadows } from './src/shared/design/tokens'
+
+const cssVarForConfig = (token: { cssVar: string }): string =>
+  `var(${token.cssVar})`
+
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
@@ -28,30 +33,49 @@ export default {
         lg: '12px',
       },
       boxShadow: {
-        'primary-hover': '2px 4px 8px rgba(218,244,73,0.8)',
-        'secondary-hover': '0px 4px 8px rgba(42,117,244,0.2)',
+        'primary-hover': cssVarForConfig(shadows.primaryHover),
+        'secondary-hover': cssVarForConfig(shadows.secondaryHover),
+        popup: cssVarForConfig(shadows.popup),
       },
       colors: {
         ui: {
-          '01': '#ffffff',
-          '02': '#f2f6fd',
-          '03': '#c3cee0',
-          '04': '#dbe7fd',
-          '05': '#9fa9ba',
-          '06': '#222124',
-          '07': '#E0EAFC',
-          '08': '#c4d6f5',
+          '01': cssVarForConfig(palette.ui01),
+          '02': cssVarForConfig(palette.ui02),
+          '03': cssVarForConfig(palette.ui03),
+          '04': cssVarForConfig(palette.ui04),
+          '05': cssVarForConfig(palette.ui05),
+          '06': cssVarForConfig(palette.ui06),
+          '07': cssVarForConfig(palette.ui07),
+          '08': cssVarForConfig(palette.ui08),
         },
         accent: {
           '01': {
-            DEFAULT: '#daf449',
-            hover: '#dafe10',
-            pressed: '#c0e10b',
+            DEFAULT: cssVarForConfig(palette.accent01),
+            hover: cssVarForConfig(palette.accent01Hover),
+            pressed: cssVarForConfig(palette.accent01Pressed),
           },
-          '02': '#2a75f4',
+          '02': {
+            DEFAULT: cssVarForConfig(palette.accent02),
+            hover: cssVarForConfig(palette.accent02Hover),
+          },
         },
-        support: {
-          '01': '#f4482a',
+        support: { '01': cssVarForConfig(palette.support01) },
+        pending: {
+          'gray-1': cssVarForConfig(palette.pendingGray1),
+          'gray-2': cssVarForConfig(palette.pendingGray2),
+          'gray-3': cssVarForConfig(palette.pendingGray3),
+          'gray-4': cssVarForConfig(palette.pendingGray4),
+          'gray-5': cssVarForConfig(palette.pendingGray5),
+          'gray-6': cssVarForConfig(palette.pendingGray6),
+          'blue-bg': cssVarForConfig(palette.pendingBlueBg),
+          'warn-border': cssVarForConfig(palette.pendingWarnBorder),
+          'warn-bg': cssVarForConfig(palette.pendingWarnBg),
+          'warn-bg-2': cssVarForConfig(palette.pendingWarnBg2),
+          'yellow-1': cssVarForConfig(palette.pendingYellow1),
+          'yellow-2': cssVarForConfig(palette.pendingYellow2),
+          'yellow-3': cssVarForConfig(palette.pendingYellow3),
+          'weekend-red': cssVarForConfig(palette.pendingWeekendRed),
+          'weekend-bg': cssVarForConfig(palette.pendingWeekendBg),
         },
       },
     },

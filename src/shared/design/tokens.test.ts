@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { allTokens, cssVar, palette } from './tokens'
 import { injectDesignTokens } from './inject-design-tokens'
+import tailwindConfig from '../../../tailwind.config'
 
 describe('design tokens', () => {
   it('cssVar собирает var() с фолбэком-значением', () => {
@@ -26,5 +27,15 @@ describe('design tokens', () => {
     expect(styles.length).toBe(1)
     expect(styles[0].textContent).toContain('--ui-01: #ffffff')
     expect(styles[0].textContent).toContain('--accent-02: #2a75f4')
+  })
+
+  it('tailwind-палитра построена из токенов (var(), не literal-hex)', () => {
+    const colors = (
+      tailwindConfig as unknown as {
+        theme: { extend: { colors: Record<string, unknown> } }
+      }
+    ).theme.extend.colors
+    expect(JSON.stringify(colors)).not.toMatch(/#[0-9a-fA-F]{6}/)
+    expect(JSON.stringify(colors)).toContain('var(--ui-01')
   })
 })

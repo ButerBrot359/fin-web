@@ -1,0 +1,1434 @@
+{
+  "POST /api/view#OPEN@APP_SHELL": {
+    "formSessionId": "b694f043-6edd-4202-af39-b50630b87796",
+    "revision": 0,
+    "tree": {
+      "id": "shell",
+      "type": "APP_SHELL",
+      "props": null,
+      "binding": null,
+      "value": null,
+      "children": [
+        {
+          "id": "shell.topbar",
+          "type": "TOP_BAR",
+          "props": null,
+          "binding": null,
+          "value": null,
+          "children": null,
+          "actions": null
+        },
+        {
+          "id": "shell.sidebar",
+          "type": "SIDEBAR",
+          "props": {
+            "collapsed": false
+          },
+          "binding": null,
+          "value": null,
+          "children": [
+            {
+              "id": "shell.nav.home",
+              "type": "LINK",
+              "props": {
+                "label": "Главное",
+                "icon": "home",
+                "route": "/"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Administrirovanie",
+              "type": "LINK",
+              "props": {
+                "label": "Администрирование",
+                "icon": "admin",
+                "route": "/modules/Administrirovanie"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.BankiIKassy",
+              "type": "LINK",
+              "props": {
+                "label": "Банк и касса",
+                "icon": "bank",
+                "route": "/modules/BankiIKassy"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Sklad",
+              "type": "LINK",
+              "props": {
+                "label": "Склад",
+                "icon": "warehouse",
+                "route": "/modules/Sklad"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.OsiNma",
+              "type": "LINK",
+              "props": {
+                "label": "Основные средства и нематериальные активы",
+                "icon": "actives",
+                "route": "/modules/OsiNma"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Tarifikatsiya",
+              "type": "LINK",
+              "props": {
+                "label": "Тарификация",
+                "icon": "salary",
+                "route": "/modules/Tarifikatsiya"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.ZarplatiIKadri",
+              "type": "LINK",
+              "props": {
+                "label": "Зарплата и кадры",
+                "icon": "salary",
+                "route": "/modules/ZarplatiIKadri"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Otchety",
+              "type": "LINK",
+              "props": {
+                "label": "Отчеты",
+                "icon": "reports",
+                "route": "/modules/Otchety"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.NasheUchrezhdenie",
+              "type": "LINK",
+              "props": {
+                "label": "Наше учреждение",
+                "icon": "admin",
+                "route": "/modules/NasheUchrezhdenie"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.FormatnoLogicheskiyKontrol",
+              "type": "LINK",
+              "props": {
+                "label": "ФЛК",
+                "icon": "admin",
+                "route": "/modules/FormatnoLogicheskiyKontrol"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.ReglamentirovannayaNastraivaemayaOtchetnost",
+              "type": "LINK",
+              "props": {
+                "label": "Регламентированная настраиваемая отчетность",
+                "icon": "reports",
+                "route": "/modules/ReglamentirovannayaNastraivaemayaOtchetnost"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            }
+          ],
+          "actions": null
+        },
+        {
+          "id": "shell.workspace",
+          "type": "WORKSPACE",
+          "props": null,
+          "binding": null,
+          "value": null,
+          "children": null,
+          "actions": null
+        }
+      ],
+      "actions": null
+    },
+    "state": {},
+    "patches": null,
+    "statePatch": null,
+    "effects": null,
+    "onDirtyClose": null,
+    "formDirty": false,
+    "tab": null,
+    "dirty": null,
+    "commandFailed": null
+  },
+  "GET /api/settings/modules": {
+    "data": [
+      {
+        "code": "Administrirovanie",
+        "nameRu": "Администрирование",
+        "nameKz": "Әкімшілік",
+        "iconCode": "admin",
+        "sortOrder": 1
+      },
+      {
+        "code": "BankiIKassy",
+        "nameRu": "Банк и касса",
+        "nameKz": "Банк және касса",
+        "iconCode": "bank",
+        "sortOrder": 2
+      },
+      {
+        "code": "Sklad",
+        "nameRu": "Склад",
+        "nameKz": "Қойма",
+        "iconCode": "warehouse",
+        "sortOrder": 3
+      },
+      {
+        "code": "OsiNma",
+        "nameRu": "Основные средства и нематериальные активы",
+        "nameKz": "Негізгі құралдар және материалдық емес активтер",
+        "iconCode": "actives",
+        "sortOrder": 4
+      },
+      {
+        "code": "Tarifikatsiya",
+        "nameRu": "Тарификация",
+        "nameKz": "Тарифтеу",
+        "iconCode": "salary",
+        "sortOrder": 5
+      },
+      {
+        "code": "ZarplatiIKadri",
+        "nameRu": "Зарплата и кадры",
+        "nameKz": "Жалақы және кадрлар",
+        "iconCode": "salary",
+        "sortOrder": 6
+      },
+      {
+        "code": "Otchety",
+        "nameRu": "Отчеты",
+        "nameKz": "Есептер",
+        "iconCode": "reports",
+        "sortOrder": 7
+      },
+      {
+        "code": "NasheUchrezhdenie",
+        "nameRu": "Наше учреждение",
+        "nameKz": "Біздің мекеме",
+        "iconCode": "admin",
+        "sortOrder": 8
+      },
+      {
+        "code": "FormatnoLogicheskiyKontrol",
+        "nameRu": "ФЛК",
+        "nameKz": "ФЛБ",
+        "iconCode": "admin",
+        "sortOrder": 9
+      },
+      {
+        "code": "ReglamentirovannayaNastraivaemayaOtchetnost",
+        "nameRu": "Регламентированная настраиваемая отчетность",
+        "nameKz": "Реттелетін бапталатын есептілік",
+        "iconCode": "reports",
+        "sortOrder": 10
+      }
+    ],
+    "success": true
+  },
+  "GET /api/tasks/active": [],
+  "GET /api/support/calls/active": {
+    "__status": 204,
+    "__body": ""
+  },
+  "POST /api/view#CLOSE": {},
+  "POST /api/view#OPEN@/dictionaries/Kalendari/49237": {
+    "formSessionId": "87d4f3e9-f233-4e30-8b9e-8b7f1fe28bcb",
+    "revision": 0,
+    "tree": {
+      "id": "page.Kalendari",
+      "type": "PAGE",
+      "props": {
+        "kind": "OBJECT_FORM",
+        "title": "Пятидневка - 36 часов (7,2 ч) (График работы)"
+      },
+      "binding": null,
+      "value": null,
+      "children": [
+        {
+          "id": "page.Kalendari.toolbar",
+          "type": "TOOLBAR",
+          "props": null,
+          "binding": null,
+          "value": null,
+          "children": [
+            {
+              "id": "page.Kalendari.btn.saveAndClose",
+              "type": "BUTTON",
+              "props": {
+                "variant": "contained",
+                "command": "dict.saveAndClose",
+                "label": "Записать и закрыть",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": "dict.saveAndClose",
+                  "behavior": {
+                    "flushPendingTables": true,
+                    "resetsDirty": true,
+                    "closeAfter": false
+                  },
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "page.Kalendari.btn.save",
+              "type": "BUTTON",
+              "props": {
+                "variant": "outlined",
+                "command": "dict.save",
+                "label": "Записать",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": "dict.save",
+                  "behavior": {
+                    "flushPendingTables": true,
+                    "resetsDirty": true,
+                    "closeAfter": false
+                  },
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "btn.dict.more",
+              "type": "BUTTON",
+              "props": {
+                "label": "Ещё",
+                "variant": "dropdown",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "mi.dict.more.saveAndClose",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Записать и закрыть",
+                    "command": "dict.saveAndClose",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": true,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.dict.more.save",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Записать",
+                    "command": "dict.save",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": true,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.dict.more.showInList",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Показать в списке",
+                    "command": "showInList",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                }
+              ],
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            }
+          ],
+          "actions": null
+        },
+        {
+          "id": "page.Kalendari.body",
+          "type": "VSTACK",
+          "props": {
+            "gap": 16,
+            "padding": 16
+          },
+          "binding": null,
+          "value": null,
+          "children": [
+            {
+              "id": "kalendari.header",
+              "type": "HSTACK",
+              "props": {
+                "gap": 2,
+                "align": "flex-start"
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "dict.field.Naimenovaniya",
+                  "type": "TEXT_FIELD",
+                  "props": {
+                    "label": "Наименование",
+                    "required": true,
+                    "maxLength": 100,
+                    "serverEvents": ["change"],
+                    "flex": "1 1 0%",
+                    "visible": true,
+                    "enabled": true
+                  },
+                  "binding": "Naimenovaniya",
+                  "value": "Пятидневка - 36 часов (7,2 ч)",
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "change",
+                      "actionId": "fieldEvent",
+                      "command": null,
+                      "behavior": null,
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "dict.field.Kod",
+                  "type": "TEXT_FIELD",
+                  "props": {
+                    "label": "Код",
+                    "maxLength": 2,
+                    "serverEvents": ["change"],
+                    "flex": "0 1 120px",
+                    "visible": true,
+                    "enabled": true
+                  },
+                  "binding": "Kod",
+                  "value": "01",
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "change",
+                      "actionId": "fieldEvent",
+                      "command": null,
+                      "behavior": null,
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                }
+              ],
+              "actions": null
+            },
+            {
+              "id": "kalendari.periodAndProductionCalendar",
+              "type": "HSTACK",
+              "props": {
+                "gap": 2,
+                "align": "flex-start"
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "kalendari.period",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 1
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "kalendari.period.dates",
+                      "type": "HSTACK",
+                      "props": {
+                        "gap": 2,
+                        "align": "flex-start"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": [
+                        {
+                          "id": "dict.field.DataNachala",
+                          "type": "DATE_FIELD",
+                          "props": {
+                            "label": "Период заполнения графика с",
+                            "required": true,
+                            "serverEvents": ["change"],
+                            "visible": true,
+                            "enabled": true
+                          },
+                          "binding": "DataNachala",
+                          "value": "2021-01-01",
+                          "children": null,
+                          "actions": [
+                            {
+                              "trigger": "change",
+                              "actionId": "fieldEvent",
+                              "command": null,
+                              "behavior": null,
+                              "requiresSelectedRow": null,
+                              "selectionField": null,
+                              "request": null
+                            }
+                          ]
+                        },
+                        {
+                          "id": "dict.field.DataOkonchaniya",
+                          "type": "DATE_FIELD",
+                          "props": {
+                            "label": "по",
+                            "serverEvents": ["change"],
+                            "visible": true,
+                            "enabled": true
+                          },
+                          "binding": "DataOkonchaniya",
+                          "value": null,
+                          "children": null,
+                          "actions": [
+                            {
+                              "trigger": "change",
+                              "actionId": "fieldEvent",
+                              "command": null,
+                              "behavior": null,
+                              "requiresSelectedRow": null,
+                              "selectionField": null,
+                              "request": null
+                            }
+                          ]
+                        }
+                      ],
+                      "actions": null
+                    },
+                    {
+                      "id": "kalendari.period.helper",
+                      "type": "LABEL",
+                      "props": {
+                        "variant": "comment",
+                        "text": "Если дата \"по\" не заполнена, график будет заполняться по указанному шаблону до конца года производственного календаря."
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "kalendari.productionCalendar",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 1
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "dict.field.ProizvodstvennyyKalendar",
+                      "type": "REFERENCE_FIELD",
+                      "props": {
+                        "label": "Производственный календарь",
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "ProizvodstvennyeKalendari",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/ProizvodstvennyeKalendari/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": true,
+                        "allowCopy": true,
+                        "serverEvents": ["change"],
+                        "visible": true,
+                        "enabled": true
+                      },
+                      "binding": "ProizvodstvennyyKalendar",
+                      "value": {
+                        "id": 49252,
+                        "presentation": "Республика Казахстан (пятидневка)",
+                        "code": null,
+                        "domain": null,
+                        "targetTypeCode": null
+                      },
+                      "children": null,
+                      "actions": [
+                        {
+                          "trigger": "change",
+                          "actionId": "fieldEvent",
+                          "command": null,
+                          "behavior": null,
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "showAll",
+                          "actionId": "command",
+                          "command": "ref.showAll:dict.field.ProizvodstvennyyKalendar",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "create",
+                          "actionId": "command",
+                          "command": "ref.create:dict.field.ProizvodstvennyyKalendar",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "open",
+                          "actionId": "command",
+                          "command": "ref.open:dict.field.ProizvodstvennyyKalendar",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "copy",
+                          "actionId": "command",
+                          "command": "ref.copy:dict.field.ProizvodstvennyyKalendar",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        }
+                      ]
+                    },
+                    {
+                      "id": "kalendari.productionCalendar.helper",
+                      "type": "LABEL",
+                      "props": {
+                        "variant": "comment",
+                        "text": "При изменении производственного календаря график работы будет автоматически заполнен за указанный период."
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                }
+              ],
+              "actions": null
+            },
+            {
+              "id": "kalendari.configurationColumns",
+              "type": "HSTACK",
+              "props": {
+                "gap": 2,
+                "align": "flex-start"
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "kalendari.configuration.left",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 2,
+                    "flex": "1.1 1 0%"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "kalendari.fillMethodSettings",
+                      "type": "HSTACK",
+                      "props": {
+                        "gap": 2,
+                        "align": "flex-start"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": [
+                        {
+                          "id": "dict.field.SposobZapolneniya",
+                          "type": "ENUM_FIELD",
+                          "props": {
+                            "label": "Способ заполнения",
+                            "options": [
+                              {
+                                "value": "PoNedelyam",
+                                "label": "По неделям",
+                                "id": 31,
+                                "code": "PoNedelyam"
+                              },
+                              {
+                                "value": "PoTsiklamProizvolnoyDliny",
+                                "label": "По циклам произвольной длины",
+                                "id": 32,
+                                "code": "PoTsiklamProizvolnoyDliny"
+                              }
+                            ],
+                            "serverEvents": ["change"],
+                            "control": "radio",
+                            "visible": true,
+                            "enabled": true
+                          },
+                          "binding": "SposobZapolneniya",
+                          "value": {
+                            "id": 31,
+                            "presentation": "По неделям",
+                            "code": "PoNedelyam",
+                            "domain": null,
+                            "targetTypeCode": null
+                          },
+                          "children": null,
+                          "actions": [
+                            {
+                              "trigger": "change",
+                              "actionId": "fieldEvent",
+                              "command": null,
+                              "behavior": null,
+                              "requiresSelectedRow": null,
+                              "selectionField": null,
+                              "request": null
+                            }
+                          ]
+                        },
+                        {
+                          "id": "dict.field.DataOtscheta",
+                          "type": "DATE_FIELD",
+                          "props": {
+                            "label": "Дата отсчета",
+                            "serverEvents": ["change"],
+                            "enabled": false,
+                            "required": false,
+                            "visible": true
+                          },
+                          "binding": "DataOtscheta",
+                          "value": "2026-01-01",
+                          "children": null,
+                          "actions": [
+                            {
+                              "trigger": "change",
+                              "actionId": "fieldEvent",
+                              "command": null,
+                              "behavior": null,
+                              "requiresSelectedRow": null,
+                              "selectionField": null,
+                              "request": null
+                            }
+                          ]
+                        }
+                      ],
+                      "actions": null
+                    },
+                    {
+                      "id": "kalendari.templateIntro",
+                      "type": "LABEL",
+                      "props": {
+                        "variant": "comment",
+                        "text": "Выберите шаблон, по которому будет заполнен график работы"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "dict.field.UchityvatPrazdniki",
+                      "type": "CHECKBOX_FIELD",
+                      "props": {
+                        "label": "Учитывать праздники",
+                        "serverEvents": ["change"],
+                        "variant": "comment",
+                        "helperText": "Если установлено, то из состава рабочих дней будут исключаться дни, выпадающие на праздники.",
+                        "enabled": true,
+                        "visible": true
+                      },
+                      "binding": "UchityvatPrazdniki",
+                      "value": true,
+                      "children": null,
+                      "actions": [
+                        {
+                          "trigger": "change",
+                          "actionId": "fieldEvent",
+                          "command": null,
+                          "behavior": null,
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        }
+                      ]
+                    },
+                    {
+                      "id": "dict.field.ProdolzhitelnostDnya",
+                      "type": "NUMBER_FIELD",
+                      "props": {
+                        "label": "Продолжительность дня",
+                        "required": true,
+                        "serverEvents": ["change"],
+                        "visible": true,
+                        "enabled": true
+                      },
+                      "binding": "ProdolzhitelnostDnya",
+                      "value": 7.2,
+                      "children": null,
+                      "actions": [
+                        {
+                          "trigger": "change",
+                          "actionId": "fieldEvent",
+                          "command": null,
+                          "behavior": null,
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        }
+                      ]
+                    },
+                    {
+                      "id": "dict.field.VidNormy",
+                      "type": "ENUM_FIELD",
+                      "props": {
+                        "label": "Вид нормы",
+                        "options": [
+                          {
+                            "value": "SrednemesyachnayaPoOsnovnomuGrafiku",
+                            "label": "Среднемесячная по основному графику",
+                            "id": 1078,
+                            "code": "SrednemesyachnayaPoOsnovnomuGrafiku"
+                          }
+                        ],
+                        "serverEvents": ["change"],
+                        "visible": true,
+                        "enabled": true
+                      },
+                      "binding": "VidNormy",
+                      "value": null,
+                      "children": null,
+                      "actions": [
+                        {
+                          "trigger": "change",
+                          "actionId": "fieldEvent",
+                          "command": null,
+                          "behavior": null,
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        }
+                      ]
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "kalendari.configuration.template",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 2,
+                    "flex": "0.9 1 0%"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "dict.field.ShablonZapolneniya",
+                      "type": "TABLE",
+                      "props": {
+                        "label": "Шаблон заполнения",
+                        "editable": true,
+                        "allowAdd": true,
+                        "allowDelete": true,
+                        "allowReorder": true,
+                        "showRowNumbers": true
+                      },
+                      "binding": "ShablonZapolneniya",
+                      "value": [
+                        {
+                          "rowId": "262781",
+                          "DenVklyuchenVGrafik": true,
+                          "Kod": "1"
+                        },
+                        {
+                          "rowId": "262782",
+                          "DenVklyuchenVGrafik": true,
+                          "Kod": "2"
+                        },
+                        {
+                          "rowId": "262783",
+                          "DenVklyuchenVGrafik": true,
+                          "Kod": "3"
+                        },
+                        {
+                          "rowId": "262784",
+                          "DenVklyuchenVGrafik": true,
+                          "Kod": "4"
+                        },
+                        {
+                          "rowId": "262785",
+                          "DenVklyuchenVGrafik": true,
+                          "Kod": "5"
+                        },
+                        {
+                          "rowId": "262786",
+                          "DenVklyuchenVGrafik": false,
+                          "Kod": "6"
+                        },
+                        {
+                          "rowId": "262787",
+                          "DenVklyuchenVGrafik": false,
+                          "Kod": "7"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "id": "dict.field.ShablonZapolneniya.col.DenVklyuchenVGrafik",
+                          "type": "TABLE_COLUMN",
+                          "props": {
+                            "label": "День включен в график",
+                            "dataType": "BOOLEAN",
+                            "cellWidget": "CHECKBOX_FIELD"
+                          },
+                          "binding": "DenVklyuchenVGrafik",
+                          "value": null,
+                          "children": null,
+                          "actions": null
+                        }
+                      ],
+                      "actions": [
+                        {
+                          "trigger": "change",
+                          "actionId": "fieldEvent",
+                          "command": null,
+                          "behavior": null,
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        }
+                      ]
+                    }
+                  ],
+                  "actions": null
+                }
+              ],
+              "actions": null
+            },
+            {
+              "id": "dict.field.GorizontPlanirovaniya",
+              "type": "NUMBER_FIELD",
+              "props": {
+                "label": "Горизонт планирования, мес.",
+                "serverEvents": ["change"],
+                "variant": "comment",
+                "helperText": "Период времени, на который график должен быть заполнен вперед.",
+                "visible": true,
+                "enabled": true
+              },
+              "binding": "GorizontPlanirovaniya",
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "change",
+                  "actionId": "fieldEvent",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "kalendari.fillStatus",
+              "type": "HSTACK",
+              "props": {
+                "gap": 1,
+                "align": "center"
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "kalendari.fillStatus.icon",
+                  "type": "ICON",
+                  "props": {
+                    "name": "warning",
+                    "visible": false
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": null
+                },
+                {
+                  "id": "kalendari.filledThrough",
+                  "type": "LABEL",
+                  "props": {
+                    "text": "График работы заполнен до 31.12.2027"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": null
+                }
+              ],
+              "actions": null
+            },
+            {
+              "id": "dict.field.Opisanie",
+              "type": "TEXT_AREA",
+              "props": {
+                "label": "Описание",
+                "serverEvents": ["change"],
+                "rows": 5,
+                "visible": true,
+                "enabled": true
+              },
+              "binding": "Opisanie",
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "change",
+                  "actionId": "fieldEvent",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "dict.field.RaspisanieRaboty",
+              "type": "TABLE",
+              "props": {
+                "label": "Расписание работы",
+                "editable": true,
+                "allowAdd": true,
+                "allowDelete": true,
+                "allowReorder": true,
+                "showRowNumbers": true
+              },
+              "binding": "RaspisanieRaboty",
+              "value": [
+                {
+                  "rowId": "263561",
+                  "NomerDnya": 1,
+                  "VremyaNachala": "2000-01-01T09:00:00",
+                  "VremyaOkonchaniya": "2000-01-01T13:00:00",
+                  "Kod": null
+                },
+                {
+                  "rowId": "263562",
+                  "NomerDnya": 1,
+                  "VremyaNachala": "2000-01-01T14:00:00",
+                  "VremyaOkonchaniya": "2000-01-01T17:12:00",
+                  "Kod": null
+                },
+                {
+                  "rowId": "263563",
+                  "NomerDnya": 2,
+                  "VremyaNachala": "2000-01-01T09:00:00",
+                  "VremyaOkonchaniya": "2000-01-01T13:00:00",
+                  "Kod": null
+                },
+                {
+                  "rowId": "263564",
+                  "NomerDnya": 2,
+                  "VremyaNachala": "2000-01-01T14:00:00",
+                  "VremyaOkonchaniya": "2000-01-01T17:12:00",
+                  "Kod": null
+                },
+                {
+                  "rowId": "263565",
+                  "NomerDnya": 3,
+                  "VremyaNachala": "2000-01-01T09:00:00",
+                  "VremyaOkonchaniya": "2000-01-01T13:00:00",
+                  "Kod": null
+                },
+                {
+                  "rowId": "263566",
+                  "NomerDnya": 3,
+                  "VremyaNachala": "2000-01-01T14:00:00",
+                  "VremyaOkonchaniya": "2000-01-01T17:12:00",
+                  "Kod": null
+                },
+                {
+                  "rowId": "263567",
+                  "NomerDnya": 4,
+                  "VremyaNachala": "2000-01-01T09:00:00",
+                  "VremyaOkonchaniya": "2000-01-01T13:00:00",
+                  "Kod": null
+                },
+                {
+                  "rowId": "263568",
+                  "NomerDnya": 4,
+                  "VremyaNachala": "2000-01-01T14:00:00",
+                  "VremyaOkonchaniya": "2000-01-01T17:12:00",
+                  "Kod": null
+                },
+                {
+                  "rowId": "263569",
+                  "NomerDnya": 5,
+                  "VremyaNachala": "2000-01-01T09:00:00",
+                  "VremyaOkonchaniya": "2000-01-01T13:00:00",
+                  "Kod": null
+                },
+                {
+                  "rowId": "263570",
+                  "NomerDnya": 5,
+                  "VremyaNachala": "2000-01-01T14:00:00",
+                  "VremyaOkonchaniya": "2000-01-01T17:12:00",
+                  "Kod": null
+                }
+              ],
+              "children": [
+                {
+                  "id": "dict.field.RaspisanieRaboty.col.NomerDnya",
+                  "type": "TABLE_COLUMN",
+                  "props": {
+                    "label": "Номер дня",
+                    "dataType": "INTEGER",
+                    "cellWidget": "NUMBER_FIELD"
+                  },
+                  "binding": "NomerDnya",
+                  "value": null,
+                  "children": null,
+                  "actions": null
+                },
+                {
+                  "id": "dict.field.RaspisanieRaboty.col.VremyaNachala",
+                  "type": "TABLE_COLUMN",
+                  "props": {
+                    "label": "Время начала",
+                    "dataType": "DATETIME",
+                    "cellWidget": "DATETIME_FIELD"
+                  },
+                  "binding": "VremyaNachala",
+                  "value": null,
+                  "children": null,
+                  "actions": null
+                },
+                {
+                  "id": "dict.field.RaspisanieRaboty.col.VremyaOkonchaniya",
+                  "type": "TABLE_COLUMN",
+                  "props": {
+                    "label": "Время окончания",
+                    "dataType": "DATETIME",
+                    "cellWidget": "DATETIME_FIELD"
+                  },
+                  "binding": "VremyaOkonchaniya",
+                  "value": null,
+                  "children": null,
+                  "actions": null
+                }
+              ],
+              "actions": [
+                {
+                  "trigger": "change",
+                  "actionId": "fieldEvent",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            }
+          ],
+          "actions": null
+        }
+      ],
+      "actions": null
+    },
+    "state": {
+      "Naimenovaniya": "Пятидневка - 36 часов (7,2 ч)",
+      "Kod": "01",
+      "DataNachala": "2021-01-01",
+      "ProizvodstvennyyKalendar": {
+        "id": 49252,
+        "presentation": "Республика Казахстан (пятидневка)",
+        "code": null,
+        "domain": null,
+        "targetTypeCode": null
+      },
+      "SposobZapolneniya": {
+        "id": 31,
+        "presentation": "По неделям",
+        "code": "PoNedelyam",
+        "domain": null,
+        "targetTypeCode": null
+      },
+      "DataOtscheta": "2026-01-01",
+      "UchityvatPrazdniki": true,
+      "ProdolzhitelnostDnya": 7.2,
+      "ShablonZapolneniya": [
+        {
+          "rowId": "262781",
+          "DenVklyuchenVGrafik": true,
+          "Kod": "1"
+        },
+        {
+          "rowId": "262782",
+          "DenVklyuchenVGrafik": true,
+          "Kod": "2"
+        },
+        {
+          "rowId": "262783",
+          "DenVklyuchenVGrafik": true,
+          "Kod": "3"
+        },
+        {
+          "rowId": "262784",
+          "DenVklyuchenVGrafik": true,
+          "Kod": "4"
+        },
+        {
+          "rowId": "262785",
+          "DenVklyuchenVGrafik": true,
+          "Kod": "5"
+        },
+        {
+          "rowId": "262786",
+          "DenVklyuchenVGrafik": false,
+          "Kod": "6"
+        },
+        {
+          "rowId": "262787",
+          "DenVklyuchenVGrafik": false,
+          "Kod": "7"
+        }
+      ],
+      "RaspisanieRaboty": [
+        {
+          "rowId": "263561",
+          "NomerDnya": 1,
+          "VremyaNachala": "2000-01-01T09:00:00",
+          "VremyaOkonchaniya": "2000-01-01T13:00:00",
+          "Kod": null
+        },
+        {
+          "rowId": "263562",
+          "NomerDnya": 1,
+          "VremyaNachala": "2000-01-01T14:00:00",
+          "VremyaOkonchaniya": "2000-01-01T17:12:00",
+          "Kod": null
+        },
+        {
+          "rowId": "263563",
+          "NomerDnya": 2,
+          "VremyaNachala": "2000-01-01T09:00:00",
+          "VremyaOkonchaniya": "2000-01-01T13:00:00",
+          "Kod": null
+        },
+        {
+          "rowId": "263564",
+          "NomerDnya": 2,
+          "VremyaNachala": "2000-01-01T14:00:00",
+          "VremyaOkonchaniya": "2000-01-01T17:12:00",
+          "Kod": null
+        },
+        {
+          "rowId": "263565",
+          "NomerDnya": 3,
+          "VremyaNachala": "2000-01-01T09:00:00",
+          "VremyaOkonchaniya": "2000-01-01T13:00:00",
+          "Kod": null
+        },
+        {
+          "rowId": "263566",
+          "NomerDnya": 3,
+          "VremyaNachala": "2000-01-01T14:00:00",
+          "VremyaOkonchaniya": "2000-01-01T17:12:00",
+          "Kod": null
+        },
+        {
+          "rowId": "263567",
+          "NomerDnya": 4,
+          "VremyaNachala": "2000-01-01T09:00:00",
+          "VremyaOkonchaniya": "2000-01-01T13:00:00",
+          "Kod": null
+        },
+        {
+          "rowId": "263568",
+          "NomerDnya": 4,
+          "VremyaNachala": "2000-01-01T14:00:00",
+          "VremyaOkonchaniya": "2000-01-01T17:12:00",
+          "Kod": null
+        },
+        {
+          "rowId": "263569",
+          "NomerDnya": 5,
+          "VremyaNachala": "2000-01-01T09:00:00",
+          "VremyaOkonchaniya": "2000-01-01T13:00:00",
+          "Kod": null
+        },
+        {
+          "rowId": "263570",
+          "NomerDnya": 5,
+          "VremyaNachala": "2000-01-01T14:00:00",
+          "VremyaOkonchaniya": "2000-01-01T17:12:00",
+          "Kod": null
+        }
+      ]
+    },
+    "patches": null,
+    "statePatch": null,
+    "effects": [],
+    "onDirtyClose": {
+      "trigger": "click",
+      "actionId": "command",
+      "command": "save",
+      "behavior": {
+        "flushPendingTables": true,
+        "resetsDirty": true,
+        "closeAfter": true
+      },
+      "requiresSelectedRow": null,
+      "selectionField": null,
+      "request": null
+    },
+    "formDirty": false,
+    "tab": {
+      "kind": "DICTIONARY",
+      "title": "Пятидневка - 36 часов (7,2 ч) (График работы)",
+      "icon": "dictionary",
+      "closable": true
+    },
+    "dirty": null,
+    "commandFailed": null
+  }
+}

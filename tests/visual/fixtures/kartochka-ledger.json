@@ -1,0 +1,1059 @@
+{
+  "POST /api/view#OPEN@APP_SHELL": {
+    "formSessionId": "b694f043-6edd-4202-af39-b50630b87796",
+    "revision": 0,
+    "tree": {
+      "id": "shell",
+      "type": "APP_SHELL",
+      "props": null,
+      "binding": null,
+      "value": null,
+      "children": [
+        {
+          "id": "shell.topbar",
+          "type": "TOP_BAR",
+          "props": null,
+          "binding": null,
+          "value": null,
+          "children": null,
+          "actions": null
+        },
+        {
+          "id": "shell.sidebar",
+          "type": "SIDEBAR",
+          "props": {
+            "collapsed": false
+          },
+          "binding": null,
+          "value": null,
+          "children": [
+            {
+              "id": "shell.nav.home",
+              "type": "LINK",
+              "props": {
+                "label": "Главное",
+                "icon": "home",
+                "route": "/"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Administrirovanie",
+              "type": "LINK",
+              "props": {
+                "label": "Администрирование",
+                "icon": "admin",
+                "route": "/modules/Administrirovanie"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.BankiIKassy",
+              "type": "LINK",
+              "props": {
+                "label": "Банк и касса",
+                "icon": "bank",
+                "route": "/modules/BankiIKassy"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Sklad",
+              "type": "LINK",
+              "props": {
+                "label": "Склад",
+                "icon": "warehouse",
+                "route": "/modules/Sklad"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.OsiNma",
+              "type": "LINK",
+              "props": {
+                "label": "Основные средства и нематериальные активы",
+                "icon": "actives",
+                "route": "/modules/OsiNma"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Tarifikatsiya",
+              "type": "LINK",
+              "props": {
+                "label": "Тарификация",
+                "icon": "salary",
+                "route": "/modules/Tarifikatsiya"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.ZarplatiIKadri",
+              "type": "LINK",
+              "props": {
+                "label": "Зарплата и кадры",
+                "icon": "salary",
+                "route": "/modules/ZarplatiIKadri"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Otchety",
+              "type": "LINK",
+              "props": {
+                "label": "Отчеты",
+                "icon": "reports",
+                "route": "/modules/Otchety"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.NasheUchrezhdenie",
+              "type": "LINK",
+              "props": {
+                "label": "Наше учреждение",
+                "icon": "admin",
+                "route": "/modules/NasheUchrezhdenie"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.FormatnoLogicheskiyKontrol",
+              "type": "LINK",
+              "props": {
+                "label": "ФЛК",
+                "icon": "admin",
+                "route": "/modules/FormatnoLogicheskiyKontrol"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.ReglamentirovannayaNastraivaemayaOtchetnost",
+              "type": "LINK",
+              "props": {
+                "label": "Регламентированная настраиваемая отчетность",
+                "icon": "reports",
+                "route": "/modules/ReglamentirovannayaNastraivaemayaOtchetnost"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            }
+          ],
+          "actions": null
+        },
+        {
+          "id": "shell.workspace",
+          "type": "WORKSPACE",
+          "props": null,
+          "binding": null,
+          "value": null,
+          "children": null,
+          "actions": null
+        }
+      ],
+      "actions": null
+    },
+    "state": {},
+    "patches": null,
+    "statePatch": null,
+    "effects": null,
+    "onDirtyClose": null,
+    "formDirty": false,
+    "tab": null,
+    "dirty": null,
+    "commandFailed": null
+  },
+  "GET /api/settings/modules": {
+    "data": [
+      {
+        "code": "Administrirovanie",
+        "nameRu": "Администрирование",
+        "nameKz": "Әкімшілік",
+        "iconCode": "admin",
+        "sortOrder": 1
+      },
+      {
+        "code": "BankiIKassy",
+        "nameRu": "Банк и касса",
+        "nameKz": "Банк және касса",
+        "iconCode": "bank",
+        "sortOrder": 2
+      },
+      {
+        "code": "Sklad",
+        "nameRu": "Склад",
+        "nameKz": "Қойма",
+        "iconCode": "warehouse",
+        "sortOrder": 3
+      },
+      {
+        "code": "OsiNma",
+        "nameRu": "Основные средства и нематериальные активы",
+        "nameKz": "Негізгі құралдар және материалдық емес активтер",
+        "iconCode": "actives",
+        "sortOrder": 4
+      },
+      {
+        "code": "Tarifikatsiya",
+        "nameRu": "Тарификация",
+        "nameKz": "Тарифтеу",
+        "iconCode": "salary",
+        "sortOrder": 5
+      },
+      {
+        "code": "ZarplatiIKadri",
+        "nameRu": "Зарплата и кадры",
+        "nameKz": "Жалақы және кадрлар",
+        "iconCode": "salary",
+        "sortOrder": 6
+      },
+      {
+        "code": "Otchety",
+        "nameRu": "Отчеты",
+        "nameKz": "Есептер",
+        "iconCode": "reports",
+        "sortOrder": 7
+      },
+      {
+        "code": "NasheUchrezhdenie",
+        "nameRu": "Наше учреждение",
+        "nameKz": "Біздің мекеме",
+        "iconCode": "admin",
+        "sortOrder": 8
+      },
+      {
+        "code": "FormatnoLogicheskiyKontrol",
+        "nameRu": "ФЛК",
+        "nameKz": "ФЛБ",
+        "iconCode": "admin",
+        "sortOrder": 9
+      },
+      {
+        "code": "ReglamentirovannayaNastraivaemayaOtchetnost",
+        "nameRu": "Регламентированная настраиваемая отчетность",
+        "nameKz": "Реттелетін бапталатын есептілік",
+        "iconCode": "reports",
+        "sortOrder": 10
+      }
+    ],
+    "success": true
+  },
+  "GET /api/tasks/active": [],
+  "GET /api/support/calls/active": {
+    "__status": 204,
+    "__body": ""
+  },
+  "POST /api/view#CLOSE": {},
+  "POST /api/view#OPEN@/modules/Otchety/reportalt/KartochkaScheta": {
+    "formSessionId": "70c628c0-95db-46f1-aac0-64f096b222bf",
+    "revision": 0,
+    "tree": {
+      "id": "report.KartochkaScheta",
+      "type": "PAGE",
+      "props": {
+        "title": "Карточка счёта"
+      },
+      "binding": null,
+      "value": null,
+      "children": [
+        {
+          "id": "report.KartochkaScheta.title",
+          "type": "LABEL",
+          "props": {
+            "text": "Карточка счёта",
+            "variant": "h6"
+          },
+          "binding": null,
+          "value": null,
+          "children": null,
+          "actions": null
+        },
+        {
+          "id": "report.KartochkaScheta.toolbar",
+          "type": "TOOLBAR",
+          "props": null,
+          "binding": null,
+          "value": null,
+          "children": [
+            {
+              "id": "report.KartochkaScheta.toolbar.run",
+              "type": "BUTTON",
+              "props": {
+                "label": "Сформировать",
+                "variant": "primary",
+                "command": "report.run",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": "report.run",
+                  "behavior": {
+                    "flushPendingTables": false,
+                    "resetsDirty": false,
+                    "closeAfter": false
+                  },
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "report.KartochkaScheta.toolbar.reset",
+              "type": "BUTTON",
+              "props": {
+                "label": "Сбросить",
+                "command": "report.reset",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": "report.reset",
+                  "behavior": {
+                    "flushPendingTables": false,
+                    "resetsDirty": true,
+                    "closeAfter": false
+                  },
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "report.KartochkaScheta.toolbar.settings",
+              "type": "BUTTON",
+              "props": {
+                "label": "Настройки",
+                "command": "report.settings.open",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": "report.settings.open",
+                  "behavior": {
+                    "flushPendingTables": true,
+                    "resetsDirty": false,
+                    "closeAfter": false
+                  },
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            }
+          ],
+          "actions": null
+        },
+        {
+          "id": "report.KartochkaScheta.params",
+          "type": "GROUP",
+          "props": {
+            "title": "Параметры",
+            "collapsible": true
+          },
+          "binding": null,
+          "value": null,
+          "children": [
+            {
+              "id": "report.KartochkaScheta.param.Schet",
+              "type": "REFERENCE_FIELD",
+              "props": {
+                "label": "Счёт",
+                "required": true,
+                "serverEvents": ["change"],
+                "domain": "ACCOUNT_PLAN",
+                "targetTypeCode": "EdiniyPlanSchetovGosUchrezhdeniya",
+                "optionsSource": {
+                  "url": "/api/account-plan/EdiniyPlanSchetovGosUchrezhdeniya/entries",
+                  "params": {}
+                },
+                "visible": true,
+                "enabled": true
+              },
+              "binding": "report.KartochkaScheta.param.Schet",
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "change",
+                  "actionId": "fieldEvent",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "report.KartochkaScheta.param.Period",
+              "type": "GROUP",
+              "props": {
+                "title": "Период"
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "report.KartochkaScheta.param.Period.from",
+                  "type": "DATE_FIELD",
+                  "props": {
+                    "label": "С",
+                    "required": true,
+                    "serverEvents": ["change"],
+                    "visible": true,
+                    "enabled": true
+                  },
+                  "binding": "report.KartochkaScheta.param.Period.from",
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "change",
+                      "actionId": "fieldEvent",
+                      "command": null,
+                      "behavior": null,
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "report.KartochkaScheta.param.Period.to",
+                  "type": "DATE_FIELD",
+                  "props": {
+                    "label": "По",
+                    "required": true,
+                    "serverEvents": ["change"],
+                    "visible": true,
+                    "enabled": true
+                  },
+                  "binding": "report.KartochkaScheta.param.Period.to",
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "change",
+                      "actionId": "fieldEvent",
+                      "command": null,
+                      "behavior": null,
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                }
+              ],
+              "actions": null
+            },
+            {
+              "id": "report.KartochkaScheta.param.Organizatsiya",
+              "type": "REFERENCE_FIELD",
+              "props": {
+                "label": "Организация",
+                "required": false,
+                "serverEvents": ["change"],
+                "domain": "DICTIONARY",
+                "targetTypeCode": "Organizatsii",
+                "optionsSource": {
+                  "url": "/api/dictionary-entries/Organizatsii/entries",
+                  "params": {}
+                },
+                "visible": true,
+                "enabled": true
+              },
+              "binding": "report.KartochkaScheta.param.Organizatsiya",
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "change",
+                  "actionId": "fieldEvent",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "report.KartochkaScheta.param.UchetPoPodrazdeleniyam",
+              "type": "CHECKBOX_FIELD",
+              "props": {
+                "label": "Учёт по подразделениям",
+                "required": false,
+                "serverEvents": ["change"],
+                "visible": true,
+                "enabled": true
+              },
+              "binding": "report.KartochkaScheta.param.UchetPoPodrazdeleniyam",
+              "value": true,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "change",
+                  "actionId": "fieldEvent",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "report.KartochkaScheta.param.Periodichnost",
+              "type": "ENUM_FIELD",
+              "props": {
+                "label": "Периодичность",
+                "required": false,
+                "serverEvents": ["change"],
+                "options": [
+                  {
+                    "value": "DAY",
+                    "label": "День"
+                  },
+                  {
+                    "value": "WEEK",
+                    "label": "Неделя"
+                  },
+                  {
+                    "value": "MONTH",
+                    "label": "Месяц"
+                  },
+                  {
+                    "value": "QUARTER",
+                    "label": "Квартал"
+                  },
+                  {
+                    "value": "YEAR",
+                    "label": "Год"
+                  }
+                ],
+                "visible": true,
+                "enabled": true
+              },
+              "binding": "report.KartochkaScheta.param.Periodichnost",
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "change",
+                  "actionId": "fieldEvent",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            }
+          ],
+          "actions": null
+        },
+        {
+          "id": "report.KartochkaScheta.result",
+          "type": "REPORT_RESULT",
+          "props": {
+            "reportCode": "KartochkaScheta",
+            "contour": "REPORT_ALT",
+            "reportLayout": "LEDGER",
+            "source": null,
+            "pageSize": 200,
+            "settingsEnabled": false,
+            "settingsApplyCommand": "report.settings.apply",
+            "settingsResetCommand": "report.settings.reset",
+            "drilldownCommand": "report.drilldown",
+            "printEffect": null,
+            "exportEffect": null,
+            "placeholder": "Нажмите «Сформировать»"
+          },
+          "binding": null,
+          "value": null,
+          "children": null,
+          "actions": null
+        }
+      ],
+      "actions": null
+    },
+    "state": {},
+    "patches": null,
+    "statePatch": null,
+    "effects": null,
+    "onDirtyClose": null,
+    "formDirty": false,
+    "tab": {
+      "kind": "REPORT",
+      "title": "Карточка счёта",
+      "icon": null,
+      "closable": true
+    },
+    "dirty": null,
+    "commandFailed": null
+  },
+  "POST /api/view#COMMAND": {
+    "formSessionId": "a61e10e3-a9aa-4d7d-94f0-01bc8f617779",
+    "revision": 9,
+    "tree": null,
+    "state": null,
+    "patches": [
+      {
+        "op": "setProp",
+        "nodeId": "report.KartochkaScheta.result",
+        "binding": null,
+        "key": "source",
+        "value": {
+          "url": "/api/reportalt/KartochkaScheta/run",
+          "method": "POST",
+          "body": {
+            "parameters": {
+              "Schet": 13,
+              "Period": {
+                "from": "2026-08-01",
+                "to": "2026-08-31"
+              },
+              "UchetPoPodrazdeleniyam": true
+            }
+          }
+        },
+        "parentId": null,
+        "index": null,
+        "node": null,
+        "options": null
+      },
+      {
+        "op": "setProp",
+        "nodeId": "report.KartochkaScheta.result",
+        "binding": null,
+        "key": "printEffect",
+        "value": null,
+        "parentId": null,
+        "index": null,
+        "node": null,
+        "options": null
+      },
+      {
+        "op": "setProp",
+        "nodeId": "report.KartochkaScheta.result",
+        "binding": null,
+        "key": "exportEffect",
+        "value": {
+          "type": "download",
+          "route": null,
+          "openInNewTab": false,
+          "node": null,
+          "id": null,
+          "level": null,
+          "message": null,
+          "text": null,
+          "url": null,
+          "request": {
+            "method": "POST",
+            "url": "/api/reportalt/KartochkaScheta/export",
+            "body": {
+              "parameters": {
+                "Schet": 13,
+                "Period": {
+                  "from": "2026-08-01",
+                  "to": "2026-08-31"
+                },
+                "UchetPoPodrazdeleniyam": true
+              }
+            }
+          },
+          "confirmCommand": null,
+          "cancelCommand": null,
+          "confirmBehavior": null,
+          "sessionId": null,
+          "task": null,
+          "childRevision": null,
+          "childState": null,
+          "applyToParentSessionId": null,
+          "applyToParentTargetNodeId": null,
+          "applyToParentValue": null,
+          "applyToParentCommand": null,
+          "confirmRequest": null,
+          "saveCommand": null,
+          "saveBehavior": null,
+          "discardCommand": null,
+          "discardBehavior": null
+        },
+        "parentId": null,
+        "index": null,
+        "node": null,
+        "options": null
+      },
+      {
+        "op": "setProp",
+        "nodeId": "report.KartochkaScheta.params",
+        "binding": null,
+        "key": "collapsed",
+        "value": true,
+        "parentId": null,
+        "index": null,
+        "node": null,
+        "options": null
+      }
+    ],
+    "statePatch": null,
+    "effects": [
+      {
+        "type": "replaceUrl",
+        "route": "/modules/Otchety/reportalt/KartochkaScheta?rp=r1.eyJwYXJhbWV0ZXJzIjp7IlNjaGV0IjoxMywiUGVyaW9kLmZyb20iOiIwMjAyLTA4LTAxIiwiUGVyaW9kLnRvIjoiMjAyNi0wOC0zMSIsIlVjaGV0UG9Qb2RyYXpkZWxlbml5YW0iOnRydWV9LCJ2YXJpYW50Q29kZSI6bnVsbH0",
+        "openInNewTab": false,
+        "node": null,
+        "id": null,
+        "level": null,
+        "message": null,
+        "text": null,
+        "url": null,
+        "request": null,
+        "confirmCommand": null,
+        "cancelCommand": null,
+        "confirmBehavior": null,
+        "sessionId": null,
+        "task": null,
+        "childRevision": null,
+        "childState": null,
+        "applyToParentSessionId": null,
+        "applyToParentTargetNodeId": null,
+        "applyToParentValue": null,
+        "applyToParentCommand": null,
+        "confirmRequest": null,
+        "saveCommand": null,
+        "saveBehavior": null,
+        "discardCommand": null,
+        "discardBehavior": null
+      }
+    ],
+    "onDirtyClose": null,
+    "formDirty": true,
+    "tab": null,
+    "dirty": false,
+    "commandFailed": null
+  },
+  "POST /api/reportalt/KartochkaScheta/run": {
+    "data": {
+      "reportCode": "KartochkaScheta",
+      "reportNameRu": "Карточка счёта",
+      "reportNameKz": "Шот карточкасы",
+      "appliedParameters": {
+        "Schet": 13,
+        "Period": {
+          "from": "2026-08-01",
+          "to": "2026-08-31"
+        },
+        "UchetPoPodrazdeleniyam": true
+      },
+      "columns": [
+        {
+          "code": "Period",
+          "titleRu": "Период",
+          "titleKz": "Кезең",
+          "role": "DIMENSION",
+          "valueType": null,
+          "format": null,
+          "derived": false,
+          "columnFamily": "PLAIN",
+          "negativeRed": false,
+          "blankOnZero": false,
+          "align": "LEFT",
+          "groupTitleRu": null,
+          "groupTitleKz": null,
+          "subGroupTitleRu": null,
+          "subGroupTitleKz": null,
+          "width": null,
+          "dcIndicator": null,
+          "wrap": null
+        },
+        {
+          "code": "DocumentRegistrator",
+          "titleRu": "Документ",
+          "titleKz": "Құжат",
+          "role": "ATTRIBUTE",
+          "valueType": null,
+          "format": null,
+          "derived": false,
+          "columnFamily": "PLAIN",
+          "negativeRed": false,
+          "blankOnZero": false,
+          "align": "LEFT",
+          "groupTitleRu": null,
+          "groupTitleKz": null,
+          "subGroupTitleRu": null,
+          "subGroupTitleKz": null,
+          "width": null,
+          "dcIndicator": null,
+          "wrap": null
+        },
+        {
+          "code": "Soderzhanie",
+          "titleRu": "Содержание операции",
+          "titleKz": "Операция мазмұны",
+          "role": "ATTRIBUTE",
+          "valueType": null,
+          "format": null,
+          "derived": false,
+          "columnFamily": "PLAIN",
+          "negativeRed": false,
+          "blankOnZero": false,
+          "align": "LEFT",
+          "groupTitleRu": null,
+          "groupTitleKz": null,
+          "subGroupTitleRu": null,
+          "subGroupTitleKz": null,
+          "width": null,
+          "dcIndicator": null,
+          "wrap": null
+        },
+        {
+          "code": "AnalitikaDt",
+          "titleRu": "Аналитика Дт",
+          "titleKz": "Дт аналитикасы",
+          "role": "DIMENSION",
+          "valueType": null,
+          "format": null,
+          "derived": false,
+          "columnFamily": "PLAIN",
+          "negativeRed": false,
+          "blankOnZero": false,
+          "align": "LEFT",
+          "groupTitleRu": null,
+          "groupTitleKz": null,
+          "subGroupTitleRu": null,
+          "subGroupTitleKz": null,
+          "width": null,
+          "dcIndicator": null,
+          "wrap": null
+        },
+        {
+          "code": "AnalitikaKt",
+          "titleRu": "Аналитика Кт",
+          "titleKz": "Кт аналитикасы",
+          "role": "DIMENSION",
+          "valueType": null,
+          "format": null,
+          "derived": false,
+          "columnFamily": "PLAIN",
+          "negativeRed": false,
+          "blankOnZero": false,
+          "align": "LEFT",
+          "groupTitleRu": null,
+          "groupTitleKz": null,
+          "subGroupTitleRu": null,
+          "subGroupTitleKz": null,
+          "width": null,
+          "dcIndicator": null,
+          "wrap": null
+        },
+        {
+          "code": "Schet",
+          "titleRu": "Счёт",
+          "titleKz": "Шот",
+          "role": "DIMENSION",
+          "valueType": null,
+          "format": null,
+          "derived": false,
+          "columnFamily": "PLAIN",
+          "negativeRed": false,
+          "blankOnZero": false,
+          "align": "LEFT",
+          "groupTitleRu": "Дебет",
+          "groupTitleKz": "Дебет",
+          "subGroupTitleRu": null,
+          "subGroupTitleKz": null,
+          "width": null,
+          "dcIndicator": null,
+          "wrap": null
+        },
+        {
+          "code": "Debet",
+          "titleRu": "Сумма",
+          "titleKz": "Сома",
+          "role": "ATTRIBUTE",
+          "valueType": null,
+          "format": null,
+          "derived": false,
+          "columnFamily": "TURNOVER_DT",
+          "negativeRed": true,
+          "blankOnZero": false,
+          "align": "RIGHT",
+          "groupTitleRu": "Дебет",
+          "groupTitleKz": "Дебет",
+          "subGroupTitleRu": null,
+          "subGroupTitleKz": null,
+          "width": null,
+          "dcIndicator": null,
+          "wrap": null
+        },
+        {
+          "code": "SchetKt",
+          "titleRu": "Счёт",
+          "titleKz": "Шот",
+          "role": "DIMENSION",
+          "valueType": null,
+          "format": null,
+          "derived": false,
+          "columnFamily": "PLAIN",
+          "negativeRed": false,
+          "blankOnZero": false,
+          "align": "LEFT",
+          "groupTitleRu": "Кредит",
+          "groupTitleKz": "Кредит",
+          "subGroupTitleRu": null,
+          "subGroupTitleKz": null,
+          "width": null,
+          "dcIndicator": null,
+          "wrap": null
+        },
+        {
+          "code": "Kredit",
+          "titleRu": "Сумма",
+          "titleKz": "Сома",
+          "role": "ATTRIBUTE",
+          "valueType": null,
+          "format": null,
+          "derived": false,
+          "columnFamily": "TURNOVER_KT",
+          "negativeRed": true,
+          "blankOnZero": false,
+          "align": "RIGHT",
+          "groupTitleRu": "Кредит",
+          "groupTitleKz": "Кредит",
+          "subGroupTitleRu": null,
+          "subGroupTitleKz": null,
+          "width": null,
+          "dcIndicator": null,
+          "wrap": null
+        },
+        {
+          "code": "TekushcheeSaldo",
+          "titleRu": "Текущее сальдо",
+          "titleKz": "Ағымдағы қалдық",
+          "role": "ATTRIBUTE",
+          "valueType": null,
+          "format": null,
+          "derived": false,
+          "columnFamily": "CLOSING",
+          "negativeRed": true,
+          "blankOnZero": false,
+          "align": "RIGHT",
+          "groupTitleRu": null,
+          "groupTitleKz": null,
+          "subGroupTitleRu": null,
+          "subGroupTitleKz": null,
+          "width": null,
+          "dcIndicator": true,
+          "wrap": null
+        }
+      ],
+      "rows": [
+        {
+          "level": 0,
+          "groupCode": "SaldoNaNachalo",
+          "groupRefId": null,
+          "rowRef": null,
+          "groupValue": "Сальдо на начало",
+          "rowKind": "OPENING_BALANCE",
+          "labelText": "Сальдо на начало",
+          "labelColSpan": 5,
+          "cells": {
+            "TekushcheeSaldo": -763757.0
+          },
+          "children": []
+        },
+        {
+          "level": 0,
+          "groupCode": "OborotyISaldoNaKonets",
+          "groupRefId": null,
+          "rowRef": null,
+          "groupValue": "Обороты за период и сальдо на конец",
+          "rowKind": "TOTAL",
+          "labelText": "Обороты за период и сальдо на конец",
+          "labelColSpan": 5,
+          "cells": {
+            "Debet": 0,
+            "Kredit": 0,
+            "TekushcheeSaldo": -763757.0
+          },
+          "children": []
+        }
+      ],
+      "groupFloorCodes": [],
+      "total": {
+        "Debet": 0,
+        "Kredit": 0,
+        "TekushcheeSaldo": -763757.0
+      },
+      "language": "ru",
+      "layout": "LEDGER",
+      "titleTemplate": "Карточка счёта {account} за {from} - {to}",
+      "appliedTitleValues": {
+        "account": "1010",
+        "from": "01.08.2026",
+        "to": "31.08.2026"
+      },
+      "organizationTitle": null,
+      "subtitleLines": [],
+      "periodLine": "Период: 01.08.2026 - 31.08.2026",
+      "headerBlocks": [],
+      "footerBlock": null,
+      "form": null,
+      "page": 0,
+      "pageSize": 200,
+      "hasMore": false,
+      "nextOffset": null
+    },
+    "success": true
+  }
+}

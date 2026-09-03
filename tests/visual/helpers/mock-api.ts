@@ -58,8 +58,21 @@ const fontFileByUrl = (url: string): string | undefined =>
  * Полная изоляция от сети: все /api/* отвечаются фикстурами, шрифты —
  * локальными woff2 (CDN недетерминирован), прочий внешний трафик — 200 {}.
  * Ключ фикстуры: `${method} ${pathname}`; для POST /api/view — дополнительно
- * по `action.type` из тела: `POST /api/view#OPEN`.
+ * по `action.type` из тела: `POST /api/view#OPEN`. Один экран шлёт несколько
+ * OPEN (APP_SHELL + route), поэтому OPEN/COMMAND различаются ещё и
+ * дискриминатором `@` — `action.layoutCode` либо `route` из тела запроса:
+ * `POST /api/view#OPEN@APP_SHELL`; ключ без `@` — фолбэк.
+ * Значение вида `{ __status, __body }` отвечается с указанным HTTP-статусом
+ * (легаси-двери живут на 422 SCREEN_NOT_SDUI).
  */
+interface StatusFixture {
+  __status: number
+  __body: unknown
+}
+
+const isStatusFixture = (v: unknown): v is StatusFixture =>
+  typeof v === 'object' && v !== null && '__status' in v
+
 export async function mockApi(
   page: Page,
   fixtures: Record<string, unknown>
@@ -89,10 +102,25 @@ export async function mockApi(
     const url = new URL(req.url())
     let key = `${req.method()} ${url.pathname}`
     if (url.pathname === '/api/view' && req.method() === 'POST') {
-      const body = req.postDataJSON() as { action?: { type?: string } }
+      const body = req.postDataJSON() as {
+        route?: string
+        action?: { type?: string; layoutCode?: string }
+      }
       key = `${key}#${body.action?.type ?? ''}`
+      const discriminator = body.action?.layoutCode ?? body.route
+      if (discriminator && `${key}@${discriminator}` in fixtures) {
+        key = `${key}@${discriminator}`
+      }
     }
     const fixture = fixtures[key]
+    if (isStatusFixture(fixture)) {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify(fixture.__body ?? {}),
+        status: fixture.__status,
+      })
+      return
+    }
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify(fixture ?? {}),

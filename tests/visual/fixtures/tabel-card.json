@@ -1,0 +1,4447 @@
+{
+  "POST /api/view#OPEN@APP_SHELL": {
+    "formSessionId": "b694f043-6edd-4202-af39-b50630b87796",
+    "revision": 0,
+    "tree": {
+      "id": "shell",
+      "type": "APP_SHELL",
+      "props": null,
+      "binding": null,
+      "value": null,
+      "children": [
+        {
+          "id": "shell.topbar",
+          "type": "TOP_BAR",
+          "props": null,
+          "binding": null,
+          "value": null,
+          "children": null,
+          "actions": null
+        },
+        {
+          "id": "shell.sidebar",
+          "type": "SIDEBAR",
+          "props": {
+            "collapsed": false
+          },
+          "binding": null,
+          "value": null,
+          "children": [
+            {
+              "id": "shell.nav.home",
+              "type": "LINK",
+              "props": {
+                "label": "Главное",
+                "icon": "home",
+                "route": "/"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Administrirovanie",
+              "type": "LINK",
+              "props": {
+                "label": "Администрирование",
+                "icon": "admin",
+                "route": "/modules/Administrirovanie"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.BankiIKassy",
+              "type": "LINK",
+              "props": {
+                "label": "Банк и касса",
+                "icon": "bank",
+                "route": "/modules/BankiIKassy"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Sklad",
+              "type": "LINK",
+              "props": {
+                "label": "Склад",
+                "icon": "warehouse",
+                "route": "/modules/Sklad"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.OsiNma",
+              "type": "LINK",
+              "props": {
+                "label": "Основные средства и нематериальные активы",
+                "icon": "actives",
+                "route": "/modules/OsiNma"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Tarifikatsiya",
+              "type": "LINK",
+              "props": {
+                "label": "Тарификация",
+                "icon": "salary",
+                "route": "/modules/Tarifikatsiya"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.ZarplatiIKadri",
+              "type": "LINK",
+              "props": {
+                "label": "Зарплата и кадры",
+                "icon": "salary",
+                "route": "/modules/ZarplatiIKadri"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Otchety",
+              "type": "LINK",
+              "props": {
+                "label": "Отчеты",
+                "icon": "reports",
+                "route": "/modules/Otchety"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.NasheUchrezhdenie",
+              "type": "LINK",
+              "props": {
+                "label": "Наше учреждение",
+                "icon": "admin",
+                "route": "/modules/NasheUchrezhdenie"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.FormatnoLogicheskiyKontrol",
+              "type": "LINK",
+              "props": {
+                "label": "ФЛК",
+                "icon": "admin",
+                "route": "/modules/FormatnoLogicheskiyKontrol"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.ReglamentirovannayaNastraivaemayaOtchetnost",
+              "type": "LINK",
+              "props": {
+                "label": "Регламентированная настраиваемая отчетность",
+                "icon": "reports",
+                "route": "/modules/ReglamentirovannayaNastraivaemayaOtchetnost"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            }
+          ],
+          "actions": null
+        },
+        {
+          "id": "shell.workspace",
+          "type": "WORKSPACE",
+          "props": null,
+          "binding": null,
+          "value": null,
+          "children": null,
+          "actions": null
+        }
+      ],
+      "actions": null
+    },
+    "state": {},
+    "patches": null,
+    "statePatch": null,
+    "effects": null,
+    "onDirtyClose": null,
+    "formDirty": false,
+    "tab": null,
+    "dirty": null,
+    "commandFailed": null
+  },
+  "GET /api/settings/modules": {
+    "data": [
+      {
+        "code": "Administrirovanie",
+        "nameRu": "Администрирование",
+        "nameKz": "Әкімшілік",
+        "iconCode": "admin",
+        "sortOrder": 1
+      },
+      {
+        "code": "BankiIKassy",
+        "nameRu": "Банк и касса",
+        "nameKz": "Банк және касса",
+        "iconCode": "bank",
+        "sortOrder": 2
+      },
+      {
+        "code": "Sklad",
+        "nameRu": "Склад",
+        "nameKz": "Қойма",
+        "iconCode": "warehouse",
+        "sortOrder": 3
+      },
+      {
+        "code": "OsiNma",
+        "nameRu": "Основные средства и нематериальные активы",
+        "nameKz": "Негізгі құралдар және материалдық емес активтер",
+        "iconCode": "actives",
+        "sortOrder": 4
+      },
+      {
+        "code": "Tarifikatsiya",
+        "nameRu": "Тарификация",
+        "nameKz": "Тарифтеу",
+        "iconCode": "salary",
+        "sortOrder": 5
+      },
+      {
+        "code": "ZarplatiIKadri",
+        "nameRu": "Зарплата и кадры",
+        "nameKz": "Жалақы және кадрлар",
+        "iconCode": "salary",
+        "sortOrder": 6
+      },
+      {
+        "code": "Otchety",
+        "nameRu": "Отчеты",
+        "nameKz": "Есептер",
+        "iconCode": "reports",
+        "sortOrder": 7
+      },
+      {
+        "code": "NasheUchrezhdenie",
+        "nameRu": "Наше учреждение",
+        "nameKz": "Біздің мекеме",
+        "iconCode": "admin",
+        "sortOrder": 8
+      },
+      {
+        "code": "FormatnoLogicheskiyKontrol",
+        "nameRu": "ФЛК",
+        "nameKz": "ФЛБ",
+        "iconCode": "admin",
+        "sortOrder": 9
+      },
+      {
+        "code": "ReglamentirovannayaNastraivaemayaOtchetnost",
+        "nameRu": "Регламентированная настраиваемая отчетность",
+        "nameKz": "Реттелетін бапталатын есептілік",
+        "iconCode": "reports",
+        "sortOrder": 10
+      }
+    ],
+    "success": true
+  },
+  "GET /api/tasks/active": [],
+  "GET /api/support/calls/active": {
+    "__status": 204,
+    "__body": ""
+  },
+  "POST /api/view#CLOSE": {},
+  "POST /api/view#OPEN@/modules/ZarplatiIKadri/document/Tabel/27858509": {
+    "formSessionId": "341dedef-b0f0-40ce-b730-4b80a37f8c8f",
+    "revision": 0,
+    "tree": {
+      "id": "page",
+      "type": "PAGE",
+      "props": {
+        "kind": "OBJECT_FORM",
+        "title": "Табель AAQ00-00001 от 01.09.2026 00:00:00"
+      },
+      "binding": null,
+      "value": null,
+      "children": [
+        {
+          "id": "commandBar",
+          "type": "TOOLBAR",
+          "props": {
+            "commandSource": "AUTO"
+          },
+          "binding": null,
+          "value": null,
+          "children": [
+            {
+              "id": "btn.postClose",
+              "type": "BUTTON",
+              "props": {
+                "label": "Провести и закрыть",
+                "variant": "primary",
+                "command": "postAndClose",
+                "pinned": true,
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": null,
+                  "behavior": {
+                    "flushPendingTables": true,
+                    "resetsDirty": true,
+                    "closeAfter": true
+                  },
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "btn.save",
+              "type": "BUTTON",
+              "props": {
+                "label": "Записать",
+                "command": "save",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": null,
+                  "behavior": {
+                    "flushPendingTables": true,
+                    "resetsDirty": true,
+                    "closeAfter": false
+                  },
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "btn.post",
+              "type": "BUTTON",
+              "props": {
+                "label": "Провести",
+                "command": "post",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": null,
+                  "behavior": {
+                    "flushPendingTables": true,
+                    "resetsDirty": true,
+                    "closeAfter": false
+                  },
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "btn.showMovements",
+              "type": "BUTTON",
+              "props": {
+                "command": "showMovements",
+                "icon": "dtkt",
+                "tooltip": "Движения документа",
+                "label": "Дт/Кт",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": null,
+                  "behavior": {
+                    "flushPendingTables": false,
+                    "resetsDirty": false,
+                    "closeAfter": false
+                  },
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "btn.group.zapolnit",
+              "type": "BUTTON",
+              "props": {
+                "label": "Заполнить",
+                "variant": "dropdown",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "mi.group.zapolnit.zapolnit",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Заполнить",
+                    "command": "zapolnit",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.group.zapolnit.perezapolnitTekushchegoSotrudnikaTabel",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Перезаполнить текущего сотрудника",
+                    "command": "perezapolnitTekushchegoSotrudnikaTabel",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                }
+              ],
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "btn.ochistit",
+              "type": "BUTTON",
+              "props": {
+                "label": "Очистить",
+                "command": "ochistit",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": null,
+                  "behavior": {
+                    "flushPendingTables": true,
+                    "resetsDirty": false,
+                    "closeAfter": false
+                  },
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "btn.print",
+              "type": "BUTTON",
+              "props": {
+                "label": "Печать",
+                "variant": "dropdown",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "mi.print.Tabel",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Табель учета рабочего времени",
+                    "command": "print:Tabel",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.print.TabelKaz",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Табель учета рабочего времени каз.",
+                    "command": "print:TabelKaz",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.print.Komplekt",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Все формы одним файлом",
+                    "command": "print:Komplekt",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                }
+              ],
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "btn.reports",
+              "type": "BUTTON",
+              "props": {
+                "label": "Отчеты",
+                "variant": "dropdown",
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "mi.reports.showMovements",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Движения документа",
+                    "command": "showMovements",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                }
+              ],
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "spacer.more",
+              "type": "SPACER",
+              "props": {
+                "pinned": true
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "btn.more",
+              "type": "BUTTON",
+              "props": {
+                "label": "Ещё",
+                "variant": "dropdown",
+                "pinned": true,
+                "overflowHost": true,
+                "enabled": true
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "mi.more.postAndClose",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Провести и закрыть",
+                    "command": "postAndClose",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": true,
+                        "closeAfter": true
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.save",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Записать",
+                    "command": "save",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": true,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.reread",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Перечитать",
+                    "command": "reread",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": true,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.copy",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Скопировать",
+                    "command": "copy",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.setDeletionMark",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Пометить на удаление",
+                    "command": "setDeletionMark",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.post",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Провести",
+                    "command": "post",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": true,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.unpost",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Отменить проведение",
+                    "command": "unpost",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": true,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.showInList",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Показать в списке",
+                    "command": "showInList",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.showMovements",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Отчет по движениям",
+                    "command": "showMovements",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.showHistory",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "История изменений",
+                    "command": "showHistory",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "sep.more.std",
+                  "type": "SEPARATOR",
+                  "props": null,
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": null
+                },
+                {
+                  "id": "mi.more.vybratPeriodTabel",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Выбрать период",
+                    "command": "vybratPeriodTabel",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.zapolnit",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Заполнить",
+                    "command": "zapolnit",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.perezapolnitTekushchegoSotrudnikaTabel",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Перезаполнить текущего сотрудника",
+                    "command": "perezapolnitTekushchegoSotrudnikaTabel",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.ochistit",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Очистить",
+                    "command": "ochistit",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": true,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "sep.more.tabelPrint",
+                  "type": "SEPARATOR",
+                  "props": null,
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": null
+                },
+                {
+                  "id": "mi.print.Tabel",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Табель учета рабочего времени",
+                    "command": "print:Tabel",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.print.TabelKaz",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Табель учета рабочего времени каз.",
+                    "command": "print:TabelKaz",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.print.Komplekt",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Все формы одним файлом",
+                    "command": "print:Komplekt",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mi.more.tabelReports.showMovements",
+                  "type": "MENU_ITEM",
+                  "props": {
+                    "label": "Отчеты: Движения документа",
+                    "command": "showMovements",
+                    "enabled": true
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "click",
+                      "actionId": "command",
+                      "command": null,
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                }
+              ],
+              "actions": [
+                {
+                  "trigger": "click",
+                  "actionId": "command",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            }
+          ],
+          "actions": null
+        },
+        {
+          "id": "content",
+          "type": "VSTACK",
+          "props": null,
+          "binding": null,
+          "value": null,
+          "children": [
+            {
+              "id": "row.header",
+              "type": "HSTACK",
+              "props": {
+                "align": "stretch",
+                "gap": 6
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "col.headerLeft",
+                  "type": "VSTACK",
+                  "props": null,
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "row.nomerData",
+                      "type": "HSTACK",
+                      "props": {
+                        "align": "stretch",
+                        "gap": 6
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": [
+                        {
+                          "id": "field.nomer",
+                          "type": "TEXT_FIELD",
+                          "props": {
+                            "label": "Номер",
+                            "maxLength": 11,
+                            "editConfirm": "Номер заполняется автоматически при записи. Продолжить редактирование?",
+                            "serverEvents": ["change"],
+                            "visible": true,
+                            "enabled": true
+                          },
+                          "binding": "Nomer",
+                          "value": "AAQ00-00001",
+                          "children": null,
+                          "actions": [
+                            {
+                              "trigger": "change",
+                              "actionId": "fieldEvent",
+                              "command": null,
+                              "behavior": null,
+                              "requiresSelectedRow": null,
+                              "selectionField": null,
+                              "request": null
+                            }
+                          ]
+                        },
+                        {
+                          "id": "field.data",
+                          "type": "DATETIME_FIELD",
+                          "props": {
+                            "serverEvents": "change",
+                            "label": "Дата",
+                            "required": true,
+                            "selectionMode": "ELEMENT",
+                            "visible": true,
+                            "enabled": true
+                          },
+                          "binding": "Data",
+                          "value": "2026-09-01T00:00:00",
+                          "children": null,
+                          "actions": [
+                            {
+                              "trigger": "change",
+                              "actionId": "fieldEvent",
+                              "command": null,
+                              "behavior": null,
+                              "requiresSelectedRow": null,
+                              "selectionField": null,
+                              "request": null
+                            }
+                          ]
+                        }
+                      ],
+                      "actions": null
+                    },
+                    {
+                      "id": "field.organizatsiya",
+                      "type": "REFERENCE_FIELD",
+                      "props": {
+                        "label": "Организация",
+                        "required": true,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "Organizatsii",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/Organizatsii/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false,
+                        "filter": {
+                          "flatWithGroups": "true"
+                        },
+                        "serverEvents": ["change"],
+                        "visible": true,
+                        "enabled": true
+                      },
+                      "binding": "Organizatsiya",
+                      "value": {
+                        "id": 30259,
+                        "presentation": "ГУ \"Отдел жилищно-коммунального хозяйства города Талдыкорган\"",
+                        "code": null,
+                        "domain": null,
+                        "targetTypeCode": null
+                      },
+                      "children": null,
+                      "actions": [
+                        {
+                          "trigger": "change",
+                          "actionId": "fieldEvent",
+                          "command": null,
+                          "behavior": null,
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "showAll",
+                          "actionId": "command",
+                          "command": "ref.showAll:field.organizatsiya",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "create",
+                          "actionId": "command",
+                          "command": "ref.create:field.organizatsiya",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "open",
+                          "actionId": "command",
+                          "command": "ref.open:field.organizatsiya",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "copy",
+                          "actionId": "command",
+                          "command": "ref.copy:field.organizatsiya",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        }
+                      ]
+                    },
+                    {
+                      "id": "group.period",
+                      "type": "HSTACK",
+                      "props": {
+                        "align": "stretch",
+                        "gap": 6
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": [
+                        {
+                          "id": "field.nachaloPerioda",
+                          "type": "DATE_FIELD",
+                          "props": {
+                            "label": "Период с",
+                            "serverEvents": ["change"],
+                            "visible": true,
+                            "enabled": true
+                          },
+                          "binding": "NachaloPerioda",
+                          "value": "2026-09-01",
+                          "children": null,
+                          "actions": [
+                            {
+                              "trigger": "change",
+                              "actionId": "fieldEvent",
+                              "command": null,
+                              "behavior": null,
+                              "requiresSelectedRow": null,
+                              "selectionField": null,
+                              "request": null
+                            }
+                          ]
+                        },
+                        {
+                          "id": "field.okonchaniePerioda",
+                          "type": "DATE_FIELD",
+                          "props": {
+                            "label": "по",
+                            "serverEvents": ["change"],
+                            "visible": true,
+                            "enabled": true
+                          },
+                          "binding": "OkonchaniePerioda",
+                          "value": "2026-09-30",
+                          "children": null,
+                          "actions": [
+                            {
+                              "trigger": "change",
+                              "actionId": "fieldEvent",
+                              "command": null,
+                              "behavior": null,
+                              "requiresSelectedRow": null,
+                              "selectionField": null,
+                              "request": null
+                            }
+                          ]
+                        }
+                      ],
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "col.headerRight",
+                  "type": "VSTACK",
+                  "props": null,
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "field.periodRegistratsii",
+                      "type": "DATE_FIELD",
+                      "props": {
+                        "serverEvents": "change",
+                        "label": "Период регистрации",
+                        "required": true,
+                        "dateFormat": "MM.yyyy",
+                        "visible": true,
+                        "enabled": true
+                      },
+                      "binding": "PeriodRegistratsii",
+                      "value": "2026-09-30",
+                      "children": null,
+                      "actions": [
+                        {
+                          "trigger": "change",
+                          "actionId": "fieldEvent",
+                          "command": null,
+                          "behavior": null,
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field.podrazdelenieOrganizatsii",
+                      "type": "REFERENCE_FIELD",
+                      "props": {
+                        "label": "Подразделение организации",
+                        "required": true,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "PodrazdeleniyaOrganizatsiy",
+                        "filter": {
+                          "Vladelets": 30259,
+                          "nullableAf": "Vladelets",
+                          "skipDependsOn": true,
+                          "flatWithGroups": "true"
+                        },
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/PodrazdeleniyaOrganizatsiy/entries",
+                          "params": {
+                            "Vladelets": "30259",
+                            "nullableAf": "Vladelets",
+                            "skipDependsOn": "true"
+                          }
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": true,
+                        "allowCopy": true,
+                        "serverEvents": ["change"],
+                        "visible": true,
+                        "enabled": true
+                      },
+                      "binding": "PodrazdelenieOrganizatsii",
+                      "value": {
+                        "id": 263665,
+                        "presentation": "Талдык основное",
+                        "code": null,
+                        "domain": null,
+                        "targetTypeCode": null
+                      },
+                      "children": null,
+                      "actions": [
+                        {
+                          "trigger": "change",
+                          "actionId": "fieldEvent",
+                          "command": null,
+                          "behavior": null,
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "showAll",
+                          "actionId": "command",
+                          "command": "ref.showAll:field.podrazdelenieOrganizatsii",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "create",
+                          "actionId": "command",
+                          "command": "ref.create:field.podrazdelenieOrganizatsii",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "open",
+                          "actionId": "command",
+                          "command": "ref.open:field.podrazdelenieOrganizatsii",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        },
+                        {
+                          "trigger": "copy",
+                          "actionId": "command",
+                          "command": "ref.copy:field.podrazdelenieOrganizatsii",
+                          "behavior": {
+                            "flushPendingTables": false,
+                            "resetsDirty": false,
+                            "closeAfter": false
+                          },
+                          "requiresSelectedRow": null,
+                          "selectionField": null,
+                          "request": null
+                        }
+                      ]
+                    }
+                  ],
+                  "actions": null
+                }
+              ],
+              "actions": null
+            },
+            {
+              "id": "table.uchetRabochegoVremeni",
+              "type": "TABLE",
+              "props": {
+                "allowDelete": true,
+                "columnStateKey": "doc:Tabel.UchetRabochegoVremeni",
+                "sourceBinding": "UchetRabochegoVremeni",
+                "editable": true,
+                "podborColumn": "Sotrudnik",
+                "allowAdd": true,
+                "label": "Учёт рабочего времени",
+                "columnsResizable": true,
+                "required": true,
+                "tableCommands": [
+                  {
+                    "command": "table.copyRow:UchetRabochegoVremeni",
+                    "label": "Скопировать",
+                    "labelKz": "Көшіру",
+                    "enabled": true,
+                    "disabledReason": null,
+                    "behavior": {
+                      "flushPendingTables": true,
+                      "resetsDirty": false,
+                      "closeAfter": false
+                    },
+                    "column": null,
+                    "inMoreMenu": true,
+                    "requiresSelectedRow": true,
+                    "icon": null
+                  },
+                  {
+                    "command": "table.deleteRow:UchetRabochegoVremeni",
+                    "label": "Удалить",
+                    "labelKz": "Жою",
+                    "enabled": true,
+                    "disabledReason": null,
+                    "behavior": {
+                      "flushPendingTables": true,
+                      "resetsDirty": false,
+                      "closeAfter": false
+                    },
+                    "column": null,
+                    "inMoreMenu": false,
+                    "requiresSelectedRow": true,
+                    "icon": "delete"
+                  },
+                  {
+                    "command": "table.podbor:UchetRabochegoVremeni",
+                    "label": "Подбор",
+                    "labelKz": "Іріктеу",
+                    "enabled": true,
+                    "disabledReason": null,
+                    "behavior": {
+                      "flushPendingTables": false,
+                      "resetsDirty": false,
+                      "closeAfter": false
+                    },
+                    "column": "Sotrudnik",
+                    "inMoreMenu": true,
+                    "requiresSelectedRow": false,
+                    "icon": null
+                  },
+                  {
+                    "command": "etalon1c:dobavitVidVremeni:UchetRabochegoVremeni",
+                    "label": "Добавить вид времени",
+                    "labelKz": "Добавить вид времени",
+                    "enabled": true,
+                    "disabledReason": null,
+                    "behavior": {
+                      "flushPendingTables": true,
+                      "resetsDirty": false,
+                      "closeAfter": false
+                    },
+                    "column": null,
+                    "inMoreMenu": true,
+                    "requiresSelectedRow": false,
+                    "icon": null
+                  },
+                  {
+                    "command": "etalon1c:dobavitSotrudnika:UchetRabochegoVremeni",
+                    "label": "Добавить сотрудника",
+                    "labelKz": "Добавить сотрудника",
+                    "enabled": true,
+                    "disabledReason": null,
+                    "behavior": {
+                      "flushPendingTables": true,
+                      "resetsDirty": false,
+                      "closeAfter": false
+                    },
+                    "column": null,
+                    "inMoreMenu": true,
+                    "requiresSelectedRow": false,
+                    "icon": null
+                  },
+                  {
+                    "command": "etalon1c:razvernutDerevo:UchetRabochegoVremeni",
+                    "label": "Развернуть дерево",
+                    "labelKz": "Развернуть дерево",
+                    "enabled": true,
+                    "disabledReason": null,
+                    "behavior": {
+                      "flushPendingTables": true,
+                      "resetsDirty": false,
+                      "closeAfter": false
+                    },
+                    "column": null,
+                    "inMoreMenu": true,
+                    "requiresSelectedRow": false,
+                    "icon": null
+                  },
+                  {
+                    "command": "etalon1c:svernutDerevo:UchetRabochegoVremeni",
+                    "label": "Свернуть дерево",
+                    "labelKz": "Свернуть дерево",
+                    "enabled": true,
+                    "disabledReason": null,
+                    "behavior": {
+                      "flushPendingTables": true,
+                      "resetsDirty": false,
+                      "closeAfter": false
+                    },
+                    "column": null,
+                    "inMoreMenu": true,
+                    "requiresSelectedRow": false,
+                    "icon": null
+                  }
+                ],
+                "tableWireVersion": "tabel-matrix/v1",
+                "labelKz": "Жұмыс уақытын есепке алу",
+                "allowReorder": true,
+                "tablePresentation": "TABEL_MATRIX"
+              },
+              "binding": "tabel.matrix",
+              "value": {
+                "wireVersion": "tabel-matrix/v1",
+                "generation": 0,
+                "interval": {
+                  "start": "2026-09-01",
+                  "end": "2026-09-30"
+                },
+                "employees": [
+                  {
+                    "employeeNodeId": "employee:263666",
+                    "employeeRef": 263666,
+                    "employeePresentation": "Жанар физ лицо",
+                    "dayTotals": {
+                      "2026-09-24": "8.0000",
+                      "2026-09-23": "8.0000",
+                      "2026-09-22": "8.0000",
+                      "2026-09-21": "8.0000",
+                      "2026-09-09": "8.0000",
+                      "2026-09-08": "8.0000",
+                      "2026-09-07": "8.0000",
+                      "2026-09-30": "8.0000",
+                      "2026-09-04": "8.0000",
+                      "2026-09-03": "10.0000",
+                      "2026-09-02": "8.0000",
+                      "2026-09-01": "8.0000",
+                      "2026-09-18": "8.0000",
+                      "2026-09-17": "8.0000",
+                      "2026-09-16": "8.0000",
+                      "2026-09-15": "8.0000",
+                      "2026-09-14": "8.0000",
+                      "2026-09-11": "8.0000",
+                      "2026-09-10": "8.0000",
+                      "2026-09-29": "8.0000",
+                      "2026-09-28": "8.0000",
+                      "2026-09-25": "8.0000"
+                    },
+                    "total": "178.0000",
+                    "workKinds": [
+                      {
+                        "kindNodeId": "work-kind:263666:87751",
+                        "workTimeKindRef": 87751,
+                        "workTimeKindPresentation": "Явка",
+                        "protected": false,
+                        "protectionCode": null,
+                        "cells": {
+                          "2026-09-24": "8.0000",
+                          "2026-09-23": "8.0000",
+                          "2026-09-22": "8.0000",
+                          "2026-09-21": "8.0000",
+                          "2026-09-09": "8.0000",
+                          "2026-09-08": "8.0000",
+                          "2026-09-07": "8.0000",
+                          "2026-09-30": "8.0000",
+                          "2026-09-04": "8.0000",
+                          "2026-09-03": "8.0000",
+                          "2026-09-02": "8.0000",
+                          "2026-09-01": "8.0000",
+                          "2026-09-18": "8.0000",
+                          "2026-09-17": "8.0000",
+                          "2026-09-16": "8.0000",
+                          "2026-09-15": "8.0000",
+                          "2026-09-14": "8.0000",
+                          "2026-09-11": "8.0000",
+                          "2026-09-10": "8.0000",
+                          "2026-09-29": "8.0000",
+                          "2026-09-28": "8.0000",
+                          "2026-09-25": "8.0000"
+                        },
+                        "total": "176.0000"
+                      },
+                      {
+                        "kindNodeId": "work-kind:263666:87753",
+                        "workTimeKindRef": 87753,
+                        "workTimeKindPresentation": "Сверхурочные часы",
+                        "protected": false,
+                        "protectionCode": null,
+                        "cells": {
+                          "2026-09-03": "2.0000"
+                        },
+                        "total": "2.0000"
+                      }
+                    ]
+                  },
+                  {
+                    "employeeNodeId": "employee:263667",
+                    "employeeRef": 263667,
+                    "employeePresentation": "Жанар1 физ лицо",
+                    "dayTotals": {
+                      "2026-09-05": "6.0000",
+                      "2026-09-04": "6.0000",
+                      "2026-09-03": "8.0000",
+                      "2026-09-02": "6.0000",
+                      "2026-09-01": "6.0000",
+                      "2026-09-30": "6.0000",
+                      "2026-09-19": "6.0000",
+                      "2026-09-18": "6.0000",
+                      "2026-09-17": "6.0000",
+                      "2026-09-16": "6.0000",
+                      "2026-09-15": "6.0000",
+                      "2026-09-14": "6.0000",
+                      "2026-09-12": "6.0000",
+                      "2026-09-11": "6.0000",
+                      "2026-09-10": "6.0000",
+                      "2026-09-29": "6.0000",
+                      "2026-09-28": "6.0000",
+                      "2026-09-26": "6.0000",
+                      "2026-09-25": "6.0000",
+                      "2026-09-24": "6.0000",
+                      "2026-09-23": "6.0000",
+                      "2026-09-22": "6.0000",
+                      "2026-09-21": "6.0000",
+                      "2026-09-09": "6.0000",
+                      "2026-09-08": "6.0000",
+                      "2026-09-07": "6.0000"
+                    },
+                    "total": "158.0000",
+                    "workKinds": [
+                      {
+                        "kindNodeId": "work-kind:263667:87751",
+                        "workTimeKindRef": 87751,
+                        "workTimeKindPresentation": "Явка",
+                        "protected": false,
+                        "protectionCode": null,
+                        "cells": {
+                          "2026-09-05": "6.0000",
+                          "2026-09-04": "6.0000",
+                          "2026-09-03": "6.0000",
+                          "2026-09-02": "6.0000",
+                          "2026-09-01": "6.0000",
+                          "2026-09-30": "6.0000",
+                          "2026-09-19": "6.0000",
+                          "2026-09-18": "6.0000",
+                          "2026-09-17": "6.0000",
+                          "2026-09-16": "6.0000",
+                          "2026-09-15": "6.0000",
+                          "2026-09-14": "6.0000",
+                          "2026-09-12": "6.0000",
+                          "2026-09-11": "6.0000",
+                          "2026-09-10": "6.0000",
+                          "2026-09-29": "6.0000",
+                          "2026-09-28": "6.0000",
+                          "2026-09-26": "6.0000",
+                          "2026-09-25": "6.0000",
+                          "2026-09-24": "6.0000",
+                          "2026-09-23": "6.0000",
+                          "2026-09-22": "6.0000",
+                          "2026-09-21": "6.0000",
+                          "2026-09-09": "6.0000",
+                          "2026-09-08": "6.0000",
+                          "2026-09-07": "6.0000"
+                        },
+                        "total": "156.0000"
+                      },
+                      {
+                        "kindNodeId": "work-kind:263667:87753",
+                        "workTimeKindRef": 87753,
+                        "workTimeKindPresentation": "Сверхурочные часы",
+                        "protected": false,
+                        "protectionCode": null,
+                        "cells": {
+                          "2026-09-03": "2.0000"
+                        },
+                        "total": "2.0000"
+                      }
+                    ]
+                  },
+                  {
+                    "employeeNodeId": "employee:263669",
+                    "employeeRef": 263669,
+                    "employeePresentation": "Жанар2 физ лицо",
+                    "dayTotals": {
+                      "2026-09-28": "8.0000",
+                      "2026-09-06": "8.0000",
+                      "2026-09-25": "8.0000",
+                      "2026-09-03": "8.0000",
+                      "2026-09-26": "8.0000",
+                      "2026-09-04": "13.0000",
+                      "2026-09-29": "8.0000",
+                      "2026-09-23": "8.0000",
+                      "2026-09-09": "8.0000",
+                      "2026-09-08": "8.0000",
+                      "2026-09-07": "8.0000",
+                      "2026-09-24": "8.0000",
+                      "2026-09-02": "8.0000",
+                      "2026-09-22": "8.0000",
+                      "2026-09-21": "8.0000",
+                      "2026-09-20": "8.0000",
+                      "2026-09-01": "8.0000",
+                      "2026-09-18": "8.0000",
+                      "2026-09-19": "8.0000",
+                      "2026-09-16": "8.0000",
+                      "2026-09-17": "8.0000",
+                      "2026-09-14": "8.0000",
+                      "2026-09-15": "8.0000",
+                      "2026-09-12": "8.0000",
+                      "2026-09-13": "8.0000",
+                      "2026-09-30": "8.0000",
+                      "2026-09-11": "8.0000",
+                      "2026-09-10": "8.0000",
+                      "2026-09-27": "8.0000",
+                      "2026-09-05": "8.0000"
+                    },
+                    "total": "245.0000",
+                    "workKinds": [
+                      {
+                        "kindNodeId": "work-kind:263669:87751",
+                        "workTimeKindRef": 87751,
+                        "workTimeKindPresentation": "Явка",
+                        "protected": false,
+                        "protectionCode": null,
+                        "cells": {
+                          "2026-09-28": "8.0000",
+                          "2026-09-06": "8.0000",
+                          "2026-09-25": "8.0000",
+                          "2026-09-03": "8.0000",
+                          "2026-09-26": "8.0000",
+                          "2026-09-04": "8.0000",
+                          "2026-09-29": "8.0000",
+                          "2026-09-23": "8.0000",
+                          "2026-09-09": "8.0000",
+                          "2026-09-08": "8.0000",
+                          "2026-09-07": "8.0000",
+                          "2026-09-24": "8.0000",
+                          "2026-09-02": "8.0000",
+                          "2026-09-22": "8.0000",
+                          "2026-09-21": "8.0000",
+                          "2026-09-20": "8.0000",
+                          "2026-09-01": "8.0000",
+                          "2026-09-18": "8.0000",
+                          "2026-09-19": "8.0000",
+                          "2026-09-16": "8.0000",
+                          "2026-09-17": "8.0000",
+                          "2026-09-14": "8.0000",
+                          "2026-09-15": "8.0000",
+                          "2026-09-12": "8.0000",
+                          "2026-09-13": "8.0000",
+                          "2026-09-30": "8.0000",
+                          "2026-09-11": "8.0000",
+                          "2026-09-10": "8.0000",
+                          "2026-09-27": "8.0000",
+                          "2026-09-05": "8.0000"
+                        },
+                        "total": "240.0000"
+                      },
+                      {
+                        "kindNodeId": "work-kind:263669:87753",
+                        "workTimeKindRef": 87753,
+                        "workTimeKindPresentation": "Сверхурочные часы",
+                        "protected": false,
+                        "protectionCode": null,
+                        "cells": {
+                          "2026-09-04": "5.0000"
+                        },
+                        "total": "5.0000"
+                      }
+                    ]
+                  }
+                ],
+                "manualWorkKinds": [
+                  {
+                    "workTimeKindRef": 87745,
+                    "presentation": "Выходной день"
+                  },
+                  {
+                    "workTimeKindRef": 87747,
+                    "presentation": "Неявка"
+                  },
+                  {
+                    "workTimeKindRef": 87748,
+                    "presentation": "Ночные часы"
+                  },
+                  {
+                    "workTimeKindRef": 87750,
+                    "presentation": "Праздничный день"
+                  },
+                  {
+                    "workTimeKindRef": 87751,
+                    "presentation": "Явка"
+                  },
+                  {
+                    "workTimeKindRef": 87753,
+                    "presentation": "Сверхурочные часы"
+                  }
+                ]
+              },
+              "children": [
+                {
+                  "id": "table.uchetRabochegoVremeni.col.sotrudnik",
+                  "type": "TABLE_COLUMN",
+                  "props": {
+                    "cellWidget": "REFERENCE_FIELD",
+                    "label": "Сотрудник",
+                    "labelKz": "Қызметкер",
+                    "visible": true,
+                    "binding": "Sotrudnik",
+                    "dataType": "DICTIONARY",
+                    "required": true,
+                    "width": 240,
+                    "domain": "DICTIONARY",
+                    "targetTypeCode": "Sotrudniki",
+                    "filter": {
+                      "Organizatsiya": 30259,
+                      "nullableAf": "Organizatsiya",
+                      "skipDependsOn": true
+                    },
+                    "optionsSource": {
+                      "url": "/api/dictionary-entries/Sotrudniki/entries",
+                      "params": {
+                        "Organizatsiya": "30259",
+                        "nullableAf": "Organizatsiya",
+                        "skipDependsOn": "true"
+                      }
+                    },
+                    "allowShowAll": true,
+                    "allowOpen": true,
+                    "allowCreate": true,
+                    "allowCopy": true
+                  },
+                  "binding": "Sotrudnik",
+                  "value": null,
+                  "children": null,
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day1",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 1",
+                    "labelKz": "1-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy1",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 1",
+                        "labelKz": "1-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy1",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy1",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni1",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 1",
+                        "labelKz": "1-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni1",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni1",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day2",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 2",
+                    "labelKz": "2-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy2",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 2",
+                        "labelKz": "2-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy2",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy2",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni2",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 2",
+                        "labelKz": "2-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni2",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni2",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day3",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 3",
+                    "labelKz": "3-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy3",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 3",
+                        "labelKz": "3-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy3",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy3",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni3",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 3",
+                        "labelKz": "3-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni3",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni3",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day4",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 4",
+                    "labelKz": "4-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy4",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 4",
+                        "labelKz": "4-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy4",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy4",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni4",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 4",
+                        "labelKz": "4-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni4",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni4",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day5",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 5",
+                    "labelKz": "5-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy5",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 5",
+                        "labelKz": "5-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy5",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy5",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni5",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 5",
+                        "labelKz": "5-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni5",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni5",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day6",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 6",
+                    "labelKz": "6-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy6",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 6",
+                        "labelKz": "6-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy6",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy6",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni6",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 6",
+                        "labelKz": "6-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni6",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni6",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day7",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 7",
+                    "labelKz": "7-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy7",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 7",
+                        "labelKz": "7-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy7",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy7",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni7",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 7",
+                        "labelKz": "7-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni7",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni7",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day8",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 8",
+                    "labelKz": "8-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy8",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 8",
+                        "labelKz": "8-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy8",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy8",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni8",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 8",
+                        "labelKz": "8-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni8",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni8",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day9",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 9",
+                    "labelKz": "9-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy9",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 9",
+                        "labelKz": "9-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy9",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy9",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni9",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 9",
+                        "labelKz": "9-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni9",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni9",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day10",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 10",
+                    "labelKz": "10-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy10",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 10",
+                        "labelKz": "10-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy10",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy10",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni10",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 10",
+                        "labelKz": "10-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni10",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni10",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day11",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 11",
+                    "labelKz": "11-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy11",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 11",
+                        "labelKz": "11-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy11",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy11",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni11",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 11",
+                        "labelKz": "11-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni11",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni11",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day12",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 12",
+                    "labelKz": "12-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy12",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 12",
+                        "labelKz": "12-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy12",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy12",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni12",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 12",
+                        "labelKz": "12-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni12",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni12",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day13",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 13",
+                    "labelKz": "13-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy13",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 13",
+                        "labelKz": "13-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy13",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy13",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni13",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 13",
+                        "labelKz": "13-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni13",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni13",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day14",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 14",
+                    "labelKz": "14-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy14",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 14",
+                        "labelKz": "14-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy14",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy14",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni14",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 14",
+                        "labelKz": "14-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni14",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni14",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day15",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 15",
+                    "labelKz": "15-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy15",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 15",
+                        "labelKz": "15-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy15",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy15",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni15",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 15",
+                        "labelKz": "15-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni15",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni15",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day16",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 16",
+                    "labelKz": "16-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy16",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 16",
+                        "labelKz": "16-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy16",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy16",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni16",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 16",
+                        "labelKz": "16-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni16",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni16",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day17",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 17",
+                    "labelKz": "17-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy17",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 17",
+                        "labelKz": "17-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy17",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy17",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni17",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 17",
+                        "labelKz": "17-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni17",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni17",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day18",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 18",
+                    "labelKz": "18-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy18",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 18",
+                        "labelKz": "18-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy18",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy18",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni18",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 18",
+                        "labelKz": "18-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni18",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni18",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day19",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 19",
+                    "labelKz": "19-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy19",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 19",
+                        "labelKz": "19-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy19",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy19",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni19",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 19",
+                        "labelKz": "19-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni19",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni19",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day20",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 20",
+                    "labelKz": "20-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy20",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 20",
+                        "labelKz": "20-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy20",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy20",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni20",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 20",
+                        "labelKz": "20-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni20",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni20",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day21",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 21",
+                    "labelKz": "21-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy21",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 21",
+                        "labelKz": "21-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy21",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy21",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni21",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 21",
+                        "labelKz": "21-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni21",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni21",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day22",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 22",
+                    "labelKz": "22-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy22",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 22",
+                        "labelKz": "22-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy22",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy22",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni22",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 22",
+                        "labelKz": "22-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni22",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni22",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day23",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 23",
+                    "labelKz": "23-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy23",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 23",
+                        "labelKz": "23-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy23",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy23",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni23",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 23",
+                        "labelKz": "23-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni23",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni23",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day24",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 24",
+                    "labelKz": "24-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy24",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 24",
+                        "labelKz": "24-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy24",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy24",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni24",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 24",
+                        "labelKz": "24-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni24",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni24",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day25",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 25",
+                    "labelKz": "25-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy25",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 25",
+                        "labelKz": "25-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy25",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy25",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni25",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 25",
+                        "labelKz": "25-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni25",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni25",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day26",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 26",
+                    "labelKz": "26-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy26",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 26",
+                        "labelKz": "26-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy26",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy26",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni26",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 26",
+                        "labelKz": "26-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni26",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni26",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day27",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 27",
+                    "labelKz": "27-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy27",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 27",
+                        "labelKz": "27-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy27",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy27",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni27",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 27",
+                        "labelKz": "27-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni27",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni27",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day28",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 28",
+                    "labelKz": "28-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy28",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 28",
+                        "labelKz": "28-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy28",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy28",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni28",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 28",
+                        "labelKz": "28-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni28",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni28",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day29",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 29",
+                    "labelKz": "29-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy29",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 29",
+                        "labelKz": "29-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy29",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy29",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni29",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 29",
+                        "labelKz": "29-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni29",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni29",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day30",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 30",
+                    "labelKz": "30-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy30",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 30",
+                        "labelKz": "30-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy30",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy30",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni30",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 30",
+                        "labelKz": "30-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni30",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni30",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.colgroup.day31",
+                  "type": "COLUMN_GROUP",
+                  "props": {
+                    "label": "День 31",
+                    "labelKz": "31-күн",
+                    "orientation": "HORIZONTAL"
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.chasy31",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "NUMBER_FIELD",
+                        "label": "Часы 31",
+                        "labelKz": "31-күн сағат",
+                        "visible": true,
+                        "binding": "Chasy31",
+                        "dataType": "DECIMAL",
+                        "width": 160
+                      },
+                      "binding": "Chasy31",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "table.uchetRabochegoVremeni.col.vidRabochegoVremeni31",
+                      "type": "TABLE_COLUMN",
+                      "props": {
+                        "cellWidget": "REFERENCE_FIELD",
+                        "label": "Вид времени 31",
+                        "labelKz": "31-күн уақыт түрі",
+                        "visible": true,
+                        "binding": "VidRabochegoVremeni31",
+                        "dataType": "DICTIONARY",
+                        "width": 240,
+                        "domain": "DICTIONARY",
+                        "targetTypeCode": "KlassifikatorRabochegoVremeni",
+                        "optionsSource": {
+                          "url": "/api/dictionary-entries/KlassifikatorRabochegoVremeni/entries",
+                          "params": {}
+                        },
+                        "allowShowAll": true,
+                        "allowOpen": true,
+                        "allowCreate": false,
+                        "allowCopy": false
+                      },
+                      "binding": "VidRabochegoVremeni31",
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.col.fizicheskoeLitso",
+                  "type": "TABLE_COLUMN",
+                  "props": {
+                    "cellWidget": "REFERENCE_FIELD",
+                    "label": "Физическое лицо",
+                    "labelKz": "Жеке тұлға",
+                    "visible": true,
+                    "binding": "FizicheskoeLitso",
+                    "dataType": "DICTIONARY",
+                    "width": 240,
+                    "domain": "DICTIONARY",
+                    "targetTypeCode": "FizicheskieLitsa",
+                    "filter": {
+                      "Organizatsiya": 30259,
+                      "nullableAf": "Organizatsiya",
+                      "skipDependsOn": true,
+                      "flatWithGroups": "true"
+                    },
+                    "optionsSource": {
+                      "url": "/api/dictionary-entries/FizicheskieLitsa/entries",
+                      "params": {
+                        "Organizatsiya": "30259",
+                        "nullableAf": "Organizatsiya",
+                        "skipDependsOn": "true"
+                      }
+                    },
+                    "allowShowAll": true,
+                    "allowOpen": true,
+                    "allowCreate": true,
+                    "allowCopy": true
+                  },
+                  "binding": "FizicheskoeLitso",
+                  "value": null,
+                  "children": null,
+                  "actions": null
+                },
+                {
+                  "id": "table.uchetRabochegoVremeni.col.prikaz",
+                  "type": "TABLE_COLUMN",
+                  "props": {
+                    "cellWidget": "TEXT_FIELD",
+                    "label": "Приказ",
+                    "labelKz": "Бұйрық",
+                    "visible": true,
+                    "binding": "Prikaz",
+                    "dataType": "STRING",
+                    "width": 200
+                  },
+                  "binding": "Prikaz",
+                  "value": null,
+                  "children": null,
+                  "actions": null
+                }
+              ],
+              "actions": [
+                {
+                  "trigger": "change",
+                  "actionId": "fieldEvent",
+                  "command": null,
+                  "behavior": null,
+                  "requiresSelectedRow": null,
+                  "selectionField": null,
+                  "request": null
+                }
+              ]
+            },
+            {
+              "id": "group.podval",
+              "type": "HSTACK",
+              "props": null,
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "field.kommentariy",
+                  "type": "TEXT_FIELD",
+                  "props": {
+                    "label": "Комментарий",
+                    "maxLength": 0,
+                    "serverEvents": ["change"],
+                    "visible": true,
+                    "enabled": true
+                  },
+                  "binding": "Kommentariy",
+                  "value": null,
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "change",
+                      "actionId": "fieldEvent",
+                      "command": null,
+                      "behavior": null,
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                },
+                {
+                  "id": "field.otvetstvennyy",
+                  "type": "REFERENCE_FIELD",
+                  "props": {
+                    "label": "Ответственный",
+                    "domain": "DICTIONARY",
+                    "targetTypeCode": "Polzovateli",
+                    "optionsSource": {
+                      "url": "/api/dictionary-entries/Polzovateli/entries",
+                      "params": {}
+                    },
+                    "allowShowAll": true,
+                    "allowOpen": true,
+                    "allowCreate": false,
+                    "allowCopy": false,
+                    "serverEvents": ["change"],
+                    "visible": true,
+                    "enabled": true
+                  },
+                  "binding": "Otvetstvennyy",
+                  "value": {
+                    "id": 263657,
+                    "presentation": "Нагыманова Жанар",
+                    "code": null,
+                    "domain": null,
+                    "targetTypeCode": null
+                  },
+                  "children": null,
+                  "actions": [
+                    {
+                      "trigger": "change",
+                      "actionId": "fieldEvent",
+                      "command": null,
+                      "behavior": null,
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    },
+                    {
+                      "trigger": "showAll",
+                      "actionId": "command",
+                      "command": "ref.showAll:field.otvetstvennyy",
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    },
+                    {
+                      "trigger": "create",
+                      "actionId": "command",
+                      "command": "ref.create:field.otvetstvennyy",
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    },
+                    {
+                      "trigger": "open",
+                      "actionId": "command",
+                      "command": "ref.open:field.otvetstvennyy",
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    },
+                    {
+                      "trigger": "copy",
+                      "actionId": "command",
+                      "command": "ref.copy:field.otvetstvennyy",
+                      "behavior": {
+                        "flushPendingTables": false,
+                        "resetsDirty": false,
+                        "closeAfter": false
+                      },
+                      "requiresSelectedRow": null,
+                      "selectionField": null,
+                      "request": null
+                    }
+                  ]
+                }
+              ],
+              "actions": null
+            }
+          ],
+          "actions": null
+        }
+      ],
+      "actions": null
+    },
+    "state": {
+      "Data": "2026-09-01T00:00:00",
+      "Otvetstvennyy": {
+        "id": 263657,
+        "presentation": "Нагыманова Жанар",
+        "code": null,
+        "domain": null,
+        "targetTypeCode": null
+      },
+      "PeriodRegistratsii": "2026-09-30",
+      "NachaloPerioda": "2026-09-01",
+      "OkonchaniePerioda": "2026-09-30",
+      "Nomer": "AAQ00-00001",
+      "Organizatsiya": {
+        "id": 30259,
+        "presentation": "ГУ \"Отдел жилищно-коммунального хозяйства города Талдыкорган\"",
+        "code": null,
+        "domain": null,
+        "targetTypeCode": null
+      },
+      "PodrazdelenieOrganizatsii": {
+        "id": 263665,
+        "presentation": "Талдык основное",
+        "code": null,
+        "domain": null,
+        "targetTypeCode": null
+      },
+      "tabel.matrix": {
+        "wireVersion": "tabel-matrix/v1",
+        "generation": 0,
+        "interval": {
+          "start": "2026-09-01",
+          "end": "2026-09-30"
+        },
+        "employees": [
+          {
+            "employeeNodeId": "employee:263666",
+            "employeeRef": 263666,
+            "employeePresentation": "Жанар физ лицо",
+            "dayTotals": {
+              "2026-09-24": "8.0000",
+              "2026-09-23": "8.0000",
+              "2026-09-22": "8.0000",
+              "2026-09-21": "8.0000",
+              "2026-09-09": "8.0000",
+              "2026-09-08": "8.0000",
+              "2026-09-07": "8.0000",
+              "2026-09-30": "8.0000",
+              "2026-09-04": "8.0000",
+              "2026-09-03": "10.0000",
+              "2026-09-02": "8.0000",
+              "2026-09-01": "8.0000",
+              "2026-09-18": "8.0000",
+              "2026-09-17": "8.0000",
+              "2026-09-16": "8.0000",
+              "2026-09-15": "8.0000",
+              "2026-09-14": "8.0000",
+              "2026-09-11": "8.0000",
+              "2026-09-10": "8.0000",
+              "2026-09-29": "8.0000",
+              "2026-09-28": "8.0000",
+              "2026-09-25": "8.0000"
+            },
+            "total": "178.0000",
+            "workKinds": [
+              {
+                "kindNodeId": "work-kind:263666:87751",
+                "workTimeKindRef": 87751,
+                "workTimeKindPresentation": "Явка",
+                "protected": false,
+                "protectionCode": null,
+                "cells": {
+                  "2026-09-24": "8.0000",
+                  "2026-09-23": "8.0000",
+                  "2026-09-22": "8.0000",
+                  "2026-09-21": "8.0000",
+                  "2026-09-09": "8.0000",
+                  "2026-09-08": "8.0000",
+                  "2026-09-07": "8.0000",
+                  "2026-09-30": "8.0000",
+                  "2026-09-04": "8.0000",
+                  "2026-09-03": "8.0000",
+                  "2026-09-02": "8.0000",
+                  "2026-09-01": "8.0000",
+                  "2026-09-18": "8.0000",
+                  "2026-09-17": "8.0000",
+                  "2026-09-16": "8.0000",
+                  "2026-09-15": "8.0000",
+                  "2026-09-14": "8.0000",
+                  "2026-09-11": "8.0000",
+                  "2026-09-10": "8.0000",
+                  "2026-09-29": "8.0000",
+                  "2026-09-28": "8.0000",
+                  "2026-09-25": "8.0000"
+                },
+                "total": "176.0000"
+              },
+              {
+                "kindNodeId": "work-kind:263666:87753",
+                "workTimeKindRef": 87753,
+                "workTimeKindPresentation": "Сверхурочные часы",
+                "protected": false,
+                "protectionCode": null,
+                "cells": {
+                  "2026-09-03": "2.0000"
+                },
+                "total": "2.0000"
+              }
+            ]
+          },
+          {
+            "employeeNodeId": "employee:263667",
+            "employeeRef": 263667,
+            "employeePresentation": "Жанар1 физ лицо",
+            "dayTotals": {
+              "2026-09-05": "6.0000",
+              "2026-09-04": "6.0000",
+              "2026-09-03": "8.0000",
+              "2026-09-02": "6.0000",
+              "2026-09-01": "6.0000",
+              "2026-09-30": "6.0000",
+              "2026-09-19": "6.0000",
+              "2026-09-18": "6.0000",
+              "2026-09-17": "6.0000",
+              "2026-09-16": "6.0000",
+              "2026-09-15": "6.0000",
+              "2026-09-14": "6.0000",
+              "2026-09-12": "6.0000",
+              "2026-09-11": "6.0000",
+              "2026-09-10": "6.0000",
+              "2026-09-29": "6.0000",
+              "2026-09-28": "6.0000",
+              "2026-09-26": "6.0000",
+              "2026-09-25": "6.0000",
+              "2026-09-24": "6.0000",
+              "2026-09-23": "6.0000",
+              "2026-09-22": "6.0000",
+              "2026-09-21": "6.0000",
+              "2026-09-09": "6.0000",
+              "2026-09-08": "6.0000",
+              "2026-09-07": "6.0000"
+            },
+            "total": "158.0000",
+            "workKinds": [
+              {
+                "kindNodeId": "work-kind:263667:87751",
+                "workTimeKindRef": 87751,
+                "workTimeKindPresentation": "Явка",
+                "protected": false,
+                "protectionCode": null,
+                "cells": {
+                  "2026-09-05": "6.0000",
+                  "2026-09-04": "6.0000",
+                  "2026-09-03": "6.0000",
+                  "2026-09-02": "6.0000",
+                  "2026-09-01": "6.0000",
+                  "2026-09-30": "6.0000",
+                  "2026-09-19": "6.0000",
+                  "2026-09-18": "6.0000",
+                  "2026-09-17": "6.0000",
+                  "2026-09-16": "6.0000",
+                  "2026-09-15": "6.0000",
+                  "2026-09-14": "6.0000",
+                  "2026-09-12": "6.0000",
+                  "2026-09-11": "6.0000",
+                  "2026-09-10": "6.0000",
+                  "2026-09-29": "6.0000",
+                  "2026-09-28": "6.0000",
+                  "2026-09-26": "6.0000",
+                  "2026-09-25": "6.0000",
+                  "2026-09-24": "6.0000",
+                  "2026-09-23": "6.0000",
+                  "2026-09-22": "6.0000",
+                  "2026-09-21": "6.0000",
+                  "2026-09-09": "6.0000",
+                  "2026-09-08": "6.0000",
+                  "2026-09-07": "6.0000"
+                },
+                "total": "156.0000"
+              },
+              {
+                "kindNodeId": "work-kind:263667:87753",
+                "workTimeKindRef": 87753,
+                "workTimeKindPresentation": "Сверхурочные часы",
+                "protected": false,
+                "protectionCode": null,
+                "cells": {
+                  "2026-09-03": "2.0000"
+                },
+                "total": "2.0000"
+              }
+            ]
+          },
+          {
+            "employeeNodeId": "employee:263669",
+            "employeeRef": 263669,
+            "employeePresentation": "Жанар2 физ лицо",
+            "dayTotals": {
+              "2026-09-28": "8.0000",
+              "2026-09-06": "8.0000",
+              "2026-09-25": "8.0000",
+              "2026-09-03": "8.0000",
+              "2026-09-26": "8.0000",
+              "2026-09-04": "13.0000",
+              "2026-09-29": "8.0000",
+              "2026-09-23": "8.0000",
+              "2026-09-09": "8.0000",
+              "2026-09-08": "8.0000",
+              "2026-09-07": "8.0000",
+              "2026-09-24": "8.0000",
+              "2026-09-02": "8.0000",
+              "2026-09-22": "8.0000",
+              "2026-09-21": "8.0000",
+              "2026-09-20": "8.0000",
+              "2026-09-01": "8.0000",
+              "2026-09-18": "8.0000",
+              "2026-09-19": "8.0000",
+              "2026-09-16": "8.0000",
+              "2026-09-17": "8.0000",
+              "2026-09-14": "8.0000",
+              "2026-09-15": "8.0000",
+              "2026-09-12": "8.0000",
+              "2026-09-13": "8.0000",
+              "2026-09-30": "8.0000",
+              "2026-09-11": "8.0000",
+              "2026-09-10": "8.0000",
+              "2026-09-27": "8.0000",
+              "2026-09-05": "8.0000"
+            },
+            "total": "245.0000",
+            "workKinds": [
+              {
+                "kindNodeId": "work-kind:263669:87751",
+                "workTimeKindRef": 87751,
+                "workTimeKindPresentation": "Явка",
+                "protected": false,
+                "protectionCode": null,
+                "cells": {
+                  "2026-09-28": "8.0000",
+                  "2026-09-06": "8.0000",
+                  "2026-09-25": "8.0000",
+                  "2026-09-03": "8.0000",
+                  "2026-09-26": "8.0000",
+                  "2026-09-04": "8.0000",
+                  "2026-09-29": "8.0000",
+                  "2026-09-23": "8.0000",
+                  "2026-09-09": "8.0000",
+                  "2026-09-08": "8.0000",
+                  "2026-09-07": "8.0000",
+                  "2026-09-24": "8.0000",
+                  "2026-09-02": "8.0000",
+                  "2026-09-22": "8.0000",
+                  "2026-09-21": "8.0000",
+                  "2026-09-20": "8.0000",
+                  "2026-09-01": "8.0000",
+                  "2026-09-18": "8.0000",
+                  "2026-09-19": "8.0000",
+                  "2026-09-16": "8.0000",
+                  "2026-09-17": "8.0000",
+                  "2026-09-14": "8.0000",
+                  "2026-09-15": "8.0000",
+                  "2026-09-12": "8.0000",
+                  "2026-09-13": "8.0000",
+                  "2026-09-30": "8.0000",
+                  "2026-09-11": "8.0000",
+                  "2026-09-10": "8.0000",
+                  "2026-09-27": "8.0000",
+                  "2026-09-05": "8.0000"
+                },
+                "total": "240.0000"
+              },
+              {
+                "kindNodeId": "work-kind:263669:87753",
+                "workTimeKindRef": 87753,
+                "workTimeKindPresentation": "Сверхурочные часы",
+                "protected": false,
+                "protectionCode": null,
+                "cells": {
+                  "2026-09-04": "5.0000"
+                },
+                "total": "5.0000"
+              }
+            ]
+          }
+        ],
+        "manualWorkKinds": [
+          {
+            "workTimeKindRef": 87745,
+            "presentation": "Выходной день"
+          },
+          {
+            "workTimeKindRef": 87747,
+            "presentation": "Неявка"
+          },
+          {
+            "workTimeKindRef": 87748,
+            "presentation": "Ночные часы"
+          },
+          {
+            "workTimeKindRef": 87750,
+            "presentation": "Праздничный день"
+          },
+          {
+            "workTimeKindRef": 87751,
+            "presentation": "Явка"
+          },
+          {
+            "workTimeKindRef": 87753,
+            "presentation": "Сверхурочные часы"
+          }
+        ]
+      }
+    },
+    "patches": [
+      {
+        "op": "setProp",
+        "nodeId": "field.podrazdelenieOrganizatsii",
+        "binding": null,
+        "key": "enabled",
+        "value": true,
+        "parentId": null,
+        "index": null,
+        "node": null,
+        "options": null
+      },
+      {
+        "op": "setProp",
+        "nodeId": "field.podrazdelenieOrganizatsii",
+        "binding": null,
+        "key": "filter",
+        "value": {
+          "Vladelets": 30259,
+          "nullableAf": "Vladelets",
+          "skipDependsOn": true
+        },
+        "parentId": null,
+        "index": null,
+        "node": null,
+        "options": null
+      },
+      {
+        "op": "setProp",
+        "nodeId": "field.podrazdelenieOrganizatsii",
+        "binding": null,
+        "key": "optionsSource",
+        "value": {
+          "url": "/api/dictionary-entries/PodrazdeleniyaOrganizatsiy/entries",
+          "params": {
+            "Vladelets": "30259",
+            "nullableAf": "Vladelets",
+            "skipDependsOn": "true"
+          }
+        },
+        "parentId": null,
+        "index": null,
+        "node": null,
+        "options": null
+      }
+    ],
+    "statePatch": null,
+    "effects": null,
+    "onDirtyClose": {
+      "trigger": "click",
+      "actionId": "command",
+      "command": "save",
+      "behavior": {
+        "flushPendingTables": true,
+        "resetsDirty": true,
+        "closeAfter": true
+      },
+      "requiresSelectedRow": null,
+      "selectionField": null,
+      "request": null
+    },
+    "formDirty": false,
+    "tab": {
+      "kind": "DOCUMENT",
+      "title": "Табель AAQ00-00001 от 01.09.2026 00:00:00",
+      "icon": "document",
+      "closable": true
+    },
+    "dirty": null,
+    "commandFailed": null
+  }
+}

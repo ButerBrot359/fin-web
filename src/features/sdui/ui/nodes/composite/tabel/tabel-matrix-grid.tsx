@@ -76,10 +76,29 @@ export const TabelMatrixGrid: FC<TabelMatrixGridProps> = ({
                 left: 0,
                 zIndex: 3,
                 backgroundColor: 'background.paper',
+                width: 260,
                 minWidth: 260,
+                maxWidth: 260,
               }}
             >
               {t('sdui.tabel.employeeColumn')}
+            </TableCell>
+            {/* «Итого» — вторая колонка, в одной sticky-зоне с колонкой
+                сотрудника (спека от 01.09 §1): при горизонтальном скролле
+                итог не уезжает раньше дней. */}
+            <TableCell
+              sx={{
+                position: 'sticky',
+                left: 260,
+                zIndex: 3,
+                backgroundColor: 'background.paper',
+                textAlign: 'center',
+                minWidth: 90,
+                borderRight: '1px solid',
+                borderRightColor: 'divider',
+              }}
+            >
+              {t('sdui.tabel.totalColumn')}
             </TableCell>
             {days.map((d) => (
               <TableCell
@@ -103,9 +122,6 @@ export const TabelMatrixGrid: FC<TabelMatrixGridProps> = ({
                 </div>
               </TableCell>
             ))}
-            <TableCell sx={{ textAlign: 'center', minWidth: 90 }}>
-              {t('sdui.tabel.totalColumn')}
-            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

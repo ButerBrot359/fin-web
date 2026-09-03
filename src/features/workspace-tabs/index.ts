@@ -7,5 +7,12 @@ export { decideTabSync } from './lib/utils/decide-tab-sync'
 export type { TabSyncAction, TabSyncInput } from './lib/utils/decide-tab-sync'
 export { performTabClose } from './lib/utils/perform-tab-close'
 export { performTabBack } from './lib/utils/perform-tab-back'
-export { onPanelTabClose, notifyPanelTabClose } from './lib/panel-tab-close-registry'
+export {
+  onPanelTabClose,
+  notifyPanelTabClose,
+} from './lib/panel-tab-close-registry'
+export {
+  onTabDiscardClose,
+  notifyTabDiscardClose,
+} from './lib/tab-discard-registry'
 export type { WorkspaceTab, TabPageType } from './types/workspace-tab'

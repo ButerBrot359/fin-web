@@ -10,6 +10,7 @@ import {
   useViewStateStore,
   useTreeStore,
   useSduiDispatch,
+  markDiscardDraftClose,
 } from '@/features/sdui'
 import {
   useWorkspaceTabsStore,
@@ -84,6 +85,8 @@ export function useSduiCardBinding() {
       void dispatch({ type: 'COMMAND', command: desc.command }, desc.behavior)
     },
     onDiscard: () => {
+      // «Не сохранять» → ближайший CLOSE уйдёт с discardDraft=true (SCRUM-276)
+      markDiscardDraftClose(location.pathname)
       closeCurrentTab()
       navigateToNeighborTab(navigate)
     },

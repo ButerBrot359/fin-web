@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FC } from 'react'
+import { useEffect, useMemo, useRef, useState, type FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
@@ -44,14 +44,23 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
 
   const generation = payload?.generation ?? -1
 
-  // Новый payload: убираем expand/collapse исчезнувших сотрудников (§5).
+  // Новый payload: свои мутации сохраняют раскрытие (убираем только
+  // исчезнувших сотрудников, §5); чужая generation — серверная команда формы
+  // («Заполнить» и т.п.) — раскрывает дерево целиком, как в 1С (спека 01.09 §3).
+  // Ref-гард: queue пересоздаётся на каждый рендер, реагируем только на
+  // фактическую смену generation.
+  const prevGenerationRef = useRef(generation)
   useEffect(() => {
-    if (!payload) return
+    if (!payload || prevGenerationRef.current === generation) return
+    prevGenerationRef.current = generation
+    if (!queue.isOwnGeneration(generation)) {
+      setCollapsed((prev) => (prev.size > 0 ? new Set() : prev))
+      return
+    }
     const ids = new Set(payload.employees.map((e) => e.employeeNodeId))
 
     setCollapsed((prev) => new Set([...prev].filter((id) => ids.has(id))))
-    // generation в deps: чистим по каждому серверному обновлению
-  }, [generation, payload])
+  }, [generation, payload, queue])
 
   const days = useMemo(
     () => (payload ? listIntervalDays(payload.interval).map(dayHeader) : []),

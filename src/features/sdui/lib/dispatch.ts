@@ -243,6 +243,10 @@ export function useSduiDispatch() {
           setOnDirtyClose?.(res.onDirtyClose ?? null)
           opts?.onOpenTab?.(res.tab ?? null)
           replaceAll(res.state ?? {})
+          // SCRUM-276 (черновики): OPEN с подмешанным черновиком приходит с
+          // formDirty=true — форма сразу «изменена», как в 1С. Латч после
+          // replaceAll (он сбрасывает dirty в false).
+          if (res.formDirty === true) setDirty(true)
           // Apply handler.handleOpen patches (e.g. required/enabled/label defaults)
           const openPatches = validatePatches(res.patches)
           applyTreePatches(openPatches)
@@ -263,6 +267,11 @@ export function useSduiDispatch() {
           // SCRUM-288 §2.5: серверный dirty авторитетен и ПЕРЕКРЫВАЕТ клиентский флаг
           // (включая false с LIST/REPORT). null/undefined — «решай сам».
           if (res.dirty != null) setDirty(res.dirty)
+          // SCRUM-276 (черновики): серверные правки scratch (заполнение ТЧ,
+          // команды) в клиентский dirty не попадают — formDirty=true латчит
+          // его, чтобы закрытие вкладки задало «Сохранить изменения?».
+          // false клиентский флаг не трогает (условие: клиентский ИЛИ серверный).
+          if (res.formDirty === true) setDirty(true)
           effectHandler.playAll(res.effects ?? []) // navigate играет здесь…
           // SCRUM-277 §3.1: commandFailed=true — неуспех команды на 200-ответе.
           // Патчи/эффекты уже применены (бэк ими показывает причину), но

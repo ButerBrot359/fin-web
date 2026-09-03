@@ -42,8 +42,14 @@ const PanelContent = ({
         ? (panel.title ?? typeName)
         : typeName
 
+  // Figma side-panel (324:13541): паддинги L/R 40, сверху 60
   return (
-    <div className={cn('flex h-full flex-col p-7', !isActive && 'hidden')}>
+    <div
+      className={cn(
+        'flex h-full flex-col px-10 pt-15 pb-10',
+        !isActive && 'hidden'
+      )}
+    >
       {isActive && <DictSidebarHeader title={title} />}
       {panel.mode === 'list' && <DictSidebarListView panel={panel} />}
       {(panel.mode === 'create' || panel.mode === 'edit') && typeData && (
@@ -73,7 +79,8 @@ export const DictSidebarDrawer = () => {
       slotProps={{
         paper: {
           sx: {
-            width: 900,
+            // Figma side-panel (324:13541): ширина 766
+            width: 766,
             borderTopLeftRadius: 40,
             borderBottomLeftRadius: 40,
             backgroundColor: cssVar(palette.ui02),

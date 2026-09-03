@@ -56,7 +56,8 @@ const fontFileByUrl = (url: string): string | undefined =>
 
 /**
  * Полная изоляция от сети: все /api/* отвечаются фикстурами, шрифты —
- * локальными woff2 (CDN недетерминирован), прочий внешний трафик — 200 {}.
+ * локальными woff2 (CDN недетерминирован), прочий не-localhost трафик
+ * обрывается catch-all'ом.
  * Ключ фикстуры: `${method} ${pathname}`; для POST /api/view — дополнительно
  * по `action.type` из тела: `POST /api/view#OPEN`. Один экран шлёт несколько
  * OPEN (APP_SHELL + route), поэтому OPEN/COMMAND различаются ещё и
@@ -77,6 +78,14 @@ export async function mockApi(
   page: Page,
   fixtures: Record<string, unknown>
 ): Promise<void> {
+  // Catch-all: любой не-localhost запрос, не перехваченный правилами ниже,
+  // обрывается — изоляция от сети не зависит от того, что именно дёргает
+  // страница. Playwright матчит route'ы с конца, поэтому специфичные
+  // правила ниже перекрывают этот.
+  await page.route(
+    (url) => url.hostname !== 'localhost' && url.hostname !== '127.0.0.1',
+    (r) => r.abort('blockedbyclient')
+  )
   await page.route('**/fonts.googleapis.com/**', (r) =>
     r.fulfill({ contentType: 'text/css', body: buildFontsCss() })
   )

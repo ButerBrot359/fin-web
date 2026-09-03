@@ -28,10 +28,10 @@ export const CalendarDayCell: FC<CalendarDayCellProps> = ({
       disabled
       className={[
         'w-full h-7 text-sm rounded',
-        // text-gray-400 НЕ переведён на text-ui-05: разное значение
-        // (#9ca3af vs #9fa9ba) — bit-perfect-сомнение, оставлено для аудита.
-        active ? 'text-accent-02 font-semibold' : 'text-gray-400',
-        manual ? 'bg-amber-100' : '',
+        // Канонизация Ф4: серый нерабочих дней = ui-05, подложка ручной
+        // правки = support-03 (Figma warning) с прозрачностью.
+        active ? 'text-accent-02 font-semibold' : 'text-ui-05',
+        manual ? 'bg-support-03/20' : '',
       ]
         .filter(Boolean)
         .join(' ')}

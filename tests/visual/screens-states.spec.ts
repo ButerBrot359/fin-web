@@ -37,7 +37,10 @@ test('диалог «Сохранить изменения?» при закры�
   await field.blur()
   await eventResponse
 
+  // Крестик закрытия виден только при наведении (компонент-шит Tab, Ф4):
+  // сначала hover по вкладке, затем клик по крестику — как делает пользователь.
   const tabButton = page.getByRole('button', { name: /Отпуск/ })
+  await tabButton.hover()
   await tabButton.locator('[role="button"]').click()
 
   await expect(page.getByRole('dialog')).toBeVisible()

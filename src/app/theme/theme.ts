@@ -24,6 +24,11 @@ export const theme = createTheme({
       secondary: semantic.textSecondary.value,
     },
   },
+  // Google Sans для всей MUI-типографики (K-2 аудита Ф3): без этого h6 и
+  // прочие variant'ы рендерились дефолтным Roboto.
+  typography: {
+    fontFamily,
+  },
   components: {
     MuiTextField: {
       defaultProps: {
@@ -72,7 +77,13 @@ export const theme = createTheme({
           color: cssVar(semantic.textSecondary),
           fontWeight: 500,
           left: 8,
+          // Figma «Input» (53:592): Filled без фокуса — label остаётся серым
+          // (UI 05); синий — только в фокусе. Порядок правил важен: focused
+          // объявлен после shrink и перебивает его.
           '&.MuiInputLabel-shrink': {
+            color: cssVar(semantic.textSecondary),
+          },
+          '&.Mui-focused': {
             color: cssVar(semantic.primary),
           },
           '&.Mui-error': {
@@ -146,8 +157,42 @@ export const theme = createTheme({
           boxShadow: cssVar(shadows.popup),
         },
         option: {
+          minHeight: 40,
+          // Figma «Dropdown menu» (306:9741): ховер пункта — светло-голубая
+          // подложка с синим текстом, как у tertiary-кнопок.
+          '&:hover, &.Mui-focused': {
+            backgroundColor: cssVar(semantic.selection),
+            color: cssVar(semantic.primary),
+          },
           '&[aria-selected="true"]': {
             backgroundColor: `${cssVar(semantic.selection)} !important`,
+            color: cssVar(semantic.primary),
+          },
+        },
+      },
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          borderRadius: 8,
+          boxShadow: cssVar(shadows.popup),
+        },
+      },
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        // Figma «Dropdown menu» (306:9741): пункт 40px, Body2, синий ховер
+        root: {
+          minHeight: 40,
+          fontSize: 14,
+          fontWeight: 500,
+          color: cssVar(semantic.textPrimary),
+          '&:hover, &.Mui-focusVisible': {
+            backgroundColor: cssVar(semantic.selection),
+            color: cssVar(semantic.primary),
+          },
+          '&.Mui-selected, &.Mui-selected:hover': {
+            backgroundColor: cssVar(semantic.selection),
             color: cssVar(semantic.primary),
           },
         },

@@ -4,19 +4,17 @@ import { cssVar, palette, semantic, shadows } from '@/shared/design/tokens'
 
 type ToastType = 'success' | 'error' | 'info' | 'warning'
 
+// Роли по Figma: error = Support 01, warning = Support 03 (жёлтый),
+// success = Support 02 (зелёный), info = Accent 02 — раньше warning красился
+// как error, success как info (токенов support02/03 не существовало).
 const borderColorMap: Record<ToastType, string> = {
   error: cssVar(semantic.error),
-  warning: cssVar(semantic.error),
-  success: cssVar(semantic.primary),
+  warning: cssVar(semantic.warning),
+  success: cssVar(semantic.success),
   info: cssVar(semantic.primary),
 }
 
-const iconColorMap: Record<ToastType, string> = {
-  error: cssVar(semantic.error),
-  warning: cssVar(semantic.error),
-  success: cssVar(semantic.primary),
-  info: cssVar(semantic.primary),
-}
+const iconColorMap: Record<ToastType, string> = borderColorMap
 
 const AttentionIcon = ({ color }: { color: string }) => (
   <svg

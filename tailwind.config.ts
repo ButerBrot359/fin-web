@@ -56,7 +56,11 @@ export default {
             hover: cssVar(palette.accent02Hover),
           },
         },
-        support: { '01': cssVar(palette.support01) },
+        support: {
+          '01': cssVar(palette.support01),
+          '02': cssVar(palette.support02),
+          '03': cssVar(palette.support03),
+        },
         pending: {
           'gray-1': cssVar(palette.pendingGray1),
           'gray-2': cssVar(palette.pendingGray2),

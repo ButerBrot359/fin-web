@@ -15,7 +15,7 @@ const walk = (dir: string): string[] =>
   readdirSync(dir).flatMap((name) => {
     const p = join(dir, name)
     if (statSync(p).isDirectory()) return walk(p)
-    return /\.(ts|tsx)$/.test(p) && !/\.test\.tsx?$/.test(p) ? [p] : []
+    return /\.(ts|tsx|css)$/.test(p) && !/\.test\.tsx?$/.test(p) ? [p] : []
   })
 
 const stripComments = (code: string): string =>

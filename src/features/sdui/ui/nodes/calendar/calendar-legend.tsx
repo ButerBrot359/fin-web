@@ -12,12 +12,12 @@ export const CalendarLegend: FC = () => {
     },
     {
       key: 'nonWorking',
-      swatch: 'bg-gray-400',
+      swatch: 'bg-ui-05',
       label: t('sdui.calendar.legend.nonWorking'),
     },
     {
       key: 'manual',
-      swatch: 'bg-amber-100',
+      swatch: 'bg-support-03/20',
       label: t('sdui.calendar.legend.manual'),
     },
   ]

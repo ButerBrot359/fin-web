@@ -28,6 +28,7 @@ export const palette = {
   accent02Hover: t('--accent-02-hover', '#1f66db'),
   support01: t('--support-01', '#f4482a'),
   support02: t('--support-02', '#21d73b'),
+  support03: t('--support-03', '#f4b42a'),
   // pending: значения зафиксированы Ф1 как есть, судьба — аудит (Ф3)
   pendingGray1: t('--pending-gray-1', '#d9d9d9'),
   pendingGray2: t('--pending-gray-2', '#dcdcdc'),
@@ -65,6 +66,8 @@ export const semantic = {
   selection: palette.ui04,
   primary: palette.accent02,
   error: palette.support01,
+  success: palette.support02,
+  warning: palette.support03,
   brand: palette.accent01,
 } satisfies Record<string, DesignToken>
 

@@ -626,7 +626,18 @@
       ],
       "actions": null
     },
-    "state": {},
+    "state": {
+      "report.KartochkaScheta.param.Schet": {
+        "id": 13,
+        "presentation": "1010 (Денежные средства в кассе)",
+        "code": null,
+        "domain": null,
+        "targetTypeCode": null
+      },
+      "report.KartochkaScheta.param.Period.from": "2026-08-01",
+      "report.KartochkaScheta.param.Period.to": "2026-08-31",
+      "report.KartochkaScheta.param.UchetPoPodrazdeleniyam": true
+    },
     "patches": null,
     "statePatch": null,
     "effects": null,

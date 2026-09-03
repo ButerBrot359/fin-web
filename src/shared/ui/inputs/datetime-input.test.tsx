@@ -108,6 +108,47 @@ describe('DateTimeInput — props.dateFormat', () => {
     expect(onChange).toHaveBeenCalledWith('2026-09-01')
   })
 
+  /**
+   * Поле ДАТЫ-ВРЕМЕНИ с месячной маской — «Период» Разделения результатов расчёта
+   * зарплаты. В 1С там «Сентябрь 2026», времени нет вовсе, а день срезается
+   * (НачалоМесяца в ПередЗаписью). Раньше DateTimePicker получал только format,
+   * поэтому подпись была месячной, а календарь всё равно предлагал выбрать день
+   * и часы.
+   */
+  it('DATETIME с месячной маской: календарь без дней, только месяцы', () => {
+    const utils = render(
+      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ru}>
+        <DateTimeInput
+          value="2026-08-12T00:00:00"
+          onChange={() => undefined}
+          dateFormat="LLLL yyyy"
+        />
+      </LocalizationProvider>
+    )
+    fireEvent.click(
+      utils.container.querySelector<HTMLButtonElement>('button[aria-label]')!
+    )
+
+    expect(screen.queryByRole('grid')).toBeNull()
+    expect(screen.getAllByRole('radio')).toHaveLength(12)
+    cleanup()
+  })
+
+  it('DATETIME с месячной маской: подпись — название месяца и год', () => {
+    const utils = render(
+      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ru}>
+        <DateTimeInput
+          value="2026-08-12T00:00:00"
+          onChange={() => undefined}
+          dateFormat="LLLL yyyy"
+        />
+      </LocalizationProvider>
+    )
+
+    expect(utils.container.querySelector('input')?.value).toBe('август 2026')
+    cleanup()
+  })
+
   it('с «dd.MM.yyyy» день по-прежнему выбирается', () => {
     const { openCalendar } = renderInput({ dateFormat: 'dd.MM.yyyy' })
     openCalendar()

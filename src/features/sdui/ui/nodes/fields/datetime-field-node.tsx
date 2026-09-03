@@ -15,6 +15,11 @@ export const DatetimeFieldNode: FC<NodeProps> = ({ node }) => {
       <DateTimeInput
         label={f.label}
         value={value}
+        // Маска месяца («Период: Сентябрь 2026» у Разделения результатов расчёта
+        // зарплаты) приходит с бэка одним props.dateFormat — тем же ключом, что уже
+        // читает поле DATE. Без проброса DATETIME-поле игнорировало формат и
+        // показывало полную дату со временем.
+        dateFormat={node.props?.dateFormat as string | undefined}
         required={f.required}
         readOnly={f.readonly}
         disabled={!f.enabled}

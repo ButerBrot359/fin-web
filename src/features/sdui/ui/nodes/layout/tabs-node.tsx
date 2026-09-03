@@ -102,6 +102,7 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
 
   const content = (
     <div
+      data-stretch={stretch ? 'true' : undefined}
       style={
         isLeft
           ? { paddingLeft: 16, flex: '1 1 0%', minWidth: 0 }

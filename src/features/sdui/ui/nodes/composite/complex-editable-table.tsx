@@ -620,10 +620,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
         data-own-scroll="true"
         sx={{
           flex: '1 1 auto',
-          ...(viewport.maxHeight != null && {
-            maxHeight: viewport.maxHeight,
-            overflowY: 'auto',
-          }),
+          // Высоту даёт либо замер по вьюпорту, либо растянутый предок — в обоих
+          // случаях скролл внутренний, поэтому overflowY общий.
+          overflowY: 'auto',
+          ...(viewport.maxHeight != null && { maxHeight: viewport.maxHeight }),
         }}
       >
         <Table

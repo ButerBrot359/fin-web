@@ -90,7 +90,7 @@ export const ItogiHierarchyTable: FC<NodeProps> = ({ node }) => {
   const firstColumn = columns[0]
 
   return (
-    <Box>
+    <Box className="flex min-h-0 flex-1 flex-col">
       <Box className="flex items-center gap-2 mb-2">
         <Button
           variant="secondary"
@@ -110,7 +110,11 @@ export const ItogiHierarchyTable: FC<NodeProps> = ({ node }) => {
         </Button>
       </Box>
 
-      <TableContainer component={Paper} variant="outlined">
+      <TableContainer
+        component={Paper}
+        variant="outlined"
+        sx={{ flex: '1 1 auto', overflowY: 'auto' }}
+      >
         <Table size="small">
           <TableHead>
             <TableRow>

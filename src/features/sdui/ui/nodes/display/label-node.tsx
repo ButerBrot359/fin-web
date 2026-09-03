@@ -1,4 +1,5 @@
 import type { FC } from 'react'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import { Typography } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 
@@ -15,6 +16,7 @@ export const LabelNode: FC<NodeProps> = ({ node }) => {
       | 'module-title'
       | 'module-section'
       | 'comment'
+      | 'warning'
       | undefined) ?? 'default'
   const dispatch = useSduiDispatch()
   const theme = useTheme()
@@ -57,6 +59,26 @@ export const LabelNode: FC<NodeProps> = ({ node }) => {
         variant="body2"
         sx={{ color: 'text.secondary', fontSize: 14, lineHeight: 1.35 }}
       >
+        {text}
+      </Typography>
+    )
+  }
+
+  // SCRUM-278 (после теста): предупреждение как в 1С — значок и красный текст
+  // («График работы заполнен до X, с учетом горизонта … до Y»). Текст целиком
+  // серверный, фронт только оформляет вариант.
+  if (variant === 'warning') {
+    return (
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'error.main',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.75,
+        }}
+      >
+        <WarningAmberIcon sx={{ fontSize: 18, color: 'warning.main' }} />
         {text}
       </Typography>
     )

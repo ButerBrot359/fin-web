@@ -12,6 +12,10 @@ import {
   ViewHttpError,
 } from '../api/view-transport'
 import { applyValuePatches } from './patch-applier'
+import {
+  DOCUMENT_VALIDATION_CODE,
+  buildValidationErrorPatches,
+} from './validation-highlight'
 import { validatePatches } from './validation'
 import { handleConflict } from './conflict-handler'
 import { createEffectHandler } from './effect-handler'
@@ -305,7 +309,20 @@ export function useSduiDispatch() {
         }
         return true
       } catch (error) {
-        if (error instanceof ViewConflictError) {
+        if (
+          error instanceof ViewHttpError &&
+          error.status === 422 &&
+          error.code === DOCUMENT_VALIDATION_CODE
+        ) {
+          clearAllErrors()
+          applyTreePatches(
+            buildValidationErrorPatches(
+              session.getTree?.() ?? session.tree,
+              error.errors
+            )
+          )
+          showToast('error', error.message || i18n.t('sdui.requestError'))
+        } else if (error instanceof ViewConflictError) {
           const retry =
             !isRetry && action.type !== 'OPEN'
               ? () => dispatchAction(action, behavior, true)

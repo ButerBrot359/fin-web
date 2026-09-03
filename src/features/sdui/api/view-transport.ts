@@ -3,7 +3,12 @@ import i18n from 'i18next'
 
 import { attachAuthInterceptors } from '@/shared/api/auth/attach-auth-interceptors'
 
-import type { ViewRequest, ViewResponse, ConflictError } from '../types/view'
+import type {
+  ViewRequest,
+  ViewResponse,
+  ConflictError,
+  ValidationErrorDetail,
+} from '../types/view'
 import { normalizeConflictBody } from './normalize-conflict'
 import { parseViewError } from './parse-view-error'
 import { resolveViewLanguage } from './view-language'
@@ -30,7 +35,8 @@ export class ViewHttpError extends Error {
     message: string,
     public status: number | undefined,
     public code?: string,
-    public kind?: string
+    public kind?: string,
+    public errors?: ValidationErrorDetail[]
   ) {
     super(message)
   }
@@ -54,7 +60,8 @@ export const viewTransport = {
           meta.message ?? error.message,
           error.response?.status,
           meta.code,
-          meta.kind
+          meta.kind,
+          meta.errors
         )
       }
       throw error

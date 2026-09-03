@@ -250,17 +250,19 @@ const EnumsControl = ({ value, onChange, column }: ValueControlProps) => {
     select: (response) => response.data,
   })
 
-  const currentId =
+  const rawId: unknown =
     value && typeof value === 'object' && 'id' in value
       ? (value as { id: number | string }).id
       : value
+  const currentId =
+    typeof rawId === 'number' || typeof rawId === 'string' ? String(rawId) : ''
 
   return (
     <TextField
       select
       fullWidth
       label={t('tableFilter.value')}
-      value={currentId ?? ''}
+      value={currentId}
       onFocus={() => {
         setOpened(true)
       }}
@@ -277,7 +279,7 @@ const EnumsControl = ({ value, onChange, column }: ValueControlProps) => {
       }}
     >
       {options.map((o) => (
-        <MenuItem key={o.id} value={o.id}>
+        <MenuItem key={o.id} value={String(o.id)}>
           {o.name}
         </MenuItem>
       ))}

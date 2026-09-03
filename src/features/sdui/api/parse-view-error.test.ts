@@ -18,9 +18,10 @@ describe('parseViewError', () => {
     })
   })
 
-  it('унаследованный 404: code=NOT_FOUND', () => {
+  // SCRUM-366 (ADR-0042 §0.1): ключа `code` бэк не эмитит — ветка удалена,
+  // тело только с `code` разбирается как безкодовое.
+  it('ключ `code` игнорируется (мёртвый фолбэк снят)', () => {
     expect(parseViewError({ code: 'NOT_FOUND', message: 'нет типа' })).toEqual({
-      code: 'NOT_FOUND',
       message: 'нет типа',
     })
   })

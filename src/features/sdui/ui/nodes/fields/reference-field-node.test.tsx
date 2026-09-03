@@ -308,16 +308,14 @@ describe('ReferenceFieldNode — SCRUM-291 §18.3 allow* гейтинг', () => 
       })
     })
 
-    it('нет createAction, canBrowse → «Создать» открывает легаси-пикер create', () => {
+    // SCRUM-360 (v5-back): гейт C1.4a зелёный — props-only фолбэк create снят.
+    // Создание существует только как серверная команда; без createAction
+    // кнопки «Создать» нет, даже когда browse доступен.
+    it('нет createAction, canBrowse → кнопки «Создать» нет (фолбэк снят)', () => {
       render(<ReferenceFieldNode node={makeNode({})} />)
       openDropdown()
-      fireEvent.mouseDown(screen.getByRole('button', { name: addName }))
-      expect(openPickerMock).toHaveBeenCalledTimes(1)
-      expect(openPickerMock.mock.calls[0][0]).toMatchObject({
-        mode: 'create',
-        domain: 'DICTIONARY',
-        typeCode: 'Organizatsii',
-      })
+      expect(screen.queryByRole('button', { name: addName })).toBeNull()
+      expect(openPickerMock).not.toHaveBeenCalled()
     })
 
     it('нет openAction, canBrowse, выбрано значение → иконка открывает легаси-пикер edit', () => {

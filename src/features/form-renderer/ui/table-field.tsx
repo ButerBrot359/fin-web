@@ -20,6 +20,7 @@ import { resolveAttributeDomain } from '@/shared/lib/consts/data-types'
 import { usePersistedColumnSizing } from '@/shared/lib/table/use-persisted-column-sizing'
 import { usePersistedScroll } from '@/shared/lib/table/use-persisted-scroll'
 import emptyImage from '@/shared/assets/info/empty.png'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 import { useTableColumns } from '../lib/hooks/use-table-columns'
 import { useAccountAutofill } from '../lib/hooks/use-account-autofill'
@@ -503,8 +504,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
                     // SCRUM-368: фантомные линии строк вместо белого при быстром скролле
                     style={{
                       height: paddingTop,
-                      background:
-                        'repeating-linear-gradient(to bottom, transparent 0 119px, #e5e7eb 119px 120px)',
+                      background: `repeating-linear-gradient(to bottom, transparent 0 119px, ${cssVar(palette.pendingGray3)} 119px 120px)`,
                     }}
                   />
                 </tr>
@@ -542,8 +542,7 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
                   <td
                     style={{
                       height: paddingBottom,
-                      background:
-                        'repeating-linear-gradient(to bottom, transparent 0 119px, #e5e7eb 119px 120px)',
+                      background: `repeating-linear-gradient(to bottom, transparent 0 119px, ${cssVar(palette.pendingGray3)} 119px 120px)`,
                     }}
                   />
                 </tr>

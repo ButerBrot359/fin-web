@@ -14,6 +14,8 @@
  * агент их подсказывает словами.
  */
 
+import { cssVar, palette, semantic } from '@/shared/design/tokens'
+
 interface Point {
   x: number
   y: number
@@ -106,8 +108,8 @@ const cursorElement = (): HTMLElement => {
     // пикселей ниже настоящей точки: агент целился верно, а указатель показывал мимо.
     'margin:0',
     'border-radius:2px 50% 50% 50%',
-    'background:#2a75f4',
-    'box-shadow:0 0 0 2px #ffffff, 0 2px 8px rgba(0,0,0,0.35)',
+    `background:${cssVar(semantic.primary)}`,
+    `box-shadow:0 0 0 2px ${cssVar(palette.ui01)}, 0 2px 8px rgba(0,0,0,0.35)`,
     'transition:left 60ms linear, top 60ms linear',
   ].join(';')
   document.body.appendChild(cursor)

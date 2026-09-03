@@ -1,19 +1,21 @@
 import { toast } from 'sonner'
 
+import { cssVar, palette, semantic, shadows } from '@/shared/design/tokens'
+
 type ToastType = 'success' | 'error' | 'info' | 'warning'
 
 const borderColorMap: Record<ToastType, string> = {
-  error: '#f4482a',
-  warning: '#f4482a',
-  success: '#2a75f4',
-  info: '#2a75f4',
+  error: cssVar(semantic.error),
+  warning: cssVar(semantic.error),
+  success: cssVar(semantic.primary),
+  info: cssVar(semantic.primary),
 }
 
 const iconColorMap: Record<ToastType, string> = {
-  error: '#f4482a',
-  warning: '#f4482a',
-  success: '#2a75f4',
-  info: '#2a75f4',
+  error: cssVar(semantic.error),
+  warning: cssVar(semantic.error),
+  success: cssVar(semantic.primary),
+  info: cssVar(semantic.primary),
 }
 
 const AttentionIcon = ({ color }: { color: string }) => (
@@ -51,7 +53,7 @@ const CloseIcon = () => (
   >
     <path
       d="M5 5l10 10M15 5L5 15"
-      stroke="#222124"
+      stroke={cssVar(semantic.textPrimary)}
       strokeWidth="1.5"
       strokeLinecap="round"
     />
@@ -68,10 +70,10 @@ interface ToastContentProps {
 const ToastContent = ({ id, type, title, description }: ToastContentProps) => (
   <div
     style={{
-      background: '#ffffff',
+      background: cssVar(palette.ui01),
       borderLeft: `4px solid ${borderColorMap[type]}`,
       borderRadius: '8px',
-      boxShadow: '0px 3px 24px 0px rgba(42, 117, 244, 0.4)',
+      boxShadow: cssVar(shadows.popup),
       padding: '12px 16px',
       width: '351px',
       display: 'flex',
@@ -88,7 +90,7 @@ const ToastContent = ({ id, type, title, description }: ToastContentProps) => (
           flex: 1,
           fontWeight: 700,
           fontSize: '16px',
-          color: '#222124',
+          color: cssVar(semantic.textPrimary),
           minWidth: 0,
         }}
       >
@@ -103,7 +105,7 @@ const ToastContent = ({ id, type, title, description }: ToastContentProps) => (
         style={{
           fontWeight: 500,
           fontSize: '14px',
-          color: '#222124',
+          color: cssVar(semantic.textPrimary),
         }}
       >
         {description}

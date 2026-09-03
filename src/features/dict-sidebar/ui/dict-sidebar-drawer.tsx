@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { cn } from '@/shared/lib/utils/cn'
 import { DICT_SIDEBAR_Z } from '@/shared/lib/utils/overlay-z-index'
+import { cssVar, palette } from '@/shared/design/tokens'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
 import { fetchDictTypeMetadata } from '../api/dict-sidebar-api'
 import type { DictSidebarPanel } from '../types/dict-sidebar'
@@ -32,7 +33,7 @@ const PanelContent = ({
 
   const typeName = typeData
     ? getLocalizedName(typeData, i18n.language)
-    : (panel.typeCode ?? '')
+    : panel.typeCode
 
   const title =
     panel.mode === 'create'
@@ -75,7 +76,7 @@ export const DictSidebarDrawer = () => {
             width: 900,
             borderTopLeftRadius: 40,
             borderBottomLeftRadius: 40,
-            backgroundColor: '#F2F6FD',
+            backgroundColor: cssVar(palette.ui02),
             overflow: 'hidden',
           },
         },

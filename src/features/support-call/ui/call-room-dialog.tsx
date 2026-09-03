@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/shared/lib/utils/cn'
+import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
 import type { SupportCallSession } from '../model/types'
 import { ActiveCallBar } from './active-call-bar'
@@ -38,16 +39,17 @@ import { SupportDialog } from './support-dialog'
  * частью webbuh, а не встроенным виджетом.
  */
 const STAGE_THEME = {
-  '--lk-bg': '#222124',
+  '--lk-bg': cssVar(semantic.textPrimary),
+  // #2f2e33 / #3b3a40 не входят в mapping-таблицу дизайн-системы — оставлены как есть.
   '--lk-bg2': '#2f2e33',
   '--lk-bg3': '#3b3a40',
-  '--lk-fg': '#ffffff',
-  '--lk-fg2': '#c3cee0',
-  '--lk-fg3': '#9fa9ba',
-  '--lk-accent-bg': '#2a75f4',
-  '--lk-accent-fg': '#ffffff',
-  '--lk-danger': '#f4482a',
-  '--lk-success': '#daf449',
+  '--lk-fg': cssVar(palette.ui01),
+  '--lk-fg2': cssVar(semantic.divider),
+  '--lk-fg3': cssVar(semantic.textSecondary),
+  '--lk-accent-bg': cssVar(semantic.primary),
+  '--lk-accent-fg': cssVar(palette.ui01),
+  '--lk-danger': cssVar(semantic.error),
+  '--lk-success': cssVar(semantic.brand),
   '--lk-border-color': 'rgba(255, 255, 255, 0.08)',
   '--lk-border-radius': '12px',
   '--lk-grid-gap': '12px',
@@ -380,7 +382,9 @@ const RoomStage = ({ isCaller }: { isCaller: boolean }) => {
         <span className="relative flex h-14 w-14 items-center justify-center">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-02/30" />
           <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-accent-02">
-            <HeadsetMicIcon sx={{ fontSize: 22, color: '#ffffff' }} />
+            <HeadsetMicIcon
+              sx={{ fontSize: 22, color: cssVar(palette.ui01) }}
+            />
           </span>
         </span>
         <span className="text-body1 text-ui-03">

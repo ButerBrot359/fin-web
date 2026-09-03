@@ -22,6 +22,7 @@ import {
   TextInput,
 } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
+import { cssVar, semantic } from '@/shared/design/tokens'
 
 import type { ReportParameterDto } from '../types/report'
 
@@ -253,7 +254,7 @@ export const ReportParamField = ({
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    color: '#222124',
+                    color: cssVar(semantic.textPrimary),
                     minWidth: 0,
                   }}
                 >

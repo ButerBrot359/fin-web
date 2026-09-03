@@ -1,4 +1,4 @@
-import { useMemo, useState, type FC } from 'react'
+import { useMemo, useRef, useState, type FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Box,
@@ -9,6 +9,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material'
 
@@ -53,6 +54,34 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
 
+  // Список сотрудников документа может быть длинным (десятки строк), а панель
+  // узкая — искать глазами неудобно. Фильтр чисто клиентский: строки уже
+  // целиком загружены (витрина формы), сервер тут ни при чём.
+  const [query, setQuery] = useState('')
+  const visibleRows = useMemo(() => {
+    const nuzhno = query.trim().toLowerCase()
+    if (!nuzhno) return rows
+    return rows.filter((row) =>
+      columns.some((col) =>
+        renderCellValue(col.binding ? row[col.binding] : undefined)
+          .toLowerCase()
+          .includes(nuzhno)
+      )
+    )
+  }, [rows, columns, query])
+
+  // Хвост очереди отправленных EVENT'ов этого узла. dispatch.ts даёт in-flight-
+  // гард от параллельных запросов ТОЛЬКО action.type === 'COMMAND' (SCRUM-330,
+  // строка 71); EVENT-путь им не защищён. При быстром переключении сотрудников
+  // это гонка: два запроса уходят параллельно, и если ответ на БОЛЕЕ РАННИЙ
+  // клик придёт по сети ПОЗЖЕ ответа на следующий, его patches применяются
+  // последними и откатывают своды/подвалы «Итого» на прошлого сотрудника —
+  // воспроизведено на стенде 03.09.2026 (footer показывал суммы предыдущего
+  // выбора, хотя строки таблицы уже отфильтрованы по новому). Сериализация
+  // очередью промисов гарантирует, что ответы применяются строго в порядке
+  // кликов, а не в порядке прихода по сети.
+  const pendingRef = useRef<Promise<unknown>>(Promise.resolve())
+
   // Выбор публикуется дважды: в сессию — для клиентского отбора строк ТЧ
   // (ОтборСтрокТабЧастей), и EVENT'ом на сервер — потому что от того же выбора
   // зависят свод «Итоги» (набор ФизЛица) и подвалы «Итого» вкладок
@@ -68,12 +97,14 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
         (a) => a.trigger === 'change' && a.actionId === 'fieldEvent'
       )
     ) {
-      void dispatch({
-        type: 'EVENT',
-        sourceNodeId: node.id,
-        trigger: 'change',
-        value: row,
-      })
+      pendingRef.current = pendingRef.current.then(() =>
+        dispatch({
+          type: 'EVENT',
+          sourceNodeId: node.id,
+          trigger: 'change',
+          value: row,
+        })
+      )
     }
   }
 
@@ -96,6 +127,17 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
         </Button>
       </Box>
 
+      <TextField
+        size="small"
+        fullWidth
+        placeholder={t('table.searchPlaceholder')}
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value)
+        }}
+        sx={{ mb: 1 }}
+      />
+
       <TableContainer
         component={Paper}
         variant="outlined"
@@ -114,7 +156,7 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.length === 0 && (
+            {visibleRows.length === 0 && (
               <TableRow>
                 <TableCell colSpan={Math.max(columns.length, 1)}>
                   <Typography variant="body2" color="text.secondary">
@@ -123,7 +165,7 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
                 </TableCell>
               </TableRow>
             )}
-            {rows.map((row) => (
+            {visibleRows.map((row) => (
               <TableRow
                 key={row.rowId}
                 hover

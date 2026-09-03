@@ -67,6 +67,13 @@ export async function mockApi(
   await page.route('**/fonts.googleapis.com/**', (r) =>
     r.fulfill({ contentType: 'text/css', body: buildFontsCss() })
   )
+  // Страховка от preconnect-хинта в index.html: реальных woff2-запросов на
+  // gstatic быть не должно (CSS выше ссылается только на локальные __font-*),
+  // но домен всё равно перехватываем явно — иначе изоляция от сети держится
+  // на негласном допущении, которое конкретная версия Chromium может нарушить.
+  await page.route('**/fonts.gstatic.com/**', (r) =>
+    r.fulfill({ status: 204, body: '' })
+  )
   await page.route('**/__font-*.woff2', (r) => {
     const file = fontFileByUrl(r.request().url())
     if (!file) {

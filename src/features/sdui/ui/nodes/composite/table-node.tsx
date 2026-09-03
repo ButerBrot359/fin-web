@@ -12,6 +12,7 @@ import { KalendariTemplateTable } from './kalendari-template-table'
 import { isTabelMatrixNode } from './tabel/tabel-matrix-contract'
 import { TabelMatrixTable } from './tabel/tabel-matrix-table'
 import { ItogiHierarchyTable } from './itogi-hierarchy-table'
+import { SelectionListTable } from './selection-list-table'
 
 /**
  * Дискриминатор kalendari-таблиц по binding (v2-back §1). Спец-пропа нет —
@@ -48,6 +49,10 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
   // __level/__parentRowId, показ — дерево со сворачиванием, а не таблица ТЧ.
   if (node.props?.hierarchical === true)
     return <ItogiHierarchyTable node={node} />
+
+  // Список-отбор: витрина, выбор в которой фильтрует другие ТЧ формы.
+  if (node.props?.selectionList === true)
+    return <SelectionListTable node={node} />
 
   const editable = node.props?.editable === true
 

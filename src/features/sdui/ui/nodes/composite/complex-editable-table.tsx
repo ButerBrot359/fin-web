@@ -31,6 +31,7 @@ import {
 } from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { readVirtualization } from '../../../lib/utils/pagination'
+import { useExternalRowFilter } from '../../../lib/hooks/use-external-row-filter'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
@@ -229,10 +230,15 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const masterKeyValue =
     selectedMasterRow && masterKey ? selectedMasterRow[masterKey] : undefined
 
-  const visibleRows = useMemo<TableRow[]>(() => {
+  // Отбор по внешнему списку (панель сотрудников) — независим от master-detail:
+  // тот связывает ДВЕ ТЧ одного документа, этот фильтрует по витрине формы и не
+  // трогает доступность команд таблицы.
+  const masterDetailRows = useMemo<TableRow[]>(() => {
     if (!isMasterDetail || !masterKey || !detailKey) return sync.rows
     return filterDetailRows(sync.rows, selectedMasterRow, masterKey, detailKey)
   }, [sync.rows, isMasterDetail, masterKey, detailKey, selectedMasterRow])
+
+  const visibleRows = useExternalRowFilter(node, masterDetailRows)
 
   // Индекс выбранной строки в текущем видимом наборе (не в полном sync.rows —
   // при активном master-detail фильтре это разные массивы, SCRUM-282 C1).

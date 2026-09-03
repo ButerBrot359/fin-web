@@ -4,6 +4,7 @@ import type { ReactElement } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
+import { TABLE_GRID_SX } from './table-grid-sx'
 import { TableNode } from './table-node'
 
 vi.mock('react-i18next', () => ({
@@ -55,13 +56,19 @@ beforeEach(() => {
 })
 
 describe('сетка ТЧ', () => {
-  it('таблица без COLUMN_GROUP тоже получает сетку', () => {
+  // SCRUM-312 (макет «Журнал проводок»): вертикальных линий больше нет —
+  // колонки разделяет воздух, строки — горизонтальный разделитель ui-03,
+  // низ шапки — тёмная линия ui-06. Каскад дескендант-селекторов sx в jsdom
+  // неполон, поэтому пиним сам объект стиля, а рендер — смоуком.
+  it('стиль по макету: горизонтали ui-03, тёмный низ шапки, без вертикалей', () => {
+    expect(TABLE_GRID_SX).toEqual({
+      '& .MuiTableCell-root': { borderBottomColor: '#c3cee0' },
+      '& .MuiTableHead-root .MuiTableRow-root:last-child .MuiTableCell-root, & .MuiTableHead-root .MuiTableCell-root[rowspan]':
+        { borderBottomColor: '#222124' },
+    })
+    expect(JSON.stringify(TABLE_GRID_SX)).not.toContain('borderRight')
     renderTable(<TableNode node={flatTable()} />)
-    // TABLE_GRID_SX задаёт линии дескендант-селекторами на <table>
-    const cellBorder = getComputedStyle(
-      screen.getAllByRole('cell')[0]
-    ).borderRightColor
-    expect(cellBorder).toBe('rgb(195, 206, 224)')
+    expect(screen.getAllByRole('cell').length).toBeGreaterThan(0)
   })
 })
 

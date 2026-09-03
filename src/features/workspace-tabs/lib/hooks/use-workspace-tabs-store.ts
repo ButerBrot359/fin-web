@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
 import { MAX_TABS } from '../consts/workspace-tabs-config'
+import { dropFormInstanceId, moveFormInstanceId } from '../form-instance-ids'
 import { tabEntityKey } from '../utils/tab-entity-key'
 import type { WorkspaceTab, TabPageType } from '../../types/workspace-tab'
 
@@ -90,6 +91,9 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
 
         let newTabs = [...tabs, tab]
         if (newTabs.length > MAX_TABS) {
+          // Вытесненная вкладка исчезает вместе со своим formInstanceId —
+          // иначе следующее открытие того же маршрута подхватит её черновик
+          dropFormInstanceId(newTabs[1].id)
           newTabs = [newTabs[0], ...newTabs.slice(2)]
         }
 
@@ -131,6 +135,7 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
 
         let newTabs = [...tabs, tab]
         if (newTabs.length > MAX_TABS) {
+          dropFormInstanceId(newTabs[1].id)
           newTabs = [newTabs[0], ...newTabs.slice(2)]
         }
 
@@ -143,6 +148,9 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
         if (idx === -1) return undefined
 
         const closed = tabs[idx]
+        // SCRUM-312: id вкладки умирает вместе с ней — новое открытие того же
+        // маршрута получит новый formInstanceId (и пустую форму создания)
+        dropFormInstanceId(tabId)
         const newTabs = tabs.filter((t) => t.id !== tabId)
 
         let newActiveId = activeTabId
@@ -166,6 +174,9 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
       },
 
       updateTabPath: (tabId, path, search) => {
+        // SCRUM-312: переход формы new → записанный меняет маршрут вкладки,
+        // но это ТА ЖЕ вкладка — formInstanceId едет вместе с ней
+        moveFormInstanceId(tabId, path)
         set((state) => ({
           tabs: updateTab(state.tabs, tabId, (t) => ({
             ...t,

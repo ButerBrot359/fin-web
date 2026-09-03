@@ -33,6 +33,13 @@ export const Button = ({
 }: ButtonProps) => {
   const isIconOnly = !children
 
+  // Figma (лист button 40:601): у tertiary два дефолтных цвета глифа —
+  // icon-only тёмный (#222124), текстовые/с текстом — синие; hover одинаков.
+  const tertiaryIconOnly =
+    isIconOnly && variant === 'tertiary'
+      ? 'text-ui-06 hover:text-accent-02'
+      : ''
+
   const paddingClasses = isIconOnly
     ? size === 'small'
       ? 'p-1 rounded-sm'
@@ -64,6 +71,7 @@ export const Button = ({
       className={cn(
         'flex cursor-pointer items-center justify-center rounded-md whitespace-nowrap transition-all disabled:cursor-not-allowed disabled:hover:shadow-none',
         variantClasses[variant],
+        tertiaryIconOnly,
         sizeClasses,
         paddingClasses,
         className

@@ -949,3 +949,48 @@ describe('useSduiDispatch: formDirty и CLOSE discardDraft (SCRUM-276)', () => {
     expect('discardDraft' in action).toBe(false)
   })
 })
+
+// SCRUM-312: стабильный id вкладки на OPEN — ключ серверного черновика формы.
+describe('useSduiDispatch: formInstanceId на OPEN (SCRUM-312)', () => {
+  let queryClient: QueryClient
+  let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    sessionStorage.clear()
+    router.search = ''
+    queryClient = new QueryClient()
+    wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children
+      )
+  })
+
+  it('OPEN несёт formInstanceId; повторный OPEN того же маршрута — тот же id', async () => {
+    const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'OPEN' })
+    await result.current({ type: 'OPEN' })
+
+    const first = (post.mock.calls[0][0].action as { formInstanceId?: string })
+      .formInstanceId
+    const second = (post.mock.calls[1][0].action as { formInstanceId?: string })
+      .formInstanceId
+    expect(first).toBeTruthy()
+    expect(second).toBe(first)
+  })
+
+  it('EVENT и CLOSE идут без formInstanceId', async () => {
+    const post = vi
+      .spyOn(viewTransport, 'post')
+      .mockResolvedValue(commandResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'EVENT', sourceNodeId: 'n', trigger: 'blur' })
+    await result.current({ type: 'CLOSE' })
+    for (const call of post.mock.calls) {
+      expect('formInstanceId' in (call[0].action as object)).toBe(false)
+    }
+  })
+})

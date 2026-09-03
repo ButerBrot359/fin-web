@@ -29,11 +29,11 @@ describe('report-result-gateway', () => {
     expect(getReportResultGateway()).toBeNull()
   })
 
-  it('опциональные print/exportXlsx можно не задавать', () => {
+  // SCRUM-370 блок Г: print/exportXlsx удалены из контракта — печать и экспорт
+  // идут только серверными READY-эффектами, у gateway остался рендер и панель.
+  it('минимальная реализация — только Renderer', () => {
     const impl: ReportResultGatewayImpl = { Renderer: () => null }
     setReportResultGateway(impl)
-    const got = getReportResultGateway()
-    expect(got?.print).toBeUndefined()
-    expect(got?.exportXlsx).toBeUndefined()
+    expect(getReportResultGateway()).toBe(impl)
   })
 })

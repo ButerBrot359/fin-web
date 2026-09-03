@@ -244,11 +244,11 @@ describe('ReportResultNode', () => {
     expect(screen.queryByTestId('report-result-show-more')).toBeNull()
   })
 
-  it('printSource → кнопка печати зовёт gateway.print(printSource.url, effectiveBody)', () => {
-    const printMock = vi.fn().mockResolvedValue(undefined)
+  // SCRUM-370 блок Г: легаси-ветка печати удалена — printSource игнорируется,
+  // печать существует только серверным printEffect.
+  it('printSource игнорируется (легаси-ветка снята) — кнопки печати нет', () => {
     getReportResultGateway.mockReturnValue({
       Renderer: (() => null) as unknown as FC<{ result: unknown }>,
-      print: printMock,
     })
     render(
       <ReportResultNode
@@ -260,11 +260,7 @@ describe('ReportResultNode', () => {
         })}
       />
     )
-    fireEvent.click(screen.getByTestId('report-result-print'))
-    expect(printMock).toHaveBeenCalledWith(
-      '/api/reportalt/OSV/print?language=Kz',
-      { a: 1 }
-    )
+    expect(screen.queryByTestId('report-result-print')).toBeNull()
   })
 
   it('без printSource → кнопки печати нет', () => {
@@ -276,22 +272,19 @@ describe('ReportResultNode', () => {
     expect(screen.queryByTestId('report-result-print')).toBeNull()
   })
 
-  it('exportEnabled → кнопка экспорта зовёт gateway.exportXlsx(result, reportName)', () => {
-    const exportMock = vi.fn()
+  // SCRUM-370 блок Г: легаси-ветка экспорта удалена — exportEnabled
+  // игнорируется, экспорт существует только серверным exportEffect.
+  it('exportEnabled игнорируется (легаси-ветка снята) — кнопки экспорта нет', () => {
     const result = { reportCode: 'OSV', reportNameRu: 'ОСВ', rows: [] }
     useInfiniteQuery.mockReturnValue({
       ...baseQueryResult,
       data: { pages: [result] },
     })
-    getReportResultGateway.mockReturnValue({
-      Renderer: () => null,
-      exportXlsx: exportMock,
-    })
+    getReportResultGateway.mockReturnValue({ Renderer: () => null })
 
     render(<ReportResultNode node={nodeWithSource({ exportEnabled: true })} />)
 
-    fireEvent.click(screen.getByTestId('report-result-export'))
-    expect(exportMock).toHaveBeenCalledWith(result, 'ОСВ')
+    expect(screen.queryByTestId('report-result-export')).toBeNull()
   })
 
   it('queryFn: тело POST — source.body целиком, без ручной сборки (§19.6)', async () => {
@@ -310,7 +303,9 @@ describe('ReportResultNode', () => {
     )
   })
 
-  it('settingsEnabled + gateway.SettingsPanel → кнопка «Настройки» открывает панель, apply наложением userSettings меняет тело следующего queryFn (§19.6)', async () => {
+  // SCRUM-370 блок Б шаг 2: клиентское наложение снято — apply не меняет тело
+  // запроса, настройки доедут в source.body серверным патчем.
+  it('settingsEnabled + gateway.SettingsPanel → apply НЕ меняет тело queryFn (наложение снято)', async () => {
     postMock.mockResolvedValue({ data: { reportCode: 'OSV', rows: [] } })
     const SettingsPanelStub: FC<SettingsPanelStubProps> = ({
       open,
@@ -349,7 +344,7 @@ describe('ReportResultNode', () => {
     expect(postMock).toHaveBeenCalledWith(
       expect.objectContaining({
         url: '/api/reportalt/OSV/run',
-        data: { a: 1, userSettings: { schemaVersionRef: 1 } },
+        data: { a: 1 },
       })
     )
   })
@@ -415,7 +410,9 @@ describe('ReportResultNode', () => {
     expect(exportMock).not.toHaveBeenCalled()
   })
 
-  it('userSettings домешивается в request.body перед проигрыванием printEffect (§3.5 п.3)', () => {
+  // SCRUM-370 блок Б шаг 2: printEffect проигрывается как есть — сервер сам
+  // кладёт настройки в request.body эффекта (патч setProp printEffect).
+  it('после apply printEffect проигрывается как есть, без домешивания', () => {
     const SettingsPanelStub: FC<SettingsPanelStubProps> = ({
       open,
       onApply,
@@ -441,15 +438,14 @@ describe('ReportResultNode', () => {
     fireEvent.click(screen.getByTestId('apply-us'))
     fireEvent.click(screen.getByTestId('report-result-print'))
 
-    expect(playMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        request: expect.objectContaining({
-          body: expect.objectContaining({
-            userSettings: { schemaVersionRef: 1 },
-          }),
-        }),
-      })
-    )
+    expect(playMock).toHaveBeenCalledWith({
+      type: 'download',
+      request: {
+        method: 'POST',
+        url: '/api/reportalt/X/print',
+        body: { parameters: {} },
+      },
+    })
   })
 
   it('без userSettings — printEffect проигрывается как есть, request.body не меняется', () => {

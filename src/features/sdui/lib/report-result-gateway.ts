@@ -10,11 +10,6 @@ export interface ReportResultGatewayImpl {
   // onDrilldown (SCRUM-370 блок В) — серверная расшифровка строки LEDGER; SDUI
   // читает у строки ровно одно поле rowRef, остальное непрозрачно (§19.6).
   Renderer: FC<{ result: unknown; onDrilldown?: (row: unknown) => void }>
-  // Печать (опц.): POST по url от бэка (props.printSource.url; язык уже в url),
-  // blob открывает impl.
-  print?: (url: string, body: unknown) => Promise<void>
-  // Экспорт в XLSX (опц.): клиентский, из result.
-  exportXlsx?: (result: unknown, reportName: string) => void
   // Панель настроек отчёта (опц., §19.1): полностью реализуется на app-слое
   // (легаси-drawer + meta-фетч). SDUI держит userSettings как unknown.
   SettingsPanel?: FC<{

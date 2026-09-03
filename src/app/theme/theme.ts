@@ -11,6 +11,11 @@ import {
 import { POPUP_Z } from '@/shared/lib/utils/overlay-z-index'
 
 export const theme = createTheme({
+  // ВАЖНО: palette использует .value (hex-литерал), а не cssVar().
+  // Причина: MUI augmentColor/alpha (decomposeColor) не парсит var()-строки и падает при createTheme.
+  // Следствие: эти четыре цвета (primary, error, text.primary, text.secondary) не runtime-темизируемы.
+  // Серверная тема фазы 2 потребует пересоздания темы для изменения этих цветов (см. спеку §4.1).
+  // StyleOverrides используют cssVar() для рантайм CSS-переменных.
   palette: {
     primary: { main: semantic.primary.value },
     error: { main: semantic.error.value },

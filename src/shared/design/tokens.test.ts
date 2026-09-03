@@ -82,4 +82,14 @@ describe('design tokens', () => {
       'var(--shadow-popup, 0 3px 24px rgba(42, 117, 244, 0.4))'
     )
   })
+
+  it('MUI-тема не содержит literal-hex (кроме none)', async () => {
+    const fs = await import('node:fs')
+    const src = fs.readFileSync('src/app/theme/theme.ts', 'utf8')
+    const code = src
+      .split('\n')
+      .filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*'))
+      .join('\n')
+    expect(code).not.toMatch(/#[0-9a-fA-F]{3,6}\b/)
+  })
 })

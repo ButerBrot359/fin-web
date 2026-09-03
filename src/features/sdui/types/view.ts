@@ -201,6 +201,12 @@ export interface NodeProps {
   node: ViewNode
 }
 
+export interface ValidationErrorDetail {
+  attributeCode: string | null
+  errorCode?: string
+  message?: string
+}
+
 export interface ConflictError {
   // Открытый тип НАМЕРЕННО: закрытый union маскировал расхождение с проводом
   // (код приходил в поле error и никогда не матчился) — SCRUM-244 §4.1

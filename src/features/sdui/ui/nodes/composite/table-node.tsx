@@ -1,4 +1,5 @@
-import type { FC } from 'react'
+import type { FC, ReactElement } from 'react'
+import { Box, FormHelperText } from '@mui/material'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { nodeToTableColumnDef } from '../../../lib/utils/build-column-defs'
@@ -35,7 +36,7 @@ export function extractEditableColumns(
     .map((c) => nodeToTableColumnDef(c))
 }
 
-export const TableNode: FC<NodeProps> = ({ node }) => {
+const renderTable = (node: ViewNode): ReactElement | null => {
   // SCRUM-70: невидимая таблица ≠ пустая таблица (чек-лист ограничения
   // скрыт, пока гейт-флаг выключен). Строго `=== false`: у большинства
   // таблиц пропа нет вовсе — они рендерятся как раньше.
@@ -102,4 +103,26 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
     return <AccountingPostingsBlock node={node} />
   }
   return <ReadOnlyTable node={node} />
+}
+
+export const TableNode: FC<NodeProps> = ({ node }) => {
+  const content = renderTable(node)
+  const error =
+    typeof node.props?.error === 'string' && node.props.error !== ''
+      ? node.props.error
+      : null
+  if (!content || !error) return content
+  return (
+    <Box
+      sx={{
+        border: 1,
+        borderColor: 'error.main',
+        borderRadius: 1,
+        p: 0.5,
+      }}
+    >
+      {content}
+      <FormHelperText error>{error}</FormHelperText>
+    </Box>
+  )
 }

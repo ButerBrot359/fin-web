@@ -171,9 +171,16 @@ export const DateTimeInput = ({
         disabled={disabled}
         slots={slots}
         slotProps={slotProps}
-        // Только формат: `views` у DateTimePicker перечисляют и часы с минутами,
-        // и подстановка сюда календарных видов отняла бы у поля ввод времени.
+        // `views` у DateTimePicker перечисляют и часы с минутами, поэтому для
+        // обычных полей подставляется только формат — иначе поле потеряло бы ввод
+        // времени. Но у поля с точностью месяца («LLLL yyyy») времени и нет: 1С
+        // показывает там «Сентябрь 2026», а день с часами всё равно срезаются
+        // (snapToGranularity + НачалоМесяца на записи). Для таких полей календарные
+        // виды подставляются намеренно — иначе пикер предлагал бы выбрать день.
         {...(dateFormat ? { format: dateFormat } : {})}
+        {...(spec && spec.granularity !== 'day'
+          ? { views: spec.views, openTo: spec.views.at(-1) }
+          : {})}
       />
     </CalendarNavProvider>
   )

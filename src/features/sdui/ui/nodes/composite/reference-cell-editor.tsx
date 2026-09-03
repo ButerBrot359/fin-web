@@ -30,6 +30,19 @@ interface ReferenceCellEditorProps {
   noWrap?: boolean
   /** SCRUM-363: одноразовая цель автофокуса — раскрыть список на фокусе. */
   openOnFocus?: boolean
+  /**
+   * ADR-0029 Phase 2b: server-driven «Показать всё» (команда `ref.showAll` с
+   * координатой строки). Задан ⇒ используем ЕГО вместо легаси-пикера.
+   *
+   * <p>Легаси-ветка ниже НЕ удаляется намеренно (BL-2 ADR-0029 §6.1): бэк эмитит
+   * actions только под флагом `sdui.ref-picker.table-cell` и только для строк с
+   * персистентным `rowId`. При выключенном флаге actions не приходят, и снятие
+   * фолбэка убрало бы кнопку из ячейки совсем. Фолбэк снимается отдельным
+   * неделимым коммитом после раскатки.
+   */
+  onServerShowAll?: () => void
+  /** ADR-0029 Phase 2b: server-driven «Добавить» (`ref.create`). См. `onServerShowAll`. */
+  onServerCreate?: () => void
 }
 
 /**
@@ -134,6 +147,8 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   extraParams,
   noWrap,
   openOnFocus,
+  onServerShowAll,
+  onServerCreate,
 }) => {
   const { t } = useTranslation()
 
@@ -264,21 +279,26 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
         }}
         onChange={applySelected}
         onShowAll={
-          openPicker && (allowShowAll ?? true)
+          // ADR-0029 Phase 2b, двойной путь: есть серверный action → он;
+          // нет → прежний легаси-пикер (см. javadoc onServerShowAll).
+          onServerShowAll ??
+          (openPicker && (allowShowAll ?? true)
             ? () => {
                 openPicker('list')
               }
-            : undefined
+            : undefined)
         }
         onAdd={
+          // ADR-0029 Phase 2b, двойной путь (см. onShowAll выше).
           // Запрещающий дефолт (канон п.5, аудит F-21): сервер закрывает create,
           // пока явно не пришлёт allowCreate: true (ReferenceAffordanceResolver) —
           // фронт зеркалит. allowShowAll ниже остаётся ?? true: серверный default true.
-          openPicker && canCreate && allowCreate === true
+          onServerCreate ??
+          (openPicker && canCreate && allowCreate === true
             ? () => {
                 openPicker('create')
               }
-            : undefined
+            : undefined)
         }
         endAction={
           openCard ? (

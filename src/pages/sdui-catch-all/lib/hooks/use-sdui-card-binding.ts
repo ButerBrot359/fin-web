@@ -22,18 +22,21 @@ import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entitie
 
 import { useUnsavedChangesDialog } from '@/pages/documents/documents-entry/lib/hooks/use-unsaved-changes-dialog'
 
-// После закрытия вкладки садимся на соседнюю вкладку рабочего стола (или дефолт,
+// После закрытия вкладки садимся на СОСЕДНЮЮ вкладку рабочего стола (или дефолт,
 // если вкладок не осталось) — карточка универсальная (документ/справочник),
-// целевой list-путь неизвестен, сосед выбирается на клиенте (SCRUM-283 v2 §2.3;
-// перенесено из sdui-document-page.tsx для SCRUM-360 этап B).
+// целевой list-путь неизвестен, сосед выбирается на клиенте (SCRUM-283 v2 §2.3).
+// SCRUM-386 фикс 1: соседа уже выбрал closeTab (activeTabId), раньше здесь
+// брался tabs[0] — закрытие крестиком уводило на первую вкладку.
 function navigateToNeighborTab(navigate: NavigateFunction): void {
-  const { tabs } = useWorkspaceTabsStore.getState()
-  if (tabs.length > 0) {
-    const next = tabs[0]
-    void navigate(next.path + next.search)
-  } else {
+  const { tabs, activeTabId } = useWorkspaceTabsStore.getState()
+  if (tabs.length === 0) {
     void navigate('/')
+    return
   }
+  const next = tabs.find((t) => t.id === activeTabId) ?? tabs[0]
+  // Панельная вкладка живёт вне роутера — активирована стором, навигация сломала бы URL
+  if (next.pageType === 'sdui-panel') return
+  void navigate(next.path + next.search)
 }
 
 // Обвязка карточки (документ/справочник) поверх catch-all SduiScreen: стабильный

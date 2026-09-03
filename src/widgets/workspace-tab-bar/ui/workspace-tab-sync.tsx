@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import {
   useLocation,
+  useNavigate,
   useNavigationType,
   type NavigationType,
 } from 'react-router-dom'
@@ -13,6 +14,7 @@ import {
 
 export const WorkspaceTabSync = () => {
   const location = useLocation()
+  const navigate = useNavigate()
   const navType = useNavigationType()
 
   const activateOrCreate = useWorkspaceTabsStore((s) => s.activateOrCreate)
@@ -43,10 +45,21 @@ export const WorkspaceTabSync = () => {
     if (action === 'updateActive' && activeTabId) {
       updateTabPath(activeTabId, pathname, search)
     } else if (action === 'create' && pageType) {
-      activateOrCreate(pathname, search, pageType)
+      const tabId = activateOrCreate(pathname, search, pageType)
       // Гасим только когда флаг реально сработал: до целевого маршрута может
       // быть хоп через /documents/:type/new, у которого pageType ещё нет.
       if (forceNewTab) consumeNewTab()
+      // SCRUM-386 фикс 2: сущность уже открыта во вкладке под другим URL
+      // (модульный vs плоский) — activateOrCreate активировал её; доводим
+      // адресную строку до пути этой вкладки, второй не появляется.
+      if (tabId && tabId !== pathname) {
+        const existing = useWorkspaceTabsStore
+          .getState()
+          .tabs.find((t) => t.id === tabId)
+        if (existing && existing.pageType !== 'sdui-panel') {
+          void navigate(existing.path + existing.search, { replace: true })
+        }
+      }
     }
 
     prevPathRef.current = pathname

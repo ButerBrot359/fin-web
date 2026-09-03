@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
 import { MAX_TABS } from '../consts/workspace-tabs-config'
+import { tabEntityKey } from '../utils/tab-entity-key'
 import type { WorkspaceTab, TabPageType } from '../../types/workspace-tab'
 
 interface WorkspaceTabsStore {
@@ -58,11 +59,20 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
 
         const { tabs } = get()
 
-        const existing = tabs.find((t) => t.path === path)
+        // SCRUM-386 фикс 2: сущность может быть открыта под другим семейством
+        // URL (модульный vs плоский) — вкладку с тем же сущностным ключом не
+        // дублируем, а активируем. Вызывающая сторона по несовпадению id и
+        // path редиректит URL на путь существующей вкладки.
+        const key = tabEntityKey(path)
+        const existing =
+          tabs.find((t) => t.path === path) ??
+          (key ? tabs.find((t) => tabEntityKey(t.path) === key) : undefined)
         if (existing) {
           set({
             activeTabId: existing.id,
-            tabs: updateTab(tabs, existing.id, (t) => ({ ...t, search })),
+            tabs: updateTab(tabs, existing.id, (t) =>
+              t.path === path ? { ...t, search } : t
+            ),
           })
           return existing.id
         }
@@ -96,7 +106,11 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
         if (existing) {
           set({
             activeTabId: existing.id,
-            tabs: updateTab(tabs, existing.id, (t) => ({ ...t, title, panelId })),
+            tabs: updateTab(tabs, existing.id, (t) => ({
+              ...t,
+              title,
+              panelId,
+            })),
           })
           return
         }

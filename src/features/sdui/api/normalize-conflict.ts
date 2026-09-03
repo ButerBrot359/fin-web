@@ -3,17 +3,15 @@ import type { ConflictError } from '../types/view'
 /**
  * Тело 409 с бэка несёт код конфликта в поле `error` (не `code`) — §2.6 спеки
  * SCRUM-244. Нормализуем на границе транспорта, чтобы conflict-handler и его
- * тесты остались на прежнем контракте.
+ * тесты остались на прежнем контракте. Фолбэк `code` удалён как мёртвый, и с
+ * ним ушёл рассинхрон приоритета ключей с parse-view-error (SCRUM-366).
  */
 export function normalizeConflictBody(body: unknown): ConflictError {
   const b = (body && typeof body === 'object' ? body : {}) as Record<
     string,
     unknown
   >
-  const code =
-    (typeof b.code === 'string' && b.code) ||
-    (typeof b.error === 'string' && b.error) ||
-    ''
+  const code = (typeof b.error === 'string' && b.error) || ''
   return {
     code,
     formSessionId:

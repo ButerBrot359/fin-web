@@ -14,9 +14,11 @@ describe('normalizeConflictBody', () => {
     expect(result.formSessionId).toBe('abc')
   })
 
-  it('поле code имеет приоритет, если бэк начнёт слать его', () => {
+  // SCRUM-366: фолбэк `code` удалён как мёртвый — источник кода только `error`,
+  // рассинхрон приоритета ключей с parse-view-error устранён.
+  it('ключ `code` игнорируется, код берётся только из error', () => {
     const result = normalizeConflictBody({ code: 'STALE_REVISION', error: 'X' })
-    expect(result.code).toBe('STALE_REVISION')
+    expect(result.code).toBe('X')
   })
 
   it('переносит currentRevision и snapshot как есть', () => {

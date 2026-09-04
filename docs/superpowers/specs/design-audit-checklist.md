@@ -156,3 +156,8 @@ workspace-tabs); легаси-мир руками не полируем (Ф-4/Ф
 - Скриншот-тест: добавить login-спек в tests/visual (фикстуры мокают
   /api/auth/\*; AUTH_ENABLED-нюанс прод-сборки учесть — см. комментарий в
   smoke.spec.ts).
+- ✅ Пачка 8 «Окно авторизации» — 1ebe18df: иллюстрация сцены выгружена из
+  Figma (5 SVG в src/shared/assets/illustrations/login/, канвас-подложки и
+  пустые clipPath вычищены), кнопка «Войти» вправо, скриншот-тесты
+  login-default/login-error (через page.screenshot+toMatchSnapshot:
+  стабилизатор toHaveScreenshot терял слой ламп).

@@ -237,7 +237,11 @@ function columnHeaderContent(col: TableColumnDef): ReactNode {
 export type CellRefHandlersFactory = (
   col: TableColumnDef,
   row: TableRow
-) => { onServerShowAll?: () => void; onServerCreate?: () => void }
+) => {
+  onServerShowAll?: () => void
+  onServerCreate?: () => void
+  onServerOpen?: () => void
+}
 
 export function buildColumnDefs(
   children: ViewNode[] | undefined,

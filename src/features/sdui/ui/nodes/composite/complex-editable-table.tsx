@@ -108,7 +108,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
       // на место relay-selection → applyCellValueLocally.
       // Команда в actions «голая» (один action на колонку, минтится при композиции,
       // когда строка ещё неизвестна) — координату строки добавляем здесь.
-      const handler = (trigger: 'showAll' | 'create') => {
+      const handler = (trigger: 'showAll' | 'create' | 'open') => {
         const command = col.actions?.find(
           (a) => a.trigger === trigger && a.actionId === 'command'
         )?.command
@@ -125,6 +125,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
       return {
         onServerShowAll: handler('showAll'),
         onServerCreate: handler('create'),
+        onServerOpen: handler('open'),
       }
     },
     []

@@ -1,5 +1,7 @@
 import type { FC } from 'react'
 
+import { cssVar, semantic } from '@/shared/design/tokens'
+
 import type { NodeProps } from '../../../types/view'
 import { NodeRenderer } from '../../node-renderer'
 import { isNodeVisible } from '../../../lib/utils/node-visibility'
@@ -18,6 +20,9 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
   }
 
   const gap = resolveStackGap(node.props?.gap as number | undefined)
+  // Layout-проп dividers (спека конструктора дизайна, v2): вертикальная
+  // линия ui-03 между колонками — визуальное разделение соседних таблиц.
+  const dividers = node.props?.dividers === true
   const justify = (node.props?.justify as string | undefined) ?? 'flex-start'
   const align = (node.props?.align as string | undefined) ?? 'stretch'
   const flex = node.props?.flex as number | string | undefined
@@ -36,7 +41,7 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
       {/* Скрытых детей отсеиваем здесь, а не только в NodeRenderer: обёртка
           ниже — собственный DOM-узел с flex:1, и от невидимого ребёнка
           осталась бы пустая колонка. */}
-      {node.children?.filter(isNodeVisible).map((c) => (
+      {node.children?.filter(isNodeVisible).map((c, i) => (
         // Равное деление ширины по умолчанию (SCRUM-282 #1): без flex дети
         // ужимаются до контента (таблицы «скомканы»). minWidth:0 обязателен,
         // иначе таблица не даёт контейнеру сжиматься и появляется h-скролл формы.
@@ -51,6 +56,12 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
+            ...(dividers && i > 0
+              ? {
+                  borderLeft: `1px solid ${cssVar(semantic.divider)}`,
+                  paddingLeft: gap,
+                }
+              : {}),
           }}
         >
           <NodeRenderer node={c} />

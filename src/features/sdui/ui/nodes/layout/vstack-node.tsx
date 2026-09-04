@@ -23,9 +23,18 @@ export const VStackNode: FC<NodeProps> = ({ node }) => {
         minHeight: flex !== undefined ? 0 : undefined,
       }}
     >
-      {node.children?.map((c) => (
-        <NodeRenderer key={c.id} node={c} />
-      ))}
+      {node.children?.map((c) =>
+        // Layout-проп pinBottom (спека конструктора дизайна, v2): блок
+        // прижимается к низу стека растущим зазором — «Комментарий/
+        // Ответственный» у нижней кромки формы без хардкода экрана.
+        c.props?.pinBottom === true ? (
+          <div key={c.id} style={{ marginTop: 'auto' }}>
+            <NodeRenderer node={c} />
+          </div>
+        ) : (
+          <NodeRenderer key={c.id} node={c} />
+        )
+      )}
     </div>
   )
 }

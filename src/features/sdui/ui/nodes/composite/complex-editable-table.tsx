@@ -99,6 +99,13 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   dispatchRef.current = dispatch
   const cellRefHandlers = useMemo<CellRefHandlersFactory>(
     () => (col, row) => {
+      // Строка без БД-id (только что добавленная, tmp-/ординальная) серверный путь принять
+      // не может: пин строки требует числового rowId, и бэк отказывает («Строка ещё не
+      // сохранена…»). Кнопка при этом видна — actions вычислены при ОТКРЫТИИ формы, когда
+      // строки были персистентными, и живут до переоткрытия. Поэтому решаем здесь: нет
+      // числового rowId ⇒ ведём себя как «серверного action нет» и уходим в легаси-пикер
+      // (ему пин не нужен, для новой строки он работает).
+      if (!/^\d+$/.test(String(row.rowId))) return {}
       // Команда в actions «голая» (один action на колонку, минтится при композиции,
       // когда строка ещё неизвестна) — координату строки добавляем здесь.
       const handler = (trigger: 'showAll' | 'create') => {

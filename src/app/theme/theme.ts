@@ -45,6 +45,7 @@ export const theme = createTheme({
           minHeight: 44,
           '&.MuiInputBase-sizeSmall': {
             minHeight: 32,
+            height: 36,
           },
           '&:hover': { backgroundColor: cssVar(palette.ui01) },
           '&.Mui-focused': {
@@ -256,9 +257,12 @@ export const theme = createTheme({
           minHeight: 44,
           // У пикеров свои имена size-классов (MuiPickersInputBase-*), общий
           // MuiInputBase-sizeSmall на них не вешается.
+          // height прибит: число (FilledInput) и дата (Pickers) в одной
+          // строке обязаны быть ровно одной высоты (36px), а не 36/37.
           '&.MuiInputBase-sizeSmall, &.MuiPickersInputBase-sizeSmall, &.MuiPickersInputBase-inputSizeSmall':
             {
               minHeight: 32,
+              height: 36,
             },
           '&:hover': { backgroundColor: cssVar(palette.ui01) },
           '&.Mui-focused': {

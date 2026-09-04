@@ -53,7 +53,7 @@ export const ActiveCallBar = ({
 
   return (
     <Grow in appear>
-      <div className="fixed right-6 bottom-20 z-[1050] w-72 overflow-hidden rounded-[20px] bg-ui-01 shadow-[0px_3px_24px_0px_rgba(42,117,244,0.4)]">
+      <div className="fixed right-6 bottom-6 z-[1050] w-72 overflow-hidden rounded-[20px] bg-ui-01 shadow-[0px_3px_24px_0px_rgba(42,117,244,0.4)]">
         <div className="flex items-center gap-2 bg-ui-06 px-4 py-2.5 text-ui-01">
           <span className="relative flex h-2.5 w-2.5 shrink-0">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-01" />

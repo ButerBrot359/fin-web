@@ -239,13 +239,10 @@ export const ListTable: FC<ListTableProps> = ({
             {onExport && rows.length > 0 && (
               // Легаси-экраны выгружали список кнопкой в подвале — на SDUI-списке
               // тот же вход, но файл собирает сервер (все выводимые колонки, текущие
-              // отборы). Выбор колонок — у «Вывести список» в панели.
-              <Button
-                size="small"
-                variant="tertiary"
-                className="ml-auto"
-                onClick={onExport}
-              >
+              // отборы). Выбор колонок — у «Вывести список» в панели. Слева, рядом
+              // со счётчиком (решение владельца 04.09); в идеале кнопку экспорта
+              // должен эмитить бэк нодой дерева — заметка в чек-листе.
+              <Button size="small" variant="tertiary" onClick={onExport}>
                 {t('table.exportExcel')}
               </Button>
             )}

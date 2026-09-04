@@ -10,6 +10,7 @@ import { usePanelStore } from './stores/panel-store'
 import { getPanelPatchSink } from './panel-patch-registry'
 import { useTreeStore } from './stores/tree-store'
 import { useViewStateStore } from './stores/view-state-store'
+import { applyCellValueLocally, parseCellTarget } from './cell-value-appliers'
 
 function applyRelayResponse(
   res: ViewResponse,
@@ -53,11 +54,21 @@ export function relaySelectionToParent(
   effect: ViewEffect,
   playEffects: (effects: ViewEffect[]) => void
 ): void {
-  if (
-    !effect.applyToParentSessionId ||
-    !effect.applyToParentCommand ||
-    !effect.applyToParentValue
-  ) {
+  if (!effect.applyToParentSessionId || !effect.applyToParentValue) {
+    return
+  }
+  // ADR-0029, несохранённая строка ТЧ: команды НЕТ — это протокольный сигнал «применяет
+  // родитель, локально». У такой строки нет БД-id, сервер её не искал и ничего не писал,
+  // ретранслировать на сервер нечего: кладём значение в свою строку сами.
+  if (!effect.applyToParentCommand) {
+    const target = parseCellTarget(effect.applyToParentTargetNodeId)
+    if (target) {
+      applyCellValueLocally(
+        target.columnNodeId,
+        target.rowId,
+        effect.applyToParentValue
+      )
+    }
     return
   }
   const panels = usePanelStore.getState()

@@ -111,11 +111,12 @@ export const LoginForm = () => {
         />
       </div>
 
+      {/* По макету (545:22859) кнопка выровнена вправо под полями */}
       <Button
         type="submit"
         variant="primary"
         disabled={isSubmitDisabled}
-        className="mt-4"
+        className="mt-4 self-end"
       >
         {isSubmitting ? t('auth.submitting') : t('auth.submit')}
       </Button>

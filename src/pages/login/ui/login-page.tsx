@@ -6,21 +6,29 @@ import { Typography } from '@mui/material'
 
 import { useAuthStore } from '@/features/auth'
 import Logo from '@/shared/assets/logo.svg'
+import DogIllustration from '@/shared/assets/illustrations/login/dog.svg'
+import GirlIllustration from '@/shared/assets/illustrations/login/girl.svg'
+import lampsUrl from '@/shared/assets/illustrations/login/lamps.svg?url'
+import PlantIllustration from '@/shared/assets/illustrations/login/plant.svg'
+import WindowIllustration from '@/shared/assets/illustrations/login/window.svg'
 
 import { LoginForm } from './login-form'
 
 /**
  * Экран входа по макету Figma (нода 545:22859).
  *
- * Цвета взяты из токенов проекта, а не подобраны по картинке: фон и заливка полей —
- * `ui-02`, кнопка — `accent-01`, она же цвет логотипа, серый
- * текст — `ui-05`. Макет и `tailwind.config.ts` совпали.
- *
- * <b>Иллюстрации из макета здесь нет.</b> Девушка с ноутбуком, собака, растение и лампы —
- * отдельные векторные объекты, выгрузить их можно только из самого файла Figma, а доступа
- * к нему нет. Слой под неё размечен ниже: когда SVG появится, она кладётся фоном и
- * компоновка карточки не меняется.
+ * Цвета — токены проекта: фон и заливка полей `ui-02`, кнопка `accent-01`,
+ * серый текст `ui-05`. Иллюстрация сцены (окно, девушка с ноутбуком, собака,
+ * растение, лампы) выгружена из макета отдельными SVG; позиции — проценты от
+ * фрейма 1920×1080, слой лежит ПОД карточкой: на узких экранах карточка
+ * перекрывает декор целиком — форма важнее.
  */
+const SCENE_LAYERS = [
+  { Svg: WindowIllustration, left: '9.6%', top: '8.5%', width: '27.6%' },
+  { Svg: GirlIllustration, left: '8.6%', top: '42.8%', width: '32.2%' },
+  { Svg: DogIllustration, left: '43.3%', top: '70.5%', width: '12.1%' },
+  { Svg: PlantIllustration, left: '66.4%', top: '55.9%', width: '17.5%' },
+] as const
 export const LoginPage = () => {
   const { t } = useTranslation()
   const status = useAuthStore((state) => state.status)
@@ -38,10 +46,24 @@ export const LoginPage = () => {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-ui-02 p-6">
-      {/*
-        Слот под иллюстрацию макета. Она декоративная и лежит ПОД карточкой: на узких
-        экранах карточка перекрывает её целиком, и это правильный порядок — форма важнее.
-      */}
+      <div aria-hidden className="absolute inset-0">
+        {SCENE_LAYERS.map(({ Svg, ...pos }, i) => (
+          <Svg
+            key={i}
+            className="absolute h-auto"
+            style={{ left: pos.left, top: pos.top, width: pos.width }}
+          />
+        ))}
+        {/* Лампы — <img>, не инлайн: этот единственный слой стабильно
+            выпадал из скриншотов toHaveScreenshot при инлайн-рендере
+            (контент SVG с отрицательными координатами внутри viewBox). */}
+        <img
+          src={lampsUrl}
+          alt=""
+          className="absolute h-auto"
+          style={{ left: '74.5%', top: '0%', width: '10%' }}
+        />
+      </div>
 
       <div className="relative z-10 w-full max-w-[810px] rounded-[24px] bg-ui-01 px-6 py-14 sm:px-24">
         <div className="mx-auto flex w-full max-w-[576px] flex-col items-center">

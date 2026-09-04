@@ -50,6 +50,10 @@ import {
 } from '../../../lib/utils/build-column-defs'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import {
+  registerCellValueApplier,
+  unregisterCellValueApplier,
+} from '../../../lib/cell-value-appliers'
+import {
   findAutoAdvanceColumn,
   type AutoAdvanceTarget,
 } from '../../../lib/utils/table-auto-advance'
@@ -99,13 +103,9 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   dispatchRef.current = dispatch
   const cellRefHandlers = useMemo<CellRefHandlersFactory>(
     () => (col, row) => {
-      // Строка без БД-id (только что добавленная, tmp-/ординальная) серверный путь принять
-      // не может: пин строки требует числового rowId, и бэк отказывает («Строка ещё не
-      // сохранена…»). Кнопка при этом видна — actions вычислены при ОТКРЫТИИ формы, когда
-      // строки были персистентными, и живут до переоткрытия. Поэтому решаем здесь: нет
-      // числового rowId ⇒ ведём себя как «серверного action нет» и уходим в легаси-пикер
-      // (ему пин не нужен, для новой строки он работает).
-      if (!/^\d+$/.test(String(row.rowId))) return {}
+      // Строки БЕЗ БД-id (только что добавленные) тоже идут серверным путём: бэк для них не
+      // ищет строку, а возвращает значение эффектом без applyToParentCommand, и его кладёт
+      // на место relay-selection → applyCellValueLocally.
       // Команда в actions «голая» (один action на колонку, минтится при композиции,
       // когда строка ещё неизвестна) — координату строки добавляем здесь.
       const handler = (trigger: 'showAll' | 'create') => {
@@ -218,6 +218,22 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
       sync.updateCell(rowId, binding, value)
     },
   }
+
+  // ADR-0029: значение, выбранное/созданное для строки БЕЗ БД-id, сервер применить не может —
+  // он возвращает его эффектом без applyToParentCommand, а кладём его мы (см.
+  // cell-value-appliers). Колонку узнаём по id узла, строку — по rowId.
+  useEffect(() => {
+    const token = registerCellValueApplier((columnNodeId, rowId, value) => {
+      const col = flatColumns.find((c) => c.id === columnNodeId)
+      if (!col) return false
+      syncRef.current.updateCell(rowId, col.binding, value)
+      syncRef.current.commitCell()
+      return true
+    })
+    return () => {
+      unregisterCellValueApplier(token)
+    }
+  }, [flatColumns])
 
   const validation = useTableValidation(node)
   const validationRef = useRef(validation)

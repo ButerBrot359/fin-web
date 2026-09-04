@@ -226,11 +226,25 @@ function columnHeaderContent(col: TableColumnDef): ReactNode {
  *
  * Nodes with props.visible === false are excluded from rendering.
  */
+/**
+ * ADR-0029 Phase 2b: фабрика server-driven аффордансов пикера ячейки.
+ *
+ * <p>Строится вызывающим (там, где доступен `dispatch`), потому что команда в
+ * `col.actions` «голая» — один action на колонку, минтится при композиции, когда
+ * строка ещё неизвестна. Координату строки добавляет фабрика, получая её здесь.
+ * Возвращает пустой объект ⇒ ячейка уходит в легаси-пикер (двойной путь, BL-2).
+ */
+export type CellRefHandlersFactory = (
+  col: TableColumnDef,
+  row: TableRow
+) => { onServerShowAll?: () => void; onServerCreate?: () => void }
+
 export function buildColumnDefs(
   children: ViewNode[] | undefined,
   syncRef: RefObject<UseTableSyncResult>,
   validationRef?: RefObject<UseTableValidationResult>,
-  autoAdvance?: AutoAdvanceColumnContext
+  autoAdvance?: AutoAdvanceColumnContext,
+  cellRefHandlers?: CellRefHandlersFactory
 ): ColumnDef<TableRow>[] {
   // Число под-строк считается по ВСЕЙ таблице и одно на все вертикальные
   // группы — иначе их разделители встают на разной высоте (см. verticalSubRows).
@@ -239,7 +253,8 @@ export function buildColumnDefs(
     syncRef,
     validationRef,
     maxVerticalSubRows(children),
-    autoAdvance
+    autoAdvance,
+    cellRefHandlers
   )
 }
 
@@ -248,7 +263,8 @@ function buildColumnDefsInner(
   syncRef: RefObject<UseTableSyncResult>,
   validationRef: RefObject<UseTableValidationResult> | undefined,
   subRowCount: number,
-  autoAdvance?: AutoAdvanceColumnContext
+  autoAdvance?: AutoAdvanceColumnContext,
+  cellRefHandlers?: CellRefHandlersFactory
 ): ColumnDef<TableRow>[] {
   if (!children) return []
 
@@ -289,6 +305,8 @@ function buildColumnDefsInner(
               info.row.original.rowId,
               col.binding
             ),
+            // ADR-0029 Phase 2b: пусто ⇒ легаси-пикер (двойной путь).
+            ...(cellRefHandlers?.(col, info.row.original) ?? {}),
             onChange: (val: unknown) => {
               syncRef.current.updateCell(
                 info.row.original.rowId,
@@ -376,6 +394,8 @@ function buildColumnDefsInner(
                       info.row.original.rowId,
                       childCol.binding
                     ),
+                    // ADR-0029 Phase 2b: пусто ⇒ легаси-пикер (двойной путь).
+                    ...(cellRefHandlers?.(childCol, info.row.original) ?? {}),
                     onChange: (val: unknown) => {
                       syncRef.current.updateCell(
                         info.row.original.rowId,
@@ -409,7 +429,8 @@ function buildColumnDefsInner(
             syncRef,
             validationRef,
             subRowCount,
-            autoAdvance
+            autoAdvance,
+            cellRefHandlers
           ),
         }
         result.push(colDef)

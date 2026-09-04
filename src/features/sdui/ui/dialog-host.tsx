@@ -186,7 +186,7 @@ export const DialogHost = () => {
                 },
               }}
             >
-              <div className="flex h-full flex-col p-7">
+              <div className="flex h-full flex-col p-10">
                 <div className="flex shrink-0 items-center justify-between">
                   {typeof panel.node.props?.title === 'string' && (
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -210,7 +210,8 @@ export const DialogHost = () => {
         }
 
         if (panel.presentation === 'drawer') {
-          const width = (panel.node.props?.width as number | undefined) ?? 900
+          // Figma side-panel (324:13541): дефолтная ширина 766
+          const width = (panel.node.props?.width as number | undefined) ?? 766
 
           return (
             <Drawer
@@ -237,7 +238,7 @@ export const DialogHost = () => {
                 },
               }}
             >
-              <div className="flex h-full flex-col p-7">
+              <div className="flex h-full flex-col p-10">
                 <div className="flex shrink-0 items-center justify-end">
                   <IconButton
                     onClick={() => {

@@ -14,5 +14,16 @@ export const DEFAULT_STACK_GAP_PX = 16
 export function resolveStackGap(gap: number | undefined): number {
   if (gap === undefined) return DEFAULT_STACK_GAP_PX
   if (gap <= 0) return 0
-  return Math.min(Math.max(gap * 4, 4), 32)
+  // Потолок 24: конфиги с gap:8+ (32px и выше между полями — панели
+  // организации/физлица) разъезжаются против ритма 16/24 Figma.
+  return Math.min(Math.max(gap * 4, 4), 24)
+}
+
+/**
+ * Паддинг контейнера: та же шкала ×4 и тот же кламп-потолок, дефолта нет
+ * (без пропа контейнер не отступает — паддинги задают страница/панель).
+ */
+export function resolveStackPadding(padding: number | undefined): number {
+  if (padding === undefined || padding <= 0) return 0
+  return Math.min(Math.max(padding * 4, 4), 24)
 }

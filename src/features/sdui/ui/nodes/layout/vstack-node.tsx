@@ -1,12 +1,15 @@
 import type { FC } from 'react'
 
 import type { NodeProps } from '../../../types/view'
-import { resolveStackGap } from '../../../lib/utils/resolve-stack-gap'
+import {
+  resolveStackGap,
+  resolveStackPadding,
+} from '../../../lib/utils/resolve-stack-gap'
 import { NodeRenderer } from '../../node-renderer'
 
 export const VStackNode: FC<NodeProps> = ({ node }) => {
   const gap = resolveStackGap(node.props?.gap as number | undefined)
-  const padding = (node.props?.padding as number | undefined) ?? 0
+  const padding = resolveStackPadding(node.props?.padding as number | undefined)
   const align = (node.props?.align as string | undefined) ?? 'stretch'
   const flex = node.props?.flex as number | string | undefined
 
@@ -16,7 +19,7 @@ export const VStackNode: FC<NodeProps> = ({ node }) => {
         display: 'flex',
         flexDirection: 'column',
         gap,
-        padding: padding * 4,
+        padding,
         alignItems: align,
         flex: flex !== undefined ? flex : undefined,
         minHeight: flex !== undefined ? 0 : undefined,

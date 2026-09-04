@@ -107,10 +107,18 @@ export const KalendariFillMethodSettings: FC<NodeProps> = ({ node }) => {
               </Typography>
               {dateNode && (
                 <div style={{ width: 170 }}>
+                  {/* Дата отсчёта активна только при выбранной циклической
+                      опции — симметрично полю длины цикла. */}
                   <NodeRenderer
                     node={{
                       ...dateNode,
-                      props: { ...dateNode.props, label: undefined },
+                      props: {
+                        ...dateNode.props,
+                        label: undefined,
+                        enabled: cyclicSelected
+                          ? dateNode.props?.enabled
+                          : false,
+                      },
                     }}
                   />
                 </div>

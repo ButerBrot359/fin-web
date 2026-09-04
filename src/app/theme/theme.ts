@@ -54,6 +54,13 @@ export const theme = createTheme({
           '&.Mui-error': {
             borderColor: cssVar(semantic.error),
           },
+          // Заблокированное поле: серая заливка, без ховер-реакции — иначе
+          // выглядит активным (даты/числа «Графиков работы»).
+          '&.Mui-disabled': {
+            backgroundColor: cssVar(palette.ui02),
+            cursor: 'not-allowed',
+            '&:hover': { backgroundColor: cssVar(palette.ui02) },
+          },
           '&::before, &::after': { display: 'none' },
         },
         input: {
@@ -64,6 +71,7 @@ export const theme = createTheme({
           fontSize: 16,
           fontWeight: 500,
           color: cssVar(semantic.textPrimary),
+          '&.Mui-disabled': { cursor: 'not-allowed' },
           '&.MuiInputBase-inputSizeSmall': {
             paddingTop: 6,
             paddingBottom: 6,
@@ -257,6 +265,11 @@ export const theme = createTheme({
           '&.Mui-error': {
             borderColor: cssVar(semantic.error),
           },
+          '&.Mui-disabled': {
+            backgroundColor: cssVar(palette.ui02),
+            cursor: 'not-allowed',
+            '&:hover': { backgroundColor: cssVar(palette.ui02) },
+          },
           '&::before, &::after': { display: 'none' },
         },
         input: {
@@ -267,6 +280,7 @@ export const theme = createTheme({
           fontSize: 16,
           fontWeight: 500,
           color: cssVar(semantic.textPrimary),
+          '&.Mui-disabled': { cursor: 'not-allowed' },
           '&.MuiInputBase-inputSizeSmall': {
             paddingTop: 6,
             paddingBottom: 6,

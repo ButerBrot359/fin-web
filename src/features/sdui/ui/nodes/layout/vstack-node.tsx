@@ -1,15 +1,14 @@
 import type { FC } from 'react'
 
 import type { NodeProps } from '../../../types/view'
-import {
-  resolveStackGap,
-  resolveStackPadding,
-} from '../../../lib/utils/resolve-stack-gap'
+import { resolveStackGap } from '../../../lib/utils/resolve-stack-gap'
 import { NodeRenderer } from '../../node-renderer'
 
 export const VStackNode: FC<NodeProps> = ({ node }) => {
+  // props.padding с провода игнорируется: боковые отступы контента задают
+  // PAGE/панель (карта уже даёт p-8); единственный конфиг с padding —
+  // Kalendari (padding:16 → двойной отступ, поля не на уровне тулбара).
   const gap = resolveStackGap(node.props?.gap as number | undefined)
-  const padding = resolveStackPadding(node.props?.padding as number | undefined)
   const align = (node.props?.align as string | undefined) ?? 'stretch'
   const flex = node.props?.flex as number | string | undefined
 
@@ -19,7 +18,6 @@ export const VStackNode: FC<NodeProps> = ({ node }) => {
         display: 'flex',
         flexDirection: 'column',
         gap,
-        padding,
         alignItems: align,
         flex: flex !== undefined ? flex : undefined,
         minHeight: flex !== undefined ? 0 : undefined,

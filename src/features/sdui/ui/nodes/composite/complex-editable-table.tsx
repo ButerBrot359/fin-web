@@ -46,7 +46,9 @@ import {
   VERTICAL_SUB_ROW_HEIGHT,
   type AutoAdvanceColumnContext,
   type SduiColumnMetaExtra,
+  type CellRefHandlersFactory,
 } from '../../../lib/utils/build-column-defs'
+import { useSduiDispatch } from '../../../lib/dispatch'
 import {
   findAutoAdvanceColumn,
   type AutoAdvanceTarget,
@@ -87,6 +89,39 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
 }) => {
   const { t } = useTranslation()
   const { getValue, setFromServer } = useSduiSession()
+
+  // ADR-0029 Phase 2b: server-driven пикер в ячейке ТЧ. dispatch берём через ref —
+  // он не референциально стабилен (deps location/navigate/session/queryClient), и
+  // захват в мемоизированные колонки пересоздавал бы cell-рендер, роняя фокус.
+  // Фабрика стабильна (deps []): внутри читается только ref, значение — на момент клика.
+  const dispatch = useSduiDispatch()
+  const dispatchRef = useRef(dispatch)
+  dispatchRef.current = dispatch
+  const cellRefHandlers = useMemo<CellRefHandlersFactory>(
+    () => (col, row) => {
+      // Команда в actions «голая» (один action на колонку, минтится при композиции,
+      // когда строка ещё неизвестна) — координату строки добавляем здесь.
+      const handler = (trigger: 'showAll' | 'create') => {
+        const command = col.actions?.find(
+          (a) => a.trigger === trigger && a.actionId === 'command'
+        )?.command
+        if (!command) return undefined
+        return () => {
+          void dispatchRef.current({
+            type: 'COMMAND',
+            command,
+            sourceNodeId: col.id,
+            value: { rowId: row.rowId, row },
+          })
+        }
+      }
+      return {
+        onServerShowAll: handler('showAll'),
+        onServerCreate: handler('create'),
+      }
+    },
+    []
+  )
 
   const allowAdd = node.props?.allowAdd === true
   const allowDelete = node.props?.allowDelete === true
@@ -208,9 +243,15 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
 
   const tableColumns = useMemo(
     () =>
-      buildColumnDefs(node.children, syncRef, validationRef, autoAdvanceCtx),
+      buildColumnDefs(
+        node.children,
+        syncRef,
+        validationRef,
+        autoAdvanceCtx,
+        cellRefHandlers
+      ),
 
-    [node.children, autoAdvanceCtx]
+    [node.children, autoAdvanceCtx, cellRefHandlers]
   )
 
   // ── Master-detail filtering ──

@@ -60,6 +60,12 @@ interface TableCellEditorProps {
    */
   onServerShowAll?: () => void
   onServerCreate?: () => void
+  /**
+   * ADR-0029: server-driven «открыть карточку» (`ref.open`). До появления
+   * серверной cell-ветки этот путь отсутствовал, и кнопка ⧉ в ячейке ТЧ
+   * открывала ЛЕГАСИ-дровер — тот самый дефект, ради которого заведён проп.
+   */
+  onServerOpen?: () => void
 }
 
 /**
@@ -130,6 +136,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
   autoOpen,
   onServerShowAll,
   onServerCreate,
+  onServerOpen,
 }) => {
   const [touched, setTouched] = useState(false)
   const handleCommit = () => {
@@ -293,6 +300,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             openOnFocus={autoOpen}
             onServerShowAll={onServerShowAll}
             onServerCreate={onServerCreate}
+            onServerOpen={onServerOpen}
           />
         )
 

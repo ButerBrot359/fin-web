@@ -238,7 +238,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           // минтится при композиции, когда строка ещё неизвестна) — координату
           // строки добавляем здесь, в момент клика. Нет action ⇒ undefined,
           // и редактор ячейки уходит в легаси-пикер (двойной путь, BL-2).
-          const serverRefHandler = (trigger: 'showAll' | 'create') => {
+          const serverRefHandler = (
+            trigger: 'showAll' | 'create' | 'open'
+          ) => {
             // Строки БЕЗ БД-id (только что добавленные) тоже идут серверным путём: бэк для
             // них не ищет строку, а возвращает значение эффектом без applyToParentCommand,
             // и его кладёт на место relay-selection → applyCellValueLocally. Раньше здесь
@@ -269,6 +271,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
               revealErrors={validationRef.current.revealErrors}
               onServerShowAll={serverRefHandler('showAll')}
               onServerCreate={serverRefHandler('create')}
+              onServerOpen={serverRefHandler('open')}
               onChange={(val) => {
                 syncRef.current.updateCell(row.original.rowId, col.binding, val)
               }}

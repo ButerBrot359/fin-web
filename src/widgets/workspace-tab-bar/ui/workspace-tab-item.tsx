@@ -13,15 +13,14 @@ interface WorkspaceTabItemProps {
   onClose: (e: React.MouseEvent) => void
 }
 
-// Состояния по компонент-шиту Figma «Tab» (58:1107): активная — тёмная с
-// белым текстом; неактивная — белая с тёмным; ховер неактивной — синий текст;
-// ховер активной — светло-голубая с тёмным текстом. Крестик закрытия виден
-// только при наведении (вариант Icon=Right шита).
+// Вид по низу рабочих макетов Figma (ПКО 167:5013 и др.): активная вкладка —
+// светло-голубая (UI 04) с тёмным текстом, неактивные белые, крестик виден у
+// всех всегда; ховер неактивной — синий текст (компонент-шит Tab 58:1107).
 const tabStyles = (isActive: boolean) =>
   cn(
-    'group flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border-none pr-1.5 pl-3 transition-colors',
+    'flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border-none pr-1.5 pl-3 transition-colors',
     isActive
-      ? 'bg-ui-06 text-ui-01 hover:bg-ui-04 hover:text-ui-06'
+      ? 'bg-ui-04 text-ui-06'
       : 'bg-ui-01 text-ui-06 hover:text-accent-02'
   )
 
@@ -53,7 +52,7 @@ export const WorkspaceTabItem = ({
         onKeyDown={(e) => {
           if (e.key === 'Enter') onClose(e as unknown as React.MouseEvent)
         }}
-        className="hidden shrink-0 items-center justify-center group-hover:flex"
+        className="flex shrink-0 items-center justify-center opacity-60 hover:opacity-100"
       >
         <CrossIcon className="size-4" />
       </span>

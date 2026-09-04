@@ -4,7 +4,9 @@
 // строк). Логика перенесена verbatim, без изменения поведения.
 import type { FC, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, CircularProgress, Typography } from '@mui/material'
+import { CircularProgress, Typography } from '@mui/material'
+
+import { Button } from '@/shared/ui/buttons'
 import { flexRender, type Table } from '@tanstack/react-table'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
@@ -240,7 +242,7 @@ export const ListTable: FC<ListTableProps> = ({
               // отборы). Выбор колонок — у «Вывести список» в панели.
               <Button
                 size="small"
-                variant="outlined"
+                variant="tertiary"
                 className="ml-auto"
                 onClick={onExport}
               >

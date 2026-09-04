@@ -254,9 +254,12 @@ export const theme = createTheme({
           backgroundColor: cssVar(palette.ui01),
           border: `1px solid ${cssVar(semantic.divider)}`,
           minHeight: 44,
-          '&.MuiInputBase-sizeSmall': {
-            minHeight: 32,
-          },
+          // У пикеров свои имена size-классов (MuiPickersInputBase-*), общий
+          // MuiInputBase-sizeSmall на них не вешается.
+          '&.MuiInputBase-sizeSmall, &.MuiPickersInputBase-sizeSmall, &.MuiPickersInputBase-inputSizeSmall':
+            {
+              minHeight: 32,
+            },
           '&:hover': { backgroundColor: cssVar(palette.ui01) },
           '&.Mui-focused': {
             backgroundColor: cssVar(palette.ui01),
@@ -294,10 +297,11 @@ export const theme = createTheme({
           fontSize: 16,
           fontWeight: 500,
           color: cssVar(semantic.textPrimary),
-          '.MuiInputBase-sizeSmall &': {
-            paddingTop: 6,
-            paddingBottom: 6,
-          },
+          '.MuiInputBase-sizeSmall &, .MuiPickersInputBase-sizeSmall &, .MuiPickersInputBase-inputSizeSmall &':
+            {
+              paddingTop: 6,
+              paddingBottom: 6,
+            },
         },
       },
     },

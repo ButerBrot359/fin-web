@@ -115,6 +115,9 @@ export const KalendariFillMethodSettings: FC<NodeProps> = ({ node }) => {
                       props: {
                         ...dateNode.props,
                         label: undefined,
+                        // Компактный размер — в одну линию с полем длины
+                        // цикла (size=small, как у соседнего инпута «дней»)
+                        size: 'small',
                         enabled: cyclicSelected
                           ? dateNode.props?.enabled
                           : false,

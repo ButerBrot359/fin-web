@@ -11,6 +11,7 @@ import {
   toColumnWidth,
 } from '../../../lib/utils/column-sizing'
 import { getCellIcon } from './cell-icon-registry'
+import { ListDocumentLinkCell } from './list-document-link-cell'
 import { ListSortHeader } from './list-sort-header'
 import {
   ListFilterFunnel,
@@ -213,24 +214,35 @@ export const buildListColumns = (
                 </span>
               )
             }
-          : col.props?.cellKind === 'ICON'
-            ? (info: { getValue: () => unknown }) => {
-                const iconMap = col.props?.iconMap as
-                  | Record<string, string>
-                  | undefined
-                // eslint-disable-next-line @typescript-eslint/no-base-to-string
-                const value = String(info.getValue() ?? '')
-                const Icon = getCellIcon(iconMap?.[value])
-                return Icon ? (
-                  <Icon aria-hidden="true" className="h-4 w-4" />
-                ) : null
-              }
-            : (info: { getValue: () => unknown }) => (
-                <Typography variant="body2" noWrap className="text-ui-06">
-                  {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
-                  {String(info.getValue() ?? '')}
-                </Typography>
-              ),
+          : col.props?.cellKind === 'DOCUMENT_LINK'
+            ? (info: {
+                getValue: () => unknown
+                row: { original: ListRow }
+              }) => (
+                <ListDocumentLinkCell
+                  row={info.row.original}
+                  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                  text={String(info.getValue() ?? '')}
+                />
+              )
+            : col.props?.cellKind === 'ICON'
+              ? (info: { getValue: () => unknown }) => {
+                  const iconMap = col.props?.iconMap as
+                    | Record<string, string>
+                    | undefined
+                  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                  const value = String(info.getValue() ?? '')
+                  const Icon = getCellIcon(iconMap?.[value])
+                  return Icon ? (
+                    <Icon aria-hidden="true" className="h-4 w-4" />
+                  ) : null
+                }
+              : (info: { getValue: () => unknown }) => (
+                  <Typography variant="body2" noWrap className="text-ui-06">
+                    {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
+                    {String(info.getValue() ?? '')}
+                  </Typography>
+                ),
     }
   })
 }

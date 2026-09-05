@@ -144,8 +144,22 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     [columns]
   )
 
+  // Отбор строк внешним списком (порт 1С `ОтборСтрок`) считается ДО поиска,
+  // виртуализации и операций тулбара: всё перечисленное обязано работать над тем
+  // же набором, который реально отрисован, иначе индексы разъезжаются с экраном.
+  const visibleRows = useExternalRowFilter(node, sync.rows)
+
+  // Позиция видимой строки в ПОЛНОМ массиве: `selectedIndex` и `row.index`
+  // TanStack'а нумеруют отфильтрованный набор, а мутации sync принимают индекс
+  // полного (SCRUM-282 C1, тот же приём, что в ComplexEditableTable).
+  const globalIndexOf = (visibleIndex: number | null): number => {
+    if (visibleIndex === null) return -1
+    const rowId = visibleRows[visibleIndex]?.rowId
+    return sync.rows.findIndex((r) => r.rowId === rowId)
+  }
+
   const search = useTableSearch(
-    sync.rows,
+    visibleRows,
     visibleColumns.map((c) => ({ id: c.id, binding: c.binding }))
   )
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -153,7 +167,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   // Виртуализация строк (SCRUM-368): в DOM — только видимое окно. Ниже порога
   // хука рендер прежний (все строки).
   const virt = useVirtualTableRows(
-    sync.rows.length,
+    visibleRows.length,
     readVirtualization(node),
     HEAVY_ROW_VIRTUAL_OPTIONS
   )
@@ -173,7 +187,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     () => {
       const current = search.current
       if (!current) return
-      const idx = sync.rows.findIndex((r) => r.rowId === current.rowId)
+      const idx = visibleRows.findIndex((r) => r.rowId === current.rowId)
       if (idx >= 0) virt.scrollToRow(idx)
       requestAnimationFrame(() => {
         containerRef.current
@@ -188,11 +202,11 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   useEffect(() => {
     setSelectedIndex((prev) => {
       if (prev === null) return null
-      if (prev >= sync.rows.length)
-        return sync.rows.length > 0 ? sync.rows.length - 1 : null
+      if (prev >= visibleRows.length)
+        return visibleRows.length > 0 ? visibleRows.length - 1 : null
       return prev
     })
-  }, [sync.rows.length])
+  }, [visibleRows.length])
 
   // Мемоизируем колонки по [columns]: при ре-рендере EditableTable (ввод символа →
   // setLocalRows) определения колонок/cell-функций НЕ пересоздаются, поэтому TanStack
@@ -272,8 +286,6 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
 
   // Отбор по внешнему списку (панель сотрудников, порт 1С ОтборСтрок): при
   // пустом отборе возвращает те же строки, поэтому ветку рендера не двоим.
-  const visibleRows = useExternalRowFilter(node, sync.rows)
-
   const table = useReactTable({
     data: visibleRows,
     columns: tableColumns,
@@ -308,14 +320,15 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     sync.addRow(columns)
   }
   const handleRemove = () => {
-    if (selectedIndex !== null) {
-      sync.deleteRow(selectedIndex)
+    const globalIndex = globalIndexOf(selectedIndex)
+    if (globalIndex >= 0) {
+      sync.deleteRow(globalIndex)
       setSelectedIndex(null)
     }
   }
   const handleCopy = () => {
     if (selectedIndex === null) return
-    const src = sync.rows[selectedIndex]
+    const src = visibleRows[selectedIndex]
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!src) return
     // Копируются ЗНАЧЕНИЯ строки: служебные ключи посчитаны для источника, и
@@ -324,17 +337,25 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     const { rowId: _rowId, ...values } = omitServiceRowKeys(src)
     sync.addRow(columns, values)
   }
+  // Соседом считается соседняя ВИДИМАЯ строка: при активном отборе строки между
+  // ними принадлежат другим сотрудникам, и перестановка через них сдвинула бы
+  // чужие данные.
   const handleMoveUp = () => {
-    if (selectedIndex !== null && selectedIndex > 0) {
-      sync.moveRow(selectedIndex, selectedIndex - 1)
-      setSelectedIndex(selectedIndex - 1)
-    }
+    if (selectedIndex === null || selectedIndex <= 0) return
+    const from = globalIndexOf(selectedIndex)
+    const to = globalIndexOf(selectedIndex - 1)
+    if (from < 0 || to < 0) return
+    sync.moveRow(from, to)
+    setSelectedIndex(selectedIndex - 1)
   }
   const handleMoveDown = () => {
-    if (selectedIndex !== null && selectedIndex < sync.rows.length - 1) {
-      sync.moveRow(selectedIndex, selectedIndex + 1)
-      setSelectedIndex(selectedIndex + 1)
-    }
+    if (selectedIndex === null || selectedIndex >= visibleRows.length - 1)
+      return
+    const from = globalIndexOf(selectedIndex)
+    const to = globalIndexOf(selectedIndex + 1)
+    if (from < 0 || to < 0) return
+    sync.moveRow(from, to)
+    setSelectedIndex(selectedIndex + 1)
   }
 
   const handleKeyDown = createTableHotkeysHandler({
@@ -368,7 +389,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           onCopy={handleCopy}
           canMoveUp={selectedIndex !== null && selectedIndex > 0}
           canMoveDown={
-            selectedIndex !== null && selectedIndex < sync.rows.length - 1
+            selectedIndex !== null && selectedIndex < visibleRows.length - 1
           }
           canRemove={selectedIndex !== null}
           canCopy={selectedIndex !== null}
@@ -379,7 +400,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           search={search}
           selectedRowId={
             selectedIndex != null
-              ? (sync.rows[selectedIndex]?.rowId ?? null)
+              ? (visibleRows[selectedIndex]?.rowId ?? null)
               : null
           }
         />

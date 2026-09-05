@@ -30,10 +30,10 @@ const UNDER_CARD_LAYERS = [
 ] as const
 
 const OVER_CARD_LAYERS = [
-  { Svg: GirlIllustration, left: '8.6%', top: '42.8%', width: '32.2%' },
+  { Svg: GirlIllustration, left: '8.6%', top: '48%', width: '32.2%' },
   { Svg: DogIllustration, left: '43.3%', top: '70.5%', width: '12.1%' },
   // правее макетных 66.4%: на узких вьюпортах растение налезало на «Войти»
-  { Svg: PlantIllustration, left: '71%', top: '55.9%', width: '17.5%' },
+  { Svg: PlantIllustration, left: '71%', top: '52%', width: '17.5%' },
 ] as const
 export const LoginPage = () => {
   const { t } = useTranslation()
@@ -73,16 +73,20 @@ export const LoginPage = () => {
         {/* Лампы — <img>, не инлайн: этот единственный слой стабильно
             выпадал из скриншотов toHaveScreenshot при инлайн-рендере
             (контент SVG с отрицательными координатами внутри viewBox). */}
+        {/* крупнее макетных 10%: лампа должна заходить на карточку, как в
+            референсе; отрицательный top безопасен — login-тесты снимают кадр
+            page.screenshot'ом (см. screens-login.spec) */}
         <img
           src={lampsUrl}
           alt=""
           className="absolute h-auto"
-          style={{ left: '74.5%', top: '0%', width: '10%' }}
+          style={{ left: '74%', top: '-2%', width: '11%' }}
         />
       </div>
 
-      {/* Карточка прижата к верху, как в макете (y≈15% фрейма) */}
-      <div className="relative z-10 mt-[12vh] w-full max-w-[810px] rounded-[24px] bg-ui-01 px-6 py-14 sm:px-24">
+      {/* Смещение вверх как в референсе; элементы сцены заходят на карточку,
+          но не на поля (гео согласована с top персонажей ниже) */}
+      <div className="relative z-10 mt-[10vh] w-full max-w-[810px] rounded-[24px] bg-ui-01 px-6 py-14 sm:px-24">
         <div className="mx-auto flex w-full max-w-[576px] flex-col items-center">
           <div className="flex items-center gap-3">
             <Logo className="h-8 w-8 shrink-0" aria-hidden />

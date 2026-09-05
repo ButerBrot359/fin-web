@@ -23,11 +23,17 @@ import { LoginForm } from './login-form'
  * фрейма 1920×1080, слой лежит ПОД карточкой: на узких экранах карточка
  * перекрывает декор целиком — форма важнее.
  */
-const SCENE_LAYERS = [
+// Порядок слоёв — как в Figma-фрейме: окно комнаты ПОД карточкой, персонажи
+// (девушка, собака, растение) и лампы — ПОВЕРХ, «сидят» на окне ввода.
+const UNDER_CARD_LAYERS = [
   { Svg: WindowIllustration, left: '9.6%', top: '8.5%', width: '27.6%' },
+] as const
+
+const OVER_CARD_LAYERS = [
   { Svg: GirlIllustration, left: '8.6%', top: '42.8%', width: '32.2%' },
   { Svg: DogIllustration, left: '43.3%', top: '70.5%', width: '12.1%' },
-  { Svg: PlantIllustration, left: '66.4%', top: '55.9%', width: '17.5%' },
+  // правее макетных 66.4%: на узких вьюпортах растение налезало на «Войти»
+  { Svg: PlantIllustration, left: '71%', top: '55.9%', width: '17.5%' },
 ] as const
 export const LoginPage = () => {
   const { t } = useTranslation()
@@ -45,9 +51,19 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-ui-02 p-6">
+    <div className="relative flex min-h-screen items-start justify-center overflow-hidden bg-ui-02 p-6">
       <div aria-hidden className="absolute inset-0">
-        {SCENE_LAYERS.map(({ Svg, ...pos }, i) => (
+        {UNDER_CARD_LAYERS.map(({ Svg, ...pos }, i) => (
+          <Svg
+            key={i}
+            className="absolute h-auto"
+            style={{ left: pos.left, top: pos.top, width: pos.width }}
+          />
+        ))}
+      </div>
+      {/* pointer-events-none: клики сквозь декор проходят в форму */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-20">
+        {OVER_CARD_LAYERS.map(({ Svg, ...pos }, i) => (
           <Svg
             key={i}
             className="absolute h-auto"
@@ -65,7 +81,8 @@ export const LoginPage = () => {
         />
       </div>
 
-      <div className="relative z-10 w-full max-w-[810px] rounded-[24px] bg-ui-01 px-6 py-14 sm:px-24">
+      {/* Карточка прижата к верху, как в макете (y≈15% фрейма) */}
+      <div className="relative z-10 mt-[12vh] w-full max-w-[810px] rounded-[24px] bg-ui-01 px-6 py-14 sm:px-24">
         <div className="mx-auto flex w-full max-w-[576px] flex-col items-center">
           <div className="flex items-center gap-3">
             <Logo className="h-8 w-8 shrink-0" aria-hidden />

@@ -165,6 +165,25 @@ const baseQueryResult = {
   fetchNextPage: vi.fn(),
 }
 
+const emptyStateNode = {
+  id: 'lst',
+  type: 'LIST',
+  props: { source: { url: '/x/search', method: 'POST' } },
+  children: [
+    {
+      id: 'col-data',
+      type: 'TABLE_COLUMN',
+      props: { header: 'Дата', attributeCode: 'Data' },
+    },
+    {
+      id: 'col-nomer',
+      type: 'TABLE_COLUMN',
+      props: { header: 'Номер', attributeCode: 'Nomer' },
+    },
+  ],
+  actions: [],
+} as unknown as ViewNode
+
 const searchNode = {
   id: 'lst',
   type: 'LIST',
@@ -232,6 +251,29 @@ describe('ListNode — транспорт', () => {
         body: { filters: [], logic: 'AND' },
       })
     )
+  })
+
+  it('пустой список СОХРАНЯЕТ шапку колонок — сообщение живёт строкой таблицы', () => {
+    // Регресс 05.09.2026: ветка rows.length === 0 подменяла таблицу целиком, и на
+    // пустом экране пропадали и заголовки, и воронки отборов — то есть не было видно,
+    // по чему вообще можно отобрать, и снять собственный отбор было нечем. В 1С форма
+    // списка без записей шапку сохраняет.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: {
+        pages: [
+          { data: { content: [], last: true, number: 0, totalElements: 0 } },
+        ],
+      },
+    })
+
+    render(<ListNode node={emptyStateNode} />)
+
+    expect(screen.getByText('dictSidebar.noData')).toBeTruthy()
+    expect(screen.getByText('Дата')).toBeTruthy()
+    expect(screen.getByText('Номер')).toBeTruthy()
   })
 
   it('isError → показывает table.loadError, а не «нет данных»', () => {

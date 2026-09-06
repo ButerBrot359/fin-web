@@ -25,7 +25,7 @@ describe('NavigationButtons', () => {
     render(
       <MemoryRouter>
         <NavigationButtons onBack={onBack} />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'actions.back' }))
@@ -37,12 +37,12 @@ describe('NavigationButtons', () => {
     render(
       <MemoryRouter>
         <NavigationButtons />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
 
     const forward = screen.getByRole('button', {
       name: 'actions.forward',
-    }) as HTMLButtonElement
-    expect(forward.disabled).toBe(true)
+    })
+    expect(forward).toHaveProperty('disabled', true)
   })
 })

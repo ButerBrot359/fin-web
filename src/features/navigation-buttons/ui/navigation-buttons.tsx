@@ -28,7 +28,7 @@ export const NavigationButtons = ({ onBack }: NavigationButtonsProps) => {
       <IconButton aria-label={t('actions.back')} onClick={handleBack}>
         <ArrowLeftIcon className="h-5 w-5" />
       </IconButton>
-      <IconButton aria-label={t('actions.forward' as never)} disabled>
+      <IconButton aria-label={t('actions.forward')} disabled>
         <ArrowRightIcon className="h-5 w-5" />
       </IconButton>
     </div>

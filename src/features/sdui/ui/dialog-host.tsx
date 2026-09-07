@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { Fragment, useState, useMemo, useEffect } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -161,6 +161,14 @@ export const DialogHost = () => {
           // (409 SESSION_NOT_FOUND + проглоченные патчи). SCRUM-265 v1.
           <NodeRenderer node={panel.node} />
         )
+
+        // Узел, который рисует СОБСТВЕННОЕ окно (props.selfChrome): хост не оборачивает
+        // его во вторую MUI-Dialog — иначе получилось бы два backdrop'а и две рамки.
+        // Так приезжает «Выберите операцию»: то же окно, что на легаси-форме списка,
+        // с её же вёрсткой, а не пересобранное из SDUI-примитивов.
+        if (panel.node.props?.selfChrome === true) {
+          return <Fragment key={panel.panelId}>{content}</Fragment>
+        }
 
         // Панель-замена показывается БЕЗ анимации появления: сервер прислал
         // её вместе с закрытием предыдущей (пересборка того же окна), и fade-in

@@ -5,10 +5,14 @@ import type { NodeProps } from '../../../types/view'
 import { cn } from '@/shared/lib/utils/cn'
 import { NodeRenderer } from '../../node-renderer'
 import { ListOutputDialog } from '../composite/list-output-dialog'
+import { VidOperatsiiChoiceDialog } from '../composite/vid-operatsii-choice-dialog'
 
 // PAGE-узлы серверных диалогов приходят БЕЗ детей: состав лежит в пропах, а тело
 // рисует клиент по props.kind. Первый такой вид — «Вывести список» (выбор колонок).
 const KIND_LIST_OUTPUT_DIALOG = 'LIST_OUTPUT_DIALOG'
+// «Выберите операцию» перед созданием документа из формы списка (эталон 1С —
+// ОбщаяФорма.ФормаВыбораВидаОперацииДокумента).
+const KIND_VID_OPERATSII_CHOICE_DIALOG = 'VID_OPERATSII_CHOICE_DIALOG'
 
 export const PageNode: FC<NodeProps> = ({ node }) => {
   const title = node.props?.title as string | undefined
@@ -37,6 +41,10 @@ export const PageNode: FC<NodeProps> = ({ node }) => {
 
   if (kind === KIND_LIST_OUTPUT_DIALOG) {
     return <ListOutputDialog node={node} />
+  }
+
+  if (kind === KIND_VID_OPERATSII_CHOICE_DIALOG) {
+    return <VidOperatsiiChoiceDialog node={node} />
   }
 
   return (

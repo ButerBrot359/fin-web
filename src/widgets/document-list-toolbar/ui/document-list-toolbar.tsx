@@ -13,13 +13,13 @@ import LayersIcon from '@/shared/assets/icons/layers.svg'
 import SearchIcon from '@/shared/assets/icons/search.svg'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
+import { SelectOperationDialog } from '@/shared/ui/select-operation-dialog'
 import { markFreshFormInstance } from '@/features/workspace-tabs'
 
 import { useDocumentEntryPrint } from '@/entities/document-entry'
 import { PrintDropdownButton } from '@/widgets/document-form-toolbar'
 
 import { useToolbarMutations } from '../lib/hooks/use-toolbar-mutations'
-import { SelectOperationDialog } from './select-operation-dialog'
 import { TabelBulkEditButton } from './tabel-bulk-edit-dialog'
 import { TabelMoreDropdown, TabelReportsDropdown } from './tabel-toolbar-menus'
 

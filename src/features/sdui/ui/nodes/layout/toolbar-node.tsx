@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type FC } from 'react'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
+import { ModuleWorkspaceToolbar } from './module-workspace-toolbar'
 import { NodeRenderer } from '../../node-renderer'
 import { OverflowContext } from '../../../lib/overflow/overflow-context'
 import { isNodeVisible } from '../../../lib/utils/node-visibility'
@@ -12,6 +13,16 @@ import {
 const HYSTERESIS_PX = 4
 
 export const ToolbarNode: FC<NodeProps> = ({ node }) => {
+  // SCRUM-181 v3: тулбар воркспейса модуля — отдельный контракт (title +
+  // локальный close-route, без детей и действий), не overflow-раскладка.
+  if (node.props?.variant === 'module-workspace') {
+    return <ModuleWorkspaceToolbar node={node} />
+  }
+
+  return <OverflowToolbar node={node} />
+}
+
+const OverflowToolbar: FC<NodeProps> = ({ node }) => {
   // Скрытые узлы выбывают до раскладки: каждый ребёнок получает свою обёртку с
   // gap, и его ещё и меряют для «Ещё» — пустая обёртка съедала бы ширину.
   const children = (node.children ?? []).filter(isNodeVisible)

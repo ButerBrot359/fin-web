@@ -33,7 +33,8 @@
     "close": "Жабу",
     "copy": "Көшіру",
     "copied": "Жазба көшірілді",
-    "copyError": "Көшіру қатесі"
+    "copyError": "Көшіру қатесі",
+    "settings": "Баптаулар"
   },
   "bankPage": {
     "financing": {

@@ -130,9 +130,12 @@ describe('ObjectFieldNode смена счёта (патч allowedTypes)', () => 
     )
     expect(typeSelect().textContent).toContain('Физические лица')
 
-    // сервер прислал другой вид субконто — прежнего члена в нём нет
+    // сервер прислал другой вид субконто — прежнего члена в нём нет.
+    // Тип остаётся НЕвыбранным: подставлять первый член нельзя, в 1С составное
+    // поле сначала спрашивает вид (см. resolveSelectedMemberKey).
     rerender(<ObjectFieldNode node={node([DVIZHENIYA, KONTRAGENTY])} />)
-    expect(typeSelect().textContent).toContain('Движения финансирования')
+    expect(typeSelect().textContent).not.toContain('Физические лица')
+    expect(typeSelect().textContent).not.toContain('Движения финансирования')
   })
 
   it('выбор сбрасывается, даже если прежний член есть и в новом наборе', () => {
@@ -145,9 +148,11 @@ describe('ObjectFieldNode смена счёта (патч allowedTypes)', () => 
     )
 
     // Набор другой, хотя «Физические лица» в нём остались: вид субконто задаёт
-    // сервер, и его решение важнее прежнего ручного выбора.
+    // сервер, и его решение важнее прежнего ручного выбора. Новый тип при этом
+    // не подставляется — его выбирает пользователь.
     rerender(<ObjectFieldNode node={node([DVIZHENIYA, FIZ_LITSA])} />)
-    expect(typeSelect().textContent).toContain('Движения финансирования')
+    expect(typeSelect().textContent).not.toContain('Физические лица')
+    expect(typeSelect().textContent).not.toContain('Движения финансирования')
   })
 
   it('тот же набор в новом массиве выбор не сбрасывает', () => {

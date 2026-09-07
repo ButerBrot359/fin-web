@@ -84,7 +84,15 @@ export function resolveSelectedMemberKey(
   const fromValue = findAllowedType(allowedTypes, value?.targetTypeCode)
   if (fromValue) return memberKey(fromValue)
   if (findMemberByKey(allowedTypes, userKey)) return userKey
-  return allowedTypes[0] ? memberKey(allowedTypes[0]) : undefined
+  // Пустое значение и НЕСКОЛЬКО членов — тип не выбран. В 1С составное поле
+  // сначала спрашивает «Выбор типа данных» и ничего не подставляет само: у
+  // «Документа аванса» («Авансовый отчёт») это выбор между РКО и Счётом к
+  // оплате. Подставляя первый член, мы решали за пользователя — он видел
+  // «Расходный кассовый ордер» и не догадывался, что бывает второй вид.
+  // Единственный член — выбирать не из чего, селектор для него не рисуется
+  // вовсе (см. ObjectFieldNode/ObjectCellEditor), поэтому он подставляется.
+  if (allowedTypes.length === 1) return memberKey(allowedTypes[0])
+  return undefined
 }
 
 export function findAllowedType(

@@ -182,6 +182,13 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   )
 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
+  const firstHeadRowObserver = useRef<ResizeObserver | null>(null)
+  useEffect(
+    () => () => {
+      firstHeadRowObserver.current?.disconnect()
+    },
+    []
+  )
   // Подпись содержимого выбранной строки на момент выбора — пара «id +
   // подпись» (SCRUM-291 §0.5 дефект 2). Устойчивого id строки в контракте
   // нет: у части типов документов (ИПН) rowId — порядковый номер, и
@@ -573,6 +580,25 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     virt.setContainerRef(node)
   }
 
+  // Высота ПЕРВОГО ряда шапки: второй ряд двухуровневой шапки прилипает под ним
+  // (MUI задаёт всем sticky-ячейкам top:0, и без смещения ряды наложились бы).
+  // Замер, а не константа: высота ряда зависит от шрифта, переносов подписи и
+  // масштаба страницы. ResizeObserver — потому что подписи переносятся при
+  // ресайзе колонок, то есть высота меняется без перемонтирования.
+  const [headTopOffset, setHeadTopOffset] = useState(0)
+  const setFirstHeadRowRef = (row: HTMLTableRowElement | null) => {
+    firstHeadRowObserver.current?.disconnect()
+    if (!row) return
+    setHeadTopOffset(row.offsetHeight)
+    // jsdom (юнит-тесты) ResizeObserver не даёт — там достаточно замера выше.
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => {
+      setHeadTopOffset(row.offsetHeight)
+    })
+    observer.observe(row)
+    firstHeadRowObserver.current = observer
+  }
+
   // Скролл к текущему совпадению поиска (§6.5: поиск не фильтрует строки).
   // При виртуализации строка совпадения может быть вне окна — сначала подводим
   // окно к её индексу, затем после кадра доводим по горизонтали к самой ячейке.
@@ -705,9 +731,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
         <Table
           size="small"
           // Шапка колонок остаётся видимой при внутреннем скролле (SCRUM-327).
-          // Двухуровневые шапки (VERTICAL-группы) sticky не переживут — у MUI
-          // оба ряда прилипают к top:0 и накладываются; для них шапка обычная.
-          stickyHeader={table.getHeaderGroups().length === 1}
+          // Двухуровневая шапка (VERTICAL-группы) тоже прилипает: MUI ставит
+          // всем рядам top:0, и второй ряд наезжал бы на первый — поэтому его
+          // ячейкам ниже задаётся top = высота первого ряда (headTopOffset).
+          stickyHeader
           sx={tableSx}
         >
           {sizing.isResizable && (
@@ -718,7 +745,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           )}
           <TableHead>
             {table.getHeaderGroups().map((hg, hgIndex) => (
-              <MuiTableRow key={hg.id}>
+              <MuiTableRow
+                key={hg.id}
+                ref={hgIndex === 0 ? setFirstHeadRowRef : undefined}
+              >
                 {showRowNumbers && hgIndex === 0 && (
                   <TableCell
                     rowSpan={table.getHeaderGroups().length}
@@ -761,6 +791,8 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                       // границы ячейки и наезжает на соседний заголовок.
                       sx={{
                         overflow: 'hidden',
+                        // Второй ряд шапки прилипает ПОД первым, а не к top:0.
+                        ...(hgIndex > 0 ? { top: headTopOffset } : {}),
                         ...(extra?.verticalGroup ? { p: 0 } : {}),
                         ...(sizing.isResizable ? { position: 'relative' } : {}),
                       }}

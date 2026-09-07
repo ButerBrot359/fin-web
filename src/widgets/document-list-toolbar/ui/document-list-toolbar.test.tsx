@@ -27,7 +27,7 @@ vi.mock('@/shared/api/api', () => ({ apiService: { get: vi.fn() } }))
 vi.mock('@/widgets/document-form-toolbar', () => ({
   PrintDropdownButton: () => null,
 }))
-vi.mock('./select-operation-dialog', () => ({
+vi.mock('@/shared/ui/select-operation-dialog', () => ({
   SelectOperationDialog: () => null,
 }))
 // В vitest svg-импорты резолвятся как data-URI строки (svgr не применяется).

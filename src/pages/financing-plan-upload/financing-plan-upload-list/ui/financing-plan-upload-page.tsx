@@ -12,7 +12,7 @@ import {
 
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import type { EnumsValue } from '@/entities/document-type'
-import { SelectOperationDialog } from '@/widgets/document-list-toolbar'
+import { SelectOperationDialog } from '@/shared/ui/select-operation-dialog'
 import { PageHeader } from '@/widgets/page-header'
 import {
   AutocompleteInput,

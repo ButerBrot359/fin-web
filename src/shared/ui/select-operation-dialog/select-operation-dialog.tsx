@@ -3,14 +3,24 @@ import { Dialog, RadioGroup, FormControlLabel, Radio } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { useTranslation } from 'react-i18next'
 
-import type { EnumsValue } from '@/entities/document-type'
 import { Button } from '@/shared/ui/buttons'
+
+/**
+ * Вид операции в списке выбора. Ровно те поля, которые рисует диалог, — не
+ * `EnumsValue` целиком: компонент лежит в shared и на entities не смотрит, а
+ * SDUI-канал (окно приезжает узлом с бэка) отдаёт только код и подпись.
+ */
+export interface SelectOperationItem {
+  code: string
+  name: string
+  isActive?: boolean
+}
 
 interface SelectOperationDialogProps {
   open: boolean
   onClose: () => void
   onSelect: (operationCode: string) => void
-  operations: EnumsValue[]
+  operations: SelectOperationItem[]
   isLoading: boolean
 }
 
@@ -82,7 +92,7 @@ export const SelectOperationDialog = ({
               <FormControlLabel
                 key={op.code}
                 value={op.code}
-                disabled={!op.isActive}
+                disabled={op.isActive === false}
                 sx={{ m: 0, gap: '10px' }}
                 control={
                   <Radio

@@ -5,6 +5,7 @@ import DocDraftIcon from '@/shared/assets/icons/doc-draft.svg'
 import DocPostedIcon from '@/shared/assets/icons/doc-posted.svg'
 import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
 import ListElementIcon from '@/shared/assets/icons/list-element-icon.svg'
+import ZayavkaIspolnenaIcon from '@/shared/assets/icons/zayavka-ispolnena.svg'
 
 type CellIconComponent = FC<SVGProps<SVGSVGElement>>
 
@@ -26,6 +27,9 @@ const CELL_ICONS: Record<string, CellIconComponent | undefined> = {
   docPosted: DocPostedIcon,
   docDraft: DocDraftIcon,
   docDeleted: DocDeletedIcon,
+  // Колонка «КартинкаИсполнено» формы списка заявок на регистрацию ГП-сделки: бэк эмитит
+  // iconMap только для значения «исполнено» — второе значение эталона картинки не имеет.
+  zayavkaIspolnena: ZayavkaIspolnenaIcon,
 }
 
 // Неизвестное/отсутствующее имя → null (пустая ячейка), НЕ исключение (§17.2):

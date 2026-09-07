@@ -14,6 +14,12 @@ import type { SelectOption } from '@/shared/types/select-option'
 import type { OptionsParamValue } from '../../../lib/utils/resolve-options-params'
 import { fetchReferenceOptions } from '../../../api/reference-options'
 import { openReferencePicker } from '../../../lib/reference-picker-gateway'
+import {
+  useStableSelectOption,
+  useStableSelectOptions,
+} from '../../../lib/hooks/use-stable-select-option'
+
+const EMPTY_OPTIONS: SelectOption[] = []
 
 interface ReferenceValue {
   id: number
@@ -99,13 +105,17 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
       resetKey
     )
 
-  if (!f.visible) return null
-
-  const selectedOption =
+  // Ссылка на value обязана быть стабильной между рендерами, иначе MUI стирает набранный
+  // текст на каждом нажатии клавиши — см. useStableSelectOption. Хуки стоят ДО раннего
+  // возврата по visible: порядок вызова хуков не должен зависеть от условия.
+  const selectedOption = useStableSelectOption(
     !multiple && rawValue ? toSelectOption(rawValue as ReferenceValue) : null
-  const selectedOptions = multiple
-    ? toReferenceArray(rawValue).map(toSelectOption)
-    : []
+  )
+  const selectedOptions = useStableSelectOptions(
+    multiple ? toReferenceArray(rawValue).map(toSelectOption) : EMPTY_OPTIONS
+  )
+
+  if (!f.visible) return null
 
   const applySelected = (opt: SelectOption | null) => {
     const newVal = opt ? fromSelectOption(opt) : null

@@ -52,6 +52,65 @@ const openDropdown = () => {
 // смонтированные компоненты накапливаются и combobox перестаёт быть уникальным.
 afterEach(cleanup)
 
+// ── Ввод текста в поле ───────────────────────────────────────────────────
+//
+// Боевой дефект («Вид расчета» шапки «Разделения результатов расчёта заработной
+// платы»): в поле не набирался текст — символ уходил в стейт и тут же стирался.
+// MUI сбрасывает inputValue при КАЖДОЙ смене ссылки на value (useAutocomplete →
+// resetInputValue), а компонент пересобирал value новым объектом/массивом на каждом
+// рендере — то есть на каждое нажатие клавиши. У multiple ломалось всегда (пустое
+// значение — тоже новый []), у одиночного — когда в поле уже стоит запись.
+describe('ReferenceFieldNode — ввод текста держится в поле', () => {
+  const baseProps = {
+    label: 'Вид расчета',
+    visible: true,
+    enabled: true,
+    domain: 'CALCULATION_PLAN',
+    targetTypeCode: 'VidyNachisleniyOrganizatsii',
+    optionsSource: { url: '/api/test-options' },
+  }
+
+  const typeInto = (text: string) => {
+    const input: HTMLInputElement = screen.getByRole('combobox')
+    fireEvent.focus(input)
+    fireEvent.input(input, { target: { value: text } })
+    return input
+  }
+
+  beforeEach(() => {
+    fetchMock.mockReset()
+    fetchMock.mockResolvedValue([])
+    delete state.ref
+  })
+
+  it('поле множественного выбора принимает набранный текст', () => {
+    const node = {
+      id: 'f1',
+      type: 'REFERENCE_FIELD',
+      binding: 'ref',
+      props: { ...baseProps, multiple: true },
+    } as unknown as ViewNode
+
+    render(<ReferenceFieldNode node={node} />)
+
+    expect(typeInto('бон').value).toBe('бон')
+  })
+
+  it('одиночное поле с уже выбранным значением принимает набранный текст', () => {
+    state.ref = { id: 240, presentation: 'Надбавка' }
+    const node = {
+      id: 'f1',
+      type: 'REFERENCE_FIELD',
+      binding: 'ref',
+      props: baseProps,
+    } as unknown as ViewNode
+
+    render(<ReferenceFieldNode node={node} />)
+
+    expect(typeInto('бон').value).toBe('бон')
+  })
+})
+
 describe('ReferenceFieldNode — кэш опций', () => {
   beforeEach(() => {
     fetchMock.mockReset()

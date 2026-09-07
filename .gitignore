@@ -37,3 +37,4 @@ specs-local/
 
 # SDD scratch workspace
 .superpowers/
+test-results/

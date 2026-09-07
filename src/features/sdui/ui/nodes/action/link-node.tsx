@@ -1,6 +1,6 @@
 import type { FC } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
-import { Link } from '@mui/material'
+import { Link, Tooltip } from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -10,8 +10,35 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
   const route = node.props?.route as string | undefined
   const external = node.props?.external as boolean | undefined
   const variant = node.props?.variant as string | undefined
+  const disabled = node.props?.disabled === true
+  const tooltip = node.props?.tooltip as string | undefined
 
   const dispatch = useSduiDispatch()
+
+  // SCRUM-181 v3: disabled-пункт — известная команда 1С без опубликованного
+  // приёмника. route у него намеренно отсутствует; геометрия строки та же, что
+  // у активной ссылки, навигации нет ни мышью, ни клавиатурой.
+  if (disabled) {
+    const disabledLink = (
+      <Link
+        component="a"
+        aria-disabled="true"
+        tabIndex={0}
+        underline="none"
+        sx={{ color: 'text.disabled', cursor: 'default' }}
+      >
+        {text}
+      </Link>
+    )
+
+    if (!tooltip) return disabledLink
+
+    return (
+      <Tooltip title={tooltip}>
+        <span style={{ display: 'inline-flex' }}>{disabledLink}</span>
+      </Tooltip>
+    )
+  }
 
   const hasServerNavigate = node.actions?.some((a) => a.actionId === 'navigate')
 

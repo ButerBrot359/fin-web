@@ -15,6 +15,9 @@ vi.mock('@/shared/assets/icons/doc-draft.svg', () => ({
 vi.mock('@/shared/assets/icons/doc-deleted.svg', () => ({
   default: () => <span data-testid="icon-doc-deleted" />,
 }))
+vi.mock('@/shared/assets/icons/zayavka-ispolnena.svg', () => ({
+  default: () => <span data-testid="icon-zayavka-ispolnena" />,
+}))
 
 import { getCellIcon } from './cell-icon-registry'
 
@@ -37,6 +40,11 @@ describe('getCellIcon', () => {
       expect(getCellIcon(name)).toBeTruthy()
     }
   )
+
+  // Колонка «КартинкаИсполнено» формы списка заявок на регистрацию ГП-сделки
+  it('zayavkaIspolnena → компонент иконки', () => {
+    expect(getCellIcon('zayavkaIspolnena')).toBeTruthy()
+  })
 
   it('неизвестное имя → null (не исключение)', () => {
     expect(getCellIcon('unknownIconName')).toBeNull()

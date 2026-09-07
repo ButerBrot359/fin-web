@@ -8,6 +8,9 @@ import { useSduiDispatch } from '../../../lib/dispatch'
 
 export const LabelNode: FC<NodeProps> = ({ node }) => {
   const text = (node.props?.text as string | undefined) ?? ''
+  // Контракт с бэком (SCRUM-278 v6 §5): variant — типографская роль; 'warning' —
+  // единственное допустимое severity-значение здесь. Второе severity ('error',
+  // 'info', …) заводится ОТДЕЛЬНЫМ ключом props.severity, union не расширять.
   const variant =
     (node.props?.variant as
       | 'default'

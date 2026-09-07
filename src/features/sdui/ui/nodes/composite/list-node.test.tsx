@@ -165,6 +165,25 @@ const baseQueryResult = {
   fetchNextPage: vi.fn(),
 }
 
+const emptyStateNode = {
+  id: 'lst',
+  type: 'LIST',
+  props: { source: { url: '/x/search', method: 'POST' } },
+  children: [
+    {
+      id: 'col-data',
+      type: 'TABLE_COLUMN',
+      props: { header: 'Дата', attributeCode: 'Data' },
+    },
+    {
+      id: 'col-nomer',
+      type: 'TABLE_COLUMN',
+      props: { header: 'Номер', attributeCode: 'Nomer' },
+    },
+  ],
+  actions: [],
+} as unknown as ViewNode
+
 const searchNode = {
   id: 'lst',
   type: 'LIST',
@@ -232,6 +251,64 @@ describe('ListNode — транспорт', () => {
         body: { filters: [], logic: 'AND' },
       })
     )
+  })
+
+  it('queryFn пробрасывает отбор источника (entryIds) панели «Показать все»', async () => {
+    // Дефект 04.09.2026 («Больничный лист», колонка «Сотрудник» ТЧ): дропдаун ячейки
+    // показывал сотрудников выбранного физлица, а панель «Показать все» — весь
+    // справочник. Отбор сервер кладёт в props.source.params.entryIds
+    // (RefCellShowAllServiceSourceParamsTest), фронт обязан отправить его как есть.
+    const node = {
+      id: 'panel.choice.list',
+      type: 'LIST',
+      props: {
+        source: {
+          url: '/api/universaldomain-entries/DICTIONARY/Sotrudniki/paged',
+          params: { entryIds: '263666' },
+        },
+      },
+      children: [],
+    } as unknown as ViewNode
+
+    render(<ListNode node={node} />)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const cfg = useInfiniteQuery.mock.calls[0]?.[0] as
+      | Record<string, unknown>
+      | undefined
+    const queryFn = cfg?.queryFn as
+      | ((args: Record<string, unknown>) => Promise<unknown>)
+      | undefined
+    await queryFn?.({ pageParam: 0, signal: undefined })
+
+    expect(fetchListPage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/universaldomain-entries/DICTIONARY/Sotrudniki/paged',
+        params: { entryIds: '263666' },
+      })
+    )
+  })
+
+  it('пустой список СОХРАНЯЕТ шапку колонок — сообщение живёт строкой таблицы', () => {
+    // Регресс 05.09.2026: ветка rows.length === 0 подменяла таблицу целиком, и на
+    // пустом экране пропадали и заголовки, и воронки отборов — то есть не было видно,
+    // по чему вообще можно отобрать, и снять собственный отбор было нечем. В 1С форма
+    // списка без записей шапку сохраняет.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: {
+        pages: [
+          { data: { content: [], last: true, number: 0, totalElements: 0 } },
+        ],
+      },
+    })
+
+    render(<ListNode node={emptyStateNode} />)
+
+    expect(screen.getByText('dictSidebar.noData')).toBeTruthy()
+    expect(screen.getByText('Дата')).toBeTruthy()
+    expect(screen.getByText('Номер')).toBeTruthy()
   })
 
   it('isError → показывает table.loadError, а не «нет данных»', () => {

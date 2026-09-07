@@ -40,15 +40,21 @@ import {
   useSduiSession,
   useBindingValue,
 } from '../../../lib/sdui-session-context'
+import { footerCell } from './table-footer-value'
 import {
   buildColumnDefs,
   extractAllLeafColumns,
+  verticalSubRows,
   VERTICAL_SUB_ROW_HEIGHT,
   type AutoAdvanceColumnContext,
   type SduiColumnMetaExtra,
   type CellRefHandlersFactory,
 } from '../../../lib/utils/build-column-defs'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import {
+  registerCellValueApplier,
+  unregisterCellValueApplier,
+} from '../../../lib/cell-value-appliers'
 import {
   findAutoAdvanceColumn,
   type AutoAdvanceTarget,
@@ -99,9 +105,12 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   dispatchRef.current = dispatch
   const cellRefHandlers = useMemo<CellRefHandlersFactory>(
     () => (col, row) => {
+      // Строки БЕЗ БД-id (только что добавленные) тоже идут серверным путём: бэк для них не
+      // ищет строку, а возвращает значение эффектом без applyToParentCommand, и его кладёт
+      // на место relay-selection → applyCellValueLocally.
       // Команда в actions «голая» (один action на колонку, минтится при композиции,
       // когда строка ещё неизвестна) — координату строки добавляем здесь.
-      const handler = (trigger: 'showAll' | 'create') => {
+      const handler = (trigger: 'showAll' | 'create' | 'open') => {
         const command = col.actions?.find(
           (a) => a.trigger === trigger && a.actionId === 'command'
         )?.command
@@ -118,6 +127,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
       return {
         onServerShowAll: handler('showAll'),
         onServerCreate: handler('create'),
+        onServerOpen: handler('open'),
       }
     },
     []
@@ -211,6 +221,22 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
       sync.updateCell(rowId, binding, value)
     },
   }
+
+  // ADR-0029: значение, выбранное/созданное для строки БЕЗ БД-id, сервер применить не может —
+  // он возвращает его эффектом без applyToParentCommand, а кладём его мы (см.
+  // cell-value-appliers). Колонку узнаём по id узла, строку — по rowId.
+  useEffect(() => {
+    const token = registerCellValueApplier((columnNodeId, rowId, value) => {
+      const col = flatColumns.find((c) => c.id === columnNodeId)
+      if (!col) return false
+      syncRef.current.updateCell(rowId, col.binding, value)
+      syncRef.current.commitCell()
+      return true
+    })
+    return () => {
+      unregisterCellValueApplier(token)
+    }
+  }, [flatColumns])
 
   const validation = useTableValidation(node)
   const validationRef = useRef(validation)
@@ -361,7 +387,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
         if ('columns' in c && Array.isArray(c.columns)) {
           return c.columns.some(hasFooterDef)
         }
-        return Boolean(c.footer)
+        // Итоги под-колонок ВЕРТИКАЛЬНОЙ группы лежат в meta.footerKeys:
+        // сама группа — одна колонка TanStack и своего `footer` не имеет.
+        const meta = c.meta as SduiColumnMetaExtra | undefined
+        return Boolean(c.footer) || Boolean(meta?.footerKeys)
       }
       return hasFooterDef(col)
     })
@@ -886,6 +915,34 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                 <MuiTableRow key={fg.id}>
                   {showRowNumbers && <TableCell />}
                   {fg.headers.map((header) => {
+                    const meta = header.column.columnDef.meta as
+                      | SduiColumnMetaExtra
+                      | undefined
+                    // ВЕРТИКАЛЬНАЯ группа: итоги идут стопкой той же сетки, что
+                    // и значения — иначе второй итог показать негде.
+                    if (meta?.footerKeys) {
+                      return (
+                        <TableCell
+                          key={header.id}
+                          colSpan={header.colSpan}
+                          sx={{ p: 0 }}
+                        >
+                          {verticalSubRows(
+                            meta.footerKeys.map((key, index) => ({
+                              key: key ?? `empty-${String(index)}`,
+                              content: footerCell(
+                                key != null && footerValues[key] !== undefined
+                                  ? renderCellValue(footerValues[key])
+                                  : ''
+                              ),
+                            })),
+                            16,
+                            true,
+                            meta.subRowCount ?? meta.footerKeys.length
+                          )}
+                        </TableCell>
+                      )
+                    }
                     const footerId = header.column.columnDef.footer
                     const footerText =
                       typeof footerId === 'string' &&
@@ -894,11 +951,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                         : ''
                     return (
                       <TableCell key={header.id} colSpan={header.colSpan}>
-                        {footerText ? (
-                          <Typography variant="body2" fontWeight="bold">
-                            {footerText}
-                          </Typography>
-                        ) : null}
+                        {footerCell(footerText)}
                       </TableCell>
                     )
                   })}

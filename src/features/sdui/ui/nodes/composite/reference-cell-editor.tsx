@@ -43,6 +43,17 @@ interface ReferenceCellEditorProps {
   onServerShowAll?: () => void
   /** ADR-0029 Phase 2b: server-driven «Добавить» (`ref.create`). См. `onServerShowAll`. */
   onServerCreate?: () => void
+  /**
+   * ADR-0029: server-driven «открыть карточку» (`ref.open`) — проваливание в
+   * запись, уже стоящую в ячейке. Задан ⇒ используем ЕГО вместо легаси-дровера.
+   *
+   * <p>Именно этот путь и был дырой: `showAll`/`create` уже ходили на сервер, а
+   * ⧉ по-прежнему звала `openReferencePicker({mode:'edit'})`, и пользователь
+   * видел старую форму в новом документе. Легаси-ветка ниже сохраняется по тому
+   * же BL-2, что у соседей: при выключенном флаге `sdui.ref-picker.table-cell`
+   * бэк actions не эмитит вовсе, и снятие фолбэка убрало бы кнопку совсем.
+   */
+  onServerOpen?: () => void
 }
 
 /**
@@ -149,6 +160,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   openOnFocus,
   onServerShowAll,
   onServerCreate,
+  onServerOpen,
 }) => {
   const { t } = useTranslation()
 
@@ -243,18 +255,24 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   // не пикер (§18.4 заблокирован PM). Читаем {id, presentation} из текущего
   // значения ячейки, никакой rowId-командной модели не нужно (по образцу
   // browse-edit ветки reference-field-node.tsx).
-  const openCard =
-    selectedOption && domain && targetTypeCode
-      ? () => {
-          openReferencePicker({
-            mode: 'edit',
-            domain,
-            typeCode: targetTypeCode,
-            entryId: selectedOption.id,
-            onSelect: applySelected,
-          })
-        }
-      : null
+  // ADR-0029, двойной путь (как у onShowAll/onAdd): есть серверный action —
+  // идём на бэк, он открывает SDUI-карточку записи; нет — прежний легаси-дровер.
+  // Гейт по selectedOption общий для обеих веток: проваливаться из пустой ячейки
+  // некуда, и сервер такую команду всё равно отклоняет.
+  const openCard = !selectedOption
+    ? null
+    : (onServerOpen ??
+      (domain && targetTypeCode
+        ? () => {
+            openReferencePicker({
+              mode: 'edit',
+              domain,
+              typeCode: targetTypeCode,
+              entryId: selectedOption.id,
+              onSelect: applySelected,
+            })
+          }
+        : null))
 
   return (
     <Box sx={noWrap ? nowrapWrapperSx : wrapperSx}>

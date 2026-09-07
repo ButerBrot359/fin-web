@@ -89,12 +89,6 @@ export const ListTable: FC<ListTableProps> = ({
         <div className="flex items-center justify-center py-20">
           <Typography className="text-ui-05">{t('table.loadError')}</Typography>
         </div>
-      ) : rows.length === 0 ? (
-        <div className="flex items-center justify-center py-20">
-          <Typography className="text-ui-05">
-            {t('dictSidebar.noData')}
-          </Typography>
-        </div>
       ) : (
         <>
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pb-2">
@@ -148,6 +142,23 @@ export const ListTable: FC<ListTableProps> = ({
                 ))}
               </thead>
               <tbody>
+                {/* Пустой список сохраняет ШАПКУ: в 1С форма списка без записей
+                    показывает колонки и воронки отборов, и это не украшение —
+                    иначе на пустом экране не видно, по чему вообще можно
+                    отобрать, и снять собственный отбор нечем. Сообщение живёт
+                    строкой таблицы, а не вместо неё. */}
+                {rows.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={table.getVisibleLeafColumns().length || 1}
+                      className="px-3 py-20 text-center"
+                    >
+                      <Typography className="text-ui-05">
+                        {t('dictSidebar.noData')}
+                      </Typography>
+                    </td>
+                  </tr>
+                )}
                 {paddingTop > 0 && (
                   <tr>
                     <td style={{ height: paddingTop }} />

@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as I18next from 'react-i18next'
 
 import type { ViewNode } from '../../../types/view'
+import type { SelectOption } from '@/shared/types/select-option'
 import { SelectionListTable } from './selection-list-table'
 
 vi.mock('react-i18next', async (importOriginal) => ({
@@ -26,6 +27,11 @@ vi.mock('../../../lib/reference-picker-gateway', () => ({
   openReferencePicker: (req: Record<string, unknown>) => {
     openPickerMock(req)
   },
+}))
+
+const fetchMock = vi.fn<(...args: unknown[]) => Promise<SelectOption[]>>()
+vi.mock('../../../api/reference-options', () => ({
+  fetchReferenceOptions: (...args: unknown[]) => fetchMock(...args),
 }))
 
 const state: Record<string, unknown> = {}
@@ -60,6 +66,8 @@ describe('список-отбор', () => {
     setFromServer.mockClear()
     dispatch.mockClear()
     openPickerMock.mockClear()
+    fetchMock.mockReset()
+    fetchMock.mockResolvedValue([])
     state.OtborSotrudnikov = [
       { rowId: '1', Sotrudnik: { id: 1, presentation: 'Иванов' } },
       { rowId: '2', Sotrudnik: { id: 2, presentation: 'Петров' } },
@@ -314,5 +322,77 @@ describe('список-отбор', () => {
       'OtborSotrudnikov.__selectedRowId',
       '99'
     )
+  })
+
+  describe('с optionsSource (SCRUM-330-бис: поиск сразу по справочнику)', () => {
+    const sOptionsSource = {
+      ...node,
+      props: {
+        ...node.props,
+        domain: 'DICTIONARY',
+        targetTypeCode: 'Sotrudniki',
+        filter: { Organizatsiya: 555 },
+        optionsSource: { url: '/api/dictionary-entries/Sotrudniki/entries' },
+      },
+    } as unknown as ViewNode
+
+    it('нет отдельной кнопки «Показать всех сотрудников» — поле отбора одно', () => {
+      render(<SelectionListTable node={sOptionsSource} />)
+
+      expect(screen.queryByText('table.showAllEmployees')).toBeNull()
+    })
+
+    it('ввод текста ищет по справочнику, а не по уже загруженным строкам', async () => {
+      fetchMock.mockResolvedValue([{ id: 3, code: '3', label: 'Сидоров' }])
+      render(<SelectionListTable node={sOptionsSource} />)
+
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: { value: 'Сид' },
+      })
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            url: '/api/dictionary-entries/Sotrudniki/entries',
+            search: 'Сид',
+          })
+        )
+      })
+    })
+
+    it('выбор найденного в справочнике сотрудника, которого нет в ТЧ, публикует минимальную строку', async () => {
+      fetchMock.mockResolvedValue([{ id: 3, code: '3', label: 'Сидоров' }])
+      render(<SelectionListTable node={sOptionsSource} />)
+
+      fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' })
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: { value: 'Сид' },
+      })
+      const option = await screen.findByText('Сидоров')
+      fireEvent.click(option)
+
+      expect(setFromServer).toHaveBeenCalledWith(
+        'OtborSotrudnikov.__selectedRowId',
+        '3'
+      )
+    })
+
+    it('«Показать все» внутри выпадающего списка открывает справочник с фильтром', () => {
+      render(<SelectionListTable node={sOptionsSource} />)
+
+      fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' })
+      fireEvent.mouseDown(
+        screen.getByRole('button', { name: 'dictSidebar.showAll' })
+      )
+
+      expect(openPickerMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: 'list',
+          domain: 'DICTIONARY',
+          typeCode: 'Sotrudniki',
+          searchParams: { Organizatsiya: '555' },
+        })
+      )
+    })
   })
 })

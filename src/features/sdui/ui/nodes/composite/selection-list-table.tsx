@@ -14,10 +14,16 @@ import {
 } from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons'
+import { AutocompleteInput } from '@/shared/ui/inputs'
+import type { SelectOption } from '@/shared/types/select-option'
 
 import type { NodeProps } from '../../../types/view'
 import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
+import { useResolvedOptionsParams } from '../../../lib/hooks/use-resolved-options-params'
+import type { OptionsParamValue } from '../../../lib/utils/resolve-options-params'
+import { fetchReferenceOptions } from '../../../api/reference-options'
 import { renderCellValue } from '../../../lib/utils/cell-value'
 import { extractReadOnlyColumns } from '../../../lib/utils/read-only-header-model'
 import { openReferencePicker } from '../../../lib/reference-picker-gateway'
@@ -54,12 +60,15 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
   }, [getValue, node.binding])
 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
+  const [selectedOption, setSelectedOption] = useState<SelectOption | null>(
+    null
+  )
 
-  // Порт «Отбор по сотруднику» → «Показать все» (1С: автодополнение поля отбора
-  // открывает справочник Сотрудники целиком). Панель по умолчанию видит только тех,
-  // кто уже попал в ТЧ документа — этого мало для организаций с большим штатом.
-  // domain/targetTypeCode/filter кладёт бэк (emitOtborSotrudnikovPickerProps), фронт
-  // их не синтезирует — тот же контракт, что у reference-field-node.
+  // Порт «Отбор по сотруднику» → «Показать все» (1С: единое поле отбора и есть
+  // автодополнение по справочнику Сотрудники, «Показать все» — ссылка внутри его
+  // выпадающего списка, а не отдельная кнопка). domain/targetTypeCode/filter
+  // кладёт бэк (emitOtborSotrudnikovPickerProps), фронт их не синтезирует —
+  // тот же контракт, что у reference-field-node.
   const pickerDomain = node.props?.domain as string | undefined
   const pickerTypeCode = node.props?.targetTypeCode as string | undefined
   const pickerFilter = node.props?.filter as Record<string, unknown> | undefined
@@ -69,11 +78,32 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
       )
     : undefined
 
+  // optionsSource — тот же RefEndpointResolver.forOptions, что строит поиск
+  // ссылочным полям (см. reference-field-node.tsx). Бэк его кладёт не всегда
+  // (required=false резолвер) — тогда поле отбора остаётся клиентским фильтром
+  // уже загруженных строк ТЧ, без live-поиска по всему справочнику.
+  const optionsSource = node.props?.optionsSource as
+    | { url: string; params?: Record<string, OptionsParamValue> }
+    | undefined
+  const url = optionsSource?.url ?? null
+  const resolvedParams = useResolvedOptionsParams(optionsSource?.params)
+  const [inputValue, setInputValue] = useState('')
+  const { options, loading, load, loadDebounced } = useReferenceOptions(
+    (search?: string) =>
+      url
+        ? fetchReferenceOptions({ url, params: resolvedParams, search })
+        : Promise.resolve([]),
+    JSON.stringify(resolvedParams)
+  )
+
   // Список сотрудников документа может быть длинным (десятки строк), а панель
-  // узкая — искать глазами неудобно. Фильтр чисто клиентский: строки уже
-  // целиком загружены (витрина формы), сервер тут ни при чём.
+  // узкая — искать глазами неудобно. Без optionsSource фильтр чисто клиентский:
+  // строки уже целиком загружены (витрина формы), сервер тут ни при чём. При
+  // наличии optionsSource поиск уходит в справочник — таблица показывает все
+  // строки ТЧ как есть, отбор делает сам выбор в автокомплите.
   const [query, setQuery] = useState('')
   const visibleRows = useMemo(() => {
+    if (optionsSource) return rows
     const nuzhno = query.trim().toLowerCase()
     if (!nuzhno) return rows
     return rows.filter((row) =>
@@ -83,7 +113,15 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
           .includes(nuzhno)
       )
     )
-  }, [rows, columns, query])
+  }, [rows, columns, query, optionsSource])
+
+  const rowLabel = (row: SelectionRow): string => {
+    const firstColumn = columns.at(0)
+    const rendered = renderCellValue(
+      firstColumn?.binding ? row[firstColumn.binding] : undefined
+    )
+    return rendered || row.rowId
+  }
 
   // Хвост очереди отправленных EVENT'ов этого узла. dispatch.ts даёт in-flight-
   // гард от параллельных запросов ТОЛЬКО action.type === 'COMMAND' (SCRUM-330,
@@ -101,9 +139,14 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
   // (ОтборСтрокТабЧастей), и EVENT'ом на сервер — потому что от того же выбора
   // зависят свод «Итоги» (набор ФизЛица) и подвалы «Итого» вкладок
   // (ЗаполнитьПоляИтогиПоТабЧастям). Порт СписокСотрудниковВыбор :1103.
-  const publish = (row: SelectionRow | null) => {
+  const publish = (row: SelectionRow | null, option?: SelectOption | null) => {
     const rowId = row?.rowId ?? null
     setSelectedRowId(rowId)
+    setSelectedOption(
+      row
+        ? (option ?? { id: row.rowId, code: row.rowId, label: rowLabel(row) })
+        : null
+    )
     if (node.binding) {
       setFromServer(node.binding + '.__selectedRowId', rowId)
     }
@@ -123,6 +166,28 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
     }
   }
 
+  // Выбор из справочника (и live-поиск в поле отбора, и «Показать все» —
+  // ссылка footer'а автокомплита): если сотрудник уже виден в панели (есть в ТЧ
+  // документа), публикуем ЕГО строку, с обоими ключами отбора (Sotrudnik +
+  // FizicheskoeLitso). Иначе строим минимальную: ФизЛицо сервер не пришлёт по
+  // голому справочнику Sotrudniki, отбор восьми налоговых ТЧ по такому
+  // сотруднику не сработает — деградация терпимая (нечего фильтровать, раз его
+  // нет ни в одной ТЧ), а не потеря данных.
+  const selectFromDictionary = (opt: SelectOption | null) => {
+    if (!opt) {
+      publish(null)
+      return
+    }
+    const existing = rows.find((r) => r.rowId === String(opt.id))
+    publish(
+      existing ?? {
+        rowId: String(opt.id),
+        Sotrudnik: { id: Number(opt.id), presentation: opt.label },
+      },
+      opt
+    )
+  }
+
   const showAllFromDictionary = () => {
     if (!pickerDomain || !pickerTypeCode) return
     openReferencePicker({
@@ -131,21 +196,7 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
       typeCode: pickerTypeCode,
       searchParams: pickerSearchParams,
       selectedId: selectedRowId ?? undefined,
-      onSelect: (opt) => {
-        if (!opt) return
-        // Выбранный уже виден в панели (есть в ТЧ документа) — публикуем ЕГО строку,
-        // с обоими ключами отбора (Sotrudnik + FizicheskoeLitso). Иначе строим
-        // минимальную: ФизЛицо сервер не пришлёт по голому справочнику Sotrudniki,
-        // отбор восьми налоговых ТЧ по такому сотруднику не сработает — деградация
-        // терпимая (нечего фильтровать, раз его нет ни в одной ТЧ), а не потеря данных.
-        const existing = rows.find((r) => r.rowId === String(opt.id))
-        publish(
-          existing ?? {
-            rowId: String(opt.id),
-            Sotrudnik: { id: Number(opt.id), presentation: opt.label },
-          }
-        )
-      },
+      onSelect: selectFromDictionary,
     })
   }
 
@@ -166,23 +217,48 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
         >
           {t('table.clearFilter')}
         </Button>
-        {pickerDomain && pickerTypeCode && (
+        {pickerDomain && pickerTypeCode && !optionsSource && (
           <Button variant="secondary" onClick={showAllFromDictionary}>
             {t('table.showAllEmployees')}
           </Button>
         )}
       </Box>
 
-      <TextField
-        size="small"
-        fullWidth
-        placeholder={t('table.searchPlaceholder')}
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value)
-        }}
-        sx={{ mb: 1 }}
-      />
+      {optionsSource ? (
+        <Box sx={{ mb: 1 }}>
+          <AutocompleteInput
+            size="small"
+            fullWidth
+            value={selectedOption}
+            onChange={selectFromDictionary}
+            inputValue={inputValue}
+            options={options}
+            loading={loading}
+            label={t('table.searchPlaceholder')}
+            onInputChange={(_e, val, reason) => {
+              setInputValue(val)
+              if (reason === 'input') loadDebounced(val)
+            }}
+            onOpen={() => {
+              if (options.length === 0) load()
+            }}
+            onShowAll={
+              pickerDomain && pickerTypeCode ? showAllFromDictionary : undefined
+            }
+          />
+        </Box>
+      ) : (
+        <TextField
+          size="small"
+          fullWidth
+          placeholder={t('table.searchPlaceholder')}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+          }}
+          sx={{ mb: 1 }}
+        />
+      )}
 
       <TableContainer
         component={Paper}

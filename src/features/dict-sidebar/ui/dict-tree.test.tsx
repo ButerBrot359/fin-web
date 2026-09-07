@@ -142,6 +142,20 @@ describe('DictTree', () => {
     expect(lastParams()).toMatchObject({ af: 'X:1' })
   })
 
+  it('exact-id отбор поля (entryIds) уходит в запрос уровня', async () => {
+    // Второй канал того же отбора, что и у SDUI-панели (list-node.test.tsx):
+    // легаси-пикер ячейки ТЧ кладёт props.filter колонки в panel.searchParams.
+    // Дефект 04.09.2026 («Больничный лист»): панель «Показать все» показывала
+    // весь справочник сотрудников мимо выбранного в шапке физлица.
+    fetchPagedMock.mockResolvedValue(
+      paged([entry({ id: 263666, nameRu: 'Жанар физ лицо' })])
+    )
+    renderTree({ searchParams: { entryIds: '263666' } })
+
+    await screen.findByText('Жанар физ лицо')
+    expect(lastParams()).toMatchObject({ entryIds: '263666' })
+  })
+
   it('клик по элементу выбирает его, а не разворачивает', async () => {
     fetchPagedMock.mockResolvedValue(
       paged([entry({ id: 70, nameRu: '1-й квалификационный разряд' })])

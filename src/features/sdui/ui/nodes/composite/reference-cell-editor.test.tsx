@@ -343,6 +343,68 @@ describe('ReferenceCellEditor', () => {
 
       expect(screen.queryByRole('button', { name: openCardName })).toBeNull()
     })
+
+    it('onServerOpen задан → клик идёт на сервер, легаси-дровер НЕ открывается', () => {
+      const onServerOpen = vi.fn()
+      render(
+        <ReferenceCellEditor
+          colProps={{
+            optionsSource: { url: '/api/x/sdui-entries' },
+            domain: 'DICTIONARY',
+            targetTypeCode: 'VidyStazha',
+          }}
+          value={{ id: 5, presentation: 'ИПН 10%' }}
+          onChange={vi.fn()}
+          onCommit={vi.fn()}
+          onServerOpen={onServerOpen}
+        />
+      )
+
+      fireEvent.mouseDown(screen.getByRole('button', { name: openCardName }))
+
+      expect(onServerOpen).toHaveBeenCalledTimes(1)
+      // Тот самый дефект: раньше здесь звался openReferencePicker({mode:'edit'}),
+      // и в SDUI-документе открывалась старая форма.
+      expect(openPickerMock).not.toHaveBeenCalled()
+    })
+
+    it('onServerOpen задан, но ячейка пуста → иконки нет (проваливаться некуда)', () => {
+      const onServerOpen = vi.fn()
+      render(
+        <ReferenceCellEditor
+          colProps={{
+            optionsSource: { url: '/api/x/sdui-entries' },
+            domain: 'DICTIONARY',
+            targetTypeCode: 'VidyStazha',
+          }}
+          value={null}
+          onChange={vi.fn()}
+          onCommit={vi.fn()}
+          onServerOpen={onServerOpen}
+        />
+      )
+
+      expect(screen.queryByRole('button', { name: openCardName })).toBeNull()
+      expect(onServerOpen).not.toHaveBeenCalled()
+    })
+
+    it('onServerOpen задан без domain/targetTypeCode → серверный путь всё равно работает', () => {
+      const onServerOpen = vi.fn()
+      render(
+        <ReferenceCellEditor
+          colProps={{ optionsSource: { url: '/api/x/sdui-entries' } }}
+          value={{ id: 1, presentation: 'Значение' }}
+          onChange={vi.fn()}
+          onCommit={vi.fn()}
+          onServerOpen={onServerOpen}
+        />
+      )
+
+      fireEvent.mouseDown(screen.getByRole('button', { name: openCardName }))
+
+      expect(onServerOpen).toHaveBeenCalledTimes(1)
+      expect(openPickerMock).not.toHaveBeenCalled()
+    })
   })
 })
 

@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
+import { useStableSelectOption } from '../../../lib/hooks/use-stable-select-option'
 import { fetchReferenceOptions } from '../../../api/reference-options'
 import { openReferencePicker } from '../../../lib/reference-picker-gateway'
 import { renderCellValue } from '../../../lib/utils/cell-value'
@@ -199,6 +200,11 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
       resetKey
     )
 
+  // Ссылка на value обязана быть стабильной между рендерами, иначе MUI стирает набранный
+  // текст на каждом нажатии клавиши — см. useStableSelectOption. Хук стоит ДО ранних
+  // возвратов ниже: порядок вызова хуков не должен зависеть от условия.
+  const selectedOption = useStableSelectOption(toSelectOption(value))
+
   // ENUM-колонка без optionsSource и без фолбэка (нет targetTypeCode):
   // graceful-деградация — нейтральное отображение, не рабочий пикер без данных
   // (известный бэкенд-gap resolveEnumOptions, спека §1.3(d)).
@@ -209,8 +215,6 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
       </span>
     )
   }
-
-  const selectedOption = toSelectOption(value)
 
   const applySelected = (opt: SelectOption | null) => {
     // Полный ссылочный объект {id, presentation}, не bare id (спека §1.3(a), TODO-2)

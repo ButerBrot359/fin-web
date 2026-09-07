@@ -40,9 +40,11 @@ import {
   useSduiSession,
   useBindingValue,
 } from '../../../lib/sdui-session-context'
+import { footerCell } from './table-footer-value'
 import {
   buildColumnDefs,
   extractAllLeafColumns,
+  verticalSubRows,
   VERTICAL_SUB_ROW_HEIGHT,
   type AutoAdvanceColumnContext,
   type SduiColumnMetaExtra,
@@ -385,7 +387,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
         if ('columns' in c && Array.isArray(c.columns)) {
           return c.columns.some(hasFooterDef)
         }
-        return Boolean(c.footer)
+        // Итоги под-колонок ВЕРТИКАЛЬНОЙ группы лежат в meta.footerKeys:
+        // сама группа — одна колонка TanStack и своего `footer` не имеет.
+        const meta = c.meta as SduiColumnMetaExtra | undefined
+        return Boolean(c.footer) || Boolean(meta?.footerKeys)
       }
       return hasFooterDef(col)
     })
@@ -910,6 +915,34 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                 <MuiTableRow key={fg.id}>
                   {showRowNumbers && <TableCell />}
                   {fg.headers.map((header) => {
+                    const meta = header.column.columnDef.meta as
+                      | SduiColumnMetaExtra
+                      | undefined
+                    // ВЕРТИКАЛЬНАЯ группа: итоги идут стопкой той же сетки, что
+                    // и значения — иначе второй итог показать негде.
+                    if (meta?.footerKeys) {
+                      return (
+                        <TableCell
+                          key={header.id}
+                          colSpan={header.colSpan}
+                          sx={{ p: 0 }}
+                        >
+                          {verticalSubRows(
+                            meta.footerKeys.map((key, index) => ({
+                              key: key ?? `empty-${String(index)}`,
+                              content: footerCell(
+                                key != null && footerValues[key] !== undefined
+                                  ? renderCellValue(footerValues[key])
+                                  : ''
+                              ),
+                            })),
+                            16,
+                            true,
+                            meta.subRowCount ?? meta.footerKeys.length
+                          )}
+                        </TableCell>
+                      )
+                    }
                     const footerId = header.column.columnDef.footer
                     const footerText =
                       typeof footerId === 'string' &&
@@ -918,11 +951,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                         : ''
                     return (
                       <TableCell key={header.id} colSpan={header.colSpan}>
-                        {footerText ? (
-                          <Typography variant="body2" fontWeight="bold">
-                            {footerText}
-                          </Typography>
-                        ) : null}
+                        {footerCell(footerText)}
                       </TableCell>
                     )
                   })}

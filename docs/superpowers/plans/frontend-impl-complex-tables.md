@@ -14,6 +14,7 @@
 ## 1. Цель + ссылки
 
 Достроить SDUI-таблицу (`table-node.tsx`) до **сложной**:
+
 1. **группы колонок (горизонтальные)** — многоуровневая шапка с общим заголовком над под-колонками;
 2. **вертикальные группы / составные ячейки** — несколько полей в одной визуальной ячейке стопкой (требование ИПН «Основание + Предоставлять вычет друг под другом»);
 3. **подвалы-итоги** — серверно-вычисленная строка-итог под таблицей;
@@ -21,6 +22,7 @@
 5. **master-detail** — две связанные ТЧ (`VychetyIPN` ↔ `GrafikVycheta`).
 
 Контекст для чтения:
+
 - **[ADR-0013](../adr/ADR-0013-sdui-complex-tables.md)** (главный): §2.1 (`NodeType.COLUMN_GROUP` + дети `TABLE_COLUMN`), §2.2 (orientation HORIZONTAL/VERTICAL), §2.3 (составная ячейка — данные плоские, commit-единица = поле), §2.4 (видимость), §4 (master-detail = две таблицы + **презентационный** фильтр на фронте), §5 (подвалы — server-driven), §11 (фазирование).
 - **[frontend-impl-tables.md](frontend-impl-tables.md)** — НАСЛЕДУЕТСЯ целиком: §4 (round-trip/coalescing), §4.4 (table-level EVENT), §4.5 (rowId), §4.6 (flush-before-save), §4.1 (`cellWidget→редактор`).
 - [ADR-0011](../adr/ADR-0011-sdui-editable-tables.md) §2.5 (server-driven дисциплина), §2.5.1 (cellWidget-override).
@@ -42,17 +44,51 @@
 `TABLE`-узел теперь содержит не только плоские `TABLE_COLUMN`, но и узлы **`COLUMN_GROUP`** с детьми `TABLE_COLUMN` (или вложенными `COLUMN_GROUP`, **≤ 2 уровня** — ADR-0013 §2.1):
 
 ```jsonc
-{ "id": "table.vychetyIPN", "type": "TABLE", "binding": "VychetyIPN",
+{
+  "id": "table.vychetyIPN",
+  "type": "TABLE",
+  "binding": "VychetyIPN",
   "children": [
-    { "id": "col.vychetIPN", "type": "TABLE_COLUMN",
-      "props": { "binding": "VychetIPN", "label": "Вычет ИПН", "cellWidget": "REFERENCE_FIELD", "visible": true } },
-    { "id": "colgroup.osnPredost", "type": "COLUMN_GROUP",
-      "props": { "label": "Предоставлять вычет / основание", "orientation": "HORIZONTAL" },
+    {
+      "id": "col.vychetIPN",
+      "type": "TABLE_COLUMN",
+      "props": {
+        "binding": "VychetIPN",
+        "label": "Вычет ИПН",
+        "cellWidget": "REFERENCE_FIELD",
+        "visible": true,
+      },
+    },
+    {
+      "id": "colgroup.osnPredost",
+      "type": "COLUMN_GROUP",
+      "props": {
+        "label": "Предоставлять вычет / основание",
+        "orientation": "HORIZONTAL",
+      },
       "children": [
-        { "id": "col.osnovanie",   "type": "TABLE_COLUMN", "props": { "binding": "Osnovanie", "cellWidget": "TEXT_FIELD", "visible": true } },
-        { "id": "col.predostavlyat","type": "TABLE_COLUMN", "props": { "binding": "PredostavlyatVychet", "cellWidget": "CHECKBOX_FIELD", "visible": true } }
-      ] }
-  ] }
+        {
+          "id": "col.osnovanie",
+          "type": "TABLE_COLUMN",
+          "props": {
+            "binding": "Osnovanie",
+            "cellWidget": "TEXT_FIELD",
+            "visible": true,
+          },
+        },
+        {
+          "id": "col.predostavlyat",
+          "type": "TABLE_COLUMN",
+          "props": {
+            "binding": "PredostavlyatVychet",
+            "cellWidget": "CHECKBOX_FIELD",
+            "visible": true,
+          },
+        },
+      ],
+    },
+  ],
+}
 ```
 
 - `COLUMN_GROUP.props.label` — общий заголовок группы (шапка). `COLUMN_GROUP` **не имеет `binding`** — это контейнер (ADR-0013 §10 Решение 1).
@@ -62,10 +98,10 @@
 
 `COLUMN_GROUP.props.orientation`:
 
-| `orientation` | Рендер | Раздел |
-|---|---|---|
-| `HORIZONTAL` (default) | под-колонки **рядом** под общим заголовком → многоуровневая шапка | §3 |
-| `VERTICAL` | поля **друг под другом** в **одной** визуальной ячейке-колонке (стопка) | §4 |
+| `orientation`          | Рендер                                                                  | Раздел |
+| ---------------------- | ----------------------------------------------------------------------- | ------ |
+| `HORIZONTAL` (default) | под-колонки **рядом** под общим заголовком → многоуровневая шапка       | §3     |
+| `VERTICAL`             | поля **друг под другом** в **одной** визуальной ячейке-колонке (стопка) | §4     |
 
 > ADR-0013 §3.3 (challenger D2): **прувпойнт ИПН реализуется на `HORIZONTAL`** (паритет с реальной УФ-1С). `VERTICAL` — опция, включается сменой одного prop `orientation` после подтверждения владельца; **не на критическом пути acceptance Phase 1**. Реализовать оба рендера стоит сразу (дёшево), но тест-чеклист (§9) обязателен только для HORIZONTAL.
 
@@ -110,10 +146,12 @@ detail-`TABLE`-узел несёт props связи: `masterTable`, `masterKey`,
 import type { ColumnDef } from '@tanstack/react-table'
 
 // дитя TABLE: TABLE_COLUMN (лист) или COLUMN_GROUP (контейнер)
-function buildColumnDefs(children: ViewNode[] | undefined): ColumnDef<TableRow>[] {
+function buildColumnDefs(
+  children: ViewNode[] | undefined
+): ColumnDef<TableRow>[] {
   if (!children) return []
   return children
-    .filter((c) => (c.props?.visible ?? true) !== false)          // §6 — скрытые выкидываем
+    .filter((c) => (c.props?.visible ?? true) !== false) // §6 — скрытые выкидываем
     .map((c) => {
       if (c.type === 'COLUMN_GROUP') {
         const orientation = (c.props?.orientation as string) ?? 'HORIZONTAL'
@@ -125,11 +163,11 @@ function buildColumnDefs(children: ViewNode[] | undefined): ColumnDef<TableRow>[
         return {
           id: c.id,
           header: (c.props?.label as string) ?? '',
-          columns: buildColumnDefs(c.children),   // рекурсия (≤2 уровня, ADR-0013 §2.1)
+          columns: buildColumnDefs(c.children), // рекурсия (≤2 уровня, ADR-0013 §2.1)
         }
       }
       // TABLE_COLUMN — лист
-      return buildLeafColumn(c)                    // см. frontend-impl-tables.md §4.1
+      return buildLeafColumn(c) // см. frontend-impl-tables.md §4.1
     })
 }
 ```
@@ -212,7 +250,7 @@ function buildLeafColumn(col: ViewNode): ColumnDef<TableRow> {
     header: (col.props?.label as string) ?? '',
     cell: /* редактор, frontend-impl-tables.md §4.1 */,
     ...(hasFooter
-      ? { footer: () => renderFooterValue(col.props?.binding as string) }  // значение из §5.2, НЕ из reduce
+      ? { footer: col.id }  // КЛЮЧ — id УЗЛА колонки, не binding; значение из §5.2, НЕ из reduce
       : {}),
   }
 }
@@ -236,7 +274,18 @@ function buildLeafColumn(col: ViewNode): ColumnDef<TableRow> {
 </tfoot>
 ```
 
-> `renderFooterValue` **читает** присланный каноном итог (§5.2), а **не** `rows.reduce(...)`. Никакой клиентской арифметики — это граница server-driven.
+> Итог **читается** из присланной каноном карты (§5.2), а **не** считается `rows.reduce(...)`. Никакой клиентской арифметики — это граница server-driven.
+
+**Ключ карты итогов — `id` УЗЛА колонки, а не `binding`.** Карта плоская: вложенности групп в
+ней нет, ключи всех колонок таблицы лежат на одном уровне. Раньше в этом примере стояло
+`col.props?.binding` — неточность документации (реальный код всегда читал `col.id`); та же
+подмена ключа однажды уже дала пустой подвал у ИПН.
+
+**Колонки внутри `COLUMN_GROUP` с `orientation: VERTICAL`** своего `columnDef.footer` получить
+не могут: вертикальная группа рендерится ОДНОЙ колонкой TanStack. Их итоги едут списком слотов
+в `meta.footerKeys` (по слоту на под-строку, `null` — итога нет) и рисуются в подвале той же
+стопкой `verticalSubRows`, что и значения, — иначе второй итог показать негде (дефект
+«Средний заработок» больничного, 04.09.2026: рисовались 4 итога из 8).
 
 ---
 
@@ -270,7 +319,7 @@ detail-`TABLE` несёт props (ADR-0013 §4.2): `masterTable` (id master-уз�
    ```ts
    const masterKeyVal = normalizeKey(selectedMasterRow?.[masterKey])
    const visibleDetailRows = allDetailRows.filter(
-     (r) => normalizeKey(r[detailKey]) === masterKeyVal,
+     (r) => normalizeKey(r[detailKey]) === masterKeyVal
    )
    ```
    `normalizeKey` извлекает скаляр сравнения из ссылочной ячейки `{id,presentation}` → `id` (ключ хранится ссылкой, ADR-0013 §4.2; **не** rowIndex — устойчиво к reorder/delete master).
@@ -332,14 +381,14 @@ detail-`TABLE` несёт props (ADR-0013 §4.2): `masterTable` (id master-уз�
 
 ## 11. Главные фронт-артефакты (резюме)
 
-| Артефакт | Файл | Что делать |
-|---|---|---|
-| `COLUMN_GROUP` в типах | `sdui/types/node-types.ts:13` | добавить член union |
-| `COLUMN_GROUP` в реестр | `sdui/lib/component-registry.ts` | `ColumnGroupNode = () => null` (не standalone, как `TABLE_COLUMN`); родитель читает props |
-| TanStack-группы (шапка) | `table-node.tsx` (`buildColumnDefs`) | рекурсия `COLUMN_GROUP`→`{header, columns:[...]}`; перевод на `useReactTable`+`getHeaderGroups` (образец `table-field.tsx:189-207`) |
-| Vertical-cell (составная) | `table-node.tsx` (`buildVerticalGroupColumn`) | одна колонка, `cell`-стопка под-редакторов; commit по-полю; данные плоские |
-| Footer (подвал) | `table-node.tsx` (`ColumnDef.footer` + `<tfoot>`/`getFooterGroups`) | значения из канона (§5.2), **не** reduce |
-| Фильтр видимых колонок | `table-node.tsx` (`buildColumnDefs` `.filter(visible)`) | `visible:false` вне рендера, в данных остаётся |
-| master-detail-фильтр | `table-node.tsx` (`masterTable/masterKey/detailKey`) | **решение ADR-0013 §4.2**: две таблицы + презентационный фильтр по ключу; EVENT шлёт полный массив; round-trip не нужен |
-| Нормализатор ячейки | переиспользование `renderCellValue` ([frontend-impl-movements.md §3](frontend-impl-movements.md)) | `{id,presentation}`→текст; `normalizeKey`→`id` для master-key |
-| Наследуемая механика | [frontend-impl-tables.md](frontend-impl-tables.md) | редактируемость/sync/coalescing/rowId/save — **там**, не дублировать |
+| Артефакт                  | Файл                                                                                              | Что делать                                                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `COLUMN_GROUP` в типах    | `sdui/types/node-types.ts:13`                                                                     | добавить член union                                                                                                                 |
+| `COLUMN_GROUP` в реестр   | `sdui/lib/component-registry.ts`                                                                  | `ColumnGroupNode = () => null` (не standalone, как `TABLE_COLUMN`); родитель читает props                                           |
+| TanStack-группы (шапка)   | `table-node.tsx` (`buildColumnDefs`)                                                              | рекурсия `COLUMN_GROUP`→`{header, columns:[...]}`; перевод на `useReactTable`+`getHeaderGroups` (образец `table-field.tsx:189-207`) |
+| Vertical-cell (составная) | `table-node.tsx` (`buildVerticalGroupColumn`)                                                     | одна колонка, `cell`-стопка под-редакторов; commit по-полю; данные плоские                                                          |
+| Footer (подвал)           | `table-node.tsx` (`ColumnDef.footer` + `<tfoot>`/`getFooterGroups`)                               | значения из канона (§5.2), **не** reduce                                                                                            |
+| Фильтр видимых колонок    | `table-node.tsx` (`buildColumnDefs` `.filter(visible)`)                                           | `visible:false` вне рендера, в данных остаётся                                                                                      |
+| master-detail-фильтр      | `table-node.tsx` (`masterTable/masterKey/detailKey`)                                              | **решение ADR-0013 §4.2**: две таблицы + презентационный фильтр по ключу; EVENT шлёт полный массив; round-trip не нужен             |
+| Нормализатор ячейки       | переиспользование `renderCellValue` ([frontend-impl-movements.md §3](frontend-impl-movements.md)) | `{id,presentation}`→текст; `normalizeKey`→`id` для master-key                                                                       |
+| Наследуемая механика      | [frontend-impl-tables.md](frontend-impl-tables.md)                                                | редактируемость/sync/coalescing/rowId/save — **там**, не дублировать                                                                |

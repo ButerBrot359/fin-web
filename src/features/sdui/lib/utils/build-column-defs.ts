@@ -54,6 +54,24 @@ export interface SduiColumnMetaExtra {
    * вниз относительно редакторов на ту же величину padding'а).
    */
   verticalGroup?: boolean
+  /**
+   * Итоги под-колонок VERTICAL-группы — по слоту на под-строку, `null` там, где
+   * у под-колонки итога нет. Ключ слота — `id` УЗЛА колонки: именно им бэк
+   * адресует значения в карте `<binding>.footer` (плоской, без вложенности).
+   * <p>
+   * Отдельный проп нужен потому, что вертикальная группа рендерится ОДНОЙ
+   * колонкой TanStack: собственного `columnDef.footer` под-колонки не получают,
+   * и без этого списка их итоги пропадали, хотя `footer=true` на них стоит
+   * (дефект 04.09.2026: в «Среднем заработке» больничного отрисовывались 4 итога
+   * из 8 — ровно те, что лежат в TABLE напрямую).
+   */
+  footerKeys?: (string | null)[]
+  /**
+   * Общее число под-строк вертикальных групп таблицы — та же величина, по
+   * которой строится сетка шапки и ячейки. Подвал обязан взять её же, иначе
+   * стопка итогов встанет по другой сетке, чем стопка значений.
+   */
+  subRowCount?: number
 }
 
 /**
@@ -108,7 +126,7 @@ interface SubRowItem {
   content: ReactNode
 }
 
-function verticalSubRows(
+export function verticalSubRows(
   items: SubRowItem[],
   paddingX: number,
   clip: boolean,
@@ -353,12 +371,25 @@ function buildColumnDefsInner(
           .map((child) => nodeToTableColumnDef(child))
           .filter((col) => col.label !== '')
 
+        // Итоги под-колонок: слот на под-строку, null — итога нет. Порядок тот
+        // же, что у шапки и ячейки (visibleChildren), поэтому итог встаёт под
+        // своим значением.
+        const footerKeys = visibleChildren.map((child) =>
+          child.props?.footer === true ? child.id : null
+        )
+        const meta: SduiColumnMetaExtra = {
+          verticalGroup: true,
+          ...(footerKeys.some((key) => key !== null)
+            ? { footerKeys, subRowCount }
+            : {}),
+        }
+
         const colDef: ColumnDef<TableRow> = {
           id: groupId,
           // VERTICAL-группа рендерится ОДНОЙ колонкой, поэтому ширины берутся с
           // узла группы, а не с под-колонок.
           ...columnSizeProps(node.props),
-          meta: { verticalGroup: true },
+          meta,
           header:
             subLabels.length > 0
               ? () =>

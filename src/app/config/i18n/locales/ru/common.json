@@ -653,6 +653,7 @@
     "error": "Ошибка",
     "objectField": {
       "type": "Тип",
+      "choosePlaceholder": "Выберите тип",
       "unsupportedMember": "Тип не поддерживается (в разработке)",
       "primitive": {
         "STRING": "Строка",

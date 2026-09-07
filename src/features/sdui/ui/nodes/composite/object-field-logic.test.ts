@@ -223,16 +223,28 @@ describe('члены без targetTypeCode (примитивы)', () => {
       ).toBe('ZnacheniyaSvoystvObektovIerarkhiya')
     })
 
-    it('приоритет 3: первый член по position', () => {
+    // 1С у составного поля сначала спрашивает «Выбор типа данных» и сама тип не
+    // подставляет: у «Документа аванса» («Авансовый отчёт») это выбор между РКО
+    // и Счётом к оплате. Подставленный первый член скрывал бы от пользователя,
+    // что вид вообще выбирается.
+    it('пустое значение и несколько членов → тип не выбран', () => {
       expect(
         resolveSelectedMemberKey(dopRekvizityMembers, null, undefined)
-      ).toBe('ZnacheniyaSvoystvObektovIerarkhiya')
+      ).toBeUndefined()
     })
 
-    it('несуществующий ручной ключ игнорируется', () => {
+    it('несуществующий ручной ключ игнорируется — тип остаётся невыбранным', () => {
       expect(
         resolveSelectedMemberKey(dopRekvizityMembers, null, 'NETAKOGO#1')
-      ).toBe('ZnacheniyaSvoystvObektovIerarkhiya')
+      ).toBeUndefined()
+    })
+
+    // Единственный член: селектор не рисуется вовсе, выбирать не из чего —
+    // подставляем его, иначе пикер значения не появился бы никогда.
+    it('единственный член подставляется без выбора', () => {
+      expect(
+        resolveSelectedMemberKey([dopRekvizityMembers[0]], null, undefined)
+      ).toBe(memberKey(dopRekvizityMembers[0]))
     })
 
     it('пустой allowedTypes → undefined', () => {

@@ -163,6 +163,19 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
           }}
           size="small"
           variant="standard"
+          // Тип не подставляется сам (1С сначала спрашивает «Выбор типа
+          // данных») — пустая ячейка должна ЧИТАТЬСЯ как приглашение выбрать,
+          // иначе селектор выглядит просто пустым местом.
+          displayEmpty
+          renderValue={(key) =>
+            key
+              ? (findMemberByKey(allowedTypes, key)?.presentation ??
+                t(
+                  `sdui.objectField.primitive.${findMemberByKey(allowedTypes, key)?.domainKind ?? ''}`,
+                  { defaultValue: '' }
+                ))
+              : t('sdui.objectField.choosePlaceholder')
+          }
           sx={memberSelectSx}
         >
           {allowedTypes.map((tp) => (

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
 import { REDIRECT_PARAM, useAuthStore } from '@/features/auth'
+import { FaceLoginButton } from '@/features/face-auth'
 import { getLastLogin } from '@/shared/api/auth/token-storage'
 import { Button } from '@/shared/ui/buttons/button'
 
@@ -26,6 +27,7 @@ export const LoginForm = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const signIn = useAuthStore((state) => state.signIn)
+  const completeSignIn = useAuthStore((state) => state.completeSignIn)
   const sessionExpired = useAuthStore((state) => state.sessionExpired)
 
   // Логин предзаполняется значением последнего успешного входа НА ЭТОМ УСТРОЙСТВЕ
@@ -119,6 +121,28 @@ export const LoginForm = () => {
       >
         {isSubmitting ? t('auth.submitting') : t('auth.submit')}
       </Button>
+
+      {/* Вход по лицу — ДОПОЛНИТЕЛЬНЫЙ способ, а не замена паролю (ADR-0069 §D0). Он стоит
+          ниже пароля намеренно: при недоступном движке распознавания, отказе камеры или
+          светочувствительности пользователь обязан видеть работающий путь входа, а не
+          выяснять, куда делся привычный. Кнопка сама уходит в неактивное состояние, пока не
+          введён логин: серверу нужно знать, чей эталон сверять. */}
+      <div className="mt-2 flex flex-col items-stretch gap-1">
+        <FaceLoginButton
+          login={login}
+          disabled={isSubmitting}
+          onSuccess={(tokens) => {
+            completeSignIn(tokens, login)
+            // Тот же разбор адреса возврата, что и у парольного входа выше, включая
+            // decodeURIComponent: параметр кладут закодированным, и без раскодирования
+            // человек после входа по лицу уезжал бы не туда, куда после входа паролем.
+            const from = searchParams.get(REDIRECT_PARAM)
+            void navigate(from ? decodeURIComponent(from) : '/', {
+              replace: true,
+            })
+          }}
+        />
+      </div>
     </form>
   )
 }

@@ -653,6 +653,7 @@
     "error": "Қате",
     "objectField": {
       "type": "Түрі",
+      "choosePlaceholder": "Түрін таңдаңыз",
       "unsupportedMember": "Түрі қолдау көрсетілмейді (әзірленуде)",
       "primitive": {
         "STRING": "Жол",

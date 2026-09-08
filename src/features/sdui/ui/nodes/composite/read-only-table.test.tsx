@@ -79,6 +79,38 @@ describe('ReadOnlyTable showRowNumbers', () => {
 
 // Ресайз read-only таблицы (движения): рендер ручной, без TanStack — ширины
 // едут через <colgroup>, ручки ставятся только на листовые ячейки шапки.
+/**
+ * Шапка нередактируемой ТЧ тоже закреплена: при прокрутке длинной таблицы
+ * заголовки колонок обязаны оставаться видимыми (отказ 08.09.2026 — «Плана
+ * финансирования»; у редактируемых ТЧ закрепление ломал собственный
+ * `position: relative` ячеек шапки, здесь его не было вовсе).
+ */
+describe('ReadOnlyTable — закрепление шапки', () => {
+  const headPosition = (container: HTMLElement) => {
+    const th = container.querySelector('thead th')
+    return th ? getComputedStyle(th).position : null
+  }
+
+  it('шапка закреплена', () => {
+    state.rows = [{ rowId: 'r1', a: 'x' }]
+    const { container } = render(<TableNode node={makeTable({})} />)
+    expect(headPosition(container)).toBe('sticky')
+  })
+
+  it('с включённым ресайзом шапка закреплена и ручка на месте', () => {
+    state.rows = [{ rowId: 'r1', a: 'x' }]
+    const { container } = render(
+      <TableNode
+        node={makeTable({ columnsResizable: true, columnStateKey: 'ro:test' })}
+      />
+    )
+    expect(headPosition(container)).toBe('sticky')
+    expect(
+      container.querySelectorAll('[role="separator"]').length
+    ).toBeGreaterThan(0)
+  })
+})
+
 describe('ReadOnlyTable ресайз колонок', () => {
   const nodeWithGroups = (props: Record<string, unknown>): ViewNode =>
     ({

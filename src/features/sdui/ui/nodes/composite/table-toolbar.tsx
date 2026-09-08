@@ -6,6 +6,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { IconButton, InputAdornment, TextField, Tooltip } from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons'
+import { figmaIcons } from '@/shared/ui/icons'
 
 import type { TableCommandDescriptor } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -80,7 +81,14 @@ export const TableToolbar = ({
   return (
     <div className="flex items-center gap-2">
       {allowAdd && (
-        <Button variant="primary" disabled={!canAdd} onClick={onAdd}>
+        // Figma 772:24370: «+ Добавить» — secondary; primary на экране одна,
+        // и это главное действие тулбара документа («Провести и закрыть»).
+        <Button
+          variant="secondary"
+          disabled={!canAdd}
+          onClick={onAdd}
+          startIcon={figmaIcons.plus}
+        >
           {t('table.add')}
         </Button>
       )}

@@ -1,3 +1,5 @@
+import { createElement } from 'react'
+
 import { createTheme } from '@mui/material/styles'
 import type {} from '@mui/x-date-pickers/themeAugmentation'
 
@@ -9,6 +11,11 @@ import {
   shadows,
 } from '@/shared/design/tokens'
 import { POPUP_Z } from '@/shared/lib/utils/overlay-z-index'
+import {
+  CheckboxBlankIcon,
+  CheckboxCheckedIcon,
+  CheckboxIndeterminateIcon,
+} from '@/shared/ui/checkbox/checkbox-icons'
 
 export const theme = createTheme({
   // ВАЖНО: palette использует .value (hex-литерал), а не cssVar().
@@ -120,6 +127,28 @@ export const theme = createTheme({
         root: {
           position: 'relative',
           marginBottom: 4,
+        },
+      },
+    },
+    // Чекбокс по Figma (772:24370): 24×24, тёмная рамка, checked — салатовая
+    // заливка с тёмной галкой. MUI-дефолт (синий квадрат, белая галка) в
+    // макетах отсутствует. Цвет рамки/галки — через color (currentColor глифов).
+    MuiCheckbox: {
+      defaultProps: {
+        // createElement: файл — .ts, JSX здесь недоступен
+        icon: createElement(CheckboxBlankIcon),
+        checkedIcon: createElement(CheckboxCheckedIcon),
+        indeterminateIcon: createElement(CheckboxIndeterminateIcon),
+      },
+      styleOverrides: {
+        root: {
+          color: cssVar(palette.ui06),
+          '&.Mui-checked, &.MuiCheckbox-indeterminate': {
+            color: cssVar(palette.ui06),
+          },
+          '&.Mui-disabled': {
+            color: cssVar(palette.ui05),
+          },
         },
       },
     },

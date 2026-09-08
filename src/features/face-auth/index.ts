@@ -6,11 +6,16 @@
  * приватными — подменять их поштучно нельзя, они образуют одно целое с тем, что измеряет сервер.
  */
 export { FaceLoginButton } from './ui/face-login-button'
+export { FacePhotoDialog } from './ui/face-photo-dialog'
 export { useFaceCapture } from './lib/hooks/use-face-capture'
 export type {
   FaceCapturePhase,
   FaceCaptureState,
 } from './lib/hooks/use-face-capture'
+export type {
+  FaceTemplateSummary,
+  FaceTemplateUploadOutcome,
+} from './types/face-template'
 export type {
   FaceChallengeResponse,
   FaceQualityReason,

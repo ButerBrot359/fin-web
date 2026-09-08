@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
+import FaceIcon from '@mui/icons-material/Face'
 import LogoutIcon from '@mui/icons-material/Logout'
 import {
   ListItemIcon,
@@ -12,6 +13,7 @@ import {
 } from '@mui/material'
 
 import { LOGIN_ROUTE, useAuthStore } from '@/features/auth'
+import { FacePhotoDialog } from '@/features/face-auth'
 import UserIcon from '@/shared/assets/icons/user.svg'
 import { Button } from '@/shared/ui/buttons'
 
@@ -30,6 +32,7 @@ export const TopBarUser = () => {
   const signOut = useAuthStore((state) => state.signOut)
   // Якорь меню — в состоянии, а не в ref: значение читается во время рендера.
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null)
+  const [photoDialogOpen, setPhotoDialogOpen] = useState(false)
 
   if (!user) {
     return (
@@ -83,6 +86,18 @@ export const TopBarUser = () => {
       >
         <MenuItem
           onClick={() => {
+            setAnchorElement(null)
+            setPhotoDialogOpen(true)
+          }}
+        >
+          <ListItemIcon>
+            <FaceIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t('auth.face.photo.title')}</ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
             void handleLogout()
           }}
         >
@@ -92,6 +107,14 @@ export const TopBarUser = () => {
           <ListItemText>{t('topBar.logout')}</ListItemText>
         </MenuItem>
       </Menu>
+
+      <FacePhotoDialog
+        open={photoDialogOpen}
+        userId={user.id}
+        onClose={() => {
+          setPhotoDialogOpen(false)
+        }}
+      />
     </>
   )
 }

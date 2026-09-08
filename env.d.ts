@@ -9,6 +9,7 @@ interface ImportMetaEnv {
    * webbuh.auth.enabled: см. features/auth/lib/consts/auth-config.ts.
    */
   readonly VITE_AUTH_ENABLED?: string
+  readonly VITE_FACE_FLASH_DISABLED?: string
 }
 
 interface ImportMeta {

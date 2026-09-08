@@ -15,9 +15,16 @@ import { FaceLoginButton } from './face-login-button'
 const run = vi.fn()
 const reset = vi.fn()
 let state: FaceCaptureState
+let flashEnabled: boolean
 
 vi.mock('../lib/hooks/use-face-capture', () => ({
   useFaceCapture: () => ({ state, run, reset }),
+}))
+
+vi.mock('../lib/consts/flash-config', () => ({
+  get FLASH_ENABLED() {
+    return flashEnabled
+  },
 }))
 
 const idle: FaceCaptureState = {
@@ -29,6 +36,7 @@ const idle: FaceCaptureState = {
 
 beforeEach(() => {
   state = idle
+  flashEnabled = true
   run.mockReset()
   run.mockResolvedValue({ kind: 'success' })
   reset.mockReset()
@@ -115,5 +123,17 @@ describe('FaceLoginButton', () => {
     render(<FaceLoginButton login="Иванов Иван" onSuccess={vi.fn()} />)
 
     expect(screen.getByRole('alert').textContent).toMatch(/придвиньтесь ближе/i)
+  })
+
+  it('при выключенной вспышке предупреждение пропускается и съёмка стартует сразу', async () => {
+    flashEnabled = false
+    render(<FaceLoginButton login="Иванов Иван" onSuccess={vi.fn()} />)
+
+    clickFaceButton()
+
+    await waitFor(() => {
+      expect(run).toHaveBeenCalledWith('Иванов Иван')
+    })
+    expect(screen.queryByText(/экран будет ярко мигать/i)).toBeNull()
   })
 })

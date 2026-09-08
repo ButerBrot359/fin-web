@@ -6,6 +6,7 @@ import { Typography } from '@mui/material'
 import type { TokenPair } from '@/shared/types/auth.types'
 import { Button } from '@/shared/ui/buttons/button'
 
+import { FLASH_ENABLED } from '../lib/consts/flash-config'
 import { useFaceCapture } from '../lib/hooks/use-face-capture'
 import { faceOutcomeMessageKey } from '../lib/outcome-message'
 import { FaceFlashOverlay } from './face-flash-overlay'
@@ -67,7 +68,11 @@ export const FaceLoginButton = ({
         disabled={busy || disabled || login.trim().length === 0}
         onClick={() => {
           reset()
-          setWarningOpen(true)
+          if (FLASH_ENABLED) {
+            setWarningOpen(true)
+            return
+          }
+          void handleStart()
         }}
       >
         {t('auth.face.button')}

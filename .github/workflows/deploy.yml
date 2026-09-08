@@ -58,6 +58,7 @@ jobs:
             # паролей закрывает приложение целиком. Поднимать одновременно с серверным
             # WEBBUH_AUTH_ENABLED — по отдельности любой из флагов бесполезен.
             VITE_AUTH_ENABLED=${{ vars.VITE_AUTH_ENABLED || 'false' }}
+            VITE_FACE_FLASH_DISABLED=${{ vars.VITE_FACE_FLASH_DISABLED || 'false' }}
 
   deploy:
     runs-on: ubuntu-latest

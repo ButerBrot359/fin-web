@@ -9,9 +9,11 @@ ARG VITE_FORM_CONFIGS_URL
 # выставить — переключение требует пересборки образа, а не рестарта.
 # Пусто или что угодно кроме 'true' — выключено (см. features/auth/lib/consts/auth-config.ts).
 ARG VITE_AUTH_ENABLED
+ARG VITE_FACE_FLASH_DISABLED
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_FORM_CONFIGS_URL=$VITE_FORM_CONFIGS_URL
 ENV VITE_AUTH_ENABLED=$VITE_AUTH_ENABLED
+ENV VITE_FACE_FLASH_DISABLED=$VITE_FACE_FLASH_DISABLED
 
 COPY package.json package-lock.json* ./
 RUN npm ci

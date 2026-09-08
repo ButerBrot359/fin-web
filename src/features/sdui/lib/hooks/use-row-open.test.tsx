@@ -209,4 +209,43 @@ describe('useRowOpen', () => {
       expect(mockDispatch).toHaveBeenCalledTimes(1)
     })
   })
+
+  // 1С `<ТЧ>Выбор(Элемент, ВыбраннаяСтрока, Поле, СтандартнаяОбработка)` несёт ЯЧЕЙКУ:
+  // «Авансовый отчёт» открывает окно субконто только для «Аналитики БУ».
+  describe('ячейка двойного клика едет в payload как field', () => {
+    it('цель внутри ячейки с data-sdui-cell-binding → field = биндинг колонки', () => {
+      const { result } = renderHook(() => useRowOpen(nodeWithOpen))
+      const cell = document.createElement('span')
+      cell.setAttribute(
+        'data-sdui-cell-binding',
+        'SchetOtneseniyaZatratSubkontoNadpis'
+      )
+      const inner = document.createElement('span')
+      cell.appendChild(inner)
+
+      act(() => {
+        result.current('3', { target: inner })
+      })
+
+      expect(mockDispatch.mock.calls[0][0]).toMatchObject({
+        value: { rowId: '3', field: 'SchetOtneseniyaZatratSubkontoNadpis' },
+      })
+    })
+
+    it('якоря ячейки нет → payload прежний, из одного rowId', () => {
+      const { result } = renderHook(() => useRowOpen(nodeWithOpen))
+
+      act(() => {
+        result.current('3', { target: document.createElement('td') })
+      })
+
+      expect(mockDispatch.mock.calls[0][0]).toMatchObject({
+        value: { rowId: '3' },
+      })
+      expect(
+        (mockDispatch.mock.calls[0][0] as { value: Record<string, unknown> })
+          .value
+      ).not.toHaveProperty('field')
+    })
+  })
 })

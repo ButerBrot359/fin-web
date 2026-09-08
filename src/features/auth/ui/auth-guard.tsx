@@ -6,6 +6,7 @@ import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 
 import {
   AUTH_ENABLED,
+  CHANGE_PASSWORD_ROUTE,
   LOGIN_ROUTE,
   REDIRECT_PARAM,
 } from '../lib/consts/auth-config'
@@ -25,6 +26,9 @@ interface AuthGuardProps {
 export const AuthGuard = ({ children }: AuthGuardProps) => {
   const location = useLocation()
   const status = useAuthStore((state) => state.status)
+  const mustChangePassword = useAuthStore(
+    (state) => state.user?.mustChangePassword ?? false
+  )
   const restore = useAuthStore((state) => state.restore)
   const handleSessionExpired = useAuthStore(
     (state) => state.handleSessionExpired
@@ -55,6 +59,13 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     const from = `${location.pathname}${location.search}${location.hash}`
     const target = `${LOGIN_ROUTE}?${REDIRECT_PARAM}=${encodeURIComponent(from)}`
     return <Navigate to={target} replace />
+  }
+
+  // Пароль потребовали сменить — остальное приложение всё равно закрыто сервером (403,
+  // ТЗ §А5). Ведём на смену пароля сами, иначе человек видел бы пустые экраны с отказами и
+  // не понимал, чего от него хотят.
+  if (mustChangePassword) {
+    return <Navigate to={CHANGE_PASSWORD_ROUTE} replace />
   }
 
   return <>{children}</>

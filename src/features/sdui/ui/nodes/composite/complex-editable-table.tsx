@@ -789,12 +789,14 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                       // overflow:hidden — безусловно: подпись шире колонки
                       // должна обрезаться и без ресайза, иначе она выходит за
                       // границы ячейки и наезжает на соседний заголовок.
+                      // position НЕ трогаем — см. editable-table-head.tsx:
+                      // `relative` замещал бы `sticky` от stickyHeader, и шапка
+                      // с включённым ресайзом уезжала бы при прокрутке строк.
                       sx={{
                         overflow: 'hidden',
                         // Второй ряд шапки прилипает ПОД первым, а не к top:0.
                         ...(hgIndex > 0 ? { top: headTopOffset } : {}),
                         ...(extra?.verticalGroup ? { p: 0 } : {}),
-                        ...(sizing.isResizable ? { position: 'relative' } : {}),
                       }}
                     >
                       {flexRender(

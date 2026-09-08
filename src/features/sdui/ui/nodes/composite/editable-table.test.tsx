@@ -119,6 +119,34 @@ describe('EditableTable — visible: false', () => {
   })
 })
 
+/**
+ * Шапка ТЧ прокручивается вместе со строками (отказ 08.09.2026: «План
+ * финансирования организации», внутренний скролл ТЧ — заголовков колонок не
+ * видно). Причина была в собственном `position: relative` у ячеек шапки: он
+ * ставился ради якоря ручки ресайза и ЗАМЕЩАЛ `position: sticky`, который
+ * таблице даёт `stickyHeader`.
+ */
+describe('EditableTable — закрепление шапки', () => {
+  const headCellPosition = (container: HTMLElement) => {
+    const th = container.querySelector('thead th')
+    return th ? getComputedStyle(th).position : null
+  }
+
+  it('без ресайза шапка закреплена', () => {
+    const { container } = renderTable({})
+    expect(headCellPosition(container)).toBe('sticky')
+  })
+
+  it('с включённым ресайзом шапка ТОЖЕ закреплена — и ручка на месте', () => {
+    const { container } = renderTable({
+      columnsResizable: true,
+      columnStateKey: STATE_KEY,
+    })
+    expect(headCellPosition(container)).toBe('sticky')
+    expect(container.querySelectorAll('[role="separator"]')).toHaveLength(1)
+  })
+})
+
 describe('EditableTable — ресайз колонок', () => {
   // Регресс-пин: ресайз включается ТОЛЬКО контрактом бэка. Если ручки появятся
   // «по умолчанию», сломается вид всех уже работающих ТЧ (tableLayout:fixed).

@@ -486,6 +486,25 @@ describe('ReferenceFieldNode — SCRUM-291 §19.3 props.multiple', () => {
     expect(screen.getByText('5')).toBeTruthy()
   })
 
+  // Строку табличной части в состояние приносит любой источник, не приведший значение к
+  // контракту поля (команда таблицы, доменный обработчик, восстановленный черновик). Без
+  // разбора по props.binding поле показывало пустоту при заполненной табличной части —
+  // пользователь видел, что выбранное значение исчезло после записи.
+  it('(f) multiple: строка ТЧ {<колонка>: {id, presentation}} читается по props.binding', () => {
+    state.ref = [
+      { rowId: 'r-1', Dolzhnost: { id: 7, presentation: 'АГРОНОМ' } },
+      { rowId: 'r-2', Dolzhnost: { id: 8, presentation: 'АГРОХИМИК' } },
+    ]
+    render(
+      <ReferenceFieldNode
+        node={makeNode({ multiple: true, binding: 'Dolzhnost' })}
+      />
+    )
+
+    expect(screen.getByText('АГРОНОМ')).toBeTruthy()
+    expect(screen.getByText('АГРОХИМИК')).toBeTruthy()
+  })
+
   it('(e) multiple не задан: выбор по-прежнему эмитит одиночное значение, а не массив (без регресса)', async () => {
     fetchMock.mockResolvedValue([{ id: 1, code: '1', label: 'Счёт 1' }])
     render(<ReferenceFieldNode node={makeNode({})} />)

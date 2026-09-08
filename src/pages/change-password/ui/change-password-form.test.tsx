@@ -19,11 +19,11 @@ const signOut = vi.fn()
 
 vi.mock('@/shared/api/auth/auth-endpoints', () => ({
   requestChangePassword: (
-    token: string,
+    bearer: string,
     current: string,
     next: string
   ): Promise<void> =>
-    requestChangePassword(token, current, next) as Promise<void>,
+    requestChangePassword(bearer, current, next) as Promise<void>,
 }))
 
 vi.mock('@/features/auth', async () => {

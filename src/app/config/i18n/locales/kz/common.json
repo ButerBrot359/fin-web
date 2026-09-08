@@ -233,7 +233,11 @@
   },
   "informationRegister": {
     "period": "Кезең",
-    "recorder": "Тіркеуші"
+    "recorder": "Тіркеуші",
+    "deleteTitle": "Жазбаны жою",
+    "deleteMessage": "Тіркелім жазбасы қалпына келтірусіз жойылады. Жалғастырамыз ба?",
+    "deleteSuccess": "Жазба жойылды",
+    "deleteError": "Жазбаны жою мүмкін болмады"
   },
   "accumulationRegister": {
     "period": "Кезең",

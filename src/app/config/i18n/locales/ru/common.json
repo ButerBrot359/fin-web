@@ -233,7 +233,11 @@
   },
   "informationRegister": {
     "period": "Период",
-    "recorder": "Регистратор"
+    "recorder": "Регистратор",
+    "deleteTitle": "Удаление записи",
+    "deleteMessage": "Запись регистра будет удалена без возможности восстановления. Продолжить?",
+    "deleteSuccess": "Запись удалена",
+    "deleteError": "Не удалось удалить запись"
   },
   "accumulationRegister": {
     "period": "Период",

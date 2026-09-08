@@ -77,6 +77,11 @@ const SduiCatchAllPage = lazy(() =>
     default: m.SduiCatchAllPage,
   }))
 )
+const AnalyticsRouterPage = lazy(() =>
+  import('@/pages/analytics/analytics-router').then((m) => ({
+    default: m.AnalyticsRouterPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -137,6 +142,18 @@ const AppRoutes = () => {
           <Route
             path="/modules/:pageCode/calculationplan/:moduleCode/:entryId"
             element={<UniversalDomainEntryPage />}
+          />
+          {/*
+            Аналитика: пункт меню type="Analytics" → сегмент "analytics".
+            Маршрут один на весь раздел — дашборды и отчёты заводит пользователь
+            в рантайме, их коды заранее неизвестны. Что рендерить (ассистент,
+            настройки, дашборд или отчёт), решает диспетчер по `:code`.
+            Идёт до catch-all: тот подхватывает всё неизвестное и увёл бы раздел
+            в SDUI-экран.
+          */}
+          <Route
+            path="/modules/:pageCode/analytics/:code"
+            element={<AnalyticsRouterPage />}
           />
           <Route path="*" element={<SduiCatchAllPage />} />
         </Routes>

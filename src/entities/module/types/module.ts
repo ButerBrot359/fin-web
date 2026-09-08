@@ -12,6 +12,7 @@ export enum ModuleElementType {
   AccountPlan = 'AccountPlan',
   CalculationPlan = 'CalculationPlan',
   DataProcessor = 'DataProcessor',
+  Analytics = 'Analytics',
 }
 
 export interface ModuleElement {

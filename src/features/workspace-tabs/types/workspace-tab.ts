@@ -13,6 +13,7 @@ export type TabPageType =
   | 'reportalt'
   | 'account-plan-list'
   | 'account-card'
+  | 'analytics'
   | 'sdui-panel'
 
 export interface WorkspaceTab {

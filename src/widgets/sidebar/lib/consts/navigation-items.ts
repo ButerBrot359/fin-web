@@ -10,6 +10,7 @@ import ReportIcon from '@/shared/assets/navigation/report.svg'
 import OurCompanyIcon from '@/shared/assets/navigation/our-company.svg'
 import FlkIcon from '@/shared/assets/navigation/flk.svg'
 import RegulatedFinReportIcon from '@/shared/assets/navigation/regulated-fin-report.svg'
+import AnalyticsIcon from '@/shared/assets/navigation/analytics.svg'
 
 import type { NavigationItem } from '../../types/types'
 
@@ -24,6 +25,7 @@ export const ICON_MAP: Record<string, FC<SVGProps<SVGSVGElement>>> = {
   flk: FlkIcon,
   'regulated-fin-report': RegulatedFinReportIcon,
   admin: RegulatedFinReportIcon,
+  analytics: AnalyticsIcon,
 }
 
 export const FALLBACK_ICON = MainIcon

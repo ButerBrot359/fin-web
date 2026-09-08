@@ -31,6 +31,20 @@ describe('resolvePageType — регресс-гард (SCRUM-290, §4.5 отло
     expect(resolvePageType('/modules/kazna/account-card')).toBe('account-card')
   })
 
+  it('раздел «Аналитика» резолвится одним типом вкладки', () => {
+    expect(resolvePageType('/modules/Analitika/analytics/assistant')).toBe(
+      'analytics'
+    )
+    expect(resolvePageType('/modules/Analitika/analytics/settings')).toBe(
+      'analytics'
+    )
+    // Код сохранённого дашборда/отчёта заводит пользователь в рантайме —
+    // паттерн обязан покрывать любой, а не перечисленные заранее.
+    expect(resolvePageType('/modules/Analitika/analytics/RaskhodyPoKBP')).toBe(
+      'analytics'
+    )
+  })
+
   it('несуществующий вид → null', () => {
     expect(resolvePageType('/foo/bar')).toBeNull()
   })

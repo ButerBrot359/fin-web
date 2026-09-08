@@ -64,6 +64,37 @@ export const palette = {
   // чёрный — фолбэк цвета сегмента вспышки, тёмный — фон оверлея между фазами.
   pendingFaceFlashBlack: t('--pending-face-flash-black', '#000000'),
   pendingFaceIdleDark: t('--pending-face-idle-dark', '#1f1f1f'),
+
+  // Категориальная палитра графиков раздела «Аналитика». Первая серия — это
+  // accent02, поэтому отдельного токена у неё нет. Остальные семь в канон
+  // Figma не входят: подобраны близкими по светлоте, чтобы соседние серии на
+  // одном дашборде не спорили. Красного в ряду нет намеренно — он занят под
+  // отрицательное значение, и серия такого цвета читалась бы как «плохо».
+  pendingChart2: t('--pending-chart-2', '#12a3b4'),
+  pendingChart3: t('--pending-chart-3', '#6f5bf0'),
+  pendingChart4: t('--pending-chart-4', '#d98324'),
+  pendingChart5: t('--pending-chart-5', '#0e8a5f'),
+  pendingChart6: t('--pending-chart-6', '#c4457f'),
+  pendingChart7: t('--pending-chart-7', '#4a6285'),
+  pendingChart8: t('--pending-chart-8', '#8a6d2f'),
+  // Сетка графика светлее ui03: разметка не должна спорить с данными.
+  pendingChartGrid: t('--pending-chart-grid', '#e6ecf4'),
+  // Рост показателя. support02 (#21d73b) для этого слишком ярок: на плитке KPI
+  // он перетягивает внимание с самого числа.
+  pendingChartPositive: t('--pending-chart-positive', '#0f7a5a'),
+  // Подложки чипа дельты — те же цвета на ~10% непрозрачности.
+  pendingDeltaPositiveBg: t(
+    '--pending-delta-positive-bg',
+    'rgba(15, 122, 90, 0.10)'
+  ),
+  pendingDeltaNegativeBg: t(
+    '--pending-delta-negative-bg',
+    'rgba(244, 72, 42, 0.10)'
+  ),
+  pendingDeltaNeutralBg: t(
+    '--pending-delta-neutral-bg',
+    'rgba(159, 169, 186, 0.14)'
+  ),
 } satisfies Record<string, DesignToken>
 
 // Семантические алиасы: код читает смысл, значение — ссылка на палитру.

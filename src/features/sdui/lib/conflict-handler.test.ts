@@ -58,6 +58,32 @@ describe('handleConflict', () => {
 
   // SCRUM-330 Работа 1: блокировки. Запись НЕ выполнена, но правки целы —
   // форму не сбрасываем, не переоткрываем, автоповтор не делаем.
+  it('OBJECT_VERSION_CONFLICT: тост, форма и набранное остаются на месте', () => {
+    // 1С §9.1.4: объект изменили под нами. Переоткрывать форму нельзя — под переоткрытием
+    // пропало бы набранное пользователем; ретраить бессмысленно — версия та же.
+    vi.mocked(showToast).mockClear()
+    const session = { setSession: vi.fn(), replaceAll: vi.fn() }
+    const retry = vi.fn(() => Promise.resolve(true))
+    const reopen = vi.fn(() => Promise.resolve())
+    handleConflict(
+      {
+        code: 'OBJECT_VERSION_CONFLICT',
+        message: 'Документ изменён другим пользователем после того, как вы его открыли.',
+      } as ConflictError,
+      session,
+      retry,
+      reopen
+    )
+    expect(showToast).toHaveBeenCalledWith(
+      'warning',
+      'Документ изменён другим пользователем после того, как вы его открыли.'
+    )
+    expect(retry).not.toHaveBeenCalled()
+    expect(reopen).not.toHaveBeenCalled()
+    expect(session.replaceAll).not.toHaveBeenCalled()
+    expect(session.setSession).not.toHaveBeenCalled()
+  })
+
   it('OBJECT_LOCKED: тост с message бэка, без retry/reopen/сброса формы', () => {
     vi.mocked(showToast).mockClear()
     const session = { setSession: vi.fn(), replaceAll: vi.fn() }

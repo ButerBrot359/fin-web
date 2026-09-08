@@ -63,6 +63,11 @@ const TreasuryExportPage = lazy(() =>
     default: m.TreasuryExportPage,
   }))
 )
+const InactivityLocksPage = lazy(() =>
+  import('@/pages/inactivity-locks').then((m) => ({
+    default: m.InactivityLocksPage,
+  }))
+)
 const SduiCatchAllPage = lazy(() =>
   import('@/pages/sdui-catch-all').then((m) => ({
     default: m.SduiCatchAllPage,
@@ -77,6 +82,14 @@ const AppRoutes = () => {
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
           <Route path="/" element={<MainPage />} />
+          {/*
+            Снятие блокировок по бездействию (ТЗ §А4). Обычная страница под Layout, а не экран
+            входа: её открывает уже вошедший администратор, чтобы вернуть доступ другому.
+          */}
+          <Route
+            path="/admin/inactivity-locks"
+            element={<InactivityLocksPage />}
+          />
           {/*
             Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект
             navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.

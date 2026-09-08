@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
@@ -10,6 +10,7 @@ import {
   TextField,
 } from '@mui/material'
 
+import { requestSelectionList } from '@/shared/api/auth/auth-endpoints'
 import { getKnownLogins } from '@/shared/api/auth/token-storage'
 
 import { loginFieldSx } from './login-field-sx'
@@ -23,16 +24,19 @@ interface LoginNameFieldProps {
 }
 
 /**
- * Поле «Пользователь» — обычный ввод со стрелкой выбора.
+ * Поле «Пользователь» — ввод со стрелкой выбора, как в диалоге запуска 1С.
  *
- * <b>Стрелка открывает логины, набранные на ЭТОМ устройстве, а не список пользователей
- * системы.</b> В макете у поля есть выпадашка, но серверного перечня учётных записей нет и
- * быть не должно: он раскрыл бы состав пользователей любому, кто открыл страницу входа
- * (ТЗ §А1 — там же отклонён и список пользователей в диалоге запуска 1С). Браузер
- * показывает только то, что и так знает про себя.
+ * <b>Список приходит с сервера</b> (`GET /api/auth/selection-list`) и повторяет список выбора
+ * 1С: в нём те, у кого в карточке пользователя стоит флаг «Показывать в списке выбора», и кому
+ * при этом не запрещён вход — снятая аутентификация, пометка удаления и «Недействителен»
+ * убирают человека из списка так же, как в 1С их снимает «ВходВПрограммуРазрешен».
  *
- * Поле остаётся вводом, а не выбором из списка: логина может не быть в памяти этого
- * браузера — например, человек сел за чужую машину.
+ * <b>Пустой список — не ошибка.</b> В 1С без флага ни у кого поле остаётся обычным вводом; здесь
+ * так же, только вместо пустого меню показываются логины, набранные на ЭТОМ устройстве, — они и
+ * так известны браузеру, и терять эту подсказку при недоступном сервере незачем.
+ *
+ * Поле остаётся вводом, а не выбором из списка: логина может не быть в списке — человек с
+ * снятым флагом входит, просто набрав своё имя, ровно как в 1С.
  */
 export const LoginNameField = ({
   value,
@@ -49,13 +53,31 @@ export const LoginNameField = ({
     null
   )
   const [isMenuOpen, setMenuOpen] = useState(false)
-  // Читаем при открытии, а не на каждый рендер: список меняется только после входа.
-  const [knownLogins, setKnownLogins] = useState<string[]>([])
+  const [logins, setLogins] = useState<string[]>([])
 
-  const openMenu = () => {
-    setKnownLogins(getKnownLogins())
-    setMenuOpen(true)
-  }
+  // Список запрашивается один раз при открытии экрана, а не на каждый клик по стрелке:
+  // состав списка меняет администратор в карточке пользователя, а не то, что происходит
+  // на этой странице. Отказ сервера гасится молча — вход по набранному логину от списка
+  // не зависит, и сообщать об этом человеку нечего.
+  useEffect(() => {
+    let isCurrent = true
+
+    void requestSelectionList()
+      .then((selectionList) => {
+        if (isCurrent) {
+          setLogins(selectionList.length > 0 ? selectionList : getKnownLogins())
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setLogins(getKnownLogins())
+        }
+      })
+
+    return () => {
+      isCurrent = false
+    }
+  }, [])
 
   const pickLogin = (login: string) => {
     onChange(login)
@@ -83,8 +105,10 @@ export const LoginNameField = ({
             endAdornment: (
               <InputAdornment position="end">
                 <IconButton
-                  aria-label={t('auth.knownLoginsToggle')}
-                  onClick={openMenu}
+                  aria-label={t('auth.selectionListToggle')}
+                  onClick={() => {
+                    setMenuOpen(true)
+                  }}
                   disabled={disabled}
                   edge="end"
                 >
@@ -108,10 +132,10 @@ export const LoginNameField = ({
           paper: { sx: { width: anchorElement?.clientWidth } },
         }}
       >
-        {knownLogins.length === 0 ? (
-          <MenuItem disabled>{t('auth.knownLoginsEmpty')}</MenuItem>
+        {logins.length === 0 ? (
+          <MenuItem disabled>{t('auth.selectionListEmpty')}</MenuItem>
         ) : (
-          knownLogins.map((login) => (
+          logins.map((login) => (
             <MenuItem
               key={login}
               selected={login === value}

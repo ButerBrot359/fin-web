@@ -830,8 +830,8 @@
     "instanceLabel": "Имя ИБ",
     "showPassword": "Показать пароль",
     "hidePassword": "Скрыть пароль",
-    "knownLoginsToggle": "Выбрать из сохранённых на этом устройстве",
-    "knownLoginsEmpty": "На этом устройстве ещё никто не входил",
+    "selectionListToggle": "Выбрать пользователя",
+    "selectionListEmpty": "Список пользователей пуст",
     "face": {
       "button": "Войти по лицу",
       "warningTitle": "Экран будет ярко мигать",

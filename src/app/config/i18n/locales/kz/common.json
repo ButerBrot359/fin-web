@@ -830,8 +830,8 @@
     "instanceLabel": "АБ атауы",
     "showPassword": "Құпиясөзді көрсету",
     "hidePassword": "Құпиясөзді жасыру",
-    "knownLoginsToggle": "Осы құрылғыда сақталғандардан таңдау",
-    "knownLoginsEmpty": "Бұл құрылғыда әлі ешкім кірмеген",
+    "selectionListToggle": "Пайдаланушыны таңдау",
+    "selectionListEmpty": "Пайдаланушылар тізімі бос",
     "face": {
       "button": "Бет арқылы кіру",
       "warningTitle": "Экран жарқылдайды",

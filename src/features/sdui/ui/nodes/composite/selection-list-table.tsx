@@ -265,7 +265,9 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
         variant="outlined"
         sx={{ flex: '1 1 auto', overflowY: 'auto' }}
       >
-        <Table size="small">
+        {/* Список-отбор прокручивается внутри себя — шапка закреплена, иначе
+            при прокрутке не видно, по какой колонке идёт отбор. */}
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               {columns.map((col) => (

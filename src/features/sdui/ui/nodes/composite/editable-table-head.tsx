@@ -46,11 +46,16 @@ export const EditableTableHead: FC<EditableTableHeadProps> = ({
               // overflow:hidden — безусловно: подпись шире колонки должна
               // обрезаться и в таблице без ресайза, иначе она выходит за
               // границы ячейки и наезжает на соседний заголовок.
+              // position НЕ трогаем: у таблицы включён stickyHeader, и MUI уже
+              // ставит ячейкам шапки `position: sticky`. Прежний `relative`
+              // (нужен был как якорь для ручки ресайза) ЗАМЕНЯЛ собой sticky —
+              // и шапка ТЧ с включённым ресайзом переставала закрепляться, то
+              // есть уезжала при прокрутке строк (отказ 08.09.2026). Ручке
+              // sticky-ячейки достаточно: она тоже позиционированная и служит
+              // содержащим блоком для absolute-элемента (см. ColumnResizeHandle).
               sx={{
                 overflow: 'hidden',
-                ...(isResizable
-                  ? { width: header.getSize(), position: 'relative' }
-                  : {}),
+                ...(isResizable ? { width: header.getSize() } : {}),
               }}
             >
               {flexRender(header.column.columnDef.header, header.getContext())}

@@ -229,6 +229,31 @@ beforeEach(() => {
   state.VychetyRows = detailRows
 })
 
+/**
+ * Та же регрессия, что у плоской ТЧ (см. editable-table.test.tsx): ячейки шапки
+ * получали `position: relative` под ручку ресайза и теряли `sticky` — заголовки
+ * уезжали при внутренней прокрутке ТЧ.
+ */
+describe('ComplexEditableTable — закрепление шапки', () => {
+  const resizableNode: ViewNode = {
+    ...masterNode,
+    id: 'table.sticky',
+    props: {
+      ...(masterNode.props ?? {}),
+      columnsResizable: true,
+      columnStateKey: 'doc:Test.Sticky',
+    },
+  } as ViewNode
+
+  it('с включённым ресайзом шапка закреплена', () => {
+    const { container } = render(<ComplexEditableTable node={resizableNode} />)
+
+    const th = container.querySelector('thead th')
+    expect(th).toBeTruthy()
+    expect(getComputedStyle(th!).position).toBe('sticky')
+  })
+})
+
 describe('ComplexEditableTable — master-detail (SCRUM-282)', () => {
   it('фильтрует detail-строки по выбранной master-строке (реактивно на смену выбора)', () => {
     state['VychetyIPN.__selectedRowId'] = 'm2'

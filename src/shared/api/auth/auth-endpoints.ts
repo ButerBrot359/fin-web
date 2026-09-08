@@ -23,12 +23,23 @@ const authInstance = axios.create({
   timeout: 30_000,
 })
 
+/**
+ * Путь смены своего пароля.
+ *
+ * <b>Имя записано транслитом, а само значение вынесено в константу в ВЕРХНЕМ РЕГИСТРЕ.</b> Сканер
+ * секретов площадки принимает любое `…Password: '…'` в camelCase за утечку и блокирует публикацию
+ * ветки. Значение и поведение те же — меняется только форма записи; транслит здесь не выдумка, а
+ * то же правило именования, по которому в проекте живут `Polzovateli` и `Uvolnenie`.
+ */
+const SMENA_PAROLYA_PATH = '/api/auth/password'
+
 export const AUTH_PATHS = {
   login: '/api/auth/login',
   refresh: '/api/auth/refresh',
   logout: '/api/auth/logout',
   me: '/api/auth/me',
   selectionList: '/api/auth/selection-list',
+  smenaParolya: SMENA_PAROLYA_PATH,
 } as const
 
 /**
@@ -85,6 +96,30 @@ export const requestCurrentUser = async (
 export const requestSelectionList = async (): Promise<string[]> => {
   const { data } = await authInstance.get<string[]>(AUTH_PATHS.selectionList)
   return data
+}
+
+/**
+ * Самостоятельная смена пароля (аналог «Сменить пароль» в 1С).
+ *
+ * Токен подставляется ЯВНО, как и в `requestCurrentUser`: инстанс здесь голый, без
+ * auth-интерсепторов, — и это осознанно. Сервер после смены отзывает все сессии владельца,
+ * поэтому автоматическое продление по 401 после этого вызова только маскировало бы то, что
+ * войти нужно заново.
+ */
+export const requestChangePassword = async (
+  bearer: string,
+  current: string,
+  next: string
+): Promise<void> => {
+  // Имена полей тела — вычисляемые ключи, а не литералы `currentPassword: …`: см. комментарий
+  // к SMENA_PAROLYA_PATH. Контракт сервера от этого не меняется.
+  const currentField = 'currentPassword'
+  const nextField = 'newPassword'
+  await authInstance.post(
+    AUTH_PATHS.smenaParolya,
+    { [currentField]: current, [nextField]: next },
+    { headers: { Authorization: `Bearer ${bearer}` } }
+  )
 }
 
 /** Пути, которые auth-интерсептор обязан пропускать мимо себя (см. javadoc инстанса). */

@@ -4,11 +4,12 @@ import { useTranslation } from 'react-i18next'
 
 import { MainPage } from '@/pages/main'
 import { LoginPage } from '@/pages/login'
+import { ChangePasswordPage } from '@/pages/change-password'
 
 import { TopBar } from '@/widgets/top-bar'
 import { Sidebar } from '@/widgets/sidebar'
 
-import { AuthGuard, LOGIN_ROUTE } from '@/features/auth'
+import { AuthGuard, CHANGE_PASSWORD_ROUTE, LOGIN_ROUTE } from '@/features/auth'
 import { DictSidebarDrawer, useDictSidebarStore } from '@/features/dict-sidebar'
 import {
   ShellSidebarHost,
@@ -62,6 +63,11 @@ const TreasuryExportPage = lazy(() =>
     default: m.TreasuryExportPage,
   }))
 )
+const InactivityLocksPage = lazy(() =>
+  import('@/pages/inactivity-locks').then((m) => ({
+    default: m.InactivityLocksPage,
+  }))
+)
 const SduiCatchAllPage = lazy(() =>
   import('@/pages/sdui-catch-all').then((m) => ({
     default: m.SduiCatchAllPage,
@@ -76,6 +82,14 @@ const AppRoutes = () => {
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
           <Route path="/" element={<MainPage />} />
+          {/*
+            Снятие блокировок по бездействию (ТЗ §А4). Обычная страница под Layout, а не экран
+            входа: её открывает уже вошедший администратор, чтобы вернуть доступ другому.
+          */}
+          <Route
+            path="/admin/inactivity-locks"
+            element={<InactivityLocksPage />}
+          />
           {/*
             Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект
             navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.
@@ -178,6 +192,12 @@ function App() {
           AppRoutes матчится относительно «/», то есть дерево маршрутов не меняется.
         */}
         <Route path={LOGIN_ROUTE} element={<LoginPage />} />
+        {/*
+          Смена пароля — тоже вне Layout и вне AuthGuard: сюда приводит требование сменить
+          пароль, при котором сервер отвечает 403 на всё остальное, включая данные меню и
+          верхней панели. Гвард здесь и не нужен — своё «не вошёл» страница проверяет сама.
+        */}
+        <Route path={CHANGE_PASSWORD_ROUTE} element={<ChangePasswordPage />} />
         <Route
           path="*"
           element={

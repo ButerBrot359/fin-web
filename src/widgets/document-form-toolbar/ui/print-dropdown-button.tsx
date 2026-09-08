@@ -7,6 +7,7 @@ import type { PrintCommand } from '@/entities/document-entry'
 
 import ArrowDownIcon from '@/shared/assets/icons/arrow-down.svg'
 import { cn } from '@/shared/lib/utils/cn'
+import { cssVar, shadows } from '@/shared/design/tokens'
 
 interface PrintDropdownButtonProps {
   commands: PrintCommand[]
@@ -76,7 +77,7 @@ export const PrintDropdownButton = ({
           paper: {
             sx: {
               mt: 0.5,
-              boxShadow: '0px 3px 24px 0px rgba(42, 117, 244, 0.4)',
+              boxShadow: cssVar(shadows.popup),
               borderRadius: '20px',
               overflow: 'hidden',
             },

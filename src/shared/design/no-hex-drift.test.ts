@@ -3,10 +3,11 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
- * Страж дрейфа (спека §1.4): literal-hex запрещены вне канона токенов.
- * Комментарии не считаются (упоминания значений с провода легальны в
- * javadoc). Regex ловит и 3-значные, и 6-значные (и 8-значные с альфой)
- * hex-литералы.
+ * Страж дрейфа (спека §1.4): literal-цвета запрещены вне канона токенов —
+ * hex (3/6/8-значные), rgb()/rgba() и hsl()/hsla(). Комментарии не
+ * считаются (упоминания значений с провода легальны в javadoc). Цвета,
+ * приходящие данными с провода (textColor ячеек и т.п.), — runtime-строки,
+ * литералами в код не попадают и стража не касаются.
  */
 const SRC = 'src'
 const ALLOWED_FILES = new Set(['src/shared/design/tokens.ts'])
@@ -28,12 +29,12 @@ const stripComments = (code: string): string =>
     .join('\n')
 
 describe('страж дрейфа дизайн-токенов', () => {
-  it('literal-hex нет нигде, кроме tokens.ts', () => {
+  it('literal-цветов (hex/rgb/hsl) нет нигде, кроме tokens.ts', () => {
     const offenders: string[] = []
     for (const file of walk(SRC)) {
       if (ALLOWED_FILES.has(file.replaceAll('\\', '/'))) continue
       const code = stripComments(readFileSync(file, 'utf8'))
-      const hits = code.match(/#[0-9a-fA-F]{3,8}\b/g)
+      const hits = code.match(/#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(/g)
       if (hits) offenders.push(`${file}: ${hits.join(', ')}`)
     }
     expect(offenders).toEqual([])

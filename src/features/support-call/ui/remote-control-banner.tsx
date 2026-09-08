@@ -31,7 +31,7 @@ export const RemoteControlBanner = ({ onRevoke }: { onRevoke: () => void }) => {
   }, [onRevoke])
 
   return (
-    <div className="fixed inset-x-0 top-0 z-[1400] flex items-center justify-center gap-3 bg-support-01 px-4 py-2 text-ui-01 shadow-[0px_3px_16px_0px_rgba(244,72,42,0.5)]">
+    <div className="fixed inset-x-0 top-0 z-[1400] flex items-center justify-center gap-3 bg-support-01 px-4 py-2 text-ui-01 shadow-danger-glow">
       <span className="relative flex h-2.5 w-2.5 shrink-0">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ui-01" />
         <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-ui-01" />

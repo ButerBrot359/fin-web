@@ -29,6 +29,8 @@ export const palette = {
   support01: t('--support-01', '#f4482a'),
   support02: t('--support-02', '#21d73b'),
   support03: t('--support-03', '#f4b42a'),
+  // Бэкдроп модалок/панелей: UI 06 при 0.6 (dialog-host, dict-sidebar)
+  overlayBackdrop: t('--overlay-backdrop', 'rgba(34, 33, 36, 0.6)'),
   // pending: значения зафиксированы Ф1 как есть, судьба — аудит (Ф3)
   pendingGray1: t('--pending-gray-1', '#d9d9d9'),
   pendingGray2: t('--pending-gray-2', '#dcdcdc'),
@@ -52,6 +54,12 @@ export const palette = {
   pendingText2: t('--pending-text-2', '#666'),
   pendingViolet1: t('--pending-violet-1', '#6366f1'),
   pendingViolet2: t('--pending-violet-2', '#8b5cf6'),
+  // Эмуляция живого табличного документа 1С в отчётах (не дизайн-система):
+  // тёмно-зелёный групп/итогов и красный отрицательных значений.
+  pending1cGreen: t('--pending-1c-green', 'rgb(0,63,47)'),
+  pending1cRed: t('--pending-1c-red', 'rgb(255,0,0)'),
+  // LiveKit-тема звонилки: полупрозрачная рамка контролов.
+  pendingLkBorder: t('--pending-lk-border', 'rgba(255, 255, 255, 0.08)'),
 } satisfies Record<string, DesignToken>
 
 // Семантические алиасы: код читает смысл, значение — ссылка на палитру.
@@ -69,6 +77,7 @@ export const semantic = {
   success: palette.support02,
   warning: palette.support03,
   brand: palette.accent01,
+  backdrop: palette.overlayBackdrop,
 } satisfies Record<string, DesignToken>
 
 export const shadows = {
@@ -78,6 +87,24 @@ export const shadows = {
     '0px 4px 8px rgba(42,117,244,0.2)'
   ),
   popup: t('--shadow-popup', '0 3px 24px rgba(42, 117, 244, 0.4)'),
+  // pending-семейство звонилки поддержки: зафиксировано как есть при
+  // токенизации (в Figma-каноне этих теней нет).
+  pendingCallGlow: t(
+    '--shadow-call-glow',
+    '0px 3px 16px 0px rgba(42, 117, 244, 0.35)'
+  ),
+  pendingDangerPopup: t(
+    '--shadow-danger-popup',
+    '0px 3px 24px 0px rgba(244, 72, 42, 0.4)'
+  ),
+  pendingDangerGlow: t(
+    '--shadow-danger-glow',
+    '0px 3px 16px 0px rgba(244, 72, 42, 0.5)'
+  ),
+  pendingRemoteCursor: t(
+    '--shadow-remote-cursor',
+    '0 2px 8px rgba(0, 0, 0, 0.35)'
+  ),
 } satisfies Record<string, DesignToken>
 
 export const fontFamily = "'Google Sans', system-ui, sans-serif"

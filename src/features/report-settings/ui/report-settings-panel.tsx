@@ -18,13 +18,14 @@ import type { SelectOption } from '@/shared/types/select-option'
 import type { ReportGroupItem } from './report-settings-drawer'
 import { LanguageSelect } from './language-select'
 import { ReportFilterTable } from './report-filter-table'
+import { cssVar, palette } from '@/shared/design/tokens'
 import type {
   ReportAppearance,
   ReportFilterRow,
 } from '../lib/report-filter-model'
 
 /** Тёмно-зелёный 1С для заголовков разделов настроек (как в живом СКД). */
-const GREEN_1C = 'rgb(0,63,47)'
+const GREEN_1C = cssVar(palette.pending1cGreen)
 
 interface ReportSettingsPanelProps {
   isKz: boolean

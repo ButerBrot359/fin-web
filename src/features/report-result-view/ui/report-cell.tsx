@@ -33,7 +33,7 @@ const formatPeriodValue = (raw: string, col: ReportColumnDto): string => {
 /** Стиль текста 1С: данные — #333/11px, выделенные строки — зелёный жирный/13px. */
 const textStyle = (highlight?: boolean, negative?: boolean) => ({
   color: negative
-    ? 'rgb(255,0,0)'
+    ? cssVar(palette.pending1cRed)
     : highlight
       ? GREEN_1C
       : cssVar(palette.pendingText1),

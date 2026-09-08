@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { cn } from '@/shared/lib/utils/cn'
 import { DICT_SIDEBAR_Z } from '@/shared/lib/utils/overlay-z-index'
-import { cssVar, palette } from '@/shared/design/tokens'
+import { cssVar, palette, semantic } from '@/shared/design/tokens'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
 import { fetchDictTypeMetadata } from '../api/dict-sidebar-api'
 import type { DictSidebarPanel } from '../types/dict-sidebar'
@@ -88,7 +88,7 @@ export const DictSidebarDrawer = () => {
           },
         },
         backdrop: {
-          sx: { backgroundColor: 'rgba(34, 33, 36, 0.6)' },
+          sx: { backgroundColor: cssVar(semantic.backdrop) },
         },
       }}
     >

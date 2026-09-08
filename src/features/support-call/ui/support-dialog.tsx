@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 
 import CrossIcon from '@/shared/assets/icons/cross.svg'
 import { cn } from '@/shared/lib/utils/cn'
+import { cssVar, shadows } from '@/shared/design/tokens'
 
 interface SupportDialogProps {
   title: string
@@ -75,7 +76,7 @@ export const SupportDialog = ({
         paper: {
           sx: {
             borderRadius: expanded ? '24px' : '40px',
-            boxShadow: '0px 3px 24px 0px rgba(42, 117, 244, 0.4)',
+            boxShadow: cssVar(shadows.popup),
             m: 2,
             ...(expanded && {
               width: 'calc(100% - 32px)',

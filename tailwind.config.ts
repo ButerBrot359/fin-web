@@ -37,6 +37,8 @@ export default {
         'primary-hover': cssVar(shadows.primaryHover),
         'secondary-hover': cssVar(shadows.secondaryHover),
         popup: cssVar(shadows.popup),
+        'call-glow': cssVar(shadows.pendingCallGlow),
+        'danger-glow': cssVar(shadows.pendingDangerGlow),
       },
       colors: {
         ui: {

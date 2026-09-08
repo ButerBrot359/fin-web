@@ -14,7 +14,7 @@
  * агент их подсказывает словами.
  */
 
-import { cssVar, palette, semantic } from '@/shared/design/tokens'
+import { cssVar, palette, semantic, shadows } from '@/shared/design/tokens'
 
 interface Point {
   x: number
@@ -109,7 +109,7 @@ const cursorElement = (): HTMLElement => {
     'margin:0',
     'border-radius:2px 50% 50% 50%',
     `background:${cssVar(semantic.primary)}`,
-    `box-shadow:0 0 0 2px ${cssVar(palette.ui01)}, 0 2px 8px rgba(0,0,0,0.35)`,
+    `box-shadow:0 0 0 2px ${cssVar(palette.ui01)}, ${cssVar(shadows.pendingRemoteCursor)}`,
     'transition:left 60ms linear, top 60ms linear',
   ].join(';')
   document.body.appendChild(cursor)

@@ -73,7 +73,7 @@ const SupportFab = ({
         onClick={onClick}
         aria-label={label}
         className={cn(
-          'relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full shadow-[0px_3px_16px_0px_rgba(42,117,244,0.35)] transition-all',
+          'relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full shadow-call-glow transition-all',
           TONE_CLASSES[tone]
         )}
       >

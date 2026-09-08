@@ -52,7 +52,7 @@ const STAGE_THEME = {
   '--lk-accent-fg': cssVar(palette.ui01),
   '--lk-danger': cssVar(semantic.error),
   '--lk-success': cssVar(semantic.brand),
-  '--lk-border-color': 'rgba(255, 255, 255, 0.08)',
+  '--lk-border-color': cssVar(palette.pendingLkBorder),
   '--lk-border-radius': '12px',
   '--lk-grid-gap': '12px',
   '--lk-font-family': '"Google Sans", system-ui, sans-serif',

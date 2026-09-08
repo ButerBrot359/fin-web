@@ -210,6 +210,9 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
         // Тип не задан. Один член — выбирать не из чего: ветка недостижима,
         // resolveSelectedMemberKey отдаёт единственного члена сам.
         <ButtonBase
+          // Устойчивый селектор для e2e-проверки на стенде: подпись у кнопки —
+          // локализованное приглашение, по тексту её не адресовать.
+          data-testid="object-cell-choose-type"
           sx={choosePromptSx}
           onClick={(e) => {
             setMenuAnchor(e.currentTarget)

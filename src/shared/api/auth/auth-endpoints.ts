@@ -29,6 +29,7 @@ export const AUTH_PATHS = {
   logout: '/api/auth/logout',
   me: '/api/auth/me',
   selectionList: '/api/auth/selection-list',
+  password: '/api/auth/password',
 } as const
 
 /**
@@ -85,6 +86,26 @@ export const requestCurrentUser = async (
 export const requestSelectionList = async (): Promise<string[]> => {
   const { data } = await authInstance.get<string[]>(AUTH_PATHS.selectionList)
   return data
+}
+
+/**
+ * Самостоятельная смена пароля (аналог «Сменить пароль» в 1С).
+ *
+ * Токен подставляется ЯВНО, как и в `requestCurrentUser`: инстанс здесь голый, без
+ * auth-интерсепторов, — и это осознанно. Сервер после смены отзывает все сессии владельца,
+ * поэтому автоматическое продление по 401 после этого вызова только маскировало бы то, что
+ * войти нужно заново.
+ */
+export const requestChangePassword = async (
+  accessToken: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<void> => {
+  await authInstance.post(
+    AUTH_PATHS.password,
+    { currentPassword, newPassword },
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  )
 }
 
 /** Пути, которые auth-интерсептор обязан пропускать мимо себя (см. javadoc инстанса). */

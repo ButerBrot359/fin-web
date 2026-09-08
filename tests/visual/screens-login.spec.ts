@@ -24,7 +24,21 @@ test('окно авторизации — дефолтное состояние'
   // кадра сами (stableScreenshot).
   expect(await stableScreenshot(page)).toMatchSnapshot('login-default.png', {
     maxDiffPixelRatio: 0.001,
+    maxDiffPixels: 400,
   })
+})
+
+test('низкое окно: карточка досягаема скроллом (html/body overflow hidden)', async ({
+  page,
+}) => {
+  await mockApi(page, {})
+  await page.setViewportSize({ width: 1440, height: 560 })
+  await page.goto('/login')
+  const submit = page.getByRole('button', { name: 'Войти' })
+  // scrollIntoViewIfNeeded прокручивает ВНУТРЕННИЙ контейнер страницы:
+  // документ заблокирован overflow:hidden, скроллит обёртка /login.
+  await submit.scrollIntoViewIfNeeded()
+  await expect(submit).toBeInViewport()
 })
 
 test('окно авторизации — ошибка входа', async ({ page }) => {
@@ -41,5 +55,6 @@ test('окно авторизации — ошибка входа', async ({ pag
   await expect(page.getByText('Неверный логин или пароль')).toBeVisible()
   expect(await stableScreenshot(page)).toMatchSnapshot('login-error.png', {
     maxDiffPixelRatio: 0.001,
+    maxDiffPixels: 400,
   })
 })

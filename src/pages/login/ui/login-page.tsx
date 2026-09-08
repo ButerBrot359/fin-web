@@ -51,83 +51,88 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-ui-02 p-6">
-      <div aria-hidden className="absolute inset-0">
-        {UNDER_CARD_LAYERS.map(({ Svg, ...pos }, i) => (
-          <Svg
-            key={i}
-            className="absolute h-auto"
-            style={{ left: pos.left, top: pos.top, width: pos.width }}
-          />
-        ))}
-      </div>
-      {/* pointer-events-none: клики сквозь декор проходят в форму */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 z-20">
-        {OVER_CARD_LAYERS.map(({ Svg, ...pos }, i) => (
-          <Svg
-            key={i}
-            className="absolute h-auto"
-            style={{ left: pos.left, top: pos.top, width: pos.width }}
-          />
-        ))}
-        {/* Лампы — <img>, не инлайн: этот единственный слой стабильно
+    // Внешний слой скроллит сам: html/body глобально overflow:hidden (борьба
+    // с документным скроллбаром шелла), и без него карточка на низких окнах
+    // (<~650px) обрезалась бы без возможности доскроллить.
+    <div className="h-screen overflow-y-auto bg-ui-02">
+      <div className="relative flex min-h-full items-center justify-center overflow-hidden p-6">
+        <div aria-hidden className="absolute inset-0">
+          {UNDER_CARD_LAYERS.map(({ Svg, ...pos }, i) => (
+            <Svg
+              key={i}
+              className="absolute h-auto"
+              style={{ left: pos.left, top: pos.top, width: pos.width }}
+            />
+          ))}
+        </div>
+        {/* pointer-events-none: клики сквозь декор проходят в форму */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 z-20">
+          {OVER_CARD_LAYERS.map(({ Svg, ...pos }, i) => (
+            <Svg
+              key={i}
+              className="absolute h-auto"
+              style={{ left: pos.left, top: pos.top, width: pos.width }}
+            />
+          ))}
+          {/* Лампы — <img>, не инлайн: этот единственный слой стабильно
             выпадал из скриншотов toHaveScreenshot при инлайн-рендере
             (контент SVG с отрицательными координатами внутри viewBox). */}
-        {/* крупнее макетных 10%: лампа должна заходить на карточку, как в
+          {/* крупнее макетных 10%: лампа должна заходить на карточку, как в
             референсе; отрицательный top безопасен — login-тесты снимают кадр
             page.screenshot'ом (см. screens-login.spec) */}
-        <img
-          src={lampsUrl}
-          alt=""
-          className="absolute h-auto"
-          style={{ left: '74%', top: '4%', width: '11%' }}
-        />
-      </div>
+          <img
+            src={lampsUrl}
+            alt=""
+            className="absolute h-auto"
+            style={{ left: '74%', top: '4%', width: '11%' }}
+          />
+        </div>
 
-      {/* Карточка по центру окна; top-координаты персонажей согласованы так,
+        {/* Карточка по центру окна; top-координаты персонажей согласованы так,
           чтобы заходить на карточку, не касаясь полей и кнопки */}
-      <div className="relative z-10 w-full max-w-[810px] rounded-[24px] bg-ui-01 px-6 py-14 sm:px-24">
-        <div className="mx-auto flex w-full max-w-[576px] flex-col items-center">
-          <div className="flex items-center gap-3">
-            <Logo className="h-8 w-8 shrink-0" aria-hidden />
-            {/*
+        <div className="relative z-10 w-full max-w-[810px] rounded-[24px] bg-ui-01 px-6 py-14 sm:px-24">
+          <div className="mx-auto flex w-full max-w-[576px] flex-col items-center">
+            <div className="flex items-center gap-3">
+              <Logo className="h-8 w-8 shrink-0" aria-hidden />
+              {/*
               Размеры и цвета заданы пропсами Typography, а не классами Tailwind:
               Emotion-стили MUI перебивают утилитарные классы, и текст молча остаётся
               дефолтным 16px/400 — как это и случилось на первом заходе.
             */}
+              <Typography
+                component="span"
+                fontSize={20}
+                fontWeight={700}
+                color="text.primary"
+              >
+                {t('sidebar.appName')}
+              </Typography>
+            </div>
+
             <Typography
-              component="span"
-              fontSize={20}
+              component="h1"
+              fontSize={40}
               fontWeight={700}
+              lineHeight={1.15}
               color="text.primary"
+              className="mt-11"
             >
-              {t('sidebar.appName')}
+              {t('auth.title')}
             </Typography>
-          </div>
 
-          <Typography
-            component="h1"
-            fontSize={40}
-            fontWeight={700}
-            lineHeight={1.15}
-            color="text.primary"
-            className="mt-11"
-          >
-            {t('auth.title')}
-          </Typography>
+            <Typography
+              component="p"
+              fontSize={14}
+              fontWeight={500}
+              color="text.secondary"
+              className="mt-4"
+            >
+              {t('auth.instanceLabel')}
+            </Typography>
 
-          <Typography
-            component="p"
-            fontSize={14}
-            fontWeight={500}
-            color="text.secondary"
-            className="mt-4"
-          >
-            {t('auth.instanceLabel')}
-          </Typography>
-
-          <div className="mt-8 w-full">
-            <LoginForm />
+            <div className="mt-8 w-full">
+              <LoginForm />
+            </div>
           </div>
         </div>
       </div>

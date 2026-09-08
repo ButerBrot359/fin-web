@@ -19,6 +19,22 @@ function isInsideCellEditor(target: EventTarget | null | undefined): boolean {
   return target.closest(INTERACTIVE_EDITOR_SELECTOR) !== null
 }
 
+// Ячейка, по которой был двойной клик. В 1С `<ТЧ>Выбор` получает параметр `Поле`, и
+// обработчики по нему ветвятся: «Авансовый отчёт» открывает окно выбора субконто только
+// для ячейки «Аналитика БУ», а по остальным ячейкам не делает ничего. Имя ячейки берём с
+// того же якоря `data-sdui-cell-binding`, который ставит рендер ячейки, — второго
+// источника (проброс биндинга через колонку в обработчик строки) заводить не надо.
+function cellBindingOf(
+  target: EventTarget | null | undefined
+): string | undefined {
+  if (!(target instanceof Element)) return undefined
+  return (
+    target
+      .closest('[data-sdui-cell-binding]')
+      ?.getAttribute('data-sdui-cell-binding') ?? undefined
+  )
+}
+
 /**
  * Серверная реакция на двойной клик по строке ТЧ (`table.rowOpen`,
  * frontend-spec-tch-dvoynoy-klik-forma-stroki §2).
@@ -47,6 +63,10 @@ function isInsideCellEditor(target: EventTarget | null | undefined): boolean {
  * диалог и хочет вернуться). Сервер отдаст тот же диалог — это нормально.
  * Не «оптимизировать» копипастой `lastActivatedRef` из `use-row-activate.ts`.
  *
+ * Рядом с `rowId` едет `field` — биндинг ячейки двойного клика (1С `Поле`), если ячейку
+ * удалось определить по DOM-якорю `data-sdui-cell-binding`. Сервер вправе его
+ * игнорировать: хендлеры, которым ячейка не нужна, читают только `rowId`.
+ *
  * Ключ строки в payload — `rowId`, а НЕ `id` (§2.3): у LIST там `id`, потому что
  * это ключ записи БД, а строка ТЧ может быть ещё не сохранена (`tmp-…`).
  * Без `rowId` не эмитим вовсе — сервер не может определить строку сам
@@ -71,7 +91,15 @@ export function useRowOpen(
       // behavior приходит с бэка (все три false): команда немутирующая, ревизию
       // не поднимает — открытие окна не должно стоить flush'а незакоммиченного
       // ввода и не снимает признак «есть изменения».
-      void dispatch({ type: 'COMMAND', command, value: { rowId } }, behavior)
+      const field = cellBindingOf(event?.target)
+      void dispatch(
+        {
+          type: 'COMMAND',
+          command,
+          value: field ? { rowId, field } : { rowId },
+        },
+        behavior
+      )
     },
     [command, behavior, dispatch]
   )

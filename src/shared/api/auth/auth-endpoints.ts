@@ -28,6 +28,7 @@ export const AUTH_PATHS = {
   refresh: '/api/auth/refresh',
   logout: '/api/auth/logout',
   me: '/api/auth/me',
+  selectionList: '/api/auth/selection-list',
 } as const
 
 /**
@@ -70,6 +71,19 @@ export const requestCurrentUser = async (
   const { data } = await authInstance.get<CurrentUser>(AUTH_PATHS.me, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
+  return data
+}
+
+/**
+ * Список выбора пользователей — то же, что показывает диалог запуска 1С: имена для входа тех,
+ * у кого в карточке пользователя стоит флаг «Показывать в списке выбора». Открыт без токена: на
+ * экране входа его ещё нет.
+ *
+ * Пустой список — штатный ответ, а не сбой: если флаг не стоит ни у кого, поле «Пользователь»
+ * остаётся обычным вводом. Ровно так же ведёт себя 1С.
+ */
+export const requestSelectionList = async (): Promise<string[]> => {
+  const { data } = await authInstance.get<string[]>(AUTH_PATHS.selectionList)
   return data
 }
 

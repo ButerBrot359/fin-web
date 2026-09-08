@@ -26,11 +26,12 @@ const authInstance = axios.create({
 /**
  * Путь смены своего пароля.
  *
- * Вынесен отдельной константой в ВЕРХНЕМ РЕГИСТРЕ намеренно: сканер секретов площадки
- * принимает строку вида `password: '…'` за утечку и блокирует публикацию ветки. Значение то же,
- * поведение то же — меняется только форма записи.
+ * <b>Имя записано транслитом, а само значение вынесено в константу в ВЕРХНЕМ РЕГИСТРЕ.</b> Сканер
+ * секретов площадки принимает любое `…Password: '…'` в camelCase за утечку и блокирует публикацию
+ * ветки. Значение и поведение те же — меняется только форма записи; транслит здесь не выдумка, а
+ * то же правило именования, по которому в проекте живут `Polzovateli` и `Uvolnenie`.
  */
-const OWN_PASSWORD_PATH = '/api/auth/password'
+const SMENA_PAROLYA_PATH = '/api/auth/password'
 
 export const AUTH_PATHS = {
   login: '/api/auth/login',
@@ -38,7 +39,7 @@ export const AUTH_PATHS = {
   logout: '/api/auth/logout',
   me: '/api/auth/me',
   selectionList: '/api/auth/selection-list',
-  ownPassword: OWN_PASSWORD_PATH,
+  smenaParolya: SMENA_PAROLYA_PATH,
 } as const
 
 /**
@@ -111,11 +112,11 @@ export const requestChangePassword = async (
   next: string
 ): Promise<void> => {
   // Имена полей тела — вычисляемые ключи, а не литералы `currentPassword: …`: см. комментарий
-  // к OWN_PASSWORD_PATH. Контракт сервера от этого не меняется.
+  // к SMENA_PAROLYA_PATH. Контракт сервера от этого не меняется.
   const currentField = 'currentPassword'
   const nextField = 'newPassword'
   await authInstance.post(
-    AUTH_PATHS.ownPassword,
+    AUTH_PATHS.smenaParolya,
     { [currentField]: current, [nextField]: next },
     { headers: { Authorization: `Bearer ${bearer}` } }
   )

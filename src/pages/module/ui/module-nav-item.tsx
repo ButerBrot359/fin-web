@@ -13,12 +13,14 @@ import type { NavItemProps } from '../types/module-nav'
 export const ModuleNavItem = ({ item, pageCode }: NavItemProps) => {
   const { i18n } = useTranslation()
 
+  // Собственные экраны вне SDUI (журнал регистрации, снятие блокировок) приходят с готовым
+  // маршрутом: у них нет ни типа метаданных, ни кода объекта, из которых строится ссылка ниже.
   const basePath = `/modules/${pageCode}/${item.type.toLowerCase()}/${item.code}`
   const params = new URLSearchParams()
   if (item.domainKind) params.set('domain', item.domainKind)
   if (item.skipDependsOn) params.set('skipDependsOn', 'true')
   const query = params.toString()
-  const url = query ? `${basePath}?${query}` : basePath
+  const url = item.route ?? (query ? `${basePath}?${query}` : basePath)
 
   return (
     <li>

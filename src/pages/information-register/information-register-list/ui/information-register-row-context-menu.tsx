@@ -12,15 +12,19 @@ interface InformationRegisterRowContextMenuProps {
   position: RegisterMenuPosition | null
   onClose: () => void
   onCreate: () => void
-  /** ПКМ по пустой области: строки нет ⇒ «Изменить» скрыт. */
+  /** ПКМ по пустой области: строки нет ⇒ команды над записью скрыты. */
   hasEntry: boolean
   onEdit: () => void
+  onCopy: () => void
+  onDelete: () => void
+  onRefresh: () => void
 }
 
 /**
  * 1С-стиль контекстное меню строки списка регистра сведений (SCRUM-353 §10):
- * «Создать» / «Изменить». Презентационный компонент — навигацию выполняет
- * страница; образец — OsvRowContextMenu.
+ * тот же набор команд, что на тулбаре и в «Ещё» — в 1С все три точки входа
+ * показывают одно меню. Презентационный компонент: навигацию и удаление
+ * выполняет страница; образец — OsvRowContextMenu.
  */
 export const InformationRegisterRowContextMenu = ({
   position,
@@ -28,8 +32,16 @@ export const InformationRegisterRowContextMenu = ({
   onCreate,
   hasEntry,
   onEdit,
+  onCopy,
+  onDelete,
+  onRefresh,
 }: InformationRegisterRowContextMenuProps) => {
   const { t } = useTranslation()
+
+  const run = (command: () => void) => () => {
+    command()
+    onClose()
+  }
 
   return (
     <Menu
@@ -40,24 +52,19 @@ export const InformationRegisterRowContextMenu = ({
         position ? { top: position.top, left: position.left } : undefined
       }
     >
-      <MenuItem
-        onClick={() => {
-          onCreate()
-          onClose()
-        }}
-      >
-        {t('actions.create')}
-      </MenuItem>
+      <MenuItem onClick={run(onCreate)}>{t('actions.create')}</MenuItem>
       {hasEntry && (
-        <MenuItem
-          onClick={() => {
-            onEdit()
-            onClose()
-          }}
-        >
-          {t('actions.change')}
-        </MenuItem>
+        <MenuItem onClick={run(onCopy)}>{t('actions.copy')}</MenuItem>
       )}
+      {hasEntry && (
+        <MenuItem onClick={run(onEdit)}>{t('actions.change')}</MenuItem>
+      )}
+      {hasEntry && (
+        <MenuItem onClick={run(onDelete)}>{t('actions.delete')}</MenuItem>
+      )}
+      <MenuItem onClick={run(onRefresh)}>
+        {t('documentListToolbar.refresh')}
+      </MenuItem>
     </Menu>
   )
 }

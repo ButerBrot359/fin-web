@@ -9,7 +9,7 @@ import {
   saveLastLogin,
   saveSession,
 } from '@/shared/api/auth/token-storage'
-import type { CurrentUser } from '@/shared/types/auth.types'
+import type { CurrentUser, TokenPair } from '@/shared/types/auth.types'
 
 /**
  * `unknown` — состояние до восстановления из хранилища. Отличать его от `anonymous`
@@ -33,12 +33,21 @@ interface AuthState {
   restore: () => void
   /** @throws ошибку axios с телом `ApiErrorBody` — текст отказа показывает форма входа. */
   signIn: (login: string, password: string) => Promise<CurrentUser>
+  /**
+   * Завести сессию по уже полученным токенам.
+   *
+   * Нужен входу по лицу: тот сам ходит к серверу (у него свой протокол со съёмкой серии кадров)
+   * и приносит готовый `TokenPair`. Всё, что происходит ПОСЛЕ получения токенов, обязано быть
+   * общим с парольным входом — иначе два способа входа со временем разойдутся в мелочах вроде
+   * запоминания логина, и расхождение вылезет не сразу.
+   */
+  completeSignIn: (tokens: TokenPair, fallbackLogin: string) => CurrentUser
   signOut: () => Promise<void>
   /** Сессия закончилась не по воле пользователя (refresh истёк, доступ отозван). */
   handleSessionExpired: () => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   status: 'unknown',
   user: null,
   sessionExpired: false,
@@ -59,13 +68,17 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signIn: async (login, password) => {
     const tokens = await requestLogin({ login, password })
+    return get().completeSignIn(tokens, login)
+  },
+
+  completeSignIn: (tokens, fallbackLogin) => {
     saveSession(tokens.accessToken, tokens.refreshToken, tokens.user)
     // Запоминаем КАНОНИЧЕСКОЕ написание логина — то, что вернул сервер, а не то, что
     // набрали. Иначе введённое «  АЙБАС   Сара » осело бы в предзаполнении поля и в
     // выпадашке ровно в таком виде: на вход это не влияет (сервер нормализует), но
     // человек каждый раз видел бы собственную опечатку вместо «Айбас Сара».
     // Запасной вариант — введённое значение: без него пустой ответ сервера стёр бы память.
-    saveLastLogin(tokens.user.login || login)
+    saveLastLogin(tokens.user.login || fallbackLogin)
     set({ status: 'authenticated', user: tokens.user, sessionExpired: false })
     return tokens.user
   },

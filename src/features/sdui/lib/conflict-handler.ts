@@ -33,6 +33,13 @@ export function handleConflict(
     // draft свежим OPEN; retry намеренно не вызывается.
     showToast('warning', i18n.t('sdui.conflict.productionCalendarState'))
     void reopen()
+  } else if (err.code === 'OBJECT_VERSION_CONFLICT') {
+    // Оптимистическая блокировка (1С §9.1.4): объект изменили под нами, запись НЕ выполнена.
+    // Форму намеренно НЕ переоткрываем и не ретраим: набранное пользователем осталось бы под
+    // переоткрытием и пропало, а повтор вслепую упёрся бы в ту же версию. Показываем текст
+    // бэка — он объясняет, что документ надо открыть заново, — и оставляем данные на экране,
+    // чтобы человек мог их перенести. То же поведение, что у OBJECT_LOCKED ниже.
+    showToast('warning', err.message ?? i18n.t('sdui.conflict.objectVersionConflict'))
   } else if (err.code === 'OBJECT_LOCKED' || err.code === 'LOCK_CONFLICT') {
     // SCRUM-330 Работа 1: объект занят (другой пользователь / конкурентная
     // запись / фоновая задача). Запись НЕ выполнена, но правки целы: форму не

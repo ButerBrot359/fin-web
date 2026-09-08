@@ -115,7 +115,10 @@ export const ItogiHierarchyTable: FC<NodeProps> = ({ node }) => {
         variant="outlined"
         sx={{ flex: '1 1 auto', overflowY: 'auto' }}
       >
-        <Table size="small">
+        {/* Скролл живёт внутри свода — шапка колонок обязана оставаться видимой
+            (та же причина, что у ТЧ: без stickyHeader заголовки уезжают вместе
+            со строками). */}
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               {columns.map((col) => (

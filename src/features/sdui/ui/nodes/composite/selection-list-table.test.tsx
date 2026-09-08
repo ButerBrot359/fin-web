@@ -74,6 +74,16 @@ describe('список-отбор', () => {
     ]
   })
 
+  // Витрина прокручивается внутри себя — подпись колонки, по которой идёт
+  // отбор, обязана оставаться видимой (та же правка, что у ТЧ).
+  it('шапка закреплена при внутренней прокрутке', () => {
+    const { container } = render(<SelectionListTable node={node} />)
+
+    const th = container.querySelector('thead th')
+    expect(th).toBeTruthy()
+    expect(getComputedStyle(th!).position).toBe('sticky')
+  })
+
   it('клик по строке публикует выбор под ключом master-detail', () => {
     render(<SelectionListTable node={node} />)
 

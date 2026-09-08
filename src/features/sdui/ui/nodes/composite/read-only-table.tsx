@@ -132,12 +132,12 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
       rowSpan={cell.rowSpan}
       align={cell.align}
       // overflow:hidden — безусловно: обрезка заголовка нужна и без ресайза,
-      // иначе подпись шире колонки выходит за её границы. position:relative
-      // требуется только под абсолютную ручку ресайза.
-      sx={{
-        overflow: 'hidden',
-        ...(isResizable ? { position: 'relative' } : {}),
-      }}
+      // иначе подпись шире колонки выходит за её границы. position НЕ трогаем:
+      // ячейке шапки его уже задал stickyHeader (`sticky`), и прежний
+      // `relative` — якорь ручки ресайза — замещал бы закрепление (та же
+      // регрессия, что чинилась в editable-table-head.tsx). Ручке достаточно
+      // sticky: это тоже позиционированный элемент.
+      sx={{ overflow: 'hidden' }}
     >
       <ColumnHeaderLabel label={cell.label} align={cell.align ?? 'left'} />
       {canResize(cell) && (
@@ -193,6 +193,11 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
       <TableContainer component={Paper} ref={setContainerRef}>
         <Table
           size="small"
+          // Шапка колонок закреплена — как у редактируемых ТЧ. Своей прокрутки
+          // у нередактируемой ТЧ нет, поэтому липнет она к прокручиваемому
+          // предку (телу страницы либо растянутой карточке): пока таблица на
+          // экране, заголовки видны. Без этого длинная ТЧ листалась «вслепую».
+          stickyHeader
           // Сетка одинакова во всех ТЧ и не зависит от ресайза — см. коммент в
           // editable-table.tsx.
           sx={{

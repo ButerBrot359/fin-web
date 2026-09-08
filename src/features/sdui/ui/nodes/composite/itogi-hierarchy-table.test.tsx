@@ -98,6 +98,17 @@ describe('ItogiHierarchyTable — свод «Итоги»', () => {
     expect(screen.getAllByText('167672').length).toBe(1)
   })
 
+  // Свод прокручивается внутри себя — заголовки колонок обязаны оставаться
+  // видимыми, как у ТЧ (отказ 08.09.2026).
+  it('шапка закреплена при внутренней прокрутке', () => {
+    state.Itogi = rows
+    const { container } = render(<ItogiHierarchyTable node={node} />)
+
+    const th = container.querySelector('thead th')
+    expect(th).toBeTruthy()
+    expect(getComputedStyle(th!).position).toBe('sticky')
+  })
+
   it('шапка берёт подписи колонок из узлов', () => {
     render(<ItogiHierarchyTable node={node} />)
     expect(screen.getByText('Физическое лицо')).toBeTruthy()

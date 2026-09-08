@@ -44,7 +44,8 @@ beforeEach(() => {
 
 afterEach(cleanup)
 
-const faceButton = () => screen.getByRole('button', { name: 'Войти по лицу' })
+const faceButton = () =>
+  screen.getByRole<HTMLButtonElement>('button', { name: 'Войти по лицу' })
 
 const clickFaceButton = () => fireEvent.click(faceButton())
 

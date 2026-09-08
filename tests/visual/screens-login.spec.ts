@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 
 import { freezeTime } from './helpers/freeze'
 import { mockApi } from './helpers/mock-api'
+import { stableScreenshot } from './helpers/stable-screenshot'
 
 /**
  * Окно авторизации по Figma 545:22859 (чек-лист, пачка 8): сцена ui-02 с
@@ -19,9 +20,9 @@ test('окно авторизации — дефолтное состояние'
   await expect(page.getByRole('heading', { name: 'Вход' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Войти' })).toBeVisible()
   // Прямой скрин + toMatchSnapshot: стабилизатор toHaveScreenshot стабильно
-  // терял слой ламп (см. коммент у <img> в login-page) — сравниваем кадр,
-  // снятый обычным page.screenshot.
-  expect(await page.screenshot()).toMatchSnapshot('login-default.png', {
+  // терял слой ламп (см. коммент у <img> в login-page) — ретраим-до-стабильного
+  // кадра сами (stableScreenshot).
+  expect(await stableScreenshot(page)).toMatchSnapshot('login-default.png', {
     maxDiffPixelRatio: 0.001,
   })
 })
@@ -38,7 +39,7 @@ test('окно авторизации — ошибка входа', async ({ pag
   await page.getByLabel('Пароль', { exact: true }).fill('wrong')
   await page.getByRole('button', { name: 'Войти' }).click()
   await expect(page.getByText('Неверный логин или пароль')).toBeVisible()
-  expect(await page.screenshot()).toMatchSnapshot('login-error.png', {
+  expect(await stableScreenshot(page)).toMatchSnapshot('login-error.png', {
     maxDiffPixelRatio: 0.001,
   })
 })

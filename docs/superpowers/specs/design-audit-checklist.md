@@ -161,3 +161,28 @@ workspace-tabs); легаси-мир руками не полируем (Ф-4/Ф
   пустые clipPath вычищены), кнопка «Войти» вправо, скриншот-тесты
   login-default/login-error (через page.screenshot+toMatchSnapshot:
   стабилизатор toHaveScreenshot терял слой ламп).
+
+## Пачка 9 «Повторный аудит» (08.09.2026, полная сверка с Figma)
+
+Найдено и закрыто три расхождения, не попавших в Ф3:
+
+- ✅ Чекбоксы: MUI-дефолт (синий квадрат, белая галка) ≠ Figma 772:24370
+  (24×24, тёмная рамка, checked — салатовая заливка с тёмной галкой).
+  Кастомные глифы `src/shared/ui/checkbox/checkbox-icons.tsx` + MuiCheckbox
+  defaultProps/styleOverrides в теме; state indeterminate — салатовый с
+  тёмным тире. Радио не трогали: в макетах виден только unchecked
+  (тёмная окружность) — совпадает с текущим видом.
+- ✅ Кнопка «Войти»: по метаданным 545:22859 центрирована (x=367 при
+  ширине 814) и активна даже при пустых полях; была вправо и disabled.
+  Теперь disabled только на время запроса и в состоянии ошибки до правки
+  полей (правка сбрасывает отказ).
+- ✅ «Добавить» тулбара ТЧ: был фронтовой хардкод variant=primary (второй
+  лайм на экране); по Figma 772:24370 — secondary с плюсом. Исправлены
+  table-toolbar и tabel-matrix-toolbar; primary в диалоге Подбора оставлен
+  (там это главное действие диалога).
+
+Хвосты тестов: юниты на прокидку props.size:'small' (field-size-small.test),
+stableScreenshot (ретрай-до-стабильного кадра) для login-скринов,
+timezoneId пинован в playwright.config, стейл-коммент [4..32]→[4..24] в
+resolve-stack-gap. Эталоны: dictionary-card/otpusk-card/tabel-matrix +
+login-default/login-error обновлены осознанно (дифф = эти три фикса).

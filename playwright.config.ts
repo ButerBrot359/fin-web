@@ -7,6 +7,9 @@ export default defineConfig({
     baseURL: 'http://localhost:4173',
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1,
+    // Момент времени морозит freezeTime, но форматирование дат зависит и от
+    // зоны рендера — пинуем, чтобы эталоны не зависели от TZ машины.
+    timezoneId: 'Asia/Almaty',
   },
   expect: {
     toHaveScreenshot: { maxDiffPixelRatio: 0.001, animations: 'disabled' },

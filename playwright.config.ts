@@ -12,7 +12,14 @@ export default defineConfig({
     timezoneId: 'Asia/Almaty',
   },
   expect: {
-    toHaveScreenshot: { maxDiffPixelRatio: 0.001, animations: 'disabled' },
+    // ratio 0.001 на полноэкранном 1440×900 — это ~1300px допуска: дрейф
+    // мелкого элемента (иконка, чекбокс) пролезал молча. Абсолютная крышка
+    // 400px оставляет запас на анти-алиасинг, но ловит смысловые диффы.
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.001,
+      maxDiffPixels: 400,
+      animations: 'disabled',
+    },
   },
   webServer: {
     command: 'npm run build && npm run preview -- --port 4173 --strictPort',

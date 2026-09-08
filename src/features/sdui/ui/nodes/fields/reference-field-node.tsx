@@ -57,13 +57,29 @@ function toReferenceValue(raw: unknown): ReferenceValue | null {
   return null
 }
 
-function toReferenceArray(raw: unknown): ReferenceValue[] {
+// Поле над табличной частью ждёт ссылки, но строку ТЧ ({rowId, <колонка>: {id, presentation}})
+// сюда приносит любой источник, который не привёл значение к контракту: команда таблицы,
+// доменный обработчик, восстановленный черновик. Без разбора по колонке (props.binding) поле
+// рисует пустоту при заполненной табличной части — выбор пользователя выглядит исчезнувшим.
+function toReferenceValueOrRow(
+  raw: unknown,
+  binding?: string
+): ReferenceValue | null {
+  const direct = toReferenceValue(raw)
+  if (direct || !binding) return direct
+  if (raw && typeof raw === 'object' && binding in raw) {
+    return toReferenceValue((raw as Record<string, unknown>)[binding])
+  }
+  return null
+}
+
+function toReferenceArray(raw: unknown, binding?: string): ReferenceValue[] {
   if (Array.isArray(raw)) {
     return raw
-      .map(toReferenceValue)
+      .map((item) => toReferenceValueOrRow(item, binding))
       .filter((v): v is ReferenceValue => v !== null)
   }
-  const single = toReferenceValue(raw)
+  const single = toReferenceValueOrRow(raw, binding)
   return single ? [single] : []
 }
 
@@ -73,6 +89,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
 
   const domain = node.props?.domain as string | undefined
+  const multiSelectBinding = node.props?.binding as string | undefined
   const targetTypeCode = node.props?.targetTypeCode as string | undefined
   const filter = node.props?.filter as Record<string, unknown> | undefined
   const optionsSource = node.props?.optionsSource as
@@ -112,7 +129,9 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     !multiple && rawValue ? toSelectOption(rawValue as ReferenceValue) : null
   )
   const selectedOptions = useStableSelectOptions(
-    multiple ? toReferenceArray(rawValue).map(toSelectOption) : EMPTY_OPTIONS
+    multiple
+      ? toReferenceArray(rawValue, multiSelectBinding).map(toSelectOption)
+      : EMPTY_OPTIONS
   )
 
   if (!f.visible) return null

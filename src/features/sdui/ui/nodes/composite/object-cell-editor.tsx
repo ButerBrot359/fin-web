@@ -1,5 +1,5 @@
 import { useEffect, useState, type FC } from 'react'
-import { Box, MenuItem, Select } from '@mui/material'
+import { Box, ButtonBase, Menu, MenuItem } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
@@ -8,6 +8,7 @@ import type { SelectOption } from '@/shared/types/select-option'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
 import { fetchReferenceOptions } from '../../../api/reference-options'
 import { renderCellValue } from '../../../lib/utils/cell-value'
+import { openReferencePicker } from '../../../lib/reference-picker-gateway'
 import {
   sortAllowedTypes,
   memberKey,
@@ -49,18 +50,15 @@ const wrapperSx: SxProps<Theme> = {
   },
 }
 
-const memberSelectSx: SxProps<Theme> = {
-  flex: '0 0 auto',
-  minWidth: 96,
-  maxWidth: 140,
+/** Приглашение «выбрать тип» в ПУСТОЙ ячейке — на месте будущего значения. */
+const choosePromptSx: SxProps<Theme> = {
+  flex: '1 1 auto',
+  justifyContent: 'flex-start',
+  minHeight: '28px',
+  padding: '4px 8px',
   fontSize: '14px',
-  '&::before, &::after': { display: 'none' },
-  '& .MuiSelect-select': {
-    padding: '4px 8px !important',
-    minHeight: '28px',
-    display: 'flex',
-    alignItems: 'center',
-  },
+  color: 'text.secondary',
+  textAlign: 'left',
 }
 
 /**
@@ -81,6 +79,13 @@ const memberSelectSx: SxProps<Theme> = {
  * Отличие от шапки — источник данных: ячейка ТЧ не читает стейт формы
  * (`useFieldNode`), а получает `colProps`/`value` и отдаёт `onChange`/`onCommit`,
  * как остальные редакторы ячеек.
+ *
+ * ВЫБОР ТИПА — ШАГ, А НЕ ОТДЕЛЬНОЕ ПОЛЕ. Раньше в ячейке постоянно висел селектор
+ * члена рядом со значением: он съедал ширину и в 1С такого поля нет. Теперь как в
+ * эталоне: пустая ячейка — приглашение «Выбрать тип», по клику меню «Выбор типа
+ * данных», а СРАЗУ после выбора типа открывается список записей этого типа
+ * (`openReferencePicker`, тот же пикер, что у ссылочной колонки). Очистка значения
+ * возвращает ячейку в исходное состояние — тип снова не задан, как в 1С.
  */
 export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
   colProps,
@@ -101,6 +106,8 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
   const [userMemberKey, setUserMemberKey] = useState<string | undefined>(
     undefined
   )
+  /** Якорь меню «Выбор типа данных»; null — меню закрыто. */
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
 
   // Смена «Свойства»/счёта перестраивает набор членов колонки: ручной выбор от
   // прежнего набора не переносим (см. membersSignature).
@@ -140,7 +147,22 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
   )
   const member = findMemberByKey(allowedTypes, selectedKey)
 
+  const memberTitle = (tp: AllowedType) =>
+    // У примитивных членов бэк presentation не присылает — подписываем по
+    // domainKind именами типов 1С («Строка», «Число», «Булево», «Дата»),
+    // иначе часть пунктов меню была бы пустой.
+    tp.presentation ??
+    t(`sdui.objectField.primitive.${tp.domainKind}`, {
+      defaultValue: tp.domainKind,
+    })
+
+  const applyPicked = (picked: AllowedType, option: SelectOption | null) => {
+    onChange(option ? buildObjectValue(picked, option) : null)
+    onCommit()
+  }
+
   const handleMemberChange = (nextKey: string) => {
+    setMenuAnchor(null)
     setUserMemberKey(nextKey)
     // Семантика 1С: смена члена ВСЕГДА чистит значение (без кэша «по типу»).
     // Коммитим только если чистить было что — иначе это локальный выбор типа,
@@ -149,49 +171,31 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
       onChange(null)
       onCommit()
     }
+    // Эталон: «Выбор типа данных» и сразу — форма списка выбранного типа.
+    // Член без ссылочной цели (примитив) списка не имеет: выбор типа остаётся
+    // выбором типа, редактор ниже честно скажет, что член не поддержан.
+    const picked = findMemberByKey(allowedTypes, nextKey)
+    if (picked?.optionsSource && picked.targetTypeCode) {
+      openReferencePicker({
+        mode: 'list',
+        domain: picked.domainKind,
+        typeCode: picked.targetTypeCode,
+        onSelect: (option) => {
+          applyPicked(picked, option)
+        },
+      })
+    }
+  }
+
+  // Очистка значения возвращает ячейку к «тип не задан»: следующий выбор снова
+  // начинается с меню типов, как в 1С, а не молча остаётся на прежнем типе.
+  const handleValueCleared = () => {
+    setUserMemberKey(undefined)
   }
 
   return (
     <Box sx={wrapperSx}>
-      {/* Один член — выбирать не из чего, селектор только съедал бы ширину
-          ячейки (см. тот же случай в шапке). */}
-      {allowedTypes.length > 1 && (
-        <Select
-          value={selectedKey ?? ''}
-          onChange={(e) => {
-            handleMemberChange(e.target.value)
-          }}
-          size="small"
-          variant="standard"
-          // Тип не подставляется сам (1С сначала спрашивает «Выбор типа
-          // данных») — пустая ячейка должна ЧИТАТЬСЯ как приглашение выбрать,
-          // иначе селектор выглядит просто пустым местом.
-          displayEmpty
-          renderValue={(key) =>
-            key
-              ? (findMemberByKey(allowedTypes, key)?.presentation ??
-                t(
-                  `sdui.objectField.primitive.${findMemberByKey(allowedTypes, key)?.domainKind ?? ''}`,
-                  { defaultValue: '' }
-                ))
-              : t('sdui.objectField.choosePlaceholder')
-          }
-          sx={memberSelectSx}
-        >
-          {allowedTypes.map((tp) => (
-            <MenuItem key={memberKey(tp)} value={memberKey(tp)}>
-              {/* У примитивных членов бэк presentation не присылает — подписываем
-                по domainKind именами типов 1С («Строка», «Число», «Булево»,
-                «Дата»), иначе четыре пункта из семи были бы пустыми. */}
-              {tp.presentation ??
-                t(`sdui.objectField.primitive.${tp.domainKind}`, {
-                  defaultValue: tp.domainKind,
-                })}
-            </MenuItem>
-          ))}
-        </Select>
-      )}
-      {member && (
+      {member ? (
         // key: смена члена перемонтирует пикер — чистые inputValue и кэш опций
         <ObjectCellValuePicker
           key={memberKey(member)}
@@ -200,8 +204,38 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
           placeholder={t('sdui.objectField.unsupportedMember')}
           onChange={onChange}
           onCommit={onCommit}
+          onCleared={handleValueCleared}
         />
+      ) : (
+        // Тип не задан. Один член — выбирать не из чего: ветка недостижима,
+        // resolveSelectedMemberKey отдаёт единственного члена сам.
+        <ButtonBase
+          sx={choosePromptSx}
+          onClick={(e) => {
+            setMenuAnchor(e.currentTarget)
+          }}
+        >
+          {t('sdui.objectField.choosePlaceholder')}
+        </ButtonBase>
       )}
+      <Menu
+        anchorEl={menuAnchor}
+        open={menuAnchor !== null}
+        onClose={() => {
+          setMenuAnchor(null)
+        }}
+      >
+        {allowedTypes.map((tp) => (
+          <MenuItem
+            key={memberKey(tp)}
+            onClick={() => {
+              handleMemberChange(memberKey(tp))
+            }}
+          >
+            {memberTitle(tp)}
+          </MenuItem>
+        ))}
+      </Menu>
     </Box>
   )
 }
@@ -212,6 +246,8 @@ interface ObjectCellValuePickerProps {
   placeholder: string
   onChange: (value: unknown) => void
   onCommit: () => void
+  /** Значение очистили — тип у ячейки снова не задан (см. handleValueCleared). */
+  onCleared: () => void
 }
 
 const ObjectCellValuePicker: FC<ObjectCellValuePickerProps> = ({
@@ -220,6 +256,7 @@ const ObjectCellValuePicker: FC<ObjectCellValuePickerProps> = ({
   placeholder,
   onChange,
   onCommit,
+  onCleared,
 }) => {
   const optionsSource = member.optionsSource
 
@@ -289,6 +326,7 @@ const ObjectCellValuePicker: FC<ObjectCellValuePickerProps> = ({
         onChange(opt ? buildObjectValue(member, opt) : null)
         resetOptions()
         onCommit()
+        if (!opt) onCleared()
       }}
     />
   )

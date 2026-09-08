@@ -63,6 +63,9 @@ const TreasuryExportPage = lazy(() =>
     default: m.TreasuryExportPage,
   }))
 )
+const AuditLogPage = lazy(() =>
+  import('@/pages/audit-log').then((m) => ({ default: m.AuditLogPage }))
+)
 const InactivityLocksPage = lazy(() =>
   import('@/pages/inactivity-locks').then((m) => ({
     default: m.InactivityLocksPage,
@@ -90,6 +93,8 @@ const AppRoutes = () => {
             path="/admin/inactivity-locks"
             element={<InactivityLocksPage />}
           />
+          {/* Журнал регистрации действий (приказ МФ РК № 254, п. 27) — только чтение. */}
+          <Route path="/admin/audit" element={<AuditLogPage />} />
           {/*
             Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект
             navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.

@@ -5,9 +5,21 @@ export const CalendarLegend: FC = () => {
   const { t } = useTranslation()
 
   const items = [
-    { key: 'working', swatch: 'bg-[#2a75f4]', label: t('sdui.calendar.legend.working') },
-    { key: 'nonWorking', swatch: 'bg-gray-400', label: t('sdui.calendar.legend.nonWorking') },
-    { key: 'manual', swatch: 'bg-amber-100', label: t('sdui.calendar.legend.manual') },
+    {
+      key: 'working',
+      swatch: 'bg-accent-02',
+      label: t('sdui.calendar.legend.working'),
+    },
+    {
+      key: 'nonWorking',
+      swatch: 'bg-ui-05',
+      label: t('sdui.calendar.legend.nonWorking'),
+    },
+    {
+      key: 'manual',
+      swatch: 'bg-support-03/20',
+      label: t('sdui.calendar.legend.manual'),
+    },
   ]
 
   return (

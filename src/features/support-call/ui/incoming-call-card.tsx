@@ -51,7 +51,7 @@ export const IncomingCallCard = ({
 
   return (
     <Grow in appear>
-      <div className="w-80 overflow-hidden rounded-[20px] bg-ui-01 shadow-[0px_3px_24px_0px_rgba(42,117,244,0.4)]">
+      <div className="w-80 overflow-hidden rounded-[20px] bg-ui-01 shadow-popup">
         <div className="flex items-center gap-2 bg-support-01 px-5 py-3 text-ui-01">
           <PhoneInTalkIcon sx={{ fontSize: 18 }} />
           <span className="flex-1 text-body2">

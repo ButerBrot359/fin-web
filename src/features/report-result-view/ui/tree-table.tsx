@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-table'
 
 import ArrowDownIcon from '@/shared/assets/icons/arrow-down.svg'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 import type {
   ReportColumnDto,
@@ -38,8 +39,9 @@ interface TreeTableProps {
 
 /** Сетка 1С: тонкие серые линии, плотные ячейки. */
 const tdBase =
-  'overflow-hidden whitespace-nowrap border border-[#d9d9d9] px-1.5 py-0.5'
-const thBase = 'whitespace-nowrap border border-[#d9d9d9] px-1.5 py-1 text-left'
+  'overflow-hidden whitespace-nowrap border border-pending-gray-1 px-1.5 py-0.5'
+const thBase =
+  'whitespace-nowrap border border-pending-gray-1 px-1.5 py-1 text-left'
 
 /** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, 13px, без капса. */
 const thTextSx = { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
@@ -363,7 +365,7 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
           sx={
             bold
               ? { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
-              : { color: '#333', fontSize: DATA_FS }
+              : { color: cssVar(palette.pendingText1), fontSize: DATA_FS }
           }
         >
           {label}
@@ -373,7 +375,7 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
   }
 
   return (
-    <div className="overflow-auto rounded-md border border-[#d9d9d9]">
+    <div className="overflow-auto rounded-md border border-pending-gray-1">
       <table className="table-fixed border-collapse bg-white">
         <colgroup>
           <col style={{ width: treeColWidthPx }} />
@@ -614,34 +616,70 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
   const measureHead3 = useMemo(() => {
     const hasGroups = measureColumns.some((c) => columnGroupTitle(c, isKz))
     if (!hasGroups) return null
-    const topRow: { key: string; title: string; colSpan: number; rowSpan: number }[] = []
-    const midRow: { key: string; title: string; colSpan: number; rowSpan: number }[] = []
+    const topRow: {
+      key: string
+      title: string
+      colSpan: number
+      rowSpan: number
+    }[] = []
+    const midRow: {
+      key: string
+      title: string
+      colSpan: number
+      rowSpan: number
+    }[] = []
     const botRow: { key: string; col: ReportColumnDto }[] = []
     let i = 0
     while (i < measureColumns.length) {
       const col = measureColumns[i]
       const group = columnGroupTitle(col, isKz)
       if (!group) {
-        topRow.push({ key: col.code, title: columnTitle(col, isKz), colSpan: 1, rowSpan: 3 })
+        topRow.push({
+          key: col.code,
+          title: columnTitle(col, isKz),
+          colSpan: 1,
+          rowSpan: 3,
+        })
         i++
         continue
       }
       let j = i
-      while (j < measureColumns.length && columnGroupTitle(measureColumns[j], isKz) === group) j++
-      topRow.push({ key: `grp-${col.code}`, title: group, colSpan: j - i, rowSpan: 1 })
+      while (
+        j < measureColumns.length &&
+        columnGroupTitle(measureColumns[j], isKz) === group
+      )
+        j++
+      topRow.push({
+        key: `grp-${col.code}`,
+        title: group,
+        colSpan: j - i,
+        rowSpan: 1,
+      })
       let k = i
       while (k < j) {
         const c = measureColumns[k]
         const sub = columnSubGroupTitle(c, isKz)
         if (!sub) {
-          midRow.push({ key: c.code, title: columnTitle(c, isKz), colSpan: 1, rowSpan: 2 })
+          midRow.push({
+            key: c.code,
+            title: columnTitle(c, isKz),
+            colSpan: 1,
+            rowSpan: 2,
+          })
           k++
           continue
         }
         let m = k
-        while (m < j && columnSubGroupTitle(measureColumns[m], isKz) === sub) m++
-        midRow.push({ key: `sub-${c.code}`, title: sub, colSpan: m - k, rowSpan: 1 })
-        for (let x = k; x < m; x++) botRow.push({ key: measureColumns[x].code, col: measureColumns[x] })
+        while (m < j && columnSubGroupTitle(measureColumns[m], isKz) === sub)
+          m++
+        midRow.push({
+          key: `sub-${c.code}`,
+          title: sub,
+          colSpan: m - k,
+          rowSpan: 1,
+        })
+        for (let x = k; x < m; x++)
+          botRow.push({ key: measureColumns[x].code, col: measureColumns[x] })
         k = m
       }
       i = j
@@ -736,7 +774,7 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
   }
 
   return (
-    <div className="overflow-auto rounded-md border border-[#d9d9d9]">
+    <div className="overflow-auto rounded-md border border-pending-gray-1">
       <table className="table-fixed border-collapse bg-white">
         <colgroup>
           {leafColumns.map((col) => (
@@ -762,9 +800,9 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                 </th>
                 {useMeasure3
                   ? (idx === 0
-                      ? (measureHead3?.topRow ?? [])
+                      ? measureHead3.topRow
                       : idx === 1
-                        ? (measureHead3?.midRow ?? [])
+                        ? measureHead3.midRow
                         : []
                     ).map((cell) => (
                       <th
@@ -830,7 +868,7 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
               ))}
               {/* Форма 326: нижний ряд шапки мер (Кол-во/Сумма под Дебет/Кредит). */}
               {useMeasure3 &&
-                (measureHead3?.botRow ?? []).map(({ key, col }) => (
+                measureHead3.botRow.map(({ key, col }) => (
                   <th key={key} className={thBase}>
                     <Typography variant="body2" sx={thTextSx}>
                       {columnTitle(col, isKz)}

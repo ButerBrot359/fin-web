@@ -54,11 +54,11 @@ features/example/
 
 ### Граница
 
-| Зона | Пути |
-|---|---|
-| **SDUI** | `src/features/sdui/`, `src/pages/documents/documents-entry/ui/sdui-document-page.tsx`, `src/pages/documents/document-redirect/` |
+| Зона       | Пути                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **SDUI**   | `src/features/sdui/`, `src/pages/documents/documents-entry/ui/sdui-document-page.tsx`, `src/pages/documents/document-redirect/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Легаси** | `src/features/form-renderer/`, `src/features/generate-form-config/`, `src/features/tarifikatsiya/`, `src/features/dict-sidebar/`, `src/pages/documents/documents-entry/ui/legacy-document-entry-page.tsx`, `src/pages/documents/document-list/`, `src/pages/documents/document-movements/`, `src/pages/dictionaries/`, `src/pages/account-plan/`, `src/pages/account-card/`, `src/pages/accounting-register/`, `src/pages/accumulation-register/`, `src/pages/information-register/`, `src/pages/financing-plan-upload/`, `src/pages/osv-report/`, `src/pages/reports/`, `src/pages/universal-domain/`, `src/entities/form-config/`, `src/shared/lib/eav/`, `src/shared/lib/filter/`, `src/shared/lib/dictionary-entry/` |
-| **Общее** | `src/shared/ui/`, `src/shared/api/`, `src/shared/types/`, `src/entities/*` (кроме form-config), `src/features/workspace-tabs/`, `src/features/table-filter/`, `src/features/navigation-buttons/`, `src/features/favorite-button/` |
+| **Общее**  | `src/shared/ui/`, `src/shared/api/`, `src/shared/types/`, `src/entities/*` (кроме form-config), `src/features/workspace-tabs/`, `src/features/table-filter/`, `src/features/navigation-buttons/`, `src/features/favorite-button/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 **Точка ветвления:** `src/pages/documents/documents-entry/ui/document-entry-page.tsx` — флаг `newView` из `useDocumentType`.
 
@@ -74,6 +74,16 @@ features/example/
 
 - Авторитетная спека архитектуры: `docs/superpowers/specs/2026-07-02-sdui-course-audit.md`
 - Карта границы легаси/SDUI: `docs/superpowers/specs/2026-07-02-sdui-code-review.md`
+
+## Правила дизайна
+
+Полный свод: [docs/design-rules.md](docs/design-rules.md). Жёсткий минимум:
+
+- **Цвета только токенами** (`tokens.ts` → tailwind-классы или `cssVar()`); literal-hex валит страж дрейфа.
+- **Отступы по 4px-шкале** (4…32); ритм форм 16/32; гэп тулбара 8.
+- **Кнопки только `@/shared/ui/buttons`** (сырой MUI Button запрещён), **иконки только из `@/shared/ui/icons`** (реестр Figma).
+- SDUI-раскладка приходит с провода (layout-пропы, спека `2026-09-04-sdui-design-constructor-spec.md`) — не хардкодить компоновку под экран.
+- Любое намеренное визуальное изменение = обновление эталонов `npm run test:visual:update` в том же PR; перед мержем в dev `npm run test:visual` обязателен наравне с build.
 
 ## Правила кода
 

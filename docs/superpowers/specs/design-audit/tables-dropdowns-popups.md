@@ -1,0 +1,138 @@
+# Ф3-аудит: таблицы, дропдауны/поповеры, попапы, тосты
+
+fileKey Figma: `8RxAFhNubquQ1bz912H2wB`. Скрины в `../figma/`.
+
+## §1. Спека Figma
+
+### Таблица — эталон (164:3535 «Table»)
+
+- Высота ячейки (шапка и данные одинаково): **42px**.
+- Паддинг ячейки: **8px слева**, текст вертикально центрирован (12px сверху/снизу вокруг строки текста высотой 18px).
+- Шрифт ячейки: Body 2 — Google Sans Medium 14/100%.
+- Состояние «Chosen» (выбранная/наведённая строка): фон **UI 07 `#E0EAFC`**.
+- Состояние «Focused» (редактируемая ячейка): нижняя синяя граница, курсор ввода — Accent 02 `#2A75F4`.
+- Заголовок: текст — обычный вес, без заливки фона; линия под шапкой — тёмная (UI 06 `#222124`).
+- Иконки в ячейках: сортировка (стрелка) в заголовке, доп. иконки — справа (Icon=Right/Right 2) и слева (Icon=Left).
+- Цвета из variable_defs узла: `UI 06 #222124`, `UI 01 #FFFFFF`, `Accent 02 #2A75F4`, `UI 07 #E0EAFC`.
+
+### Список документов (167:5013 «ПКО список»)
+
+- Шапка страницы + панель кнопок (Создать/печать/отчёты) + 3 фильтра в ряд + поиск + таблица + пагинация-вкладки снизу.
+- Строки таблицы: **без зебры** — все строки белые (UI 01), кроме выделенных/наведённых — заливка **UI 07 `#E0EAFC`** (те же 2 строки подряд в примере).
+- Заголовок колонки: серый текст (UI 05 `#9FA9BA`), сортирующая колонка — со стрелкой; тонкая линия-разделитель под заголовком (не жирная тёмная — легче, чем в 164:3535/466:15058).
+- Фильтры над таблицей — компонент `Filter` (166:4529): пилюля-инпут с воронкой слева, шевроном справа, плейсхолдер `Название`; в выбранном состоянии — синяя метка-лейбл сверху + значение + крестик очистки.
+- Search (146:1060): скруглённое поле, лупа слева, плейсхолдер `Поиск по истории`; в активном состоянии — синяя лупа, текст жирнее, крестик очистки справа.
+
+### Read-only таблица «Проводки документа» (466:15058)
+
+- Тонкие таблицы без внешней рамки и без вертикальных линий между колонками — только горизонтальные разделители строк + тёмная линия под шапкой. Это прямо описано в коде (см. §2) как узел 466-15059/SCRUM-312 — эталон уже воспроизведён.
+
+### Dropdown menu (306:9741, вкл. date-picker 314:12446)
+
+- Инпут-триггер: высота **50px**.
+- Пункт списка: высота **40px**, ширина по контейнеру (338px при наличии скроллбара 4px, иначе 350px), без внутренних зазоров между пунктами (стек впритык).
+- Состояние «выбран ранее» (`Chosen before=Yes`) — заливка пункта светло-синим (UI 04 `#DBE7FD`/UI 07).
+- Поиск внутри дропдауна: строка ввода в шапке (в самом Input, а не отдельным полем внутри списка), пустой результат — иконка лупы + текст «Нет подходящих результатов / Перепроверьте поисковой запрос и попробуйте снова».
+- Футер с кнопками («Показать все» / «Добавить»): контейнер высотой **64px**, кнопки **40px** высотой, вертикальный паддинг 12px, отделены от списка (визуально — верхняя граница).
+- Тень поповера — **Shadow 1**: `drop-shadow(0 3px 24px #2A75F466)` (синеватая, не серая). Радиус скругления паппера — 8px (по Paper-обёртке).
+- Date picker: заголовок год/месяц-навигация 32px, сетка дней — ячейки **32×32px**, «Сегодня» — отдельная строка снизу.
+- Цвета: `UI 05 #9FA9BA`, `UI 06 #222124`, `UI 01 #FFFFFF`, `Accent 02 #2A75F4`, `UI 04 #DBE7FD`, `UI 03 #C3CEE0`, `UI 07 #E0EAFC`, Shadow 1 как выше.
+
+### Pop-Up подтверждение (150:3758, 660×249) и Pop-Up выбор (176:9592, 660×321)
+
+- Заголовок — H3 (Bold 20). Крестик-закрытие — справа от заголовка, 20×20.
+- Текст описания — Body 2, серый/чёрный.
+- **Кнопки: первичная (заливка/lime) — СЛЕВА, вторичная (текстовая/«Отмена») — СПРАВА.** В обоих образцах (150:3758 «Текст кнопки»/«Текст кнопки», 176:9592 «Далее»/«Отмена») порядок одинаковый: filled-primary первым (левее), text/ghost-secondary — вторым (правее). Кнопки шириной ~264px каждая (150:3758) или на всю ширину минус зазор (176:9592).
+- Тень — Shadow 1 (та же синеватая тень, что у дропдаунов).
+- Radiobutton-список (176:9592) — пункты по 24px с шагом 40px (16px зазор).
+
+### Message flash / тосты (384:14498)
+
+- 3 семантических типа: **Error** (красный, Support 01 `#F4482A`), **Attention/Warning** (жёлтый/янтарный, Support 03 `#F4B42A`), **Info** (синий, Accent 02 `#2A75F4`). Нет отдельного зелёного/success-варианта в самом компоненте.
+- Каждый тип — в 2 вариантах: без подзаголовка (44px) и с подзаголовком (68px).
+- Структура: слева — иконка (одна и та же треугольная «attention»-иконка перекрашивается под тип), заголовок жирным, крестик-закрытие справа; с подзаголовком — второй текстовой строкой снизу, обычным весом.
+- Цвета: `Support 01 #F4482A`, `Support 03 #F4B42A`, `Accent 02 #2A75F4`, тень — Shadow 1, `Body 1 b` (Bold 16) для заголовка, `Body 2` (Medium 14) для описания.
+
+### Pagination (169:6527)
+
+- Классическая нумерованная пагинация: `‹ 1 2 3 4 … ›`, активная страница — синим текстом (Accent 02), стрелки в скруглённых квадратных кнопках слева/справа, у краёв — многоточие.
+
+## §2. Код сейчас
+
+### Таблицы SDUI
+
+- **`src/features/sdui/ui/nodes/composite/table-grid-sx.ts`** (весь файл, 46 строк) — уже реализует эталон из Figma для read-only-таблиц: `border-bottom` ячеек = `semantic.divider` (`ui-03`), нижняя линия шапки = `semantic.headerLine` (`ui-06`). Комментарий в коде прямо ссылается на «Figma «Журнал проводок», node 466-15059» и SCRUM-312/SCRUM-329 — это наш узел 466:15058. **Уже соответствует.**
+- **`src/features/sdui/ui/nodes/composite/read-only-table.tsx:193-209`** — использует `TABLE_GRID_SX`, `size="small"`, без зебры, без hover (read-only, что и в Figma). **Соответствует.**
+- **`src/features/sdui/ui/nodes/composite/list-table.tsx:127`** — заголовок: `'sticky top-0 z-10 bg-white px-3 py-2 text-left text-body2 font-medium text-ui-06 whitespace-nowrap border-b-2 border-ui-06'` — нижняя линия шапки уже `ui-06`, толщина 2px (в Figma «ПКО список» линия визуально тоньше — расхождение по толщине, не по цвету).
+- **`list-table.tsx:183-190`** — hover `hover:bg-ui-07`, выделенная строка `isSelected ? 'bg-ui-07' : …`, «зебра» — `virtualRow.index % 2 === 1 ? 'bg-ui-01' : ''` (нечётные — явный белый, чётные — без класса/прозрачный, что и есть `#ffffff`). Т.к. в Figma «ПКО список» зебры фактически нет (все строки белые, кроме выделения), это соответствует — **пункт из SCRUM-312 «осталось» уже закрыт для list-таблиц**: и заголовок (border-ui-06), и hover/выделение (bg-ui-07) уже на месте.
+- **Расхождение токена «выделено» между list-таблицей и автокомплитом**: `list-table.tsx` красит hover/selected в `ui-07` (`#E0EAFC`), а `MuiAutocomplete.option[aria-selected]` в теме (`theme.ts:150`) — в `semantic.selection` = `ui-04` (`#DBE7FD`). Два разных «синих» токена для концептуально одного и того же состояния «выбрано» в разных частях приложения.
+- **`src/features/sdui/ui/nodes/composite/table-toolbar.tsx:134-164`** — поиск внутри тулбара таблицы (Ctrl+F-подобный, не глобальный список-поиск из Figma): `TextField size="small"` без кастомного паддинга/скруглений/иконки-лупы слева — обычный MUI filled/outlined инпут, плейсхолдер `table.searchPlaceholder`.
+- **`table-toolbar.tsx:165-173`** — кнопка «Ещё» (`variant="secondary"`, `endIcon={<KeyboardArrowDownIcon>}`) открывает `TableMoreMenu`.
+
+### Дропдауны/меню
+
+- **`src/features/sdui/ui/nodes/composite/table-more-menu.tsx:99` и `81-95`** — голый MUI `<Menu>`/`<MenuItem>` без единого `sx`/токена: нет `borderRadius`, нет кастомной тени (используется MUI-дефолт elevation, НЕ `Shadow 1` из Figma), пункты — MUI-дефолтная высота (~48px, min-height по паддингам 6px/16px), а не 40px как в Figma. Hover — MUI-дефолтный серый `action.hover`, а не синеватый UI04/UI07 из Figma.
+- **`src/app/theme/theme.ts`** — grep по всему файлу подтверждает: **нет `MuiMenu`, `MuiPopover.styleOverrides.paper`, `MuiPaper` (menu-вариант), `MuiPagination`, `MuiChip` overrides вообще**. Единственный `MuiPopover` override (строки 221-227) задаёт только `zIndex: POPUP_Z`, ничего визуального.
+- **`src/shared/ui/inputs/autocomplete-input.tsx:190-198,349`** (footer через `createFooterPaper`, строки 29-76) — Paper с `borderRadius: '8px'` и `boxShadow: cssVar(shadows.popup)` (Shadow 1 — совпадает с Figma!) для варианта с футером «Показать все/Добавить» (строки 46-71, кнопки-ссылки accent-02 текстом, без явной высоты 40px, паддинг `px-4 py-2.5`).
+- **`src/app/theme/theme.ts:106-155`** (`MuiAutocomplete.styleOverrides`) — `paper: { borderRadius: 8, boxShadow: cssVar(shadows.popup) }` (строки 144-147, совпадает с Figma Shadow 1/8px), но `option` (148-153) стилизует **только** `[aria-selected="true"]` (фон `semantic.selection`=`ui-04`, текст `semantic.primary`=синий) — **нет стиля `:hover` пункта вообще** (MUI-дефолт `rgba(0,0,0,.04)` серый вместо синеватого UI07/UI04 из Figma) и **нет фиксированной высоты пункта** (40px по Figma).
+- Date picker (`MuiPickersDay`, theme.ts:235-266) — 32×32px, `borderRadius: 8`, `Mui-selected` фон `semantic.primary` — **соответствует Figma** (32×32 ячейка).
+
+### Диалоги/попапы
+
+В коде — **три независимые реализации** диалога/попапа, стилизованные по-разному:
+
+- **A. `src/shared/ui/confirm-dialog/confirm-dialog.tsx:19-69`** (используется только легаси `src/widgets/top-bar/ui/top-bar.tsx`, вне SDUI) — **уже правильно повторяет Figma**: `borderRadius:'40px'`, заголовок `text-[26px] font-bold text-ui-06` (=H2 токен), кнопки — **primary (`variant="primary"`) ПЕРВАЯ/слева, secondary (`variant="secondary"`) ВТОРАЯ/справа**, обе `flex-1`. НО тень задана **захардкоженным литералом** `'0px 3px 24px 0px rgba(42, 117, 244, 0.4)'` вместо `cssVar(shadows.popup)` (`tokens.ts:76`, `'0 3px 24px rgba(42, 117, 244, 0.4)'`) — расхождение в юнитах (`0px`/`0px` лишние), то есть дублирование значения токена текстом, а не ссылкой на него. `src/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog.tsx:26-79` — та же схема (тот же хардкод тени), 3 кнопки Save→Discard→Cancel, primary первая.
+- **B. `src/features/sdui/ui/confirm-dialog-host.tsx:14-25`** (SDUI, SCRUM-244) — `Dialog` + `DialogContent` (просто `Typography`, без паддингов/заголовка) + `DialogActions`: **Cancel-кнопка (`variant="outlined"`) идёт ПЕРВОЙ (слева), OK-кнопка (`variant="contained"`) — ВТОРОЙ (справа)** — порядок ОБРАТНЫЙ и Figma, и собственному легаси-компоненту A из того же репо. Нет заголовка (`DialogTitle`) с крестиком. Нет вообще никакой кастомной стилизации (paddings/radius/shadow — чистый MUI-дефолт).
+- **C. Универсальный SDUI-панельный диалог (`presentation: 'dialog'`)** — `src/features/sdui/ui/dialog-host.tsx:258-275` — `DialogTitle` дефолтного MUI-вида (`h6`, без токенов) + `DialogContent`, тоже без paddings/radius/shadow-токенов. Для сравнения, соседние `presentation: 'page'`/`'drawer'` в том же файле (172-255) токены используют (`PANEL_BG = cssVar(palette.ui02)`, `borderTopLeftRadius: 40` и т.п.) — то есть именно `'dialog'`-презентация выпадает из общего подхода.
+- Нет `MuiDialog`/`MuiDialogActions`/`MuiDialogContent` styleOverrides в `theme.ts` — вся консистентность (или её отсутствие) диалогов держится на копипасте по компонентам, не на теме.
+
+### Тосты
+
+- **`src/shared/ui/toast/show-toast.tsx`** (весь файл, 126 строк): типы `'success' | 'error' | 'info' | 'warning'` (строка 5).
+  - `borderColorMap`/`iconColorMap` (строки 7-19): **`warning: cssVar(semantic.error)`** — то есть warning красится тем же красным, что и error; **`success: cssVar(semantic.primary)`** — тем же синим, что и info. Реальных отдельных цветов для warning (жёлтый/Support 03) и success нет.
+  - Причина — **в токенах нет `support02`/`support03`**: `src/shared/design/tokens.ts:16-29` определяет только `support01: '#f4482a'` (совпадает с Figma Support 01). Figma использует `Support 02 #21D73B` (зелёный) и `Support 03 #F4B42A` (жёлтый) — **этих токенов в коде нет вообще**, поэтому 4 типа тоста физически не могут получить 4 разных цвета.
+  - Структура (строки 70-114) в остальном соответствует Figma: иконка слева + жирный заголовок + крестик-закрытие в одной строке; описание — отдельная строка снизу, обычным весом. `boxShadow: cssVar(shadows.popup)` = Shadow 1 — совпадает. `borderRadius: '8px'` — совпадает. `borderLeft: 4px solid <color>` — акцентная левая полоса, которой в самом Figma-компоненте (384:14498) нет (там просто белая карточка + цветная иконка+текст, без цветной левой полосы) — доп. элемент, не описанный в макете.
+
+### Пагинация
+
+- Поиск по всему репозиторию (`grep -rl "TablePagination|MuiPagination|Pagination"` в `src/pages/documents/document-list`, `src/shared/ui`) — **пусто**. Нумерованной пагинации (169:6527) в коде нет нигде; списки (и SDUI `list-table.tsx`, и футер `paged-table-footer.tsx`) используют infinite-scroll/сентинел либо кнопку «Показать ещё» (`paged-table-footer.tsx:43-47`). Это архитектурное решение (SCRUM-368), а не забытая доработка — фиксирую как расхождение с макетом, но не как баг для точечного фикса.
+
+### Filter (166:4529) / Search (146:1060) — заголовочные фильтры списка
+
+- Найден только `src/features/table-filter/ui/column-filter-trigger.tsx` — это **другой** паттерн: маленькая иконка-воронка (`IconButton` + `FilterAltIcon`/`FilterAltOffIcon`) в шапке колонки таблицы, открывающая `ColumnFilterPopover`, а не полноширинный лейбл-дропдаун из Figma (`Организация ⌄` и т.п. над таблицей списка). Полноширинного `Filter`-компонента (166:4529) и `Search`-компонента с плейсхолдером «Поиск по истории» (146:1060) в SDUI-коде не найдено — похоже, это часть легаси-страницы списка документов (`src/pages/documents/document-list/`, вне зоны этой группы/возможно другой группы аудита) либо ещё не реализовано на SDUI.
+- **Активные фильтры-чипы** — `src/features/sdui/ui/nodes/composite/list-filter-chips.tsx:38-52` — обычный MUI `Chip` (`size="small" variant="outlined"`) без единого кастомного `sx` — нет `MuiChip` overrides в теме вообще.
+
+### Search — два несовместимых по виду компонента
+
+- **`src/shared/ui/inputs/search-input.tsx:14-49`** — `variant="standard"`, `disableUnderline` (без рамки), высота `h-9` (36px), плейсхолдер/текст `text-ui-05`, иконка-лупа передаётся снаружи через `startIcon`. Используется, например, в `src/features/dict-sidebar/ui/dict-sidebar-list-view.tsx:355-363`. Ближе всего к Figma `Search` (146:1060) по духу (округлая пилюля без явной рамки), но лупа не встроена по умолчанию, а передаётся вызывающим кодом.
+- **`src/features/sdui/ui/nodes/composite/table-toolbar.tsx:134-164`** — независимый `TextField size="small"` БЕЗ `variant` (наследует тему `variant:'filled'`, `theme.ts:28-33` → рамка `semantic.divider`, `minHeight:44`, фон `ui-01`), БЕЗ иконки-лупы слева, только крестик-очистка справа при непустом запросе. Визуально другой компонент, чем `search-input.tsx`, хотя оба называются «поиск».
+- → Расхождение между собой (не только с Figma): два разных вида инпута поиска в одном приложении.
+
+## §3. Расхождения
+
+| #   | Что                                                                                                  | Сейчас                                                                                                                                                                                         | По Figma                                                                                                                                       | Где чинить                                                                                                                                                                                        | P                              |
+| --- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| 1   | Порядок кнопок в SDUI confirm-диалоге обратный **и Figma, и собственному легаси-аналогу**            | `confirm-dialog-host.tsx`: Cancel(outlined) слева, OK(contained) справа                                                                                                                        | Primary(filled) слева, Secondary(текст) справа — именно так уже сделано в `src/shared/ui/confirm-dialog/confirm-dialog.tsx` (легаси top-bar)   | `src/features/sdui/ui/confirm-dialog-host.tsx:18-24` — поменять местами `Button` (Cancel/OK); можно скопировать порядок из `confirm-dialog.tsx:19-69` (готовый эталон в этом же репо)             | **P1**                         |
+| 2   | Цвет тоста warning/success                                                                           | `warning`→красный (`semantic.error`), `success`→синий (`semantic.primary`); нет токенов `support02`(#21D73B)/`support03`(#F4B42A) в `tokens.ts` вообще                                         | Error=красный Support01, Attention/Warning=жёлтый Support03, Info=синий Accent02 (Success не описан отдельным цветом в самом Figma-компоненте) | Добавить `support02`/`support03` в `src/shared/design/tokens.ts:16-29` (палитра) + `semantic` мэппинг; поправить `borderColorMap`/`iconColorMap` в `src/shared/ui/toast/show-toast.tsx:7-19`      | **P1**                         |
+| 3   | MUI `<Menu>`/`<MenuItem>` (context-меню «Ещё» ТЧ и `menu-item-node.tsx`) без стилизации              | Дефолтный MUI: elevation-тень, radius 4px, item ~48px, hover серый; в теме нет `MuiMenu`/`MuiMenuItem` overrides вообще                                                                        | Shadow 1 (синеватая тень), radius 8px, item 40px, hover/selected — UI04/UI07                                                                   | `src/features/sdui/ui/nodes/composite/table-more-menu.tsx:99`, `src/features/sdui/ui/nodes/action/menu-item-node.tsx:83`, либо централизованно `MuiMenu`/`MuiMenuItem` в `src/app/theme/theme.ts` | **P2**                         |
+| 4   | Hover-состояние пункта автокомплита                                                                  | Только `[aria-selected=true]` стилизован (`ui-04` фон + синий текст); `:hover` — MUI-дефолт серый; высота пункта не зафиксирована (40px в Figma)                                               | Пункт 40px, hover — светло-синий (UI04/UI07)                                                                                                   | `src/app/theme/theme.ts:148-153` (`MuiAutocomplete.styleOverrides.option`)                                                                                                                        | **P2**                         |
+| 5   | Заголовок SDUI confirm-диалога отсутствует                                                           | `ConfirmDialogHost` рендерит только текст сообщения, без `DialogTitle`/крестика (в отличие от легаси `confirm-dialog.tsx`, у которого заголовок есть)                                          | Заголовок (H3, Bold 20) + крестик-закрытие справа от него                                                                                      | `src/features/sdui/ui/confirm-dialog-host.tsx:14-17`                                                                                                                                              | **P2**                         |
+| 6   | Тень попапа задана литералом с юнит-дрейфом, а не токеном                                            | `confirm-dialog.tsx`/`unsaved-changes-dialog.tsx`: хардкод `'0px 3px 24px 0px rgba(42, 117, 244, 0.4)'` (лишние `0px`) вместо `cssVar(shadows.popup)` = `'0 3px 24px rgba(42, 117, 244, 0.4)'` | Единое значение Shadow 1 через токен                                                                                                           | `src/shared/ui/confirm-dialog/confirm-dialog.tsx`, `src/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog.tsx` — заменить литерал на `cssVar(shadows.popup)`                                | P2                             |
+| 7   | Токен «выделено» разный у list-таблицы и автокомплита                                                | `list-table.tsx` использует `ui-07` (`#E0EAFC`) для hover/selected; `MuiAutocomplete.option[aria-selected]` — `ui-04`/`semantic.selection` (`#DBE7FD`)                                         | Единый токен состояния «выбрано»                                                                                                               | Свести к одному semantic-токену (`semantic.selection` либо отдельно завести `semantic.rowSelected`) — `list-table.tsx:183-190` vs `theme.ts:150`                                                  | P2                             |
+| 8   | Два разных по виду компонента поиска                                                                 | `shared/ui/inputs/search-input.tsx` — borderless `standard`, 36px, лупа снаружи; `table-toolbar.tsx:134-164` — независимый `filled` TextField без лупы                                         | Единый паттерн пилюли с лупой слева (Figma `Search`, 146:1060)                                                                                 | Свести к одному компоненту либо осознанно развести зоны применения                                                                                                                                | P2                             |
+| 9   | Генерик-диалог SDUI (`presentation:'dialog'`) без токенов, в отличие от соседних `'page'`/`'drawer'` | `dialog-host.tsx:258-275` — дефолтный MUI `DialogTitle`(h6)/`DialogContent`, без radius/shadow/паддингов-токенов                                                                               | Единый визуальный язык попапов (8px radius, Shadow 1)                                                                                          | `src/features/sdui/ui/dialog-host.tsx:258-275` — подтянуть к паттерну `'page'`/`'drawer'` (172-255) той же функции                                                                                | P2                             |
+| 10  | `MuiChip` (фильтр-чипы) без стилизации                                                               | `list-filter-chips.tsx:38-52` — обычный `Chip size="small" variant="outlined"`, нет `MuiChip` overrides в теме                                                                                 | Нет прямого узла в Figma-выборке этой группы — фиксирую как «нет темизации» до отдельной сверки                                                | `src/app/theme/theme.ts` — при необходимости добавить `MuiChip` overrides                                                                                                                         | P3                             |
+| 11  | Толщина линии под шапкой list-таблиц                                                                 | `border-b-2` (2px) в `list-table.tsx:127`                                                                                                                                                      | Тонкая линия (визуально ~1px) в «ПКО список» (167:5013), хотя в 164:3535/466:15058 линия жирнее — сам эталон неоднозначен между компонентами   | `src/features/sdui/ui/nodes/composite/list-table.tsx:127` — сверить визуально, возможно норм                                                                                                      | P3                             |
+| 12  | Нет `MuiDialog`/`MuiDialogActions` overrides в теме                                                  | Паддинги/радиус/тень диалогов — чистый MUI-дефолт там, где нет ручной стилизации                                                                                                               | 8px radius, Shadow 1, паддинги как в 150:3758/176:9592                                                                                         | `src/app/theme/theme.ts` — добавить `MuiDialog`/`MuiDialogContent`/`MuiDialogActions` styleOverrides                                                                                              | P3                             |
+| 13  | Нумерованная пагинация (169:6527) нигде не реализована                                               | Infinite-scroll / кнопка «Показать ещё» везде (`paged-table-footer.tsx:29-47`); тип `PaginationLoadTrigger` формально включает `'PAGER'` (`types/pagination.ts:14`), но фронт его не реализует | `‹ 1 2 3 … ›` с активной синей страницей                                                                                                       | Архитектурное решение SCRUM-368 — фиксирую как расхождение с макетом, чинить не предлагаю без отдельного решения продукта                                                                         | P3 (информационно)             |
+| 14  | Filter/Search компоненты списка (166:4529, 146:1060) не найдены в SDUI-коде                          | В SDUI — только точечный `column-filter-trigger.tsx` (иконка-воронка в колонке)                                                                                                                | Полноширинные лейбл-дропдауны и пилюля-поиск над таблицей списка                                                                               | Не найдено в зоне этой группы — вероятно легаси `document-list` или зона другой группы аудита; нужна доп. сверка                                                                                  | P3 (требует уточнения границы) |
+
+## Топ-5 расхождений (кратко)
+
+1. **Порядок кнопок в SDUI confirm-диалоге обратный и Figma, и собственному легаси-эталону** — `confirm-dialog-host.tsx`: Cancel слева/OK справа, тогда как Figma И уже существующий `src/shared/ui/confirm-dialog/confirm-dialog.tsx` (легаси top-bar) делают Primary слева/Secondary справа. Готовый образец для копирования есть в этом же репо. P1.
+2. **Тосты warning/success красятся чужими цветами** — в `tokens.ts` нет токенов `support02`(зелёный)/`support03`(жёлтый) вообще, поэтому `show-toast.tsx:7-19` красит warning в красный (как error), success в синий (как info). P1.
+3. **Контекстное меню таблицы (`table-more-menu.tsx`, `menu-item-node.tsx`) полностью не стилизовано** — голый MUI `<Menu>`/`<MenuItem>`: нет Shadow 1, нет radius 8px, высота пункта не 40px, hover не синий; в теме нет `MuiMenu`/`MuiMenuItem` overrides вообще. P2.
+4. **Hover пункта автокомплита не задан, и токен «выделено» расходится с list-таблицей** — `MuiAutocomplete.option` в теме стилизует только `aria-selected` цветом `ui-04`, hover остаётся MUI-дефолтным серым; при этом `list-table.tsx` для того же смыслового состояния использует другой токен, `ui-07`. P2.
+5. **У SDUI confirm-диалога нет заголовка/крестика** — рендерится только текст сообщения, без `DialogTitle` (H3) и кнопки-крестика, которые есть и в Figma, и в легаси `confirm-dialog.tsx`. P2.
+
+Дополнительно найдено (не в топ-5, но в таблице §3): захардкоженная тень с юнит-дрейфом вместо токена в `confirm-dialog.tsx`/`unsaved-changes-dialog.tsx`; два визуально разных компонента поиска (`search-input.tsx` vs `table-toolbar.tsx`); генерик-презентация `'dialog'` в `dialog-host.tsx` не подтянута к токенам в отличие от соседних `'page'`/`'drawer'`; `MuiChip` фильтр-чипов не стилизован; толщина линии шапки list-таблиц (2px) визуально жирнее, чем в «ПКО список»; нумерованная пагинация (Figma 169:6527) нигде не реализована — везде infinite-scroll/«Показать ещё» (архитектурное решение SCRUM-368, тип `PAGER` формально объявлен, но не собран); полноширинные Filter/Search компоненты списка не найдены в SDUI-коде — вероятно легаси или зона другой группы аудита.

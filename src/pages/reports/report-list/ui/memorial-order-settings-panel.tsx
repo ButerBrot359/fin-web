@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { Checkbox, FormControlLabel, Typography } from '@mui/material'
 
 import { comparisonLabel, LanguageSelect } from '@/features/report-settings'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 import type { ReportParameterDto } from '../types/report'
 import { ReportParamField, type ReportParamValue } from './report-param-field'
 
 /** Тёмно-зелёный 1С для заголовков разделов (как в живом СКД). */
-const GREEN_1C = 'rgb(0,63,47)'
+const GREEN_1C = cssVar(palette.pending1cGreen)
 
 /** Локализованный заголовок параметра. */
 const paramLabel = (p: ReportParameterDto, isKz: boolean): string =>

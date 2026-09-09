@@ -2,6 +2,7 @@ import { Typography } from '@mui/material'
 
 import type { WorkspaceTab } from '@/features/workspace-tabs'
 import { useFormCacheStore } from '@/features/workspace-tabs'
+import { cn } from '@/shared/lib/utils/cn'
 
 import CrossIcon from '@/shared/assets/icons/cross.svg'
 
@@ -11,6 +12,17 @@ interface WorkspaceTabItemProps {
   onActivate: () => void
   onClose: (e: React.MouseEvent) => void
 }
+
+// Вид по низу рабочих макетов Figma (ПКО 167:5013 и др.): активная вкладка —
+// светло-голубая (UI 04) с тёмным текстом, неактивные белые, крестик виден у
+// всех всегда; ховер неактивной — синий текст (компонент-шит Tab 58:1107).
+const tabStyles = (isActive: boolean) =>
+  cn(
+    'flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border-none pr-1.5 pl-3 transition-colors',
+    isActive
+      ? 'bg-ui-04 text-ui-06'
+      : 'bg-ui-01 text-ui-06 hover:text-accent-02'
+  )
 
 export const WorkspaceTabItem = ({
   tab,
@@ -25,19 +37,13 @@ export const WorkspaceTabItem = ({
   const displayTitle = isDirty ? `${tab.title} *` : tab.title
 
   return (
-    <button
-      type="button"
-      onClick={onActivate}
-      className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-t-md border-none py-2 pr-1.5 pl-3 ${
-        isActive ? 'bg-ui-04' : 'bg-ui-01'
-      }`}
-    >
+    <button type="button" onClick={onActivate} className={tabStyles(isActive)}>
       <Typography
         variant="body1"
-        className="whitespace-nowrap text-ui-06"
-        sx={{ fontSize: '16px', fontWeight: 500 }}
+        className="whitespace-nowrap text-inherit"
+        sx={{ fontSize: '16px', fontWeight: 500, color: 'inherit' }}
       >
-        {displayTitle || '\u00A0'}
+        {displayTitle || ' '}
       </Typography>
       <span
         role="button"

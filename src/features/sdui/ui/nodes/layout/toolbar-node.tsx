@@ -71,6 +71,11 @@ const OverflowToolbar: FC<NodeProps> = ({ node }) => {
     }
   }, [node.children, overflowHostId])
 
+  // Тулбар без видимых детей не рендерится вовсе (после хуков — правила
+  // хуков): пустой контейнер добавлял строку нулевой высоты и два гэпа
+  // родительского стека (список Kalendari).
+  if (children.length === 0) return null
+
   const collapsedSet = new Set(overflowHostId ? collapsedIds : [])
   const collapsedNodes: ViewNode[] = children.filter((c) =>
     collapsedSet.has(c.id)
@@ -80,7 +85,7 @@ const OverflowToolbar: FC<NodeProps> = ({ node }) => {
     <OverflowContext.Provider value={{ collapsedNodes }}>
       <div
         ref={containerRef}
-        className={`flex items-center gap-1${overflowHostId ? '' : ' overflow-x-auto'}`}
+        className={`flex items-center gap-2${overflowHostId ? '' : ' overflow-x-auto'}`}
       >
         {children.map((c) => (
           <div

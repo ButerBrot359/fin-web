@@ -72,9 +72,9 @@ describe('GroupNode / отступы между детьми', () => {
     expect(gapBox(container)?.style.gap).toBe('12px')
   })
 
-  it('без gap раскладка детей прежняя — лишней обёртки нет', () => {
+  it('без gap — пол дизайн-ритма 16px (Ф4, аудит Ф3)', () => {
     const { container } = render(<GroupNode node={withGap()} />)
-    expect(gapBox(container)).toBeNull()
+    expect(gapBox(container)?.style.gap).toBe('16px')
   })
 
   it('дети рендерятся в обоих вариантах', () => {

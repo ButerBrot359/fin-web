@@ -2,6 +2,8 @@ import { IconButton, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloseIcon from '@mui/icons-material/Close'
 
+import { cssVar, semantic } from '@/shared/design/tokens'
+
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
 
 interface DictSidebarHeaderProps {
@@ -22,7 +24,11 @@ export const DictSidebarHeader = ({ title }: DictSidebarHeaderProps) => {
         )}
         <Typography
           variant="h5"
-          sx={{ fontWeight: 700, fontSize: 26, color: '#222124' }}
+          sx={{
+            fontWeight: 700,
+            fontSize: 26,
+            color: cssVar(semantic.textPrimary),
+          }}
         >
           {title}
         </Typography>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import CrossIcon from '@/shared/assets/icons/cross.svg'
 import { Button } from '@/shared/ui/buttons'
+import { cssVar, shadows } from '@/shared/design/tokens'
 
 interface UnsavedChangesDialogProps {
   open: boolean
@@ -27,7 +28,7 @@ export const UnsavedChangesDialog = ({
         paper: {
           sx: {
             borderRadius: '40px',
-            boxShadow: '0px 3px 24px 0px rgba(42, 117, 244, 0.4)',
+            boxShadow: cssVar(shadows.popup),
             p: 0,
             m: 0,
             minWidth: 660,

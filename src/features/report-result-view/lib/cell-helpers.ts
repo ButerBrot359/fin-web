@@ -3,6 +3,7 @@ import type {
   ReportRowDto,
   RowKind,
 } from '@/pages/reports/report-list/types/report'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 /**
  * Язык РЕНДЕРА отчёта: язык, на котором его сформировал бэк (`result.language`),
@@ -31,7 +32,7 @@ export const isRightAligned = (col: ReportColumnDto): boolean => {
  * Цвет 1С для групп, итогов и шапки колонок — тёмно-зелёный из живого
  * табличного документа 1С (rgb(0,63,47)); заливок 1С не использует.
  */
-export const GREEN_1C = 'rgb(0,63,47)'
+export const GREEN_1C = cssVar(palette.pending1cGreen)
 
 /**
  * Кегли 1С из живого табличного документа: данные ~11px, шапка колонок и

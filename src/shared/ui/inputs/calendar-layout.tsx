@@ -12,6 +12,8 @@ import { format, setMonth, setYear, startOfDay } from 'date-fns'
 import type { Locale } from 'date-fns'
 import { ru, kk } from 'date-fns/locale'
 
+import { cssVar, palette, semantic, shadows } from '@/shared/design/tokens'
+
 const FONT_FAMILY = '"Google Sans", system-ui, sans-serif'
 
 /**
@@ -54,7 +56,7 @@ const useMonthLabels = (): string[] => {
         const clean = label.replace(/\.$/, '')
         return clean.charAt(0).toUpperCase() + clean.slice(1)
       }),
-    [locale],
+    [locale]
   )
 }
 
@@ -81,7 +83,7 @@ export const CalendarSidebar = () => {
   const currentYear = new Date().getFullYear()
   const years = Array.from(
     { length: YEAR_FUTURE_SPAN + YEAR_PAST_SPAN + 1 },
-    (_, i) => currentYear + YEAR_FUTURE_SPAN - i,
+    (_, i) => currentYear + YEAR_FUTURE_SPAN - i
   )
 
   const selectMonth = (month: number) => {
@@ -107,7 +109,9 @@ export const CalendarSidebar = () => {
         return (
           <ButtonBase
             key={month}
-            onClick={() => selectMonth(month)}
+            onClick={() => {
+              selectMonth(month)
+            }}
             sx={{
               justifyContent: 'center',
               width: 52,
@@ -116,12 +120,20 @@ export const CalendarSidebar = () => {
               fontFamily: FONT_FAMILY,
               fontSize: 15,
               fontWeight: 500,
-              color: selected ? '#ffffff' : '#222124',
-              backgroundColor: selected ? '#2a75f4' : 'transparent',
+              color: selected
+                ? cssVar(palette.ui01)
+                : cssVar(semantic.textPrimary),
+              backgroundColor: selected
+                ? cssVar(semantic.primary)
+                : 'transparent',
               transition: 'background-color 0.15s, color 0.15s',
               '&:hover': {
-                backgroundColor: selected ? '#2a75f4' : '#dbe7fd',
-                color: selected ? '#ffffff' : '#2a75f4',
+                backgroundColor: selected
+                  ? cssVar(semantic.primary)
+                  : cssVar(semantic.selection),
+                color: selected
+                  ? cssVar(palette.ui01)
+                  : cssVar(semantic.primary),
               },
             }}
           >
@@ -140,7 +152,7 @@ export const CalendarSidebar = () => {
         flexDirection: 'column',
         gap: '12px',
         padding: '12px',
-        borderRight: '1px solid #eceff4',
+        borderRight: `1px solid ${cssVar(palette.pendingGray5)}`,
         fontFamily: FONT_FAMILY,
       }}
     >
@@ -157,12 +169,12 @@ export const CalendarSidebar = () => {
             height: 36,
             padding: '0 10px 0 14px',
             borderRadius: '8px',
-            backgroundColor: '#2a75f4',
-            color: '#ffffff',
+            backgroundColor: cssVar(semantic.primary),
+            color: cssVar(palette.ui01),
             fontFamily: FONT_FAMILY,
             fontSize: 16,
             fontWeight: 600,
-            '&:hover': { backgroundColor: '#1f66db' },
+            '&:hover': { backgroundColor: cssVar(palette.accent02Hover) },
           }}
         >
           {activeYear}
@@ -187,9 +199,9 @@ export const CalendarSidebar = () => {
               maxHeight: 220,
               overflowY: 'auto',
               padding: '4px',
-              backgroundColor: '#ffffff',
+              backgroundColor: cssVar(palette.ui01),
               borderRadius: '8px',
-              boxShadow: '0px 3px 24px rgba(42, 117, 244, 0.4)',
+              boxShadow: cssVar(shadows.popup),
             }}
           >
             {years.map((year) => {
@@ -207,9 +219,13 @@ export const CalendarSidebar = () => {
                     fontFamily: FONT_FAMILY,
                     fontSize: 15,
                     fontWeight: selected ? 600 : 500,
-                    color: selected ? '#2a75f4' : '#222124',
-                    backgroundColor: selected ? '#dbe7fd' : 'transparent',
-                    '&:hover': { backgroundColor: '#dbe7fd' },
+                    color: selected
+                      ? cssVar(semantic.primary)
+                      : cssVar(semantic.textPrimary),
+                    backgroundColor: selected
+                      ? cssVar(semantic.selection)
+                      : 'transparent',
+                    '&:hover': { backgroundColor: cssVar(semantic.selection) },
                   }}
                 >
                   {year}
@@ -232,7 +248,7 @@ export const CalendarSidebar = () => {
           alignSelf: 'flex-start',
           marginTop: 'auto',
           padding: '4px 4px',
-          color: '#2a75f4',
+          color: cssVar(semantic.primary),
           fontFamily: FONT_FAMILY,
           fontSize: 15,
           fontWeight: 600,
@@ -243,4 +259,3 @@ export const CalendarSidebar = () => {
     </Box>
   )
 }
-

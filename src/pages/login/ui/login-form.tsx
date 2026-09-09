@@ -59,7 +59,10 @@ export const LoginForm = () => {
     }
   }
 
-  const isSubmitDisabled = isSubmitting || !login.trim() || !password
+  // Figma 545:22859: в дефолте кнопка салатовая даже при пустых полях —
+  // блокируется только на время запроса и в состоянии ошибки (серая ui-05,
+  // пока поля не тронули; правка любого поля сбрасывает error и оживляет её).
+  const isSubmitDisabled = isSubmitting || error !== null
 
   return (
     <form
@@ -111,6 +114,7 @@ export const LoginForm = () => {
         />
       </div>
 
+      {/* По макету (545:22859, x=367 при ширине 814) кнопка центрирована */}
       <Button
         type="submit"
         variant="primary"

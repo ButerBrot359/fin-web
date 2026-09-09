@@ -44,8 +44,9 @@ const type = (input: Element, value: string) => {
 /**
  * Форма входа.
  *
- * Проверяется то, что видно на трёх состояниях макета: пустая форма с погашенной кнопкой,
- * заполненная с активной, и отказ с текстом под полем пароля. Плюс главное свойство
+ * Проверяется то, что видно на трёх состояниях макета (545:22859): пустая форма
+ * с активной салатовой кнопкой, заполненная с активной, и отказ с текстом под полем
+ * пароля и погашенной кнопкой до правки полей. Плюс главное свойство
  * webbuh — <b>логин уходит на сервер без правок</b>: в 1С это «Фамилия Имя», и любой
  * клиентский `trim` или приведение регистра разошлись бы с серверной нормализацией.
  */
@@ -56,17 +57,15 @@ describe('LoginForm', () => {
     window.localStorage.clear()
   })
 
-  it('гасит кнопку, пока не заполнены оба поля', () => {
+  it('кнопка активна и при пустых полях — как в дефолте макета', () => {
     renderForm()
     // Матчеров jest-dom в проекте нет — проверяем свойство напрямую.
     const submit = screen.getByRole<HTMLButtonElement>('button', {
       name: 'Войти',
     })
-    expect(submit.disabled).toBe(true)
+    expect(submit.disabled).toBe(false)
 
     type(fields().login, 'tdorozhkina')
-    expect(submit.disabled).toBe(true)
-
     type(fields().password, '123435')
     expect(submit.disabled).toBe(false)
   })
@@ -99,6 +98,16 @@ describe('LoginForm', () => {
     expect((fields().password as HTMLInputElement).value).toBe('')
     // Логин остаётся: повторяют обычно только пароль.
     expect((fields().login as HTMLInputElement).value).toBe('tdorozhkina')
+
+    // Состояние ошибки макета: кнопка погашена, пока поля не тронули;
+    // правка пароля сбрасывает отказ и оживляет её.
+    const submit = screen.getByRole<HTMLButtonElement>('button', {
+      name: 'Войти',
+    })
+    expect(submit.disabled).toBe(true)
+    type(fields().password, 'новый')
+    expect(submit.disabled).toBe(false)
+    expect(screen.queryByText('Неверный логин или пароль')).toBeNull()
   })
 
   it('переключает показ пароля', () => {

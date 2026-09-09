@@ -1,5 +1,7 @@
 import type { Config } from 'tailwindcss'
 
+import { cssVar, palette, shadows } from './src/shared/design/tokens'
+
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
@@ -17,10 +19,14 @@ export default {
         sans: ['Google Sans', 'system-ui', 'sans-serif'],
       },
       fontSize: {
-        h2: ['26px', { lineHeight: 'auto', fontWeight: '700' }],
-        h3: ['20px', { lineHeight: 'auto', fontWeight: '700' }],
-        body1: ['16px', { lineHeight: 'auto', fontWeight: '500' }],
-        body2: ['14px', { lineHeight: 'auto', fontWeight: '500' }],
+        // 'auto' — невалидный line-height (браузер падал в normal ≈1.48 и
+        // кнопки 40px превращались в 41). Явные значения: заголовки по Figma
+        // (line-height 100%), body — 20/24px, чтобы контролы попадали в
+        // сетку 40px (10+20+10).
+        h2: ['26px', { lineHeight: '26px', fontWeight: '700' }],
+        h3: ['20px', { lineHeight: '20px', fontWeight: '700' }],
+        body1: ['16px', { lineHeight: '24px', fontWeight: '500' }],
+        body2: ['14px', { lineHeight: '20px', fontWeight: '500' }],
       },
       borderRadius: {
         sm: '4px',
@@ -28,30 +34,62 @@ export default {
         lg: '12px',
       },
       boxShadow: {
-        'primary-hover': '2px 4px 8px rgba(218,244,73,0.8)',
-        'secondary-hover': '0px 4px 8px rgba(42,117,244,0.2)',
+        'primary-hover': cssVar(shadows.primaryHover),
+        'secondary-hover': cssVar(shadows.secondaryHover),
+        popup: cssVar(shadows.popup),
+        'call-glow': cssVar(shadows.pendingCallGlow),
+        'danger-glow': cssVar(shadows.pendingDangerGlow),
       },
       colors: {
         ui: {
-          '01': '#ffffff',
-          '02': '#f2f6fd',
-          '03': '#c3cee0',
-          '04': '#dbe7fd',
-          '05': '#9fa9ba',
-          '06': '#222124',
-          '07': '#E0EAFC',
-          '08': '#c4d6f5',
+          '01': cssVar(palette.ui01),
+          '02': cssVar(palette.ui02),
+          '03': cssVar(palette.ui03),
+          '04': cssVar(palette.ui04),
+          '05': cssVar(palette.ui05),
+          '06': cssVar(palette.ui06),
+          '07': cssVar(palette.ui07),
+          '08': cssVar(palette.ui08),
         },
         accent: {
           '01': {
-            DEFAULT: '#daf449',
-            hover: '#dafe10',
-            pressed: '#c0e10b',
+            DEFAULT: cssVar(palette.accent01),
+            hover: cssVar(palette.accent01Hover),
+            pressed: cssVar(palette.accent01Pressed),
           },
-          '02': '#2a75f4',
+          '02': {
+            DEFAULT: cssVar(palette.accent02),
+            hover: cssVar(palette.accent02Hover),
+          },
         },
         support: {
-          '01': '#f4482a',
+          '01': cssVar(palette.support01),
+          '02': cssVar(palette.support02),
+          '03': cssVar(palette.support03),
+        },
+        pending: {
+          'gray-1': cssVar(palette.pendingGray1),
+          'gray-2': cssVar(palette.pendingGray2),
+          'gray-3': cssVar(palette.pendingGray3),
+          'gray-4': cssVar(palette.pendingGray4),
+          'gray-5': cssVar(palette.pendingGray5),
+          'gray-6': cssVar(palette.pendingGray6),
+          'blue-bg': cssVar(palette.pendingBlueBg),
+          'warn-border': cssVar(palette.pendingWarnBorder),
+          'warn-bg': cssVar(palette.pendingWarnBg),
+          'warn-bg-2': cssVar(palette.pendingWarnBg2),
+          'yellow-1': cssVar(palette.pendingYellow1),
+          'yellow-2': cssVar(palette.pendingYellow2),
+          'yellow-3': cssVar(palette.pendingYellow3),
+          'weekend-red': cssVar(palette.pendingWeekendRed),
+          'weekend-bg': cssVar(palette.pendingWeekendBg),
+          'dark-1': cssVar(palette.pendingDark1),
+          'dark-2': cssVar(palette.pendingDark2),
+          'dark-3': cssVar(palette.pendingDark3),
+          'text-1': cssVar(palette.pendingText1),
+          'text-2': cssVar(palette.pendingText2),
+          'violet-1': cssVar(palette.pendingViolet1),
+          'violet-2': cssVar(palette.pendingViolet2),
         },
       },
     },

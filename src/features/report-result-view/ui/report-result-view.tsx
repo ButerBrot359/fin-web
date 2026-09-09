@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { Typography } from '@mui/material'
 
+import { cssVar, palette } from '@/shared/design/tokens'
+
 import type {
   ReportColumnDto,
   ReportResultDto,
@@ -85,7 +87,10 @@ export const ReportResultView = ({
         <ReportHeaderBlocks blocks={result.headerBlocks} />
       )}
       {result.organizationTitle && (
-        <Typography variant="body2" sx={{ color: '#333', fontWeight: 700 }}>
+        <Typography
+          variant="body2"
+          sx={{ color: cssVar(palette.pendingText1), fontWeight: 700 }}
+        >
           {result.organizationTitle}
         </Typography>
       )}
@@ -93,7 +98,7 @@ export const ReportResultView = ({
         <Typography
           variant="body1"
           sx={{
-            color: '#333',
+            color: cssVar(palette.pendingText1),
             fontWeight: 700,
             fontSize: 17,
             ...(isBlank ? { textAlign: 'center', maxWidth: 900 } : {}),
@@ -107,7 +112,7 @@ export const ReportResultView = ({
         <Typography
           variant="body2"
           sx={{
-            color: '#333',
+            color: cssVar(palette.pendingText1),
             fontWeight: 700,
             ...(isBlank ? { textAlign: 'center', maxWidth: 900 } : {}),
           }}
@@ -116,7 +121,11 @@ export const ReportResultView = ({
         </Typography>
       )}
       {result.subtitleLines?.map((line, i) => (
-        <Typography key={i} variant="caption" sx={{ color: '#333' }}>
+        <Typography
+          key={i}
+          variant="caption"
+          sx={{ color: cssVar(palette.pendingText1) }}
+        >
           {line}
         </Typography>
       ))}

@@ -3,6 +3,7 @@ import { Dialog, Typography } from '@mui/material'
 
 import CrossIcon from '@/shared/assets/icons/cross.svg'
 import { Button } from '@/shared/ui/buttons'
+import { cssVar, shadows } from '@/shared/design/tokens'
 
 interface ConfirmDialogProps {
   open: boolean
@@ -32,7 +33,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
       paper: {
         sx: {
           borderRadius: '40px',
-          boxShadow: '0px 3px 24px 0px rgba(42, 117, 244, 0.4)',
+          boxShadow: cssVar(shadows.popup),
           p: 0,
           m: 0,
           minWidth: 660,
@@ -49,18 +50,32 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
         >
           {title}
         </Typography>
-        <button type="button" onClick={onCancel} className="shrink-0 cursor-pointer">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="shrink-0 cursor-pointer"
+        >
           <CrossIcon className="h-5 w-5" />
         </button>
       </div>
 
-      <Typography className="text-base font-medium text-ui-06">{message}</Typography>
+      <Typography className="text-base font-medium text-ui-06">
+        {message}
+      </Typography>
 
       <div className="flex w-full gap-3">
-        <Button variant="primary" onClick={onConfirm} className="flex-1 rounded-lg">
+        <Button
+          variant="primary"
+          onClick={onConfirm}
+          className="flex-1 rounded-lg"
+        >
           {confirmLabel}
         </Button>
-        <Button variant="secondary" onClick={onCancel} className="flex-1 rounded-lg">
+        <Button
+          variant="secondary"
+          onClick={onCancel}
+          className="flex-1 rounded-lg"
+        >
           {cancelLabel}
         </Button>
       </div>

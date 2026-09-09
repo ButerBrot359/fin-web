@@ -667,7 +667,8 @@
     "downloadError": "Файлды қалыптастыру мүмкін болмады",
     "confirm": {
       "ok": "Иә",
-      "cancel": "Жоқ"
+      "cancel": "Жоқ",
+      "title": "Растау"
     },
     "calendar": {
       "legend": {

@@ -4,7 +4,9 @@
 // строк). Логика перенесена verbatim, без изменения поведения.
 import type { FC, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, CircularProgress, Typography } from '@mui/material'
+import { CircularProgress, Typography } from '@mui/material'
+
+import { Button } from '@/shared/ui/buttons'
 import { flexRender, type Table } from '@tanstack/react-table'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
@@ -248,13 +250,10 @@ export const ListTable: FC<ListTableProps> = ({
             {onExport && rows.length > 0 && (
               // Легаси-экраны выгружали список кнопкой в подвале — на SDUI-списке
               // тот же вход, но файл собирает сервер (все выводимые колонки, текущие
-              // отборы). Выбор колонок — у «Вывести список» в панели.
-              <Button
-                size="small"
-                variant="outlined"
-                className="ml-auto"
-                onClick={onExport}
-              >
+              // отборы). Выбор колонок — у «Вывести список» в панели. Слева, рядом
+              // со счётчиком (решение владельца 04.09); в идеале кнопку экспорта
+              // должен эмитить бэк нодой дерева — заметка в чек-листе.
+              <Button size="small" variant="tertiary" onClick={onExport}>
                 {t('table.exportExcel')}
               </Button>
             )}

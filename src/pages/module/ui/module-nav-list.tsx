@@ -16,16 +16,18 @@ export const ModuleNavList = ({ items, pageCode }: ModuleNavListProps) => {
   }
 
   return (
+    // Figma 175:7122: три равные колонки, гэп 24; между группами 32,
+    // заголовок группы → список 16 (аудит Ф3, Ш-1).
     <div
-      className="grid gap-x-10"
-      style={{ gridTemplateColumns: `repeat(${String(items.length)}, auto)` }}
+      className="grid gap-x-6"
+      style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}
     >
       {items.map((column, colIdx) => (
-        <div key={colIdx} className="flex flex-col gap-6 justify-start">
+        <div key={colIdx} className="flex flex-col gap-8 justify-start">
           {column.map((section) => (
             <div
               key={`${String(colIdx)}-${section.nameRu}`}
-              className="flex flex-col gap-2"
+              className="flex flex-col gap-4"
             >
               <Typography
                 variant="subtitle1"

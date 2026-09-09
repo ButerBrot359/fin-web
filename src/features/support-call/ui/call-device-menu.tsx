@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/shared/lib/utils/cn'
+import { cssVar, shadows } from '@/shared/design/tokens'
 
 /**
  * Умеет ли браузер переключать устройство вывода.
@@ -101,7 +102,7 @@ export const CallDeviceMenu = () => {
           paper: {
             sx: {
               borderRadius: '12px',
-              boxShadow: '0px 3px 24px 0px rgba(42, 117, 244, 0.4)',
+              boxShadow: cssVar(shadows.popup),
               minWidth: 280,
               maxWidth: 360,
             },

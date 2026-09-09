@@ -21,6 +21,7 @@ export const TextFieldNode: FC<NodeProps> = ({ node }) => {
   return (
     <TextField
       label={f.label}
+      size={node.props?.size as 'small' | undefined}
       value={value}
       placeholder={placeholder}
       required={f.required}

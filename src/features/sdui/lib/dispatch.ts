@@ -38,6 +38,11 @@ import {
   saveFormSession,
 } from './form-session-storage'
 import { useAsyncTaskStore } from '@/entities/async-task'
+import {
+  parseValidationReport,
+  useValidationReportStore,
+} from '@/entities/validation-report'
+import { useAlertStore } from './stores/alert-store'
 
 export function useSduiDispatch() {
   const location = useLocation()
@@ -160,6 +165,22 @@ export function useSduiDispatch() {
                 effect.confirmBehavior
               )
             })
+        },
+        validationReport: (effect) => {
+          // SCRUM-317 §3.1/§3.3: отчёт ПОЛНОСТЬЮ заменяет прежний список
+          // экрана; пустой — гасит панель (успешная операция без замечаний).
+          // Ключ — маршрут вкладки: тот же, что у sdui-cache-store.
+          const report = parseValidationReport(effect.report)
+          if (report) {
+            useValidationReportStore
+              .getState()
+              .setReport(location.pathname, report)
+          }
+        },
+        alert: (effect) => {
+          useAlertStore
+            .getState()
+            .show(effect.message ?? '', effect.title ?? null)
         },
         taskStarted: (effect) => {
           // SCRUM-330 §3.3: фоновая операция запущена — задача приезжает в
@@ -321,7 +342,20 @@ export function useSduiDispatch() {
               error.errors
             )
           )
-          showToast('error', error.message || i18n.t('sdui.requestError'))
+          // SCRUM-317 §3.2/§3.3: отчёт из тела 422 кладётся ТЕМ ЖЕ редьюсером,
+          // что 200-эффект. operation на этом канале null — подставляем команду,
+          // которую сами отправили. Есть панель — тост-дубль не показываем.
+          const report = parseValidationReport(error.validation)
+          if (report && report.messages.length > 0) {
+            useValidationReportStore.getState().setReport(location.pathname, {
+              ...report,
+              operation:
+                report.operation ??
+                (action.type === 'COMMAND' ? (action.command ?? null) : null),
+            })
+          } else {
+            showToast('error', error.message || i18n.t('sdui.requestError'))
+          }
         } else if (error instanceof ViewConflictError) {
           const retry =
             !isRetry && action.type !== 'OPEN'

@@ -66,6 +66,14 @@ export interface EffectHandlerDeps {
   // session-less путь (use-sdui-effects) деп не даёт — эффект туда прийти
   // не должен, отсутствие = warn.
   taskStarted?: (effect: ViewEffect) => void
+  // validationReport (SCRUM-317): отчёт о проверке кладётся в стор экрана.
+  // Реализация в dispatch (нужен ключ экрана); session-less путь деп не даёт —
+  // отчёт приходит только форм-сессионными командами.
+  validationReport?: (effect: ViewEffect) => void
+  // alert (SCRUM-317 §4.2): модальное предупреждение. Мост обязателен для
+  // форм-сессионного пути; без него — фолбэк на warning-тост, чтобы текст
+  // не потерялся вовсе.
+  alert?: (effect: ViewEffect) => void
 }
 
 /**
@@ -121,8 +129,41 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
         if (effect.route) deps.replaceUrl(effect.route)
         break
 
-      case 'notify':
-        showToast((effect.level ?? 'info') as ToastLevel, effect.message ?? '')
+      case 'notify': {
+        // SCRUM-317 §4.1: непустой route делает всплывашку кликабельной, но
+        // сам по себе перехода не вызывает — переход только по клику. route
+        // уходит и в историю оповещений (запись остаётся кликабельной там).
+        const route = effect.route
+        showToast(
+          (effect.level ?? 'info') as ToastLevel,
+          effect.message ?? '',
+          undefined,
+          {
+            route: route ?? null,
+            onClick: route
+              ? () => {
+                  void deps.navigate(route)
+                }
+              : undefined,
+          }
+        )
+        break
+      }
+
+      case 'validationReport':
+        if (deps.validationReport) {
+          deps.validationReport(effect)
+        } else {
+          console.warn('[sdui] эффект validationReport вне форм-сессии', effect)
+        }
+        break
+
+      case 'alert':
+        if (deps.alert) {
+          deps.alert(effect)
+        } else {
+          showToast('warning', effect.message ?? '')
+        }
         break
 
       case 'refresh':
@@ -205,8 +246,13 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
       // confirm эксклюзивен (SCRUM-244 v3 §1.3): сервер обязан слать его
       // единственным, но обрываем массив на первом сами — двойная гарантия,
       // что за модальным подтверждением не сыграет второй эффект.
-      // unsavedChanges — тот же контракт эксклюзивности (EffectType javadoc).
-      if (effect.type === 'confirm' || effect.type === 'unsavedChanges') break
+      // unsavedChanges и alert — тот же контракт эксклюзивности.
+      if (
+        effect.type === 'confirm' ||
+        effect.type === 'unsavedChanges' ||
+        effect.type === 'alert'
+      )
+        break
     }
   }
 

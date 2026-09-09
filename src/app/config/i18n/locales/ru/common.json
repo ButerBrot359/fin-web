@@ -601,9 +601,19 @@
     "regenerate": "Перегенерировать",
     "generateError": "Ошибка генерации конфигурации"
   },
+  "notificationCenter": {
+    "title": "Оповещения",
+    "empty": "Оповещений нет",
+    "clear": "Очистить",
+    "details": "Подробнее",
+    "detailsTitle": "Сведения об ошибке",
+    "copy": "Скопировать",
+    "close": "Закрыть"
+  },
   "backgroundTasks": {
     "title": "Мои операции",
     "empty": "Нет операций",
+    "moreActive": "ещё {{count}}",
     "queued": "В очереди",
     "running": "Выполняется",
     "cancelling": "Отменяется…",
@@ -676,6 +686,19 @@
       "ok": "Да",
       "cancel": "Нет",
       "title": "Подтверждение"
+    },
+    "alert": {
+      "title": "Предупреждение",
+      "ok": "Понятно"
+    },
+    "validation": {
+      "panelTitle": "Ошибок на странице: {{count}}",
+      "tooltipTitle": "Ошибки",
+      "position": "{{position}} из {{total}}",
+      "prev": "Предыдущая ошибка",
+      "next": "Следующая ошибка",
+      "copy": "Скопировать текст",
+      "close": "Закрыть"
     },
     "calendar": {
       "legend": {

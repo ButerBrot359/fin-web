@@ -601,9 +601,19 @@
     "regenerate": "Қайта генерациялау",
     "generateError": "Конфигурация генерациясының қатесі"
   },
+  "notificationCenter": {
+    "title": "Хабарламалар",
+    "empty": "Хабарламалар жоқ",
+    "clear": "Тазарту",
+    "details": "Толығырақ",
+    "detailsTitle": "Қате туралы мәліметтер",
+    "copy": "Көшіру",
+    "close": "Жабу"
+  },
   "backgroundTasks": {
     "title": "Менің операцияларым",
     "empty": "Операциялар жоқ",
+    "moreActive": "тағы {{count}}",
     "queued": "Кезекте",
     "running": "Орындалуда",
     "cancelling": "Болдырылмауда…",
@@ -676,6 +686,19 @@
       "ok": "Иә",
       "cancel": "Жоқ",
       "title": "Растау"
+    },
+    "alert": {
+      "title": "Ескерту",
+      "ok": "Түсінікті"
+    },
+    "validation": {
+      "panelTitle": "Беттегі қателер: {{count}}",
+      "tooltipTitle": "Қателер",
+      "position": "{{total}} ішінен {{position}}",
+      "prev": "Алдыңғы қате",
+      "next": "Келесі қате",
+      "copy": "Мәтінді көшіру",
+      "close": "Жабу"
     },
     "calendar": {
       "legend": {

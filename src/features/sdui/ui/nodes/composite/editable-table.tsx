@@ -468,6 +468,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                     key={row.id}
                     hover
                     data-index={virt.isVirtualized ? row.index : undefined}
+                    data-sdui-row-index={row.index}
                     ref={virt.measureRow}
                     selected={selectedIndex === row.index}
                     onClick={() => {
@@ -500,6 +501,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                     {row.getVisibleCells().map((cell) => (
                       <SearchHitCell
                         key={cell.id}
+                        columnId={cell.column.id}
                         isHit={isSearchHit(
                           search.current,
                           row.original.rowId,

@@ -36,7 +36,9 @@ export class ViewHttpError extends Error {
     public status: number | undefined,
     public code?: string,
     public kind?: string,
-    public errors?: ValidationErrorDetail[]
+    public errors?: ValidationErrorDetail[],
+    // SCRUM-317 §3.2: сырой отчёт о проверке из тела 422 DOCUMENT_VALIDATION
+    public validation?: unknown
   ) {
     super(message)
   }
@@ -61,7 +63,8 @@ export const viewTransport = {
           error.response?.status,
           meta.code,
           meta.kind,
-          meta.errors
+          meta.errors,
+          meta.validation
         )
       }
       throw error

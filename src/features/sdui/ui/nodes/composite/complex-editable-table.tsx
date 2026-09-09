@@ -868,6 +868,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     hover
                     data-index={virt.isVirtualized ? row.index : undefined}
                     data-sdui-row-id={row.original.rowId}
+                    data-sdui-row-index={row.index}
                     ref={virt.measureRow}
                     selected={row.id === selectedRowId}
                     onClick={() => {
@@ -902,6 +903,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     {row.getVisibleCells().map((cell) => (
                       <SearchHitCell
                         key={cell.id}
+                        columnId={cell.column.id}
                         isHit={isSearchHit(
                           search.current,
                           row.original.rowId,

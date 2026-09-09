@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { BackgroundStatusBar } from '@/features/background-tasks'
 import { WorkspacePanelHost } from '@/features/sdui'
 import { SupportCallWidget } from '@/features/support-call'
 import {
@@ -62,6 +63,8 @@ export const Layout = ({ sidebar, header, children }: LayoutProps) => {
             </div>
           )}
         </main>
+        {/* SCRUM-317 канал №6: строка состояния над фоновыми операциями */}
+        <BackgroundStatusBar />
         <WorkspaceTabBar />
       </div>
       {/* Живая поддержка (ADR-0050): доступна с любой страницы. */}

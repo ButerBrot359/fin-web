@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import MenuIcon from '@/shared/assets/icons/menu.svg'
 import { BackgroundTasksIndicator } from '@/features/background-tasks'
+import { NotificationBell } from '@/features/notification-center'
 import { Button } from '@/shared/ui/buttons'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog/confirm-dialog'
 
@@ -39,6 +40,13 @@ export const TopBar = () => {
                 aria-label={action.label}
                 startIcon={<action.icon className="h-5 w-5" />}
               />
+              {action.id === 'search' && (
+                <>
+                  <div className="mx-1 h-7 w-px bg-ui-04" aria-hidden="true" />
+                  {/* SCRUM-317 канал №8: колокольчик с историей оповещений */}
+                  <NotificationBell />
+                </>
+              )}
             </div>
           ))}
         </div>

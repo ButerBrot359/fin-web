@@ -371,3 +371,53 @@ describe('effect taskStarted (SCRUM-330)', () => {
     warn.mockRestore()
   })
 })
+
+describe('validationReport (SCRUM-317)', () => {
+  it('прокидывает эффект в мост validationReport', () => {
+    const deps = makeDeps()
+    const validationReport = vi.fn()
+    deps.validationReport = validationReport
+    const effect: ViewEffect = {
+      type: 'validationReport',
+      report: { operation: 'post', blockingCount: 1, messages: [] },
+    }
+    createEffectHandler(deps).play(effect)
+    expect(validationReport).toHaveBeenCalledWith(effect)
+  })
+
+  it('без депа (session-less путь) — warn, не бросает', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    expect(() => {
+      createEffectHandler(makeDeps()).play({ type: 'validationReport' })
+    }).not.toThrow()
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+})
+
+describe('alert (SCRUM-317 §4.2)', () => {
+  it('прокидывает эффект в мост alert', () => {
+    const deps = makeDeps()
+    const alert = vi.fn()
+    deps.alert = alert
+    const effect: ViewEffect = {
+      type: 'alert',
+      message: 'Период закрыт. Проведение невозможно.',
+      title: 'Проведение',
+    }
+    createEffectHandler(deps).play(effect)
+    expect(alert).toHaveBeenCalledWith(effect)
+  })
+
+  it('playAll обрывается на alert — эффект эксклюзивный', () => {
+    const deps = makeDeps()
+    const alert = vi.fn()
+    deps.alert = alert
+    createEffectHandler(deps).playAll([
+      { type: 'alert', message: 'x' },
+      { type: 'refresh' },
+    ])
+    expect(alert).toHaveBeenCalledTimes(1)
+    expect(deps.invalidateLists).not.toHaveBeenCalled()
+  })
+})

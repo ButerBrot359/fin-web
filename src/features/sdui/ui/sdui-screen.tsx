@@ -24,6 +24,8 @@ import { reopenFormForLanguageChange } from '../lib/language-reopen'
 import type { ViewTabMeta } from '../types/view'
 import { NodeRenderer } from './node-renderer'
 import { DialogHost } from './dialog-host'
+import { ValidationReportHost } from './validation/validation-report-host'
+import { useValidationReportStore } from '@/entities/validation-report'
 
 interface SduiScreenProps {
   // Хост решает, сохранять ли сессию в кэш при размонтировании (вкладка ещё открыта)
@@ -87,6 +89,10 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     // вкладки) не должен дожить до нашего CLOSE — снимаем на монтировании.
     clearDiscardDraftClose(route)
 
+    // SCRUM-317: ключ активного экрана для якорей тултипа-навигатора —
+    // узлы дерева находят «свой» отчёт по нему, не читая роутер.
+    useValidationReportStore.getState().setScreenKey(route)
+
     // Восстановление из кэша рабочей вкладки ТОЛЬКО при несохранённых изменениях
     // (чтобы не потерять правки при переключении вкладок) — тогда без повторного
     // OPEN, серверная form-session ещё жива. Чистый документ при возврате
@@ -144,6 +150,10 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       }
       onDirtyChange?.(route, false)
       usePanelStore.getState().reset()
+      // SCRUM-317 §5.3: отчёт принадлежит карточке — гасим на размонтировании
+      // экрана, а не только при открытии (грязный документ возвращается из
+      // кэша вкладки без повторного OPEN).
+      useValidationReportStore.getState().clear(route)
       reset()
     }
   }, [location.pathname])
@@ -233,8 +243,14 @@ export const SduiScreen: FC<SduiScreenProps> = ({
 
   return (
     <SduiSessionProvider value={sessionValue}>
-      <NodeRenderer node={tree} />
+      {/* SCRUM-317: граница поиска якорей тултипа — свой экран, не документ
+          целиком (панели-порталы рендерят те же узлы). display:contents не
+          участвует в раскладке. */}
+      <div style={{ display: 'contents' }} data-sdui-screen-root>
+        <NodeRenderer node={tree} />
+      </div>
       <DialogHost />
+      <ValidationReportHost />
     </SduiSessionProvider>
   )
 }

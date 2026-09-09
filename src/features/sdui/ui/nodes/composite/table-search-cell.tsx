@@ -12,16 +12,24 @@ interface SearchHitCellProps {
   isHit: boolean
   /** Постоянная заливка колонки (column-background.ts), если она задана. */
   backgroundColor?: string
+  /**
+   * Код колонки (binding) для адресации ячейки тултипом-навигатором ошибок
+   * (SCRUM-317): якорь ищется по data-sdui-col внутри строки с логическим
+   * data-sdui-row-index.
+   */
+  columnId?: string
   children: ReactNode
 }
 
 export const SearchHitCell = ({
   isHit,
   backgroundColor,
+  columnId,
   children,
 }: SearchHitCellProps) => (
   <TableCell
     data-search-hit={isHit || undefined}
+    data-sdui-col={columnId}
     // Подсветка текущего совпадения поиска важнее постоянной заливки: она
     // временная и отвечает на действие пользователя прямо сейчас.
     sx={{ p: 0, bgcolor: isHit ? 'action.focus' : backgroundColor }}

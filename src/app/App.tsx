@@ -25,6 +25,7 @@ import { WorkspaceTabSync } from '@/widgets/workspace-tab-bar'
 import { ReportResultView } from '@/features/report-result-view'
 import type { ReportAltResultDto } from '@/pages/reportalt/types/reportalt'
 
+import { connectToastHistory } from '@/entities/notification-history'
 import { Toaster } from '@/shared/ui/toast/toast'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
@@ -147,6 +148,9 @@ const AppRoutes = () => {
 function App() {
   useWorkspaceTabGatewayBinding()
   const { t, i18n } = useTranslation()
+
+  // SCRUM-317 канал №8: центр оповещений копит всё показанное всплывашками
+  useEffect(() => connectToastHistory(), [])
 
   useEffect(() => {
     setReferencePickerGateway((req) => {

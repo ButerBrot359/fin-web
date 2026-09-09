@@ -63,10 +63,25 @@ interface ToastContentProps {
   type: ToastType
   title: string
   description?: string
+  onClick?: () => void
 }
 
-const ToastContent = ({ id, type, title, description }: ToastContentProps) => (
+const ToastContent = ({
+  id,
+  type,
+  title,
+  description,
+  onClick,
+}: ToastContentProps) => (
   <div
+    onClick={
+      onClick
+        ? () => {
+            onClick()
+            toast.dismiss(id)
+          }
+        : undefined
+    }
     style={{
       background: cssVar(palette.ui01),
       borderLeft: `4px solid ${borderColorMap[type]}`,
@@ -79,6 +94,7 @@ const ToastContent = ({ id, type, title, description }: ToastContentProps) => (
       gap: '6px',
       overflow: 'hidden',
       fontFamily: "'Google Sans', system-ui, sans-serif",
+      cursor: onClick ? 'pointer' : undefined,
     }}
   >
     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -94,7 +110,13 @@ const ToastContent = ({ id, type, title, description }: ToastContentProps) => (
       >
         {title}
       </span>
-      <span onClick={() => toast.dismiss(id)}>
+      <span
+        onClick={(e) => {
+          // Крестик закрывает всплывашку, не срабатывая как переход по ней.
+          e.stopPropagation()
+          toast.dismiss(id)
+        }}
+      >
         <CloseIcon />
       </span>
     </div>
@@ -112,12 +134,52 @@ const ToastContent = ({ id, type, title, description }: ToastContentProps) => (
   </div>
 )
 
+export interface ToastEvent {
+  type: ToastType
+  title: string
+  description?: string
+  /** Готовый маршрут фронта (notify.route) — для истории оповещений. */
+  route?: string | null
+}
+
+type ToastListener = (event: ToastEvent) => void
+
+// SCRUM-317 канал №8: центр оповещений копит всё, что показано всплывашкой.
+// Подписка вместо прямого импорта — shared не знает про entities-стор.
+const listeners = new Set<ToastListener>()
+
+export function onToastShown(listener: ToastListener): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+export interface ShowToastOptions {
+  /**
+   * Клик по всплывашке (кроме крестика). SCRUM-317 §4.1: notify.route делает
+   * всплывашку кликабельной, но сам по себе перехода НЕ вызывает.
+   */
+  onClick?: () => void
+  route?: string | null
+}
+
 export const showToast = (
   type: ToastType,
   title: string,
-  description?: string
+  description?: string,
+  opts?: ShowToastOptions
 ) => {
+  for (const listener of listeners) {
+    listener({ type, title, description, route: opts?.route ?? null })
+  }
   toast.custom((id) => (
-    <ToastContent id={id} type={type} title={title} description={description} />
+    <ToastContent
+      id={id}
+      type={type}
+      title={title}
+      description={description}
+      onClick={opts?.onClick}
+    />
   ))
 }

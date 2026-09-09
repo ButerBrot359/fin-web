@@ -28,6 +28,7 @@ export function parseViewError(data: unknown): {
   code?: string
   kind?: string
   errors?: ValidationErrorDetail[]
+  validation?: unknown
 } {
   if (!data || typeof data !== 'object') return {}
   const b = data as Record<string, unknown>
@@ -40,10 +41,15 @@ export function parseViewError(data: unknown): {
     code?: string
     kind?: string
     errors?: ValidationErrorDetail[]
+    validation?: unknown
   } = {}
   if (code) out.code = code
   if (kind) out.kind = kind
   if (message) out.message = message
   if (errors) out.errors = errors
+  // SCRUM-317 §3.2: отчёт о проверке в теле 422 DOCUMENT_VALIDATION. Ключ
+  // есть только там; на пустом списке приходит null — оба случая пробрасываем
+  // как есть, разбор — parseValidationReport на стороне dispatch.
+  if ('validation' in b) out.validation = b.validation
   return out
 }

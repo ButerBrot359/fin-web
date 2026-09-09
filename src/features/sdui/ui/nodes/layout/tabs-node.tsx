@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FC } from 'react'
 import { Tabs, Tab } from '@mui/material'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { NodeRenderer } from '../../node-renderer'
 import { useSduiDispatch } from '../../../lib/dispatch'
+import { registerRevealHandler } from '../../../lib/validation/reveal-bus'
+import { subtreeHasBinding } from '../../../lib/validation/subtree-has-binding'
 
 export const TabsNode: FC<NodeProps> = ({ node }) => {
   const [activeIndex, setActiveIndex] = useState(0)
@@ -13,6 +15,24 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
   // Условные вкладки (напр. «График платежей» по галке «Использовать график»).
   // SCRUM-362 B-4: visible эмитится бэком явно — строгая проверка вместо ?? true.
   const tabs = (node.children ?? []).filter((t) => t.props?.visible === true)
+
+  // SCRUM-317: тултип-навигатор просит раскрыть вкладку с целью сообщения —
+  // содержимое неактивной вкладки не смонтировано, искать в DOM там нечего.
+  // Вкладка находится по узлу дерева (binding в поддереве), не по DOM.
+  const tabsRef = useRef(tabs)
+  useEffect(() => {
+    tabsRef.current = tabs
+  })
+  useEffect(
+    () =>
+      registerRevealHandler((binding) => {
+        const idx = tabsRef.current.findIndex((tab) =>
+          subtreeHasBinding(tab, binding)
+        )
+        if (idx >= 0) setActiveIndex(idx)
+      }),
+    []
+  )
 
   // SCRUM-70: disabled-вкладка остаётся в ленте, но недоступна (у группы
   // доступа без видов доступа «Ограничения доступа» видимы, но заблокированы).

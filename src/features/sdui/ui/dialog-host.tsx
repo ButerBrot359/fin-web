@@ -23,6 +23,7 @@ import {
   unregisterPanelPatchSink,
 } from '../lib/panel-patch-registry'
 import { ConfirmDialogHost } from './confirm-dialog-host'
+import { AlertDialogHost } from './alert-dialog-host'
 import { UnsavedChangesHost } from './unsaved-changes-host'
 import { PanelCloseCommand } from './panel-close-command'
 import { requestPanelClose } from '../lib/panel-close-registry'
@@ -285,6 +286,7 @@ export const DialogHost = () => {
       })}
       <ConfirmDialogHost />
       <UnsavedChangesHost />
+      <AlertDialogHost />
     </>
   )
 }

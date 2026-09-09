@@ -188,6 +188,12 @@ export interface ViewEffect {
   // taskStarted (SCRUM-330 §3.3): задача целиком, а не одним id — между
   // командой и первым опросом панели уже есть что показать.
   task?: AsyncTask | null
+  // validationReport (SCRUM-317): сырой отчёт с провода; разбирается
+  // parseValidationReport на границе — контракту не доверяем.
+  report?: unknown
+  // alert (SCRUM-317 §4.2): заголовок модального предупреждения;
+  // null = клиент подставляет свой.
+  title?: string | null
   sessionId?: string
   childRevision?: number
   childState?: Record<string, unknown>

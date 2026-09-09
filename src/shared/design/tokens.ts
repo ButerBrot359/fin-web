@@ -60,6 +60,10 @@ export const palette = {
   pending1cRed: t('--pending-1c-red', 'rgb(255,0,0)'),
   // LiveKit-тема звонилки: полупрозрачная рамка контролов.
   pendingLkBorder: t('--pending-lk-border', 'rgba(255, 255, 255, 0.08)'),
+  // Функциональные цвета liveness-вспышки face-auth (не дизайн-система):
+  // чёрный — фолбэк цвета сегмента вспышки, тёмный — фон оверлея между фазами.
+  pendingFaceFlashBlack: t('--pending-face-flash-black', '#000000'),
+  pendingFaceIdleDark: t('--pending-face-idle-dark', '#1f1f1f'),
 } satisfies Record<string, DesignToken>
 
 // Семантические алиасы: код читает смысл, значение — ссылка на палитру.

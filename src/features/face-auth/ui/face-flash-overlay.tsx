@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
 import type { FaceCaptureState } from '../lib/hooks/use-face-capture'
+import { palette } from '@/shared/design/tokens'
 
 interface FaceFlashOverlayProps {
   state: FaceCaptureState
@@ -39,7 +40,9 @@ export const FaceFlashOverlay = forwardRef<
     <div
       // Заливка на весь вьюпорт. Во время загрузки цвета уже нет — держим нейтральный тёмный,
       // чтобы экран не мигал белым в момент, когда съёмка закончилась.
-      style={{ backgroundColor: state.fillColor ?? '#1f1f1f' }}
+      style={{
+        backgroundColor: state.fillColor ?? palette.pendingFaceIdleDark.value,
+      }}
       className="fixed inset-0 z-[1300] flex flex-col items-center justify-center gap-6"
       role="status"
       aria-live="polite"

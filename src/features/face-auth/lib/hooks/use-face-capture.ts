@@ -18,6 +18,7 @@ import {
   subscribeToFrames,
 } from '../camera'
 import { FLASH_ENABLED } from '../consts/flash-config'
+import { palette } from '@/shared/design/tokens'
 import {
   baselineStartMs,
   buildFlashTimeline,
@@ -199,7 +200,9 @@ async function captureSeries(
         const slot = slots.find((s) => s.seg === seg)
         onTick(
           Math.min(frameTimeMs / totalMs, 1),
-          FLASH_ENABLED ? (slot?.rgb ?? '#000000') : challenge.warmupRgb
+          FLASH_ENABLED
+            ? (slot?.rgb ?? palette.pendingFaceFlashBlack.value)
+            : challenge.warmupRgb
         )
 
         if (!isFrameWithinCaptureWindow(slots, frameTimeMs, windowStart)) {

@@ -20,6 +20,7 @@ import {
   dayAriaLabel,
   monthLabel,
 } from '../../../../lib/calendar/calendar-format'
+import { collapseWeekendKinds } from '../../../../lib/calendar/collapse-weekend-kinds'
 import { MonthGrid } from '../month-grid'
 import { YearSelector } from '../year-selector'
 import { DayKindLegend } from '../day-kind-legend'
@@ -44,7 +45,10 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
   const p = (node.props ?? {}) as ProductionCalendarNodeProps
   const dispatch = useSduiDispatch()
 
-  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set())
+  // v11 §4: daySelectionMode='single' — выделен не более чем один день; клик по
+  // другому дню переносит выделение. Одиночное значение вместо коллекции делает
+  // «выбрано два дня» невыразимым состоянием.
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [transferDialogOpen, setTransferDialogOpen] = useState(false)
   const [contextMenuPosition, setContextMenuPosition] =
     useState<MenuPosition>(null)
@@ -101,16 +105,13 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
 
   const canChangeDay = editable && ops.has('CHANGE_DAY')
   const canTransferSelected =
-    editable && ops.has('TRANSFER_DAY') && selectedDates.size > 0
+    editable && ops.has('TRANSFER_DAY') && selectedDate != null
   const canFillYear = editable && ops.has('FILL_YEAR')
   const canPrint = draftReady && ops.has('PRINT')
 
-  // Мультивыбор допустим (v5 §2.3): источником переноса становится первая
-  // выбранная дата, остальные в request не входят.
-  const sourceDate = selectedDates.size > 0 ? [...selectedDates][0] : null
   // Неполный год: у source-даты может не быть физической строки в days
-  const sourceDay = sourceDate
-    ? (daysByDate.get(sourceDate) ?? { date: sourceDate, kind: null })
+  const sourceDay = selectedDate
+    ? (daysByDate.get(selectedDate) ?? { date: selectedDate, kind: null })
     : null
 
   const projection = supported ? readPrintProjection(p) : null
@@ -122,32 +123,29 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
     !saveWarningDismissed
 
   const toggleDate = (date: string) => {
-    setSelectedDates((prev) => {
-      const next = new Set(prev)
-      if (next.has(date)) next.delete(date)
-      else next.add(date)
-      return next
-    })
+    // Клик по другому дню переносит выделение, по выбранному — снимает (v11 §4.4).
+    setSelectedDate((prev) => (prev === date ? null : date))
   }
 
   const openContextMenu = (
     date: string,
     position: { left: number; top: number }
   ) => {
-    // Правый клик выбирает дату (§13.5): не входящая в выбор дата заменяет его.
-    setSelectedDates((prev) => (prev.has(date) ? prev : new Set([date])))
+    // Правый клик выбирает дату (§13.5).
+    setSelectedDate(date)
     setContextMenuPosition(position)
   }
 
-  const changeSelectedDays = async (targetKindCode: string) => {
+  const changeSelectedDay = async (targetKindCode: string) => {
     setKindMenuPosition(null)
-    if (selectedDates.size === 0) return
+    if (selectedDate == null) return
+    // selectedDates — массив ровно из одного элемента: форма провода (v11 §4.2).
     const ok = await sendDraftCommand('proizvkalendar.dni.izmenit', {
-      selectedDates: [...selectedDates].sort(),
+      selectedDates: [selectedDate],
       targetKindCode,
     })
     // Успех очищает выбор (§13.5); неуспех сохраняет его для повтора.
-    if (ok) setSelectedDates(new Set())
+    if (ok) setSelectedDate(null)
   }
 
   const transferDay = async (firstDate: string, secondDate: string) => {
@@ -157,7 +155,7 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
     })
     if (ok) {
       setTransferDialogOpen(false)
-      setSelectedDates(new Set())
+      setSelectedDate(null)
     }
   }
 
@@ -209,10 +207,15 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
             if (nextYear !== year) void yearChange.requestYearChange(nextYear)
           }}
         />
-        <DayKindLegend dayKinds={dayKinds} />
+        <DayKindLegend
+          dayKinds={collapseWeekendKinds(
+            dayKinds,
+            t('sdui.productionCalendar.weekendKind')
+          )}
+        />
       </div>
       <ProductionCalendarToolbar
-        selectedCount={selectedDates.size}
+        hasSelection={selectedDate != null}
         canChangeDay={canChangeDay}
         canTransferDay={canTransferSelected}
         canFillYear={canFillYear}
@@ -226,9 +229,6 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
           void sendDraftCommand('proizvkalendar.god.zapolnit')
         }}
         onPrint={print}
-        onClearSelection={() => {
-          setSelectedDates(new Set())
-        }}
       />
       <div className="overflow-x-auto">
         <div className="grid grid-cols-4 gap-4 min-w-[720px]">
@@ -246,7 +246,7 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
                   day={daysByDate.get(iso)}
                   dayKinds={dayKinds}
                   ariaLabel={cellAriaLabel(iso)}
-                  selected={selectedDates.has(iso)}
+                  selected={selectedDate === iso}
                   selectable={canChangeDay && !busy}
                   onToggle={toggleDate}
                   onContextMenu={editable ? openContextMenu : undefined}
@@ -279,7 +279,7 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
       <ProductionTransferList transfers={p.transfers ?? []} />
       <ProductionDayContextMenu
         position={contextMenuPosition}
-        canChangeDay={canChangeDay && selectedDates.size > 0}
+        canChangeDay={canChangeDay && selectedDate != null}
         canTransferDay={canTransferSelected}
         onChangeDay={() => {
           setKindMenuPosition(contextMenuPosition)
@@ -297,7 +297,7 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
         position={kindMenuPosition}
         dayKinds={dayKinds}
         onPick={(kindCode) => {
-          void changeSelectedDays(kindCode)
+          void changeSelectedDay(kindCode)
         }}
         onClose={() => {
           setKindMenuPosition(null)

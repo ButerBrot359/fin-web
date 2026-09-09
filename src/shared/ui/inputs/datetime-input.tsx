@@ -31,6 +31,14 @@ export interface DateTimeInputProps {
    * дд.ММ.гггг и выбор дня.
    */
   dateFormat?: string
+  /** Нижняя граница выбора (ISO). Даты раньше — disabled, навигация ограничена. */
+  minDate?: string
+  /** Верхняя граница выбора (ISO). Даты позже — disabled, навигация ограничена. */
+  maxDate?: string
+  /** Месяц, на котором открывается пустой пикер (ISO-дата). */
+  referenceDate?: string
+  /** Точечно запрещённые дни (ISO yyyy-MM-dd), поверх min/max. */
+  disabledDates?: string[]
 }
 
 export const DateTimeInput = ({
@@ -48,9 +56,35 @@ export const DateTimeInput = ({
   onClose,
   fullWidth,
   dateFormat,
+  minDate,
+  maxDate,
+  referenceDate,
+  disabledDates,
 }: DateTimeInputProps) => {
   const dateValue = value ? parseISO(value) : null
   const validDate = dateValue && isValid(dateValue) ? dateValue : null
+
+  const parseBound = (iso?: string): Date | undefined => {
+    if (!iso) return undefined
+    const parsed = parseISO(iso)
+    return isValid(parsed) ? parsed : undefined
+  }
+  const minBound = parseBound(minDate)
+  const maxBound = parseBound(maxDate)
+  const referenceBound = parseBound(referenceDate)
+  // Пропсы границ подставляются только когда заданы — у прежних полей
+  // остаются дефолты пикера (см. formatProps ниже, тот же принцип).
+  const boundsProps = {
+    ...(minBound ? { minDate: minBound } : {}),
+    ...(maxBound ? { maxDate: maxBound } : {}),
+    ...(referenceBound ? { referenceDate: referenceBound } : {}),
+    ...(disabledDates && disabledDates.length > 0
+      ? {
+          shouldDisableDate: (candidate: Date) =>
+            disabledDates.includes(serializeDateInput(candidate, true)),
+        }
+      : {}),
+  }
 
   const spec = dateFormat ? resolveDateFormatSpec(dateFormat) : null
 
@@ -152,6 +186,7 @@ export const DateTimeInput = ({
           slots={slots}
           slotProps={slotProps}
           {...formatProps}
+          {...boundsProps}
         />
       </CalendarNavProvider>
     )
@@ -181,6 +216,7 @@ export const DateTimeInput = ({
         {...(spec && spec.granularity !== 'day'
           ? { views: spec.views, openTo: spec.views.at(-1) }
           : {})}
+        {...boundsProps}
       />
     </CalendarNavProvider>
   )

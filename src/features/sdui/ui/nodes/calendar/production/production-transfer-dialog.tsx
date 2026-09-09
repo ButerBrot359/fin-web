@@ -24,6 +24,9 @@ export interface ProductionTransferDialogProps {
 
 // Диалог переноса дня (§13.6): ровно одна source-дата, назначение — в том же
 // году и не равно источнику. Смену видов местами выполняет бэк.
+// Пикер (спека пикера §3): открывается на месяце исходной даты, поле пустое,
+// выбор ограничен годом props.year, исходный день disabled — всё, что можно
+// выбрать, обязано быть валидным payload'ом.
 export const ProductionTransferDialog: FC<ProductionTransferDialogProps> = ({
   open,
   sourceDay,
@@ -69,6 +72,10 @@ export const ProductionTransferDialog: FC<ProductionTransferDialogProps> = ({
           error={!!error}
           helperText={error}
           onChange={setDestination}
+          referenceDate={sourceDay?.date}
+          minDate={`${String(calendarYear)}-01-01`}
+          maxDate={`${String(calendarYear)}-12-31`}
+          disabledDates={sourceDay ? [sourceDay.date] : undefined}
         />
       </DialogContent>
       <DialogActions>

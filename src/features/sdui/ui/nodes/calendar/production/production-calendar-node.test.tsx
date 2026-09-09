@@ -141,11 +141,12 @@ describe('ProductionCalendarNode', () => {
     ).toBe(true)
   })
 
-  it('multi-select + выбор вида отправляет exact payload dni.izmenit и чистит выбор', async () => {
+  it('одиночный выбор (v11 §4): клик по другому дню переносит выделение, payload — одна дата', async () => {
     render(<ProductionCalendarNode node={node()} />)
     fireEvent.click(cell16())
     fireEvent.click(cell15())
     expect(cell15().getAttribute('aria-pressed')).toBe('true')
+    expect(cell16().getAttribute('aria-pressed')).toBe('false')
     fireEvent.click(button('sdui.productionCalendar.changeDay'))
     fireEvent.click(screen.getByText('Праздник'))
     await waitFor(() => {
@@ -155,7 +156,7 @@ describe('ProductionCalendarNode', () => {
         sourceNodeId: 'proizvkalendar.dniKalendarya',
         value: {
           ...ENVELOPE,
-          selectedDates: ['2030-01-15', '2030-01-16'],
+          selectedDates: ['2030-01-15'],
           targetKindCode: 'Prazdnik',
         },
       })
@@ -163,6 +164,17 @@ describe('ProductionCalendarNode', () => {
     await waitFor(() => {
       expect(cell15().getAttribute('aria-pressed')).toBe('false')
     })
+  })
+
+  it('клик по выбранному дню снимает выделение', () => {
+    render(<ProductionCalendarNode node={node()} />)
+    fireEvent.click(cell15())
+    expect(cell15().getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(cell15())
+    expect(cell15().getAttribute('aria-pressed')).toBe('false')
+    expect(
+      button('sdui.productionCalendar.changeDay').hasAttribute('disabled')
+    ).toBe(true)
   })
 
   it('неуспех команды сохраняет выбор для повтора', async () => {
@@ -199,7 +211,7 @@ describe('ProductionCalendarNode', () => {
     })
   })
 
-  it('перенос при мультивыборе: источник — первая выбранная дата (v5 §2.3)', async () => {
+  it('перенос: источник — единственная (последняя выбранная) дата', async () => {
     render(<ProductionCalendarNode node={node()} />)
     fireEvent.click(cell15())
     fireEvent.click(cell16())
@@ -217,7 +229,7 @@ describe('ProductionCalendarNode', () => {
         sourceNodeId: 'proizvkalendar.dniKalendarya',
         value: {
           ...ENVELOPE,
-          firstDate: '2030-01-15',
+          firstDate: '2030-01-16',
           secondDate: '2030-01-20',
         },
       })

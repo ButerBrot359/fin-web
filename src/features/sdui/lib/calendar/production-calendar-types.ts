@@ -76,6 +76,14 @@ export interface ProductionCalendarBaseCandidate {
 export interface ProductionCalendarNodeProps extends CalendarNodeProps {
   productionCalendarContractVersion?: number
 
+  /**
+   * Кардинальность выделения дней (v11 §4.3): бэк эмитит 'single' безусловно —
+   * выделен не более чем один день, `selectedDates` в командах — массив из
+   * одного элемента. Литерал в типе намеренно: второе значение потребует
+   * отдельного согласования контракта и не должно пройти молча.
+   */
+  daySelectionMode?: 'single'
+
   draftId?: string | null
   draftVersion?: number | null
   modified?: boolean

@@ -15,10 +15,16 @@ const DAY_KIND_CLASSES = [
 // SCRUM-277 §5.1: семь известных видов производственного календаря получают
 // стабильные семантические цвета (не зависящие от порядка в списке бэка).
 // Неизвестный код по-прежнему красится по индексу — состав видов расширяем.
+// v12 §3: «Суббота» и «Воскресенье» красятся одним цветом (бывшим субботним) —
+// слияние на уровне ЗНАЧЕНИЙ, семь ключей провода остаются, чтобы расширение
+// перечисления на бэке не прошло мимо палитры. Vykhodnoy — синтетический код
+// чипа легенды (collapse-weekend-kinds), на провод не уходит.
+const WEEKEND_CLASS = 'bg-gray-200 text-gray-600'
 const KNOWN_KIND_CLASSES: Record<string, string> = {
   Rabochiy: 'bg-blue-100 text-blue-800',
-  Subbota: 'bg-gray-200 text-gray-600',
-  Voskresene: 'bg-red-100 text-red-700',
+  Subbota: WEEKEND_CLASS,
+  Voskresene: WEEKEND_CLASS,
+  Vykhodnoy: WEEKEND_CLASS,
   DopolnitelnyyVykhodnoy: 'bg-purple-100 text-purple-800',
   Predprazdnichnyy: 'bg-amber-100 text-amber-800',
   Prazdnik: 'bg-red-200 text-red-800',

@@ -1,9 +1,9 @@
 import type { FC, MouseEvent } from 'react'
-import { Button, Typography } from '@mui/material'
+import { Button } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 export interface ProductionCalendarToolbarProps {
-  selectedCount: number
+  hasSelection: boolean
   canChangeDay: boolean
   canTransferDay: boolean
   canFillYear: boolean
@@ -13,13 +13,14 @@ export interface ProductionCalendarToolbarProps {
   onTransferDay: () => void
   onFillYear: () => void
   onPrint: () => void
-  onClearSelection: () => void
 }
 
 // Toolbar спец-команд карточки (§5.2). Доступность кнопок — только из
 // allowedOperations + локального выбора; фронт права не вычисляет.
+// Плашки «Очистить выбор: N» нет (v11 §4.4): выделение одиночное, снять его —
+// кликнуть по выбранному дню или выбрать другой.
 export const ProductionCalendarToolbar: FC<ProductionCalendarToolbarProps> = ({
-  selectedCount,
+  hasSelection,
   canChangeDay,
   canTransferDay,
   canFillYear,
@@ -29,7 +30,6 @@ export const ProductionCalendarToolbar: FC<ProductionCalendarToolbarProps> = ({
   onTransferDay,
   onFillYear,
   onPrint,
-  onClearSelection,
 }) => {
   const { t } = useTranslation()
 
@@ -43,7 +43,7 @@ export const ProductionCalendarToolbar: FC<ProductionCalendarToolbarProps> = ({
       <Button
         size="small"
         variant="outlined"
-        disabled={busy || !canChangeDay || selectedCount === 0}
+        disabled={busy || !canChangeDay || !hasSelection}
         onClick={handleChangeDay}
       >
         {t('sdui.productionCalendar.changeDay')}
@@ -72,18 +72,6 @@ export const ProductionCalendarToolbar: FC<ProductionCalendarToolbarProps> = ({
       >
         {t('sdui.productionCalendar.print')}
       </Button>
-      {selectedCount > 0 && (
-        <>
-          <Button size="small" onClick={onClearSelection} disabled={busy}>
-            {t('sdui.productionCalendar.clearSelection')}
-          </Button>
-          <Typography variant="body2" color="text.secondary">
-            {t('sdui.productionCalendar.selectedCount', {
-              count: selectedCount,
-            })}
-          </Typography>
-        </>
-      )}
     </div>
   )
 }

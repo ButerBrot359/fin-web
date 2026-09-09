@@ -18,7 +18,9 @@ test('окно авторизации — дефолтное состояние'
   await mockApi(page, {})
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: 'Вход' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Войти' })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Войти', exact: true })
+  ).toBeVisible()
   // Прямой скрин + toMatchSnapshot: стабилизатор toHaveScreenshot стабильно
   // терял слой ламп (см. коммент у <img> в login-page) — ретраим-до-стабильного
   // кадра сами (stableScreenshot).
@@ -34,7 +36,7 @@ test('низкое окно: карточка досягаема скролло�
   await mockApi(page, {})
   await page.setViewportSize({ width: 1440, height: 560 })
   await page.goto('/login')
-  const submit = page.getByRole('button', { name: 'Войти' })
+  const submit = page.getByRole('button', { name: 'Войти', exact: true })
   // scrollIntoViewIfNeeded прокручивает ВНУТРЕННИЙ контейнер страницы:
   // документ заблокирован overflow:hidden, скроллит обёртка /login.
   await submit.scrollIntoViewIfNeeded()
@@ -51,7 +53,7 @@ test('окно авторизации — ошибка входа', async ({ pag
   await page.goto('/login')
   await page.getByLabel('Пользователь').fill('demo')
   await page.getByLabel('Пароль', { exact: true }).fill('wrong')
-  await page.getByRole('button', { name: 'Войти' }).click()
+  await page.getByRole('button', { name: 'Войти', exact: true }).click()
   await expect(page.getByText('Неверный логин или пароль')).toBeVisible()
   expect(await stableScreenshot(page)).toMatchSnapshot('login-error.png', {
     maxDiffPixelRatio: 0.001,

@@ -17,6 +17,7 @@ import type { AutocompleteRenderInputParams } from '@mui/material/Autocomplete'
 import { useTranslation } from 'react-i18next'
 
 import type { SelectOption } from '@/shared/types/select-option'
+import { cssVar, palette, semantic, shadows } from '@/shared/design/tokens'
 
 interface FooterButtonsProps {
   onShowAll?: () => void
@@ -37,7 +38,7 @@ function createFooterPaper({
         {...props}
         sx={{
           borderRadius: '8px',
-          boxShadow: '0px 3px 24px 0px rgba(42,117,244,0.4)',
+          boxShadow: cssVar(shadows.popup),
           overflow: 'hidden',
         }}
       >
@@ -201,11 +202,11 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
       ? [
           {
             '& .MuiFilledInput-root': {
-              backgroundColor: '#e6e9ee',
-              borderColor: '#c3cee0',
+              backgroundColor: cssVar(palette.pendingGray4),
+              borderColor: cssVar(semantic.divider),
               '&:hover': {
-                backgroundColor: '#e6e9ee',
-                borderColor: '#c3cee0',
+                backgroundColor: cssVar(palette.pendingGray4),
+                borderColor: cssVar(semantic.divider),
               },
             },
           },

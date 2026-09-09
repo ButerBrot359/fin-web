@@ -674,7 +674,8 @@
     "downloadError": "Не удалось сформировать файл",
     "confirm": {
       "ok": "Да",
-      "cancel": "Нет"
+      "cancel": "Нет",
+      "title": "Подтверждение"
     },
     "calendar": {
       "legend": {

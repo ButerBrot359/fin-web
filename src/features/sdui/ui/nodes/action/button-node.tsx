@@ -1,5 +1,7 @@
-import { useState, type FC, type ReactNode } from 'react'
-import { Button, Divider, Menu, Tooltip } from '@mui/material'
+import { useState, type FC } from 'react'
+import { Divider, Menu, Tooltip } from '@mui/material'
+
+import { Button } from '@/shared/ui/buttons'
 
 import type { ActionBehavior, NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -8,7 +10,7 @@ import { useSelection } from '../../../lib/stores/selection-store'
 import { useCommandInFlight } from '../../../lib/stores/command-inflight-store'
 import { useSduiEffects } from '../../../lib/use-sdui-effects'
 import { NodeRenderer } from '../../node-renderer'
-import { resolveButtonIcon } from './button-icons'
+import { dropdownChevronIcon, resolveButtonIcon } from './button-icons'
 import { resolveButtonPresentation } from './button-presentation'
 import { MenuCloseContext, useMenuClose } from './menu-close-context'
 
@@ -57,7 +59,7 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
   // исполняется эффект-рантаймом напрямую, без COMMAND в форменную сессию.
   const requestAction = clickAction?.request ?? null
 
-  const { muiVariant, isDropdown } = resolveButtonPresentation(
+  const { variant, isDropdown } = resolveButtonPresentation(
     variantProp,
     !!node.children?.length
   )
@@ -71,21 +73,13 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
     (requiresSelectedRow && selectedRowId == null) ||
     (!!command && !requestAction && commandInFlight)
 
+  // Известная иконка вытесняет label (кнопка icon-only, глиф несёт смысл сам —
+  // «Дт/Кт» и т.п., SCRUM-265 FE-3); неизвестная → кнопка деградирует до текста.
   const icon = resolveButtonIcon(iconName)
-  const isIconOnly = !!icon && !label
-  // icon-only: глиф в line-box высоты текстовой строки (1.75em), иначе
-  // голый 20px svg делает кнопку ~4px ниже соседних текстовых.
-  const content: ReactNode = isIconOnly ? (
-    <span
-      style={{ display: 'inline-flex', alignItems: 'center', height: '1.75em' }}
-    >
-      {icon}
-    </span>
-  ) : (
-    // Неизвестная иконка → fallback: label, затем command (кнопка не пустая)
-    (icon ?? label ?? command ?? '')
-  )
-  const ariaLabel = isIconOnly ? (tooltip ?? command ?? undefined) : undefined
+  const isIconOnly = !!icon
+  const ariaLabel = isIconOnly
+    ? (tooltip ?? label ?? command ?? undefined)
+    : undefined
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isDropdown) {
@@ -119,15 +113,19 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
     }
   }
 
+  // Дизайн-системная кнопка (Figma 40:601): icon-only даёт 40×40 через p-2.5,
+  // текстовая — те же 40px по высоте; отдельный line-box-хак больше не нужен.
+  // Fallback без label: command, чтобы кнопка с неизвестной иконкой не была пустой.
   const buttonEl = (
     <Button
-      variant={muiVariant}
+      variant={variant}
       disabled={disabled}
       onClick={handleClick}
       aria-label={ariaLabel}
-      sx={isIconOnly ? { minWidth: 0, px: 1 } : undefined}
+      startIcon={icon ?? undefined}
+      endIcon={isDropdown ? dropdownChevronIcon : undefined}
     >
-      {content}
+      {isIconOnly ? undefined : (label ?? command ?? '')}
     </Button>
   )
 

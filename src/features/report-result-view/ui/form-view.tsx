@@ -1,6 +1,8 @@
 import { Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
+import { cssVar, palette } from '@/shared/design/tokens'
+
 import type {
   ReportColumnDto,
   ReportFieldRole,
@@ -20,8 +22,8 @@ import { ReportCell } from './report-cell'
  * Сетка бланка 1С: чёткая серая рамка каждой ячейки (официальная форма
  * печатается с выраженной сеткой, темнее аналитических отчётов), плотные ячейки.
  */
-const td = 'border border-[#808080] px-1.5 py-0.5 align-top'
-const th = 'border border-[#808080] px-1.5 py-1 text-center align-middle'
+const td = 'border border-pending-gray-6 px-1.5 py-0.5 align-top'
+const th = 'border border-pending-gray-6 px-1.5 py-1 text-center align-middle'
 
 /** Ширина одного символа колонки (`width` приходит в символах, как в 1С). */
 const CHAR_PX = 8
@@ -291,7 +293,7 @@ const SectionTable = ({
                   <Typography
                     variant="caption"
                     sx={{
-                      color: '#333',
+                      color: cssVar(palette.pendingText1),
                       fontWeight: cell.emphasis ? 700 : undefined,
                       fontStyle: cell.emphasis ? 'italic' : undefined,
                       // Многострочные заголовки граф (напр. «Д»/«К» блока «Вторые
@@ -309,7 +311,10 @@ const SectionTable = ({
           <tr>
             {cols.map((col) => (
               <th key={col.code} className={th}>
-                <Typography variant="caption" sx={{ color: '#333' }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: cssVar(palette.pendingText1) }}
+                >
                   {columnTitle(col, isKz)}
                 </Typography>
               </th>
@@ -320,7 +325,10 @@ const SectionTable = ({
           <tr>
             {cols.map((col, i) => (
               <th key={col.code} className={`${th} py-0`}>
-                <Typography variant="caption" sx={{ color: '#333' }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: cssVar(palette.pendingText1) }}
+                >
                   {start + i}
                 </Typography>
               </th>
@@ -352,7 +360,10 @@ const SectionTable = ({
                     >
                       <Typography
                         variant="body2"
-                        sx={{ color: '#333', fontWeight: 700 }}
+                        sx={{
+                          color: cssVar(palette.pendingText1),
+                          fontWeight: 700,
+                        }}
                       >
                         {row.labelText}
                       </Typography>
@@ -399,7 +410,7 @@ export const FormView = ({
   const isKz = resolveReportLang(language, i18n.language) === 'kz'
 
   return (
-    <div className="flex w-full flex-col gap-1 bg-white text-[#333]">
+    <div className="flex w-full flex-col gap-1 bg-white text-pending-text-1">
       {/* Гриф и номер формы. */}
       <div className="flex items-start justify-between">
         <div>
@@ -408,14 +419,17 @@ export const FormView = ({
               key={i}
               variant="caption"
               component="div"
-              sx={{ color: '#333' }}
+              sx={{ color: cssVar(palette.pendingText1) }}
             >
               {line}
             </Typography>
           ))}
         </div>
         {form.formNumber && (
-          <Typography variant="body2" sx={{ color: '#333', fontWeight: 700 }}>
+          <Typography
+            variant="body2"
+            sx={{ color: cssVar(palette.pendingText1), fontWeight: 700 }}
+          >
             {form.formNumber}
           </Typography>
         )}
@@ -426,8 +440,8 @@ export const FormView = ({
         <div className="mt-2">
           <Typography
             variant="body2"
-            sx={{ color: '#333' }}
-            className="border-b border-[#333] inline-block pr-24"
+            sx={{ color: cssVar(palette.pendingText1) }}
+            className="border-b border-pending-text-1 inline-block pr-24"
           >
             {form.organizationLine}
           </Typography>
@@ -435,7 +449,7 @@ export const FormView = ({
             <Typography
               variant="caption"
               component="div"
-              sx={{ color: '#666', fontSize: 10 }}
+              sx={{ color: cssVar(palette.pendingText2), fontSize: 10 }}
             >
               {form.organizationCaption}
             </Typography>
@@ -446,17 +460,26 @@ export const FormView = ({
       {/* Заголовок бланка. */}
       <div className="mt-3 text-center">
         {form.title && (
-          <Typography variant="body1" sx={{ color: '#333', fontWeight: 700 }}>
+          <Typography
+            variant="body1"
+            sx={{ color: cssVar(palette.pendingText1), fontWeight: 700 }}
+          >
             {form.title}
           </Typography>
         )}
         {form.periodLine && (
-          <Typography variant="body2" sx={{ color: '#333', fontWeight: 700 }}>
+          <Typography
+            variant="body2"
+            sx={{ color: cssVar(palette.pendingText1), fontWeight: 700 }}
+          >
             {form.periodLine}
           </Typography>
         )}
         {form.vedomostTitle && (
-          <Typography variant="body2" sx={{ color: '#333', fontWeight: 700 }}>
+          <Typography
+            variant="body2"
+            sx={{ color: cssVar(palette.pendingText1), fontWeight: 700 }}
+          >
             {form.vedomostTitle}
           </Typography>
         )}
@@ -468,12 +491,18 @@ export const FormView = ({
       {form.sections.map((section, i) => (
         <div key={i} className="mt-3 flex flex-col gap-1">
           {section.title && (
-            <Typography variant="body2" sx={{ color: '#333' }}>
+            <Typography
+              variant="body2"
+              sx={{ color: cssVar(palette.pendingText1) }}
+            >
               {section.title}
             </Typography>
           )}
           {section.openingLine && (
-            <Typography variant="body2" sx={{ color: '#333', fontWeight: 700 }}>
+            <Typography
+              variant="body2"
+              sx={{ color: cssVar(palette.pendingText1), fontWeight: 700 }}
+            >
               {section.openingLine}
             </Typography>
           )}
@@ -491,7 +520,7 @@ export const FormView = ({
           <Typography
             key={i}
             variant="body2"
-            sx={{ color: '#333', fontWeight: 700 }}
+            sx={{ color: cssVar(palette.pendingText1), fontWeight: 700 }}
           >
             {line}
           </Typography>
@@ -504,7 +533,7 @@ export const FormView = ({
             <div key={i} className="flex items-end gap-6">
               <Typography
                 variant="body2"
-                sx={{ color: '#333' }}
+                sx={{ color: cssVar(palette.pendingText1) }}
                 className="w-44 shrink-0"
               >
                 {sig.role}
@@ -513,17 +542,17 @@ export const FormView = ({
                 <div key={ci} className="flex w-48 flex-col items-center">
                   <Typography
                     variant="body2"
-                    sx={{ color: '#333' }}
+                    sx={{ color: cssVar(palette.pendingText1) }}
                     className="min-h-5"
                   >
                     {ci === (sig.captions?.length ?? 1) - 1
                       ? (sig.name ?? '')
                       : ''}
                   </Typography>
-                  <div className="w-full border-t border-[#333]" />
+                  <div className="w-full border-t border-pending-text-1" />
                   <Typography
                     variant="caption"
-                    sx={{ color: '#666', fontSize: 10 }}
+                    sx={{ color: cssVar(palette.pendingText2), fontSize: 10 }}
                   >
                     {caption}
                   </Typography>
@@ -543,13 +572,16 @@ export const FormView = ({
         <div className="mt-6 flex items-end gap-2">
           <Typography
             variant="body2"
-            sx={{ color: '#333' }}
+            sx={{ color: cssVar(palette.pendingText1) }}
             className="w-44 shrink-0"
           >
             {isKz ? 'Қосымшасы' : 'Приложение'}
           </Typography>
-          <div className="w-40 self-end border-t border-[#333]" />
-          <Typography variant="caption" sx={{ color: '#666', fontSize: 10 }}>
+          <div className="w-40 self-end border-t border-pending-text-1" />
+          <Typography
+            variant="caption"
+            sx={{ color: cssVar(palette.pendingText2), fontSize: 10 }}
+          >
             {isKz ? 'парақ' : 'лист'}
           </Typography>
         </div>
@@ -559,7 +591,11 @@ export const FormView = ({
       {form.noteLines && form.noteLines.length > 0 && (
         <div className="mt-6 flex flex-col gap-1">
           {form.noteLines.map((line, i) => (
-            <Typography key={i} variant="body2" sx={{ color: '#333' }}>
+            <Typography
+              key={i}
+              variant="body2"
+              sx={{ color: cssVar(palette.pendingText1) }}
+            >
               {line}
             </Typography>
           ))}

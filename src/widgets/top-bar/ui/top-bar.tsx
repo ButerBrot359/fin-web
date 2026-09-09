@@ -26,13 +26,13 @@ export const TopBar = () => {
         {/* SCRUM-330: индикатор фоновых операций с поповером «Мои операции» */}
         <BackgroundTasksIndicator />
 
-        <div className="mx-1 h-5 w-px bg-ui-04" aria-hidden="true" />
+        <div className="mx-1 h-7 w-px bg-ui-04" aria-hidden="true" />
 
         <div className="flex items-center">
           {TOOLBAR_ACTIONS.map((action, index) => (
             <div key={action.id} className="flex items-center">
               {index > 0 && (
-                <div className="mx-1 h-5 w-px bg-ui-04" aria-hidden="true" />
+                <div className="mx-1 h-7 w-px bg-ui-04" aria-hidden="true" />
               )}
               <Button
                 variant="tertiary"
@@ -43,7 +43,7 @@ export const TopBar = () => {
           ))}
         </div>
 
-        <div className="mx-1 h-5 w-px bg-ui-04" aria-hidden="true" />
+        <div className="mx-1 h-7 w-px bg-ui-04" aria-hidden="true" />
 
         <Button
           variant="tertiary"
@@ -56,11 +56,11 @@ export const TopBar = () => {
           </Typography>
         </Button>
 
-        <div className="mx-1 h-5 w-px bg-ui-04" aria-hidden="true" />
+        <div className="mx-1 h-7 w-px bg-ui-04" aria-hidden="true" />
 
         <TopBarUser />
 
-        <div className="mx-1 h-5 w-px bg-ui-04" aria-hidden="true" />
+        <div className="mx-1 h-7 w-px bg-ui-04" aria-hidden="true" />
 
         <Button
           variant="tertiary"

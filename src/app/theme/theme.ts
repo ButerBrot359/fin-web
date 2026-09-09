@@ -1,16 +1,40 @@
+import { createElement } from 'react'
+
 import { createTheme } from '@mui/material/styles'
 import type {} from '@mui/x-date-pickers/themeAugmentation'
 
+import {
+  cssVar,
+  fontFamily,
+  palette,
+  semantic,
+  shadows,
+} from '@/shared/design/tokens'
 import { POPUP_Z } from '@/shared/lib/utils/overlay-z-index'
+import {
+  CheckboxBlankIcon,
+  CheckboxCheckedIcon,
+  CheckboxIndeterminateIcon,
+} from '@/shared/ui/checkbox/checkbox-icons'
 
 export const theme = createTheme({
+  // ВАЖНО: palette использует .value (hex-литерал), а не cssVar().
+  // Причина: MUI augmentColor/alpha (decomposeColor) не парсит var()-строки и падает при createTheme.
+  // Следствие: эти четыре цвета (primary, error, text.primary, text.secondary) не runtime-темизируемы.
+  // Серверная тема фазы 2 потребует пересоздания темы для изменения этих цветов (см. спеку §4.1).
+  // StyleOverrides используют cssVar() для рантайм CSS-переменных.
   palette: {
-    primary: { main: '#2a75f4' },
-    error: { main: '#f4482a' },
+    primary: { main: semantic.primary.value },
+    error: { main: semantic.error.value },
     text: {
-      primary: '#222124',
-      secondary: '#9fa9ba',
+      primary: semantic.textPrimary.value,
+      secondary: semantic.textSecondary.value,
     },
+  },
+  // Google Sans для всей MUI-типографики (K-2 аудита Ф3): без этого h6 и
+  // прочие variant'ы рендерились дефолтным Roboto.
+  typography: {
+    fontFamily,
   },
   components: {
     MuiTextField: {
@@ -23,19 +47,27 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 8,
-          backgroundColor: '#ffffff',
-          border: '1px solid #c3cee0',
+          backgroundColor: cssVar(palette.ui01),
+          border: `1px solid ${cssVar(semantic.divider)}`,
           minHeight: 44,
           '&.MuiInputBase-sizeSmall': {
             minHeight: 32,
+            height: 36,
           },
-          '&:hover': { backgroundColor: '#ffffff' },
+          '&:hover': { backgroundColor: cssVar(palette.ui01) },
           '&.Mui-focused': {
-            backgroundColor: '#ffffff',
-            borderColor: '#2a75f4',
+            backgroundColor: cssVar(palette.ui01),
+            borderColor: cssVar(semantic.primary),
           },
           '&.Mui-error': {
-            borderColor: '#f4482a',
+            borderColor: cssVar(semantic.error),
+          },
+          // Заблокированное поле: серая заливка, без ховер-реакции — иначе
+          // выглядит активным (даты/числа «Графиков работы»).
+          '&.Mui-disabled': {
+            backgroundColor: cssVar(palette.ui02),
+            cursor: 'not-allowed',
+            '&:hover': { backgroundColor: cssVar(palette.ui02) },
           },
           '&::before, &::after': { display: 'none' },
         },
@@ -46,7 +78,8 @@ export const theme = createTheme({
           paddingRight: 20,
           fontSize: 16,
           fontWeight: 500,
-          color: '#222124',
+          color: cssVar(semantic.textPrimary),
+          '&.Mui-disabled': { cursor: 'not-allowed' },
           '&.MuiInputBase-inputSizeSmall': {
             paddingTop: 6,
             paddingBottom: 6,
@@ -57,14 +90,20 @@ export const theme = createTheme({
     MuiInputLabel: {
       styleOverrides: {
         root: {
-          color: '#9fa9ba',
+          color: cssVar(semantic.textSecondary),
           fontWeight: 500,
           left: 8,
+          // Figma «Input» (53:592): Filled без фокуса — label остаётся серым
+          // (UI 05); синий — только в фокусе. Порядок правил важен: focused
+          // объявлен после shrink и перебивает его.
           '&.MuiInputLabel-shrink': {
-            color: '#2a75f4',
+            color: cssVar(semantic.textSecondary),
+          },
+          '&.Mui-focused': {
+            color: cssVar(semantic.primary),
           },
           '&.Mui-error': {
-            color: '#f4482a',
+            color: cssVar(semantic.error),
           },
         },
       },
@@ -78,7 +117,7 @@ export const theme = createTheme({
           marginLeft: 0,
           fontSize: 12,
           '&.Mui-error': {
-            color: '#f4482a',
+            color: cssVar(semantic.error),
           },
         },
       },
@@ -88,6 +127,28 @@ export const theme = createTheme({
         root: {
           position: 'relative',
           marginBottom: 4,
+        },
+      },
+    },
+    // Чекбокс по Figma (772:24370): 24×24, тёмная рамка, checked — салатовая
+    // заливка с тёмной галкой. MUI-дефолт (синий квадрат, белая галка) в
+    // макетах отсутствует. Цвет рамки/галки — через color (currentColor глифов).
+    MuiCheckbox: {
+      defaultProps: {
+        // createElement: файл — .ts, JSX здесь недоступен
+        icon: createElement(CheckboxBlankIcon),
+        checkedIcon: createElement(CheckboxCheckedIcon),
+        indeterminateIcon: createElement(CheckboxIndeterminateIcon),
+      },
+      styleOverrides: {
+        root: {
+          color: cssVar(palette.ui06),
+          '&.Mui-checked, &.MuiCheckbox-indeterminate': {
+            color: cssVar(palette.ui06),
+          },
+          '&.Mui-disabled': {
+            color: cssVar(palette.ui05),
+          },
         },
       },
     },
@@ -131,12 +192,81 @@ export const theme = createTheme({
         },
         paper: {
           borderRadius: 8,
-          boxShadow: '0px 3px 24px rgba(42, 117, 244, 0.4)',
+          boxShadow: cssVar(shadows.popup),
         },
         option: {
+          minHeight: 40,
+          // Figma «Dropdown menu» (306:9741): ховер пункта — светло-голубая
+          // подложка с синим текстом, как у tertiary-кнопок.
+          '&:hover, &.Mui-focused': {
+            backgroundColor: cssVar(semantic.selection),
+            color: cssVar(semantic.primary),
+          },
           '&[aria-selected="true"]': {
-            backgroundColor: '#dbe7fd !important',
-            color: '#2a75f4',
+            backgroundColor: `${cssVar(semantic.selection)} !important`,
+            color: cssVar(semantic.primary),
+          },
+        },
+      },
+    },
+    // Табы форм/панелей по Figma (side-panel 324:13541, компонент Tab):
+    // активный — тёмная плашка с белым текстом, неактивные — белые, обычный
+    // регистр; индикатор — синяя полоска под баром.
+    MuiTabs: {
+      styleOverrides: {
+        root: { minHeight: 36 },
+        indicator: {
+          height: 3,
+          borderRadius: 2,
+          backgroundColor: cssVar(semantic.primary),
+        },
+        flexContainer: { gap: 2 },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontSize: 16,
+          fontWeight: 500,
+          minHeight: 36,
+          padding: '8px 16px',
+          color: cssVar(semantic.textPrimary),
+          backgroundColor: cssVar(palette.ui01),
+          borderRadius: '8px 8px 0 0',
+          '&:hover:not(.Mui-selected)': {
+            color: cssVar(semantic.primary),
+          },
+          '&.Mui-selected': {
+            backgroundColor: cssVar(palette.ui06),
+            color: cssVar(palette.ui01),
+          },
+        },
+      },
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          borderRadius: 8,
+          boxShadow: cssVar(shadows.popup),
+        },
+      },
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        // Figma «Dropdown menu» (306:9741): пункт 40px, Body2, синий ховер
+        root: {
+          minHeight: 40,
+          fontSize: 14,
+          fontWeight: 500,
+          color: cssVar(semantic.textPrimary),
+          '&:hover, &.Mui-focusVisible': {
+            backgroundColor: cssVar(semantic.selection),
+            color: cssVar(semantic.primary),
+          },
+          '&.Mui-selected, &.Mui-selected:hover': {
+            backgroundColor: cssVar(semantic.selection),
+            color: cssVar(semantic.primary),
           },
         },
       },
@@ -151,19 +281,30 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 8,
-          backgroundColor: '#ffffff',
-          border: '1px solid #c3cee0',
+          backgroundColor: cssVar(palette.ui01),
+          border: `1px solid ${cssVar(semantic.divider)}`,
           minHeight: 44,
-          '&.MuiInputBase-sizeSmall': {
-            minHeight: 32,
-          },
-          '&:hover': { backgroundColor: '#ffffff' },
+          // У пикеров свои имена size-классов (MuiPickersInputBase-*), общий
+          // MuiInputBase-sizeSmall на них не вешается.
+          // height прибит: число (FilledInput) и дата (Pickers) в одной
+          // строке обязаны быть ровно одной высоты (36px), а не 36/37.
+          '&.MuiInputBase-sizeSmall, &.MuiPickersInputBase-sizeSmall, &.MuiPickersInputBase-inputSizeSmall':
+            {
+              minHeight: 32,
+              height: 36,
+            },
+          '&:hover': { backgroundColor: cssVar(palette.ui01) },
           '&.Mui-focused': {
-            backgroundColor: '#ffffff',
-            borderColor: '#2a75f4',
+            backgroundColor: cssVar(palette.ui01),
+            borderColor: cssVar(semantic.primary),
           },
           '&.Mui-error': {
-            borderColor: '#f4482a',
+            borderColor: cssVar(semantic.error),
+          },
+          '&.Mui-disabled': {
+            backgroundColor: cssVar(palette.ui02),
+            cursor: 'not-allowed',
+            '&:hover': { backgroundColor: cssVar(palette.ui02) },
           },
           '&::before, &::after': { display: 'none' },
         },
@@ -174,7 +315,8 @@ export const theme = createTheme({
           paddingRight: 20,
           fontSize: 16,
           fontWeight: 500,
-          color: '#222124',
+          color: cssVar(semantic.textPrimary),
+          '&.Mui-disabled': { cursor: 'not-allowed' },
           '&.MuiInputBase-inputSizeSmall': {
             paddingTop: 6,
             paddingBottom: 6,
@@ -187,11 +329,12 @@ export const theme = createTheme({
           paddingRight: 8,
           fontSize: 16,
           fontWeight: 500,
-          color: '#222124',
-          '.MuiInputBase-sizeSmall &': {
-            paddingTop: 6,
-            paddingBottom: 6,
-          },
+          color: cssVar(semantic.textPrimary),
+          '.MuiInputBase-sizeSmall &, .MuiPickersInputBase-sizeSmall &, .MuiPickersInputBase-inputSizeSmall &':
+            {
+              paddingTop: 6,
+              paddingBottom: 6,
+            },
         },
       },
     },
@@ -202,7 +345,7 @@ export const theme = createTheme({
         },
         paper: {
           borderRadius: 8,
-          boxShadow: '0px 3px 24px rgba(42, 117, 244, 0.4)',
+          boxShadow: cssVar(shadows.popup),
         },
       },
     },
@@ -216,7 +359,7 @@ export const theme = createTheme({
     MuiDateCalendar: {
       styleOverrides: {
         root: {
-          fontFamily: '"Google Sans", system-ui, sans-serif',
+          fontFamily,
         },
       },
     },
@@ -228,26 +371,26 @@ export const theme = createTheme({
           borderRadius: 8,
           fontSize: 16,
           fontWeight: 500,
-          fontFamily: '"Google Sans", system-ui, sans-serif',
-          color: '#222124',
+          fontFamily,
+          color: cssVar(semantic.textPrimary),
           '&.Mui-selected': {
-            backgroundColor: '#2a75f4',
-            color: '#ffffff',
+            backgroundColor: cssVar(semantic.primary),
+            color: cssVar(palette.ui01),
             '&:hover': {
-              backgroundColor: '#2a75f4',
+              backgroundColor: cssVar(semantic.primary),
             },
             '&:focus': {
-              backgroundColor: '#2a75f4',
+              backgroundColor: cssVar(semantic.primary),
             },
           },
           '&.MuiPickersDay-today:not(.Mui-selected)': {
-            backgroundColor: '#e0eafc',
+            backgroundColor: cssVar(palette.ui07),
             borderColor: 'transparent',
-            color: '#2a75f4',
+            color: cssVar(semantic.primary),
           },
           '&:not(.Mui-selected):not(.MuiPickersDay-today).MuiPickersDay-dayOutsideMonth':
             {
-              color: '#9fa9ba',
+              color: cssVar(semantic.textSecondary),
             },
         },
       },
@@ -259,10 +402,10 @@ export const theme = createTheme({
           height: 32,
           fontSize: 14,
           fontWeight: 500,
-          color: '#222124',
-          fontFamily: '"Google Sans", system-ui, sans-serif',
+          color: cssVar(semantic.textPrimary),
+          fontFamily,
           '&:nth-of-type(6), &:nth-of-type(7)': {
-            color: '#2a75f4',
+            color: cssVar(semantic.primary),
           },
         },
       },
@@ -272,22 +415,22 @@ export const theme = createTheme({
         label: {
           fontSize: 16,
           fontWeight: 500,
-          color: '#222124',
-          fontFamily: '"Google Sans", system-ui, sans-serif',
+          color: cssVar(semantic.textPrimary),
+          fontFamily,
         },
       },
     },
     MuiMonthCalendar: {
       styleOverrides: {
         root: {
-          fontFamily: '"Google Sans", system-ui, sans-serif',
+          fontFamily,
         },
       },
     },
     MuiYearCalendar: {
       styleOverrides: {
         root: {
-          fontFamily: '"Google Sans", system-ui, sans-serif',
+          fontFamily,
         },
       },
     },

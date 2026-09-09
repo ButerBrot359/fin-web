@@ -62,6 +62,7 @@ import { TABLE_GRID_SX } from './table-grid-sx'
 import { tableTextColorSx } from '../../../lib/utils/table-text-color'
 import { buildColumnBackgroundMap } from '../../../lib/utils/column-background'
 import { TableToolbar } from './table-toolbar'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 interface EditableTableProps {
   node: ViewNode
@@ -238,9 +239,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           // минтится при композиции, когда строка ещё неизвестна) — координату
           // строки добавляем здесь, в момент клика. Нет action ⇒ undefined,
           // и редактор ячейки уходит в легаси-пикер (двойной путь, BL-2).
-          const serverRefHandler = (
-            trigger: 'showAll' | 'create' | 'open'
-          ) => {
+          const serverRefHandler = (trigger: 'showAll' | 'create' | 'open') => {
             // Строки БЕЗ БД-id (только что добавленные) тоже идут серверным путём: бэк для
             // них не ищет строку, а возвращает значение эффектом без applyToParentCommand,
             // и его кладёт на место relay-selection → applyCellValueLocally. Раньше здесь
@@ -454,8 +453,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                         p: 0,
                         border: 0,
                         // SCRUM-368: фантомные линии строк вместо белого при быстром скролле
-                        background:
-                          'repeating-linear-gradient(to bottom, transparent 0 119px, #e5e7eb 119px 120px)',
+                        background: `repeating-linear-gradient(to bottom, transparent 0 119px, ${cssVar(palette.pendingGray3)} 119px 120px)`,
                       }}
                     />
                   </MuiTableRow>
@@ -531,8 +529,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                         height: virt.paddingBottom,
                         p: 0,
                         border: 0,
-                        background:
-                          'repeating-linear-gradient(to bottom, transparent 0 119px, #e5e7eb 119px 120px)',
+                        background: `repeating-linear-gradient(to bottom, transparent 0 119px, ${cssVar(palette.pendingGray3)} 119px 120px)`,
                       }}
                     />
                   </MuiTableRow>

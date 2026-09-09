@@ -52,8 +52,8 @@ const CHAR_PX = 8
 const POKAZATEL_COL = 'Pokazatel'
 
 /** Сетка 1С: тонкие серые линии, плотные ячейки, вертикаль по верху. */
-const td = 'border border-[#d9d9d9] px-1.5 py-0.5 align-top'
-const th = 'overflow-hidden border border-[#d9d9d9] px-1.5 py-1 text-left'
+const td = 'border border-pending-gray-1 px-1.5 py-0.5 align-top'
+const th = 'overflow-hidden border border-pending-gray-1 px-1.5 py-1 text-left'
 
 /** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, 13px, без капса. */
 const thTextSx = { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
@@ -347,7 +347,7 @@ export const LedgerTable = ({
   return (
     <div
       ref={containerRef}
-      className="overflow-auto rounded-md border border-[#d9d9d9]"
+      className="overflow-auto rounded-md border border-pending-gray-1"
     >
       {/* relative-обёртка: поверх таблицы — разделители-ручки на всю высоту. */}
       <div className="relative" style={{ width: totalWidth }}>

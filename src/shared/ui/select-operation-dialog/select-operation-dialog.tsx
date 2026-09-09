@@ -4,6 +4,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/shared/ui/buttons'
+import { cssVar, semantic, shadows } from '@/shared/design/tokens'
 
 /**
  * Вид операции в списке выбора. Ровно те поля, которые рисует диалог, — не
@@ -51,7 +52,7 @@ export const SelectOperationDialog = ({
         paper: {
           sx: {
             borderRadius: '40px',
-            boxShadow: '0px 3px 24px 0px rgba(42, 117, 244, 0.4)',
+            boxShadow: cssVar(shadows.popup),
             p: 0,
             m: 0,
             minWidth: 560,
@@ -71,7 +72,9 @@ export const SelectOperationDialog = ({
             onClick={onClose}
             className="shrink-0 cursor-pointer"
           >
-            <CloseIcon sx={{ fontSize: 20, color: '#222124' }} />
+            <CloseIcon
+              sx={{ fontSize: 20, color: cssVar(semantic.textPrimary) }}
+            />
           </button>
         </div>
 
@@ -99,10 +102,10 @@ export const SelectOperationDialog = ({
                     disableRipple
                     sx={{
                       p: 0,
-                      color: '#222124',
+                      color: cssVar(semantic.textPrimary),
                       transition: 'none',
                       '&.Mui-checked': {
-                        color: '#DAF449',
+                        color: cssVar(semantic.brand),
                         transition: 'none',
                       },
                       '&:hover': { bgcolor: 'transparent' },

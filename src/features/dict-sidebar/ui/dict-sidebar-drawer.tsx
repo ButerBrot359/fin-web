@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { cn } from '@/shared/lib/utils/cn'
 import { DICT_SIDEBAR_Z } from '@/shared/lib/utils/overlay-z-index'
+import { cssVar, palette, semantic } from '@/shared/design/tokens'
 import { useDictSidebarStore } from '../lib/hooks/use-dict-sidebar-store'
 import { fetchDictTypeMetadata } from '../api/dict-sidebar-api'
 import type { DictSidebarPanel } from '../types/dict-sidebar'
@@ -32,7 +33,7 @@ const PanelContent = ({
 
   const typeName = typeData
     ? getLocalizedName(typeData, i18n.language)
-    : (panel.typeCode ?? '')
+    : panel.typeCode
 
   const title =
     panel.mode === 'create'
@@ -41,8 +42,14 @@ const PanelContent = ({
         ? (panel.title ?? typeName)
         : typeName
 
+  // Figma side-panel (324:13541): паддинги L/R 40, сверху 60
   return (
-    <div className={cn('flex h-full flex-col p-7', !isActive && 'hidden')}>
+    <div
+      className={cn(
+        'flex h-full flex-col px-10 pt-15 pb-10',
+        !isActive && 'hidden'
+      )}
+    >
       {isActive && <DictSidebarHeader title={title} />}
       {panel.mode === 'list' && <DictSidebarListView panel={panel} />}
       {(panel.mode === 'create' || panel.mode === 'edit') && typeData && (
@@ -72,15 +79,16 @@ export const DictSidebarDrawer = () => {
       slotProps={{
         paper: {
           sx: {
-            width: 900,
+            // Figma side-panel (324:13541): ширина 766
+            width: 766,
             borderTopLeftRadius: 40,
             borderBottomLeftRadius: 40,
-            backgroundColor: '#F2F6FD',
+            backgroundColor: cssVar(palette.ui02),
             overflow: 'hidden',
           },
         },
         backdrop: {
-          sx: { backgroundColor: 'rgba(34, 33, 36, 0.6)' },
+          sx: { backgroundColor: cssVar(semantic.backdrop) },
         },
       }}
     >

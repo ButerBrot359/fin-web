@@ -18,6 +18,7 @@ import {
   TextInput,
 } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
+import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
 import type { ReportAltParameterDto } from '../types/reportalt'
 import type { ReportAltParamValue } from '../lib/utils/params'
@@ -161,7 +162,7 @@ export const ReportAltParamField = ({
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    color: '#222124',
+                    color: cssVar(semantic.textPrimary),
                     minWidth: 0,
                   }}
                 >
@@ -176,7 +177,7 @@ export const ReportAltParamField = ({
                       fontSize: 16,
                       fontWeight: 500,
                       lineHeight: 1.4,
-                      color: '#666',
+                      color: cssVar(palette.pendingText2),
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                     }}

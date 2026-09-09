@@ -1,5 +1,7 @@
 import { Typography } from '@mui/material'
 
+import { cssVar, palette } from '@/shared/design/tokens'
+
 import type { ReportFormSignatureDto } from '@/pages/reports/report-list/types/report'
 
 /**
@@ -23,7 +25,7 @@ export const ReportSignature = ({
           {/* Над линией: в 1-й графе — роль («Главный бухгалтер»), в последней — ФИО. */}
           <Typography
             variant="body2"
-            sx={{ color: '#333' }}
+            sx={{ color: cssVar(palette.pendingText1) }}
             className="min-h-5 truncate"
           >
             {ci === 0
@@ -32,11 +34,11 @@ export const ReportSignature = ({
                 ? (signature.name ?? '')
                 : ''}
           </Typography>
-          <div className="w-full border-t border-[#333]" />
+          <div className="w-full border-t border-pending-text-1" />
           {/* Под линией: подпись-графа (должность | подпись | расшифровка подписи). */}
           <Typography
             variant="caption"
-            sx={{ color: '#666', fontSize: 10 }}
+            sx={{ color: cssVar(palette.pendingText2), fontSize: 10 }}
             className="min-h-4"
           >
             {caption}

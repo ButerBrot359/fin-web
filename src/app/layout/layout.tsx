@@ -37,7 +37,9 @@ export const Layout = ({ sidebar, header, children }: LayoutProps) => {
   return (
     <div className="flex h-screen w-full bg-ui-06">
       {sidebar}
-      <div className="flex min-w-0 flex-1 flex-col rounded-tl-4xl rounded-bl-4xl bg-ui-02 p-8 pb-0">
+      {/* Карта контента скруглена только сверху-слева (Figma 150:4094);
+          нижнего скругления в макете нет — тёмный «язык» слева внизу убран. */}
+      <div className="flex min-w-0 flex-1 flex-col rounded-tl-4xl bg-ui-02 p-8 pb-0">
         <header>{header}</header>
         <main className="min-h-0 flex-1 overflow-auto">
           {/* Роут-контент прячем классом, НЕ размонтируем: форма документа

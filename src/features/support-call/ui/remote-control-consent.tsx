@@ -3,6 +3,7 @@ import { Dialog } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/shared/ui/buttons'
+import { cssVar, shadows } from '@/shared/design/tokens'
 
 /**
  * Согласие на управление (ADR-0050).
@@ -35,7 +36,7 @@ export const RemoteControlConsent = ({
         paper: {
           sx: {
             borderRadius: '40px',
-            boxShadow: '0px 3px 24px 0px rgba(244, 72, 42, 0.4)',
+            boxShadow: cssVar(shadows.pendingDangerPopup),
             m: 2,
           },
         },

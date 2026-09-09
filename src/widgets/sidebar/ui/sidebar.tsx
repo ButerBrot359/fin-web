@@ -7,10 +7,11 @@ import { cn } from '@/shared/lib/utils/cn'
 
 import { useSidebar } from '../lib/hooks/use-sidebar'
 
+// Пункт по Figma «main menu» (314:14173): плашка с радиусом 16, паддинг 20
 const getButtonStyles = (isActive: boolean, isCollapsed: boolean) =>
   cn(
-    'flex w-full max-h-14 items-center gap-3 rounded-lg py-2 text-left text-base text-ui-01 transition-colors',
-    isCollapsed ? 'justify-center px-2' : 'justify-start pl-4',
+    'flex w-full max-h-14 items-center gap-3 rounded-2xl py-2 text-left text-base text-ui-01 transition-colors',
+    isCollapsed ? 'justify-center px-2' : 'justify-start pl-5',
     isActive && 'bg-ui-01 text-ui-06',
     !isActive && 'cursor-pointer hover:bg-ui-01/10'
   )

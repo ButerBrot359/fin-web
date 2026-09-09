@@ -1,17 +1,31 @@
 import { Typography } from '@mui/material'
 
+import { cssVar, palette } from '@/shared/design/tokens'
+
 import type { ReportHeaderBlockDto } from '@/pages/reports/report-list/types/report'
 
 /** Один блок бланка: строки (как есть) [+ линия] [+ мелкая подпись под блоком]. */
 const HeaderBlock = ({ block }: { block: ReportHeaderBlockDto }) => (
   <div className="flex max-w-[48%] flex-col items-center">
-    <div className={block.underline ? 'w-full border-b border-[#333] pb-0.5' : undefined}>
+    <div
+      className={
+        block.underline
+          ? 'w-full border-b border-pending-text-1 pb-0.5'
+          : undefined
+      }
+    >
       {block.lines.map((line, i) => (
         <Typography
           key={i}
           variant="caption"
           // whiteSpace: pre — двойные пробелы эталона байт-в-байт.
-          sx={{ color: '#333', fontSize: 11, whiteSpace: 'pre', display: 'block', textAlign: 'center' }}
+          sx={{
+            color: cssVar(palette.pendingText1),
+            fontSize: 11,
+            whiteSpace: 'pre',
+            display: 'block',
+            textAlign: 'center',
+          }}
         >
           {line}
         </Typography>
@@ -20,7 +34,12 @@ const HeaderBlock = ({ block }: { block: ReportHeaderBlockDto }) => (
     {block.caption && (
       <Typography
         variant="caption"
-        sx={{ color: '#666', fontSize: 9, textAlign: 'center', mt: 0.25 }}
+        sx={{
+          color: cssVar(palette.pendingText2),
+          fontSize: 9,
+          textAlign: 'center',
+          mt: 0.25,
+        }}
       >
         {block.caption}
       </Typography>

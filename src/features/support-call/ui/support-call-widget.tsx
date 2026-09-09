@@ -73,7 +73,7 @@ const SupportFab = ({
         onClick={onClick}
         aria-label={label}
         className={cn(
-          'relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full shadow-[0px_3px_16px_0px_rgba(42,117,244,0.35)] transition-all',
+          'relative flex h-14 w-14 cursor-pointer items-center justify-center rounded-full shadow-call-glow transition-all',
           TONE_CLASSES[tone]
         )}
       >
@@ -121,7 +121,7 @@ export const SupportCallWidget = () => {
       {/* Во время разговора кнопки нет: её угол занимает свёрнутая плашка разговора, а звать
           поддержку, уже разговаривая с ней, незачем. */}
       {!session && (
-        <div className="fixed right-6 bottom-20 z-[1050]">
+        <div className="fixed right-6 bottom-6 z-[1050]">
           {/* Возврат в разговор — состояние ТОЙ ЖЕ кнопки, а не вторая плашка рядом.
             Отдельный элемент выглядел чужеродно и занимал место постоянно, хотя нужен
             в редком случае: вкладку перезагрузили посреди звонка. */}

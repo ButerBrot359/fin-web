@@ -15,6 +15,7 @@ export const DateFieldNode: FC<NodeProps> = ({ node }) => {
       <DateTimeInput
         label={f.label}
         value={value}
+        size={node.props?.size as 'small' | undefined}
         dateOnly={true}
         dateFormat={node.props?.dateFormat as string | undefined}
         required={f.required}

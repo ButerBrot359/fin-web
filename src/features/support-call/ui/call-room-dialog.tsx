@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/shared/lib/utils/cn'
+import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
 import type { SupportCallSession } from '../model/types'
 import { ActiveCallBar } from './active-call-bar'
@@ -38,17 +39,20 @@ import { SupportDialog } from './support-dialog'
  * частью webbuh, а не встроенным виджетом.
  */
 const STAGE_THEME = {
-  '--lk-bg': '#222124',
-  '--lk-bg2': '#2f2e33',
-  '--lk-bg3': '#3b3a40',
-  '--lk-fg': '#ffffff',
-  '--lk-fg2': '#c3cee0',
-  '--lk-fg3': '#9fa9ba',
-  '--lk-accent-bg': '#2a75f4',
-  '--lk-accent-fg': '#ffffff',
-  '--lk-danger': '#f4482a',
-  '--lk-success': '#daf449',
-  '--lk-border-color': 'rgba(255, 255, 255, 0.08)',
+  // Сырые palette-токены, не semantic: тёмный ФОН сцены — это ui06 как цвет
+  // поверхности, а не «цвет текста»; серверная тема фазы 2, меняя textPrimary,
+  // не должна перекрашивать фон звонилки (финальное ревью Ф1+Ф2, seed §3).
+  '--lk-bg': cssVar(palette.ui06),
+  '--lk-bg2': cssVar(palette.pendingDark1),
+  '--lk-bg3': cssVar(palette.pendingDark2),
+  '--lk-fg': cssVar(palette.ui01),
+  '--lk-fg2': cssVar(palette.ui03),
+  '--lk-fg3': cssVar(palette.ui05),
+  '--lk-accent-bg': cssVar(semantic.primary),
+  '--lk-accent-fg': cssVar(palette.ui01),
+  '--lk-danger': cssVar(semantic.error),
+  '--lk-success': cssVar(semantic.brand),
+  '--lk-border-color': cssVar(palette.pendingLkBorder),
   '--lk-border-radius': '12px',
   '--lk-grid-gap': '12px',
   '--lk-font-family': '"Google Sans", system-ui, sans-serif',
@@ -380,7 +384,9 @@ const RoomStage = ({ isCaller }: { isCaller: boolean }) => {
         <span className="relative flex h-14 w-14 items-center justify-center">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-02/30" />
           <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-accent-02">
-            <HeadsetMicIcon sx={{ fontSize: 22, color: '#ffffff' }} />
+            <HeadsetMicIcon
+              sx={{ fontSize: 22, color: cssVar(palette.ui01) }}
+            />
           </span>
         </span>
         <span className="text-body1 text-ui-03">

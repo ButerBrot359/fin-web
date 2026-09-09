@@ -1,0 +1,1699 @@
+{
+  "POST /api/view#OPEN@APP_SHELL": {
+    "formSessionId": "b694f043-6edd-4202-af39-b50630b87796",
+    "revision": 0,
+    "tree": {
+      "id": "shell",
+      "type": "APP_SHELL",
+      "props": null,
+      "binding": null,
+      "value": null,
+      "children": [
+        {
+          "id": "shell.topbar",
+          "type": "TOP_BAR",
+          "props": null,
+          "binding": null,
+          "value": null,
+          "children": null,
+          "actions": null
+        },
+        {
+          "id": "shell.sidebar",
+          "type": "SIDEBAR",
+          "props": {
+            "collapsed": false
+          },
+          "binding": null,
+          "value": null,
+          "children": [
+            {
+              "id": "shell.nav.home",
+              "type": "LINK",
+              "props": {
+                "label": "Главное",
+                "icon": "home",
+                "route": "/"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Administrirovanie",
+              "type": "LINK",
+              "props": {
+                "label": "Администрирование",
+                "icon": "admin",
+                "route": "/modules/Administrirovanie"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.BankiIKassy",
+              "type": "LINK",
+              "props": {
+                "label": "Банк и касса",
+                "icon": "bank",
+                "route": "/modules/BankiIKassy"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Sklad",
+              "type": "LINK",
+              "props": {
+                "label": "Склад",
+                "icon": "warehouse",
+                "route": "/modules/Sklad"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.OsiNma",
+              "type": "LINK",
+              "props": {
+                "label": "Основные средства и нематериальные активы",
+                "icon": "actives",
+                "route": "/modules/OsiNma"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Tarifikatsiya",
+              "type": "LINK",
+              "props": {
+                "label": "Тарификация",
+                "icon": "salary",
+                "route": "/modules/Tarifikatsiya"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.ZarplatiIKadri",
+              "type": "LINK",
+              "props": {
+                "label": "Зарплата и кадры",
+                "icon": "salary",
+                "route": "/modules/ZarplatiIKadri"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.Otchety",
+              "type": "LINK",
+              "props": {
+                "label": "Отчеты",
+                "icon": "reports",
+                "route": "/modules/Otchety"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.NasheUchrezhdenie",
+              "type": "LINK",
+              "props": {
+                "label": "Наше учреждение",
+                "icon": "admin",
+                "route": "/modules/NasheUchrezhdenie"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.FormatnoLogicheskiyKontrol",
+              "type": "LINK",
+              "props": {
+                "label": "ФЛК",
+                "icon": "admin",
+                "route": "/modules/FormatnoLogicheskiyKontrol"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            },
+            {
+              "id": "shell.nav.ReglamentirovannayaNastraivaemayaOtchetnost",
+              "type": "LINK",
+              "props": {
+                "label": "Регламентированная настраиваемая отчетность",
+                "icon": "reports",
+                "route": "/modules/ReglamentirovannayaNastraivaemayaOtchetnost"
+              },
+              "binding": null,
+              "value": null,
+              "children": null,
+              "actions": null
+            }
+          ],
+          "actions": null
+        },
+        {
+          "id": "shell.workspace",
+          "type": "WORKSPACE",
+          "props": null,
+          "binding": null,
+          "value": null,
+          "children": null,
+          "actions": null
+        }
+      ],
+      "actions": null
+    },
+    "state": {},
+    "patches": null,
+    "statePatch": null,
+    "effects": null,
+    "onDirtyClose": null,
+    "formDirty": false,
+    "tab": null,
+    "dirty": null,
+    "commandFailed": null
+  },
+  "GET /api/settings/modules": {
+    "data": [
+      {
+        "code": "Administrirovanie",
+        "nameRu": "Администрирование",
+        "nameKz": "Әкімшілік",
+        "iconCode": "admin",
+        "sortOrder": 1
+      },
+      {
+        "code": "BankiIKassy",
+        "nameRu": "Банк и касса",
+        "nameKz": "Банк және касса",
+        "iconCode": "bank",
+        "sortOrder": 2
+      },
+      {
+        "code": "Sklad",
+        "nameRu": "Склад",
+        "nameKz": "Қойма",
+        "iconCode": "warehouse",
+        "sortOrder": 3
+      },
+      {
+        "code": "OsiNma",
+        "nameRu": "Основные средства и нематериальные активы",
+        "nameKz": "Негізгі құралдар және материалдық емес активтер",
+        "iconCode": "actives",
+        "sortOrder": 4
+      },
+      {
+        "code": "Tarifikatsiya",
+        "nameRu": "Тарификация",
+        "nameKz": "Тарифтеу",
+        "iconCode": "salary",
+        "sortOrder": 5
+      },
+      {
+        "code": "ZarplatiIKadri",
+        "nameRu": "Зарплата и кадры",
+        "nameKz": "Жалақы және кадрлар",
+        "iconCode": "salary",
+        "sortOrder": 6
+      },
+      {
+        "code": "Otchety",
+        "nameRu": "Отчеты",
+        "nameKz": "Есептер",
+        "iconCode": "reports",
+        "sortOrder": 7
+      },
+      {
+        "code": "NasheUchrezhdenie",
+        "nameRu": "Наше учреждение",
+        "nameKz": "Біздің мекеме",
+        "iconCode": "admin",
+        "sortOrder": 8
+      },
+      {
+        "code": "FormatnoLogicheskiyKontrol",
+        "nameRu": "ФЛК",
+        "nameKz": "ФЛБ",
+        "iconCode": "admin",
+        "sortOrder": 9
+      },
+      {
+        "code": "ReglamentirovannayaNastraivaemayaOtchetnost",
+        "nameRu": "Регламентированная настраиваемая отчетность",
+        "nameKz": "Реттелетін бапталатын есептілік",
+        "iconCode": "reports",
+        "sortOrder": 10
+      }
+    ],
+    "success": true
+  },
+  "GET /api/tasks/active": [],
+  "GET /api/support/calls/active": {
+    "__status": 204,
+    "__body": ""
+  },
+  "POST /api/view#CLOSE": {},
+  "POST /api/view#OPEN@/modules/ZarplatiIKadri": {
+    "formSessionId": "89becd03-5103-416e-8f25-d043e469134d",
+    "revision": 0,
+    "tree": {
+      "id": "module.ZarplatiIKadri",
+      "type": "PAGE",
+      "props": {
+        "title": "Зарплата и кадры",
+        "kind": "MODULE"
+      },
+      "binding": null,
+      "value": null,
+      "children": [
+        {
+          "id": "module.ZarplatiIKadri.toolbar",
+          "type": "TOOLBAR",
+          "props": {
+            "variant": "module-workspace",
+            "route": "/",
+            "title": "Зарплата и кадры"
+          },
+          "binding": null,
+          "value": null,
+          "children": null,
+          "actions": null
+        },
+        {
+          "id": "module.ZarplatiIKadri.grid",
+          "type": "GRID",
+          "props": {
+            "gap": 6,
+            "columns": 2
+          },
+          "binding": null,
+          "value": null,
+          "children": [
+            {
+              "id": "module.ZarplatiIKadri.column.0",
+              "type": "VSTACK",
+              "props": {
+                "gap": 6
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "module.ZarplatiIKadri.section.0.0",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 2
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "module.ZarplatiIKadri.section.0.0.title",
+                      "type": "LABEL",
+                      "props": {
+                        "variant": "module-section",
+                        "text": "Кадровый учёт"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.0.0",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Кадровые документы",
+                        "variant": "module-link",
+                        "disabled": true,
+                        "tooltip": "Переход будет доступен после проверки receiver-а"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.0.1",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Приемы на работу",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/PriemNaRabotu"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.0.2",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Приемы на работу (списком)",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/PriemNaRabotuSpiskom"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.0.3",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Кадровое перемещение",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/KadrovoePeremeshchenie"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.0.4",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Увольнения",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/Uvolnenie"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.0.5",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Табель",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/Tabel"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.0.6",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Замещение",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/Zameshchenie"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.0.7",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Регистрация заявлений по вычетам ИПН",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/RegistratsiyaZayavleniyPoVychetamIPN"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.0.8",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Вычеты ИПН физических лиц (РС)",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/VychetyIPNFizicheskikhLits?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "module.ZarplatiIKadri.section.0.1",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 2
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "module.ZarplatiIKadri.section.0.1.title",
+                      "type": "LABEL",
+                      "props": {
+                        "variant": "module-section",
+                        "text": "Заработная плата"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.0",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Документы по зарплате",
+                        "variant": "module-link",
+                        "disabled": true,
+                        "tooltip": "Переход будет доступен после проверки receiver-а"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.1",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Начисление зарплаты сотрудникам",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/NachislenieZarplatySotrudnikam"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.2",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Больничный лист",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/BolnichnyyList"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.3",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Отпуск",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/Otpusk"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.4",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Регистрация разовых начислений сотрудников",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/RegistratsiyaRazovykhNachisleniySotrudnikov"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.5",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Ведомость выплаты заработной платы",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/VedomostVyplatyZarabotnoyPlaty"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.6",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Отзыв из отпуска",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/OtzyvIzOtpuska"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.7",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Регистрация неявок сотрудников",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/RegistratsiyaNeyavokSotrudnikov"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.8",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Ведомость на возврат выплаченной заработной платы",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/VedomostNaVozvratVyplachennoyZarabotnoyPlaty"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.9",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Депонирование зарплаты по сотрудникам",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/DeponirovanieZarplatyPoSotrudnikam"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.10",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Начисление и списание резервов по отпускам",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/NachislenieISpisanieRezervovPoOtpuskam"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.1.11",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Разделение результатов расчёта заработной платы",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/RazdelenieRezultatovRaschetaZarabotnoyPlaty"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "module.ZarplatiIKadri.section.0.2",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 2
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "module.ZarplatiIKadri.section.0.2.title",
+                      "type": "LABEL",
+                      "props": {
+                        "variant": "module-section",
+                        "text": "Налоги и удержания"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.2.0",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Ведомость на перечисление взносов и отчислений",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/VedomostNaPerechislenieVznosovIOtchisleniy"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.2.1",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Регистрация удержаний",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/RegistratsiyaUderzhaniy"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.2.2",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Добровольное страхование",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/RegistratsiyaUderzhaniyPoDobrovolnomuStrakhovaniyu"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.2.3",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Ведомость на возврат сумм взносов и отчислений",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/VedomostNaVozvratSummVznosovIOtchisleniy"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.2.4",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Ведомость на перечисление сумм по прочим удержаниям",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/VedomostNaPerechislenieSummPoProchimUderzhaniyam"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.2.5",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Ведомость на возврат сумм по прочим удержаниям",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/VedomostNaVozvratSummPoProchimUderzhaniyam"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.2.6",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Начисление пени по взносам и отчислениям",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/NachisleniePeniPoVznosamIOtchisleniyam"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "module.ZarplatiIKadri.section.0.3",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 2
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "module.ZarplatiIKadri.section.0.3.title",
+                      "type": "LABEL",
+                      "props": {
+                        "variant": "module-section",
+                        "text": "Исполнительные листы"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.3.0",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Исполнительный лист",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/IspolnitelnyyList"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.3.1",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Ведомость выплаты по исполнительным листам",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/VedomostVyplatyPoIspolnitelnymListam"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.3.2",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Ведомость возврата сумм по исполнительным листам",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/document/VedomostVozvrataSummPoIL"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "module.ZarplatiIKadri.section.0.4",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 2
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "module.ZarplatiIKadri.section.0.4.title",
+                      "type": "LABEL",
+                      "props": {
+                        "variant": "module-section",
+                        "text": "Воинский учет"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.4.0",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Военкоматы",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/Voenkomaty?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.0.4.1",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Воинские звания",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/VoinskieZvaniya?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                }
+              ],
+              "actions": null
+            },
+            {
+              "id": "module.ZarplatiIKadri.column.1",
+              "type": "VSTACK",
+              "props": {
+                "gap": 6
+              },
+              "binding": null,
+              "value": null,
+              "children": [
+                {
+                  "id": "module.ZarplatiIKadri.section.1.0",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 2
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "module.ZarplatiIKadri.section.1.0.title",
+                      "type": "LABEL",
+                      "props": {
+                        "variant": "module-section",
+                        "text": "Справочники"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.0",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Сотрудники",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/Sotrudniki?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.1",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Физические лица",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/FizicheskieLitsa?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.2",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Виды доходов сотрудников",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/VidyDokhodovSotrudnikov?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.3",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Виды документов удостоверяющих личность",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/VidyDokumentovUdostoveryayushchikhLichnost?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.4",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Виды начислений организации",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/calculationplan/VidyNachisleniyOrganizatsii?domain=CALCULATION_PLAN"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.5",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Виды образования",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/VidyObrazovaniya?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.6",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Виды отпусков ТК РК",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/VidyOtpuskov?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.7",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Виды удержаний организации",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/calculationplan/VidyUderzhaniyOrganizatsii?domain=CALCULATION_PLAN"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.8",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Графики работы",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/Kalendari?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.9",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Каталог специальностей физических лиц",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/KatalogSpetsialnosteyFizicheskikhLits?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.10",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Квалификация физических лиц",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/KvalifikatsiyaFizicheskikhLits?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.11",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Классификатор должностей",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/KlassifikatorDolzhnostey?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.12",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Классификатор национальностей",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/KlassifikatorNatsionalnostey?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.13",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Классификатор рабочего времени",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/KlassifikatorRabochegoVremeni?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.14",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Классификация должностей по функциональным блокам",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/KlassifikatsiyaDolzhnosteyPoFunktsionalnymBlokam?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.15",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Коды строк декларации",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/KodyStrokDeklaratsii?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.16",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Основания для увольнения (Статьи ТК РК)",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/OsnovaniyaDlyaUvolneniya?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.17",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Порядок отражения заработной платы в бухгалтерском учёте",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/PoryadokOtrazheniyaZarabotnoyPlatyBU?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.18",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Причины неявок сотрудников",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/PrichinyNeyavokSotrudnikov?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.19",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Производственные календари",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/ProizvodstvennyeKalendari?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.0.20",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Функциональная классификация расходов (ФКР)",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/dictionary/FunktsionalnayaKlassifikatsiyaRaskhodov?domain=DICTIONARY"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "module.ZarplatiIKadri.section.1.1",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 2
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "module.ZarplatiIKadri.section.1.1.title",
+                      "type": "LABEL",
+                      "props": {
+                        "variant": "module-section",
+                        "text": "Отчеты"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.0",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Расчетная ведомость организации",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/RaschetnayaVedomostOrganizatsii"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.1",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Расчетные листки организаций",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/RaschetnyeListkiOrganizatsiy"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.2",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Мемориальный ордер №5",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/Report-MemorialOrder5"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.3",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Мемориальный ордер №5 (оборотная сторона)",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/Report-MemorialOrder5Reverse"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.4",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Мемориальный ордер №5 расширенный",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/Report-MemorialOrder5Extended"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.5",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Регистр налогового учета по ИПНи СН",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/RegistrNalogovogoUchetaPoIPNiSN"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.6",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Ведомость задолженности по взносам и отчислениям",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/VedomostZadolzhennostiPoVznosamIOtchisleniyam"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.7",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Контрольная ведомость по форме 5-15А",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/SverkaSummVyplachennoyZarplatySKaznacheyskoyFormoy515A"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.8",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Отчет по стажу",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/OtchetPoStazhu"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.9",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Расчетные ведомости организаций (утвержденная форма)",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/RaschetnyeVedomostiOrganizatsiyUtv"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.10",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Личная карточка (форма Т-2)",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/LichnayaKartochkaFormaT2"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.11",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Расчет резерва по неиспользованным отпускам (форма 463)",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/RaschetRezervaPoNeispolzovannymOtpuskamForma463"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.12",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Отчет по перечисленным суммам ИЛ",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/OtchetPoPerechislennymSummamIL"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.1.13",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Лицевой счет 417 форма",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/report/LitsevoySchet417Forma"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                },
+                {
+                  "id": "module.ZarplatiIKadri.section.1.2",
+                  "type": "VSTACK",
+                  "props": {
+                    "gap": 2
+                  },
+                  "binding": null,
+                  "value": null,
+                  "children": [
+                    {
+                      "id": "module.ZarplatiIKadri.section.1.2.title",
+                      "type": "LABEL",
+                      "props": {
+                        "variant": "module-section",
+                        "text": "Настройки"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.0",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Коды строк декларации по ИПН и СН",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/KodyStrokDeklaratsiiPoIPNiSN?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.1",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Коэффициенты кратности для расчета пени",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/KoeffitsientyKratnostiDlyaRaschetaPeni?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.2",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Настройка доступности реквизитов начисления зарплаты сотрудникам",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/NastroykaDostupnostiRekvizitovNachisleniyaZarplatySotrudnikam?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.3",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Настройка отражения начислений в бухгалтерском учете",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/NastroykaOtrazheniyaNachisleniyBU?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.4",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Настройка отражения налогов и сборов в бухгалтерском учете",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/NastroykaOtrazheniyaNalogovISborovBU?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.5",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Настройка отражения удержаний в бухгалтерском учете",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/NastroykaOtrazheniyaUderzhaniyBU?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.6",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Коэффициенты оплаты сверхнормативных работ",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/KoeffitsientyOplatySverkhNormativnykhRabot?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.7",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Настройка экологического отпуска",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/NastroykaEkologicheskogoOtpuska?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.8",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Настройки расчета среднего заработка",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/NastroykiRaschetaSrednegoZarabotka?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.9",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Нормативная нагрузка преподавателей",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/NormativnayaNagruzkaPrepo?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.10",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Порядок округления результатов расчета начислений, налогов, удержаний",
+                        "variant": "module-link",
+                        "disabled": true,
+                        "tooltip": "Переход будет доступен после проверки receiver-а"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.11",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Регламентированные расчётные показатели",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/ReglamentirovannyeRaschetnyePokazateli?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.12",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Сведения о ставках налогообложения",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/SvedeniyaOStavkakhNalogooblozheniya?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.13",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Соответствие надбавок и видов замещения сотрудников",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/SootvetstvieNadbavokIVidovZameshcheniyaSotrudnikov?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.14",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Пределы по взносам и отчислениям",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/PredelyPoVznosamIOtchisleniyam?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.15",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Соответствие видов деятельности сотрудника видам начисления",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/SootvetstvieVidovDeyatelnostiSotrudnikaVidamNachisleniya?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.16",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Соответствие видов нагрузок и видов начисления",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/SootvetstvieVidovNagruzokIVidovNachisleniy?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.17",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Соответствие специфики начислений и налоги, взносы, отчисления",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/SootvetstvieSpetsifikiNachisleniyINalogiVznosyOtchisleniya?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.18",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Тарифная сетка",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/TarifnayaSetka?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    },
+                    {
+                      "id": "module.ZarplatiIKadri.item.1.2.19",
+                      "type": "LINK",
+                      "props": {
+                        "text": "Дополнительные сведения должностей",
+                        "variant": "module-link",
+                        "route": "/modules/ZarplatiIKadri/informationregister/DopolnitelnyeSvedeniyaDolzhnostey?domain=INFORMATION_REGISTER"
+                      },
+                      "binding": null,
+                      "value": null,
+                      "children": null,
+                      "actions": null
+                    }
+                  ],
+                  "actions": null
+                }
+              ],
+              "actions": null
+            }
+          ],
+          "actions": null
+        }
+      ],
+      "actions": null
+    },
+    "state": {},
+    "patches": null,
+    "statePatch": null,
+    "effects": null,
+    "onDirtyClose": null,
+    "formDirty": false,
+    "tab": {
+      "kind": "MODULE",
+      "title": "Зарплата и кадры",
+      "icon": null,
+      "closable": true
+    },
+    "dirty": null,
+    "commandFailed": null
+  }
+}

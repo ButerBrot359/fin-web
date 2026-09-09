@@ -30,6 +30,7 @@ import { DateTimeInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { exportTableToXlsx } from '@/shared/lib/table-export'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 import { useReportMeta } from '../lib/hooks/use-report-meta'
 import { useRunReport } from '../lib/hooks/use-run-report'
@@ -909,11 +910,11 @@ const ReportPageContent = ({
             }}
             sx={{
               height: 48,
-              bgcolor: '#fcd53b',
-              color: '#1a1a1a',
+              bgcolor: cssVar(palette.pendingYellow1),
+              color: cssVar(palette.pendingDark3),
               fontWeight: 700,
-              border: '1px solid #e3b93c',
-              '&:hover': { bgcolor: '#f6c827' },
+              border: `1px solid ${cssVar(palette.pendingYellow3)}`,
+              '&:hover': { bgcolor: cssVar(palette.pendingYellow2) },
             }}
           >
             {t('reports.generate')}
@@ -982,8 +983,8 @@ const ReportPageContent = ({
             <div className="flex items-center justify-center py-16">
               <Typography
                 variant="body2"
-                className="rounded border border-[#d9d9d9] bg-[#fffbe6] px-4 py-2"
-                sx={{ color: '#333' }}
+                className="rounded border border-pending-gray-1 bg-pending-warn-bg-2 px-4 py-2"
+                sx={{ color: cssVar(palette.pendingText1) }}
               >
                 {t('reports.notGenerated')}
               </Typography>

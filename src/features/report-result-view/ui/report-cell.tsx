@@ -1,6 +1,7 @@
 import { Typography } from '@mui/material'
 
 import { formatDate } from '@/shared/lib/utils/date'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 import type { ReportColumnDto } from '@/pages/reports/report-list/types/report'
 
@@ -31,7 +32,11 @@ const formatPeriodValue = (raw: string, col: ReportColumnDto): string => {
 
 /** Стиль текста 1С: данные — #333/11px, выделенные строки — зелёный жирный/13px. */
 const textStyle = (highlight?: boolean, negative?: boolean) => ({
-  color: negative ? 'rgb(255,0,0)' : highlight ? GREEN_1C : '#333',
+  color: negative
+    ? cssVar(palette.pending1cRed)
+    : highlight
+      ? GREEN_1C
+      : cssVar(palette.pendingText1),
   fontWeight: highlight ? 700 : 400,
   fontSize: highlight ? HEAD_FS : DATA_FS,
   lineHeight: 1.3,

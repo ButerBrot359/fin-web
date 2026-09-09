@@ -62,9 +62,11 @@ describe('сетка ТЧ', () => {
   // неполон, поэтому пиним сам объект стиля, а рендер — смоуком.
   it('стиль по макету: горизонтали ui-03, тёмный низ шапки, без вертикалей', () => {
     expect(TABLE_GRID_SX).toEqual({
-      '& .MuiTableCell-root': { borderBottomColor: '#c3cee0' },
+      '& .MuiTableCell-root': {
+        borderBottomColor: 'var(--ui-03, #c3cee0)',
+      },
       '& .MuiTableHead-root .MuiTableRow-root:last-child .MuiTableCell-root, & .MuiTableHead-root .MuiTableCell-root[rowspan]':
-        { borderBottomColor: '#222124' },
+        { borderBottomColor: 'var(--ui-06, #222124)' },
     })
     expect(JSON.stringify(TABLE_GRID_SX)).not.toContain('borderRight')
     renderTable(<TableNode node={flatTable()} />)

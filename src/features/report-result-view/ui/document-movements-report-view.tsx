@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
 import { MovementGroupsView } from '@/pages/documents/document-movements'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 import type { DocumentMovementsReportResult } from '../lib/document-movements-result'
 
@@ -22,7 +23,11 @@ export const DocumentMovementsReportView = ({
       {result.documentPresentation && (
         <Typography
           variant="body1"
-          sx={{ color: '#333', fontWeight: 700, fontSize: 17 }}
+          sx={{
+            color: cssVar(palette.pendingText1),
+            fontWeight: 700,
+            fontSize: 17,
+          }}
         >
           {result.documentPresentation}
         </Typography>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FC } from 'react'
 import { Typography } from '@mui/material'
 
 import { formatHours } from './tabel-matrix-logic'
+import { cssVar, palette } from '@/shared/design/tokens'
 
 interface TabelMatrixCellProps {
   /** Каноническое значение из серверного payload (decimal-строка) или пусто. */
@@ -73,7 +74,7 @@ export const TabelMatrixCell: FC<TabelMatrixCellProps> = ({
     <input
       style={{
         ...baseStyle,
-        color: weekend ? 'var(--color-red-600, #d32f2f)' : undefined,
+        color: weekend ? cssVar(palette.pendingWeekendRed) : undefined,
       }}
       value={buffer}
       inputMode="decimal"

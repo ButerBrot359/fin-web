@@ -14,6 +14,7 @@ import {
 } from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons'
+import { figmaIcons } from '@/shared/ui/icons'
 
 import type { TabelManualWorkKind } from './tabel-matrix-contract'
 
@@ -64,7 +65,13 @@ export const TabelMatrixToolbar: FC<TabelMatrixToolbarProps> = ({
 
   return (
     <div className="flex items-center gap-2">
-      <Button variant="primary" disabled={busy} onClick={onAddEmployee}>
+      {/* Figma 772:24370: «+ Добавить» ТЧ — secondary, primary на экране одна */}
+      <Button
+        variant="secondary"
+        disabled={busy}
+        onClick={onAddEmployee}
+        startIcon={figmaIcons.plus}
+      >
         {t('sdui.tabel.addEmployee')}
       </Button>
       <Button variant="secondary" disabled={busy} onClick={onOpenPodbor}>

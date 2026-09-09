@@ -32,6 +32,7 @@ export const NumberFieldNode: FC<NodeProps> = ({ node }) => {
     <NumberInput
       label={f.label}
       value={stringValue}
+      size={node.props?.size as 'small' | undefined}
       required={f.required}
       readOnly={f.readonly}
       disabled={!f.enabled}

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Checkbox, FormControlLabel, Typography } from '@mui/material'
 
 import { useAiConnections } from '@/entities/ai-connection'
+import type { AiAssistantCapability } from '@/entities/ai-assistant'
 import {
   useAiAssistantSettings,
   useUpdateAiAssistantSettings,
@@ -11,6 +12,7 @@ import {
 import { Button } from '@/shared/ui/buttons'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
+import { CapabilityCheckboxes } from './capability-checkboxes'
 import { ConnectionSelect } from './connection-select'
 
 /**
@@ -30,6 +32,7 @@ export const AssistantSettingsForm = () => {
   const [connectionId, setConnectionId] = useState<number | null>(null)
   const [enabled, setEnabled] = useState(false)
   const [acknowledged, setAcknowledged] = useState(false)
+  const [capabilities, setCapabilities] = useState<AiAssistantCapability[]>([])
   const [synced, setSynced] = useState<AiAssistantSettings | null>(null)
 
   if (settings && settings !== synced) {
@@ -37,6 +40,7 @@ export const AssistantSettingsForm = () => {
     setConnectionId(settings.connectionId ?? null)
     setEnabled(settings.enabled)
     setAcknowledged(settings.externalProviderAcknowledged)
+    setCapabilities(settings.capabilities)
   }
 
   const selected = connections.find(
@@ -56,6 +60,7 @@ export const AssistantSettingsForm = () => {
         maxTokens: selected?.maxTokens ?? 4000,
         enabled,
         externalProviderAcknowledged: acknowledged,
+        capabilities,
       },
       {
         onSuccess: () => {
@@ -80,6 +85,8 @@ export const AssistantSettingsForm = () => {
       </div>
 
       <ConnectionSelect value={connectionId} onChange={setConnectionId} />
+
+      <CapabilityCheckboxes value={capabilities} onChange={setCapabilities} />
 
       {/* Выбор облачного подключения НЕ блокируется — решение за организацией.
           Но последствия названы красным: сюда уходят суммы, ФИО и ИИН конкретных
@@ -109,23 +116,6 @@ export const AssistantSettingsForm = () => {
           />
         </div>
       )}
-
-      {/* Возможности — тоже последствие выбора: помощник не только читает. */}
-      <div className="flex flex-col gap-1 rounded-r-lg border-l-4 border-support-01 bg-ui-04 px-4 py-3">
-        <Typography
-          variant="body2"
-          fontWeight={700}
-          className="text-support-01"
-        >
-          {t('aiAssistant.powersTitle')}
-        </Typography>
-        <Typography variant="body2" className="text-support-01">
-          {t('aiAssistant.powersCreate')}
-        </Typography>
-        <Typography variant="body2" className="text-ui-06">
-          {t('aiAssistant.powersNoPosting')}
-        </Typography>
-      </div>
 
       <FormControlLabel
         control={

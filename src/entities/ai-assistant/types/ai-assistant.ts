@@ -2,6 +2,22 @@
 
 import type { LlmProvider } from '@/entities/analytics'
 
+/**
+ * Что помощнику разрешено делать.
+ *
+ * Умеет он всё перечисленное; галочки решают, что позволено. Тот же набор проверяется
+ * на сервере перед каждым действием.
+ */
+export type AiAssistantCapability =
+  | 'SEARCH_DATA'
+  | 'QUERY_TOTALS'
+  | 'CREATE_DOCUMENT'
+  | 'UPDATE_DOCUMENT'
+  | 'POST_DOCUMENT'
+  | 'UNPOST_DOCUMENT'
+  | 'DELETE_DOCUMENT'
+  | 'CREATE_DICTIONARY_ENTRY'
+
 /** Объект, поверх которого открыт помощник. Содержимое сервер читает сам. */
 export interface AiAssistantContext {
   kind:
@@ -80,6 +96,7 @@ export interface AiAssistantConfirmAction {
 /** Настройки помощника — отдельные от настроек аналитики. */
 export interface AiAssistantSettings {
   organizationId?: number | null
+  capabilities: AiAssistantCapability[]
   /** Выбранное подключение из реестра; пусто — контур не настроен. */
   connectionId?: number | null
   provider: LlmProvider
@@ -97,6 +114,8 @@ export interface AiAssistantSettings {
 }
 
 export interface AiAssistantSettingsUpdate {
+  /** null — не менять сохранённые; пустой массив — снять все. */
+  capabilities: AiAssistantCapability[] | null
   /** Выбранное подключение из реестра; пусто — контур не настроен. */
   connectionId?: number | null
   provider: LlmProvider

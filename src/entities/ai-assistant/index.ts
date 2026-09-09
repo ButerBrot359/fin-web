@@ -11,6 +11,7 @@ export {
 } from './lib/hooks/use-ai-assistant'
 export type {
   AiAssistantAction,
+  AiAssistantCapability,
   AiAssistantAnswer,
   AiAssistantBreakdownRow,
   AiAssistantChatRequest,

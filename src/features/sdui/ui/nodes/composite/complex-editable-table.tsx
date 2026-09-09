@@ -31,7 +31,11 @@ import {
 } from '../../../lib/hooks/use-table-search'
 import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
 import { readVirtualization } from '../../../lib/utils/pagination'
-import { useExternalRowFilter } from '../../../lib/hooks/use-external-row-filter'
+import {
+  useExternalRowFilter,
+  useExternalRowFilterDeclared,
+} from '../../../lib/hooks/use-external-row-filter'
+import { sumVisibleFooter } from '../../../lib/utils/table-footer'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
@@ -313,6 +317,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   }, [sync.rows, isMasterDetail, masterKey, detailKey, selectedMasterRow])
 
   const visibleRows = useExternalRowFilter(node, masterDetailRows)
+  const externalFilterDeclared = useExternalRowFilterDeclared(node)
 
   // Индекс выбранной строки в текущем видимом наборе (не в полном sync.rows —
   // при активном master-detail фильтре это разные массивы, SCRUM-282 C1).
@@ -380,11 +385,16 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   }, [visibleRows, selectedRowId, node.binding, setFromServer])
 
   // ── Footer ──
-  const footerValues = node.binding
+  const serverFooter = node.binding
     ? (getValue(node.binding + '.footer') as
         | Record<string, unknown>
         | undefined)
     : undefined
+
+  const footerValues = useMemo(() => {
+    if (!externalFilterDeclared || !serverFooter) return serverFooter
+    return { ...serverFooter, ...sumVisibleFooter(node.children, visibleRows) }
+  }, [externalFilterDeclared, serverFooter, node.children, visibleRows])
 
   const hasFooter = Boolean(
     footerValues &&

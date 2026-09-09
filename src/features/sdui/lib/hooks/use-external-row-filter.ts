@@ -47,3 +47,10 @@ export function useExternalRowFilter(
     return filterDetailRows(rows, selected, sourceColumn, column)
   }, [active, rows, sourceRows, selectedRowId, sourceColumn, column])
 }
+
+export function useExternalRowFilterDeclared(node: ViewNode): boolean {
+  const source = node.props?.filterSource as string | undefined
+  const sourceColumn = node.props?.filterSourceColumn as string | undefined
+  const column = node.props?.filterColumn as string | undefined
+  return Boolean(source && sourceColumn && column)
+}

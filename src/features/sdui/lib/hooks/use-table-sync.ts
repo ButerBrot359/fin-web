@@ -335,19 +335,26 @@ export function useTableSync(
   // ── Public API ──
 
   const updateCell = (rowId: string, binding: string, value: unknown) => {
-    setLocalRows((prev) => {
-      const next = prev.map((r) =>
-        r.rowId === rowId ? { ...r, [binding]: value } : r
-      )
-      // НЕ пишем в session-стор на каждый символ. Запись canon (node.binding)
-      // меняла canonRows → срабатывал useEffect([canonRows]) → лишний ре-рендер;
-      // вместе с пересозданием колонок это ремонтило ячейку и сбрасывало фокус
-      // (баг «ввод по 1 символу»). Правка локальна (localRows); canon
-      // синхронизируется на commit (blur/Enter → EVENT → серверный setValue).
-      // ADR-0011: оптимистичный локальный эхо, canon — только от сервера.
-      localRowsRef.current = next
-      return next
-    })
+    // Снимок считается СИНХРОННО от localRowsRef, а не внутри updater'а
+    // setLocalRows: updater React вызывает при следующем рендере, поэтому ref
+    // обновлялся ПОСЛЕ возврата из updateCell. Виджеты, которые коммитят сразу
+    // за правкой (чекбокс, перечисление, дата), звали commitCell в том же такте
+    // — и sendEvent уходил со СТАРЫМ снимком, а dirtyRef он же и очищал. Ответ
+    // сервера на этот снимок возвращал прежнее значение, и галочка гасла:
+    // «не сразу проставляется, приходится кликать много раз» (Замещение,
+    // «Использовать начисления заменяющего», 09.09.2026). Остальные мутаторы
+    // (addRow/deleteRow/moveRow/replaceRows) уже написаны этим же порядком.
+    const next = localRowsRef.current.map((r) =>
+      r.rowId === rowId ? { ...r, [binding]: value } : r
+    )
+    // НЕ пишем в session-стор на каждый символ. Запись canon (node.binding)
+    // меняла canonRows → срабатывал useEffect([canonRows]) → лишний ре-рендер;
+    // вместе с пересозданием колонок это ремонтило ячейку и сбрасывало фокус
+    // (баг «ввод по 1 символу»). Правка локальна (localRows); canon
+    // синхронизируется на commit (blur/Enter → EVENT → серверный setValue).
+    // ADR-0011: оптимистичный локальный эхо, canon — только от сервера.
+    localRowsRef.current = next
+    setLocalRows(next)
 
     // Record in dirty snapshot — always (not just when in-flight): dirty нужен
     // и для реконсиляции с каноном, и как признак «сервер этого ещё не видел».

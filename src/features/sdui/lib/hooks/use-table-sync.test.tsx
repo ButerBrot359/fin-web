@@ -85,6 +85,27 @@ describe('useTableSync', () => {
     })
   })
 
+  it('правка и коммит в ОДНОМ такте уезжают на сервер вместе (чекбокс ТЧ)', () => {
+    sessionState.rows = [{ rowId: '1', Flag: false }]
+    const { result } = renderHook(() => useTableSync(node, []))
+    act(() => {
+      result.current.updateCell('1', 'Flag', true)
+      result.current.commitCell()
+    })
+    expect(lastAction()?.value).toEqual([{ rowId: '1', Flag: true }])
+  })
+
+  it('вторая правка в том же такте тоже уезжает (чекбокс ТЧ)', () => {
+    sessionState.rows = [{ rowId: '1', A: 0, Flag: false }]
+    const { result } = renderHook(() => useTableSync(node, []))
+    act(() => {
+      result.current.updateCell('1', 'A', 1)
+      result.current.updateCell('1', 'Flag', true)
+      result.current.commitCell()
+    })
+    expect(lastAction()?.value).toEqual([{ rowId: '1', A: 1, Flag: true }])
+  })
+
   it('addRow с presetValues проставляет значения поверх пустой строки', () => {
     sessionState.rows = []
     const columns = [
@@ -136,7 +157,9 @@ describe('useTableSync', () => {
   // соседняя ячейка гаснет ответом сервера. Ключ обязан пережить реконсиляцию
   // канона с локальными правками, иначе гашение не доедет до рендера.
   it('ключи из серверного канона переживают наложение локальных правок', () => {
-    sessionState.rows = [{ rowId: '1', Indeksiruemyy: null, Neindeksiruemyy: 0 }]
+    sessionState.rows = [
+      { rowId: '1', Indeksiruemyy: null, Neindeksiruemyy: 0 },
+    ]
     const { result, rerender } = renderHook(() => useTableSync(node, []))
 
     // Правка ещё не отправлена (dirty), приходит канон с новым состоянием.

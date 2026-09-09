@@ -5,13 +5,13 @@ import { Typography } from '@mui/material'
 import { useAiSettings } from '@/entities/analytics'
 import {
   AiDisclosurePanel,
+  AnalyticsSurfaceForm,
   AssistantSettingsForm,
 } from '@/features/ai-assistant'
+import { AiConnectionsPanel } from '@/features/ai-connections'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
-
-import { AiSettingsForm } from './ai-settings-form'
 
 /**
  * Страница «Настройки ИИ» раздела «Аналитика».
@@ -27,7 +27,7 @@ export const AnalyticsAiSettingsPage = () => {
 
   useTabMeta(t('analytics.settings.title'))
 
-  const { settings, isLoading } = useAiSettings()
+  const { isLoading } = useAiSettings()
 
   const handleClose = () => {
     useWorkspaceTabsStore.getState().closeTab(location.pathname)
@@ -51,7 +51,11 @@ export const AnalyticsAiSettingsPage = () => {
             провайдере принимается зная, какие данные ему достанутся. */}
         <AiDisclosurePanel />
 
-        <AiSettingsForm settings={settings} />
+        {/* Подключения — первыми: контуры ниже выбирают из уже заведённых,
+            и порядок на экране повторяет порядок действий. */}
+        <AiConnectionsPanel />
+
+        <AnalyticsSurfaceForm />
 
         <AssistantSettingsForm />
       </div>

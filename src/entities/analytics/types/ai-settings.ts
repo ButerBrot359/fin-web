@@ -13,6 +13,8 @@ export type LlmProvider = 'ANTHROPIC' | 'OPENAI' | 'OPENROUTER' | 'LOCAL'
  */
 export interface AnalyticsAiSettings {
   organizationId?: number | null
+  /** Выбранное подключение из реестра; пусто — контур не настроен. */
+  connectionId?: number | null
   provider: LlmProvider
   model: string
   baseUrl?: string | null
@@ -31,6 +33,8 @@ export interface AnalyticsAiSettings {
  * пустое поле означает «оставить сохранённый ключ как есть».
  */
 export interface AnalyticsAiSettingsUpdate {
+  /** Выбранное подключение из реестра; пусто — контур не настроен. */
+  connectionId?: number | null
   provider: LlmProvider
   model: string
   baseUrl?: string | null

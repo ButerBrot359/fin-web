@@ -72,6 +72,8 @@ export interface AiAssistantConfirmAction {
 /** Настройки помощника — отдельные от настроек аналитики. */
 export interface AiAssistantSettings {
   organizationId?: number | null
+  /** Выбранное подключение из реестра; пусто — контур не настроен. */
+  connectionId?: number | null
   provider: LlmProvider
   model: string
   baseUrl?: string | null
@@ -87,6 +89,8 @@ export interface AiAssistantSettings {
 }
 
 export interface AiAssistantSettingsUpdate {
+  /** Выбранное подключение из реестра; пусто — контур не настроен. */
+  connectionId?: number | null
   provider: LlmProvider
   model: string
   baseUrl: string | null

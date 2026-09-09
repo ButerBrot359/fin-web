@@ -1,96 +1,61 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Checkbox,
-  FormControlLabel,
-  MenuItem,
-  TextField,
-  Typography,
-} from '@mui/material'
+import { Checkbox, FormControlLabel, Typography } from '@mui/material'
 
-import type { LlmProvider } from '@/entities/analytics'
+import { useAiConnections } from '@/entities/ai-connection'
 import {
   useAiAssistantSettings,
   useUpdateAiAssistantSettings,
   type AiAssistantSettings,
 } from '@/entities/ai-assistant'
 import { Button } from '@/shared/ui/buttons'
-import type { TranslationKey } from '@/shared/types/i18n.types'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-/** Подписи берутся из ключей раздела аналитики: провайдеры у контуров одни и те же. */
-const PROVIDERS: { value: LlmProvider; labelKey: TranslationKey }[] = [
-  { value: 'LOCAL', labelKey: 'analytics.settings.providerLocal' },
-  { value: 'ANTHROPIC', labelKey: 'analytics.settings.providerAnthropic' },
-  { value: 'OPENAI', labelKey: 'analytics.settings.providerOpenai' },
-  { value: 'OPENROUTER', labelKey: 'analytics.settings.providerOpenrouter' },
-]
-
-interface FormState {
-  provider: LlmProvider
-  model: string
-  baseUrl: string
-  apiKey: string
-  enabled: boolean
-  externalProviderAcknowledged: boolean
-}
-
-const toFormState = (settings: AiAssistantSettings | null): FormState => ({
-  provider: settings?.provider ?? 'LOCAL',
-  model: settings?.model ?? '',
-  baseUrl: settings?.baseUrl ?? '',
-  // Ключ с сервера не приходит никогда — поле всегда стартует пустым.
-  apiKey: '',
-  enabled: settings?.enabled ?? false,
-  externalProviderAcknowledged: settings?.externalProviderAcknowledged ?? false,
-})
+import { ConnectionSelect } from './connection-select'
 
 /**
- * Настройки ИИ-помощника — отдельный блок, а не переключатель внутри настроек
- * аналитики.
+ * Контур «Помощник»: какое подключение использует чат поверх формы.
  *
- * Разделение здесь несёт смысл: у двух контуров разный класс отправляемых данных,
- * и общая запись означала бы, что смена провайдера для отчётов молча меняет
- * адресата сумм и ФИО.
- *
- * Согласие на стороннего провайдера — не украшение формы. Такой же запрет стоит
- * на сервере, потому что галочку обходит прямой вызов API, а решение об уходе
- * учётных данных за периметр обходить нельзя.
+ * <p>Отдельно от контура аналитики намеренно: у них разный класс отправляемых данных,
+ * и одна запись означала бы, что смена модели для отчётов молча меняет адресата сумм
+ * и ФИО. Здесь же — красные предупреждения о последствиях выбора: выбор не
+ * блокируется, но цена названа.
  */
 export const AssistantSettingsForm = () => {
   const { t } = useTranslation()
   const { settings } = useAiAssistantSettings()
+  const { connections } = useAiConnections()
   const update = useUpdateAiAssistantSettings()
-  const [form, setForm] = useState<FormState>(toFormState(null))
+
+  const [connectionId, setConnectionId] = useState<number | null>(null)
+  const [enabled, setEnabled] = useState(false)
+  const [acknowledged, setAcknowledged] = useState(false)
   const [synced, setSynced] = useState<AiAssistantSettings | null>(null)
 
-  // Настройки приходят асинхронно; перезаполняем форму В РЕНДЕРЕ, а не в эффекте.
-  // Эффект дал бы лишний проход, в котором форма ещё показывает значения по
-  // умолчанию поверх уже полученных с сервера, — и линтер проекта его запрещает
-  // именно поэтому. Тот же приём, что в use-generation-stage.
   if (settings && settings !== synced) {
     setSynced(settings)
-    setForm(toFormState(settings))
+    setConnectionId(settings.connectionId ?? null)
+    setEnabled(settings.enabled)
+    setAcknowledged(settings.externalProviderAcknowledged)
   }
 
-  const isLocal = form.provider === 'LOCAL'
-  const baseUrlMissing = isLocal && form.baseUrl.trim() === ''
-
-  const patch = (next: Partial<FormState>) => {
-    setForm((current) => ({ ...current, ...next }))
-  }
+  const selected = connections.find(
+    (connection) => connection.id === connectionId
+  )
+  const isExternal = selected?.external ?? false
 
   const submit = () => {
     update.mutate(
       {
-        provider: form.provider,
-        model: form.model.trim(),
-        baseUrl: form.baseUrl.trim() || null,
-        apiKey: form.apiKey.trim() || null,
-        temperature: settings?.temperature ?? 0.2,
-        maxTokens: settings?.maxTokens ?? 4000,
-        enabled: form.enabled,
-        externalProviderAcknowledged: form.externalProviderAcknowledged,
+        connectionId,
+        provider: selected?.provider ?? 'LOCAL',
+        model: selected?.model ?? '',
+        baseUrl: selected?.baseUrl ?? null,
+        apiKey: null,
+        temperature: selected?.temperature ?? 0.2,
+        maxTokens: selected?.maxTokens ?? 4000,
+        enabled,
+        externalProviderAcknowledged: acknowledged,
       },
       {
         onSuccess: () => {
@@ -114,71 +79,12 @@ export const AssistantSettingsForm = () => {
         </Typography>
       </div>
 
-      <TextField
-        select
-        label={t('analytics.settings.provider')}
-        value={form.provider}
-        onChange={(event) => {
-          // Смена провайдера сбрасывает и модель, и согласие: идентификаторы
-          // моделей у провайдеров свои, а согласие даётся на конкретного
-          // адресата данных, а не один раз навсегда.
-          patch({
-            provider: event.target.value as LlmProvider,
-            model: '',
-            externalProviderAcknowledged: false,
-          })
-        }}
-      >
-        {PROVIDERS.map((provider) => (
-          <MenuItem key={provider.value} value={provider.value}>
-            {t(provider.labelKey)}
-          </MenuItem>
-        ))}
-      </TextField>
+      <ConnectionSelect value={connectionId} onChange={setConnectionId} />
 
-      <TextField
-        label={t('analytics.settings.model')}
-        value={form.model}
-        onChange={(event) => {
-          patch({ model: event.target.value })
-        }}
-      />
-
-      <TextField
-        required={isLocal}
-        error={baseUrlMissing}
-        label={t('analytics.settings.baseUrl')}
-        helperText={t(
-          isLocal
-            ? 'analytics.settings.baseUrlHintLocal'
-            : 'analytics.settings.baseUrlHint'
-        )}
-        value={form.baseUrl}
-        onChange={(event) => {
-          patch({ baseUrl: event.target.value })
-        }}
-      />
-
-      <TextField
-        type="password"
-        autoComplete="off"
-        label={t('analytics.settings.apiKey')}
-        helperText={t(
-          isLocal
-            ? 'analytics.settings.apiKeyHintLocal'
-            : 'analytics.settings.apiKeyHint'
-        )}
-        value={form.apiKey}
-        onChange={(event) => {
-          patch({ apiKey: event.target.value })
-        }}
-      />
-
-      {/* Выбор облачного провайдера НЕ блокируется — решение за организацией.
-          Но последствия названы красным и прямо: сюда уходят суммы, ФИО и ИИН
-          конкретных людей, и обратно их уже не вернуть. Галочка остаётся следом
-          принятого решения, а не условием сохранения. */}
-      {!isLocal && (
+      {/* Выбор облачного подключения НЕ блокируется — решение за организацией.
+          Но последствия названы красным: сюда уходят суммы, ФИО и ИИН конкретных
+          людей, и обратно их не вернуть. Галочка — след решения, не условие. */}
+      {isExternal && (
         <div className="flex flex-col gap-2 rounded-r-lg border-l-4 border-support-01 bg-ui-04 px-4 py-3">
           <Typography
             variant="body2"
@@ -193,9 +99,9 @@ export const AssistantSettingsForm = () => {
           <FormControlLabel
             control={
               <Checkbox
-                checked={form.externalProviderAcknowledged}
+                checked={acknowledged}
                 onChange={(event) => {
-                  patch({ externalProviderAcknowledged: event.target.checked })
+                  setAcknowledged(event.target.checked)
                 }}
               />
             }
@@ -204,8 +110,7 @@ export const AssistantSettingsForm = () => {
         </div>
       )}
 
-      {/* Возможности помощника — тоже последствие выбора, и тоже красным:
-          он не только читает, но и создаёт документы без отдельного вопроса. */}
+      {/* Возможности — тоже последствие выбора: помощник не только читает. */}
       <div className="flex flex-col gap-1 rounded-r-lg border-l-4 border-support-01 bg-ui-04 px-4 py-3">
         <Typography
           variant="body2"
@@ -225,9 +130,9 @@ export const AssistantSettingsForm = () => {
       <FormControlLabel
         control={
           <Checkbox
-            checked={form.enabled}
+            checked={enabled}
             onChange={(event) => {
-              patch({ enabled: event.target.checked })
+              setEnabled(event.target.checked)
             }}
           />
         }
@@ -237,9 +142,7 @@ export const AssistantSettingsForm = () => {
       <div className="flex justify-end">
         <Button
           variant="primary"
-          disabled={
-            update.isPending || baseUrlMissing || form.model.trim() === ''
-          }
+          disabled={update.isPending || connectionId == null}
           onClick={submit}
         >
           {t('analytics.settings.save')}

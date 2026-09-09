@@ -14,10 +14,10 @@ import {
  * Диапазоны температуры и лимита токенов гарантирует сама форма (слайдер и
  * зажатый инпут), поэтому текста ошибки у них нет — сработать они не могут.
  */
-export const aiSettingsSchema = z.object({
-  provider: z.enum(['ANTHROPIC', 'OPENAI', 'OPENROUTER']),
+const baseSchema = z.object({
+  provider: z.enum(['ANTHROPIC', 'OPENAI', 'OPENROUTER', 'LOCAL']),
   model: z.string().trim().min(1, 'errors.required'),
-  /** Пусто — стандартный адрес провайдера. */
+  /** Пусто — стандартный адрес провайдера; для своей модели обязателен. */
   baseUrl: z.string(),
   /** Пусто — оставить сохранённый на сервере ключ. */
   apiKey: z.string(),
@@ -26,4 +26,19 @@ export const aiSettingsSchema = z.object({
   enabled: z.boolean(),
 })
 
-export type AiSettingsFormValues = z.infer<typeof aiSettingsSchema>
+/**
+ * У своей модели адрес обязателен: дефолтного хоста у неё нет, и пустое поле
+ * означало бы «некуда обращаться». Проверка межполевая, поэтому живёт в
+ * `superRefine`, а не в самом поле.
+ */
+export const aiSettingsSchema = baseSchema.superRefine((values, ctx) => {
+  if (values.provider === 'LOCAL' && values.baseUrl.trim() === '') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['baseUrl'],
+      message: 'analytics.settings.baseUrlRequiredLocal',
+    })
+  }
+})
+
+export type AiSettingsFormValues = z.infer<typeof baseSchema>

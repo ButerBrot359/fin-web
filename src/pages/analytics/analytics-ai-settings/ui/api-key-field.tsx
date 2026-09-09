@@ -8,6 +8,11 @@ interface ApiKeyFieldProps {
   /** Маска сохранённого ключа с сервера; пусто — ключ не задан. */
   savedMask?: string | null
   hasSavedKey: boolean
+  /**
+   * Ключ провайдеру не обязателен (своя модель). Меняет смысл пустого
+   * состояния: «не задан» — недоделка, «не требуется» — штатный режим.
+   */
+  optional?: boolean
   onChange: (apiKey: string) => void
 }
 
@@ -26,6 +31,7 @@ export const ApiKeyField = ({
   value,
   savedMask,
   hasSavedKey,
+  optional = false,
   onChange,
 }: ApiKeyFieldProps) => {
   const { t } = useTranslation()
@@ -42,7 +48,9 @@ export const ApiKeyField = ({
         <Typography variant="body2">
           {hasSavedKey
             ? t('analytics.settings.apiKeySaved')
-            : t('analytics.settings.apiKeyNotSet')}
+            : optional
+              ? t('analytics.settings.apiKeyNotNeeded')
+              : t('analytics.settings.apiKeyNotSet')}
         </Typography>
         {hasSavedKey && savedMask ? (
           <Typography variant="body2" className="tabular-nums text-ui-05">
@@ -55,7 +63,11 @@ export const ApiKeyField = ({
         type="password"
         autoComplete="off"
         label={t('analytics.settings.apiKey')}
-        helperText={t('analytics.settings.apiKeyHint')}
+        helperText={t(
+          optional
+            ? 'analytics.settings.apiKeyHintLocal'
+            : 'analytics.settings.apiKeyHint'
+        )}
         value={value}
         onChange={(event) => {
           onChange(event.target.value)

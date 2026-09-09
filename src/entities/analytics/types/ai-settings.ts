@@ -1,6 +1,11 @@
 /** Настройки ИИ на организацию. */
 
-export type LlmProvider = 'ANTHROPIC' | 'OPENAI' | 'OPENROUTER'
+/**
+ * `LOCAL` — своя модель, поднятая пользователем (Ollama, LM Studio, llama.cpp,
+ * vLLM) и доступная серверу по сети. От остальных отличается тем, что адрес
+ * API у неё обязателен, а ключ, наоборот, обычно не нужен.
+ */
+export type LlmProvider = 'ANTHROPIC' | 'OPENAI' | 'OPENROUTER' | 'LOCAL'
 
 /**
  * Настройки, отдаваемые наружу. Сам ключ не возвращается никогда — только

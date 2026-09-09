@@ -37,6 +37,8 @@ export const AiSettingsForm = ({ settings }: AiSettingsFormProps) => {
 
   const provider = watch('provider')
   const baseUrl = watch('baseUrl')
+  // Своя модель: адрес обязателен, ключ — наоборот, обычно не нужен.
+  const isLocal = provider === 'LOCAL'
 
   return (
     <div className="flex flex-col gap-5 rounded-lg bg-ui-01 p-5">
@@ -91,10 +93,17 @@ export const AiSettingsForm = ({ settings }: AiSettingsFormProps) => {
         <Controller
           name="baseUrl"
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <TextField
+              required={isLocal}
               label={t('analytics.settings.baseUrl')}
-              helperText={t('analytics.settings.baseUrlHint')}
+              error={!!fieldState.error}
+              helperText={t(
+                (fieldState.error?.message as TranslationKey | undefined) ??
+                  (isLocal
+                    ? 'analytics.settings.baseUrlHintLocal'
+                    : 'analytics.settings.baseUrlHint')
+              )}
               value={field.value}
               onChange={field.onChange}
             />
@@ -109,6 +118,7 @@ export const AiSettingsForm = ({ settings }: AiSettingsFormProps) => {
               value={field.value}
               savedMask={settings?.apiKeyMask}
               hasSavedKey={settings?.hasApiKey ?? false}
+              optional={isLocal}
               onChange={field.onChange}
             />
           )}

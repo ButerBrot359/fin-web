@@ -12,11 +12,15 @@ interface ProviderSelectorProps {
 }
 
 /**
- * Выбор провайдера — три карточки в ряд.
+ * Выбор провайдера — карточки в ряд.
  *
  * Это выбор поставщика, а не фильтр списка, поэтому каждый вариант назван и
  * подписан адресом по умолчанию. Выбранная карточка — единственное место в
  * форме, где рамка несёт смысл: она выделяет объект среди таких же.
+ *
+ * Раскладка ломается по двое, а не по четверо: подписи вроде «Claude API
+ * (Anthropic)» в четверть ширины формы переносятся на три строки и карточки
+ * перестают быть одной высоты.
  */
 export const ProviderSelector = ({
   value,
@@ -25,7 +29,7 @@ export const ProviderSelector = ({
   const { t } = useTranslation()
 
   return (
-    <div className="grid gap-2 sm:grid-cols-3">
+    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
       {PROVIDER_OPTIONS.map((option) => {
         const isSelected = option.value === value
 
@@ -52,7 +56,7 @@ export const ProviderSelector = ({
               variant="caption"
               className={isSelected ? 'text-ui-06' : 'text-ui-05'}
             >
-              {option.host}
+              {option.host ?? t('analytics.settings.providerLocalHost')}
             </Typography>
           </button>
         )

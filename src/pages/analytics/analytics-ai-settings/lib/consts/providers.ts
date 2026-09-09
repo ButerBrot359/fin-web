@@ -10,8 +10,12 @@ interface ProviderOption {
    * языках одинаковый, это технический идентификатор, а не текст интерфейса,
    * поэтому в i18n он не заводится. Пустое поле «Адрес API» означает именно
    * этот хост.
+   *
+   * `null` — адреса по умолчанию не существует (своя модель): вместо хоста
+   * карточка показывает переводимую подпись, потому что это уже текст
+   * интерфейса, а не идентификатор.
    */
-  host: string
+  host: string | null
 }
 
 export const PROVIDER_OPTIONS: ProviderOption[] = [
@@ -29,6 +33,11 @@ export const PROVIDER_OPTIONS: ProviderOption[] = [
     value: 'OPENROUTER',
     labelKey: 'analytics.settings.providerOpenrouter',
     host: 'openrouter.ai',
+  },
+  {
+    value: 'LOCAL',
+    labelKey: 'analytics.settings.providerLocal',
+    host: null,
   },
 ]
 

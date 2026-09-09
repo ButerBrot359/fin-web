@@ -42,6 +42,8 @@ export interface AiAssistantAction {
   tableCode?: string | null
   attributes?: Record<string, unknown> | null
   preview?: string | null
+  /** Причина неудачи; пусто — действие доступно. Ошибка показывается сообщением, не кнопкой. */
+  error?: string | null
 }
 
 export interface AiAssistantCreatedDocument {

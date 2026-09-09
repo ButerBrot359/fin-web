@@ -42,9 +42,9 @@ export const AssistantComposer = ({
   }
 
   return (
-    <div className="flex shrink-0 flex-col gap-2 border-t border-ui-03 bg-ui-01 p-3">
+    <div className="flex min-w-0 shrink-0 flex-col gap-2 border-t border-ui-03 bg-ui-01 p-3">
       <textarea
-        rows={3}
+        rows={2}
         value={value}
         disabled={disabled}
         placeholder={t('aiAssistant.placeholder')}
@@ -55,7 +55,7 @@ export const AssistantComposer = ({
         className="resize-none rounded-lg border border-transparent bg-ui-02 px-3 py-2 text-body2 outline-none focus:border-accent-02"
       />
       <div className="flex items-center justify-between gap-2">
-        <span className="text-caption text-ui-05">
+        <span className="truncate text-caption text-ui-05">
           {t('aiAssistant.enterHint')}
         </span>
         <Button

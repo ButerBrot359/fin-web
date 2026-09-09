@@ -81,11 +81,11 @@ export const AiAssistantPanel = ({
         minimized ? 'h-auto' : 'h-[min(38rem,75vh)]'
       )}
     >
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-ui-03 px-4 py-3">
-        <Typography variant="subtitle2" className="truncate text-ui-06">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-ui-03 px-3 py-2">
+        <Typography variant="subtitle2" className="min-w-0 truncate text-ui-06">
           {t('aiAssistant.title')}
         </Typography>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-0.5">
           {historySlot}
           <Button size="small" variant="tertiary" onClick={onToggleMinimize}>
             {t(minimized ? 'aiAssistant.expand' : 'aiAssistant.minimize')}
@@ -98,7 +98,7 @@ export const AiAssistantPanel = ({
 
       {!minimized && (
         <>
-          <div className="flex shrink-0 flex-col gap-2 px-4 py-3">
+          <div className="flex shrink-0 flex-col gap-2 px-3 pt-3 pb-2">
             <AssistantContextBar context={context} />
             {hasDocument && messages.length === 0 && (
               <div className="flex flex-wrap gap-2">
@@ -119,7 +119,7 @@ export const AiAssistantPanel = ({
             )}
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-3">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto px-3 pb-3">
             {messages.length === 0 && (
               <Typography variant="body2" className="text-ui-05">
                 {t('aiAssistant.empty')}
@@ -128,11 +128,11 @@ export const AiAssistantPanel = ({
 
             {messages.map((message) =>
               message.role === 'USER' ? (
-                <div key={message.id} className="flex justify-end">
-                  <div className="max-w-[85%] rounded-lg bg-ui-04 px-3 py-2">
+                <div key={message.id} className="flex min-w-0 justify-end">
+                  <div className="min-w-0 max-w-[85%] rounded-lg bg-ui-04 px-3 py-2">
                     <Typography
                       variant="body2"
-                      className="whitespace-pre-wrap text-ui-06"
+                      className="break-words whitespace-pre-wrap text-ui-06"
                     >
                       {message.text}
                     </Typography>
@@ -141,9 +141,12 @@ export const AiAssistantPanel = ({
               ) : message.error ? (
                 <div
                   key={message.id}
-                  className="rounded-lg bg-ui-02 p-3 outline outline-support-01"
+                  className="min-w-0 rounded-lg bg-ui-02 p-3 outline outline-support-01"
                 >
-                  <Typography variant="body2" className="text-ui-06">
+                  <Typography
+                    variant="body2"
+                    className="break-words text-ui-06"
+                  >
                     {message.error}
                   </Typography>
                 </div>
@@ -157,10 +160,13 @@ export const AiAssistantPanel = ({
                   }}
                 />
               ) : (
-                <div key={message.id} className="rounded-lg bg-ui-02 p-3">
+                <div
+                  key={message.id}
+                  className="min-w-0 rounded-lg bg-ui-02 p-3"
+                >
                   <Typography
                     variant="body2"
-                    className="whitespace-pre-wrap text-ui-06"
+                    className="break-words whitespace-pre-wrap text-ui-06"
                   >
                     {message.text}
                   </Typography>

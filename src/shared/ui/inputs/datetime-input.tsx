@@ -1,7 +1,11 @@
-import { useRef, type KeyboardEvent } from 'react'
+import { useRef, useState, type KeyboardEvent } from 'react'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
-import type { FieldRef, PickerValidDate } from '@mui/x-date-pickers/models'
+import type {
+  DateOrTimeView,
+  FieldRef,
+  PickerValidDate,
+} from '@mui/x-date-pickers/models'
 import { parseISO, isValid } from 'date-fns'
 
 import { CalendarSidebar, CalendarNavProvider } from './calendar-layout'
@@ -162,6 +166,50 @@ export const DateTimeInput = ({
     },
   }
 
+  /**
+   * Вид календаря, выбор в котором ЗАВЕРШАЕТ ввод даты: для обычного поля — день,
+   * для поля с точностью месяца/года («Месяц начисления») — сам месяц или год.
+   */
+  const closingView: DateOrTimeView =
+    spec && spec.granularity !== 'day'
+      ? spec.views[spec.views.length - 1]
+      : 'day'
+
+  /**
+   * Состояние попапа календаря — управляемое, потому что закрывать его должен
+   * КЛИК ПО ДАТЕ, а не кнопка «ОК».
+   *
+   * <p>У {@code DatePicker} так работает штатный {@code closeOnSelect} (у него он
+   * включён по умолчанию), а у {@code DateTimePicker} тот же флаг закрывает попап
+   * только после ПОСЛЕДНЕГО вида — то есть после минут. Пока минуты не выбраны,
+   * выбор считается незавершённым, MUI показывает панель «CANCEL / OK», и дату
+   * приходилось подтверждать кнопкой (отказ 09.09.2026, «Период по» в ОСВ).
+   * Эталон 1С кнопки «ОК» в календаре не имеет вовсе: клик по числу вставляет
+   * дату и закрывает календарь.
+   *
+   * <p>Часы и минуты мышью по-прежнему выбираются: попап закрывается только на
+   * {@link closingView}. Виды «год»/«месяц» внутри календаря (заголовок
+   * «сентябрь 2026») — навигация, а не выбор, и попап на них не закрывается.
+   */
+  const [open, setOpen] = useState(false)
+  // Текущий вид календаря. На открытии сбрасывается: MUI начинает с openTo, а в
+  // ref остался бы вид, на котором попап закрыли в прошлый раз.
+  const viewRef = useRef<DateOrTimeView>(closingView)
+
+  const handleOpen = () => {
+    viewRef.current = closingView
+    setOpen(true)
+    onOpen?.()
+  }
+
+  // Внешний onClose обязателен и при нашем закрытии: на нём висит коммит
+  // значения (см. DateCellEditor — ячейка ТЧ отправляет дату именно тут).
+  // Управляемый open MUI сам не закрывает, значит и onClose не позовёт.
+  const handleClose = () => {
+    setOpen(false)
+    onClose?.()
+  }
+
   const slots = { shortcuts: CalendarSidebar }
 
   // Без dateFormat пропсы не передаём вовсе — у пикера остаются его дефолты
@@ -198,9 +246,16 @@ export const DateTimeInput = ({
     >
       <DateTimePicker
         value={validDate}
-        onChange={handleChange}
-        onOpen={onOpen}
-        onClose={onClose}
+        onChange={(newValue) => {
+          handleChange(newValue)
+          if (viewRef.current === closingView) handleClose()
+        }}
+        onViewChange={(nextView) => {
+          viewRef.current = nextView
+        }}
+        open={open}
+        onOpen={handleOpen}
+        onClose={handleClose}
         label={label}
         readOnly={readOnly}
         disabled={disabled}

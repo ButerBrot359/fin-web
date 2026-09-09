@@ -3,6 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
 import { useAiSettings } from '@/entities/analytics'
+import {
+  AiDisclosurePanel,
+  AssistantSettingsForm,
+} from '@/features/ai-assistant'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
@@ -43,7 +47,13 @@ export const AnalyticsAiSettingsPage = () => {
           {t('analytics.settings.subtitle')}
         </Typography>
 
+        {/* Раскрытие по обоим контурам сразу и ПЕРЕД формами: решение о
+            провайдере принимается зная, какие данные ему достанутся. */}
+        <AiDisclosurePanel />
+
         <AiSettingsForm settings={settings} />
+
+        <AssistantSettingsForm />
       </div>
     </div>
   )

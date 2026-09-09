@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { BackgroundStatusBar } from '@/features/background-tasks'
 import { WorkspacePanelHost } from '@/features/sdui'
+import { AiAssistantWidget } from '@/features/ai-assistant'
 import { SupportCallWidget } from '@/features/support-call'
 import {
   performTabBack,
@@ -69,6 +70,12 @@ export const Layout = ({ sidebar, header, children }: LayoutProps) => {
       </div>
       {/* Живая поддержка (ADR-0050): доступна с любой страницы. */}
       <SupportCallWidget />
+
+      {/* ИИ-помощник (концепция «AI-помощник в 1С»): постоянная кнопка доступна
+          с любой страницы, панель открывается поверх формы и её не перестраивает.
+          Стоит НАД кнопкой поддержки — правый нижний угол во время звонка
+          занимает панель звонка. */}
+      <AiAssistantWidget />
     </div>
   )
 }

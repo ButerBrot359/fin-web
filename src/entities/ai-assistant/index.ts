@@ -1,6 +1,8 @@
 export { aiAssistantApi } from './api/ai-assistant-api'
 export { aiAssistantKeys } from './lib/query-keys'
 export {
+  useAiConversationMessages,
+  useAiConversations,
   useAiAssistantSettings,
   useAiDisclosure,
   useAskAssistant,
@@ -19,3 +21,7 @@ export type {
   AiAssistantSettingsUpdate,
   AiDisclosure,
 } from './types/ai-assistant'
+export type {
+  AiConversation,
+  AiConversationMessage,
+} from './types/conversation'

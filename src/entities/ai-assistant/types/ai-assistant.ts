@@ -4,7 +4,13 @@ import type { LlmProvider } from '@/entities/analytics'
 
 /** Объект, поверх которого открыт помощник. Содержимое сервер читает сам. */
 export interface AiAssistantContext {
-  kind: 'DOCUMENT' | 'NONE'
+  kind:
+    | 'DOCUMENT'
+    | 'DOCUMENT_LIST'
+    | 'DOCUMENT_NEW'
+    | 'DICTIONARY'
+    | 'DICTIONARY_LIST'
+    | 'NONE'
   typeCode?: string | null
   entryId?: number | null
 }

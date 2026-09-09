@@ -18,7 +18,10 @@ export interface AssistantChatMessage {
 interface AssistantSession {
   messages: AssistantChatMessage[]
   isPending: boolean
+  /** Лента пуста — можно подставить переписку с сервера, ничего не затерев. */
+  isEmpty: boolean
   send: (question: string) => void
+  restore: (conversationId: number, messages: AssistantChatMessage[]) => void
   reset: () => void
 }
 
@@ -99,5 +102,26 @@ export const useAssistantSession = (
     setConversationId(null)
   }, [])
 
-  return { messages, isPending: mutation.isPending, send, reset }
+  /**
+   * Подставляет переписку, сохранённую на сервере.
+   *
+   * Только в пустую ленту: восстановление не должно затирать вопрос, который человек
+   * успел задать, пока история подгружалась.
+   */
+  const restore = useCallback(
+    (restoredId: number, restored: AssistantChatMessage[]) => {
+      setMessages((current) => (current.length === 0 ? restored : current))
+      setConversationId((current) => current ?? restoredId)
+    },
+    []
+  )
+
+  return {
+    messages,
+    isPending: mutation.isPending,
+    isEmpty: messages.length === 0,
+    send,
+    restore,
+    reset,
+  }
 }

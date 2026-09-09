@@ -10,6 +10,10 @@ import type {
   AiAssistantSettingsUpdate,
   AiDisclosure,
 } from '../types/ai-assistant'
+import type {
+  AiConversation,
+  AiConversationMessage,
+} from '../types/conversation'
 
 const BASE_URL = '/api/ai-assistant'
 
@@ -78,6 +82,32 @@ export const aiAssistantApi = {
       .put<ApiResponse<AiAssistantSettings>>({
         url: `${BASE_URL}/settings`,
         data: request,
+        signal,
+      })
+      .then(unwrap),
+
+  /** Диалоги пользователя; с контекстом — только по этому объекту. */
+  getConversations: (
+    context?: { typeCode?: string | null; entryId?: number | null },
+    signal?: AbortSignal
+  ): Promise<AiConversation[]> =>
+    apiService
+      .get<ApiResponse<AiConversation[]>>({
+        url: `${BASE_URL}/conversations`,
+        params: context?.typeCode
+          ? { contextType: context.typeCode, contextId: context.entryId }
+          : undefined,
+        signal,
+      })
+      .then(unwrap),
+
+  getConversationMessages: (
+    id: number,
+    signal?: AbortSignal
+  ): Promise<AiConversationMessage[]> =>
+    apiService
+      .get<ApiResponse<AiConversationMessage[]>>({
+        url: `${BASE_URL}/conversations/${String(id)}/messages`,
         signal,
       })
       .then(unwrap),

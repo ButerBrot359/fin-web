@@ -15,6 +15,10 @@ import type {
   AiAssistantSettingsUpdate,
   AiDisclosure,
 } from '../../types/ai-assistant'
+import type {
+  AiConversation,
+  AiConversationMessage,
+} from '../../types/conversation'
 import { aiAssistantKeys } from '../query-keys'
 
 /**
@@ -85,4 +89,38 @@ export const useAiDisclosure = (): {
     queryFn: ({ signal }) => aiAssistantApi.getDisclosure(signal),
   })
   return { disclosures: data ?? [], isLoading }
+}
+
+/**
+ * Диалоги по текущему объекту.
+ *
+ * Панель восстанавливает последний из них при открытии: разговор, исчезающий вместе с
+ * окном, бесполезен — бухгалтер не станет заново описывать ситуацию ради второго вопроса.
+ */
+export const useAiConversations = (
+  context?: { typeCode?: string | null; entryId?: number | null },
+  enabled = true
+): { conversations: AiConversation[]; isLoading: boolean } => {
+  const { data, isLoading } = useQuery({
+    queryKey: [
+      ...aiAssistantKeys.conversations(),
+      context?.typeCode ?? '',
+      context?.entryId ?? '',
+    ],
+    queryFn: ({ signal }) => aiAssistantApi.getConversations(context, signal),
+    enabled,
+  })
+  return { conversations: data ?? [], isLoading }
+}
+
+export const useAiConversationMessages = (
+  conversationId: number | null
+): { messages: AiConversationMessage[]; isLoading: boolean } => {
+  const { data, isLoading } = useQuery({
+    queryKey: aiAssistantKeys.conversationMessages(conversationId ?? 0),
+    queryFn: ({ signal }) =>
+      aiAssistantApi.getConversationMessages(conversationId ?? 0, signal),
+    enabled: conversationId != null,
+  })
+  return { messages: data ?? [], isLoading }
 }

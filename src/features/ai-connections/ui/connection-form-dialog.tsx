@@ -5,7 +5,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
   TextField,
   Typography,
 } from '@mui/material'
@@ -13,15 +12,10 @@ import {
 import type { LlmProvider } from '@/entities/analytics'
 import type { AiConnection, AiConnectionUpdate } from '@/entities/ai-connection'
 import { Button } from '@/shared/ui/buttons'
-import type { TranslationKey } from '@/shared/types/i18n.types'
 
-/** Провайдеры общие для обоих контуров, подписи берём из ключей аналитики. */
-const PROVIDERS: { value: LlmProvider; labelKey: TranslationKey }[] = [
-  { value: 'LOCAL', labelKey: 'analytics.settings.providerLocal' },
-  { value: 'ANTHROPIC', labelKey: 'analytics.settings.providerAnthropic' },
-  { value: 'OPENAI', labelKey: 'analytics.settings.providerOpenai' },
-  { value: 'OPENROUTER', labelKey: 'analytics.settings.providerOpenrouter' },
-]
+import { ApiKeyField } from './api-key-field'
+import { ModelAutocomplete } from './model-autocomplete'
+import { ProviderSelector } from './provider-selector'
 
 interface ConnectionFormDialogProps {
   open: boolean
@@ -44,11 +38,16 @@ const emptyForm = (connection: AiConnection | null): AiConnectionUpdate => ({
 })
 
 /**
- * Форма подключения.
+ * Форма подключения к ИИ.
  *
- * <p>Здесь описываются провайдер, ключ и модель — один раз. Контуры потом только
- * выбирают из готовых, поэтому три модели одного провайдера заводятся тремя
- * подключениями с одним ключом, а не тремя копиями настроек.
+ * <p>Провайдер выбирается карточками, а модель — автокомплитом с каталогом провайдера:
+ * оба компонента переехали сюда из прежней формы настроек аналитики, где были написаны и
+ * обкатаны. Выпадающий список провайдеров и поле модели без каталога, которые я сделал
+ * раньше, были шагом назад — у OpenRouter сотни моделей, и вписывать идентификатор
+ * вручную по памяти невозможно.
+ *
+ * <p>Диалог широкий ({@code maxWidth="md"}): карточки провайдеров в узком окне
+ * переносятся на три строки и перестают читаться как один ряд вариантов.
  */
 export const ConnectionFormDialog = ({
   open,
@@ -80,7 +79,7 @@ export const ConnectionFormDialog = ({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>{t('aiConnections.formTitle')}</DialogTitle>
       <DialogContent>
         <div className="flex flex-col gap-4 pt-2">
@@ -93,28 +92,21 @@ export const ConnectionFormDialog = ({
             }}
           />
 
-          <TextField
-            select
-            label={t('analytics.settings.provider')}
+          <ProviderSelector
             value={form.provider}
-            onChange={(event) => {
-              // Смена провайдера очищает модель: идентификаторы у провайдеров свои.
-              patch({ provider: event.target.value as LlmProvider, model: '' })
+            onChange={(next: LlmProvider) => {
+              // Смена провайдера очищает модель: идентификаторы у провайдеров свои,
+              // и модель Claude в OpenAI не существует.
+              patch({ provider: next, model: '' })
             }}
-          >
-            {PROVIDERS.map((provider) => (
-              <MenuItem key={provider.value} value={provider.value}>
-                {t(provider.labelKey)}
-              </MenuItem>
-            ))}
-          </TextField>
+          />
 
-          <TextField
-            label={t('analytics.settings.model')}
-            helperText={t('analytics.settings.modelHint')}
+          <ModelAutocomplete
+            provider={form.provider}
+            baseUrl={form.baseUrl ?? ''}
             value={form.model}
-            onChange={(event) => {
-              patch({ model: event.target.value })
+            onChange={(model) => {
+              patch({ model })
             }}
           />
 
@@ -128,27 +120,29 @@ export const ConnectionFormDialog = ({
                 : 'analytics.settings.baseUrlHint'
             )}
             value={form.baseUrl ?? ''}
+            // Браузер принимал это поле за имя и подставлял в него ФИО пользователя.
+            // `off` современные браузеры на текстовых полях игнорируют, а незанятое
+            // значение вроде `url` уводит эвристику от адресной книги.
+            autoComplete="url"
+            name="ai-connection-base-url"
             onChange={(event) => {
               patch({ baseUrl: event.target.value })
             }}
           />
 
-          <TextField
-            type="password"
-            autoComplete="off"
-            label={t('analytics.settings.apiKey')}
-            helperText={t(
-              isLocal
-                ? 'analytics.settings.apiKeyHintLocal'
-                : 'analytics.settings.apiKeyHint'
-            )}
+          <ApiKeyField
             value={form.apiKey ?? ''}
-            onChange={(event) => {
-              patch({ apiKey: event.target.value })
+            savedMask={connection?.apiKeyMask}
+            hasSavedKey={connection?.hasApiKey ?? false}
+            optional={isLocal}
+            onChange={(apiKey) => {
+              patch({ apiKey })
             }}
           />
 
-          <div className="flex gap-4">
+          {/* Сеткой, а не флексом: у полей есть подписи снизу, и во флекс-строке
+              длинная подсказка «Максимум токенов» наезжала на соседнее поле. */}
+          <div className="grid gap-4 sm:grid-cols-2">
             <TextField
               type="number"
               label={t('analytics.settings.temperature')}

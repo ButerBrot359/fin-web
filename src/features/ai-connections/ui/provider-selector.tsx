@@ -18,9 +18,9 @@ interface ProviderSelectorProps {
  * подписан адресом по умолчанию. Выбранная карточка — единственное место в
  * форме, где рамка несёт смысл: она выделяет объект среди таких же.
  *
- * Раскладка ломается по двое, а не по четверо: подписи вроде «Claude API
- * (Anthropic)» в четверть ширины формы переносятся на три строки и карточки
- * перестают быть одной высоты.
+ * Четыре карточки в ряд в широком диалоге и по двое в узком: подписи вроде
+ * «Claude API (Anthropic)» в четверть ширины УЗКОЙ формы переносились на три
+ * строки и карточки переставали быть одной высоты.
  */
 export const ProviderSelector = ({
   value,
@@ -29,7 +29,7 @@ export const ProviderSelector = ({
   const { t } = useTranslation()
 
   return (
-    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4">
       {PROVIDER_OPTIONS.map((option) => {
         const isSelected = option.value === value
 

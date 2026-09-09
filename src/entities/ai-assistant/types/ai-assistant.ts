@@ -38,6 +38,15 @@ export interface AiAssistantAction {
   preview?: string | null
 }
 
+export interface AiAssistantCreatedDocument {
+  entryId: number
+  typeCode: string
+  presentation: string
+  /** Всегда false: помощник документы не проводит. */
+  posted: boolean
+  warnings: string[]
+}
+
 /** Ответ в формате концепции: вывод, расшифровка, источник, действия. */
 export interface AiAssistantAnswer {
   conversationId: number
@@ -46,6 +55,8 @@ export interface AiAssistantAnswer {
   sources: string[]
   actions: AiAssistantAction[]
   /** Чего не хватило для ответа; пусто — хватило всего. */
+  /** Документы, созданные помощником в этом ответе. Всегда не проведённые. */
+  created: AiAssistantCreatedDocument[]
   missing?: string | null
   requestLogId?: number | null
   latencyMs: number
@@ -56,15 +67,6 @@ export interface AiAssistantConfirmAction {
   kind: 'CREATE_DOCUMENT'
   typeCode: string
   attributes?: Record<string, unknown> | null
-}
-
-export interface AiAssistantCreatedDocument {
-  entryId: number
-  typeCode: string
-  presentation: string
-  /** Всегда false: помощник документы не проводит. */
-  posted: boolean
-  warnings: string[]
 }
 
 /** Настройки помощника — отдельные от настроек аналитики. */
@@ -112,4 +114,6 @@ export interface AiDisclosure {
   summary: string
   sent: string[]
   neverSent: string[]
+  /** Что контур делает с системой: отправка и изменение — разные риски. */
+  capabilities: string[]
 }

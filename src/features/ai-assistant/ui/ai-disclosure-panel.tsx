@@ -69,10 +69,18 @@ const DisclosureCard = ({ disclosure }: { disclosure: AiDisclosure }) => {
       <DisclosureList
         label={t('aiAssistant.disclosureSent')}
         items={disclosure.sent}
+        // Красным именно перечень уходящего наружу: это единственное здесь,
+        // что необратимо, — отправленное обратно не забирается.
+        danger={disclosure.external}
       />
       <DisclosureList
         label={t('aiAssistant.disclosureNeverSent')}
         items={disclosure.neverSent}
+      />
+      <DisclosureList
+        label={t('aiAssistant.disclosurePowers')}
+        items={disclosure.capabilities}
+        danger={disclosure.kind === 'ASSISTANT'}
       />
     </div>
   )
@@ -81,9 +89,11 @@ const DisclosureCard = ({ disclosure }: { disclosure: AiDisclosure }) => {
 const DisclosureList = ({
   label,
   items,
+  danger = false,
 }: {
   label: string
   items: string[]
+  danger?: boolean
 }) => {
   if (items.length === 0) return null
 
@@ -100,7 +110,11 @@ const DisclosureList = ({
         {label}
       </Typography>
       {items.map((item) => (
-        <Typography key={item} variant="caption" className="text-ui-06">
+        <Typography
+          key={item}
+          variant="caption"
+          className={danger ? 'text-support-01' : 'text-ui-06'}
+        >
           {`— ${item}`}
         </Typography>
       ))}

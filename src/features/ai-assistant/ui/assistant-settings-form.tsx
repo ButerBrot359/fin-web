@@ -74,7 +74,6 @@ export const AssistantSettingsForm = () => {
   }
 
   const isLocal = form.provider === 'LOCAL'
-  const needsConsent = !isLocal && !form.externalProviderAcknowledged
   const baseUrlMissing = isLocal && form.baseUrl.trim() === ''
 
   const patch = (next: Partial<FormState>) => {
@@ -175,8 +174,22 @@ export const AssistantSettingsForm = () => {
         }}
       />
 
+      {/* Выбор облачного провайдера НЕ блокируется — решение за организацией.
+          Но последствия названы красным и прямо: сюда уходят суммы, ФИО и ИИН
+          конкретных людей, и обратно их уже не вернуть. Галочка остаётся следом
+          принятого решения, а не условием сохранения. */}
       {!isLocal && (
-        <div className="flex flex-col gap-1 rounded-r-lg border-l-2 border-support-01 bg-ui-04 px-4 py-3">
+        <div className="flex flex-col gap-2 rounded-r-lg border-l-4 border-support-01 bg-ui-04 px-4 py-3">
+          <Typography
+            variant="body2"
+            fontWeight={700}
+            className="text-support-01"
+          >
+            {t('aiAssistant.externalWarningTitle')}
+          </Typography>
+          <Typography variant="body2" className="text-support-01">
+            {t('aiAssistant.externalWarningBody')}
+          </Typography>
           <FormControlLabel
             control={
               <Checkbox
@@ -188,11 +201,26 @@ export const AssistantSettingsForm = () => {
             }
             label={t('aiAssistant.externalConsent')}
           />
-          <Typography variant="caption" className="text-ui-06">
-            {t('aiAssistant.externalConsentHint')}
-          </Typography>
         </div>
       )}
+
+      {/* Возможности помощника — тоже последствие выбора, и тоже красным:
+          он не только читает, но и создаёт документы без отдельного вопроса. */}
+      <div className="flex flex-col gap-1 rounded-r-lg border-l-4 border-support-01 bg-ui-04 px-4 py-3">
+        <Typography
+          variant="body2"
+          fontWeight={700}
+          className="text-support-01"
+        >
+          {t('aiAssistant.powersTitle')}
+        </Typography>
+        <Typography variant="body2" className="text-support-01">
+          {t('aiAssistant.powersCreate')}
+        </Typography>
+        <Typography variant="body2" className="text-ui-06">
+          {t('aiAssistant.powersNoPosting')}
+        </Typography>
+      </div>
 
       <FormControlLabel
         control={
@@ -210,10 +238,7 @@ export const AssistantSettingsForm = () => {
         <Button
           variant="primary"
           disabled={
-            update.isPending ||
-            needsConsent ||
-            baseUrlMissing ||
-            form.model.trim() === ''
+            update.isPending || baseUrlMissing || form.model.trim() === ''
           }
           onClick={submit}
         >

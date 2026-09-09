@@ -93,6 +93,30 @@ export const AssistantAnswerCard = ({
         </div>
       )}
 
+      {/* Созданное помощником — отдельным блоком и с пометкой «не проведён».
+          Бухгалтер должен увидеть факт появления документа в базе сразу, а не
+          обнаружить его потом в списке: помощник создаёт без отдельного вопроса. */}
+      {answer.created.length > 0 && (
+        <div className="flex flex-col gap-1 rounded-r-lg border-l-4 border-support-01 bg-ui-04 px-3 py-2">
+          <Typography
+            variant="body2"
+            fontWeight={700}
+            className="text-support-01"
+          >
+            {t('aiAssistant.createdTitle')}
+          </Typography>
+          {answer.created.map((document) => (
+            <Typography
+              key={document.entryId}
+              variant="body2"
+              className="text-ui-06"
+            >
+              {`${document.presentation} — ${t('aiAssistant.createdUnposted')}`}
+            </Typography>
+          ))}
+        </div>
+      )}
+
       {answer.actions.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {answer.actions.map((action, index) => (

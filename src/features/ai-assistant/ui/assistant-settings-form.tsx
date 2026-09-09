@@ -86,6 +86,14 @@ export const AssistantSettingsForm = () => {
 
       <ConnectionSelect value={connectionId} onChange={setConnectionId} />
 
+      {/* Подсказка вместо блокировки: галочки «что разрешено» настраивают и до того,
+          как заведена первая модель, и запрещать сохранять их незачем. */}
+      {connectionId == null && (
+        <Typography variant="body2" className="text-support-01">
+          {t('aiAssistant.noConnectionHint')}
+        </Typography>
+      )}
+
       <CapabilityCheckboxes value={capabilities} onChange={setCapabilities} />
 
       {/* Выбор облачного подключения НЕ блокируется — решение за организацией.
@@ -130,11 +138,7 @@ export const AssistantSettingsForm = () => {
       />
 
       <div className="flex justify-end">
-        <Button
-          variant="primary"
-          disabled={update.isPending || connectionId == null}
-          onClick={submit}
-        >
+        <Button variant="primary" disabled={update.isPending} onClick={submit}>
           {t('analytics.settings.save')}
         </Button>
       </div>

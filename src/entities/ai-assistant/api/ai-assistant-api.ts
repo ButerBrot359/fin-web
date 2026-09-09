@@ -23,7 +23,12 @@ const BASE_URL = '/api/ai-assistant'
  */
 const LLM_CALL_TIMEOUT_MS = 930_000
 
-const unwrap = <T>(response: ApiResponse<T>): T => response.data
+/**
+ * Разворачивает двойную обёртку: axios отдаёт `AxiosResponse`, внутри которого
+ * лежит `ApiDataResponse` бэкенда. Отсюда `res.data.data` — уровня здесь два,
+ * и пропуск одного из них возвращает наружу конверт вместо самих данных.
+ */
+const unwrap = <T>(res: { data: ApiResponse<T> }): T => res.data.data
 
 export const aiAssistantApi = {
   ask: (

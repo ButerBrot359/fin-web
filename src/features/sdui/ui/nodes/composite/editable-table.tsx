@@ -415,6 +415,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           flex: '1 1 auto',
           overflowY: 'auto',
           ...(viewport.maxHeight != null && { maxHeight: viewport.maxHeight }),
+          // Пол высоты растянутой карточки — см. minHeight в
+          // useTableViewportMaxHeight: без него ТЧ схлопывалась до шапки колонок.
+          ...(viewport.minHeight != null && { minHeight: viewport.minHeight }),
         }}
       >
         {/* Шапка колонок видима при внутреннем скролле (SCRUM-327) */}

@@ -26,6 +26,7 @@ describe('высота контейнера ТЧ', () => {
     })
 
     expect(result.current.maxHeight).toBeGreaterThan(0)
+    expect(result.current.minHeight).toBeNull()
   })
 
   it('под растянутым предком (data-stretch) высоту задаёт flex, а не замер', () => {
@@ -37,5 +38,8 @@ describe('высота контейнера ТЧ', () => {
     })
 
     expect(result.current.maxHeight).toBeNull()
+    // …но и схлопнуться в полоску не даём: пол высоты остаётся, иначе при
+    // высокой шапке и низком окне от ТЧ видна одна шапка колонок.
+    expect(result.current.minHeight).toBe(240)
   })
 })

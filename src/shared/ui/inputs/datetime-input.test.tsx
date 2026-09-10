@@ -157,6 +157,71 @@ describe('DateTimeInput — props.dateFormat', () => {
 })
 
 /**
+ * Закрытие календаря по клику на дату (эталон 1С: кнопки «ОК» в календаре нет).
+ * У DATETIME-поля попап MUI держался открытым до выбора минут, и дату
+ * подтверждали кнопкой — отказ 09.09.2026 по «Периоду по» в ОСВ.
+ */
+describe('DateTimeInput — календарь закрывается выбором даты', () => {
+  afterEach(cleanup)
+
+  const openCalendar = (container: HTMLElement) =>
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>('button[aria-label]')!
+    )
+
+  const renderDateTime = (onChange: (v: string) => void = () => undefined) =>
+    render(
+      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ru}>
+        <DateTimeInput value="2026-09-09T00:00:00" onChange={onChange} />
+      </LocalizationProvider>
+    )
+
+  it('клик по числу отдаёт дату наружу и закрывает попап', async () => {
+    const onChange = vi.fn()
+    const onClose = vi.fn()
+    const utils = render(
+      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ru}>
+        <DateTimeInput
+          value="2026-09-09T00:00:00"
+          onChange={onChange}
+          onClose={onClose}
+        />
+      </LocalizationProvider>
+    )
+    openCalendar(utils.container)
+
+    fireEvent.click(screen.getByRole('gridcell', { name: '16' }))
+
+    expect(onChange).toHaveBeenCalledWith('2026-09-16T00:00:00')
+    expect(onClose).toHaveBeenCalledTimes(1)
+    await waitFor(() => {
+      expect(screen.queryByRole('grid')).toBeNull()
+    })
+  })
+
+  it('выбор часа попап не закрывает — время добирается мышью', () => {
+    const utils = renderDateTime()
+    openCalendar(utils.container)
+
+    fireEvent.click(screen.getByRole('option', { name: '5 hours' }))
+
+    expect(screen.getByRole('grid')).toBeTruthy()
+  })
+
+  it('смена года в заголовке календаря — навигация, попап остаётся открытым', () => {
+    const utils = renderDateTime()
+    openCalendar(utils.container)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /switch to year view/i })
+    )
+    fireEvent.click(screen.getByRole('radio', { name: '2027' }))
+
+    expect(screen.getByRole('grid')).toBeTruthy()
+  })
+})
+
+/**
  * Очистка значения. Два пути: поразрядный Backspace (каретка сама идёт справа
  * налево) и крестик «стереть всё сразу».
  */

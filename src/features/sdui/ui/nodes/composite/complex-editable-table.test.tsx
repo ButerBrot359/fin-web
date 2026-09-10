@@ -254,6 +254,39 @@ describe('ComplexEditableTable — закрепление шапки', () => {
   })
 })
 
+/**
+ * Растянутая карточка («РастягиватьПоВертикали» — Авансовый отчёт, Начисление
+ * зарплаты) высоту ТЧ получает по цепочке flex, где у каждого звена minHeight:0.
+ * При высокой шапке и низком окне раздавать нечего, и ТЧ схлопывалась до одной
+ * прилипшей шапки колонок: строки в DOM есть, а видна полоска в пару пикселей
+ * (отказ 10.09.2026). Пол высоты возвращает таблице рабочий размер, а странице —
+ * прокрутку.
+ */
+describe('ComplexEditableTable — высота в растянутой карточке', () => {
+  const container = () =>
+    document.querySelector<HTMLElement>('[data-own-scroll="true"]')
+
+  it('под растянутым предком контейнер получает пол высоты', () => {
+    render(<ComplexEditableTable node={masterNode} />, {
+      wrapper: ({ children }) => <div data-stretch="true">{children}</div>,
+    })
+
+    const node = container()
+    expect(node).toBeTruthy()
+    expect(getComputedStyle(node!).minHeight).toBe('240px')
+    expect(getComputedStyle(node!).maxHeight).toBe('none')
+  })
+
+  it('в обычной карточке пола нет — высоту ограничивает замер по вьюпорту', () => {
+    render(<ComplexEditableTable node={masterNode} />)
+
+    const node = container()
+    expect(node).toBeTruthy()
+    expect(getComputedStyle(node!).minHeight).toBe('auto')
+    expect(getComputedStyle(node!).maxHeight).not.toBe('none')
+  })
+})
+
 describe('ComplexEditableTable — master-detail (SCRUM-282)', () => {
   it('фильтрует detail-строки по выбранной master-строке (реактивно на смену выбора)', () => {
     state['VychetyIPN.__selectedRowId'] = 'm2'

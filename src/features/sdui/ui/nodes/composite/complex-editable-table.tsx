@@ -737,6 +737,9 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           // случаях скролл внутренний, поэтому overflowY общий.
           overflowY: 'auto',
           ...(viewport.maxHeight != null && { maxHeight: viewport.maxHeight }),
+          // Пол высоты растянутой карточки — см. minHeight в
+          // useTableViewportMaxHeight: без него ТЧ схлопывалась до шапки колонок.
+          ...(viewport.minHeight != null && { minHeight: viewport.minHeight }),
         }}
       >
         <Table

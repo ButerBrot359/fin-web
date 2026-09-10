@@ -46,6 +46,20 @@ const findPageScroller = (element: HTMLElement): HTMLElement | null => {
 export interface TableViewportMaxHeight {
   /** px или null, пока контейнер не смонтирован/не замерен. */
   maxHeight: number | null
+  /**
+   * Пол высоты для РАСТЯНУТОЙ карточки (px) либо null, если высоту задаёт замер.
+   * <p>
+   * В растянутой карточке высота ТЧ приходит по цепочке flex, и у каждого звена
+   * стоит {@code minHeight: 0} — иначе подвал не прижался бы к нижней кромке.
+   * Обратная сторона: когда шапка формы высокая, а окно низкое, той же цепочке
+   * нечего раздать, и контейнер ТЧ сжимается до одной прилипшей шапки колонок —
+   * строки формально в DOM, но видна полоска в несколько пикселей («не видно
+   * строк, хотя ползунок в самом низу», Авансовый отчёт, 10.09.2026).
+   * <p>
+   * Пол тот же, что у замеряемого пути ({@link MIN_HEIGHT_PX}), и смысл тот же:
+   * лучше вернуть прокрутку страницы, чем оставить таблицу нерабочей.
+   */
+  minHeight: number | null
   /** Повесить на контейнер ТЧ (совместим с другими ref-колбэками). */
   setNode: (node: HTMLElement | null) => void
 }
@@ -53,6 +67,7 @@ export interface TableViewportMaxHeight {
 export function useTableViewportMaxHeight(): TableViewportMaxHeight {
   const nodeRef = useRef<HTMLElement | null>(null)
   const [maxHeight, setMaxHeight] = useState<number | null>(null)
+  const [minHeight, setMinHeight] = useState<number | null>(null)
 
   const setNode = useCallback((node: HTMLElement | null) => {
     nodeRef.current = node
@@ -64,8 +79,10 @@ export function useTableViewportMaxHeight(): TableViewportMaxHeight {
       if (!node) return
       if (findStretchedAncestor(node)) {
         setMaxHeight(null)
+        setMinHeight(MIN_HEIGHT_PX)
         return
       }
+      setMinHeight(null)
       const scroller = findPageScroller(node)
       // Верх контейнера в системе координат прокрутки страницы: инвариантен к
       // текущему scrollTop (как measureScrollMargin в use-virtual-table-rows).
@@ -99,5 +116,5 @@ export function useTableViewportMaxHeight(): TableViewportMaxHeight {
     }
   }, [])
 
-  return { maxHeight, setNode }
+  return { maxHeight, minHeight, setNode }
 }

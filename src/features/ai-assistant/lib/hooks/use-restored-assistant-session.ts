@@ -62,7 +62,9 @@ export const useRestoredAssistantSession = (
         (conversation) =>
           conversation.contextType == null && conversation.contextId == null
       )?.id ?? null)
-  const messageConversationId = session.conversationId ?? restoredId
+  const messageConversationId = session.isRestored
+    ? session.conversationId
+    : restoredId
   const stored = useAiConversationMessages(
     messageConversationId,
     enabled && !session.isRestored

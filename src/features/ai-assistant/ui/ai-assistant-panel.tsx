@@ -42,6 +42,8 @@ interface AiAssistantPanelProps {
   olderMessagesError?: boolean
   onLoadOlder?: () => void
   onOpenHistory?: () => void
+  onNewChat?: () => void
+  newChatDisabled?: boolean
   onClose: () => void
   onToggleMinimize: () => void
   onSend: (question: string) => void
@@ -85,6 +87,8 @@ export const AiAssistantPanel = ({
   onLoadOlder,
   onClose,
   onOpenHistory,
+  onNewChat,
+  newChatDisabled,
   onToggleMinimize,
   onSend,
   onAction,
@@ -132,6 +136,8 @@ export const AiAssistantPanel = ({
         onToggleMinimize={onToggleMinimize}
         onClose={onClose}
         onOpenHistory={onOpenHistory}
+        onNewChat={onNewChat}
+        newChatDisabled={newChatDisabled}
       />
 
       {!minimized && helpOpen && (

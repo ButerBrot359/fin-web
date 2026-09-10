@@ -1,4 +1,7 @@
-import { AI_WIDGET_OPEN_EVENT } from '@/shared/lib/widgets/widget-launchers'
+import {
+  AI_WIDGET_NEW_CHAT_EVENT,
+  AI_WIDGET_OPEN_EVENT,
+} from '@/shared/lib/widgets/widget-launchers'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -42,6 +45,7 @@ const documentPath = (
  */
 export const AiAssistantWidget = () => {
   const { t } = useTranslation()
+  const [chatVersion, setChatVersion] = useState(0)
   const [open, setOpen] = useState(false)
   const [minimized, setMinimized] = useState(false)
   const [enlarged, setEnlarged] = useState(false)
@@ -100,6 +104,26 @@ export const AiAssistantWidget = () => {
     open,
     openAffectedDocument
   )
+
+  const newChatDisabled =
+    session.isPending || confirmAction.isPending || printDocument.isPending
+  const startNewChat = session.startNewChat
+  const handleNewChat = useCallback(() => {
+    setOpen(true)
+    setMinimized(false)
+    setHelpOpen(false)
+    if (!newChatDisabled) {
+      startNewChat()
+      setChatVersion((current) => current + 1)
+    }
+  }, [newChatDisabled, startNewChat])
+
+  useEffect(() => {
+    window.addEventListener(AI_WIDGET_NEW_CHAT_EVENT, handleNewChat)
+    return () => {
+      window.removeEventListener(AI_WIDGET_NEW_CHAT_EVENT, handleNewChat)
+    }
+  }, [handleNewChat])
 
   // Разрешения нужны, чтобы не предлагать заготовку, которую сервер отклонит, и
   // чтобы справка называла выключенное выключенным. Тоже только при открытой панели.
@@ -171,6 +195,7 @@ export const AiAssistantWidget = () => {
         />
       )}
       <AiAssistantPanel
+        key={chatVersion}
         open={open}
         minimized={minimized}
         enlarged={enlarged}
@@ -196,6 +221,8 @@ export const AiAssistantWidget = () => {
           confirmAction.isPending ||
           printDocument.isPending
         }
+        onNewChat={handleNewChat}
+        newChatDisabled={newChatDisabled}
         onOpenHistory={() => {
           setOpen(false)
           const query =

@@ -30,6 +30,7 @@ interface AssistantSession {
     messages: AssistantChatMessage[]
   ) => void
   reset: () => void
+  startNewChat: () => void
 }
 
 const nextId = (): string =>
@@ -156,6 +157,15 @@ export const useAssistantSession = (
     setIsRestored(false)
   }, [])
 
+  const startNewChat = useCallback(() => {
+    requestVersion.current += 1
+    sending.current = false
+    setMessages([])
+    setConversationId(null)
+    // Explicitly empty: do not restore the previous conversation from cache.
+    setIsRestored(true)
+  }, [])
+
   /**
    * Подставляет переписку, сохранённую на сервере.
    *
@@ -189,5 +199,6 @@ export const useAssistantSession = (
     send,
     restore,
     reset,
+    startNewChat,
   }
 }

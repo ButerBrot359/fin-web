@@ -24,11 +24,13 @@ import { useAiConversationPages } from '@/entities/ai-assistant'
 import { formatAssistantMessageTime } from '@/features/ai-assistant/lib/message-time'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
+import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined'
+import { startNewAiChat } from '@/shared/lib/widgets/widget-launchers'
 import { historyCopy } from '../lib/history-copy'
 import { HistoryMessageView } from './history-message-view'
 
 export function AiAssistantHistoryPage() {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
   const copy = historyCopy(i18n.language)
   const history = useAiConversationPages()
   const navigate = useNavigate()
@@ -72,13 +74,24 @@ export function AiAssistantHistoryPage() {
         gap: { xs: 1, md: 2 },
       }}
     >
-      <Typography
-        variant="h6"
-        fontWeight={650}
-        sx={{ display: { xs: 'block', md: 'none' }, px: 1 }}
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        gap={1}
+        sx={{ display: { xs: 'flex', md: 'none' }, px: 1 }}
       >
-        {copy.shortTitle}
-      </Typography>
+        <Typography variant="h6" fontWeight={650}>
+          {copy.shortTitle}
+        </Typography>
+        <Button
+          size="small"
+          onClick={startNewAiChat}
+          startIcon={<AddCommentOutlinedIcon />}
+        >
+          {t('aiAssistant.newChat')}
+        </Button>
+      </Stack>
       <Box sx={{ display: { xs: 'none', md: 'block' } }}>
         <PageHeader
           title={copy.title}
@@ -112,6 +125,16 @@ export function AiAssistantHistoryPage() {
           }}
         >
           <Box p={2.5}>
+            <Button
+              variant="outlined"
+              fullWidth
+              size="small"
+              onClick={startNewAiChat}
+              startIcon={<AddCommentOutlinedIcon />}
+              sx={{ display: { xs: 'none', md: 'flex' }, mb: 2 }}
+            >
+              {t('aiAssistant.newChat')}
+            </Button>
             <Typography fontWeight={650}>{copy.chats}</Typography>
             <Typography variant="caption" color="text.secondary">
               {copy.subtitle}

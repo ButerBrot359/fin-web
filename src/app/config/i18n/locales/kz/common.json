@@ -1186,6 +1186,7 @@
     }
   },
   "aiAssistant": {
+    "newChat": "Жаңа чат",
     "openHistory": "Тарих",
     "title": "ЖИ көмекші",
     "open": "ЖИ көмекшісін ашу",

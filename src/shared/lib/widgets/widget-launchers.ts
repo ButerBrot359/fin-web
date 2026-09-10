@@ -1,9 +1,13 @@
 /** Commands open the existing mounted widgets; no duplicate chat or call sessions. */
+export const AI_WIDGET_NEW_CHAT_EVENT = 'webbuh:new-ai-chat'
 export const AI_WIDGET_OPEN_EVENT = 'webbuh:open-ai-widget'
 export const SUPPORT_WIDGET_OPEN_EVENT = 'webbuh:open-support-widget'
 
 export function openAiWidget() {
   window.dispatchEvent(new Event(AI_WIDGET_OPEN_EVENT))
+}
+export function startNewAiChat() {
+  window.dispatchEvent(new Event(AI_WIDGET_NEW_CHAT_EVENT))
 }
 export function openSupportWidget() {
   window.dispatchEvent(new Event(SUPPORT_WIDGET_OPEN_EVENT))

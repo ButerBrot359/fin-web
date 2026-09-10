@@ -292,3 +292,76 @@ test('history and live panel share message alignment and bubble styles', async (
   })()`)
   for (const pair of sameStyles) expect(pair[0]).toBe(pair[1])
 })
+
+test('New chat opens an empty panel and sends no previous conversation ID', async ({
+  page,
+}) => {
+  await fixture(page)
+  await page.route('**/api/ai-assistant/settings', (intercepted) =>
+    intercepted.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: { enabled: true, capabilities: [] },
+        success: true,
+      }),
+    })
+  )
+  await page.route('**/api/ai-assistant/conversations', (intercepted) =>
+    intercepted.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: [
+          {
+            id: 25,
+            title: 'Диалог 25',
+            contextType: null,
+            contextId: null,
+            createdAt: '',
+          },
+        ],
+        success: true,
+      }),
+    })
+  )
+  await page.route('**/api/ai-assistant/ask', (intercepted) =>
+    intercepted.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          conversationId: 99,
+          conclusion: 'Ответ нового чата',
+          breakdown: [],
+          sources: [],
+          actions: [],
+          created: [],
+          latencyMs: 1,
+        },
+        success: true,
+      }),
+    })
+  )
+  await page.goto(route + '?conversationId=25')
+  await expect(messageRows(page)).toHaveCount(10)
+  await page.getByRole('button', { name: 'Новый чат', exact: true }).click()
+  const composer = page.getByPlaceholder('Вопрос по документу…')
+  const panel = composer.locator(
+    'xpath=ancestor::div[contains(@class,"fixed")][1]'
+  )
+  await expect(composer).toBeVisible()
+  await expect(panel.locator('[data-assistant-message-id]')).toHaveCount(0)
+  await composer.fill('Неотправленный черновик')
+  await panel.getByRole('button', { name: 'Новый чат', exact: true }).click()
+  await expect(composer).toHaveValue('')
+  await composer.fill('Новый отдельный вопрос')
+  const sent = page.waitForRequest((request) =>
+    request.url().endsWith('/api/ai-assistant/ask')
+  )
+  await composer.press('Enter')
+  const request = await sent
+  expect(request.postDataJSON()).toMatchObject({
+    conversationId: null,
+    question: 'Новый отдельный вопрос',
+  })
+  await expect(panel).toContainText('Ответ нового чата')
+  await expect(panel).not.toContainText('Чат 25 сообщение')
+})

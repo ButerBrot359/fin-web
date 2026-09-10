@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined'
 import HistoryIcon from '@mui/icons-material/History'
 import { Button } from '@/shared/ui/buttons'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -20,6 +21,8 @@ interface AssistantPanelHeaderProps {
   onToggleSize: () => void
   onToggleMinimize: () => void
   onOpenHistory?: () => void
+  onNewChat?: () => void
+  newChatDisabled?: boolean
   onClose: () => void
 }
 
@@ -42,6 +45,8 @@ export const AssistantPanelHeader = ({
   onToggleMinimize,
   onClose,
   onOpenHistory,
+  onNewChat,
+  newChatDisabled = false,
 }: AssistantPanelHeaderProps) => {
   const { t } = useTranslation()
 
@@ -58,52 +63,69 @@ export const AssistantPanelHeader = ({
   )
 
   return (
-    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-ui-03 px-3 py-2">
-      <Typography variant="subtitle2" className="min-w-0 truncate text-ui-06">
-        {helpOpen ? t('aiAssistant.helpTitle') : t('aiAssistant.title')}
-      </Typography>
+    <div className="shrink-0 border-b border-ui-03 px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <Typography variant="subtitle2" className="min-w-0 truncate text-ui-06">
+          {helpOpen ? t('aiAssistant.helpTitle') : t('aiAssistant.title')}
+        </Typography>
 
-      <div className="flex shrink-0 items-center">
-        {!minimized && onOpenHistory && (
-          <Button variant="tertiary" onClick={onOpenHistory}>
-            <HistoryIcon fontSize="small" /> {t('aiAssistant.openHistory')}
-          </Button>
-        )}
-        {/* В справке та же кнопка ведёт обратно: стрелка «назад» читается однозначно,
+        <div className="flex shrink-0 items-center">
+          {/* В справке та же кнопка ведёт обратно: стрелка «назад» читается однозначно,
             а знак вопроса в положении «уже открыто» непонятно чем работает. Заголовок
             при этом меняется — вместе они говорят, где человек находится. */}
-        {!minimized &&
-          action(
-            helpOpen ? 'aiAssistant.helpBack' : 'aiAssistant.helpOpen',
-            helpOpen ? (
-              <ArrowBackIcon fontSize="small" />
-            ) : (
-              <HelpOutlineIcon fontSize="small" />
-            ),
-            onToggleHelp
-          )}
+          {!minimized &&
+            action(
+              helpOpen ? 'aiAssistant.helpBack' : 'aiAssistant.helpOpen',
+              helpOpen ? (
+                <ArrowBackIcon fontSize="small" />
+              ) : (
+                <HelpOutlineIcon fontSize="small" />
+              ),
+              onToggleHelp
+            )}
 
-        {/* Размер прячем в свёрнутом состоянии: менять габариты полоски заголовка
+          {/* Размер прячем в свёрнутом состоянии: менять габариты полоски заголовка
             бессмысленно, а лишняя кнопка сбивает. */}
-        {!minimized &&
-          action(
-            enlarged ? 'aiAssistant.shrink' : 'aiAssistant.enlarge',
-            enlarged ? (
-              <CloseFullscreenIcon fontSize="small" />
-            ) : (
-              <OpenInFullIcon fontSize="small" />
-            ),
-            onToggleSize
+          {!minimized &&
+            action(
+              enlarged ? 'aiAssistant.shrink' : 'aiAssistant.enlarge',
+              enlarged ? (
+                <CloseFullscreenIcon fontSize="small" />
+              ) : (
+                <OpenInFullIcon fontSize="small" />
+              ),
+              onToggleSize
+            )}
+
+          {action(
+            minimized ? 'aiAssistant.expand' : 'aiAssistant.minimize',
+            <MinimizeIcon fontSize="small" />,
+            onToggleMinimize
           )}
 
-        {action(
-          minimized ? 'aiAssistant.expand' : 'aiAssistant.minimize',
-          <MinimizeIcon fontSize="small" />,
-          onToggleMinimize
-        )}
-
-        {action('actions.close', <CloseIcon fontSize="small" />, onClose)}
+          {action('actions.close', <CloseIcon fontSize="small" />, onClose)}
+        </div>
       </div>
+      {!minimized && (onOpenHistory || onNewChat) && (
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          {onNewChat && (
+            <Button
+              size="small"
+              variant="tertiary"
+              onClick={onNewChat}
+              disabled={newChatDisabled}
+            >
+              <AddCommentOutlinedIcon fontSize="small" />{' '}
+              {t('aiAssistant.newChat')}
+            </Button>
+          )}
+          {onOpenHistory && (
+            <Button size="small" variant="tertiary" onClick={onOpenHistory}>
+              <HistoryIcon fontSize="small" /> {t('aiAssistant.openHistory')}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

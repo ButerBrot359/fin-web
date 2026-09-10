@@ -9,7 +9,11 @@ import {
   Typography,
 } from '@mui/material'
 
-import { useAccountPlanList } from '@/entities/account-plan'
+import {
+  SUBCONTO_BU_TYPE_CODE,
+  useAccountPlanList,
+  useSubcontoBuTypes,
+} from '@/entities/account-plan'
 import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
 import {
   AutocompleteInput,
@@ -22,6 +26,9 @@ import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
 import type { ReportAltParameterDto } from '../types/reportalt'
 import type { ReportAltParamValue } from '../lib/utils/params'
+
+/** Маркер домена «План видов характеристик» в `referenceDomain` параметра. */
+const CHARACTERISTICS_PLAN_PREFIX = 'CHARACTERISTICS_PLAN:'
 
 interface ReportAltParamFieldProps {
   param: ReportAltParameterDto
@@ -51,10 +58,29 @@ export const ReportAltParamField = ({
   // лениво по типу параметра.
   const isAccountRef =
     param.dataType === 'ACCOUNT_LIST' || param.dataType === 'ACCOUNT_REF'
+
+  // Маркер домена «План видов характеристик» (не Dictionary) — напр. VidSubkonto
+  // Карточки счёта/субконто, referenceDomain = "CHARACTERISTICS_PLAN:VidySubcontoBu".
+  // Без этой ветки домен ушёл бы в useDictionaryEntries как typeCode справочника
+  // (/api/dictionaries/CHARACTERISTICS_PLAN:VidySubcontoBu → пусто). Та же развилка,
+  // что в легаси `report-param-field`.
+  const isCharacteristicsRef =
+    param.referenceDomain?.startsWith(CHARACTERISTICS_PLAN_PREFIX) ?? false
+  const characteristicsTypeCode = isCharacteristicsRef
+    ? param.referenceDomain!.slice(CHARACTERISTICS_PLAN_PREFIX.length)
+    : null
+
   const isDictRef =
-    param.dataType === 'DICTIONARY_REF' ||
-    param.dataType === 'ENUM_REF' ||
-    param.dataType === 'REF_LIST'
+    !isCharacteristicsRef &&
+    (param.dataType === 'DICTIONARY_REF' ||
+      param.dataType === 'ENUM_REF' ||
+      param.dataType === 'REF_LIST')
+
+  // Единственный поддержанный ПВХ-домен — «Виды субконто (БУ)»; при появлении других
+  // обобщить на generic-хук по characteristicsTypeCode (тот же TODO, что в легаси).
+  const { subcontoTypes } = useSubcontoBuTypes(
+    isCharacteristicsRef && characteristicsTypeCode === SUBCONTO_BU_TYPE_CODE
+  )
 
   // referenceDomain="ACCOUNT_PLAN" — маркер домена, а не typeCode плана.
   const accountTypeCode =
@@ -98,8 +124,23 @@ export const ReportAltParamField = ({
         label: e.displayName ?? e.nameRu ?? e.code ?? String(e.id),
       }))
     }
+    if (isCharacteristicsRef) {
+      return subcontoTypes.map((s) => ({
+        id: s.id,
+        code: s.code,
+        label: s.nameRu ? `${s.code} — ${s.nameRu}` : s.code,
+      }))
+    }
     return []
-  }, [isAccountRef, isDictRef, accounts, dictEntries, allowedAccountIds])
+  }, [
+    isAccountRef,
+    isDictRef,
+    isCharacteristicsRef,
+    accounts,
+    dictEntries,
+    subcontoTypes,
+    allowedAccountIds,
+  ])
 
   switch (param.dataType) {
     case 'DATE':

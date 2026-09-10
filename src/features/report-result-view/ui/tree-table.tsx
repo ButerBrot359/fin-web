@@ -27,6 +27,7 @@ import {
   isMeasure,
   isRightAligned,
   resolveReportLang,
+  indicatorSubLabels,
 } from '../lib/cell-helpers'
 import { ReportCell } from './report-cell'
 
@@ -495,6 +496,7 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                     }`}
                   >
                     <ReportCell
+                      subLabels={indicatorSubLabels(row.original.cells)}
                       value={row.original.cells[col.code]}
                       col={col}
                       bold={bold}
@@ -523,7 +525,12 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                     isMeasure(col) ? 'text-right tabular-nums' : ''
                   }`}
                 >
-                  <ReportCell value={result.total[col.code]} col={col} bold />
+                  <ReportCell
+                    subLabels={indicatorSubLabels(result.total)}
+                    value={result.total[col.code]}
+                    col={col}
+                    bold
+                  />
                 </td>
               ))}
             </tr>
@@ -895,6 +902,7 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                       className={`${tdBase} align-top text-right tabular-nums`}
                     >
                       <ReportCell
+                        subLabels={indicatorSubLabels(row.original.cells)}
                         value={row.original.cells[m.code]}
                         col={m}
                         bold
@@ -914,6 +922,7 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                     }`}
                   >
                     <ReportCell
+                      subLabels={indicatorSubLabels(row.original.cells)}
                       value={row.original.cells[col.code]}
                       col={col}
                     />
@@ -924,7 +933,11 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                     key={m.code}
                     className={`${tdBase} align-top text-right tabular-nums`}
                   >
-                    <ReportCell value={row.original.cells[m.code]} col={m} />
+                    <ReportCell
+                      subLabels={indicatorSubLabels(row.original.cells)}
+                      value={row.original.cells[m.code]}
+                      col={m}
+                    />
                   </td>
                 ))}
               </tr>

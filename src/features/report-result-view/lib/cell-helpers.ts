@@ -100,3 +100,10 @@ export const safeString = (v: unknown): string => {
 /** Значение ячейки строки по коду колонки. */
 export const cellValue = (row: ReportRowDto, code: string): unknown =>
   row.cells[code]
+
+export const indicatorSubLabels = (
+  cells: Record<string, unknown>
+): string[] | undefined => {
+  const v = cells.Pokazatel
+  return Array.isArray(v) ? v.map((x) => String(x)) : undefined
+}

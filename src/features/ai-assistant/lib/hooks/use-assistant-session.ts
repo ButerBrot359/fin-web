@@ -49,7 +49,15 @@ const errorText = (error: unknown): string => {
  * и решать это на клиенте было бы ненадёжно.
  */
 export const useAssistantSession = (
-  context: AiAssistantContext
+  context: AiAssistantContext,
+  /**
+   * Вызывается на каждый успешный ответ — до того, как человек что-то нажмёт.
+   *
+   * Нужен там, где реагировать надо на сам факт ответа, а не на действие в нём:
+   * документ помощник создаёт сам, в ответе, и переход на него — следствие
+   * ответа, а не отдельного нажатия.
+   */
+  onAnswer?: (answer: AiAssistantAnswer) => void
 ): AssistantSession => {
   const [messages, setMessages] = useState<AssistantChatMessage[]>([])
   const [conversationId, setConversationId] = useState<number | null>(null)
@@ -79,6 +87,7 @@ export const useAssistantSession = (
                 answer,
               },
             ])
+            onAnswer?.(answer)
           },
           onError: (error) => {
             setMessages((current) => [
@@ -94,7 +103,7 @@ export const useAssistantSession = (
         }
       )
     },
-    [context, conversationId, mutation]
+    [context, conversationId, mutation, onAnswer]
   )
 
   const reset = useCallback(() => {

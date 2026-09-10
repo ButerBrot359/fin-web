@@ -7,6 +7,8 @@ import { Button } from '@/shared/ui/buttons'
 interface AssistantAnswerCardProps {
   answer: AiAssistantAnswer
   onAction: (index: number) => void
+  /** Открыть созданный документ. Панель уводит на него сразу, это — способ вернуться. */
+  onOpenDocument: (typeCode: string, entryId: number) => void
 }
 
 const SectionLabel = ({ children }: { children: string }) => (
@@ -37,6 +39,7 @@ const SectionLabel = ({ children }: { children: string }) => (
 export const AssistantAnswerCard = ({
   answer,
   onAction,
+  onOpenDocument,
 }: AssistantAnswerCardProps) => {
   const { t } = useTranslation()
 
@@ -101,18 +104,26 @@ export const AssistantAnswerCard = ({
       )}
 
       {/* Созданное помощником — с пометкой «не проведён». Раз подтверждения нет,
-          факт появления документа в базе должен быть виден сразу. */}
+          факт появления документа в базе должен быть виден сразу.
+
+          Строки кликабельные: на первый документ панель уводит сама, но если их
+          несколько или человек уже ушёл на другую страницу, вернуться к нему больше
+          неоткуда — искать в списке значит делать руками работу помощника. */}
       {answer.created.length > 0 && (
-        <div className="flex min-w-0 flex-col gap-0.5 rounded-r-md border-l-4 border-support-01 bg-ui-01 px-3 py-2">
+        <div className="flex min-w-0 flex-col items-start gap-0.5 rounded-r-md border-l-4 border-support-01 bg-ui-01 px-3 py-2">
           <SectionLabel>{t('aiAssistant.createdTitle')}</SectionLabel>
           {answer.created.map((document) => (
-            <Typography
+            <Button
               key={document.entryId}
-              variant="body2"
-              className="break-words text-ui-06"
+              size="small"
+              variant="tertiary"
+              className="min-w-0 justify-start px-0 text-left whitespace-normal"
+              onClick={() => {
+                onOpenDocument(document.typeCode, document.entryId)
+              }}
             >
               {`${document.presentation} — ${t('aiAssistant.createdUnposted')}`}
-            </Typography>
+            </Button>
           ))}
         </div>
       )}

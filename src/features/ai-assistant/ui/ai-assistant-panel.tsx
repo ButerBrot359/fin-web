@@ -35,6 +35,8 @@ interface AiAssistantPanelProps {
   onToggleMinimize: () => void
   onSend: (question: string) => void
   onAction: (action: AiAssistantAction) => void
+  /** Открыть документ, созданный помощником. */
+  onOpenDocument: (typeCode: string, entryId: number) => void
 }
 
 /**
@@ -67,6 +69,7 @@ export const AiAssistantPanel = ({
   onToggleMinimize,
   onSend,
   onAction,
+  onOpenDocument,
 }: AiAssistantPanelProps) => {
   const { t } = useTranslation()
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -172,6 +175,7 @@ export const AiAssistantPanel = ({
                 <AssistantAnswerCard
                   key={message.id}
                   answer={message.answer}
+                  onOpenDocument={onOpenDocument}
                   onAction={(index) => {
                     const action = message.answer?.actions[index]
                     if (action) onAction(action)

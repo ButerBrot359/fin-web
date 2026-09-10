@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 import '@/app/config/i18n'
 
@@ -42,6 +42,7 @@ describe('AssistantAnswerCard', () => {
           ],
         })}
         onAction={vi.fn()}
+        onOpenDocument={vi.fn()}
       />
     )
 
@@ -65,6 +66,7 @@ describe('AssistantAnswerCard', () => {
           ],
         })}
         onAction={vi.fn()}
+        onOpenDocument={vi.fn()}
       />
     )
 
@@ -86,6 +88,7 @@ describe('AssistantAnswerCard', () => {
           ],
         })}
         onAction={vi.fn()}
+        onOpenDocument={vi.fn()}
       />
     )
 
@@ -108,11 +111,39 @@ describe('AssistantAnswerCard', () => {
           ],
         })}
         onAction={vi.fn()}
+        onOpenDocument={vi.fn()}
       />
     )
 
     expect(
       screen.getByText(/Операция \(бухгалтерская\) №15 — не проведён/)
     ).toBeTruthy()
+  })
+
+  it('созданный документ открывается нажатием: панель уводит на первый, остальные — отсюда', () => {
+    const onOpenDocument = vi.fn()
+    render(
+      <AssistantAnswerCard
+        answer={answer({
+          created: [
+            {
+              entryId: 42,
+              typeCode: 'OperatsiyaBukh',
+              presentation: 'Операция (бухгалтерская) №15',
+              posted: false,
+              warnings: [],
+            },
+          ],
+        })}
+        onAction={vi.fn()}
+        onOpenDocument={onOpenDocument}
+      />
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Операция \(бухгалтерская\) №15/ })
+    )
+
+    expect(onOpenDocument).toHaveBeenCalledWith('OperatsiyaBukh', 42)
   })
 })

@@ -69,13 +69,27 @@ export const ReportAltParamField = ({
     isDictRef ? (param.referenceDomain ?? null) : null
   )
 
+  // Пул счетов «Списка счетов» ограничен счетами ОТЧЁТА (как в 1С — в выпадающем
+  // списке только счета ордера, а не весь план счетов; так же ведёт себя легаси
+  // `report-param-field`). Источник — defaultValue параметра (ID счетов отчёта,
+  // подставляет бэк). Пусто ⇒ показываем весь план (прежнее поведение для прочих
+  // ACCOUNT_LIST-параметров без дефолта).
+  const allowedAccountIds = useMemo<Set<number> | null>(() => {
+    if (param.dataType !== 'ACCOUNT_LIST') return null
+    const def = param.defaultValue
+    if (!Array.isArray(def) || def.length === 0) return null
+    return new Set(def.map((v) => Number(v)))
+  }, [param.dataType, param.defaultValue])
+
   const refOptions = useMemo<SelectOption[]>(() => {
     if (isAccountRef) {
-      return accounts.map((a) => ({
-        id: a.id,
-        code: a.code,
-        label: a.nameRu ? `${a.code} — ${a.nameRu}` : a.code,
-      }))
+      return accounts
+        .filter((a) => !allowedAccountIds || allowedAccountIds.has(a.id))
+        .map((a) => ({
+          id: a.id,
+          code: a.code,
+          label: a.nameRu ? `${a.code} — ${a.nameRu}` : a.code,
+        }))
     }
     if (isDictRef) {
       return dictEntries.map((e) => ({
@@ -85,7 +99,7 @@ export const ReportAltParamField = ({
       }))
     }
     return []
-  }, [isAccountRef, isDictRef, accounts, dictEntries])
+  }, [isAccountRef, isDictRef, accounts, dictEntries, allowedAccountIds])
 
   switch (param.dataType) {
     case 'DATE':

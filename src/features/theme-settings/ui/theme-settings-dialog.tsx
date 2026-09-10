@@ -1,4 +1,4 @@
-import { useRef, useState, type FC } from 'react'
+import { useState, type FC } from 'react'
 import {
   Dialog,
   DialogActions,
@@ -18,17 +18,12 @@ import {
   UI_SCALE_TOKEN,
 } from '@/shared/design/apply-server-theme'
 import { Button } from '@/shared/ui/buttons'
-import { showToast } from '@/shared/ui/toast/show-toast'
 
 import {
   THEME_PRESETS,
   UI_SCALE_OPTIONS,
   type ThemePresetId,
 } from '../lib/consts/theme-presets'
-import {
-  downloadThemeSettings,
-  parseThemeSettingsFile,
-} from '../lib/theme-transfer'
 
 interface ThemeSettingsDialogProps {
   open: boolean
@@ -37,10 +32,10 @@ interface ThemeSettingsDialogProps {
 
 /**
  * Диалог «Тема оформления» (конструктор дизайна Ф3): выбор из ГОТОВЫХ тем
- * (решение владельца 10.09 — без RGB-палитры: «Стандартная» из Figma + два
- * пресета) и масштаб интерфейса; экспорт/импорт файлом. Значения хранит бэк
- * (`/api/theme-settings`), применитель накатывает их на `:root` после
- * инвалидации слитой темы — диалог сам ничего не красит.
+ * (решение владельца 10.09 — без RGB-палитры и без экспорта/сброса: тем
+ * три, «сброс» — это выбор Стандартной) и масштаб интерфейса. Значения
+ * хранит бэк (`/api/theme-settings`), применитель накатывает их на `:root`
+ * после инвалидации слитой темы — диалог сам ничего не красит.
  */
 export const ThemeSettingsDialog: FC<ThemeSettingsDialogProps> = ({
   open,
@@ -48,7 +43,6 @@ export const ThemeSettingsDialog: FC<ThemeSettingsDialogProps> = ({
 }) => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const { data: overrides } = useQuery({
     queryKey: ['theme', 'overrides'],
@@ -59,7 +53,7 @@ export const ThemeSettingsDialog: FC<ThemeSettingsDialogProps> = ({
   const [preset, setPreset] = useState<ThemePresetId>('standard')
   const [scale, setScale] = useState<string>('1')
   // Снимок, из которого заполнены контролы: перезаполняем при приходе НОВЫХ
-  // override'ов (открытие, сброс), не перетирая выбор внутри диалога.
+  // override'ов (открытие диалога), не перетирая выбор внутри него.
   // Подстройка состояния во время рендера, не эффект — без каскадов.
   const [seededFrom, setSeededFrom] = useState<ThemeTokens | null>(null)
   if (open && overrides != null && seededFrom !== overrides) {
@@ -96,34 +90,15 @@ export const ThemeSettingsDialog: FC<ThemeSettingsDialogProps> = ({
     return tokens
   }
 
-  const finish = async () => {
-    await queryClient.invalidateQueries({ queryKey: themeKeys.merged() })
-    await queryClient.invalidateQueries({ queryKey: ['theme', 'overrides'] })
-    onClose()
-  }
-
   const saveMutation = useMutation({
     mutationFn: (tokens: ThemeTokens) => themeApi.putOverrides(tokens),
-    onSuccess: finish,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: themeKeys.merged() })
+      await queryClient.invalidateQueries({ queryKey: ['theme', 'overrides'] })
+      onClose()
+    },
   })
-  const resetMutation = useMutation({
-    mutationFn: () => themeApi.reset(),
-    onSuccess: finish,
-  })
-  const busy = saveMutation.isPending || resetMutation.isPending
-
-  const importFile = async (file: File) => {
-    try {
-      const imported = parseThemeSettingsFile(await file.text())
-      await themeApi.putOverrides(imported)
-      await finish()
-    } catch (error) {
-      showToast(
-        'error',
-        error instanceof Error ? error.message : t('themeSettings.importFailed')
-      )
-    }
-  }
+  const busy = saveMutation.isPending
 
   return (
     <Dialog
@@ -166,61 +141,32 @@ export const ThemeSettingsDialog: FC<ThemeSettingsDialogProps> = ({
             </Typography>
           </label>
         ))}
-        <TextField
-          select
-          size="small"
-          label={t('themeSettings.scale')}
-          value={scale}
-          onChange={(e) => {
-            setScale(e.target.value)
-          }}
-          disabled={busy}
-          className="mt-1"
-        >
-          {UI_SCALE_OPTIONS.map((option) => (
-            <MenuItem key={option} value={option}>
-              {t(`themeSettings.scaleOptions.${option}`)}
-            </MenuItem>
-          ))}
-        </TextField>
+        {/* Подпись слева + select без floating label: плавающая подпись
+            проектной темы наезжала на значение (живой дефект 10.09). */}
+        <div className="mt-1 flex items-center gap-3">
+          <Typography variant="body2" className="min-w-0 flex-1">
+            {t('themeSettings.scale')}
+          </Typography>
+          <TextField
+            select
+            hiddenLabel
+            size="small"
+            value={scale}
+            onChange={(e) => {
+              setScale(e.target.value)
+            }}
+            disabled={busy}
+            sx={{ width: 200 }}
+          >
+            {UI_SCALE_OPTIONS.map((option) => (
+              <MenuItem key={option} value={option}>
+                {t(`themeSettings.scaleOptions.${option}`)}
+              </MenuItem>
+            ))}
+          </TextField>
+        </div>
       </DialogContent>
       <DialogActions>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json"
-          hidden
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            e.target.value = ''
-            if (file) void importFile(file)
-          }}
-        />
-        <Button
-          variant="tertiary"
-          onClick={() => {
-            downloadThemeSettings(buildTokens())
-          }}
-          disabled={busy}
-        >
-          {t('themeSettings.export')}
-        </Button>
-        <Button
-          variant="tertiary"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={busy}
-        >
-          {t('themeSettings.import')}
-        </Button>
-        <Button
-          variant="tertiary"
-          onClick={() => {
-            resetMutation.mutate()
-          }}
-          disabled={busy}
-        >
-          {t('themeSettings.reset')}
-        </Button>
         <Button variant="secondary" onClick={onClose} disabled={busy}>
           {t('themeSettings.cancel')}
         </Button>

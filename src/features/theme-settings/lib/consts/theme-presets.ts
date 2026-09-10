@@ -23,6 +23,10 @@ export const THEME_PRESETS: ThemePreset[] = [
     tokens: {},
     swatch: ['#2a75f4', '#daf449'],
   },
+  // Тени — тоже часть акцентного семейства (свечение primary-кнопки — это
+  // прозрачный accent-01, синие тени — прозрачный accent-02): без их
+  // переопределения индиго-кнопка светилась лаймом стандартной темы
+  // (живой дефект 10.09).
   {
     id: 'emerald',
     tokens: {
@@ -31,6 +35,9 @@ export const THEME_PRESETS: ThemePreset[] = [
       'accent-01': '#a7f3d0',
       'accent-01-hover': '#6ee7b7',
       'accent-01-pressed': '#34d399',
+      'shadow-primary-hover': '2px 4px 8px rgba(167,243,208,0.8)',
+      'shadow-secondary-hover': '0px 4px 8px rgba(15,118,110,0.2)',
+      'shadow-popup': '0 3px 24px rgba(15,118,110,0.4)',
     },
     swatch: ['#0f766e', '#a7f3d0'],
   },
@@ -42,6 +49,9 @@ export const THEME_PRESETS: ThemePreset[] = [
       'accent-01': '#c7d2fe',
       'accent-01-hover': '#a5b4fc',
       'accent-01-pressed': '#818cf8',
+      'shadow-primary-hover': '2px 4px 8px rgba(199,210,254,0.8)',
+      'shadow-secondary-hover': '0px 4px 8px rgba(79,70,229,0.2)',
+      'shadow-popup': '0 3px 24px rgba(79,70,229,0.4)',
     },
     swatch: ['#4f46e5', '#c7d2fe'],
   },

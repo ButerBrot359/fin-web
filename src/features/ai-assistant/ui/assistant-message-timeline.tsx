@@ -98,11 +98,18 @@ export function AssistantMessageTimeline({
                 {timestamp.time}
               </time>
             )}
-            <AssistantMessageTools
-              text={assistantMessageCopyText(message)}
-              failedQuestion={failedQuestionFor(messages, index)}
-              onEditQuestion={onEditQuestion}
-            />
+            <div
+              className={cn(
+                'flex',
+                message.role === 'USER' ? 'justify-end' : 'justify-start'
+              )}
+            >
+              <AssistantMessageTools
+                text={assistantMessageCopyText(message)}
+                failedQuestion={failedQuestionFor(messages, index)}
+                onEditQuestion={onEditQuestion}
+              />
+            </div>
           </div>
         </Fragment>
       ))}

@@ -24,34 +24,34 @@ import {
   type NodeDecision,
 } from '../lib/customize-form/collect-customizable-nodes'
 import {
-  cloneZones,
   extractGridZones,
-  zoneDecisions,
   type GridZone,
 } from '../lib/customize-form/grid-zones'
-import { buildPreviewModel } from '../lib/customize-form/build-preview-model'
 import {
+  buildPageSections,
   collectTableColumns,
-  type TableColumnItem,
-} from '../lib/customize-form/collect-table-columns'
+  sectionDecisions,
+  type PageSection,
+} from '../lib/customize-form/page-sections'
+import { buildPreviewModel } from '../lib/customize-form/build-preview-model'
 import {
   downloadViewSettings,
   parseViewSettingsFile,
 } from '../lib/customize-form/settings-transfer'
 import { useTreeStore } from '../lib/stores/tree-store'
-import { CustomizeFormGridEditor } from './customize-form-grid-editor'
 import { CustomizeFormPreview } from './customize-form-preview'
 import { CustomizeFormRow } from './customize-form-row'
+import { CustomizeFormSectionCard } from './customize-form-section-card'
 
 const settingsKey = (screenKey: string) => ['view-settings', screenKey] as const
 
 /**
- * Диалог «Ещё → Изменить форму» (конструктор дизайна, v4 — грид-редактор,
- * спека 2026-09-11): зоны 24-сетки (шапка, полевые вкладки) редактируются
- * drag-n-drop'ом — перемещение за тело, ширина за правую кромку, бросок между
- * строками = новая строка. Элементы вне сеток (подвал, таблицы) — списком с
- * галочками. Формы без грид-зон (bail-out нормализатора) — прежнее схема-превью.
- * Патч накладывает бэк; после сохранения — re-OPEN через шину.
+ * Диалог «Ещё → Изменить форму» (конструктор дизайна, v5 — страница секциями,
+ * модель владельца 11.09): страница — вертикальная стопка блоков; блоки
+ * переставляются и скрываются, зоны полей редактируются DnD по 24-сетке,
+ * вкладки скрываются галочками (полевые несут свою зону, табличные — колонки).
+ * Формы без секций — прежнее схема-превью. Патч накладывает бэк; после
+ * сохранения — re-OPEN через шину.
  */
 export const CustomizeFormDialog: FC = () => {
   const { t } = useTranslation()
@@ -68,7 +68,7 @@ export const CustomizeFormDialog: FC = () => {
     enabled: isOpen && screenKey != null,
   })
 
-  const [zones, setZones] = useState<GridZone[]>([])
+  const [sections, setSections] = useState<PageSection[]>([])
   const [originalRows, setOriginalRows] = useState<CustomizableNode[]>([])
   const [rows, setRows] = useState<CustomizableNode[]>([])
   const [hidden, setHidden] = useState<Set<string>>(new Set())
@@ -76,9 +76,6 @@ export const CustomizeFormDialog: FC = () => {
     new Map()
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [tableCols, setTableCols] = useState<Map<string, TableColumnItem[]>>(
-    new Map()
-  )
   // Снимок, из которого заполнено состояние: перезаполняем на открытии/приходе
   // патча, не перетирая правки внутри диалога. Подстройка во время рендера.
   const [seededFrom, setSeededFrom] = useState<unknown>(null)
@@ -87,24 +84,34 @@ export const CustomizeFormDialog: FC = () => {
     const hiddenByUser = new Set(
       patch.filter((e) => e.props.visible === false).map((e) => e.nodeId)
     )
-    const gridZones = extractGridZones(root, hiddenByUser)
-    const gridIds = new Set(gridZones.map((z) => z.zoneId))
-    const collected = collectCustomizableNodes(root, patch).filter(
-      (r) => !gridIds.has(r.parentId)
-    )
-    setZones(gridZones)
-    setOriginalRows(collected)
-    setRows(collected)
-    setHidden(new Set(collected.filter((n) => !n.visible).map((n) => n.nodeId)))
-    setWidths(new Map(collected.map((n) => [n.nodeId, n.width])))
-    setTableCols(collectTableColumns(root, hiddenByUser))
+    const zones = extractGridZones(root, hiddenByUser)
+    const zonesById = new Map(zones.map((z) => [z.zoneId, z]))
+    const tableColumns = collectTableColumns(root, hiddenByUser)
+    const built = buildPageSections(root, zonesById, hiddenByUser, tableColumns)
+    setSections(built)
+    if (built.length === 0) {
+      const collected = collectCustomizableNodes(root, patch)
+      setOriginalRows(collected)
+      setRows(collected)
+      setHidden(
+        new Set(collected.filter((n) => !n.visible).map((n) => n.nodeId))
+      )
+      setWidths(new Map(collected.map((n) => [n.nodeId, n.width])))
+    } else {
+      setOriginalRows([])
+      setRows([])
+      setHidden(new Set())
+      setWidths(new Map())
+    }
     setSelectedId(null)
   }
 
-  const hasZones = zones.length > 0
-  const selectedZoneItem = zones
-    .flatMap((z) => z.rows.flat())
-    .find((i) => i.nodeId === selectedId)
+  const hasSections = sections.length > 0
+  const allZoneItems = sections.flatMap((s) => [
+    ...(s.zone?.rows.flat() ?? []),
+    ...(s.tabs?.flatMap((tab) => tab.zone?.rows.flat() ?? []) ?? []),
+  ])
+  const selectedZoneItem = allZoneItems.find((i) => i.nodeId === selectedId)
   const selectedRow = rows.find((r) => r.nodeId === selectedId) ?? null
   const selectedIndex = rows.findIndex((r) => r.nodeId === selectedId)
 
@@ -117,18 +124,17 @@ export const CustomizeFormDialog: FC = () => {
   }
 
   const buildPatch = () => {
-    const decisions = new Map<string, NodeDecision>(
-      rows.map((row) => [
-        row.nodeId,
-        { hidden: hidden.has(row.nodeId), width: widths.get(row.nodeId) },
-      ])
-    )
-    assignOrders(originalRows, rows, decisions)
-    zoneDecisions(zones, decisions)
-    for (const columns of tableCols.values()) {
-      for (const column of columns) {
-        decisions.set(column.nodeId, { hidden: column.hidden })
+    const decisions = new Map<string, NodeDecision>()
+    if (hasSections) {
+      sectionDecisions(sections, decisions)
+    } else {
+      for (const row of rows) {
+        decisions.set(row.nodeId, {
+          hidden: hidden.has(row.nodeId),
+          width: widths.get(row.nodeId),
+        })
       }
+      assignOrders(originalRows, rows, decisions)
     }
     return buildPatchFromDecisions(patch ?? [], decisions)
   }
@@ -144,6 +150,70 @@ export const CustomizeFormDialog: FC = () => {
   })
   const busy = saveMutation.isPending || resetMutation.isPending
 
+  // ── Мутации секций (все через глубокую копию) ────────────────────────────
+
+  const mutateSections = (fn: (next: PageSection[]) => void) => {
+    setSections((current) => {
+      const next = current.map((s) => ({
+        ...s,
+        zone: s.zone
+          ? {
+              ...s.zone,
+              rows: s.zone.rows.map((r) => r.map((i) => ({ ...i }))),
+            }
+          : undefined,
+        tabs: s.tabs?.map((tab) => ({
+          ...tab,
+          zone: tab.zone
+            ? {
+                ...tab.zone,
+                rows: tab.zone.rows.map((r) => r.map((i) => ({ ...i }))),
+              }
+            : undefined,
+          tableColumns: tab.tableColumns?.map((c) => ({ ...c })),
+        })),
+      }))
+      fn(next)
+      return next
+    })
+  }
+
+  const moveSection = (index: number, direction: -1 | 1) => {
+    mutateSections((next) => {
+      const target = index + direction
+      if (target < 0 || target >= next.length) return
+      ;[next[index], next[target]] = [next[target], next[index]]
+    })
+  }
+
+  const replaceZone = (zoneId: string, zone: GridZone) => {
+    mutateSections((next) => {
+      for (const section of next) {
+        if (section.zone?.zoneId === zoneId) section.zone = zone
+        for (const tab of section.tabs ?? []) {
+          if (tab.zone?.zoneId === zoneId) tab.zone = zone
+        }
+      }
+    })
+  }
+
+  const toggleZoneItem = (nodeId: string) => {
+    mutateSections((next) => {
+      for (const section of next) {
+        const zones = [
+          section.zone,
+          ...(section.tabs?.map((tab) => tab.zone) ?? []),
+        ]
+        for (const zone of zones) {
+          for (const row of zone?.rows ?? []) {
+            const item = row.find((i) => i.nodeId === nodeId)
+            if (item) item.hidden = !item.hidden
+          }
+        }
+      }
+    })
+  }
+
   const toggle = (nodeId: string) => {
     setHidden((current) => {
       const next = new Set(current)
@@ -153,31 +223,7 @@ export const CustomizeFormDialog: FC = () => {
     })
   }
 
-  const toggleTableColumn = (tableId: string, nodeId: string) => {
-    setTableCols((current) => {
-      const next = new Map(
-        [...current].map(([id, cols]) => [id, cols.map((c) => ({ ...c }))])
-      )
-      const column = next.get(tableId)?.find((c) => c.nodeId === nodeId)
-      if (column) column.hidden = !column.hidden
-      return next
-    })
-  }
-
-  const toggleZoneItem = (nodeId: string) => {
-    setZones((current) => {
-      const next = cloneZones(current)
-      for (const zone of next) {
-        for (const row of zone.rows) {
-          const item = row.find((i) => i.nodeId === nodeId)
-          if (item) item.hidden = !item.hidden
-        }
-      }
-      return next
-    })
-  }
-
-  /** Перестановка с соседом ТОЙ ЖЕ группы (легаси-режим без грид-зон). */
+  /** Перестановка с соседом ТОЙ ЖЕ группы (легаси-режим без секций). */
   const move = (nodeId: string, direction: -1 | 1) => {
     setRows((current) => {
       const index = current.findIndex((r) => r.nodeId === nodeId)
@@ -220,7 +266,7 @@ export const CustomizeFormDialog: FC = () => {
 
   if (!isOpen) return null
 
-  const legacyPreview = !hasZones ? buildPreviewModel(root, rows) : null
+  const legacyPreview = !hasSections ? buildPreviewModel(root, rows) : null
 
   return (
     <Dialog
@@ -232,18 +278,46 @@ export const CustomizeFormDialog: FC = () => {
       <DialogTitle>{t('sdui.customizeForm.title')}</DialogTitle>
       <DialogContent className="flex flex-col gap-3">
         <Typography variant="body2">
-          {hasZones
-            ? t('sdui.customizeForm.gridHint')
+          {hasSections
+            ? t('sdui.customizeForm.sectionsHint')
             : t('sdui.customizeForm.previewHint')}
         </Typography>
-        {hasZones ? (
-          <CustomizeFormGridEditor
-            zones={zones}
-            selectedId={selectedId}
-            busy={busy}
-            onSelect={setSelectedId}
-            onChange={setZones}
-          />
+        {hasSections ? (
+          sections.map((section, index) => (
+            <CustomizeFormSectionCard
+              key={section.nodeId}
+              section={section}
+              canMoveUp={index > 0}
+              canMoveDown={index < sections.length - 1}
+              busy={busy}
+              selectedId={selectedId}
+              onMove={(direction) => {
+                moveSection(index, direction)
+              }}
+              onToggleSection={() => {
+                mutateSections((next) => {
+                  next[index].hidden = !next[index].hidden
+                })
+              }}
+              onToggleTab={(tabId) => {
+                mutateSections((next) => {
+                  const tab = next[index].tabs?.find((x) => x.nodeId === tabId)
+                  if (tab) tab.hidden = !tab.hidden
+                })
+              }}
+              onToggleColumn={(tabId, columnId) => {
+                mutateSections((next) => {
+                  const tab = next[index].tabs?.find((x) => x.nodeId === tabId)
+                  const column = tab?.tableColumns?.find(
+                    (c) => c.nodeId === columnId
+                  )
+                  if (column) column.hidden = !column.hidden
+                })
+              }}
+              onZoneChange={replaceZone}
+              onSelect={setSelectedId}
+            />
+          ))
         ) : legacyPreview ? (
           <CustomizeFormPreview
             model={legacyPreview}
@@ -256,57 +330,6 @@ export const CustomizeFormDialog: FC = () => {
           <Typography variant="body2">
             {t('sdui.customizeForm.empty')}
           </Typography>
-        )}
-        {hasZones && rows.length > 0 && (
-          <div className="flex flex-col gap-1">
-            <Typography variant="body2" className="text-ui-05">
-              {t('sdui.customizeForm.otherElements')}
-            </Typography>
-            {rows.map((row) => (
-              <div key={row.nodeId} className="flex flex-col">
-                <label className="flex cursor-pointer items-center gap-2">
-                  <Checkbox
-                    size="small"
-                    checked={!hidden.has(row.nodeId)}
-                    onChange={() => {
-                      toggle(row.nodeId)
-                    }}
-                    disabled={busy}
-                  />
-                  <Typography variant="body2">{row.label}</Typography>
-                </label>
-                {/* Колонки табличной части — вложенной свёрткой (запрос
-                    владельца 11.09: элементы есть и внутри вкладок). */}
-                {tableCols.has(row.nodeId) && (
-                  <details className="ml-9">
-                    <summary className="text-ui-05 cursor-pointer text-sm select-none">
-                      {t('sdui.customizeForm.tableColumns')}
-                    </summary>
-                    <div className="flex flex-col">
-                      {(tableCols.get(row.nodeId) ?? []).map((column) => (
-                        <label
-                          key={column.nodeId}
-                          className="flex cursor-pointer items-center gap-2"
-                        >
-                          <Checkbox
-                            size="small"
-                            checked={!column.hidden}
-                            onChange={() => {
-                              toggleTableColumn(row.nodeId, column.nodeId)
-                            }}
-                            disabled={busy}
-                          />
-                          <Typography variant="body2">
-                            {column.label}
-                          </Typography>
-                        </label>
-                      ))}
-                    </div>
-                  </details>
-                )}
-              </div>
-            ))}
-          </div>
         )}
         <div className="border-ui-03 min-h-12 rounded-lg border px-3 py-2">
           {selectedZoneItem ? (
@@ -325,7 +348,7 @@ export const CustomizeFormDialog: FC = () => {
                 })}
               </Typography>
             </label>
-          ) : selectedRow && !hasZones ? (
+          ) : selectedRow && !hasSections ? (
             <CustomizeFormRow
               node={selectedRow}
               hidden={hidden.has(selectedRow.nodeId)}

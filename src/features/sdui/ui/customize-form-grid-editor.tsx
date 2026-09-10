@@ -263,11 +263,14 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                       }}
                       onDrop={drop}
                     >
-                      <button
-                        type="button"
-                        disabled={busy}
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => {
-                          onSelect(item.nodeId)
+                          if (!busy) onSelect(item.nodeId)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !busy) onSelect(item.nodeId)
                         }}
                         className={cn(
                           'w-full cursor-grab truncate rounded-md border px-2 py-1.5 text-left text-xs active:cursor-grabbing',
@@ -284,7 +287,7 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                         )}
                       >
                         {item.label}
-                      </button>
+                      </div>
                       {/* Ручка ширины: тянется в сторону свободного места строки. */}
                       <div
                         onMouseDown={(e) => {

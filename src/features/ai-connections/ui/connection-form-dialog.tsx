@@ -11,6 +11,7 @@ import {
 
 import type { LlmProvider } from '@/entities/analytics'
 import type { AiConnection, AiConnectionUpdate } from '@/entities/ai-connection'
+import type { TranslationKey } from '@/shared/types/i18n.types'
 import { Button } from '@/shared/ui/buttons'
 
 import { ApiKeyField } from './api-key-field'
@@ -38,16 +39,30 @@ const emptyForm = (connection: AiConnection | null): AiConnectionUpdate => ({
 })
 
 /**
+ * Пояснение под полем обычным текстом, а НЕ через `helperText`.
+ *
+ * <p>Тема проекта позиционирует `MuiFormHelperText` абсолютно (`bottom: -18`), то есть
+ * резервирует под подпись ровно одну строку. Любая подсказка длиннее одной строки
+ * вылезает за неё и наезжает на следующее поле — именно это и происходило с подсказками
+ * про адрес API и максимум токенов. Обычный блок под полем занимает столько места,
+ * сколько ему нужно.
+ */
+const FieldHint = ({ textKey }: { textKey: TranslationKey }) => {
+  const { t } = useTranslation()
+
+  return (
+    <Typography variant="caption" className="-mt-2 block text-ui-05">
+      {t(textKey)}
+    </Typography>
+  )
+}
+
+/**
  * Форма подключения к ИИ.
  *
  * <p>Провайдер выбирается карточками, а модель — автокомплитом с каталогом провайдера:
  * оба компонента переехали сюда из прежней формы настроек аналитики, где были написаны и
- * обкатаны. Выпадающий список провайдеров и поле модели без каталога, которые я сделал
- * раньше, были шагом назад — у OpenRouter сотни моделей, и вписывать идентификатор
- * вручную по памяти невозможно.
- *
- * <p>Диалог широкий ({@code maxWidth="md"}): карточки провайдеров в узком окне
- * переносятся на три строки и перестают читаться как один ряд вариантов.
+ * обкатаны.
  */
 export const ConnectionFormDialog = ({
   open,
@@ -85,12 +100,12 @@ export const ConnectionFormDialog = ({
         <div className="flex flex-col gap-4 pt-2">
           <TextField
             label={t('aiConnections.name')}
-            helperText={t('aiConnections.nameHint')}
             value={form.name}
             onChange={(event) => {
               patch({ name: event.target.value })
             }}
           />
+          <FieldHint textKey="aiConnections.nameHint" />
 
           <ProviderSelector
             value={form.provider}
@@ -114,20 +129,22 @@ export const ConnectionFormDialog = ({
             required={isLocal}
             error={baseUrlMissing}
             label={t('analytics.settings.baseUrl')}
-            helperText={t(
-              isLocal
-                ? 'analytics.settings.baseUrlHintLocal'
-                : 'analytics.settings.baseUrlHint'
-            )}
             value={form.baseUrl ?? ''}
-            // Браузер принимал это поле за имя и подставлял в него ФИО пользователя.
-            // `off` современные браузеры на текстовых полях игнорируют, а незанятое
-            // значение вроде `url` уводит эвристику от адресной книги.
-            autoComplete="url"
+            // Браузер подставлял сюда ФИО пользователя, приняв поле за имя.
+            // `off` Chrome на текстовых полях игнорирует, а НЕИЗВЕСТНЫЙ токен
+            // трактует как «автозаполнение выключено» — это работает.
+            autoComplete="ai-connection-base-url"
             name="ai-connection-base-url"
             onChange={(event) => {
               patch({ baseUrl: event.target.value })
             }}
+          />
+          <FieldHint
+            textKey={
+              isLocal
+                ? 'analytics.settings.baseUrlHintLocal'
+                : 'analytics.settings.baseUrlHint'
+            }
           />
 
           <ApiKeyField
@@ -140,8 +157,6 @@ export const ConnectionFormDialog = ({
             }}
           />
 
-          {/* Сеткой, а не флексом: у полей есть подписи снизу, и во флекс-строке
-              длинная подсказка «Максимум токенов» наезжала на соседнее поле. */}
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField
               type="number"
@@ -154,13 +169,13 @@ export const ConnectionFormDialog = ({
             <TextField
               type="number"
               label={t('analytics.settings.maxTokens')}
-              helperText={t('aiConnections.maxTokensHint')}
               value={form.maxTokens}
               onChange={(event) => {
                 patch({ maxTokens: Number(event.target.value) })
               }}
             />
           </div>
+          <FieldHint textKey="aiConnections.maxTokensHint" />
 
           {!isLocal && (
             <Typography variant="body2" className="text-support-01">

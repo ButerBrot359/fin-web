@@ -14,10 +14,14 @@ import type { AssistantChatMessage } from '../lib/hooks/use-assistant-session'
 import { AssistantAnswerCard } from './assistant-answer-card'
 import { AssistantComposer } from './assistant-composer'
 import { AssistantContextBar } from './assistant-context-bar'
+import { AssistantPanelHeader } from './assistant-panel-header'
 
 interface AiAssistantPanelProps {
   open: boolean
   minimized: boolean
+  /** Увеличенный размер окна. Не полноэкранный: панель работает ПОВЕРХ формы. */
+  enlarged: boolean
+  onToggleSize: () => void
   context: AiAssistantContext
   messages: AssistantChatMessage[]
   isPending: boolean
@@ -25,7 +29,6 @@ interface AiAssistantPanelProps {
   onToggleMinimize: () => void
   onSend: (question: string) => void
   onAction: (action: AiAssistantAction) => void
-  historySlot?: React.ReactNode
 }
 
 /**
@@ -46,6 +49,8 @@ interface AiAssistantPanelProps {
 export const AiAssistantPanel = ({
   open,
   minimized,
+  enlarged,
+  onToggleSize,
   context,
   messages,
   isPending,
@@ -53,7 +58,6 @@ export const AiAssistantPanel = ({
   onToggleMinimize,
   onSend,
   onAction,
-  historySlot,
 }: AiAssistantPanelProps) => {
   const { t } = useTranslation()
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -76,25 +80,25 @@ export const AiAssistantPanel = ({
   return (
     <div
       className={cn(
-        'fixed right-6 bottom-6 z-[1050] flex w-[26rem] max-w-[92vw] flex-col',
+        'fixed right-6 bottom-6 z-[1050] flex max-w-[92vw] flex-col',
         'overflow-hidden rounded-2xl bg-ui-01 shadow-popup',
-        minimized ? 'h-auto' : 'h-[min(38rem,75vh)]'
+        // Увеличенный размер намеренно НЕ во весь экран: смысл панели в том, чтобы
+        // под ней оставался виден документ, о котором идёт разговор.
+        enlarged ? 'w-[42rem]' : 'w-[26rem]',
+        minimized
+          ? 'h-auto'
+          : enlarged
+            ? 'h-[min(50rem,88vh)]'
+            : 'h-[min(38rem,75vh)]'
       )}
     >
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-ui-03 px-3 py-2">
-        <Typography variant="subtitle2" className="min-w-0 truncate text-ui-06">
-          {t('aiAssistant.title')}
-        </Typography>
-        <div className="flex shrink-0 items-center gap-0.5">
-          {historySlot}
-          <Button size="small" variant="tertiary" onClick={onToggleMinimize}>
-            {t(minimized ? 'aiAssistant.expand' : 'aiAssistant.minimize')}
-          </Button>
-          <Button size="small" variant="tertiary" onClick={onClose}>
-            {t('actions.close')}
-          </Button>
-        </div>
-      </div>
+      <AssistantPanelHeader
+        minimized={minimized}
+        enlarged={enlarged}
+        onToggleSize={onToggleSize}
+        onToggleMinimize={onToggleMinimize}
+        onClose={onClose}
+      />
 
       {!minimized && (
         <>

@@ -99,60 +99,63 @@ export const AiConnectionsPanel = () => {
         {connections.map((connection) => (
           <div
             key={connection.id}
-            className="flex flex-wrap items-center gap-3 rounded-md bg-ui-02 px-3 py-2"
+            className="flex flex-col gap-2 rounded-md bg-ui-02 px-3 py-2 md:flex-row md:items-center md:gap-4"
           >
             <div className="flex min-w-0 flex-1 flex-col">
-              <Typography variant="body2" fontWeight={600}>
+              <Typography variant="body2" fontWeight={600} className="truncate">
                 {connection.name}
               </Typography>
-              <Typography variant="caption" className="text-ui-05">
+              <Typography variant="caption" className="truncate text-ui-05">
                 {`${connection.provider} · ${connection.model}${
                   connection.apiKeyMask ? ` · ${connection.apiKeyMask}` : ''
                 }`}
               </Typography>
+              {/* Красным помечено то, что необратимо: данные уходят наружу.
+                  Внутри колонки описания, а не отдельной ячейкой строки — иначе
+                  длинная фраза отбирала ширину у названия и кнопок. */}
+              {connection.external && (
+                <Typography variant="caption" className="text-support-01">
+                  {t('aiAssistant.disclosureExternal')}
+                </Typography>
+              )}
             </div>
 
-            {/* Красным помечено то, что необратимо: данные уходят наружу. */}
-            {connection.external && (
-              <Typography variant="caption" className="text-support-01">
-                {t('aiAssistant.disclosureExternal')}
-              </Typography>
-            )}
-
-            <Button
-              variant="tertiary"
-              size="small"
-              disabled={test.isPending}
-              onClick={() => {
-                runTest(connection)
-              }}
-            >
-              {t('analytics.settings.test')}
-            </Button>
-            <Button
-              variant="tertiary"
-              size="small"
-              onClick={() => {
-                setEditing(connection)
-                setDialogOpen(true)
-              }}
-            >
-              {t('actions.edit')}
-            </Button>
-            <Button
-              variant="tertiary"
-              size="small"
-              disabled={remove.isPending}
-              onClick={() => {
-                remove.mutate(connection.id, {
-                  onError: () => {
-                    showToast('error', t('errors.somethingWentWrong'))
-                  },
-                })
-              }}
-            >
-              {t('actions.delete')}
-            </Button>
+            <div className="flex shrink-0 flex-wrap items-center gap-1">
+              <Button
+                variant="tertiary"
+                size="small"
+                disabled={test.isPending}
+                onClick={() => {
+                  runTest(connection)
+                }}
+              >
+                {t('analytics.settings.test')}
+              </Button>
+              <Button
+                variant="tertiary"
+                size="small"
+                onClick={() => {
+                  setEditing(connection)
+                  setDialogOpen(true)
+                }}
+              >
+                {t('actions.edit')}
+              </Button>
+              <Button
+                variant="tertiary"
+                size="small"
+                disabled={remove.isPending}
+                onClick={() => {
+                  remove.mutate(connection.id, {
+                    onError: () => {
+                      showToast('error', t('errors.somethingWentWrong'))
+                    },
+                  })
+                }}
+              >
+                {t('actions.delete')}
+              </Button>
+            </div>
           </div>
         ))}
       </div>

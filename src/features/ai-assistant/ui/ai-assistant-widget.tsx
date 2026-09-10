@@ -32,6 +32,7 @@ export const AiAssistantWidget = () => {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [minimized, setMinimized] = useState(false)
+  const [enlarged, setEnlarged] = useState(false)
   const context = useFormContext()
   const session = useAssistantSession(context)
   const confirmAction = useConfirmAssistantAction()
@@ -118,6 +119,10 @@ export const AiAssistantWidget = () => {
       <AiAssistantPanel
         open={open}
         minimized={minimized}
+        enlarged={enlarged}
+        onToggleSize={() => {
+          setEnlarged((current) => !current)
+        }}
         context={context}
         messages={session.messages}
         isPending={session.isPending || confirmAction.isPending}

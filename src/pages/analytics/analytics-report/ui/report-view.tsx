@@ -5,6 +5,10 @@ import { Typography } from '@mui/material'
 import { useAnalyticsDataset } from '@/entities/analytics'
 import type { AnalyticsSpec } from '@/entities/analytics'
 import { AnalyticsTable } from '@/features/analytics-widgets'
+import {
+  AnalyticsOrganizationSelect,
+  useSelectedOrganizationName,
+} from '@/features/analytics-organization'
 import { AnalyticsParamsPanel, expandParams } from '@/features/analytics-params'
 import { Button } from '@/shared/ui/buttons'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
@@ -74,6 +78,7 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
     if (apply() && enabled) void refetch()
   }
 
+  const organizationName = useSelectedOrganizationName()
   const columns = dataset?.columns ?? []
   const hasRows = result != null && result.rows.length > 0
 
@@ -89,14 +94,17 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
         />
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button
-          variant="primary"
-          disabled={!canBuild || isLoading}
-          onClick={handleBuild}
-        >
-          {t('analytics.report.build')}
-        </Button>
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="flex flex-wrap items-end gap-3">
+          <AnalyticsOrganizationSelect />
+          <Button
+            variant="primary"
+            disabled={!canBuild || isLoading}
+            onClick={handleBuild}
+          >
+            {t('analytics.report.build')}
+          </Button>
+        </div>
 
         <ReportToolbar
           disabled={!hasRows}
@@ -143,7 +151,11 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
               rows={result.rows}
               specColumns={columns}
               encoding={widget?.encoding}
-              title={title}
+              // Организация — в заголовке таблицы: на печати отчёт без неё
+              // неоднозначен, а «все организации» отдельно не подписываем.
+              title={
+                organizationName ? `${title} · ${organizationName}` : title
+              }
               showTotals
             />
           </div>

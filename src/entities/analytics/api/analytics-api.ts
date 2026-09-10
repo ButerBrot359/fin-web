@@ -1,4 +1,5 @@
 import { apiService } from '@/shared/api/api'
+import type { AnalyticsOrganization } from '../types/organization'
 import type { ApiResponse } from '@/shared/types/api.types'
 
 import type {
@@ -106,6 +107,15 @@ export const analyticsApi = {
     apiService
       .post<ApiResponse<AnalyticsCatalogRebuildResult>>({
         url: `${BASE_URL}/catalog/rebuild`,
+        signal,
+      })
+      .then(unwrap),
+
+  /** Организации для отбора данных: действующие, без групп, по алфавиту. */
+  getOrganizations: (signal?: AbortSignal): Promise<AnalyticsOrganization[]> =>
+    apiService
+      .get<ApiResponse<AnalyticsOrganization[]>>({
+        url: `${BASE_URL}/organizations`,
         signal,
       })
       .then(unwrap),

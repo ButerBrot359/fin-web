@@ -55,7 +55,13 @@ export interface AiAssistantBreakdownRow {
  * не меняют. `CREATE_DOCUMENT` уходит отдельным подтверждённым вызовом.
  */
 export interface AiAssistantAction {
-  kind: 'SHOW_ROWS' | 'OPEN_DOCUMENT' | 'PRINT_DOCUMENT' | 'CREATE_DOCUMENT'
+  kind:
+    | 'SHOW_ROWS'
+    | 'OPEN_DOCUMENT'
+    | 'PRINT_DOCUMENT'
+    | 'CREATE_DOCUMENT'
+    // Копию сервер делает сам; во фронт она приходит только отказом — сообщением.
+    | 'COPY_DOCUMENT'
   label?: string | null
   typeCode?: string | null
   entryId?: number | null

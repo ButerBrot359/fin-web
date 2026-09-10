@@ -21,6 +21,10 @@ const page = (
 const child = (type: string): ViewNode =>
   ({ id: `n.${type}`, type }) as ViewNode
 
+/** Узел с props.flex — «Растягивать по вертикали» из раскладки. */
+const stretchedChild = (type: string): ViewNode =>
+  ({ id: `n.${type}`, type, props: { flex: 1 } }) as ViewNode
+
 /**
  * Высота экрана списка: страница обязана отдать таблице всю оставшуюся высоту, иначе
  * таблица не получает собственной прокрутки, а подвал (счётчик загруженных строк и
@@ -47,6 +51,31 @@ describe('PageNode', () => {
 
     const root = container.firstElementChild
     expect(root?.className).not.toContain('flex-1')
+  })
+
+  /**
+   * Растянутой карточке нужна собственная прокрутка: высота у неё жёсткая, а
+   * содержимое (таблица ТЧ с полом высоты) в низком окне выше — без прокрутки
+   * оно вытекало наружу и рисовалось поверх итогов и подвала.
+   */
+  it('растянутая карточка прокручивается сама', () => {
+    const { container } = render(
+      <PageNode node={page([child('TOOLBAR'), stretchedChild('VSTACK')])} />
+    )
+
+    const root = container.firstElementChild
+    expect(root?.className).toContain('flex-1')
+    expect(root?.className).toContain('overflow-y-auto')
+  })
+
+  it('у списка своей прокрутки на странице нет — прокручивается таблица', () => {
+    const { container } = render(
+      <PageNode node={page([child('TOOLBAR'), child('LIST')])} />
+    )
+
+    expect(container.firstElementChild?.className).not.toContain(
+      'overflow-y-auto'
+    )
   })
 
   it('диалог «Вывести список» рисуется своим телом, а не детьми', () => {

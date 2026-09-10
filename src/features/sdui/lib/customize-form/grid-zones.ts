@@ -45,7 +45,12 @@ function walk(
   hiddenByUser: ReadonlySet<string>
 ): void {
   if (node.type === 'GRID') {
-    zones.push(toZone(node, tabTitle, hiddenByUser))
+    // Зона редактора — только нормализованные сетки (columns=24). Легаси-GRID
+    // (страница модуля, старые seed-колонки) зоной не является: его поля
+    // остаются в списке «остальных элементов» с галочками.
+    if ((node.props?.columns as number | undefined) === GRID_UNITS) {
+      zones.push(toZone(node, tabTitle, hiddenByUser))
+    }
     return
   }
   for (const child of node.children ?? []) {

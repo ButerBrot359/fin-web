@@ -1,3 +1,5 @@
+import type { AiStatisticsFilters } from '../types/ai-statistics'
+
 /**
  * Ключи кэша раздела «Аналитика».
  *
@@ -14,6 +16,8 @@ export const analyticsKeys = {
   widgetKinds: () => ['analytics', 'widget-kinds'] as const,
   items: (kind?: string) => ['analytics', 'items', kind ?? 'all'] as const,
   item: (code: string) => ['analytics', 'item', code] as const,
+  aiStatistics: (filters: AiStatisticsFilters) =>
+    ['analytics', 'ai-statistics', filters] as const,
   aiSettings: () => ['analytics', 'ai-settings'] as const,
   models: (provider: string, baseUrl?: string) =>
     ['analytics', 'models', provider, baseUrl ?? ''] as const,

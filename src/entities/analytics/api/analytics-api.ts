@@ -1,4 +1,5 @@
 import { apiService } from '@/shared/api/api'
+import type { AiStatistics, AiStatisticsFilters } from '../types/ai-statistics'
 import type { AnalyticsOrganization } from '../types/organization'
 import type { ApiResponse } from '@/shared/types/api.types'
 
@@ -77,6 +78,18 @@ const LLM_CALL_TIMEOUT_MS = 930_000
 const unwrap = <T>(res: { data: ApiResponse<T> }): T => res.data.data
 
 export const analyticsApi = {
+  getAiStatistics: (
+    filters: AiStatisticsFilters,
+    signal?: AbortSignal
+  ): Promise<AiStatistics> =>
+    apiService
+      .get<ApiResponse<AiStatistics>>({
+        url: `${BASE_URL}/ai-statistics`,
+        params: { ...filters },
+        signal,
+      })
+      .then(unwrap),
+
   /** Индекс витрин: то, из чего ассистент выбирает источники данных. */
   getCatalogIndex: (
     signal?: AbortSignal

@@ -85,3 +85,14 @@ export type {
   AnalyticsWidgetKind,
 } from './types/item'
 export type { AnalyticsOrganization } from './types/organization'
+
+export { useAiStatistics } from './lib/hooks/use-ai-statistics'
+export type {
+  AiStatistics,
+  AiStatisticsFilters,
+  AiStatisticsGroupBy,
+  AiStatisticsSurface,
+  AiStatisticsMetrics,
+  AiStatisticsBucket,
+  AiStatisticsModel,
+} from './types/ai-statistics'

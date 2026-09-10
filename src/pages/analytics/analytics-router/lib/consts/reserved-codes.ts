@@ -5,3 +5,5 @@
  */
 export const ANALYTICS_ASSISTANT_CODE = 'assistant'
 export const ANALYTICS_SETTINGS_CODE = 'settings'
+
+export const ANALYTICS_STATISTICS_CODE = 'ai-statistics'

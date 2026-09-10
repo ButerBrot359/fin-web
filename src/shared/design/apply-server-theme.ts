@@ -18,9 +18,18 @@ const knownCssVarByKey = (): Map<string, string> =>
  * Специальный ключ темы «масштаб интерфейса» (запрос владельца 10.09:
  * «размер шрифтов во всём приложении»). Не CSS-переменная: раскладка проекта
  * почти вся в px, поэтому честный способ укрупнить шрифты вместе с
- * контейнерами — zoom на корне. Значение — множитель строкой («1.1»).
+ * контейнерами — zoom. Значение — множитель строкой («1.1»).
+ *
+ * Zoom ставится на КОНТЕЙНЕР приложения (#root), а не на html: MUI-поповеры
+ * (меню пользователя и т.п.) рендерятся порталами в body — вне зумленного
+ * контейнера они позиционируются в обычных координатах и не съезжают за
+ * экран (живой дефект 10.09: меню пользователя уезжало вправо при 110%).
+ * Плата: сами поповеры остаются в масштабе 100% — приемлемо против
+ * разъехавшегося позиционирования.
  */
 export const UI_SCALE_TOKEN = 'ui-scale'
+/** Ключ-маркер выбранного пресета темы — фронт его не применяет, только хранит. */
+export const THEME_PRESET_TOKEN = 'theme-preset'
 const UI_SCALE_MIN = 0.8
 const UI_SCALE_MAX = 1.5
 
@@ -44,7 +53,7 @@ export function applyServerTheme(tokens: Record<string, string>): void {
   }
 
   if (!(UI_SCALE_TOKEN in tokens)) {
-    root.style.removeProperty('zoom')
+    appContainer()?.style.removeProperty('zoom')
   }
   for (const cssVar of appliedCssVars) {
     if (!applied.includes(cssVar)) {
@@ -54,12 +63,16 @@ export function applyServerTheme(tokens: Record<string, string>): void {
   appliedCssVars = applied
 }
 
-function applyUiScale(root: HTMLElement, raw: string): void {
+const appContainer = (): HTMLElement | null => document.getElementById('root')
+
+function applyUiScale(_root: HTMLElement, raw: string): void {
+  const container = appContainer()
+  if (!container) return
   const parsed = Number(raw)
   if (Number.isNaN(parsed)) {
-    root.style.removeProperty('zoom')
+    container.style.removeProperty('zoom')
     return
   }
   const clamped = Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, parsed))
-  root.style.setProperty('zoom', String(clamped))
+  container.style.setProperty('zoom', String(clamped))
 }

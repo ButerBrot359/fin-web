@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogTitle,
   MenuItem,
+  Radio,
   TextField,
   Typography,
 } from '@mui/material'
@@ -12,14 +13,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { themeApi, themeKeys, type ThemeTokens } from '@/entities/theme'
-import { UI_SCALE_TOKEN } from '@/shared/design/apply-server-theme'
+import {
+  THEME_PRESET_TOKEN,
+  UI_SCALE_TOKEN,
+} from '@/shared/design/apply-server-theme'
 import { Button } from '@/shared/ui/buttons'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import {
-  EDITABLE_THEME_TOKENS,
+  THEME_PRESETS,
   UI_SCALE_OPTIONS,
-} from '../lib/consts/editable-tokens'
+  type ThemePresetId,
+} from '../lib/consts/theme-presets'
 import {
   downloadThemeSettings,
   parseThemeSettingsFile,
@@ -31,10 +36,11 @@ interface ThemeSettingsDialogProps {
 }
 
 /**
- * Диалог «Тема оформления» (конструктор дизайна Ф3): пер-пользовательские
- * override'ы токенов + масштаб интерфейса, экспорт/импорт файлом. Значения
- * хранит бэк (`/api/theme-settings`), применитель накатывает их на `:root`
- * после инвалидации слитой темы — диалог сам ничего не красит.
+ * Диалог «Тема оформления» (конструктор дизайна Ф3): выбор из ГОТОВЫХ тем
+ * (решение владельца 10.09 — без RGB-палитры: «Стандартная» из Figma + два
+ * пресета) и масштаб интерфейса; экспорт/импорт файлом. Значения хранит бэк
+ * (`/api/theme-settings`), применитель накатывает их на `:root` после
+ * инвалидации слитой темы — диалог сам ничего не красит.
  */
 export const ThemeSettingsDialog: FC<ThemeSettingsDialogProps> = ({
   open,
@@ -50,38 +56,41 @@ export const ThemeSettingsDialog: FC<ThemeSettingsDialogProps> = ({
     enabled: open,
   })
 
-  const [colors, setColors] = useState<Record<string, string>>({})
+  const [preset, setPreset] = useState<ThemePresetId>('standard')
   const [scale, setScale] = useState<string>('1')
   // Снимок, из которого заполнены контролы: перезаполняем при приходе НОВЫХ
-  // override'ов (открытие, сброс), не перетирая правки внутри диалога.
-  // Подстройка состояния во время рендера — паттерн React «adjusting state
-  // when props change», эффект здесь был бы каскадным ре-рендером.
+  // override'ов (открытие, сброс), не перетирая выбор внутри диалога.
+  // Подстройка состояния во время рендера, не эффект — без каскадов.
   const [seededFrom, setSeededFrom] = useState<ThemeTokens | null>(null)
   if (open && overrides != null && seededFrom !== overrides) {
     setSeededFrom(overrides)
-    const next: Record<string, string> = {}
-    for (const token of EDITABLE_THEME_TOKENS) {
-      next[token.key] = overrides[token.key] ?? token.defaultValue
-    }
-    setColors(next)
+    const stored = overrides[THEME_PRESET_TOKEN]
+    setPreset(
+      THEME_PRESETS.some((p) => p.id === stored)
+        ? (stored as ThemePresetId)
+        : 'standard'
+    )
     setScale(overrides[UI_SCALE_TOKEN] ?? '1')
   }
 
   const buildTokens = (): ThemeTokens => {
-    // Пересборка без delete: чужие ключи (агентские) проходят как есть,
-    // редактируемые — только когда отличаются от дефолта реестра.
-    const editableKeys = new Set(EDITABLE_THEME_TOKENS.map((t) => t.key))
+    // Ключи, которыми управляют пресеты, пересобираются с нуля; чужие
+    // (например, выставленные ИИ-помощником) проходят как есть.
+    const presetKeys = new Set(
+      THEME_PRESETS.flatMap((p) => Object.keys(p.tokens))
+    )
     const tokens: ThemeTokens = Object.fromEntries(
       Object.entries(overrides ?? {}).filter(
-        ([key]) => !editableKeys.has(key) && key !== UI_SCALE_TOKEN
+        ([key]) =>
+          !presetKeys.has(key) &&
+          key !== UI_SCALE_TOKEN &&
+          key !== THEME_PRESET_TOKEN
       )
     )
-    for (const token of EDITABLE_THEME_TOKENS) {
-      const value = colors[token.key]
-      // Значение, равное дефолту реестра, не храним — это «не переопределено».
-      if (value && value.toLowerCase() !== token.defaultValue.toLowerCase()) {
-        tokens[token.key] = value
-      }
+    const chosen = THEME_PRESETS.find((p) => p.id === preset)
+    if (chosen && preset !== 'standard') {
+      Object.assign(tokens, chosen.tokens)
+      tokens[THEME_PRESET_TOKEN] = chosen.id
     }
     if (scale !== '1') tokens[UI_SCALE_TOKEN] = scale
     return tokens
@@ -124,29 +133,38 @@ export const ThemeSettingsDialog: FC<ThemeSettingsDialogProps> = ({
       fullWidth
     >
       <DialogTitle>{t('themeSettings.title')}</DialogTitle>
-      <DialogContent className="flex flex-col gap-4 pt-2">
+      <DialogContent className="flex flex-col gap-3 pt-2">
         <Typography variant="body2">
           {t('themeSettings.description')}
         </Typography>
-        {EDITABLE_THEME_TOKENS.map((token) => (
-          <div key={token.key} className="flex items-center gap-3">
-            <Typography variant="body2" className="min-w-0 flex-1">
-              {t(`themeSettings.tokens.${token.labelKey}`)}
-            </Typography>
-            <input
-              type="color"
-              value={colors[token.key] ?? token.defaultValue}
-              onChange={(e) => {
-                setColors((current) => ({
-                  ...current,
-                  [token.key]: e.target.value,
-                }))
+        {THEME_PRESETS.map((option) => (
+          <label
+            key={option.id}
+            className="flex cursor-pointer items-center gap-2"
+          >
+            <Radio
+              size="small"
+              checked={preset === option.id}
+              onChange={() => {
+                setPreset(option.id)
               }}
               disabled={busy}
-              aria-label={t(`themeSettings.tokens.${token.labelKey}`)}
-              className="h-8 w-12 cursor-pointer"
+              value={option.id}
+              name="theme-preset"
             />
-          </div>
+            <span className="flex gap-1">
+              {option.swatch.map((color) => (
+                <span
+                  key={color}
+                  className="border-ui-03 h-5 w-5 rounded-full border"
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </span>
+            <Typography variant="body2">
+              {t(`themeSettings.presets.${option.id}`)}
+            </Typography>
+          </label>
         ))}
         <TextField
           select
@@ -157,6 +175,7 @@ export const ThemeSettingsDialog: FC<ThemeSettingsDialogProps> = ({
             setScale(e.target.value)
           }}
           disabled={busy}
+          className="mt-1"
         >
           {UI_SCALE_OPTIONS.map((option) => (
             <MenuItem key={option} value={option}>

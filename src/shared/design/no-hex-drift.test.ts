@@ -10,7 +10,12 @@ import { describe, expect, it } from 'vitest'
  * литералами в код не попадают и стража не касаются.
  */
 const SRC = 'src'
-const ALLOWED_FILES = new Set(['src/shared/design/tokens.ts'])
+// theme-presets: значения АЛЬТЕРНАТИВНЫХ тем (конструктор дизайна) — это
+// осознанные literal-цвета второго канона, а не дрейф от tokens.ts.
+const ALLOWED_FILES = new Set([
+  'src/shared/design/tokens.ts',
+  'src/features/theme-settings/lib/consts/theme-presets.ts',
+])
 
 const walk = (dir: string): string[] =>
   readdirSync(dir).flatMap((name) => {

@@ -43,4 +43,35 @@ describe('applyServerTheme', () => {
 
     expect(rootStyle().getPropertyValue('--accent-02')).toBe('')
   })
+
+  describe('ui-scale', () => {
+    const ensureAppRoot = (): HTMLElement => {
+      let el = document.getElementById('root')
+      if (!el) {
+        el = document.createElement('div')
+        el.id = 'root'
+        document.body.appendChild(el)
+      }
+      return el
+    }
+
+    it('масштаб ставит zoom на #root (не на html — поповеры съезжали)', () => {
+      const app = ensureAppRoot()
+
+      applyServerTheme({ 'ui-scale': '1.1' })
+
+      expect(app.style.getPropertyValue('zoom')).toBe('1.1')
+      expect(rootStyle().getPropertyValue('zoom')).toBe('')
+    })
+
+    it('кламп 0.8–1.5 и снятие при сбросе', () => {
+      const app = ensureAppRoot()
+
+      applyServerTheme({ 'ui-scale': '9' })
+      expect(app.style.getPropertyValue('zoom')).toBe('1.5')
+
+      applyServerTheme({})
+      expect(app.style.getPropertyValue('zoom')).toBe('')
+    })
+  })
 })

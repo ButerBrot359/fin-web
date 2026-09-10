@@ -66,6 +66,16 @@ export function applyServerTheme(tokens: Record<string, string>): void {
 
 const appContainer = (): HTMLElement | null => document.getElementById('root')
 
+/**
+ * Активный масштаб. Компенсация размеров считается в ПИКСЕЛЯХ от фактического
+ * innerWidth/innerHeight и пересчитывается на каждый resize: браузерный зум
+ * (Ctrl+±) меняет CSS-пиксели вьюпорта и триггерит resize, а процентная
+ * компенсация в этот момент резолвилась криво (живой дефект 10.09 — тулбар
+ * уезжал за верх при смене браузерного масштаба).
+ */
+let activeScale: number | null = null
+let resizeListenerAttached = false
+
 function applyUiScale(_root: HTMLElement, raw: string): void {
   const container = appContainer()
   if (!container) return
@@ -74,16 +84,32 @@ function applyUiScale(_root: HTMLElement, raw: string): void {
     clearUiScale(container)
     return
   }
-  const clamped = Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, parsed))
-  container.style.setProperty('zoom', String(clamped))
-  // Компенсация: зум сжимает/раздувает рендер контейнера, а 100%/масштаб
-  // возвращает заполнение вьюпорта — иначе при 90% снизу и справа полоса
-  // фона, при 110% — лишние скроллбары.
-  container.style.setProperty('width', `calc(100% / ${String(clamped)})`)
-  container.style.setProperty('height', `calc(100% / ${String(clamped)})`)
+  activeScale = Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, parsed))
+  if (!resizeListenerAttached) {
+    resizeListenerAttached = true
+    window.addEventListener('resize', syncUiScale)
+  }
+  syncUiScale()
+}
+
+function syncUiScale(): void {
+  const container = appContainer()
+  if (!container || activeScale == null) return
+  container.style.setProperty('zoom', String(activeScale))
+  // px внутри зумленного элемента рендерятся умноженными на zoom:
+  // innerHeight/масштаб локальных px × масштаб = ровно вьюпорт.
+  container.style.setProperty(
+    'width',
+    `${String(window.innerWidth / activeScale)}px`
+  )
+  container.style.setProperty(
+    'height',
+    `${String(window.innerHeight / activeScale)}px`
+  )
 }
 
 function clearUiScale(container: HTMLElement): void {
+  activeScale = null
   container.style.removeProperty('zoom')
   container.style.removeProperty('width')
   container.style.removeProperty('height')

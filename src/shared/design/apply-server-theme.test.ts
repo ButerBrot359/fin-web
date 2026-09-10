@@ -62,11 +62,15 @@ describe('applyServerTheme', () => {
 
       expect(app.style.getPropertyValue('zoom')).toBe('1.1')
       expect(rootStyle().getPropertyValue('zoom')).toBe('')
-      // Компенсация: зум сжимает рендер, 100%/масштаб возвращает заполнение
-      // вьюпорта — без неё при 90% снизу и справа полоса фона. jsdom
-      // нормализует calc до вычисленного процента — сверяем по вхождению.
-      expect(app.style.getPropertyValue('width')).toContain('calc(')
-      expect(app.style.getPropertyValue('height')).toContain('calc(')
+      // Компенсация в px от фактического вьюпорта (не в %: проценты криво
+      // резолвились при браузерном зуме): innerWidth/масштаб локальных px
+      // × масштаб = ровно вьюпорт.
+      expect(app.style.getPropertyValue('width')).toBe(
+        `${String(window.innerWidth / 1.1)}px`
+      )
+      expect(app.style.getPropertyValue('height')).toBe(
+        `${String(window.innerHeight / 1.1)}px`
+      )
     })
 
     it('кламп 0.8–1.5 и снятие при сбросе вместе с компенсацией', () => {

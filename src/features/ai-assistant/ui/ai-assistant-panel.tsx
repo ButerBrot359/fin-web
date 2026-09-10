@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
@@ -14,6 +14,7 @@ import { cn } from '@/shared/lib/utils/cn'
 import type { AssistantChatMessage } from '../lib/hooks/use-assistant-session'
 import { useAssistantHistoryScroll } from '../lib/hooks/use-assistant-history-scroll'
 import { AssistantMessageTimeline } from './assistant-message-timeline'
+import { AssistantPendingStatus } from './assistant-pending-status'
 import { AssistantComposer } from './assistant-composer'
 import { AssistantContextBar } from './assistant-context-bar'
 import { AssistantHelp } from './assistant-help'
@@ -34,6 +35,11 @@ interface AiAssistantPanelProps {
   capabilities: AiAssistantCapability[] | null
   messages: AssistantChatMessage[]
   isPending: boolean
+  pendingStartedAt?: number
+  draft?: string
+  onDraftChange?: (value: string) => void
+  unavailableReason?: string
+  onRetrySettings?: () => void
   historyLoading?: boolean
   historyError?: boolean
   onRetryHistory?: () => void
@@ -78,6 +84,11 @@ export const AiAssistantPanel = ({
   capabilities,
   messages,
   isPending,
+  pendingStartedAt,
+  draft,
+  onDraftChange,
+  unavailableReason,
+  onRetrySettings,
   historyLoading = false,
   historyError = false,
   onRetryHistory,
@@ -95,6 +106,11 @@ export const AiAssistantPanel = ({
   onOpenDocument,
 }: AiAssistantPanelProps) => {
   const { t, i18n } = useTranslation()
+  const [localDraft, setLocalDraft] = useState('')
+  const value = draft ?? localDraft
+  const changeDraft = onDraftChange ?? setLocalDraft
+  const sendDisabled =
+    isPending || historyLoading || historyError || !!unavailableReason
   const messageIds = useMemo(
     () => messages.map((message) => message.id),
     [messages]
@@ -144,7 +160,7 @@ export const AiAssistantPanel = ({
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto p-3">
           <AssistantHelp
             capabilities={capabilities}
-            disabled={isPending || historyLoading || historyError}
+            disabled={sendDisabled}
             onAsk={(question) => {
               onSend(question)
               // Возврат к ленте: ответ придёт туда, и оставаться в справке значило бы
@@ -163,7 +179,7 @@ export const AiAssistantPanel = ({
               <AssistantPresets
                 context={context}
                 capabilities={capabilities}
-                disabled={isPending}
+                disabled={sendDisabled}
                 onSelect={onSend}
               />
             )}
@@ -202,15 +218,14 @@ export const AiAssistantPanel = ({
             <AssistantMessageTimeline
               messages={messages}
               language={i18n.language}
-              disabled={isPending || historyLoading || historyError}
+              disabled={sendDisabled}
+              onEditQuestion={changeDraft}
               onAction={onAction}
               onOpenDocument={onOpenDocument}
             />
 
-            {isPending && (
-              <Typography variant="body2" className="text-ui-05">
-                {t('aiAssistant.thinking')}
-              </Typography>
+            {isPending && pendingStartedAt != null && (
+              <AssistantPendingStatus startedAt={pendingStartedAt} />
             )}
           </div>
 
@@ -229,8 +244,22 @@ export const AiAssistantPanel = ({
               </Button>
             </div>
           )}
+          {unavailableReason && (
+            <div className="px-3 py-2" role="status">
+              <Typography variant="body2" className="text-ui-05">
+                {unavailableReason}
+              </Typography>
+              {onRetrySettings && (
+                <Button variant="tertiary" onClick={onRetrySettings}>
+                  {t('aiAssistant.historyRetry')}
+                </Button>
+              )}
+            </div>
+          )}
           <AssistantComposer
-            disabled={isPending || historyLoading || historyError}
+            value={value}
+            onChange={changeDraft}
+            disabled={sendDisabled}
             onSend={onSend}
           />
         </>

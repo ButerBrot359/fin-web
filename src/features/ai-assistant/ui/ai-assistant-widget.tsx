@@ -14,6 +14,7 @@ import {
 } from '@/entities/ai-assistant'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
+import { useAssistantDraft } from '../lib/hooks/use-assistant-draft'
 import { useAssistantPrint } from '../lib/hooks/use-assistant-print'
 import { useRestoredAssistantSession } from '../lib/hooks/use-restored-assistant-session'
 import { useFormContext } from '../lib/hooks/use-form-context'
@@ -45,6 +46,7 @@ const documentPath = (
  */
 export const AiAssistantWidget = () => {
   const { t } = useTranslation()
+  const [pendingStartedAt, setPendingStartedAt] = useState<number>()
   const [chatVersion, setChatVersion] = useState(0)
   const [open, setOpen] = useState(false)
   const [minimized, setMinimized] = useState(false)
@@ -105,6 +107,13 @@ export const AiAssistantWidget = () => {
     openAffectedDocument
   )
 
+  const draftKey = JSON.stringify([
+    context.kind,
+    context.typeCode,
+    context.entryId,
+  ])
+  const { draft, setDraft } = useAssistantDraft(draftKey)
+
   const newChatDisabled =
     session.isPending || confirmAction.isPending || printDocument.isPending
   const startNewChat = session.startNewChat
@@ -113,10 +122,11 @@ export const AiAssistantWidget = () => {
     setMinimized(false)
     setHelpOpen(false)
     if (!newChatDisabled) {
+      setDraft('')
       startNewChat()
       setChatVersion((current) => current + 1)
     }
-  }, [newChatDisabled, startNewChat])
+  }, [newChatDisabled, setDraft, startNewChat])
 
   useEffect(() => {
     window.addEventListener(AI_WIDGET_NEW_CHAT_EVENT, handleNewChat)
@@ -127,8 +137,31 @@ export const AiAssistantWidget = () => {
 
   // Разрешения нужны, чтобы не предлагать заготовку, которую сервер отклонит, и
   // чтобы справка называла выключенное выключенным. Тоже только при открытой панели.
-  const { settings } = useAiAssistantSettings(open)
+  const {
+    settings,
+    isLoading: settingsLoading,
+    isError: settingsError,
+    retry: retrySettings,
+  } = useAiAssistantSettings(open)
   const capabilities = settings?.capabilities ?? null
+  const unavailableReason = settingsLoading
+    ? t('aiAssistant.settingsLoading')
+    : !settings || settingsError
+      ? t('aiAssistant.settingsLoadFailed')
+      : !settings.enabled
+        ? t('aiAssistant.assistantDisabled')
+        : undefined
+  const handleSend = (question: string) => {
+    if (
+      !unavailableReason &&
+      !newChatDisabled &&
+      session.isRestored &&
+      question.trim()
+    ) {
+      setPendingStartedAt(Date.now())
+      session.send(question)
+    }
+  }
 
   const handleAction = (action: AiAssistantAction) => {
     if (session.isPending || confirmAction.isPending || printDocument.isPending)
@@ -142,7 +175,7 @@ export const AiAssistantWidget = () => {
       return
     }
     if (action.kind === 'SHOW_ROWS' && action.tableCode) {
-      session.send(t('aiAssistant.showRowsPrompt', { table: action.tableCode }))
+      handleSend(t('aiAssistant.showRowsPrompt', { table: action.tableCode }))
       return
     }
     if (action.kind === 'OPEN_DOCUMENT' && action.typeCode && action.entryId) {
@@ -151,6 +184,7 @@ export const AiAssistantWidget = () => {
     }
 
     if (action.kind === 'PRINT_DOCUMENT' && action.typeCode && action.entryId) {
+      setPendingStartedAt(Date.now())
       printDocument.mutate(
         { typeCode: action.typeCode, entryId: action.entryId },
         {
@@ -163,6 +197,7 @@ export const AiAssistantWidget = () => {
     }
 
     if (action.kind === 'CREATE_DOCUMENT' && action.typeCode) {
+      setPendingStartedAt(Date.now())
       confirmAction.mutate(
         {
           kind: 'CREATE_DOCUMENT',
@@ -208,6 +243,10 @@ export const AiAssistantWidget = () => {
         }}
         context={context}
         capabilities={capabilities}
+        draft={draft}
+        onDraftChange={setDraft}
+        unavailableReason={unavailableReason}
+        onRetrySettings={settingsError ? retrySettings : undefined}
         messages={session.messages}
         historyLoading={session.historyLoading}
         historyError={session.historyError}
@@ -216,6 +255,7 @@ export const AiAssistantWidget = () => {
         isLoadingOlder={session.isLoadingOlder}
         olderMessagesError={session.olderMessagesError}
         onLoadOlder={session.loadOlder}
+        pendingStartedAt={pendingStartedAt}
         isPending={
           session.isPending ||
           confirmAction.isPending ||
@@ -240,7 +280,7 @@ export const AiAssistantWidget = () => {
         onToggleMinimize={() => {
           setMinimized((current) => !current)
         }}
-        onSend={session.send}
+        onSend={handleSend}
         onAction={handleAction}
         onOpenDocument={openDocument}
       />

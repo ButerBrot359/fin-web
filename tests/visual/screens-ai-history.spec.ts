@@ -365,3 +365,123 @@ test('New chat opens an empty panel and sends no previous conversation ID', asyn
   await expect(panel).toContainText('Ответ нового чата')
   await expect(panel).not.toContainText('Чат 25 сообщение')
 })
+
+async function prepareComposer(page: Page, enabled = true) {
+  await fixture(page)
+  await page.route('**/api/ai-assistant/settings', (intercepted) =>
+    intercepted.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: { enabled, capabilities: [] },
+        success: true,
+      }),
+    })
+  )
+  await page.route('**/api/ai-assistant/conversations', (intercepted) =>
+    intercepted.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ data: [], success: true }),
+    })
+  )
+  await page.goto(route)
+  await page
+    .getByRole('button', { name: 'Открыть ИИ-помощника', exact: true })
+    .click()
+  const composer = page.getByPlaceholder('Вопрос по документу…')
+  await expect(composer).toBeVisible()
+  return composer
+}
+
+test('draft survives minimize, help and close/reopen without sending', async ({
+  page,
+}) => {
+  const sent: string[] = []
+  page.on('request', (request) => {
+    if (request.url().endsWith('/api/ai-assistant/ask'))
+      sent.push(request.url())
+  })
+  const composer = await prepareComposer(page)
+  await composer.fill('Несохранённый вопрос')
+  await page.getByRole('button', { name: 'Свернуть', exact: true }).click()
+  await expect(composer).toHaveCount(0)
+  await page.getByRole('button', { name: 'Развернуть', exact: true }).click()
+  await expect(composer).toHaveValue('Несохранённый вопрос')
+  await page.getByRole('button', { name: 'Справка', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Назад к диалогу', exact: true })
+    .click()
+  await expect(composer).toHaveValue('Несохранённый вопрос')
+  const panel = composer.locator(
+    'xpath=ancestor::div[contains(@class,"fixed")][1]'
+  )
+  await panel.getByRole('button', { name: 'Закрыть', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Открыть ИИ-помощника', exact: true })
+    .click()
+  await expect(composer).toHaveValue('Несохранённый вопрос')
+  expect(sent).toEqual([])
+})
+
+test('pending answer allows drafting the next question while send remains disabled', async ({
+  page,
+}) => {
+  const composer = await prepareComposer(page)
+  let release: (() => void) | undefined
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const bodies: unknown[] = []
+  await page.route('**/api/ai-assistant/ask', async (intercepted) => {
+    bodies.push(intercepted.request().postDataJSON())
+    await gate
+    await intercepted.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          conversationId: 99,
+          conclusion: 'Ответ готов',
+          breakdown: [],
+          sources: [],
+          actions: [],
+          created: [],
+          latencyMs: 1,
+        },
+        success: true,
+      }),
+    })
+  })
+  await composer.fill('Первый вопрос')
+  await composer.press('Enter')
+  await expect(
+    page.getByRole('button', { name: 'Отправить', exact: true })
+  ).toBeDisabled()
+  await composer.fill('Следующий вопрос')
+  await composer.press('Enter')
+  await expect(composer).toHaveValue('Следующий вопрос')
+  expect(bodies).toHaveLength(1)
+  release?.()
+  await expect(page.getByText('Ответ готов', { exact: true })).toBeVisible()
+  await expect(composer).toHaveValue('Следующий вопрос')
+  await expect(
+    page.getByRole('button', { name: 'Отправить', exact: true })
+  ).toBeEnabled()
+})
+
+test('disabled AI settings cannot send through the composer', async ({
+  page,
+}) => {
+  const sent: string[] = []
+  page.on('request', (request) => {
+    if (request.url().endsWith('/api/ai-assistant/ask'))
+      sent.push(request.url())
+  })
+  const composer = await prepareComposer(page, false)
+  await expect(
+    page.getByRole('button', { name: 'Отправить', exact: true })
+  ).toBeDisabled()
+  if (await composer.isEnabled()) {
+    await composer.fill('Вопрос при выключенном ИИ')
+    await composer.press('Enter')
+  }
+  expect(sent).toEqual([])
+})

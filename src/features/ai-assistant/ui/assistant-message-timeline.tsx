@@ -5,6 +5,11 @@ import { cn } from '@/shared/lib/utils/cn'
 import type { AssistantChatMessage } from '../lib/hooks/use-assistant-session'
 import { buildAssistantMessageTimeline } from '../lib/message-time'
 import { AssistantAnswerCard } from './assistant-answer-card'
+import {
+  assistantMessageCopyText,
+  failedQuestionFor,
+} from '../lib/message-copy'
+import { AssistantMessageTools } from './assistant-message-tools'
 
 /** Shared message rendering for the live assistant and saved conversation history. */
 export function AssistantMessageTimeline({
@@ -13,12 +18,14 @@ export function AssistantMessageTimeline({
   disabled,
   onAction,
   onOpenDocument,
+  onEditQuestion,
 }: {
   messages: AssistantChatMessage[]
   language: string
   disabled: boolean
   onAction?: (action: AiAssistantAction) => void
   onOpenDocument: (typeCode: string, entryId: number) => void
+  onEditQuestion?: (question: string) => void
 }) {
   const timeline = useMemo(
     () => buildAssistantMessageTimeline(messages, language),
@@ -26,7 +33,7 @@ export function AssistantMessageTimeline({
   )
   return (
     <>
-      {timeline.map(({ message, timestamp, startsDay }) => (
+      {timeline.map(({ message, timestamp, startsDay }, index) => (
         <Fragment key={message.id}>
           {startsDay && timestamp && (
             <div
@@ -91,6 +98,11 @@ export function AssistantMessageTimeline({
                 {timestamp.time}
               </time>
             )}
+            <AssistantMessageTools
+              text={assistantMessageCopyText(message)}
+              failedQuestion={failedQuestionFor(messages, index)}
+              onEditQuestion={onEditQuestion}
+            />
           </div>
         </Fragment>
       ))}

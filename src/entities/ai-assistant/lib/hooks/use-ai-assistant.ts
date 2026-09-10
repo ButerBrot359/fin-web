@@ -121,13 +121,22 @@ export const useAiAssistantSettings = (
 ): {
   settings: AiAssistantSettings | null
   isLoading: boolean
+  isError: boolean
+  retry: () => void
 } => {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: aiAssistantKeys.settings(),
     queryFn: ({ signal }) => aiAssistantApi.getSettings(signal),
     enabled,
   })
-  return { settings: data ?? null, isLoading }
+  return {
+    settings: data ?? null,
+    isLoading,
+    isError,
+    retry: () => {
+      void refetch()
+    },
+  }
 }
 
 export const useUpdateAiAssistantSettings = (): UseMutationResult<

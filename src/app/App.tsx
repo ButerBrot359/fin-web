@@ -26,6 +26,7 @@ import { ReportResultView } from '@/features/report-result-view'
 import type { ReportAltResultDto } from '@/pages/reportalt/types/reportalt'
 
 import { connectToastHistory } from '@/entities/notification-history'
+import { ServerThemeApplier } from '@/entities/theme'
 import { Toaster } from '@/shared/ui/toast/toast'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
@@ -228,6 +229,7 @@ function App() {
           path="*"
           element={
             <AuthGuard>
+              <ServerThemeApplier />
               <Layout
                 sidebar={<ShellSidebarHost fallback={<Sidebar />} />}
                 header={<TopBar />}

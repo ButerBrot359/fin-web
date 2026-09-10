@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import i18n from 'i18next'
 
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
+import { subscribeViewSettingsChanged } from '@/shared/lib/design-settings/design-settings-events'
 
 import {
   clearDiscardDraftClose,
@@ -24,6 +25,7 @@ import { reopenFormForLanguageChange } from '../lib/language-reopen'
 import type { ViewTabMeta } from '../types/view'
 import { NodeRenderer } from './node-renderer'
 import { DialogHost } from './dialog-host'
+import { CustomizeFormDialog } from './customize-form-dialog'
 import { ValidationReportHost } from './validation/validation-report-host'
 import { useValidationReportStore } from '@/entities/validation-report'
 
@@ -186,6 +188,21 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     }
   }, [location.pathname, dispatch])
 
+  // Настройки вида изменились (ИИ-помощник или диалог «Изменить форму»,
+  // конструктор дизайна Ф2): патч накладывает бэк, поэтому нужен re-OPEN —
+  // механика та же, что при смене языка (CLOSE → сброс сторов → OPEN).
+  // Грязную форму не переоткрываем: несохранённые правки дороже свежей
+  // раскладки, патч и так применится при следующем открытии.
+  useEffect(() => {
+    return subscribeViewSettingsChanged(() => {
+      if (useViewStateStore.getState().dirty) return
+      void reopenFormForLanguageChange({
+        dispatch,
+        route: location.pathname,
+      })
+    })
+  }, [location.pathname, dispatch])
+
   useEffect(() => {
     const route = location.pathname
     const pending = consumePendingAction?.(route)
@@ -229,6 +246,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       bumpRevision: useTreeStore.getState().bumpRevision,
       getLayoutCode: () => useTreeStore.getState().layoutCode,
       setLayoutCode: useTreeStore.getState().setLayoutCode,
+      setScreenKey: useTreeStore.getState().setScreenKey,
       // closeAfter=true в root-сессии закрывает рабочую вкладку (без навигации)
       closeAfter: (didNavigate?: boolean) =>
         onCloseAfter?.(location.pathname, didNavigate),
@@ -251,6 +269,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       </div>
       <DialogHost />
       <ValidationReportHost />
+      <CustomizeFormDialog />
     </SduiSessionProvider>
   )
 }

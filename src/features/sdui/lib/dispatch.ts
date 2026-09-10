@@ -25,6 +25,8 @@ import { usePanelStore } from './stores/panel-store'
 import { useConfirmStore } from './stores/confirm-store'
 import { useUnsavedChangesStore } from './stores/unsaved-changes-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
+import { CUSTOMIZE_FORM_COMMAND } from './customize-form/customize-form-command'
+import { useCustomizeFormStore } from './customize-form/customize-form-store'
 import { revealAllTableErrors } from './table-validation-registry'
 import { shouldRevealTableErrors } from './utils/reveal-policy'
 import { openDialogAsPanel } from './open-dialog-panel'
@@ -66,6 +68,17 @@ export function useSduiDispatch() {
         onOpenTab?: (tab: ViewTabMeta | null) => void
       }
     ): Promise<boolean> {
+      // Конструктор дизайна Ф4: «Изменить форму» — единственная клиентская
+      // команда контракта. Пункт приходит с бэка обычной MENU_ITEM-нодой, но
+      // серверного хендлера нет — перехват до inflight-гарда и транспорта.
+      if (
+        action.type === 'COMMAND' &&
+        action.command === CUSTOMIZE_FORM_COMMAND
+      ) {
+        useCustomizeFormStore.getState().open()
+        return true
+      }
+
       const { formSessionId, revision } = session.getSession()
 
       // SCRUM-330 Работа 1: in-flight-гард от двойного клика. Повторный COMMAND,
@@ -275,6 +288,7 @@ export function useSduiDispatch() {
           setSession(res.formSessionId, res.revision)
           saveFormSession(route, res.formSessionId)
           session.setLayoutCode?.(action.layoutCode ?? null)
+          session.setScreenKey?.(res.screenKey ?? null)
           if (res.tree) setRoot(res.tree)
           setOnDirtyClose?.(res.onDirtyClose ?? null)
           opts?.onOpenTab?.(res.tab ?? null)

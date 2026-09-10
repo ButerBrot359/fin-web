@@ -6,6 +6,8 @@ import {
   type AiAssistantContext,
 } from '@/entities/ai-assistant'
 
+import { useDesignRefresh } from './use-design-refresh'
+
 /** Реплика в ленте диалога. */
 export interface AssistantChatMessage {
   id: string
@@ -54,6 +56,7 @@ export const useAssistantSession = (
   const [messages, setMessages] = useState<AssistantChatMessage[]>([])
   const [conversationId, setConversationId] = useState<number | null>(null)
   const mutation = useAskAssistant()
+  const refreshDesign = useDesignRefresh()
 
   const send = useCallback(
     (question: string) => {
@@ -69,6 +72,7 @@ export const useAssistantSession = (
         { conversationId, question: trimmed, context },
         {
           onSuccess: (answer) => {
+            refreshDesign(answer)
             setConversationId(answer.conversationId)
             setMessages((current) => [
               ...current,
@@ -94,7 +98,7 @@ export const useAssistantSession = (
         }
       )
     },
-    [context, conversationId, mutation]
+    [context, conversationId, mutation, refreshDesign]
   )
 
   const reset = useCallback(() => {

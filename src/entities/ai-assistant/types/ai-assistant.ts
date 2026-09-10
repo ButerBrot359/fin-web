@@ -66,6 +66,14 @@ export interface AiAssistantAnswer {
   missing?: string | null
   requestLogId?: number | null
   latencyMs: number
+  /**
+   * Помощник изменил пер-пользовательские настройки вида / темы (конструктор
+   * дизайна Ф2, спека 2026-09-10 §1.3): фронт по флагу перечитывает
+   * `/api/view` (re-OPEN чистой формы) / `/api/theme`. Старый бэк флагов не
+   * шлёт — поведение прежнее.
+   */
+  viewSettingsChanged?: boolean
+  themeChanged?: boolean
 }
 
 export interface AiAssistantConfirmAction {

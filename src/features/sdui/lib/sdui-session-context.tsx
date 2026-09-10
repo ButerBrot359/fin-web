@@ -31,6 +31,9 @@ export interface SduiSessionValue {
   // «не зациклиться» держится на этом естественном отказе, а не на явном guard'е.
   getLayoutCode?: () => string | null
   setLayoutCode?: (code: string | null) => void
+  // Ключ экрана из ответа OPEN — для /api/view-settings (конструктор дизайна
+  // Ф4). Панели не реализуют: их OPEN не должен перетирать ключ root-экрана.
+  setScreenKey?: (key: string | null) => void
   // Закрыть текущую сессию: вкладку (root) или панель (panel) — SCRUM-283.
   // didNavigate: сервер уже увёл эффектом navigate → хост не навигирует сам (v2).
   closeAfter?: (didNavigate?: boolean) => void
@@ -74,6 +77,7 @@ export const useSduiSession = (): SduiSessionValue => {
     bumpRevision: useTreeStore.getState().bumpRevision,
     getLayoutCode: () => useTreeStore.getState().layoutCode,
     setLayoutCode: useTreeStore.getState().setLayoutCode,
+    setScreenKey: useTreeStore.getState().setScreenKey,
     setOnDirtyClose: useTreeStore.getState().setOnDirtyClose,
     applyTreePatches: useTreeStore.getState().applyPatches,
     clearAllErrors: useTreeStore.getState().clearAllErrors,

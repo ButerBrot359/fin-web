@@ -146,4 +146,61 @@ describe('AssistantAnswerCard', () => {
 
     expect(onOpenDocument).toHaveBeenCalledWith('OperatsiyaBukh', 42)
   })
+  it('показывает фактическое проведение и предупреждения после действия', () => {
+    render(
+      <AssistantAnswerCard
+        answer={answer({
+          created: [
+            {
+              entryId: 42,
+              typeCode: 'OperatsiyaBukh',
+              presentation: 'Операция №15',
+              posted: true,
+              warnings: ['Проверьте реквизиты'],
+            },
+          ],
+        })}
+        onAction={vi.fn()}
+        onOpenDocument={vi.fn()}
+      />
+    )
+    expect(screen.getByText('Операция №15 — проведён')).toBeTruthy()
+    expect(screen.getByText('Проверьте реквизиты')).toBeTruthy()
+    expect(screen.queryByText(/не проведён/)).toBeNull()
+  })
+
+  it('блокирует повторное нажатие во время выполнения', () => {
+    const onAction = vi.fn()
+    render(
+      <AssistantAnswerCard
+        disabled
+        answer={answer({
+          actions: [{ kind: 'CREATE_DOCUMENT', label: 'Создать' }],
+        })}
+        onAction={onAction}
+        onOpenDocument={vi.fn()}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Создать' }))
+    expect(onAction).not.toHaveBeenCalled()
+  })
+  it('результат изменения справочника показывается текстом без повторной кнопки', () => {
+    render(
+      <AssistantAnswerCard
+        answer={answer({
+          actions: [
+            {
+              kind: 'UPDATE_DICTIONARY_ENTRY',
+              label: 'Изменена запись',
+              preview: 'Изменена запись справочника id=42',
+            },
+          ],
+        })}
+        onAction={vi.fn()}
+        onOpenDocument={vi.fn()}
+      />
+    )
+    expect(screen.getByText('Изменена запись справочника id=42')).toBeTruthy()
+    expect(screen.queryAllByRole('button')).toHaveLength(0)
+  })
 })

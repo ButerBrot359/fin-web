@@ -477,7 +477,10 @@ export function useTableSync(
   // ── Register/unregister flush for flush-before-save ──
   useEffect(() => {
     if (!node.binding) return
-    const token = registerPendingFlush(() => flushPendingRef.current())
+    const token = registerPendingFlush(
+      () => flushPendingRef.current(),
+      () => inFlightRef.current || hasPendingWork()
+    )
     return () => {
       unregisterPendingFlush(token)
     }

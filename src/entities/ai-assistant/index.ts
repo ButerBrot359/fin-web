@@ -25,4 +25,5 @@ export type {
 export type {
   AiConversation,
   AiConversationMessage,
+  AiConversationMessagePage,
 } from './types/conversation'

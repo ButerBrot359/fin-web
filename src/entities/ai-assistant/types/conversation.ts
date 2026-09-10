@@ -1,3 +1,5 @@
+import type { AiAssistantAnswer } from './ai-assistant'
+
 /** История переписки с помощником. */
 
 export interface AiConversation {
@@ -13,6 +15,15 @@ export interface AiConversationMessage {
   /** TOOL — то, что помощник прочитал из базы для ответа. */
   role: 'USER' | 'ASSISTANT' | 'TOOL'
   content: string
+  /** Полный сохранённый ответ; в старых сообщениях может отсутствовать. */
+  answer?: Partial<AiAssistantAnswer> | null
+  error?: string | null
   toolName?: string | null
   createdAt: string
+}
+
+export interface AiConversationMessagePage {
+  messages: AiConversationMessage[]
+  nextBeforeId: number | null
+  hasMore: boolean
 }

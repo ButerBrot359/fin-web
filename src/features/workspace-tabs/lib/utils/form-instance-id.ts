@@ -42,6 +42,23 @@ export function rotateFormInstanceId(path: string): string {
   return id
 }
 
+/** Reserve a fresh draft scope without abandoning the current form before OPEN succeeds. */
+export function prepareFreshFormInstanceId(path: string): {
+  id: string
+  commit: () => boolean
+} {
+  const previous = ids.get(path)
+  const id = generate()
+  return {
+    id,
+    commit: () => {
+      if (ids.get(path) !== previous) return false
+      ids.set(path, id)
+      return true
+    },
+  }
+}
+
 /** Вкладку закрыли — следующее открытие того же маршрута начнёт новый экземпляр (§5.1). */
 export function forgetFormInstanceId(path: string): void {
   ids.delete(path)

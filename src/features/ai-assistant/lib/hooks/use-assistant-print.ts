@@ -1,6 +1,6 @@
 import { useMutation, type UseMutationResult } from '@tanstack/react-query'
 
-import { printDocumentEntry } from '@/entities/document-entry'
+import { apiService } from '@/shared/api/api'
 
 export interface PrintTarget {
   typeCode: string
@@ -10,10 +10,8 @@ export interface PrintTarget {
 /**
  * Печать документа по просьбе помощника.
  *
- * <p>Зовёт ту же функцию, что кнопка «Печать» на форме документа, и так же открывает
- * полученный PDF новой вкладкой. Своего пути к печати здесь нет намеренно: печатные
- * формы выбираются и собираются на сервере, и второй способ их получить разошёлся бы
- * с первым на первой же правке макета.
+ * Сервер проверяет разрешение помощника заново при каждом нажатии, в том числе
+ * для старых ответов после изменения настроек, затем использует обычный сервис печати.
  *
  * <p>Отдельный вызов, а не часть ответа модели: PDF в ленту диалога не положишь, и
  * возвращать его через промпт бессмысленно — помощник лишь называет документ, а
@@ -26,7 +24,11 @@ export const useAssistantPrint = (): UseMutationResult<
 > =>
   useMutation({
     mutationFn: ({ typeCode, entryId }: PrintTarget) =>
-      printDocumentEntry(typeCode, entryId).then((response) => response.data),
+      apiService
+        .getFileBlob({
+          url: `/api/ai-assistant/documents/${encodeURIComponent(typeCode)}/${String(entryId)}/print`,
+        })
+        .then((response) => response.data),
     onSuccess: (blob) => {
       window.open(URL.createObjectURL(blob), '_blank')
     },

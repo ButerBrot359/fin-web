@@ -60,8 +60,15 @@ export interface AiAssistantAction {
     | 'OPEN_DOCUMENT'
     | 'PRINT_DOCUMENT'
     | 'CREATE_DOCUMENT'
-    // Копию сервер делает сам; во фронт она приходит только отказом — сообщением.
+    // Изменения сервер выполняет в ходе ответа; неудачи приходят с error.
     | 'COPY_DOCUMENT'
+    | 'UPDATE_DOCUMENT'
+    | 'POST_DOCUMENT'
+    | 'UNPOST_DOCUMENT'
+    | 'DELETE_DOCUMENT'
+    | 'RESTORE_DOCUMENT'
+    | 'CREATE_DICTIONARY_ENTRY'
+    | 'UPDATE_DICTIONARY_ENTRY'
   label?: string | null
   typeCode?: string | null
   entryId?: number | null
@@ -76,7 +83,7 @@ export interface AiAssistantCreatedDocument {
   entryId: number
   typeCode: string
   presentation: string
-  /** Всегда false: помощник документы не проводит. */
+  /** Фактическое состояние документа после действия. */
   posted: boolean
   warnings: string[]
 }
@@ -84,12 +91,15 @@ export interface AiAssistantCreatedDocument {
 /** Ответ в формате концепции: вывод, расшифровка, источник, действия. */
 export interface AiAssistantAnswer {
   conversationId: number
+  /** Серверное время получения вопроса и формирования ответа, с часовым поясом. */
+  userCreatedAt?: string
+  createdAt?: string
   conclusion: string
   breakdown: AiAssistantBreakdownRow[]
   sources: string[]
   actions: AiAssistantAction[]
   /** Чего не хватило для ответа; пусто — хватило всего. */
-  /** Документы, созданные помощником в этом ответе. Всегда не проведённые. */
+  /** Документы, созданные или изменённые помощником в этом ответе. */
   created: AiAssistantCreatedDocument[]
   missing?: string | null
   requestLogId?: number | null

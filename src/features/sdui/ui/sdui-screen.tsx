@@ -16,6 +16,8 @@ import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
 import { useSessionHeartbeat } from '../lib/hooks/use-session-heartbeat'
 import { useTaskWatcher } from '../lib/hooks/use-task-watcher'
+import { useExternalViewRefresh } from '../lib/hooks/use-external-view-refresh'
+import { useExternalPanelRefresh } from '../lib/hooks/use-external-panel-refresh'
 import {
   SduiSessionProvider,
   type SduiSessionValue,
@@ -73,6 +75,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   useSessionHeartbeat(formSessionId)
   // SCRUM-330: поллинг фоновых задач формы + рапорт task.finished в сессию
   useTaskWatcher(formSessionId)
+  useExternalViewRefresh(location.pathname + location.search, dispatch, onTab)
+  useExternalPanelRefresh()
 
   const title = (tree?.props?.title as string | undefined) ?? ''
   useEffect(() => {
@@ -109,6 +113,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       // ни в кэше вкладки, ни в пропах — сброшен, реопен идёт по маршруту.
       useTreeStore.getState().setLayoutCode(null)
       useViewStateStore.getState().replaceAll(cached.viewState)
+      useViewStateStore.getState().setDirty(true)
     } else {
       // main: устаревший кэш вкладки снимаем перед переоткрытием;
       // dev (SCRUM-244/290): 404/422 на OPEN → фолбэк на легаси через onOpenNotFound;

@@ -26,6 +26,8 @@ export interface PanelEntry {
   // признаку показывает её без анимации появления — иначе смена режима формы
   // строки читается как «окно закрылось и открылось заново» (мигание).
   swappedIn?: boolean
+  // Session-less refresh may report that the document no longer has movements.
+  refreshMessage?: string
 }
 
 interface PanelStore {

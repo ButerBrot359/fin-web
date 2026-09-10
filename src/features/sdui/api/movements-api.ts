@@ -6,9 +6,11 @@ import type { ViewResponse } from '../types/view'
 // что и POST /api/view, но formSessionId = null, всё в effects[0].
 export const fetchMovementsView = async (
   entryId: string,
+  timeout?: number
 ): Promise<ViewResponse> => {
   const res = await apiService.get<ViewResponse>({
     url: `/api/view/movements/${entryId}`,
+    ...(timeout != null ? { timeout } : {}),
   })
   return res.data
 }

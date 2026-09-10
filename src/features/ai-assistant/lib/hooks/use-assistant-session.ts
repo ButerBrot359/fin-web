@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 
 import {
   useAskAssistant,
@@ -11,6 +11,7 @@ export interface AssistantChatMessage {
   id: string
   role: 'USER' | 'ASSISTANT'
   text: string
+  createdAt: string
   answer?: AiAssistantAnswer
   error?: string
 }
@@ -20,8 +21,14 @@ interface AssistantSession {
   isPending: boolean
   /** Лента пуста — можно подставить переписку с сервера, ничего не затерев. */
   isEmpty: boolean
+  isRestored: boolean
+  conversationId: number | null
+  prepend: (messages: AssistantChatMessage[]) => void
   send: (question: string) => void
-  restore: (conversationId: number, messages: AssistantChatMessage[]) => void
+  restore: (
+    conversationId: number | null,
+    messages: AssistantChatMessage[]
+  ) => void
   reset: () => void
 }
 
@@ -36,18 +43,7 @@ const errorText = (error: unknown): string => {
   return 'Не удалось получить ответ помощника'
 }
 
-/**
- * Диалог с помощником в пределах открытой панели.
- *
- * Состояние локальное и не переживает перезагрузку страницы — на сервере диалог
- * при этом сохраняется, и это намеренная асимметрия: серверная запись нужна для
- * журнала обращений, а показывать бухгалтеру вчерашнюю переписку по документу,
- * который он уже закрыл, незачем.
- *
- * `conversationId` сервер возвращает сам и сам же заводит новый диалог при смене
- * документа — критерий приёмки требует не смешивать данные разных объектов,
- * и решать это на клиенте было бы ненадёжно.
- */
+/** Диалог по текущему объекту; запоздавшие ответы другого контекста не показываются. */
 export const useAssistantSession = (
   context: AiAssistantContext,
   /**
@@ -59,30 +55,73 @@ export const useAssistantSession = (
    */
   onAnswer?: (answer: AiAssistantAnswer) => void
 ): AssistantSession => {
+  const [isRestored, setIsRestored] = useState(false)
   const [messages, setMessages] = useState<AssistantChatMessage[]>([])
   const [conversationId, setConversationId] = useState<number | null>(null)
   const mutation = useAskAssistant()
+  const contextKey = JSON.stringify([
+    context.kind,
+    context.typeCode,
+    context.entryId,
+  ])
+  const [sessionKey, setSessionKey] = useState(contextKey)
+  const activeContext = useRef(contextKey)
+  const requestVersion = useRef(0)
+  const sending = useRef(false)
+
+  useLayoutEffect(() => {
+    activeContext.current = contextKey
+    requestVersion.current += 1
+    sending.current = false
+  }, [contextKey])
+
+  if (sessionKey !== contextKey) {
+    setSessionKey(contextKey)
+    setMessages([])
+    setConversationId(null)
+    setIsRestored(false)
+  }
 
   const send = useCallback(
     (question: string) => {
       const trimmed = question.trim()
-      if (!trimmed || mutation.isPending) return
+      if (!trimmed || mutation.isPending || sending.current) return
+      sending.current = true
+      setIsRestored(true)
+      const version = requestVersion.current
+      const isCurrent = () =>
+        activeContext.current === contextKey &&
+        requestVersion.current === version
 
+      const userMessageId = nextId()
+      const userCreatedAt = new Date().toISOString()
       setMessages((current) => [
         ...current,
-        { id: nextId(), role: 'USER', text: trimmed },
+        {
+          id: userMessageId,
+          role: 'USER',
+          text: trimmed,
+          createdAt: userCreatedAt,
+        },
       ])
 
       mutation.mutate(
         { conversationId, question: trimmed, context },
         {
           onSuccess: (answer) => {
+            if (!isCurrent()) return
+            sending.current = false
             setConversationId(answer.conversationId)
             setMessages((current) => [
-              ...current,
+              ...current.map((message) =>
+                message.id === userMessageId && answer.userCreatedAt
+                  ? { ...message, createdAt: answer.userCreatedAt }
+                  : message
+              ),
               {
                 id: nextId(),
                 role: 'ASSISTANT',
+                createdAt: answer.createdAt ?? new Date().toISOString(),
                 text: answer.conclusion,
                 answer,
               },
@@ -90,12 +129,15 @@ export const useAssistantSession = (
             onAnswer?.(answer)
           },
           onError: (error) => {
+            if (!isCurrent()) return
+            sending.current = false
             setMessages((current) => [
               ...current,
               {
                 id: nextId(),
                 role: 'ASSISTANT',
                 text: '',
+                createdAt: new Date().toISOString(),
                 error: errorText(error),
               },
             ])
@@ -103,12 +145,15 @@ export const useAssistantSession = (
         }
       )
     },
-    [context, conversationId, mutation, onAnswer]
+    [context, contextKey, conversationId, mutation, onAnswer]
   )
 
   const reset = useCallback(() => {
+    requestVersion.current += 1
+    sending.current = false
     setMessages([])
     setConversationId(null)
+    setIsRestored(false)
   }, [])
 
   /**
@@ -118,17 +163,29 @@ export const useAssistantSession = (
    * успел задать, пока история подгружалась.
    */
   const restore = useCallback(
-    (restoredId: number, restored: AssistantChatMessage[]) => {
+    (restoredId: number | null, restored: AssistantChatMessage[]) => {
+      setIsRestored(true)
       setMessages((current) => (current.length === 0 ? restored : current))
       setConversationId((current) => current ?? restoredId)
     },
     []
   )
 
+  const prepend = useCallback((older: AssistantChatMessage[]) => {
+    setMessages((current) => {
+      const ids = new Set(current.map((message) => message.id))
+      const missing = older.filter((message) => !ids.has(message.id))
+      return missing.length > 0 ? [...missing, ...current] : current
+    })
+  }, [])
+
   return {
     messages,
+    conversationId,
+    prepend,
     isPending: mutation.isPending,
     isEmpty: messages.length === 0,
+    isRestored,
     send,
     restore,
     reset,

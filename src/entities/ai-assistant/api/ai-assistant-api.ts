@@ -12,7 +12,7 @@ import type {
 } from '../types/ai-assistant'
 import type {
   AiConversation,
-  AiConversationMessage,
+  AiConversationMessagePage,
 } from '../types/conversation'
 
 const BASE_URL = '/api/ai-assistant'
@@ -103,11 +103,13 @@ export const aiAssistantApi = {
 
   getConversationMessages: (
     id: number,
-    signal?: AbortSignal
-  ): Promise<AiConversationMessage[]> =>
+    signal?: AbortSignal,
+    beforeId?: number | null
+  ): Promise<AiConversationMessagePage> =>
     apiService
-      .get<ApiResponse<AiConversationMessage[]>>({
+      .get<ApiResponse<AiConversationMessagePage>>({
         url: `${BASE_URL}/conversations/${String(id)}/messages`,
+        params: { limit: 10, ...(beforeId != null ? { beforeId } : {}) },
         signal,
       })
       .then(unwrap),

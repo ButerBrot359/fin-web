@@ -30,7 +30,10 @@ import { shouldRevealTableErrors } from './utils/reveal-policy'
 import { openDialogAsPanel } from './open-dialog-panel'
 import { relaySelectionToParent } from './relay-selection'
 import { buildCommonEffectDeps } from './build-effect-deps'
-import { currentFormInstanceId } from './form-instance'
+import {
+  currentFormInstanceId,
+  prepareFreshFormInstanceId,
+} from './form-instance'
 import { useCommandInflightStore } from './stores/command-inflight-store'
 import {
   clearFormSession,
@@ -64,6 +67,9 @@ export function useSduiDispatch() {
         onOpenNotFound?: (info?: { kind?: string }) => void
         onRouteUnknown?: () => void
         onOpenTab?: (tab: ViewTabMeta | null) => void
+        // Background refresh may finish after the user edits or changes tabs.
+        acceptOpenResponse?: () => boolean
+        freshOpen?: boolean
       }
     ): Promise<boolean> {
       const { formSessionId, revision } = session.getSession()
@@ -250,11 +256,16 @@ export function useSduiDispatch() {
         // Экземпляр формы этой вкладки — на КАЖДОМ OPEN (бэк: DocumentFormDraftStore).
         // Он же остаётся прежним при реопене после 409 и при переходе новый → записанный:
         // вкладка та же, значит и её черновик тот же.
+        const freshInstance =
+          action.type === 'OPEN' && opts?.freshOpen
+            ? prepareFreshFormInstanceId(location.pathname)
+            : null
         const openAction =
           action.type === 'OPEN'
             ? {
                 ...action,
-                formInstanceId: currentFormInstanceId(location.pathname),
+                formInstanceId:
+                  freshInstance?.id ?? currentFormInstanceId(location.pathname),
               }
             : action
         const res = await viewTransport.post({
@@ -262,7 +273,11 @@ export function useSduiDispatch() {
           // sessionStorage. Сейчас бэк его игнорирует (резюм отложен — v2 §2);
           // включение резюма будет односторонним, серверным, без правок фронта.
           formSessionId:
-            action.type === 'OPEN' ? readFormSession(route) : formSessionId,
+            action.type === 'OPEN'
+              ? opts?.freshOpen
+                ? null
+                : readFormSession(route)
+              : formSessionId,
           revision: action.type === 'OPEN' ? null : revision,
           ...(action.type === 'OPEN' && action.layoutCode
             ? { layoutCode: action.layoutCode }
@@ -272,6 +287,20 @@ export function useSduiDispatch() {
         })
 
         if (action.type === 'OPEN') {
+          if (
+            (opts?.acceptOpenResponse && !opts.acceptOpenResponse()) ||
+            (freshInstance && !freshInstance.commit())
+          ) {
+            if (res.formSessionId !== formSessionId) {
+              void viewTransport
+                .post({
+                  formSessionId: res.formSessionId,
+                  action: { type: 'CLOSE' },
+                })
+                .catch(() => undefined)
+            }
+            return false
+          }
           setSession(res.formSessionId, res.revision)
           saveFormSession(route, res.formSessionId)
           session.setLayoutCode?.(action.layoutCode ?? null)
@@ -330,6 +359,13 @@ export function useSduiDispatch() {
         }
         return true
       } catch (error) {
+        if (
+          action.type === 'OPEN' &&
+          opts?.acceptOpenResponse &&
+          !opts.acceptOpenResponse()
+        ) {
+          return false
+        }
         if (
           error instanceof ViewHttpError &&
           error.status === 422 &&

@@ -88,4 +88,19 @@ describe('useFormContext', () => {
       kind: 'NONE',
     })
   })
+  it('новый справочник не становится новым документом', () => {
+    expect(contextFor('/dictionaries/Kontragenty/new')).toEqual({
+      kind: 'DICTIONARY_LIST',
+      typeCode: 'Kontragenty',
+    })
+  })
+
+  it.each(['0', '-1', '1.5', 'Infinity', '9007199254740992'])(
+    'некорректный id %s не становится записью',
+    (id) => {
+      expect(
+        contextFor(`/documents/RaskhodnyyKassovyyOrder/${id}`).entryId
+      ).toBeNull()
+    }
+  )
 })

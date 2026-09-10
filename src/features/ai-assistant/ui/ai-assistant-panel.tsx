@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { Fragment, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
@@ -7,10 +7,13 @@ import type {
   AiAssistantCapability,
   AiAssistantContext,
 } from '@/entities/ai-assistant'
+import { Button } from '@/shared/ui/buttons'
 import { FLOATING_BOTTOM } from '@/shared/lib/utils/floating-widgets'
 import { cn } from '@/shared/lib/utils/cn'
 
 import type { AssistantChatMessage } from '../lib/hooks/use-assistant-session'
+import { useAssistantHistoryScroll } from '../lib/hooks/use-assistant-history-scroll'
+import { buildAssistantMessageTimeline } from '../lib/message-time'
 import { AssistantAnswerCard } from './assistant-answer-card'
 import { AssistantComposer } from './assistant-composer'
 import { AssistantContextBar } from './assistant-context-bar'
@@ -32,6 +35,13 @@ interface AiAssistantPanelProps {
   capabilities: AiAssistantCapability[] | null
   messages: AssistantChatMessage[]
   isPending: boolean
+  historyLoading?: boolean
+  historyError?: boolean
+  onRetryHistory?: () => void
+  hasOlderMessages?: boolean
+  isLoadingOlder?: boolean
+  olderMessagesError?: boolean
+  onLoadOlder?: () => void
   onClose: () => void
   onToggleMinimize: () => void
   onSend: (question: string) => void
@@ -66,24 +76,37 @@ export const AiAssistantPanel = ({
   capabilities,
   messages,
   isPending,
+  historyLoading = false,
+  historyError = false,
+  onRetryHistory,
+  hasOlderMessages = false,
+  isLoadingOlder = false,
+  olderMessagesError = false,
+  onLoadOlder,
   onClose,
   onToggleMinimize,
   onSend,
   onAction,
   onOpenDocument,
 }: AiAssistantPanelProps) => {
-  const { t } = useTranslation()
-  const bottomRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open || minimized) return
-    bottomRef.current?.scrollIntoView({
-      // Плавную прокрутку отключаем для тех, кто просил меньше движения.
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        ? 'auto'
-        : 'smooth',
-    })
-  }, [messages.length, isPending, open, minimized])
+  const { t, i18n } = useTranslation()
+  const timeline = useMemo(
+    () => buildAssistantMessageTimeline(messages, i18n.language),
+    [messages, i18n.language]
+  )
+  const messageIds = useMemo(
+    () => messages.map((message) => message.id),
+    [messages]
+  )
+  const { scrollRef, onScroll, loadOlder } = useAssistantHistoryScroll({
+    active: open && !minimized && !helpOpen,
+    messageIds,
+    isPending,
+    hasOlderMessages,
+    isLoadingOlder,
+    olderMessagesError,
+    onLoadOlder,
+  })
 
   if (!open) return null
 
@@ -117,7 +140,7 @@ export const AiAssistantPanel = ({
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto p-3">
           <AssistantHelp
             capabilities={capabilities}
-            disabled={isPending}
+            disabled={isPending || historyLoading || historyError}
             onAsk={(question) => {
               onSend(question)
               // Возврат к ленте: ответ придёт туда, и оставаться в справке значило бы
@@ -132,7 +155,7 @@ export const AiAssistantPanel = ({
         <>
           <div className="flex shrink-0 flex-col gap-2 px-3 pt-3 pb-2">
             <AssistantContextBar context={context} />
-            {messages.length === 0 && (
+            {messages.length === 0 && !historyLoading && !historyError && (
               <AssistantPresets
                 context={context}
                 capabilities={capabilities}
@@ -142,71 +165,139 @@ export const AiAssistantPanel = ({
             )}
           </div>
 
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto px-3 pb-3">
-            {messages.length === 0 && (
+          <div
+            ref={scrollRef}
+            onScroll={onScroll}
+            className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto px-3 pb-3"
+          >
+            {isLoadingOlder && (
+              <Typography variant="body2" role="status" className="text-ui-05">
+                {t('aiAssistant.historyLoading')}
+              </Typography>
+            )}
+            {olderMessagesError && (
+              <div>
+                <Typography variant="body2">
+                  {t('aiAssistant.historyLoadFailed')}
+                </Typography>
+                <Button
+                  variant="tertiary"
+                  disabled={isLoadingOlder}
+                  onClick={loadOlder}
+                >
+                  {t('aiAssistant.historyRetry')}
+                </Button>
+              </div>
+            )}
+            {messages.length === 0 && !historyLoading && !historyError && (
               <Typography variant="body2" className="text-ui-05">
                 {t('aiAssistant.empty')}
               </Typography>
             )}
 
-            {messages.map((message) =>
-              message.role === 'USER' ? (
-                <div key={message.id} className="flex min-w-0 justify-end">
-                  <div className="min-w-0 max-w-[85%] rounded-lg bg-ui-04 px-3 py-2">
-                    <Typography
-                      variant="body2"
-                      className="break-words whitespace-pre-wrap text-ui-06"
-                    >
-                      {message.text}
-                    </Typography>
+            {timeline.map(({ message, timestamp, startsDay }) => (
+              <Fragment key={message.id}>
+                {startsDay && timestamp && (
+                  <div
+                    role="separator"
+                    aria-label={timestamp.dayLabel}
+                    className="flex justify-center py-1 text-xs text-ui-05"
+                  >
+                    <time dateTime={timestamp.dayKey}>
+                      {timestamp.dayLabel}
+                    </time>
                   </div>
+                )}
+                <div data-assistant-message-id={message.id} className="min-w-0">
+                  {message.role === 'USER' ? (
+                    <div className="flex min-w-0 justify-end">
+                      <div className="min-w-0 max-w-[85%] rounded-lg bg-ui-04 px-3 py-2">
+                        <Typography
+                          variant="body2"
+                          className="break-words whitespace-pre-wrap text-ui-06"
+                        >
+                          {message.text}
+                        </Typography>
+                      </div>
+                    </div>
+                  ) : message.error ? (
+                    <div
+                      key={message.id}
+                      className="min-w-0 rounded-lg bg-ui-02 p-3 outline outline-support-01"
+                    >
+                      <Typography
+                        variant="body2"
+                        className="break-words text-ui-06"
+                      >
+                        {message.error}
+                      </Typography>
+                    </div>
+                  ) : message.answer ? (
+                    <AssistantAnswerCard
+                      key={message.id}
+                      answer={message.answer}
+                      disabled={isPending || historyLoading || historyError}
+                      onOpenDocument={onOpenDocument}
+                      onAction={(index) => {
+                        const action = message.answer?.actions[index]
+                        if (action) onAction(action)
+                      }}
+                    />
+                  ) : (
+                    <div
+                      key={message.id}
+                      className="min-w-0 rounded-lg bg-ui-02 p-3"
+                    >
+                      <Typography
+                        variant="body2"
+                        className="break-words whitespace-pre-wrap text-ui-06"
+                      >
+                        {message.text}
+                      </Typography>
+                    </div>
+                  )}
+                  {timestamp && (
+                    <time
+                      dateTime={timestamp.dateTime}
+                      title={timestamp.title}
+                      className={cn(
+                        'mt-1 block text-[11px] leading-4 text-ui-05',
+                        message.role === 'USER' ? 'text-right' : 'text-left'
+                      )}
+                    >
+                      {timestamp.time}
+                    </time>
+                  )}
                 </div>
-              ) : message.error ? (
-                <div
-                  key={message.id}
-                  className="min-w-0 rounded-lg bg-ui-02 p-3 outline outline-support-01"
-                >
-                  <Typography
-                    variant="body2"
-                    className="break-words text-ui-06"
-                  >
-                    {message.error}
-                  </Typography>
-                </div>
-              ) : message.answer ? (
-                <AssistantAnswerCard
-                  key={message.id}
-                  answer={message.answer}
-                  onOpenDocument={onOpenDocument}
-                  onAction={(index) => {
-                    const action = message.answer?.actions[index]
-                    if (action) onAction(action)
-                  }}
-                />
-              ) : (
-                <div
-                  key={message.id}
-                  className="min-w-0 rounded-lg bg-ui-02 p-3"
-                >
-                  <Typography
-                    variant="body2"
-                    className="break-words whitespace-pre-wrap text-ui-06"
-                  >
-                    {message.text}
-                  </Typography>
-                </div>
-              )
-            )}
+              </Fragment>
+            ))}
 
             {isPending && (
               <Typography variant="body2" className="text-ui-05">
                 {t('aiAssistant.thinking')}
               </Typography>
             )}
-            <div ref={bottomRef} />
           </div>
 
-          <AssistantComposer disabled={isPending} onSend={onSend} />
+          {historyLoading && (
+            <Typography variant="body2" className="px-3 text-ui-05">
+              {t('aiAssistant.historyLoading')}
+            </Typography>
+          )}
+          {historyError && (
+            <div className="px-3">
+              <Typography variant="body2">
+                {t('aiAssistant.historyLoadFailed')}
+              </Typography>
+              <Button variant="tertiary" onClick={onRetryHistory}>
+                {t('aiAssistant.historyRetry')}
+              </Button>
+            </div>
+          )}
+          <AssistantComposer
+            disabled={isPending || historyLoading || historyError}
+            onSend={onSend}
+          />
         </>
       )}
     </div>

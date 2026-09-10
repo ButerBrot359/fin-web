@@ -1,4 +1,5 @@
 const registry = new Map<symbol, () => Promise<void>>()
+const pendingChecks = new Map<symbol, () => boolean>()
 
 // Предохранитель: flush не должен блокировать save бесконечно (SCRUM-282 #5).
 //
@@ -28,14 +29,24 @@ function withTimeout(promise: Promise<void>): Promise<void> {
   })
 }
 
-export function registerPendingFlush(flush: () => Promise<void>): symbol {
+export function registerPendingFlush(
+  flush: () => Promise<void>,
+  hasPending?: () => boolean
+): symbol {
   const token = Symbol('pending-flush')
   registry.set(token, flush)
+  if (hasPending) pendingChecks.set(token, hasPending)
   return token
 }
 
 export function unregisterPendingFlush(token: symbol): void {
   registry.delete(token)
+  pendingChecks.delete(token)
+}
+
+/** Local cell buffers can be dirty before the server-backed form state changes. */
+export function hasPendingTableCommits(): boolean {
+  return [...pendingChecks.values()].some((check) => check())
 }
 
 export async function flushAllPendingTableCommits(): Promise<void> {

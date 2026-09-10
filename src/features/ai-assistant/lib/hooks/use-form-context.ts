@@ -81,11 +81,14 @@ export const useFormContext = (): AiAssistantContext => {
     // `new` — несохранённая карточка: идентификатора ещё нет, но тип уже известен,
     // и это лучший момент помочь с заполнением.
     if (rawId === 'new') {
-      return { kind: 'DOCUMENT_NEW', typeCode }
+      return {
+        kind: kind === 'DOCUMENT' ? 'DOCUMENT_NEW' : 'DICTIONARY_LIST',
+        typeCode,
+      }
     }
 
     const entryId = Number(rawId)
-    if (Number.isNaN(entryId)) {
+    if (!Number.isSafeInteger(entryId) || entryId <= 0) {
       // Нечисловой хвост — это не запись, а какой-то подраздел. Тип всё равно знаем.
       return {
         kind: kind === 'DOCUMENT' ? 'DOCUMENT_LIST' : 'DICTIONARY_LIST',

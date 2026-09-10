@@ -138,7 +138,11 @@ export const AssistantSettingsForm = () => {
       />
 
       <div className="flex justify-end">
-        <Button variant="primary" disabled={update.isPending} onClick={submit}>
+        <Button
+          variant="primary"
+          disabled={!settings || update.isPending}
+          onClick={submit}
+        >
           {t('analytics.settings.save')}
         </Button>
       </div>

@@ -1,15 +1,26 @@
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
-import type { AiAssistantAnswer } from '@/entities/ai-assistant'
+import type {
+  AiAssistantAction,
+  AiAssistantAnswer,
+} from '@/entities/ai-assistant'
 import { Button } from '@/shared/ui/buttons'
 
 interface AssistantAnswerCardProps {
   answer: AiAssistantAnswer
   onAction: (index: number) => void
+  disabled?: boolean
   /** Открыть созданный документ. Панель уводит на него сразу, это — способ вернуться. */
   onOpenDocument: (typeCode: string, entryId: number) => void
 }
+
+const isCompletedAction = (action: AiAssistantAction): boolean =>
+  [
+    'DELETE_DOCUMENT',
+    'CREATE_DICTIONARY_ENTRY',
+    'UPDATE_DICTIONARY_ENTRY',
+  ].includes(action.kind)
 
 const SectionLabel = ({ children }: { children: string }) => (
   <Typography
@@ -40,6 +51,7 @@ export const AssistantAnswerCard = ({
   answer,
   onAction,
   onOpenDocument,
+  disabled = false,
 }: AssistantAnswerCardProps) => {
   const { t } = useTranslation()
 
@@ -103,27 +115,31 @@ export const AssistantAnswerCard = ({
         </div>
       )}
 
-      {/* Созданное помощником — с пометкой «не проведён». Раз подтверждения нет,
-          факт появления документа в базе должен быть виден сразу.
-
-          Строки кликабельные: на первый документ панель уводит сама, но если их
-          несколько или человек уже ушёл на другую страницу, вернуться к нему больше
-          неоткуда — искать в списке значит делать руками работу помощника. */}
       {answer.created.length > 0 && (
         <div className="flex min-w-0 flex-col items-start gap-0.5 rounded-r-md border-l-4 border-support-01 bg-ui-01 px-3 py-2">
-          <SectionLabel>{t('aiAssistant.createdTitle')}</SectionLabel>
+          <SectionLabel>{t('aiAssistant.affectedTitle')}</SectionLabel>
           {answer.created.map((document) => (
-            <Button
-              key={document.entryId}
-              size="small"
-              variant="tertiary"
-              className="min-w-0 justify-start px-0 text-left whitespace-normal"
-              onClick={() => {
-                onOpenDocument(document.typeCode, document.entryId)
-              }}
-            >
-              {`${document.presentation} — ${t('aiAssistant.createdUnposted')}`}
-            </Button>
+            <div key={document.entryId} className="flex min-w-0 flex-col">
+              <Button
+                size="small"
+                variant="tertiary"
+                className="min-w-0 justify-start px-0 text-left whitespace-normal"
+                onClick={() => {
+                  onOpenDocument(document.typeCode, document.entryId)
+                }}
+              >
+                {`${document.presentation} — ${t(document.posted ? 'aiAssistant.documentPosted' : 'aiAssistant.createdUnposted')}`}
+              </Button>
+              {document.warnings.map((warning, index) => (
+                <Typography
+                  key={index}
+                  variant="caption"
+                  className="break-words text-support-01"
+                >
+                  {warning}
+                </Typography>
+              ))}
+            </div>
           ))}
         </div>
       )}
@@ -143,13 +159,28 @@ export const AssistantAnswerCard = ({
           </div>
         ))}
 
-      {answer.actions.some((action) => !action.error) && (
+      {answer.actions
+        .filter((action) => !action.error && isCompletedAction(action))
+        .map((action, index) => (
+          <Typography
+            key={`completed-${String(index)}`}
+            variant="body2"
+            className="break-words text-ui-06"
+          >
+            {action.preview ?? action.label}
+          </Typography>
+        ))}
+
+      {answer.actions.some(
+        (action) => !action.error && !isCompletedAction(action)
+      ) && (
         <div className="flex min-w-0 flex-wrap gap-2">
           {answer.actions.map((action, index) =>
-            action.error ? null : (
+            action.error || isCompletedAction(action) ? null : (
               <Button
                 key={`${action.kind}-${String(index)}`}
                 size="small"
+                disabled={disabled}
                 variant={
                   action.kind === 'CREATE_DOCUMENT' ? 'primary' : 'tertiary'
                 }

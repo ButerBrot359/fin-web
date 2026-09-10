@@ -4,8 +4,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import {
   useAiAssistantSettings,
-  useAiConversationMessages,
-  useAiConversations,
   useConfirmAssistantAction,
   type AiAssistantAction,
   type AiAssistantAnswer,
@@ -13,10 +11,7 @@ import {
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import { useAssistantPrint } from '../lib/hooks/use-assistant-print'
-import {
-  useAssistantSession,
-  type AssistantChatMessage,
-} from '../lib/hooks/use-assistant-session'
+import { useRestoredAssistantSession } from '../lib/hooks/use-restored-assistant-session'
 import { useFormContext } from '../lib/hooks/use-form-context'
 import { AiAssistantFab } from './ai-assistant-fab'
 import { AiAssistantPanel } from './ai-assistant-panel'
@@ -65,72 +60,55 @@ export const AiAssistantWidget = () => {
     [navigate, pageCode]
   )
 
-  /**
-   * Созданный документ открывается сразу, без нажатия.
-   *
-   * <p>Помощник создаёт документ сам, в ответе; раньше о нём сообщала только строка
-   * «Создано помощником», и человек шёл искать документ в списке — то есть повторял
-   * руками ровно ту работу, ради которой звал помощника.
-   *
-   * <p>Уведомление обязательно: страница меняется не от нажатия, и без подписи это
-   * читается как сбой, а не как результат.
-   */
-  const openCreatedDocument = useCallback(
+  /** Результат мутации открывается для проверки пользователем. */
+  const openAffectedDocument = useCallback(
     (answer: AiAssistantAnswer) => {
       // Индексом, а не optional chaining: при выключенном noUncheckedIndexedAccess
       // TypeScript считает элемент всегда заданным, и линтер называет проверку лишней.
       if (answer.created.length === 0) return
       const created = answer.created[0]
-      showToast('success', t('aiAssistant.created'), created.presentation)
-      openDocument(created.typeCode, created.entryId)
+      showToast(
+        'success',
+        t('aiAssistant.actionCompleted'),
+        created.presentation
+      )
+      if (
+        context.kind !== 'DOCUMENT' ||
+        context.typeCode !== created.typeCode ||
+        context.entryId !== created.entryId
+      ) {
+        openDocument(created.typeCode, created.entryId)
+      }
     },
-    [openDocument, t]
+    [openDocument, t, context.kind, context.typeCode, context.entryId]
   )
 
-  const session = useAssistantSession(context, openCreatedDocument)
+  const session = useRestoredAssistantSession(
+    context,
+    open,
+    openAffectedDocument
+  )
 
   // Разрешения нужны, чтобы не предлагать заготовку, которую сервер отклонит, и
   // чтобы справка называла выключенное выключенным. Тоже только при открытой панели.
   const { settings } = useAiAssistantSettings(open)
   const capabilities = settings?.capabilities ?? null
 
-  // Диалог по этому объекту тянем только при открытой панели: закрытый помощник
-  // не повод дёргать сервер на каждой смене страницы.
-  const { conversations } = useAiConversations(
-    { typeCode: context.typeCode, entryId: context.entryId },
-    open
-  )
-  // Индексом, а не optional chaining: при выключенном noUncheckedIndexedAccess
-  // TypeScript считает элемент всегда заданным, и линтер справедливо называет
-  // проверку лишней. Длина массива — единственный честный признак.
-  const restoredId = conversations.length > 0 ? conversations[0].id : null
-  const { messages: storedMessages } = useAiConversationMessages(
-    open && session.isEmpty ? restoredId : null
-  )
-
-  // Восстановление в рендере, а не в эффекте: линтер проекта запрещает setState
-  // в эффекте, и лишний проход показал бы пустую ленту поверх уже полученной.
-  if (
-    open &&
-    session.isEmpty &&
-    restoredId != null &&
-    storedMessages.length > 0
-  ) {
-    session.restore(
-      restoredId,
-      storedMessages
-        // Роль TOOL — что помощник прочитал из базы. В журнале она нужна, в ленте
-        // диалога это шум: человек перечитывает разговор, а не протокол чтений.
-        .filter((message) => message.role !== 'TOOL')
-        .map<AssistantChatMessage>((message) => ({
-          id: `stored-${String(message.id)}`,
-          role: message.role === 'USER' ? 'USER' : 'ASSISTANT',
-          text: message.content,
-        }))
-    )
-  }
-
   const handleAction = (action: AiAssistantAction) => {
+    if (session.isPending || confirmAction.isPending || printDocument.isPending)
+      return
+    if (action.error) return
+    if (
+      (action.kind === 'PRINT_DOCUMENT' || action.kind === 'CREATE_DOCUMENT') &&
+      (!settings?.enabled || !capabilities?.includes(action.kind))
+    ) {
+      showToast('error', t('aiAssistant.actionUnavailable'))
+      return
+    }
+    if (action.kind === 'SHOW_ROWS' && action.tableCode) {
+      session.send(t('aiAssistant.showRowsPrompt', { table: action.tableCode }))
+      return
+    }
     if (action.kind === 'OPEN_DOCUMENT' && action.typeCode && action.entryId) {
       openDocument(action.typeCode, action.entryId)
       return
@@ -165,7 +143,9 @@ export const AiAssistantWidget = () => {
           },
         }
       )
+      return
     }
+    showToast('error', t('aiAssistant.actionUnavailable'))
   }
 
   return (
@@ -192,6 +172,13 @@ export const AiAssistantWidget = () => {
         context={context}
         capabilities={capabilities}
         messages={session.messages}
+        historyLoading={session.historyLoading}
+        historyError={session.historyError}
+        onRetryHistory={session.retryHistory}
+        hasOlderMessages={session.hasOlderMessages}
+        isLoadingOlder={session.isLoadingOlder}
+        olderMessagesError={session.olderMessagesError}
+        onLoadOlder={session.loadOlder}
         isPending={
           session.isPending ||
           confirmAction.isPending ||

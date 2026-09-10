@@ -3,7 +3,16 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 import i18n from '@/app/config/i18n'
 
+import {
+  DEFAULT_CAPABILITIES,
+  READ_CAPABILITIES,
+  WRITE_CAPABILITIES,
+} from '../lib/consts/capability-catalog'
 import { AssistantHelp } from './assistant-help'
+
+// Считаем от каталога, а не числом: разрешения добавляются, и тест, знающий
+// их количество наизусть, ломался бы на каждом новом — не находя дефекта.
+const TOTAL = READ_CAPABILITIES.length + WRITE_CAPABILITIES.length
 
 const example = (text: string): RegExp =>
   new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
@@ -29,8 +38,10 @@ describe('AssistantHelp', () => {
 
     expect(screen.getByText(i18n.t('aiAssistant.capSearch'))).toBeTruthy()
     expect(screen.getByText(i18n.t('aiAssistant.capPost'))).toBeTruthy()
-    // Восемь действий, разрешено одно — остальные помечены «выключено».
-    expect(screen.getAllByText(i18n.t('aiAssistant.helpOff'))).toHaveLength(7)
+    // Разрешено одно — все остальные помечены «выключено».
+    expect(screen.getAllByText(i18n.t('aiAssistant.helpOff'))).toHaveLength(
+      TOTAL - 1
+    )
   })
 
   it('пример выключенного действия нажать нельзя', () => {
@@ -75,6 +86,8 @@ describe('AssistantHelp', () => {
 
     // Чтение и сводные данные включены на сервере по умолчанию — метки «выключено»
     // на них быть не должно, иначе справка пугает несуществующим запретом.
-    expect(screen.getAllByText(i18n.t('aiAssistant.helpOff'))).toHaveLength(6)
+    expect(screen.getAllByText(i18n.t('aiAssistant.helpOff'))).toHaveLength(
+      TOTAL - DEFAULT_CAPABILITIES.length
+    )
   })
 })

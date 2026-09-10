@@ -12,6 +12,7 @@ import {
 } from '@/entities/ai-assistant'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
+import { useAssistantPrint } from '../lib/hooks/use-assistant-print'
 import {
   useAssistantSession,
   type AssistantChatMessage,
@@ -51,6 +52,7 @@ export const AiAssistantWidget = () => {
   const [helpOpen, setHelpOpen] = useState(false)
   const context = useFormContext()
   const confirmAction = useConfirmAssistantAction()
+  const printDocument = useAssistantPrint()
   const navigate = useNavigate()
   const { pageCode } = useParams<{ pageCode: string }>()
 
@@ -134,6 +136,18 @@ export const AiAssistantWidget = () => {
       return
     }
 
+    if (action.kind === 'PRINT_DOCUMENT' && action.typeCode && action.entryId) {
+      printDocument.mutate(
+        { typeCode: action.typeCode, entryId: action.entryId },
+        {
+          onError: () => {
+            showToast('error', t('aiAssistant.printFailed'))
+          },
+        }
+      )
+      return
+    }
+
     if (action.kind === 'CREATE_DOCUMENT' && action.typeCode) {
       confirmAction.mutate(
         {
@@ -178,7 +192,11 @@ export const AiAssistantWidget = () => {
         context={context}
         capabilities={capabilities}
         messages={session.messages}
-        isPending={session.isPending || confirmAction.isPending}
+        isPending={
+          session.isPending ||
+          confirmAction.isPending ||
+          printDocument.isPending
+        }
         onClose={() => {
           setOpen(false)
           // Следующее открытие — снова диалог: кнопка внизу экрана обещает помощника,

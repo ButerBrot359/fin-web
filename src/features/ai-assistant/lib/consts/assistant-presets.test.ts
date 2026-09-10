@@ -79,6 +79,27 @@ describe('selectPresets', () => {
     ).toEqual(['month-documents', 'unposted-of-type', 'required-fields'])
   })
 
+  it('проводки предлагаются только с разрешением смотреть движения', () => {
+    const opened: AiAssistantContext = {
+      kind: 'DOCUMENT',
+      typeCode: 'Tabel',
+      entryId: 27858509,
+    }
+
+    expect(ids(opened, ['SEARCH_DATA'])).not.toContain('movements')
+    expect(ids(opened, ['SEARCH_DATA', 'READ_MOVEMENTS'])).toContain(
+      'movements'
+    )
+  })
+
+  it('стандартный отчёт идёт раньше расчёта по витринам', () => {
+    // Отчёт даёт те же числа, что человек видит на экране; свой расчёт обязан с
+    // ними сойтись, но проверить это может только он сам.
+    const both = ids({ kind: 'NONE' }, ['QUERY_TOTALS', 'RUN_REPORT'])
+
+    expect(both.indexOf('report')).toBeLessThan(both.indexOf('balances'))
+  })
+
   it('в панель влезает не больше четырёх', () => {
     expect(
       ids({ kind: 'DOCUMENT_LIST', typeCode: 'OperatsiyaBukh' }, [

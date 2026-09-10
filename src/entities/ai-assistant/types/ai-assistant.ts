@@ -11,12 +11,16 @@ import type { LlmProvider } from '@/entities/analytics'
 export type AiAssistantCapability =
   | 'SEARCH_DATA'
   | 'QUERY_TOTALS'
+  | 'READ_MOVEMENTS'
+  | 'RUN_REPORT'
+  | 'PRINT_DOCUMENT'
   | 'CREATE_DOCUMENT'
   | 'UPDATE_DOCUMENT'
   | 'POST_DOCUMENT'
   | 'UNPOST_DOCUMENT'
   | 'DELETE_DOCUMENT'
   | 'CREATE_DICTIONARY_ENTRY'
+  | 'UPDATE_DICTIONARY_ENTRY'
 
 /** Объект, поверх которого открыт помощник. Содержимое сервер читает сам. */
 export interface AiAssistantContext {
@@ -51,7 +55,7 @@ export interface AiAssistantBreakdownRow {
  * не меняют. `CREATE_DOCUMENT` уходит отдельным подтверждённым вызовом.
  */
 export interface AiAssistantAction {
-  kind: 'SHOW_ROWS' | 'OPEN_DOCUMENT' | 'CREATE_DOCUMENT'
+  kind: 'SHOW_ROWS' | 'OPEN_DOCUMENT' | 'PRINT_DOCUMENT' | 'CREATE_DOCUMENT'
   label?: string | null
   typeCode?: string | null
   entryId?: number | null

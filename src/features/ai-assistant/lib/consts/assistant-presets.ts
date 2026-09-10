@@ -51,6 +51,14 @@ const PRESETS: AssistantPreset[] = [
     requiresEntry: true,
   },
   {
+    id: 'movements',
+    labelKey: 'aiAssistant.presetMovements',
+    promptKey: 'aiAssistant.presetMovementsPrompt',
+    capability: 'READ_MOVEMENTS',
+    kinds: ['DOCUMENT'],
+    requiresEntry: true,
+  },
+  {
     // Самая частая просьба над открытым документом: «сделай такой же, но за другой
     // период». Помощник собирает её из чтения контекста и создания — отдельного
     // действия «копировать» у него нет.
@@ -116,6 +124,16 @@ const PRESETS: AssistantPreset[] = [
   },
 
   // --- ничего не открыто: вопросы, которым контекст не нужен
+  {
+    // Первым — именно стандартный отчёт: он даёт те же числа, что человек видит
+    // на экране, а расчёт по витринам ниже — свой, и сойтись с отчётом обязан,
+    // но проверить это может только сам человек.
+    id: 'report',
+    labelKey: 'aiAssistant.presetReport',
+    promptKey: 'aiAssistant.presetReportPrompt',
+    capability: 'RUN_REPORT',
+    kinds: ['NONE'],
+  },
   {
     id: 'balances',
     labelKey: 'aiAssistant.presetBalances',

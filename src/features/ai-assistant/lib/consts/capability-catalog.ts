@@ -37,6 +37,27 @@ export const READ_CAPABILITIES: CapabilityDescriptor[] = [
     hintKey: 'aiAssistant.capTotalsHint',
     exampleKey: 'aiAssistant.capTotalsExample',
   },
+  {
+    value: 'READ_MOVEMENTS',
+    labelKey: 'aiAssistant.capMovements',
+    hintKey: 'aiAssistant.capMovementsHint',
+    exampleKey: 'aiAssistant.capMovementsExample',
+  },
+  {
+    value: 'RUN_REPORT',
+    labelKey: 'aiAssistant.capReports',
+    hintKey: 'aiAssistant.capReportsHint',
+    exampleKey: 'aiAssistant.capReportsExample',
+  },
+  {
+    // Печать ничего не меняет и в модель ничего не отправляет — потому и в этой
+    // группе. Своя галочка всё равно есть: что помощнику позволено, решает
+    // организация, а не мы за неё.
+    value: 'PRINT_DOCUMENT',
+    labelKey: 'aiAssistant.capPrint',
+    hintKey: 'aiAssistant.capPrintHint',
+    exampleKey: 'aiAssistant.capPrintExample',
+  },
 ]
 
 export const WRITE_CAPABILITIES: CapabilityDescriptor[] = [
@@ -57,6 +78,12 @@ export const WRITE_CAPABILITIES: CapabilityDescriptor[] = [
     labelKey: 'aiAssistant.capCreateDictionary',
     hintKey: 'aiAssistant.capCreateDictionaryHint',
     exampleKey: 'aiAssistant.capCreateDictionaryExample',
+  },
+  {
+    value: 'UPDATE_DICTIONARY_ENTRY',
+    labelKey: 'aiAssistant.capUpdateDictionary',
+    hintKey: 'aiAssistant.capUpdateDictionaryHint',
+    exampleKey: 'aiAssistant.capUpdateDictionaryExample',
   },
   {
     value: 'POST_DOCUMENT',

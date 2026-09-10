@@ -26,7 +26,10 @@ export const AiDisclosurePanel = () => {
       <Typography variant="subtitle2">
         {t('aiAssistant.disclosureTitle')}
       </Typography>
-      <div className="grid gap-3 lg:grid-cols-2">
+      {/* Один столбец: панель стоит в узкой колонке справа, и два контура рядом
+          в ней ужимаются до нечитаемого. Друг под другом они всё так же
+          сравниваются — глазом сверху вниз. */}
+      <div className="grid gap-3">
         {disclosures.map((disclosure) => (
           <DisclosureCard key={disclosure.kind} disclosure={disclosure} />
         ))}

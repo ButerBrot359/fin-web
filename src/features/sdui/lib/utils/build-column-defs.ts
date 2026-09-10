@@ -186,6 +186,56 @@ export function verticalSubRows(
 }
 
 /**
+ * Вложенная ГОРИЗОНТАЛЬНАЯ подгруппа внутри вертикальной — эталон 1С
+ * ({@code ColumnGroup} c {@code <Group>Horizontal</Group>} внутри вертикальной
+ * группы). Одна под-строка делится на несколько ячеек в ряд: у «Аналитики
+ * затрат» Авансового отчёта это «Источник финансирования | ФКР» сверху и
+ * «Код платных услуг | Специфика» снизу — две под-строки по две ячейки, а не
+ * четыре подписи стопкой.
+ */
+function isHorizontalSubGroup(node: ViewNode): boolean {
+  if ((node.type as string) !== 'COLUMN_GROUP') return false
+  const orientation =
+    (node.props?.orientation as string | undefined) ?? 'HORIZONTAL'
+  return orientation === 'HORIZONTAL'
+}
+
+/**
+ * Ряд ячеек одной под-строки. Ширина делится поровну ({@code 1fr} с нулевым
+ * минимумом — длинное значение обрезается, а не растягивает соседа), между
+ * ячейками — вертикальная линия, как в сетке 1С.
+ */
+function horizontalSubCells(items: SubRowItem[]): ReactNode {
+  return createElement(
+    'div',
+    {
+      style: {
+        height: '100%',
+        display: 'grid',
+        gridTemplateColumns: `repeat(${String(items.length)}, minmax(0, 1fr))`,
+        alignItems: 'center',
+      },
+    },
+    ...items.map((item, index) =>
+      createElement(
+        'div',
+        {
+          key: item.key,
+          className: index > 0 ? 'border-l border-ui-03' : undefined,
+          style: {
+            minWidth: 0,
+            paddingLeft: index > 0 ? 8 : 0,
+            paddingRight: 8,
+            boxSizing: 'border-box' as const,
+          },
+        },
+        item.content
+      )
+    )
+  )
+}
+
+/**
  * Сколько под-строк у самой большой VERTICAL-группы поддерева. Ноль — если
  * вертикальных групп нет вовсе.
  *
@@ -367,15 +417,45 @@ function buildColumnDefsInner(
         // (frontend-spec-ipn-vertical-group-header.md §1).
         // Fallback на groupLabel — если все под-колонки скрыты или без подписей:
         // пустая шапка читалась бы как сломанная колонка.
-        const subLabels = visibleChildren
-          .map((child) => nodeToTableColumnDef(child))
-          .filter((col) => col.label !== '')
+        // Под-колонки под-строки: обычная колонка — она сама, вложенная
+        // ГОРИЗОНТАЛЬНАЯ подгруппа — её видимые дети в ряд (эталон 1С, см.
+        // isHorizontalSubGroup).
+        const subRowColumns = (child: ViewNode): TableColumnDef[] =>
+          isHorizontalSubGroup(child)
+            ? (child.children ?? [])
+                .filter((leaf) => leaf.props?.visible !== false)
+                .map((leaf) => nodeToTableColumnDef(leaf))
+            : [nodeToTableColumnDef(child)]
+
+        /** Под-строка: одна ячейка либо ряд ячеек вложенной подгруппы. */
+        const subRow = (
+          child: ViewNode,
+          render: (col: TableColumnDef) => ReactNode
+        ): SubRowItem => {
+          const cols = subRowColumns(child)
+          if (cols.length === 1) {
+            return { key: cols[0].id, content: render(cols[0]) }
+          }
+          return {
+            key: child.id,
+            content: horizontalSubCells(
+              cols.map((col) => ({ key: col.id, content: render(col) }))
+            ),
+          }
+        }
+
+        const subLabels = visibleChildren.filter((child) =>
+          subRowColumns(child).some((col) => col.label !== '')
+        )
 
         // Итоги под-колонок: слот на под-строку, null — итога нет. Порядок тот
         // же, что у шапки и ячейки (visibleChildren), поэтому итог встаёт под
-        // своим значением.
+        // своим значением. У вложенной подгруппы итога нет: подвал ТЧ адресует
+        // значения плоским ключом колонки, а под-строка тут делится на несколько.
         const footerKeys = visibleChildren.map((child) =>
-          child.props?.footer === true ? child.id : null
+          !isHorizontalSubGroup(child) && child.props?.footer === true
+            ? child.id
+            : null
         )
         const meta: SduiColumnMetaExtra = {
           verticalGroup: true,
@@ -394,10 +474,9 @@ function buildColumnDefsInner(
             subLabels.length > 0
               ? () =>
                   verticalSubRows(
-                    subLabels.map((col) => ({
-                      key: col.id,
-                      content: columnHeaderContent(col),
-                    })),
+                    subLabels.map((child) =>
+                      subRow(child, columnHeaderContent)
+                    ),
                     16,
                     true,
                     subRowCount
@@ -405,12 +484,10 @@ function buildColumnDefsInner(
               : () => createElement(ColumnHeaderLabel, { label: groupLabel }),
           cell: (info: CellContext<TableRow, unknown>) =>
             verticalSubRows(
-              visibleChildren.map((child) => {
-                const childCol = nodeToTableColumnDef(child)
-                const state = resolveCellState(childCol, info.row.original)
-                return {
-                  key: childCol.id,
-                  content: createElement(TableCellEditor, {
+              visibleChildren.map((child) =>
+                subRow(child, (childCol) => {
+                  const state = resolveCellState(childCol, info.row.original)
+                  return createElement(TableCellEditor, {
                     cellWidget: childCol.cellWidget,
                     dataType: childCol.dataType,
                     value: info.row.original[childCol.binding],
@@ -445,9 +522,9 @@ function buildColumnDefsInner(
                         childCol.binding
                       )
                     },
-                  }),
-                }
-              }),
+                  })
+                })
+              ),
               0,
               false,
               subRowCount

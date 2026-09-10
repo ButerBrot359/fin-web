@@ -1,8 +1,19 @@
 import type { FC } from 'react'
-import { Checkbox, IconButton, TextField, Typography } from '@mui/material'
+import {
+  Checkbox,
+  IconButton,
+  MenuItem,
+  TextField,
+  Typography,
+} from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import type { CustomizableNode } from '../lib/customize-form/collect-customizable-nodes'
+import {
+  WIDTH_STEPS,
+  stepToWidth,
+  widthToStep,
+} from '../lib/customize-form/width-steps'
 
 interface CustomizeFormRowProps {
   node: CustomizableNode
@@ -17,9 +28,10 @@ interface CustomizeFormRowProps {
 }
 
 /**
- * Строка диалога «Изменить форму»: видимость (чекбокс), порядок среди соседей
- * (стрелки), ширина поля (px, пусто = авто). Глифы стрелок текстовые — в
- * реестре иконок проекта их нет, а тянуть новые ради диалога незачем.
+ * Строка диалога «Изменить форму»: видимость (чекбокс), порядок среди
+ * соседей своей группы (стрелки) и ширина поля ИМЕНОВАННЫМИ ступенями —
+ * пиксели пользователю непонятны (решение владельца 11.09). Глифы стрелок
+ * текстовые — в реестре иконок проекта их нет.
  */
 export const CustomizeFormRow: FC<CustomizeFormRowProps> = ({
   node,
@@ -47,25 +59,25 @@ export const CustomizeFormRow: FC<CustomizeFormRowProps> = ({
       </Typography>
       {node.isField && (
         <TextField
+          select
+          hiddenLabel
           size="small"
-          type="number"
-          value={width ?? ''}
-          placeholder={t('sdui.customizeForm.widthAuto')}
+          value={widthToStep(width)}
           onChange={(e) => {
-            const parsed = Number(e.target.value)
-            onWidthChange(
-              e.target.value === '' || Number.isNaN(parsed) || parsed <= 0
-                ? undefined
-                : parsed
-            )
+            onWidthChange(stepToWidth(e.target.value as never))
           }}
           disabled={busy}
-          slotProps={{ htmlInput: { min: 100, max: 1200, step: 10 } }}
-          sx={{ width: 96 }}
+          sx={{ width: 128 }}
           aria-label={t('sdui.customizeForm.widthLabel', {
             label: node.label,
           })}
-        />
+        >
+          {WIDTH_STEPS.map((step) => (
+            <MenuItem key={step.key} value={step.key}>
+              {t(`sdui.customizeForm.widthSteps.${step.key}`)}
+            </MenuItem>
+          ))}
+        </TextField>
       )}
       <IconButton
         size="small"

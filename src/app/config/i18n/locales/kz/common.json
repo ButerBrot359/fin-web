@@ -823,13 +823,18 @@
       "save": "Сақтау",
       "cancel": "Болдырмау",
       "reset": "Баптауларды тастау",
-      "widthAuto": "авто",
       "widthLabel": "«{{label}}» өрісінің ені, px",
       "moveUp": "«{{label}}» жоғары жылжыту",
       "moveDown": "«{{label}}» төмен жылжыту",
       "export": "Экспорт",
       "import": "Импорт",
-      "importFailed": "Баптаулар файлын импорттау сәтсіз аяқталды"
+      "importFailed": "Баптаулар файлын импорттау сәтсіз аяқталды",
+      "widthSteps": {
+        "auto": "Авто",
+        "narrow": "Тар",
+        "medium": "Орташа",
+        "wide": "Кең"
+      }
     }
   },
   "tarifikatsiya": {

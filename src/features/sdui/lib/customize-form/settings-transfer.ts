@@ -12,21 +12,30 @@ const VIEW_SETTINGS_KIND = 'webbuh.view-settings'
 interface ViewSettingsFile {
   kind: typeof VIEW_SETTINGS_KIND
   screenKey: string
+  /** Человеческое название формы — для имени файла и понятности содержимого. */
+  title?: string
   exportedAt: string
   patch: ViewSettingsPatchEntry[]
 }
 
 export function downloadViewSettings(
   screenKey: string,
-  patch: ViewSettingsPatchEntry[]
+  patch: ViewSettingsPatchEntry[],
+  title?: string
 ): void {
   const file: ViewSettingsFile = {
     kind: VIEW_SETTINGS_KIND,
     screenKey,
+    title,
     exportedAt: new Date().toISOString(),
     patch,
   }
-  downloadJson(file, `view-settings-${sanitize(screenKey)}.json`)
+  // Имя файла — по названию страницы (решение владельца 11.09), технический
+  // screenKey — только фолбэк без заголовка.
+  const name = title?.trim()
+    ? `Настройки формы — ${sanitize(title)}.json`
+    : `Настройки формы — ${sanitize(screenKey)}.json`
+  downloadJson(file, name)
 }
 
 /**
@@ -61,5 +70,10 @@ export function downloadJson(payload: unknown, filename: string): void {
   URL.revokeObjectURL(url)
 }
 
+/** Убирает только недопустимое в именах файлов — кириллица и пробелы остаются. */
 const sanitize = (value: string): string =>
-  value.replace(/[^\w.-]+/g, '_').slice(0, 80)
+  value
+    .replace(/[\\/:*?"<>|\n\r]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80)

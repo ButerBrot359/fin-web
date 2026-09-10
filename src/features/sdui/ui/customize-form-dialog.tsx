@@ -4,6 +4,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Typography,
 } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -172,23 +173,30 @@ export const CustomizeFormDialog: FC = () => {
           </Typography>
         )}
         {rows.map((row, index) => (
-          <CustomizeFormRow
-            key={row.nodeId}
-            node={row}
-            hidden={hidden.has(row.nodeId)}
-            width={widths.get(row.nodeId)}
-            busy={busy}
-            {...siblingBounds(row, index)}
-            onToggle={() => {
-              toggle(row.nodeId)
-            }}
-            onMove={(direction) => {
-              move(row.nodeId, direction)
-            }}
-            onWidthChange={(width) => {
-              setWidths((current) => new Map(current).set(row.nodeId, width))
-            }}
-          />
+          <div key={row.nodeId} className="flex flex-col gap-1">
+            {/* Форма — сетка из групп (колонки, вкладки): двигать можно
+                только внутри своей группы, разделитель делает границы
+                групп видимыми (замечание владельца 11.09). */}
+            {index > 0 && rows[index - 1].parentId !== row.parentId && (
+              <Divider className="my-1" />
+            )}
+            <CustomizeFormRow
+              node={row}
+              hidden={hidden.has(row.nodeId)}
+              width={widths.get(row.nodeId)}
+              busy={busy}
+              {...siblingBounds(row, index)}
+              onToggle={() => {
+                toggle(row.nodeId)
+              }}
+              onMove={(direction) => {
+                move(row.nodeId, direction)
+              }}
+              onWidthChange={(width) => {
+                setWidths((current) => new Map(current).set(row.nodeId, width))
+              }}
+            />
+          </div>
         ))}
       </DialogContent>
       <DialogActions>
@@ -206,7 +214,11 @@ export const CustomizeFormDialog: FC = () => {
         <Button
           variant="tertiary"
           onClick={() => {
-            downloadViewSettings(screenKey ?? '', patch ?? [])
+            downloadViewSettings(
+              screenKey ?? '',
+              patch ?? [],
+              root?.props?.title as string | undefined
+            )
           }}
           disabled={busy || screenKey == null || patch == null}
         >

@@ -823,13 +823,18 @@
       "save": "Сохранить",
       "cancel": "Отмена",
       "reset": "Сбросить настройки",
-      "widthAuto": "авто",
       "widthLabel": "Ширина поля «{{label}}», px",
       "moveUp": "Переместить «{{label}}» вверх",
       "moveDown": "Переместить «{{label}}» вниз",
       "export": "Экспорт",
       "import": "Импорт",
-      "importFailed": "Не удалось импортировать файл настроек"
+      "importFailed": "Не удалось импортировать файл настроек",
+      "widthSteps": {
+        "auto": "Авто",
+        "narrow": "Узкая",
+        "medium": "Средняя",
+        "wide": "Широкая"
+      }
     }
   },
   "tarifikatsiya": {

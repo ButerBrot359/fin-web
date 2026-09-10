@@ -1,6 +1,7 @@
 import { useMutation, type UseMutationResult } from '@tanstack/react-query'
 
 import { analyticsApi } from '../../api/analytics-api'
+import { useAnalyticsOrganizationStore } from '../../model/organization-store'
 import type {
   AnalyticsGenerateRequest,
   AnalyticsGenerateResponse,
@@ -20,6 +21,9 @@ import type {
  * Ответ с `error` — это НЕ отказ мутации: бэкенд отвечает 200 и кладёт причину
  * в поле, чтобы вместе с ней вернуть `llmRequestId` для панели «Что ушло в ИИ».
  * Проверять `response.error` обязательно.
+ *
+ * Выбранная организация уходит и сюда: сервер проверяет и пробно выполняет SQL
+ * новой спецификации, и делать это надо на тех данных, которые человек смотрит.
  */
 export const useGenerateSpec = (): UseMutationResult<
   AnalyticsGenerateResponse,
@@ -28,5 +32,10 @@ export const useGenerateSpec = (): UseMutationResult<
 > =>
   useMutation({
     mutationFn: (request: AnalyticsGenerateRequest) =>
-      analyticsApi.generate(request),
+      analyticsApi.generate({
+        ...request,
+        organizationId:
+          request.organizationId ??
+          useAnalyticsOrganizationStore.getState().organizationId,
+      }),
   })

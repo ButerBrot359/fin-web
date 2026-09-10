@@ -4,6 +4,7 @@ import { Typography } from '@mui/material'
 
 import type { AnalyticsSpec } from '@/entities/analytics'
 import { DashboardGrid, WidgetGridItem } from '@/features/analytics-widgets'
+import { AnalyticsOrganizationSelect } from '@/features/analytics-organization'
 import {
   AnalyticsParamsPanel,
   expandParams,
@@ -88,7 +89,8 @@ export const DashboardView = ({
       )}
 
       {!compact && (
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <AnalyticsOrganizationSelect />
           <Button size="small" variant="secondary" onClick={handleRefresh}>
             {t('analytics.dashboard.refresh')}
           </Button>

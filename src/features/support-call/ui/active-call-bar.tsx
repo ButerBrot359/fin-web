@@ -9,6 +9,11 @@ import {
 } from '@livekit/components-react'
 import { Track } from 'livekit-client'
 import { useTranslation } from 'react-i18next'
+import { useState } from 'react'
+import {
+  useCallBarDrag,
+  type FloatingCallPosition,
+} from '../lib/use-call-bar-drag'
 
 import { callSounds } from '../lib/call-sounds'
 import { ScreenShareBadge } from './screen-share-badge'
@@ -27,6 +32,8 @@ interface ActiveCallBarProps {
   onRestore: () => void
   /** Объявить намерение положить трубку; соединение рвётся здесь же, следом. */
   onHangUp: () => void
+  position?: FloatingCallPosition | null
+  onPositionChange?: (position: FloatingCallPosition) => void
 }
 
 /**
@@ -45,23 +52,56 @@ export const ActiveCallBar = ({
   seconds,
   onRestore,
   onHangUp,
+  position,
+  onPositionChange,
 }: ActiveCallBarProps) => {
   const { t } = useTranslation()
   const peers = useRemoteParticipants()
   const mic = useTrackToggle({ source: Track.Source.Microphone })
   const room = useRoomContext()
+  const [localPosition, setLocalPosition] =
+    useState<FloatingCallPosition | null>(null)
+  const actualPosition = position === undefined ? localPosition : position
+  const { elementRef, isDragging, handleProps } = useCallBarDrag(
+    actualPosition,
+    onPositionChange ?? setLocalPosition
+  )
 
   const peerNames = peers.map((peer) => peer.name ?? peer.identity).join(', ')
 
   return (
     <Grow in appear>
       <div
+        ref={elementRef}
+        data-testid="active-call-bar"
+        style={{
+          ...(actualPosition
+            ? {
+                left: actualPosition.x,
+                top: actualPosition.y,
+                right: 'auto',
+                bottom: 'auto',
+              }
+            : {}),
+          maxWidth: 'calc(100vw - 16px)',
+          maxHeight: 'calc(100dvh - 16px)',
+          overflowY: 'auto',
+        }}
         className={cn(
           'fixed right-6 z-[1050] w-72 overflow-hidden rounded-[20px] bg-ui-01 shadow-popup',
           FLOATING_BOTTOM
         )}
       >
-        <div className="flex items-center gap-2 bg-ui-06 px-4 py-2.5 text-ui-01">
+        <div
+          {...handleProps}
+          data-testid="active-call-drag-handle"
+          style={{
+            touchAction: 'none',
+            userSelect: 'none',
+            cursor: isDragging ? 'grabbing' : 'grab',
+          }}
+          className="flex items-center gap-2 bg-ui-06 px-4 py-2.5 text-ui-01"
+        >
           <span className="relative flex h-2.5 w-2.5 shrink-0">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-01" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent-01" />

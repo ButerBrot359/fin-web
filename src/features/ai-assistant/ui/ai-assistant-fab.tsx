@@ -1,3 +1,4 @@
+import { WIDGET_LAUNCHER_CONFIG } from '@/shared/lib/widgets/widget-launchers'
 import { useTranslation } from 'react-i18next'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import { Tooltip } from '@mui/material'
@@ -27,7 +28,14 @@ export const AiAssistantFab = ({ onClick }: AiAssistantFabProps) => {
   const { t } = useTranslation()
 
   return (
-    <div className={cn('fixed right-6 z-[1050]', FLOATING_BOTTOM_SECOND)}>
+    <div
+      style={
+        WIDGET_LAUNCHER_CONFIG.showFloatingButtons
+          ? undefined
+          : { display: 'none' }
+      }
+      className={cn('fixed right-6 z-[1050]', FLOATING_BOTTOM_SECOND)}
+    >
       <Tooltip title={t('aiAssistant.open')} placement="left">
         <button
           type="button"

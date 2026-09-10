@@ -1,9 +1,13 @@
+import {
+  WIDGET_LAUNCHER_CONFIG,
+  SUPPORT_WIDGET_OPEN_EVENT,
+} from '@/shared/lib/widgets/widget-launchers'
 import HeadsetMicIcon from '@mui/icons-material/HeadsetMic'
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk'
 import SupportAgentIcon from '@mui/icons-material/SupportAgent'
 import { Tooltip } from '@mui/material'
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useAuthStore } from '@/features/auth/lib/hooks/use-auth-store'
@@ -60,7 +64,14 @@ const SupportFab = ({
   children: ReactNode
 }) => (
   <Tooltip title={label} placement="left">
-    <span className="relative inline-flex">
+    <span
+      className="relative inline-flex"
+      style={
+        WIDGET_LAUNCHER_CONFIG.showFloatingButtons
+          ? undefined
+          : { display: 'none' }
+      }
+    >
       {pulsing && (
         <span
           className={cn(
@@ -114,6 +125,19 @@ export const SupportCallWidget = () => {
   const restoreAvailable = Boolean(restored) && !session && !dismissedRestore
 
   const { mutate: endCall } = useEndSupportCall()
+
+  useEffect(() => {
+    const openWidget = () => {
+      if (!user || session) return
+      if (restoreAvailable && restored) setSession(restored)
+      else if (isAgent) setQueueOpen(true)
+      else setCallerOpen(true)
+    }
+    window.addEventListener(SUPPORT_WIDGET_OPEN_EVENT, openWidget)
+    return () => {
+      window.removeEventListener(SUPPORT_WIDGET_OPEN_EVENT, openWidget)
+    }
+  }, [user, session, restoreAvailable, restored, isAgent])
 
   if (!user) return null
 
@@ -184,6 +208,7 @@ export const SupportCallWidget = () => {
 
       {session && (
         <CallRoomDialog
+          key={session.callId}
           session={session}
           onClose={(byUser) => {
             // Разговор заканчивает тот, кто этого захотел: сервер закрывает обращение и

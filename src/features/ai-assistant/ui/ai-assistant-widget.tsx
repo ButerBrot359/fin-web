@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react'
+import { AI_WIDGET_OPEN_EVENT } from '@/shared/lib/widgets/widget-launchers'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -45,6 +46,17 @@ export const AiAssistantWidget = () => {
   const [minimized, setMinimized] = useState(false)
   const [enlarged, setEnlarged] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  useEffect(() => {
+    const openWidget = () => {
+      setOpen(true)
+      setMinimized(false)
+      setHelpOpen(false)
+    }
+    window.addEventListener(AI_WIDGET_OPEN_EVENT, openWidget)
+    return () => {
+      window.removeEventListener(AI_WIDGET_OPEN_EVENT, openWidget)
+    }
+  }, [])
   const context = useFormContext()
   const confirmAction = useConfirmAssistantAction()
   const printDocument = useAssistantPrint()

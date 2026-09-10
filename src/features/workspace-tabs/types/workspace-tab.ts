@@ -14,6 +14,7 @@ export type TabPageType =
   | 'account-plan-list'
   | 'account-card'
   | 'analytics'
+  | 'ai-history'
   | 'sdui-panel'
 
 export interface WorkspaceTab {

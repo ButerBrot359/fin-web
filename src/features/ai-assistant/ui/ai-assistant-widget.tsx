@@ -184,6 +184,14 @@ export const AiAssistantWidget = () => {
           confirmAction.isPending ||
           printDocument.isPending
         }
+        onOpenHistory={() => {
+          setOpen(false)
+          const query =
+            session.conversationId != null
+              ? `?conversationId=${String(session.conversationId)}`
+              : ''
+          void navigate(`/modules/${pageCode ?? 'Main'}/ai-history${query}`)
+        }}
         onClose={() => {
           setOpen(false)
           // Следующее открытие — снова диалог: кнопка внизу экрана обещает помощника,

@@ -27,3 +27,9 @@ export interface AiConversationMessagePage {
   nextBeforeId: number | null
   hasMore: boolean
 }
+
+export interface AiConversationPage {
+  conversations: AiConversation[]
+  nextBeforeId: number | null
+  hasMore: boolean
+}

@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import HistoryIcon from '@mui/icons-material/History'
+import { Button } from '@/shared/ui/buttons'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen'
 import CloseIcon from '@mui/icons-material/Close'
@@ -17,6 +19,7 @@ interface AssistantPanelHeaderProps {
   onToggleHelp: () => void
   onToggleSize: () => void
   onToggleMinimize: () => void
+  onOpenHistory?: () => void
   onClose: () => void
 }
 
@@ -38,6 +41,7 @@ export const AssistantPanelHeader = ({
   onToggleSize,
   onToggleMinimize,
   onClose,
+  onOpenHistory,
 }: AssistantPanelHeaderProps) => {
   const { t } = useTranslation()
 
@@ -60,6 +64,11 @@ export const AssistantPanelHeader = ({
       </Typography>
 
       <div className="flex shrink-0 items-center">
+        {!minimized && onOpenHistory && (
+          <Button variant="tertiary" onClick={onOpenHistory}>
+            <HistoryIcon fontSize="small" /> {t('aiAssistant.openHistory')}
+          </Button>
+        )}
         {/* В справке та же кнопка ведёт обратно: стрелка «назад» читается однозначно,
             а знак вопроса в положении «уже открыто» непонятно чем работает. Заголовок
             при этом меняется — вместе они говорят, где человек находится. */}

@@ -204,7 +204,8 @@ export const useAiConversations = (
 
 export const useAiConversationMessages = (
   conversationId: number | null,
-  enabled = true
+  enabled = true,
+  refetchOnMount = false
 ) => {
   const query = useInfiniteQuery({
     queryKey: [
@@ -222,7 +223,7 @@ export const useAiConversationMessages = (
     getNextPageParam: (page) => (page.hasMore ? page.nextBeforeId : undefined),
     enabled: enabled && conversationId != null,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount,
   })
   const messages = useMemo(
     () =>

@@ -5,6 +5,7 @@ import type { TabPageType } from '../../types/workspace-tab'
 // ModulePage не SDUI). Переезд типа SDUI-вкладок на response.tab.kind — после
 // shell-миграции (задача 7). Инфраструктура (mapKindToPageType/onTab) готова.
 const patterns: [RegExp, TabPageType][] = [
+  [/^\/modules\/[^/]+\/ai-history$/, 'ai-history'],
   [
     /^\/modules\/[^/]+\/document\/[^/]+\/[^/]+\/movements$/,
     'document-movements',

@@ -1186,6 +1186,7 @@
     }
   },
   "aiAssistant": {
+    "openHistory": "Тарих",
     "title": "ЖИ көмекші",
     "open": "ЖИ көмекшісін ашу",
     "context": "Контекст",

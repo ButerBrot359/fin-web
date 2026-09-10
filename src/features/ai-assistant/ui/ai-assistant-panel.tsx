@@ -42,6 +42,7 @@ interface AiAssistantPanelProps {
   isLoadingOlder?: boolean
   olderMessagesError?: boolean
   onLoadOlder?: () => void
+  onOpenHistory?: () => void
   onClose: () => void
   onToggleMinimize: () => void
   onSend: (question: string) => void
@@ -84,6 +85,7 @@ export const AiAssistantPanel = ({
   olderMessagesError = false,
   onLoadOlder,
   onClose,
+  onOpenHistory,
   onToggleMinimize,
   onSend,
   onAction,
@@ -134,6 +136,7 @@ export const AiAssistantPanel = ({
         onToggleSize={onToggleSize}
         onToggleMinimize={onToggleMinimize}
         onClose={onClose}
+        onOpenHistory={onOpenHistory}
       />
 
       {!minimized && helpOpen && (

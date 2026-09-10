@@ -12,6 +12,7 @@ import type {
 } from '../types/ai-assistant'
 import type {
   AiConversation,
+  AiConversationPage,
   AiConversationMessagePage,
 } from '../types/conversation'
 
@@ -97,6 +98,18 @@ export const aiAssistantApi = {
         params: context?.typeCode
           ? { contextType: context.typeCode, contextId: context.entryId }
           : undefined,
+        signal,
+      })
+      .then(unwrap),
+
+  getConversationPage: (
+    beforeId: number | null,
+    signal?: AbortSignal
+  ): Promise<AiConversationPage> =>
+    apiService
+      .get<ApiResponse<AiConversationPage>>({
+        url: `${BASE_URL}/conversations/page`,
+        params: { limit: 10, ...(beforeId != null ? { beforeId } : {}) },
         signal,
       })
       .then(unwrap),

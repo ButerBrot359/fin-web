@@ -77,6 +77,11 @@ const SduiCatchAllPage = lazy(() =>
     default: m.SduiCatchAllPage,
   }))
 )
+const AiAssistantHistoryPage = lazy(() =>
+  import('@/pages/ai-assistant-history').then((m) => ({
+    default: m.AiAssistantHistoryPage,
+  }))
+)
 const AnalyticsRouterPage = lazy(() =>
   import('@/pages/analytics/analytics-router').then((m) => ({
     default: m.AnalyticsRouterPage,
@@ -151,6 +156,10 @@ const AppRoutes = () => {
             Идёт до catch-all: тот подхватывает всё неизвестное и увёл бы раздел
             в SDUI-экран.
           */}
+          <Route
+            path="/modules/:pageCode/ai-history"
+            element={<AiAssistantHistoryPage />}
+          />
           <Route
             path="/modules/:pageCode/analytics/:code"
             element={<AnalyticsRouterPage />}

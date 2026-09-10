@@ -24,6 +24,9 @@ export type {
 } from './types/ai-assistant'
 export type {
   AiConversation,
+  AiConversationPage,
   AiConversationMessage,
   AiConversationMessagePage,
 } from './types/conversation'
+
+export { useAiConversationPages } from './lib/hooks/use-ai-conversation-pages'

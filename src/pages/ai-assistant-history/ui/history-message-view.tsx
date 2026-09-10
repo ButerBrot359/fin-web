@@ -1,18 +1,9 @@
-import { Fragment, useMemo } from 'react'
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Divider,
-  Stack,
-  Typography,
-} from '@mui/material'
+import { useMemo } from 'react'
+import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material'
 import { useAiConversationMessages } from '@/entities/ai-assistant'
-import { AssistantAnswerCard } from '@/features/ai-assistant/ui/assistant-answer-card'
+import { AssistantMessageTimeline } from '@/features/ai-assistant'
 import { restoreChatMessages } from '@/features/ai-assistant/lib/hooks/use-restored-assistant-session'
 import { useAssistantHistoryScroll } from '@/features/ai-assistant/lib/hooks/use-assistant-history-scroll'
-import { buildAssistantMessageTimeline } from '@/features/ai-assistant/lib/message-time'
 import type { HistoryCopy } from '../lib/history-copy'
 
 export function HistoryMessageView({
@@ -50,13 +41,14 @@ export function HistoryMessageView({
         flex: 1,
         minHeight: 0,
         overflowY: 'auto',
+        overflowX: 'hidden',
         overflowAnchor: 'none',
-        px: { xs: 1, md: 4 },
-        py: 3,
-        pb: { xs: 14, md: 3 },
+        px: 1.5,
+        pt: 1.5,
+        pb: 1.5,
       }}
     >
-      <Stack spacing={2.5} sx={{ maxWidth: 860, mx: 'auto' }}>
+      <div className="mx-auto flex w-full max-w-[860px] min-w-0 flex-col gap-3">
         {history.isLoading && (
           <Box textAlign="center">
             <CircularProgress size={24} aria-label={copy.loading} />
@@ -95,84 +87,13 @@ export function HistoryMessageView({
             {copy.noMessages}
           </Typography>
         )}
-        {buildAssistantMessageTimeline(messages, language).map(
-          ({ message, timestamp, startsDay }) => (
-            <Fragment key={message.id}>
-              {startsDay && (
-                <Divider sx={{ mb: 3, color: 'text.secondary', fontSize: 12 }}>
-                  {timestamp?.dayLabel}
-                </Divider>
-              )}
-              <Box
-                data-assistant-message-id={message.id}
-                sx={{
-                  minWidth: 0,
-                  ml: message.role === 'USER' ? { xs: 0, sm: 10 } : 0,
-                  mr: message.role === 'ASSISTANT' ? { xs: 0, sm: 4 } : 0,
-                }}
-              >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  mb={0.75}
-                  gap={1}
-                >
-                  <Typography variant="caption" fontWeight={600}>
-                    {message.role === 'USER' ? copy.user : copy.assistant}
-                  </Typography>
-                  {timestamp ? (
-                    <Typography
-                      component="time"
-                      dateTime={timestamp.dateTime}
-                      title={timestamp.title}
-                      variant="caption"
-                      color="text.secondary"
-                    >
-                      {timestamp.time}
-                    </Typography>
-                  ) : (
-                    <Typography variant="caption" color="text.secondary">
-                      {copy.unknownTime}
-                    </Typography>
-                  )}
-                </Stack>
-                {message.answer ? (
-                  <AssistantAnswerCard
-                    answer={message.answer}
-                    disabled
-                    onAction={() => undefined}
-                    onOpenDocument={onOpenDocument}
-                  />
-                ) : (
-                  <Box
-                    sx={{
-                      p: { xs: 1.5, sm: 2 },
-                      borderRadius: 3,
-                      bgcolor:
-                        message.role === 'USER'
-                          ? 'action.selected'
-                          : 'action.hover',
-                      overflowWrap: 'anywhere',
-                      whiteSpace: 'pre-wrap',
-                    }}
-                  >
-                    <Typography variant="body2">{message.text}</Typography>
-                  </Box>
-                )}
-                {message.error && (
-                  <Alert
-                    severity="error"
-                    sx={{ mt: 1, overflowWrap: 'anywhere' }}
-                  >
-                    {message.error}
-                  </Alert>
-                )}
-              </Box>
-            </Fragment>
-          )
-        )}
-      </Stack>
+        <AssistantMessageTimeline
+          messages={messages}
+          language={language}
+          disabled
+          onOpenDocument={onOpenDocument}
+        />
+      </div>
     </Box>
   )
 }

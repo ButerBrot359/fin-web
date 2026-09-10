@@ -111,6 +111,12 @@ for (const mobile of [false, true]) {
       page.getByTestId('history-messages').locator('time').last()
     ).toHaveText('10:25')
     const scroller = page.getByTestId('history-messages')
+    await expect(
+      scroller.locator('[data-assistant-message-id="stored-2525"] time[title]')
+    ).toHaveCSS('text-align', 'right')
+    await expect(
+      scroller.locator('[data-assistant-message-id="stored-2524"] time[title]')
+    ).toHaveCSS('text-align', 'left')
     for (const count of [20, 25]) {
       const anchor = await page.evaluate<{ id: string; offset: number }>(
         "(() => { const el = document.querySelector('[data-testid=history-messages]'); el.scrollTop = 50; const top = el.getBoundingClientRect().top; const row = [...el.querySelectorAll('[data-assistant-message-id]')].find(row => row.getBoundingClientRect().bottom > top); return {id: row.dataset.assistantMessageId, offset: row.getBoundingClientRect().top - top}; })()"
@@ -221,4 +227,68 @@ test('widget History button opens the full history without invoking the model', 
     page.getByRole('button', { name: 'История', exact: true })
   ).toHaveCount(0)
   expect(modelCalls).toEqual([])
+})
+
+test('history and live panel share message alignment and bubble styles', async ({
+  page,
+}) => {
+  await fixture(page)
+  await page.route('**/api/ai-assistant/settings', (intercepted) =>
+    intercepted.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: { enabled: true, capabilities: [] },
+        success: true,
+      }),
+    })
+  )
+  await page.route('**/api/ai-assistant/conversations', (intercepted) =>
+    intercepted.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: [
+          {
+            id: 25,
+            title: 'Диалог 25',
+            contextType: null,
+            contextId: null,
+            createdAt: '2026-09-10T10:00:00+05:00',
+          },
+        ],
+        success: true,
+      }),
+    })
+  )
+  await page.goto(route + '?conversationId=25')
+  await expect(messageRows(page)).toHaveCount(10)
+  const user = page
+    .getByTestId('history-messages')
+    .locator('[data-assistant-message-id="stored-2525"]')
+  const assistant = page
+    .getByTestId('history-messages')
+    .locator('[data-assistant-message-id="stored-2524"]')
+  await expect(user.locator('time[title]')).toHaveCSS('text-align', 'right')
+  await expect(assistant.locator('time[title]')).toHaveCSS('text-align', 'left')
+  const rowBox = await user.boundingBox()
+  const bubbleBox = await user.locator('.bg-ui-04').boundingBox()
+  expect(bubbleBox!.x).toBeGreaterThan(rowBox!.x)
+  expect(
+    Math.abs(bubbleBox!.x + bubbleBox!.width - rowBox!.x - rowBox!.width)
+  ).toBeLessThanOrEqual(1)
+  const assistantBox = await assistant.locator('.bg-ui-02').boundingBox()
+  expect(Math.abs(assistantBox!.x - rowBox!.x)).toBeLessThanOrEqual(1)
+  await page
+    .getByRole('button', { name: 'Открыть ИИ-помощника', exact: true })
+    .click()
+  await expect(
+    page.locator('[data-assistant-message-id="stored-2525"]')
+  ).toHaveCount(2)
+  const sameStyles = await page.evaluate<string[][]>(`(() => {
+    const pick = el => { const s = getComputedStyle(el); const text = getComputedStyle(el.querySelector('p')); return [s.backgroundColor,s.borderRadius,s.paddingTop,s.paddingRight,s.paddingBottom,s.paddingLeft,text.fontSize,text.fontFamily,text.fontWeight,text.lineHeight,text.color].join('|'); };
+    return [['stored-2525','.bg-ui-04'],['stored-2524','.bg-ui-02']].map(([id,selector]) => {
+      const rows = [...document.querySelectorAll('[data-assistant-message-id="'+id+'"]')];
+      return rows.map(row => pick(row.querySelector(selector)));
+    });
+  })()`)
+  for (const pair of sameStyles) expect(pair[0]).toBe(pair[1])
 })

@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
@@ -13,8 +13,7 @@ import { cn } from '@/shared/lib/utils/cn'
 
 import type { AssistantChatMessage } from '../lib/hooks/use-assistant-session'
 import { useAssistantHistoryScroll } from '../lib/hooks/use-assistant-history-scroll'
-import { buildAssistantMessageTimeline } from '../lib/message-time'
-import { AssistantAnswerCard } from './assistant-answer-card'
+import { AssistantMessageTimeline } from './assistant-message-timeline'
 import { AssistantComposer } from './assistant-composer'
 import { AssistantContextBar } from './assistant-context-bar'
 import { AssistantHelp } from './assistant-help'
@@ -92,10 +91,6 @@ export const AiAssistantPanel = ({
   onOpenDocument,
 }: AiAssistantPanelProps) => {
   const { t, i18n } = useTranslation()
-  const timeline = useMemo(
-    () => buildAssistantMessageTimeline(messages, i18n.language),
-    [messages, i18n.language]
-  )
   const messageIds = useMemo(
     () => messages.map((message) => message.id),
     [messages]
@@ -198,82 +193,13 @@ export const AiAssistantPanel = ({
               </Typography>
             )}
 
-            {timeline.map(({ message, timestamp, startsDay }) => (
-              <Fragment key={message.id}>
-                {startsDay && timestamp && (
-                  <div
-                    role="separator"
-                    aria-label={timestamp.dayLabel}
-                    className="flex justify-center py-1 text-xs text-ui-05"
-                  >
-                    <time dateTime={timestamp.dayKey}>
-                      {timestamp.dayLabel}
-                    </time>
-                  </div>
-                )}
-                <div data-assistant-message-id={message.id} className="min-w-0">
-                  {message.role === 'USER' ? (
-                    <div className="flex min-w-0 justify-end">
-                      <div className="min-w-0 max-w-[85%] rounded-lg bg-ui-04 px-3 py-2">
-                        <Typography
-                          variant="body2"
-                          className="break-words whitespace-pre-wrap text-ui-06"
-                        >
-                          {message.text}
-                        </Typography>
-                      </div>
-                    </div>
-                  ) : message.error ? (
-                    <div
-                      key={message.id}
-                      className="min-w-0 rounded-lg bg-ui-02 p-3 outline outline-support-01"
-                    >
-                      <Typography
-                        variant="body2"
-                        className="break-words text-ui-06"
-                      >
-                        {message.error}
-                      </Typography>
-                    </div>
-                  ) : message.answer ? (
-                    <AssistantAnswerCard
-                      key={message.id}
-                      answer={message.answer}
-                      disabled={isPending || historyLoading || historyError}
-                      onOpenDocument={onOpenDocument}
-                      onAction={(index) => {
-                        const action = message.answer?.actions[index]
-                        if (action) onAction(action)
-                      }}
-                    />
-                  ) : (
-                    <div
-                      key={message.id}
-                      className="min-w-0 rounded-lg bg-ui-02 p-3"
-                    >
-                      <Typography
-                        variant="body2"
-                        className="break-words whitespace-pre-wrap text-ui-06"
-                      >
-                        {message.text}
-                      </Typography>
-                    </div>
-                  )}
-                  {timestamp && (
-                    <time
-                      dateTime={timestamp.dateTime}
-                      title={timestamp.title}
-                      className={cn(
-                        'mt-1 block text-[11px] leading-4 text-ui-05',
-                        message.role === 'USER' ? 'text-right' : 'text-left'
-                      )}
-                    >
-                      {timestamp.time}
-                    </time>
-                  )}
-                </div>
-              </Fragment>
-            ))}
+            <AssistantMessageTimeline
+              messages={messages}
+              language={i18n.language}
+              disabled={isPending || historyLoading || historyError}
+              onAction={onAction}
+              onOpenDocument={onOpenDocument}
+            />
 
             {isPending && (
               <Typography variant="body2" className="text-ui-05">

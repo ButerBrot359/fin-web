@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState, type FC } from 'react'
+import { useMemo, useRef, useState, type FC } from 'react'
 import {
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   Typography,
 } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -23,20 +22,24 @@ import {
   type CustomizableNode,
   type NodeDecision,
 } from '../lib/customize-form/collect-customizable-nodes'
+import { buildPreviewModel } from '../lib/customize-form/build-preview-model'
 import {
   downloadViewSettings,
   parseViewSettingsFile,
 } from '../lib/customize-form/settings-transfer'
 import { useTreeStore } from '../lib/stores/tree-store'
+import { CustomizeFormPreview } from './customize-form-preview'
 import { CustomizeFormRow } from './customize-form-row'
 
 const settingsKey = (screenKey: string) => ['view-settings', screenKey] as const
 
 /**
- * Диалог «Ещё → Изменить форму» (конструктор дизайна Ф4, v2): видимость,
- * порядок среди соседей и ширина полей текущего экрана + экспорт/импорт
- * настроек файлом. Generic — строится по дереву с провода, конкретных форм
- * не знает. Патч накладывает бэк; после сохранения — re-OPEN через шину.
+ * Диалог «Ещё → Изменить форму» (конструктор дизайна Ф4, v3 — живое превью,
+ * решение владельца 11.09): схема реальной сетки формы, клик по плашке
+ * выбирает элемент, панель под превью — скрыть/ширина ступенями/двигать в
+ * своей группе; каждое действие сразу видно на схеме. Сброс возвращает к
+ * серверному дефолту (его задаёт админ — Ф5). Патч накладывает бэк; после
+ * сохранения — re-OPEN через шину.
  */
 export const CustomizeFormDialog: FC = () => {
   const { t } = useTranslation()
@@ -59,18 +62,26 @@ export const CustomizeFormDialog: FC = () => {
   const [widths, setWidths] = useState<Map<string, number | undefined>>(
     new Map()
   )
-
-  useEffect(() => {
-    if (!isOpen || patch == null) return
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Снимок, из которого заполнено состояние: перезаполняем на открытии/приходе
+  // патча, не перетирая правки внутри диалога. Подстройка во время рендера.
+  const [seededFrom, setSeededFrom] = useState<unknown>(null)
+  if (isOpen && patch != null && seededFrom !== patch) {
+    setSeededFrom(patch)
     const collected = collectCustomizableNodes(root, patch)
     setOriginalRows(collected)
     setRows(collected)
     setHidden(new Set(collected.filter((n) => !n.visible).map((n) => n.nodeId)))
     setWidths(new Map(collected.map((n) => [n.nodeId, n.width])))
-    // Пересобираем состояние только на открытии/приходе патча: правки
-    // пользователя внутри открытого диалога перетирать нельзя.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, patch])
+    setSelectedId(null)
+  }
+
+  const previewModel = useMemo(
+    () => buildPreviewModel(root, rows),
+    [root, rows]
+  )
+  const selectedRow = rows.find((r) => r.nodeId === selectedId) ?? null
+  const selectedIndex = rows.findIndex((r) => r.nodeId === selectedId)
 
   const finish = async () => {
     if (screenKey != null) {
@@ -111,7 +122,7 @@ export const CustomizeFormDialog: FC = () => {
     })
   }
 
-  /** Перестановка с соседом ТОГО ЖЕ родителя — порядок меняется внутри группы. */
+  /** Перестановка с соседом ТОЙ ЖЕ группы — превью показывает результат сразу. */
   const move = (nodeId: string, direction: -1 | 1) => {
     setRows((current) => {
       const index = current.findIndex((r) => r.nodeId === nodeId)
@@ -132,11 +143,10 @@ export const CustomizeFormDialog: FC = () => {
     })
   }
 
-  const siblingBounds = (row: CustomizableNode, index: number) => {
-    const before = rows.slice(0, index).some((r) => r.parentId === row.parentId)
-    const after = rows.slice(index + 1).some((r) => r.parentId === row.parentId)
-    return { canMoveUp: before, canMoveDown: after }
-  }
+  const siblingBounds = (row: CustomizableNode, index: number) => ({
+    canMoveUp: rows.slice(0, index).some((r) => r.parentId === row.parentId),
+    canMoveDown: rows.slice(index + 1).some((r) => r.parentId === row.parentId),
+  })
 
   const importFile = async (file: File) => {
     try {
@@ -159,45 +169,53 @@ export const CustomizeFormDialog: FC = () => {
     <Dialog
       open={isOpen}
       onClose={busy ? undefined : close}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
     >
       <DialogTitle>{t('sdui.customizeForm.title')}</DialogTitle>
-      <DialogContent className="flex flex-col gap-1">
-        <Typography variant="body2" className="pb-2">
-          {t('sdui.customizeForm.description')}
+      <DialogContent className="flex flex-col gap-3">
+        <Typography variant="body2">
+          {t('sdui.customizeForm.previewHint')}
         </Typography>
-        {rows.length === 0 && (
+        {previewModel ? (
+          <CustomizeFormPreview
+            model={previewModel}
+            selectedId={selectedId}
+            hidden={hidden}
+            widths={widths}
+            onSelect={setSelectedId}
+          />
+        ) : (
           <Typography variant="body2">
             {t('sdui.customizeForm.empty')}
           </Typography>
         )}
-        {rows.map((row, index) => (
-          <div key={row.nodeId} className="flex flex-col gap-1">
-            {/* Форма — сетка из групп (колонки, вкладки): двигать можно
-                только внутри своей группы, разделитель делает границы
-                групп видимыми (замечание владельца 11.09). */}
-            {index > 0 && rows[index - 1].parentId !== row.parentId && (
-              <Divider className="my-1" />
-            )}
+        <div className="border-ui-03 min-h-14 rounded-lg border px-3 py-2">
+          {selectedRow ? (
             <CustomizeFormRow
-              node={row}
-              hidden={hidden.has(row.nodeId)}
-              width={widths.get(row.nodeId)}
+              node={selectedRow}
+              hidden={hidden.has(selectedRow.nodeId)}
+              width={widths.get(selectedRow.nodeId)}
               busy={busy}
-              {...siblingBounds(row, index)}
+              {...siblingBounds(selectedRow, selectedIndex)}
               onToggle={() => {
-                toggle(row.nodeId)
+                toggle(selectedRow.nodeId)
               }}
               onMove={(direction) => {
-                move(row.nodeId, direction)
+                move(selectedRow.nodeId, direction)
               }}
               onWidthChange={(width) => {
-                setWidths((current) => new Map(current).set(row.nodeId, width))
+                setWidths((current) =>
+                  new Map(current).set(selectedRow.nodeId, width)
+                )
               }}
             />
-          </div>
-        ))}
+          ) : (
+            <Typography variant="body2" className="text-ui-05 py-2">
+              {t('sdui.customizeForm.selectHint')}
+            </Typography>
+          )}
+        </div>
       </DialogContent>
       <DialogActions>
         <input

@@ -14,6 +14,16 @@ import { allTokens } from './tokens'
 const knownCssVarByKey = (): Map<string, string> =>
   new Map(allTokens().map((t) => [t.cssVar.replace(/^--/, ''), t.cssVar]))
 
+/**
+ * Специальный ключ темы «масштаб интерфейса» (запрос владельца 10.09:
+ * «размер шрифтов во всём приложении»). Не CSS-переменная: раскладка проекта
+ * почти вся в px, поэтому честный способ укрупнить шрифты вместе с
+ * контейнерами — zoom на корне. Значение — множитель строкой («1.1»).
+ */
+export const UI_SCALE_TOKEN = 'ui-scale'
+const UI_SCALE_MIN = 0.8
+const UI_SCALE_MAX = 1.5
+
 let appliedCssVars: string[] = []
 
 export function applyServerTheme(tokens: Record<string, string>): void {
@@ -22,16 +32,34 @@ export function applyServerTheme(tokens: Record<string, string>): void {
   const applied: string[] = []
 
   for (const [key, value] of Object.entries(tokens)) {
+    if (typeof value !== 'string') continue
+    if (key === UI_SCALE_TOKEN) {
+      applyUiScale(root, value)
+      continue
+    }
     const cssVar = known.get(key)
-    if (!cssVar || typeof value !== 'string') continue
+    if (!cssVar) continue
     root.style.setProperty(cssVar, value)
     applied.push(cssVar)
   }
 
+  if (!(UI_SCALE_TOKEN in tokens)) {
+    root.style.removeProperty('zoom')
+  }
   for (const cssVar of appliedCssVars) {
     if (!applied.includes(cssVar)) {
       root.style.removeProperty(cssVar)
     }
   }
   appliedCssVars = applied
+}
+
+function applyUiScale(root: HTMLElement, raw: string): void {
+  const parsed = Number(raw)
+  if (Number.isNaN(parsed)) {
+    root.style.removeProperty('zoom')
+    return
+  }
+  const clamped = Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, parsed))
+  root.style.setProperty('zoom', String(clamped))
 }

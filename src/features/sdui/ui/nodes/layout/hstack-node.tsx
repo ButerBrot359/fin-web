@@ -5,6 +5,7 @@ import { cssVar, semantic } from '@/shared/design/tokens'
 import type { NodeProps } from '../../../types/view'
 import { NodeRenderer } from '../../node-renderer'
 import { isNodeVisible } from '../../../lib/utils/node-visibility'
+import { fieldWidth } from '../../../lib/utils/field-node-types'
 import { resolveStackGap } from '../../../lib/utils/resolve-stack-gap'
 import {
   FILL_METHOD_SETTINGS_NODE_ID,
@@ -52,7 +53,12 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
         <div
           key={c.id}
           style={{
-            flex: (c.props?.flex as number | string | undefined) ?? '1 1 0%',
+            // Пер-пользовательская ширина поля (конструктор дизайна): фиксированная
+            // колонка вместо равного деления. Без пропа — прежнее поведение.
+            flex:
+              fieldWidth(c) !== undefined
+                ? `0 0 ${String(fieldWidth(c))}px`
+                : ((c.props?.flex as number | string | undefined) ?? '1 1 0%'),
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',

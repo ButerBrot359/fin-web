@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import type { ViewNode } from '../../types/view'
 import {
+  assignOrders,
   buildPatchFromDecisions,
   collectCustomizableNodes,
+  type NodeDecision,
 } from './collect-customizable-nodes'
 
 const node = (
@@ -24,10 +26,17 @@ const tree = node('page', 'PAGE', {}, [
 ])
 
 describe('collectCustomizableNodes', () => {
-  it('собирает поля с подписью, пропуская кнопки и безымянные ноды', () => {
+  it('собирает поля с подписью, родителем и индексом; кнопки и безымянные — мимо', () => {
     const nodes = collectCustomizableNodes(tree, [])
 
     expect(nodes.map((n) => n.nodeId)).toEqual(['field.org', 'field.comment'])
+    expect(nodes[0]).toMatchObject({
+      parentId: 'stack',
+      childIndex: 0,
+      isField: true,
+      width: undefined,
+    })
+    expect(nodes[1].childIndex).toBe(1)
   })
 
   it('скрытая сервером нода не предлагается — чужое скрытие не раскрыть', () => {
@@ -51,15 +60,18 @@ describe('collectCustomizableNodes', () => {
 })
 
 describe('buildPatchFromDecisions', () => {
-  it('скрытие добавляет visible:false, чужие пропы записи сохраняются', () => {
+  it('скрытие и ширина попадают в запись, чужие пропы сохраняются', () => {
     const patch = buildPatchFromDecisions(
-      [{ nodeId: 'panel', props: { width: 900 } }],
-      new Set(['panel', 'field.comment'])
+      [{ nodeId: 'panel', props: { gap: 4 } }],
+      new Map<string, NodeDecision>([
+        ['panel', { hidden: true, width: 300 }],
+        ['field.comment', { hidden: true }],
+      ])
     )
 
     expect(patch).toContainEqual({
       nodeId: 'panel',
-      props: { width: 900, visible: false },
+      props: { gap: 4, visible: false, width: 300 },
     })
     expect(patch).toContainEqual({
       nodeId: 'field.comment',
@@ -67,15 +79,54 @@ describe('buildPatchFromDecisions', () => {
     })
   })
 
-  it('показ обратно убирает visible, пустая запись выбрасывается', () => {
+  it('показ обратно и сброс ширины чистят пропы; пустая запись выбрасывается', () => {
     const patch = buildPatchFromDecisions(
       [
-        { nodeId: 'field.comment', props: { visible: false } },
-        { nodeId: 'panel', props: { visible: false, width: 900 } },
+        { nodeId: 'field.comment', props: { visible: false, width: 200 } },
+        { nodeId: 'panel', props: { visible: false, gap: 2 } },
       ],
-      new Set()
+      new Map<string, NodeDecision>([
+        ['field.comment', { hidden: false }],
+        ['panel', { hidden: false }],
+      ])
     )
 
-    expect(patch).toEqual([{ nodeId: 'panel', props: { width: 900 } }])
+    expect(patch).toEqual([{ nodeId: 'panel', props: { gap: 2 } }])
+  })
+
+  it('order нетронутого родителя переживает сохранение', () => {
+    const patch = buildPatchFromDecisions(
+      [{ nodeId: 'field.org', props: { order: 3 } }],
+      new Map<string, NodeDecision>([['field.org', { hidden: false }]])
+    )
+
+    expect(patch).toEqual([{ nodeId: 'field.org', props: { order: 3 } }])
+  })
+})
+
+describe('assignOrders', () => {
+  it('переставленный родитель получает order по исходным слотам группы', () => {
+    const rows = collectCustomizableNodes(tree, [])
+    const arranged = [rows[1], rows[0]]
+    const decisions = new Map<string, NodeDecision>(
+      rows.map((r) => [r.nodeId, { hidden: false }])
+    )
+
+    assignOrders(rows, arranged, decisions)
+
+    expect(decisions.get('field.comment')?.order).toBe(0)
+    expect(decisions.get('field.org')?.order).toBe(1)
+  })
+
+  it('нетронутый родитель не получает order вовсе', () => {
+    const rows = collectCustomizableNodes(tree, [])
+    const decisions = new Map<string, NodeDecision>(
+      rows.map((r) => [r.nodeId, { hidden: false }])
+    )
+
+    assignOrders(rows, rows, decisions)
+
+    expect(decisions.get('field.org')?.order).toBeUndefined()
+    expect(decisions.get('field.comment')?.order).toBeUndefined()
   })
 })

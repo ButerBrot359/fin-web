@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import FaceIcon from '@mui/icons-material/Face'
 import LogoutIcon from '@mui/icons-material/Logout'
+import PaletteIcon from '@mui/icons-material/Palette'
 import {
   ListItemIcon,
   ListItemText,
@@ -14,6 +15,7 @@ import {
 
 import { LOGIN_ROUTE, useAuthStore } from '@/features/auth'
 import { FacePhotoDialog } from '@/features/face-auth'
+import { ThemeSettingsDialog } from '@/features/theme-settings'
 import UserIcon from '@/shared/assets/icons/user.svg'
 import { Button } from '@/shared/ui/buttons'
 
@@ -33,6 +35,7 @@ export const TopBarUser = () => {
   // Якорь меню — в состоянии, а не в ref: значение читается во время рендера.
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null)
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false)
+  const [themeDialogOpen, setThemeDialogOpen] = useState(false)
 
   if (!user) {
     return (
@@ -98,6 +101,18 @@ export const TopBarUser = () => {
 
         <MenuItem
           onClick={() => {
+            setAnchorElement(null)
+            setThemeDialogOpen(true)
+          }}
+        >
+          <ListItemIcon>
+            <PaletteIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t('themeSettings.menuItem')}</ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
             void handleLogout()
           }}
         >
@@ -113,6 +128,13 @@ export const TopBarUser = () => {
         userId={user.id}
         onClose={() => {
           setPhotoDialogOpen(false)
+        }}
+      />
+
+      <ThemeSettingsDialog
+        open={themeDialogOpen}
+        onClose={() => {
+          setThemeDialogOpen(false)
         }}
       />
     </>

@@ -93,6 +93,11 @@ export const NotificationCenterPanel: FC<{ onNavigate: () => void }> = ({
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <Typography variant="body2" className="text-ui-05">
+                  {(r.count ?? 1) > 1 && (
+                    <span className="mr-1 font-bold text-ui-06">
+                      ×{String(r.count)}
+                    </span>
+                  )}
                   {formatTime(r.at)}
                 </Typography>
                 {r.level === 'error' && (

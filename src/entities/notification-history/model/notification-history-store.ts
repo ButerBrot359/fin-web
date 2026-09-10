@@ -13,6 +13,12 @@ export interface NotificationRecord {
   route: string | null
   /** Момент показа (epoch ms). */
   at: number
+  /**
+   * Сколько раз подряд пришла та же всплывашка. Повторы одного и того же
+   * сообщения (например, четыре попытки записи с «Документ изменён другим
+   * пользователем») склеиваются в одну строку со счётчиком, а не множат историю.
+   */
+  count?: number
 }
 
 const HISTORY_LIMIT = 100
@@ -20,12 +26,24 @@ const HISTORY_LIMIT = 100
 interface NotificationHistoryState {
   records: NotificationRecord[]
   unread: number
-  add: (record: Omit<NotificationRecord, 'id'>) => void
+  add: (record: Omit<NotificationRecord, 'id' | 'count'>) => void
   markAllRead: () => void
   clear: () => void
 }
 
 let nextId = 1
+
+function isSameMessage(
+  a: Omit<NotificationRecord, 'id'>,
+  b: Omit<NotificationRecord, 'id' | 'count'>
+): boolean {
+  return (
+    a.level === b.level &&
+    a.title === b.title &&
+    (a.description ?? null) === (b.description ?? null) &&
+    a.route === b.route
+  )
+}
 
 export const useNotificationHistoryStore = create<NotificationHistoryState>(
   (set) => ({
@@ -33,13 +51,25 @@ export const useNotificationHistoryStore = create<NotificationHistoryState>(
     unread: 0,
 
     add: (record) => {
-      set((s) => ({
-        records: [{ ...record, id: nextId++ }, ...s.records].slice(
-          0,
-          HISTORY_LIMIT
-        ),
-        unread: s.unread + 1,
-      }))
+      set((s) => {
+        const last = s.records.at(0)
+        if (last && isSameMessage(last, record)) {
+          return {
+            records: [
+              { ...last, at: record.at, count: (last.count ?? 1) + 1 },
+              ...s.records.slice(1),
+            ],
+            unread: s.unread + 1,
+          }
+        }
+        return {
+          records: [{ ...record, id: nextId++, count: 1 }, ...s.records].slice(
+            0,
+            HISTORY_LIMIT
+          ),
+          unread: s.unread + 1,
+        }
+      })
     },
 
     markAllRead: () => {

@@ -35,7 +35,7 @@ describe('GridNode (грид-модель шапки)', () => {
 
     expect(getByTestId('a').parentElement!.style.gridColumn).toBe('span 12')
     expect(getByTestId('b').parentElement!.style.gridColumn).toBe('1 / span 6')
-    expect(getByTestId('c').parentElement!.style.gridColumn).toBe('span 24')
+    expect(getByTestId('c').parentElement!.style.gridColumn).toBe('span 1')
   })
 
   it('кламп colSpan к числу колонок, раздельные row/column gap', () => {

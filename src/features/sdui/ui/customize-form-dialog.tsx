@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState, type FC } from 'react'
+import { useRef, useState, type FC } from 'react'
 import {
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
@@ -22,24 +23,31 @@ import {
   type CustomizableNode,
   type NodeDecision,
 } from '../lib/customize-form/collect-customizable-nodes'
+import {
+  cloneZones,
+  extractGridZones,
+  zoneDecisions,
+  type GridZone,
+} from '../lib/customize-form/grid-zones'
 import { buildPreviewModel } from '../lib/customize-form/build-preview-model'
 import {
   downloadViewSettings,
   parseViewSettingsFile,
 } from '../lib/customize-form/settings-transfer'
 import { useTreeStore } from '../lib/stores/tree-store'
+import { CustomizeFormGridEditor } from './customize-form-grid-editor'
 import { CustomizeFormPreview } from './customize-form-preview'
 import { CustomizeFormRow } from './customize-form-row'
 
 const settingsKey = (screenKey: string) => ['view-settings', screenKey] as const
 
 /**
- * Диалог «Ещё → Изменить форму» (конструктор дизайна Ф4, v3 — живое превью,
- * решение владельца 11.09): схема реальной сетки формы, клик по плашке
- * выбирает элемент, панель под превью — скрыть/ширина ступенями/двигать в
- * своей группе; каждое действие сразу видно на схеме. Сброс возвращает к
- * серверному дефолту (его задаёт админ — Ф5). Патч накладывает бэк; после
- * сохранения — re-OPEN через шину.
+ * Диалог «Ещё → Изменить форму» (конструктор дизайна, v4 — грид-редактор,
+ * спека 2026-09-11): зоны 24-сетки (шапка, полевые вкладки) редактируются
+ * drag-n-drop'ом — перемещение за тело, ширина за правую кромку, бросок между
+ * строками = новая строка. Элементы вне сеток (подвал, таблицы) — списком с
+ * галочками. Формы без грид-зон (bail-out нормализатора) — прежнее схема-превью.
+ * Патч накладывает бэк; после сохранения — re-OPEN через шину.
  */
 export const CustomizeFormDialog: FC = () => {
   const { t } = useTranslation()
@@ -56,6 +64,7 @@ export const CustomizeFormDialog: FC = () => {
     enabled: isOpen && screenKey != null,
   })
 
+  const [zones, setZones] = useState<GridZone[]>([])
   const [originalRows, setOriginalRows] = useState<CustomizableNode[]>([])
   const [rows, setRows] = useState<CustomizableNode[]>([])
   const [hidden, setHidden] = useState<Set<string>>(new Set())
@@ -68,7 +77,15 @@ export const CustomizeFormDialog: FC = () => {
   const [seededFrom, setSeededFrom] = useState<unknown>(null)
   if (isOpen && patch != null && seededFrom !== patch) {
     setSeededFrom(patch)
-    const collected = collectCustomizableNodes(root, patch)
+    const hiddenByUser = new Set(
+      patch.filter((e) => e.props.visible === false).map((e) => e.nodeId)
+    )
+    const gridZones = extractGridZones(root, hiddenByUser)
+    const gridIds = new Set(gridZones.map((z) => z.zoneId))
+    const collected = collectCustomizableNodes(root, patch).filter(
+      (r) => !gridIds.has(r.parentId)
+    )
+    setZones(gridZones)
     setOriginalRows(collected)
     setRows(collected)
     setHidden(new Set(collected.filter((n) => !n.visible).map((n) => n.nodeId)))
@@ -76,10 +93,10 @@ export const CustomizeFormDialog: FC = () => {
     setSelectedId(null)
   }
 
-  const previewModel = useMemo(
-    () => buildPreviewModel(root, rows),
-    [root, rows]
-  )
+  const hasZones = zones.length > 0
+  const selectedZoneItem = zones
+    .flatMap((z) => z.rows.flat())
+    .find((i) => i.nodeId === selectedId)
   const selectedRow = rows.find((r) => r.nodeId === selectedId) ?? null
   const selectedIndex = rows.findIndex((r) => r.nodeId === selectedId)
 
@@ -99,6 +116,7 @@ export const CustomizeFormDialog: FC = () => {
       ])
     )
     assignOrders(originalRows, rows, decisions)
+    zoneDecisions(zones, decisions)
     return buildPatchFromDecisions(patch ?? [], decisions)
   }
 
@@ -122,7 +140,20 @@ export const CustomizeFormDialog: FC = () => {
     })
   }
 
-  /** Перестановка с соседом ТОЙ ЖЕ группы — превью показывает результат сразу. */
+  const toggleZoneItem = (nodeId: string) => {
+    setZones((current) => {
+      const next = cloneZones(current)
+      for (const zone of next) {
+        for (const row of zone.rows) {
+          const item = row.find((i) => i.nodeId === nodeId)
+          if (item) item.hidden = !item.hidden
+        }
+      }
+      return next
+    })
+  }
+
+  /** Перестановка с соседом ТОЙ ЖЕ группы (легаси-режим без грид-зон). */
   const move = (nodeId: string, direction: -1 | 1) => {
     setRows((current) => {
       const index = current.findIndex((r) => r.nodeId === nodeId)
@@ -165,6 +196,8 @@ export const CustomizeFormDialog: FC = () => {
 
   if (!isOpen) return null
 
+  const legacyPreview = !hasZones ? buildPreviewModel(root, rows) : null
+
   return (
     <Dialog
       open={isOpen}
@@ -175,11 +208,21 @@ export const CustomizeFormDialog: FC = () => {
       <DialogTitle>{t('sdui.customizeForm.title')}</DialogTitle>
       <DialogContent className="flex flex-col gap-3">
         <Typography variant="body2">
-          {t('sdui.customizeForm.previewHint')}
+          {hasZones
+            ? t('sdui.customizeForm.gridHint')
+            : t('sdui.customizeForm.previewHint')}
         </Typography>
-        {previewModel ? (
+        {hasZones ? (
+          <CustomizeFormGridEditor
+            zones={zones}
+            selectedId={selectedId}
+            busy={busy}
+            onSelect={setSelectedId}
+            onChange={setZones}
+          />
+        ) : legacyPreview ? (
           <CustomizeFormPreview
-            model={previewModel}
+            model={legacyPreview}
             selectedId={selectedId}
             hidden={hidden}
             widths={widths}
@@ -190,8 +233,47 @@ export const CustomizeFormDialog: FC = () => {
             {t('sdui.customizeForm.empty')}
           </Typography>
         )}
-        <div className="border-ui-03 min-h-14 rounded-lg border px-3 py-2">
-          {selectedRow ? (
+        {hasZones && rows.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <Typography variant="body2" className="text-ui-05">
+              {t('sdui.customizeForm.otherElements')}
+            </Typography>
+            {rows.map((row) => (
+              <label
+                key={row.nodeId}
+                className="flex cursor-pointer items-center gap-2"
+              >
+                <Checkbox
+                  size="small"
+                  checked={!hidden.has(row.nodeId)}
+                  onChange={() => {
+                    toggle(row.nodeId)
+                  }}
+                  disabled={busy}
+                />
+                <Typography variant="body2">{row.label}</Typography>
+              </label>
+            ))}
+          </div>
+        )}
+        <div className="border-ui-03 min-h-12 rounded-lg border px-3 py-2">
+          {selectedZoneItem ? (
+            <label className="flex cursor-pointer items-center gap-2">
+              <Checkbox
+                size="small"
+                checked={!selectedZoneItem.hidden}
+                onChange={() => {
+                  toggleZoneItem(selectedZoneItem.nodeId)
+                }}
+                disabled={busy}
+              />
+              <Typography variant="body2">
+                {t('sdui.customizeForm.showElement', {
+                  label: selectedZoneItem.label,
+                })}
+              </Typography>
+            </label>
+          ) : selectedRow && !hasZones ? (
             <CustomizeFormRow
               node={selectedRow}
               hidden={hidden.has(selectedRow.nodeId)}
@@ -211,7 +293,7 @@ export const CustomizeFormDialog: FC = () => {
               }}
             />
           ) : (
-            <Typography variant="body2" className="text-ui-05 py-2">
+            <Typography variant="body2" className="text-ui-05 py-1">
               {t('sdui.customizeForm.selectHint')}
             </Typography>
           )}

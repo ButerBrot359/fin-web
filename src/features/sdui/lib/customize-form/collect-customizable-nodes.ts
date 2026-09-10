@@ -27,6 +27,10 @@ export interface NodeDecision {
   width?: number
   /** Позиция среди детей родителя; undefined — порядок этой сессией не менялся. */
   order?: number
+  /** Единицы 24-сетки (грид-зоны); undefined — проп снимается. */
+  colSpan?: number
+  /** Явный разрыв строки; undefined — проп снимается. */
+  newRow?: boolean
 }
 
 const CONTAINER_TYPES = new Set(['GROUP', 'TABLE'])
@@ -109,6 +113,10 @@ export function buildPatchFromDecisions(
     if (decision.width !== undefined) props.width = decision.width
     else delete props.width
     if (decision.order !== undefined) props.order = decision.order
+    if (decision.colSpan !== undefined) props.colSpan = decision.colSpan
+    else delete props.colSpan
+    if (decision.newRow !== undefined) props.newRow = decision.newRow
+    else delete props.newRow
     byNodeId.set(nodeId, props)
   }
   for (const [nodeId, props] of byNodeId) {

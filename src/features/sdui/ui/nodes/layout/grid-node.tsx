@@ -24,8 +24,10 @@ export const GridNode: FC<NodeProps> = ({ node }) => {
       (node.props?.gap as number | undefined)
   )
 
+  // Дефолт — ОДНА ячейка, как в легаси-гридах (страница модуля: columns=2,
+  // дети без colSpan). Нормализованная шапка всегда шлёт colSpan явно.
   const cellSpan = (raw: unknown): number => {
-    if (typeof raw !== 'number' || raw < 1) return columns
+    if (typeof raw !== 'number' || raw < 1) return 1
     return Math.min(columns, Math.round(raw))
   }
 

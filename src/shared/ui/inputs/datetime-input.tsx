@@ -194,7 +194,13 @@ export const DateTimeInput = ({
   const [open, setOpen] = useState(false)
   // Текущий вид календаря. На открытии сбрасывается: MUI начинает с openTo, а в
   // ref остался бы вид, на котором попап закрыли в прошлый раз.
-  const viewRef = useRef<DateOrTimeView>(closingView)
+  //
+  // Тип шире, чем DateOrTimeView, на одно значение: onViewChange у DateTimePicker
+  // отдаёт DateOrTimeViewWithMeridiem — тот же союз плюс 'meridiem' (вид AM/PM в
+  // 12-часовом формате). Сам тип живёт во внутреннем модуле MUI, импортировать
+  // оттуда нельзя, поэтому союз выписан руками. На сравнение с closingView это не
+  // влияет: 'meridiem' закрывающим видом не бывает.
+  const viewRef = useRef<DateOrTimeView | 'meridiem'>(closingView)
 
   const handleOpen = () => {
     viewRef.current = closingView

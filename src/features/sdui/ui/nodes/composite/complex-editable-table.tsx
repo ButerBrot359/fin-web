@@ -884,8 +884,19 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     data-sdui-row-index={row.index}
                     ref={virt.measureRow}
                     selected={row.id === selectedRowId}
-                    onClick={() => {
+                    onClick={(event) => {
                       handleRowClick(row.id)
+                      // Ячейка-ссылка (props.cellHyperlink, порт CellHyperlink 1С)
+                      // открывается ОДНИМ кликом — тем же событием, что двойной клик по
+                      // строке, только жест другой.
+                      if (
+                        event.target instanceof Element &&
+                        event.target.closest(
+                          '[data-sdui-cell-hyperlink="true"]'
+                        )
+                      ) {
+                        openRow(row.id, event)
+                      }
                     }}
                     onDoubleClick={(event) => {
                       openRow(row.id, event)

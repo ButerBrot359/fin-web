@@ -1,6 +1,6 @@
 import type { FC, ReactNode } from 'react'
 import { useState } from 'react'
-import { Checkbox, MenuItem, Select } from '@mui/material'
+import { Checkbox, Link, MenuItem, Select } from '@mui/material'
 
 import { TextInput, NumberInput } from '@/shared/ui/inputs'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
@@ -159,13 +159,34 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
     )
 
   if (readonly) {
+    const readonlyText = formatReadonlyValue(value, dataType, dateFormat)
+    // props.cellHyperlink — порт «CellHyperlink = Истина» ячейки таблицы 1С: значение
+    // выглядит ссылкой и открывается ОДНИМ кликом (у «Аналитики БУ» Авансового отчёта так
+    // открывается окно выбора субконто). Обработчик не свой: клик всплывает до строки, а
+    // она уже умеет `table.rowOpen` с биндингом ячейки — маркер data-sdui-cell-hyperlink
+    // и служит признаком «этот одиночный клик = открыть», см. complex-editable-table.
+    if (props?.cellHyperlink === true) {
+      return (
+        <Link
+          component="button"
+          type="button"
+          variant="body2"
+          underline="always"
+          data-sdui-cell-binding={binding}
+          data-sdui-cell-hyperlink="true"
+          sx={{ textAlign: 'left', font: 'inherit', p: 0 }}
+        >
+          {readonlyText}
+        </Link>
+      )
+    }
     return (
       // Перенос текста по ширине колонки — общий стиль всех ячеек без
       // редактора (readonlyCellTextStyle); в исключённой колонке — одна строка.
       // Якорь binding — прямо на этом span (без обёртки): лишний уровень ломал
       // бы поиск стилизованного узла по textContent в тестах и утилитах.
       <span data-sdui-cell-binding={binding} style={textStyle}>
-        {formatReadonlyValue(value, dataType, dateFormat)}
+        {readonlyText}
       </span>
     )
   }

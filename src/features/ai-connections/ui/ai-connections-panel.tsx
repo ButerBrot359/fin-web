@@ -160,15 +160,17 @@ export const AiConnectionsPanel = () => {
         ))}
       </div>
 
-      <ConnectionFormDialog
-        open={dialogOpen}
-        connection={editing}
-        isSaving={create.isPending || update.isPending}
-        onClose={() => {
-          setDialogOpen(false)
-        }}
-        onSubmit={submit}
-      />
+      {dialogOpen && (
+        <ConnectionFormDialog
+          open={dialogOpen}
+          connection={editing}
+          isSaving={create.isPending || update.isPending}
+          onClose={() => {
+            setDialogOpen(false)
+          }}
+          onSubmit={submit}
+        />
+      )}
     </div>
   )
 }

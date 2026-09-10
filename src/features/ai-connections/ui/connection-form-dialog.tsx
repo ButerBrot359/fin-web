@@ -17,6 +17,12 @@ import { Button } from '@/shared/ui/buttons'
 import { ApiKeyField } from './api-key-field'
 import { ModelAutocomplete } from './model-autocomplete'
 import { ProviderSelector } from './provider-selector'
+import { ConnectionPricingSection } from './connection-pricing-section'
+import {
+  pricingDraft,
+  pricingRequest,
+  validPricing,
+} from '../lib/pricing/connection-pricing'
 
 interface ConnectionFormDialogProps {
   open: boolean
@@ -36,6 +42,7 @@ const emptyForm = (connection: AiConnection | null): AiConnectionUpdate => ({
   apiKey: '',
   temperature: connection?.temperature ?? 0.2,
   maxTokens: connection?.maxTokens ?? 8000,
+  cacheEnabled: connection?.cacheEnabled ?? false,
 })
 
 /**
@@ -73,6 +80,7 @@ export const ConnectionFormDialog = ({
 }: ConnectionFormDialogProps) => {
   const { t } = useTranslation()
   const [form, setForm] = useState<AiConnectionUpdate>(emptyForm(connection))
+  const [prices, setPrices] = useState(() => pricingDraft(connection?.pricing))
   const [syncedId, setSyncedId] = useState<number | null>(
     connection?.id ?? null
   )
@@ -82,6 +90,7 @@ export const ConnectionFormDialog = ({
   if ((connection?.id ?? null) !== syncedId) {
     setSyncedId(connection?.id ?? null)
     setForm(emptyForm(connection))
+    setPrices(pricingDraft(connection?.pricing))
   }
 
   const isLocal = form.provider === 'LOCAL'
@@ -112,7 +121,7 @@ export const ConnectionFormDialog = ({
             onChange={(next: LlmProvider) => {
               // Смена провайдера очищает модель: идентификаторы у провайдеров свои,
               // и модель Claude в OpenAI не существует.
-              patch({ provider: next, model: '' })
+              patch({ provider: next, model: '', cacheEnabled: false })
             }}
           />
 
@@ -121,7 +130,7 @@ export const ConnectionFormDialog = ({
             baseUrl={form.baseUrl ?? ''}
             value={form.model}
             onChange={(model) => {
-              patch({ model })
+              patch({ model, cacheEnabled: false })
             }}
           />
 
@@ -177,6 +186,17 @@ export const ConnectionFormDialog = ({
           </div>
           <FieldHint textKey="aiConnections.maxTokensHint" />
 
+          <ConnectionPricingSection
+            draft={prices}
+            onChange={setPrices}
+            provider={form.provider}
+            model={form.model}
+            cacheEnabled={form.cacheEnabled ?? false}
+            onCacheChange={(cacheEnabled) => {
+              patch({ cacheEnabled })
+            }}
+          />
+
           {!isLocal && (
             <Typography variant="body2" className="text-support-01">
               {t('aiAssistant.externalWarningBody')}
@@ -190,10 +210,11 @@ export const ConnectionFormDialog = ({
         </Button>
         <Button
           variant="primary"
-          disabled={isSaving || incomplete}
+          disabled={isSaving || incomplete || !validPricing(prices)}
           onClick={() => {
             onSubmit({
               ...form,
+              pricing: pricingRequest(prices),
               name: form.name.trim(),
               model: form.model.trim(),
               baseUrl: (form.baseUrl ?? '').trim() || null,

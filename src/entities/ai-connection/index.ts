@@ -11,4 +11,5 @@ export type {
   AiConnection,
   AiConnectionTestResult,
   AiConnectionUpdate,
+  AiConnectionPricing,
 } from './types/ai-connection'

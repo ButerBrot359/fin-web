@@ -189,6 +189,25 @@ export interface ReportAltParameterDto {
   /** Логическая группа параметра (period/account/organization/…). */
   group?: string
   allowedValues?: ReportAltAllowedValue[]
+  dependsOnParam?: { param: string; resolver: string }
+  refreshesForm?: boolean
+}
+
+export interface ReportAltOptionsSource {
+  url: string
+  params?: Record<string, string>
+}
+
+export interface ReportAltParamStateDto {
+  values: Record<string, unknown>
+  disabledParams: string[]
+  optionsSources: Record<string, ReportAltOptionsSource>
+  messages: Record<string, string>
+}
+
+export interface ReportAltParamStateBody {
+  parameters: Record<string, unknown>
+  changedParam: string | null
 }
 
 /** Строка списка отчётов (`GET /api/reportalt/reports`) и `meta.definition`. */

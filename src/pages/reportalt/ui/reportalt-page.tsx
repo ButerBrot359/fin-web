@@ -18,6 +18,7 @@ import { exportTableToXlsx } from '@/shared/lib/table-export'
 import { useReportAltMeta } from '../lib/hooks/use-reportalt-meta'
 import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
+import { useReportAltParamState } from '../lib/hooks/use-reportalt-param-state'
 import { buildReportAltExport } from '../lib/utils/build-reportalt-export'
 import {
   SETTINGS_URL_KEY,
@@ -95,6 +96,7 @@ export const ReportAltPage = () => {
   // Черновики полей формы (что пользователь правит до «Сформировать»).
   const [values, setValues] = useState<ParamValues>({})
   const [showErrors, setShowErrors] = useState(false)
+  const { paramState, refreshParamState } = useReportAltParamState(moduleCode)
 
   // Инициализация черновиков из URL (или дефолтов) при загрузке meta и при
   // перемонтировании вкладки (searchParams в зависимостях).
@@ -109,7 +111,10 @@ export const ReportAltPage = () => {
     // Сознательная синхронизация черновика формы из URL+meta при их смене.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setValues(next)
-  }, [meta, searchParams])
+    if (meta.parameters.some((p) => p.refreshesForm)) {
+      void refreshParamState(normalizeBodyDates(next, meta.parameters), null)
+    }
+  }, [meta, searchParams, refreshParamState])
 
   // Пользовательские настройки (MVP — клиентские, F-S1): черновик панели,
   // применённая дельта из URL/localStorage для тела /run.
@@ -177,7 +182,16 @@ export const ReportAltPage = () => {
   }, [meta, values])
 
   const setParamValue = (code: string, v: ReportAltParamValue) => {
-    setValues((prev) => ({ ...prev, [code]: v }))
+    const next = { ...values, [code]: v }
+    setValues(next)
+    if (!meta?.parameters.find((p) => p.code === code)?.refreshesForm) return
+    void refreshParamState(
+      normalizeBodyDates(next, meta.parameters),
+      code
+    ).then((state) => {
+      if (!state || Object.keys(state.values).length === 0) return
+      setValues((prev) => ({ ...prev, ...(state.values as ParamValues) }))
+    })
   }
 
   const handleSubmit = () => {
@@ -364,6 +378,9 @@ export const ReportAltPage = () => {
                   setParamValue(param.code, v)
                 }}
                 invalid={invalid}
+                disabled={paramState.disabledParams.includes(param.code)}
+                helperText={paramState.messages[param.code]}
+                optionsSource={paramState.optionsSources[param.code]}
               />
             </div>
           )

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
@@ -14,6 +14,7 @@ import {
   useAccountPlanList,
   useSubcontoBuTypes,
 } from '@/entities/account-plan'
+import { fetchReferenceOptions, useReferenceOptions } from '@/features/sdui'
 import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
 import {
   AutocompleteInput,
@@ -24,7 +25,10 @@ import {
 import type { SelectOption } from '@/shared/types/select-option'
 import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
-import type { ReportAltParameterDto } from '../types/reportalt'
+import type {
+  ReportAltOptionsSource,
+  ReportAltParameterDto,
+} from '../types/reportalt'
 import type { ReportAltParamValue } from '../lib/utils/params'
 
 /** Маркер домена «План видов характеристик» в `referenceDomain` параметра. */
@@ -36,6 +40,9 @@ interface ReportAltParamFieldProps {
   onChange: (value: ReportAltParamValue) => void
   /** Подсветить незаполненный обязательный параметр после «Сформировать». */
   invalid?: boolean
+  disabled?: boolean
+  helperText?: string
+  optionsSource?: ReportAltOptionsSource
 }
 
 /**
@@ -48,6 +55,9 @@ export const ReportAltParamField = ({
   value,
   onChange,
   invalid,
+  disabled,
+  helperText,
+  optionsSource,
 }: ReportAltParamFieldProps) => {
   const { t, i18n } = useTranslation()
   const isKz = i18n.language === 'kz'
@@ -142,6 +152,28 @@ export const ReportAltParamField = ({
     allowedAccountIds,
   ])
 
+  const optionsUrl = optionsSource?.url ?? null
+  const optionsParams = optionsSource?.params
+  const {
+    options: sourceOptions,
+    loading: sourceLoading,
+    load: loadSourceOptions,
+    loadDebounced: loadSourceOptionsDebounced,
+  } = useReferenceOptions(
+    (search?: string) =>
+      optionsUrl
+        ? fetchReferenceOptions({
+            url: optionsUrl,
+            params: optionsParams,
+            search,
+          })
+        : Promise.resolve([]),
+    JSON.stringify(optionsSource ?? null)
+  )
+  const [pickedLabels, setPickedLabels] = useState<
+    Partial<Record<number, string>>
+  >({})
+
   switch (param.dataType) {
     case 'DATE':
     case 'PERIOD':
@@ -163,14 +195,35 @@ export const ReportAltParamField = ({
     case 'REF_LIST': {
       // Множественный выбор; значение — массив ID записей.
       const selectedIds = Array.isArray(value) ? value : []
-      const selected = refOptions.filter((o) =>
-        selectedIds.includes(Number(o.id))
-      )
+      const listOptions = optionsUrl ? sourceOptions : refOptions
+      const selected = optionsUrl
+        ? selectedIds.map<SelectOption>((id) => ({
+            id,
+            code: String(id),
+            label:
+              sourceOptions.find((o) => Number(o.id) === id)?.label ??
+              pickedLabels[id] ??
+              `#${String(id)}`,
+          }))
+        : refOptions.filter((o) => selectedIds.includes(Number(o.id)))
       return (
         <Autocomplete
           multiple
           disableCloseOnSelect
           forcePopupIcon
+          disabled={disabled}
+          {...(optionsUrl
+            ? {
+                filterOptions: (opts: SelectOption[]) => opts,
+                loading: sourceLoading,
+                onOpen: () => {
+                  loadSourceOptions()
+                },
+                onInputChange: (_e: unknown, text: string, reason: string) => {
+                  if (reason === 'input') loadSourceOptionsDebounced(text)
+                },
+              }
+            : {})}
           // Ширину задаёт контейнер строки параметров (w-72) — поле не шире
           // соседей и не наезжает на них (прежний фикс sx={{width:300}} вылезал
           // за контейнер). Высота — обычный tall-инпут темы (minHeight 44,
@@ -243,9 +296,15 @@ export const ReportAltParamField = ({
               </Box>
             )
           }}
-          options={refOptions}
+          options={listOptions}
           value={selected}
           onChange={(_e, next) => {
+            if (optionsUrl) {
+              setPickedLabels((prev) => ({
+                ...prev,
+                ...Object.fromEntries(next.map((o) => [Number(o.id), o.label])),
+              }))
+            }
             onChange(next.map((o) => Number(o.id)))
           }}
           getOptionLabel={(o) => o.label}
@@ -270,6 +329,7 @@ export const ReportAltParamField = ({
               label={label}
               required={param.required}
               error={invalid}
+              helperText={helperText}
             />
           )}
         />
@@ -294,6 +354,8 @@ export const ReportAltParamField = ({
           label={label}
           required={param.required}
           error={invalid}
+          disabled={disabled}
+          helperText={helperText}
           fullWidth
         />
       )
@@ -347,6 +409,7 @@ export const ReportAltParamField = ({
         <FormControlLabel
           control={
             <Checkbox
+              disabled={disabled}
               checked={value === true}
               onChange={(e) => {
                 onChange(e.target.checked)
@@ -354,6 +417,7 @@ export const ReportAltParamField = ({
             />
           }
           label={label}
+          disabled={disabled}
         />
       )
 

@@ -343,6 +343,113 @@ describe('buildColumnDefs — шапка COLUMN_GROUP orientation=VERTICAL', () 
 // рисуется через него ВСЕГДА (он держит обрезку многоточием — без неё длинный
 // заголовок переносится и наезжает на соседний), а «*» добавляется только когда
 // колонка required и не readonly.
+/**
+ * Вложенная ГОРИЗОНТАЛЬНАЯ подгруппа внутри вертикальной — эталон 1С
+ * ({@code Form.xml}: «РасходыГруппаАналитикаЗатрат» содержит две подгруппы с
+ * {@code Group=Horizontal}). «Источник финансирования | ФКР» сверху и «Код
+ * платных услуг | Специфика» снизу: ДВЕ под-строки по ДВЕ ячейки, а не четыре
+ * подписи стопкой (отказ 10.09.2026 по ТЧ «Расходы» Авансового отчёта).
+ */
+describe('buildColumnDefs — горизонтальная подгруппа внутри вертикальной', () => {
+  afterEach(cleanup)
+
+  const syncRef = { current: null } as unknown as RefObject<UseTableSyncResult>
+
+  const col = (id: string, label: string): ViewNode =>
+    ({
+      id,
+      type: 'TABLE_COLUMN',
+      binding: id,
+      props: { label },
+    }) as ViewNode
+
+  const horizontal = (id: string, children: ViewNode[]): ViewNode =>
+    ({
+      id,
+      type: 'COLUMN_GROUP',
+      props: { orientation: 'HORIZONTAL' },
+      children,
+    }) as ViewNode
+
+  const analitika = (): ViewNode =>
+    ({
+      id: 'grp.analitika',
+      type: 'COLUMN_GROUP',
+      props: { orientation: 'VERTICAL', label: 'Аналитика затрат' },
+      children: [
+        horizontal('grp.h1', [
+          col('c.istochnik', 'Источник финансирования'),
+          col('c.fkr', 'ФКР'),
+        ]),
+        horizontal('grp.h2', [
+          col('c.kod', 'Код платных услуг'),
+          col('c.spetsifika', 'Специфика'),
+        ]),
+      ],
+    }) as ViewNode
+
+  const headerEl = (header: unknown): ReactElement =>
+    (header as () => ReactElement)()
+
+  const subRowsOf = (header: unknown): ReactElement[] => {
+    const children = (headerEl(header).props as { children: unknown })
+      .children as ReactElement | ReactElement[]
+    return Array.isArray(children) ? children : [children]
+  }
+
+  it('под-строк две, а не четыре', () => {
+    const defs = buildColumnDefs([analitika()], syncRef)
+
+    expect(subRowsOf(defs[0].header)).toHaveLength(2)
+  })
+
+  it('в каждой под-строке две ячейки в ряд', () => {
+    const defs = buildColumnDefs([analitika()], syncRef)
+    const { container } = render(headerEl(defs[0].header))
+
+    const rows = Array.from(
+      container.firstElementChild?.children ?? []
+    ) as HTMLElement[]
+    const cells = Array.from(rows[0].firstElementChild?.children ?? [])
+    expect(cells).toHaveLength(2)
+    expect(rows[0].textContent).toBe('Источник финансированияФКР')
+    expect(rows[1].textContent).toBe('Код платных услугСпецифика')
+  })
+
+  it('ячейки делят ширину поровну и разделены линией', () => {
+    const defs = buildColumnDefs([analitika()], syncRef)
+    const { container } = render(headerEl(defs[0].header))
+
+    const row = container.firstElementChild?.firstElementChild
+      ?.firstElementChild as HTMLElement
+    expect(row.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))')
+    expect(row.children[1].className).toContain('border-l')
+    expect(row.children[0].className).not.toContain('border-l')
+  })
+
+  it('ячейка строки тоже делится на два редактора', () => {
+    const defs = buildColumnDefs([analitika()], syncRef)
+    const cell = (
+      defs[0].cell as (ctx: CellContext<TableRow, unknown>) => ReactElement
+    )({
+      row: { original: { rowId: '1' } as TableRow },
+    } as CellContext<TableRow, unknown>)
+    const { container } = render(cell)
+
+    const rows = Array.from(
+      container.firstElementChild?.children ?? []
+    ) as HTMLElement[]
+    expect(rows).toHaveLength(2)
+    // Якорь ячейки ставит сам TableCellEditor — по нему и считаем редакторы.
+    const bindings = (row: HTMLElement) =>
+      Array.from(row.querySelectorAll('[data-sdui-cell-binding]')).map((el) =>
+        el.getAttribute('data-sdui-cell-binding')
+      )
+    expect(bindings(rows[0])).toEqual(['c.istochnik', 'c.fkr'])
+    expect(bindings(rows[1])).toEqual(['c.kod', 'c.spetsifika'])
+  })
+})
+
 describe('buildColumnDefs — required header marker', () => {
   // Без глобального setupFiles авто-cleanup RTL не включается: «*» от
   // предыдущего теста остался бы в document.body и queryByText('*') ниже

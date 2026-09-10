@@ -66,6 +66,27 @@ vi.mock('../../../lib/utils/build-column-defs', () => ({
       .filter((c) => c.type === 'TABLE_COLUMN')
       .map((c) => {
         const binding = c.binding!
+        // Ячейка-ссылка (props.cellHyperlink): в реальном рендере её рисует
+        // TableCellEditor, здесь — тот же DOM-контракт (маркер + якорь биндинга),
+        // по которому строка отличает «одиночный клик = открыть».
+        if (c.props?.testHyperlink) {
+          return {
+            id: c.id,
+            accessorKey: binding,
+            header: c.props.label ?? c.id,
+            cell: (info: { row: { original: Record<string, unknown> } }) => (
+              <button
+                type="button"
+                data-sdui-cell-binding={binding}
+                data-sdui-cell-hyperlink="true"
+              >
+                {typeof info.row.original[binding] === 'string'
+                  ? info.row.original[binding]
+                  : ''}
+              </button>
+            ),
+          }
+        }
         if (!c.props?.testEditable) {
           return {
             id: c.id,
@@ -262,6 +283,72 @@ describe('ComplexEditableTable — закрепление шапки', () => {
  * (отказ 10.09.2026). Пол высоты возвращает таблице рабочий размер, а странице —
  * прокрутку.
  */
+/**
+ * Ячейка-ссылка (props.cellHyperlink) — порт «CellHyperlink = Истина» таблицы 1С: у
+ * «Аналитики БУ» Авансового отчёта окно выбора субконто открывается ОДНИМ кликом, а не
+ * двойным. Команду шлёт тот же путь `table.rowOpen`, что и двойной клик по строке.
+ */
+describe('ComplexEditableTable — ячейка-ссылка открывается одним кликом', () => {
+  const nodeSsylka: ViewNode = {
+    ...masterNode,
+    id: 'table.ssylka',
+    actions: [
+      {
+        trigger: 'open',
+        actionId: 'command',
+        command: 'table.rowOpen:VychetyIPN',
+      },
+    ],
+    children: [
+      {
+        id: 'col.nadpis',
+        type: 'TABLE_COLUMN',
+        binding: 'VychetIPN',
+        props: { label: 'Аналитика БУ', testHyperlink: true },
+      },
+    ],
+  } as unknown as ViewNode
+
+  /** Та же ТЧ, но колонка обычная — маркера ссылки нет. */
+  const nodeSsylkaBezMarkera: ViewNode = {
+    ...nodeSsylka,
+    children: [
+      {
+        id: 'col.obychnaya',
+        type: 'TABLE_COLUMN',
+        binding: 'VychetIPN',
+        props: { label: 'Вычет' },
+      },
+    ],
+  } as unknown as ViewNode
+
+  it('одиночный клик по ссылке шлёт rowOpen с биндингом ячейки', () => {
+    render(<ComplexEditableTable node={nodeSsylka} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'A' }))
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'COMMAND',
+        command: 'table.rowOpen:VychetyIPN',
+        value: { rowId: 'm1', field: 'VychetIPN' },
+      }),
+      undefined
+    )
+  })
+
+  it('клик по обычной ячейке строки rowOpen не шлёт — только активизацию строки', () => {
+    render(<ComplexEditableTable node={nodeSsylkaBezMarkera} />)
+
+    fireEvent.click(screen.getAllByRole('row')[1])
+
+    expect(mockDispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ command: 'table.rowOpen:VychetyIPN' }),
+      expect.anything()
+    )
+  })
+})
+
 describe('ComplexEditableTable — высота в растянутой карточке', () => {
   const container = () =>
     document.querySelector<HTMLElement>('[data-own-scroll="true"]')

@@ -55,16 +55,21 @@ describe('applyServerTheme', () => {
       return el
     }
 
-    it('масштаб ставит zoom на #root (не на html — поповеры съезжали)', () => {
+    it('масштаб ставит zoom на #root (не на html — поповеры съезжали) с компенсацией размеров', () => {
       const app = ensureAppRoot()
 
       applyServerTheme({ 'ui-scale': '1.1' })
 
       expect(app.style.getPropertyValue('zoom')).toBe('1.1')
       expect(rootStyle().getPropertyValue('zoom')).toBe('')
+      // Компенсация: зум сжимает рендер, 100%/масштаб возвращает заполнение
+      // вьюпорта — без неё при 90% снизу и справа полоса фона. jsdom
+      // нормализует calc до вычисленного процента — сверяем по вхождению.
+      expect(app.style.getPropertyValue('width')).toContain('calc(')
+      expect(app.style.getPropertyValue('height')).toContain('calc(')
     })
 
-    it('кламп 0.8–1.5 и снятие при сбросе', () => {
+    it('кламп 0.8–1.5 и снятие при сбросе вместе с компенсацией', () => {
       const app = ensureAppRoot()
 
       applyServerTheme({ 'ui-scale': '9' })
@@ -72,6 +77,8 @@ describe('applyServerTheme', () => {
 
       applyServerTheme({})
       expect(app.style.getPropertyValue('zoom')).toBe('')
+      expect(app.style.getPropertyValue('width')).toBe('')
+      expect(app.style.getPropertyValue('height')).toBe('')
     })
   })
 })

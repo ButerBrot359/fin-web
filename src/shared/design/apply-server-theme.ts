@@ -53,7 +53,8 @@ export function applyServerTheme(tokens: Record<string, string>): void {
   }
 
   if (!(UI_SCALE_TOKEN in tokens)) {
-    appContainer()?.style.removeProperty('zoom')
+    const container = appContainer()
+    if (container) clearUiScale(container)
   }
   for (const cssVar of appliedCssVars) {
     if (!applied.includes(cssVar)) {
@@ -70,9 +71,20 @@ function applyUiScale(_root: HTMLElement, raw: string): void {
   if (!container) return
   const parsed = Number(raw)
   if (Number.isNaN(parsed)) {
-    container.style.removeProperty('zoom')
+    clearUiScale(container)
     return
   }
   const clamped = Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, parsed))
   container.style.setProperty('zoom', String(clamped))
+  // Компенсация: зум сжимает/раздувает рендер контейнера, а 100%/масштаб
+  // возвращает заполнение вьюпорта — иначе при 90% снизу и справа полоса
+  // фона, при 110% — лишние скроллбары.
+  container.style.setProperty('width', `calc(100% / ${String(clamped)})`)
+  container.style.setProperty('height', `calc(100% / ${String(clamped)})`)
+}
+
+function clearUiScale(container: HTMLElement): void {
+  container.style.removeProperty('zoom')
+  container.style.removeProperty('width')
+  container.style.removeProperty('height')
 }

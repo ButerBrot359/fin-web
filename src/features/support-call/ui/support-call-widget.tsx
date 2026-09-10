@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useAuthStore } from '@/features/auth/lib/hooks/use-auth-store'
+import { FLOATING_BOTTOM } from '@/shared/lib/utils/floating-widgets'
 import { cn } from '@/shared/lib/utils/cn'
 
 import type { SupportCallSession } from '../model/types'
@@ -121,7 +122,7 @@ export const SupportCallWidget = () => {
       {/* Во время разговора кнопки нет: её угол занимает свёрнутая плашка разговора, а звать
           поддержку, уже разговаривая с ней, незачем. */}
       {!session && (
-        <div className="fixed right-6 bottom-6 z-[1050]">
+        <div className={cn('fixed right-6 z-[1050]', FLOATING_BOTTOM)}>
           {/* Возврат в разговор — состояние ТОЙ ЖЕ кнопки, а не вторая плашка рядом.
             Отдельный элемент выглядел чужеродно и занимал место постоянно, хотя нужен
             в редком случае: вкладку перезагрузили посреди звонка. */}

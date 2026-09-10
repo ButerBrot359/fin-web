@@ -12,6 +12,8 @@ import { useTranslation } from 'react-i18next'
 
 import { callSounds } from '../lib/call-sounds'
 import { ScreenShareBadge } from './screen-share-badge'
+import { FLOATING_BOTTOM } from '@/shared/lib/utils/floating-widgets'
+import { cn } from '@/shared/lib/utils/cn'
 
 /** Секунды в «мм:сс». Часы не нужны: разговор с поддержкой такой длины — сам по себе новость. */
 const formatElapsed = (seconds: number) => {
@@ -53,7 +55,12 @@ export const ActiveCallBar = ({
 
   return (
     <Grow in appear>
-      <div className="fixed right-6 bottom-6 z-[1050] w-72 overflow-hidden rounded-[20px] bg-ui-01 shadow-popup">
+      <div
+        className={cn(
+          'fixed right-6 z-[1050] w-72 overflow-hidden rounded-[20px] bg-ui-01 shadow-popup',
+          FLOATING_BOTTOM
+        )}
+      >
         <div className="flex items-center gap-2 bg-ui-06 px-4 py-2.5 text-ui-01">
           <span className="relative flex h-2.5 w-2.5 shrink-0">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-01" />

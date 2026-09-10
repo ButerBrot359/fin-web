@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import { Tooltip } from '@mui/material'
+import { FLOATING_BOTTOM_SECOND } from '@/shared/lib/utils/floating-widgets'
+import { cn } from '@/shared/lib/utils/cn'
 
 interface AiAssistantFabProps {
   onClick: () => void
@@ -25,7 +27,7 @@ export const AiAssistantFab = ({ onClick }: AiAssistantFabProps) => {
   const { t } = useTranslation()
 
   return (
-    <div className="fixed right-6 bottom-24 z-[1050]">
+    <div className={cn('fixed right-6 z-[1050]', FLOATING_BOTTOM_SECOND)}>
       <Tooltip title={t('aiAssistant.open')} placement="left">
         <button
           type="button"

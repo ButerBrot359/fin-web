@@ -7,6 +7,7 @@ import type {
   AiAssistantCapability,
   AiAssistantContext,
 } from '@/entities/ai-assistant'
+import { FLOATING_BOTTOM } from '@/shared/lib/utils/floating-widgets'
 import { cn } from '@/shared/lib/utils/cn'
 
 import type { AssistantChatMessage } from '../lib/hooks/use-assistant-session'
@@ -89,7 +90,8 @@ export const AiAssistantPanel = ({
   return (
     <div
       className={cn(
-        'fixed right-6 bottom-6 z-[1050] flex max-w-[92vw] flex-col',
+        'fixed right-6 z-[1050] flex max-w-[92vw] flex-col',
+        FLOATING_BOTTOM,
         'overflow-hidden rounded-2xl bg-ui-01 shadow-popup',
         // Увеличенный размер намеренно НЕ во весь экран: смысл панели в том, чтобы
         // под ней оставался виден документ, о котором идёт разговор.

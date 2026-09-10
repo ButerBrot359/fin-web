@@ -4,25 +4,31 @@ import { Typography } from '@mui/material'
 
 import type {
   AiAssistantAction,
+  AiAssistantCapability,
   AiAssistantContext,
 } from '@/entities/ai-assistant'
-import { Button } from '@/shared/ui/buttons'
 import { cn } from '@/shared/lib/utils/cn'
 
-import { QUICK_QUESTION_KEYS } from '../lib/consts/quick-questions'
 import type { AssistantChatMessage } from '../lib/hooks/use-assistant-session'
 import { AssistantAnswerCard } from './assistant-answer-card'
 import { AssistantComposer } from './assistant-composer'
 import { AssistantContextBar } from './assistant-context-bar'
+import { AssistantHelp } from './assistant-help'
 import { AssistantPanelHeader } from './assistant-panel-header'
+import { AssistantPresets } from './assistant-presets'
 
 interface AiAssistantPanelProps {
   open: boolean
   minimized: boolean
   /** Увеличенный размер окна. Не полноэкранный: панель работает ПОВЕРХ формы. */
   enlarged: boolean
+  /** Вместо ленты диалога показана справка. */
+  helpOpen: boolean
+  onToggleHelp: () => void
   onToggleSize: () => void
   context: AiAssistantContext
+  /** Разрешения организации; `null` — ещё не загружены. */
+  capabilities: AiAssistantCapability[] | null
   messages: AssistantChatMessage[]
   isPending: boolean
   onClose: () => void
@@ -50,8 +56,11 @@ export const AiAssistantPanel = ({
   open,
   minimized,
   enlarged,
+  helpOpen,
+  onToggleHelp,
   onToggleSize,
   context,
+  capabilities,
   messages,
   isPending,
   onClose,
@@ -74,9 +83,6 @@ export const AiAssistantPanel = ({
 
   if (!open) return null
 
-  const hasDocument =
-    context.kind !== 'NONE' && context.kind !== 'DICTIONARY_LIST'
-
   return (
     <div
       className={cn(
@@ -95,31 +101,39 @@ export const AiAssistantPanel = ({
       <AssistantPanelHeader
         minimized={minimized}
         enlarged={enlarged}
+        helpOpen={helpOpen}
+        onToggleHelp={onToggleHelp}
         onToggleSize={onToggleSize}
         onToggleMinimize={onToggleMinimize}
         onClose={onClose}
       />
 
-      {!minimized && (
+      {!minimized && helpOpen && (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto p-3">
+          <AssistantHelp
+            capabilities={capabilities}
+            disabled={isPending}
+            onAsk={(question) => {
+              onSend(question)
+              // Возврат к ленте: ответ придёт туда, и оставаться в справке значило бы
+              // ждать его на экране, где он не появится.
+              onToggleHelp()
+            }}
+          />
+        </div>
+      )}
+
+      {!minimized && !helpOpen && (
         <>
           <div className="flex shrink-0 flex-col gap-2 px-3 pt-3 pb-2">
             <AssistantContextBar context={context} />
-            {hasDocument && messages.length === 0 && (
-              <div className="flex flex-wrap gap-2">
-                {QUICK_QUESTION_KEYS.map((key) => (
-                  <Button
-                    key={key}
-                    size="small"
-                    variant="tertiary"
-                    disabled={isPending}
-                    onClick={() => {
-                      onSend(t(key))
-                    }}
-                  >
-                    {t(key)}
-                  </Button>
-                ))}
-              </div>
+            {messages.length === 0 && (
+              <AssistantPresets
+                context={context}
+                capabilities={capabilities}
+                disabled={isPending}
+                onSelect={onSend}
+              />
             )}
           </div>
 

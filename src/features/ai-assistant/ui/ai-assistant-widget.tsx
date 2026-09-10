@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import {
+  useAiAssistantSettings,
   useAiConversationMessages,
   useAiConversations,
   useConfirmAssistantAction,
@@ -33,11 +34,17 @@ export const AiAssistantWidget = () => {
   const [open, setOpen] = useState(false)
   const [minimized, setMinimized] = useState(false)
   const [enlarged, setEnlarged] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const context = useFormContext()
   const session = useAssistantSession(context)
   const confirmAction = useConfirmAssistantAction()
   const navigate = useNavigate()
   const { pageCode } = useParams<{ pageCode: string }>()
+
+  // Разрешения нужны, чтобы не предлагать заготовку, которую сервер отклонит, и
+  // чтобы справка называла выключенное выключенным. Тоже только при открытой панели.
+  const { settings } = useAiAssistantSettings(open)
+  const capabilities = settings?.capabilities ?? null
 
   // Диалог по этому объекту тянем только при открытой панели: закрытый помощник
   // не повод дёргать сервер на каждой смене страницы.
@@ -120,14 +127,22 @@ export const AiAssistantWidget = () => {
         open={open}
         minimized={minimized}
         enlarged={enlarged}
+        helpOpen={helpOpen}
+        onToggleHelp={() => {
+          setHelpOpen((current) => !current)
+        }}
         onToggleSize={() => {
           setEnlarged((current) => !current)
         }}
         context={context}
+        capabilities={capabilities}
         messages={session.messages}
         isPending={session.isPending || confirmAction.isPending}
         onClose={() => {
           setOpen(false)
+          // Следующее открытие — снова диалог: кнопка внизу экрана обещает помощника,
+          // а не справку, на которой его закрыли.
+          setHelpOpen(false)
         }}
         onToggleMinimize={() => {
           setMinimized((current) => !current)

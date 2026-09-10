@@ -2,70 +2,13 @@ import { useTranslation } from 'react-i18next'
 import { Checkbox, FormControlLabel, Typography } from '@mui/material'
 
 import type { AiAssistantCapability } from '@/entities/ai-assistant'
-import type { TranslationKey } from '@/shared/types/i18n.types'
 import { cn } from '@/shared/lib/utils/cn'
 
-interface CapabilityRow {
-  value: AiAssistantCapability
-  labelKey: TranslationKey
-  hintKey: TranslationKey
-  /** Действие меняет учёт, а не готовит данные — помечается красным. */
-  critical?: boolean
-}
-
-/**
- * Порядок не алфавитный, а по нарастанию последствий: сначала чтение, затем запись,
- * затем то, что трогает учёт. Так галочка, которую опасно ставить не глядя, оказывается
- * внизу, а не между двумя безобидными.
- */
-const READ_ROWS: CapabilityRow[] = [
-  {
-    value: 'SEARCH_DATA',
-    labelKey: 'aiAssistant.capSearch',
-    hintKey: 'aiAssistant.capSearchHint',
-  },
-  {
-    value: 'QUERY_TOTALS',
-    labelKey: 'aiAssistant.capTotals',
-    hintKey: 'aiAssistant.capTotalsHint',
-  },
-]
-
-const WRITE_ROWS: CapabilityRow[] = [
-  {
-    value: 'CREATE_DOCUMENT',
-    labelKey: 'aiAssistant.capCreateDocument',
-    hintKey: 'aiAssistant.capCreateDocumentHint',
-  },
-  {
-    value: 'UPDATE_DOCUMENT',
-    labelKey: 'aiAssistant.capUpdateDocument',
-    hintKey: 'aiAssistant.capUpdateDocumentHint',
-  },
-  {
-    value: 'CREATE_DICTIONARY_ENTRY',
-    labelKey: 'aiAssistant.capCreateDictionary',
-    hintKey: 'aiAssistant.capCreateDictionaryHint',
-  },
-  {
-    value: 'POST_DOCUMENT',
-    labelKey: 'aiAssistant.capPost',
-    hintKey: 'aiAssistant.capPostHint',
-    critical: true,
-  },
-  {
-    value: 'UNPOST_DOCUMENT',
-    labelKey: 'aiAssistant.capUnpost',
-    hintKey: 'aiAssistant.capUnpostHint',
-    critical: true,
-  },
-  {
-    value: 'DELETE_DOCUMENT',
-    labelKey: 'aiAssistant.capDelete',
-    hintKey: 'aiAssistant.capDeleteHint',
-    critical: true,
-  },
-]
+import {
+  READ_CAPABILITIES,
+  WRITE_CAPABILITIES,
+  type CapabilityDescriptor,
+} from '../lib/consts/capability-catalog'
 
 interface CapabilityCheckboxesProps {
   value: AiAssistantCapability[]
@@ -96,7 +39,7 @@ export const CapabilityCheckboxes = ({
     )
   }
 
-  const renderRow = (row: CapabilityRow) => (
+  const renderRow = (row: CapabilityDescriptor) => (
     <div key={row.value} className="flex flex-col">
       <FormControlLabel
         control={
@@ -148,7 +91,7 @@ export const CapabilityCheckboxes = ({
         >
           {t('aiAssistant.capabilitiesRead')}
         </Typography>
-        {READ_ROWS.map(renderRow)}
+        {READ_CAPABILITIES.map(renderRow)}
       </div>
 
       <div className="flex flex-col">
@@ -162,7 +105,7 @@ export const CapabilityCheckboxes = ({
         >
           {t('aiAssistant.capabilitiesWrite')}
         </Typography>
-        {WRITE_ROWS.map(renderRow)}
+        {WRITE_CAPABILITIES.map(renderRow)}
       </div>
     </div>
   )

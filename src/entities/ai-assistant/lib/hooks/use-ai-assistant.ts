@@ -48,13 +48,23 @@ export const useConfirmAssistantAction = (): UseMutationResult<
       aiAssistantApi.confirmAction(request),
   })
 
-export const useAiAssistantSettings = (): {
+/**
+ * Настройки помощника.
+ *
+ * @param enabled панель помощника смонтирована на каждой странице приложения, а
+ *        разрешения ей нужны только открытой — чтобы не показывать заготовку,
+ *        которую сервер всё равно отклонит. Форма настроек зовёт без аргумента.
+ */
+export const useAiAssistantSettings = (
+  enabled = true
+): {
   settings: AiAssistantSettings | null
   isLoading: boolean
 } => {
   const { data, isLoading } = useQuery({
     queryKey: aiAssistantKeys.settings(),
     queryFn: ({ signal }) => aiAssistantApi.getSettings(signal),
+    enabled,
   })
   return { settings: data ?? null, isLoading }
 }

@@ -31,6 +31,10 @@ import {
 } from '../lib/customize-form/grid-zones'
 import { buildPreviewModel } from '../lib/customize-form/build-preview-model'
 import {
+  collectTableColumns,
+  type TableColumnItem,
+} from '../lib/customize-form/collect-table-columns'
+import {
   downloadViewSettings,
   parseViewSettingsFile,
 } from '../lib/customize-form/settings-transfer'
@@ -72,6 +76,9 @@ export const CustomizeFormDialog: FC = () => {
     new Map()
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [tableCols, setTableCols] = useState<Map<string, TableColumnItem[]>>(
+    new Map()
+  )
   // Снимок, из которого заполнено состояние: перезаполняем на открытии/приходе
   // патча, не перетирая правки внутри диалога. Подстройка во время рендера.
   const [seededFrom, setSeededFrom] = useState<unknown>(null)
@@ -90,6 +97,7 @@ export const CustomizeFormDialog: FC = () => {
     setRows(collected)
     setHidden(new Set(collected.filter((n) => !n.visible).map((n) => n.nodeId)))
     setWidths(new Map(collected.map((n) => [n.nodeId, n.width])))
+    setTableCols(collectTableColumns(root, hiddenByUser))
     setSelectedId(null)
   }
 
@@ -117,6 +125,11 @@ export const CustomizeFormDialog: FC = () => {
     )
     assignOrders(originalRows, rows, decisions)
     zoneDecisions(zones, decisions)
+    for (const columns of tableCols.values()) {
+      for (const column of columns) {
+        decisions.set(column.nodeId, { hidden: column.hidden })
+      }
+    }
     return buildPatchFromDecisions(patch ?? [], decisions)
   }
 
@@ -136,6 +149,17 @@ export const CustomizeFormDialog: FC = () => {
       const next = new Set(current)
       if (next.has(nodeId)) next.delete(nodeId)
       else next.add(nodeId)
+      return next
+    })
+  }
+
+  const toggleTableColumn = (tableId: string, nodeId: string) => {
+    setTableCols((current) => {
+      const next = new Map(
+        [...current].map(([id, cols]) => [id, cols.map((c) => ({ ...c }))])
+      )
+      const column = next.get(tableId)?.find((c) => c.nodeId === nodeId)
+      if (column) column.hidden = !column.hidden
       return next
     })
   }
@@ -239,20 +263,48 @@ export const CustomizeFormDialog: FC = () => {
               {t('sdui.customizeForm.otherElements')}
             </Typography>
             {rows.map((row) => (
-              <label
-                key={row.nodeId}
-                className="flex cursor-pointer items-center gap-2"
-              >
-                <Checkbox
-                  size="small"
-                  checked={!hidden.has(row.nodeId)}
-                  onChange={() => {
-                    toggle(row.nodeId)
-                  }}
-                  disabled={busy}
-                />
-                <Typography variant="body2">{row.label}</Typography>
-              </label>
+              <div key={row.nodeId} className="flex flex-col">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <Checkbox
+                    size="small"
+                    checked={!hidden.has(row.nodeId)}
+                    onChange={() => {
+                      toggle(row.nodeId)
+                    }}
+                    disabled={busy}
+                  />
+                  <Typography variant="body2">{row.label}</Typography>
+                </label>
+                {/* Колонки табличной части — вложенной свёрткой (запрос
+                    владельца 11.09: элементы есть и внутри вкладок). */}
+                {tableCols.has(row.nodeId) && (
+                  <details className="ml-9">
+                    <summary className="text-ui-05 cursor-pointer text-sm select-none">
+                      {t('sdui.customizeForm.tableColumns')}
+                    </summary>
+                    <div className="flex flex-col">
+                      {(tableCols.get(row.nodeId) ?? []).map((column) => (
+                        <label
+                          key={column.nodeId}
+                          className="flex cursor-pointer items-center gap-2"
+                        >
+                          <Checkbox
+                            size="small"
+                            checked={!column.hidden}
+                            onChange={() => {
+                              toggleTableColumn(row.nodeId, column.nodeId)
+                            }}
+                            disabled={busy}
+                          />
+                          <Typography variant="body2">
+                            {column.label}
+                          </Typography>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
             ))}
           </div>
         )}

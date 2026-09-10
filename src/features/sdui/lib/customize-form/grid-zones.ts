@@ -91,7 +91,9 @@ function toZone(
     }
     current.push({
       nodeId: child.id,
-      label: (props.label as string | undefined) ?? child.id,
+      // Поле без подписи (напр. служебная сумма): нейтральный глиф вместо
+      // технического id — id пользователю ни о чём.
+      label: (props.label as string | undefined) ?? '⋯',
       span,
       hidden: userHidden,
     })
@@ -150,4 +152,25 @@ export function cloneZones(zones: GridZone[]): GridZone[] {
 /** Убирает пустые строки после перестановок. */
 export function dropEmptyRows(zone: GridZone): void {
   zone.rows = zone.rows.filter((row) => row.length > 0)
+}
+
+/**
+ * Перетекание: строка, переполненная вставкой, отдаёт хвост в НАЧАЛО следующей
+ * строки (создавая её при необходимости) — каскадно, как перенос текста.
+ * Интуиция «подвинься» вместо запрета бросать в занятую строку.
+ */
+export function reflowZone(zone: GridZone, preferId?: string): void {
+  for (let i = 0; i < zone.rows.length; i++) {
+    const row = zone.rows[i]
+    while (row.length > 1 && rowFreeUnits(row) < 0) {
+      // Вытесняется хвост строки, но ТОЛЬКО-ЧТО ВСТАВЛЕННЫЙ элемент
+      // приоритетен: бросок в конец полной строки не должен выталкивать
+      // самого брошенного — уезжает его сосед.
+      let index = row.length - 1
+      if (preferId && row[index].nodeId === preferId && index > 0) index--
+      const moved = row.splice(index, 1)[0]
+      if (i + 1 >= zone.rows.length) zone.rows.push([])
+      zone.rows[i + 1].unshift(moved)
+    }
+  }
 }

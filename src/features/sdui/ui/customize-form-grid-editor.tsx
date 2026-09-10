@@ -6,6 +6,7 @@ import { cn } from '@/shared/lib/utils/cn'
 import {
   GRID_UNITS,
   dropEmptyRows,
+  reflowZone,
   rowFreeUnits,
   type GridItem,
   type GridZone,
@@ -95,13 +96,10 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
         let index = target.itemIndex
         // Перестановка внутри своей строки: удаление источника сместило цель.
         if (row === source.row && sourceItemIndex < index) index--
-        // Сжатие при нехватке места: вставляемый элемент ужимается до остатка,
-        // но не меньше 1 единицы — иначе бросок «в занятую строку» невозможен.
-        const free = rowFreeUnits(row)
-        if (source.item.span > free) {
-          source.item.span = Math.max(1, free > 0 ? free : source.item.span)
-        }
+        // Вставка БЕЗ ужатия: переполненная строка перетекает на следующую
+        // (reflowZone), как текст — интуиция «подвинься» вместо запрета.
         row.splice(Math.min(index, row.length), 0, source.item)
+        reflowZone(zone, source.item.nodeId)
       }
     })
     setDragged(null)
@@ -198,6 +196,30 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                   style={{
                     gridTemplateColumns: `repeat(${String(GRID_UNITS)}, 1fr)`,
                   }}
+                  onDragOver={(e) => {
+                    // Пустота строки (правее последней плашки, зазоры) — тоже
+                    // цель: индекс вставки вычисляется по X. Без этого курсор
+                    // в пустотах показывал «нельзя» и казалось, что тащить
+                    // можно только вверх (живой дефект 11.09).
+                    e.preventDefault()
+                    if (!dragged) return
+                    const cells = [...e.currentTarget.children] as HTMLElement[]
+                    let index = row.length
+                    for (let ci = 0; ci < cells.length; ci++) {
+                      const r = cells[ci].getBoundingClientRect()
+                      if (e.clientX < r.left + r.width / 2) {
+                        index = ci
+                        break
+                      }
+                    }
+                    setTarget({
+                      zoneIndex,
+                      rowIndex,
+                      itemIndex: index,
+                      newRow: false,
+                    })
+                  }}
+                  onDrop={drop}
                 >
                   {row.map((item, itemIndex) => (
                     <div
@@ -210,6 +232,8 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                       draggable={!busy}
                       onDragStart={(e) => {
                         e.dataTransfer.effectAllowed = 'move'
+                        // Без setData часть браузеров не инициализирует drag.
+                        e.dataTransfer.setData('text/plain', item.nodeId)
                         setDragged(item.nodeId)
                         onSelect(item.nodeId)
                       }}

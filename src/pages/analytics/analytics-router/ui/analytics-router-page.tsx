@@ -8,6 +8,7 @@ import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 
 import {
   ANALYTICS_ASSISTANT_CODE,
+  ANALYTICS_DICTIONARY_PERMISSIONS_CODE,
   ANALYTICS_DASHBOARD_ASSISTANT_CODE,
   ANALYTICS_REPORT_ASSISTANT_CODE,
   ANALYTICS_SETTINGS_CODE,
@@ -39,6 +40,11 @@ const AnalyticsAiStatisticsPage = lazy(() =>
     default: m.AnalyticsAiStatisticsPage,
   }))
 )
+const AnalyticsDictionaryPermissionsPage = lazy(() =>
+  import('@/pages/analytics/analytics-dictionary-permissions').then((m) => ({
+    default: m.AnalyticsDictionaryPermissionsPage,
+  }))
+)
 const AnalyticsDashboardPage = lazy(() =>
   import('@/pages/analytics/analytics-dashboard').then((m) => ({
     default: m.AnalyticsDashboardPage,
@@ -65,6 +71,7 @@ export const AnalyticsRouterPage = () => {
 
   const isReserved =
     code === ANALYTICS_ASSISTANT_CODE ||
+    code === ANALYTICS_DICTIONARY_PERMISSIONS_CODE ||
     code === ANALYTICS_DASHBOARD_ASSISTANT_CODE ||
     code === ANALYTICS_REPORT_ASSISTANT_CODE ||
     code === ANALYTICS_SETTINGS_CODE ||
@@ -74,6 +81,8 @@ export const AnalyticsRouterPage = () => {
   const { item, isLoading } = useAnalyticsItem(isReserved ? undefined : code)
 
   const renderContent = () => {
+    if (code === ANALYTICS_DICTIONARY_PERMISSIONS_CODE)
+      return <AnalyticsDictionaryPermissionsPage />
     if (code === ANALYTICS_ASSISTANT_CODE) return <AnalyticsAssistantLanding />
     if (code === ANALYTICS_DASHBOARD_ASSISTANT_CODE)
       return <AnalyticsAssistantPage key="DASHBOARD" kind="DASHBOARD" />

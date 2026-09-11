@@ -1,3 +1,7 @@
+import type {
+  AnalyticsDictionaryPermission,
+  AnalyticsDictionaryPermissionPage,
+} from '../types/dictionary-permissions'
 import { apiService } from '@/shared/api/api'
 import type { AiStatistics, AiStatisticsFilters } from '../types/ai-statistics'
 import type { AnalyticsOrganization } from '../types/organization'
@@ -78,6 +82,25 @@ const LLM_CALL_TIMEOUT_MS = 930_000
 const unwrap = <T>(res: { data: ApiResponse<T> }): T => res.data.data
 
 export const analyticsApi = {
+  getDictionaryPermissions: (
+    q: string,
+    page: number,
+    signal?: AbortSignal
+  ): Promise<AnalyticsDictionaryPermissionPage> =>
+    apiService
+      .get<
+        ApiResponse<AnalyticsDictionaryPermissionPage>
+      >({ url: `${BASE_URL}/ai-settings/dictionary-permissions`, params: { q, page, size: 50 }, signal })
+      .then(unwrap),
+  updateDictionaryPermission: (
+    typeCode: string,
+    allowed: boolean
+  ): Promise<AnalyticsDictionaryPermission> =>
+    apiService
+      .put<
+        ApiResponse<AnalyticsDictionaryPermission>
+      >({ url: `${BASE_URL}/ai-settings/dictionary-permissions/${encodeURIComponent(typeCode)}`, data: { allowed } })
+      .then(unwrap),
   getAiStatistics: (
     filters: AiStatisticsFilters,
     signal?: AbortSignal

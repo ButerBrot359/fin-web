@@ -250,8 +250,15 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                         e.dataTransfer.effectAllowed = 'move'
                         // Без setData часть браузеров не инициализирует drag.
                         e.dataTransfer.setData('text/plain', item.nodeId)
-                        setDragged(item.nodeId)
-                        onSelect(item.nodeId)
+                        // setState — СТРОГО следующим тиком: синхронный
+                        // ре-рендер меняет классы перетаскиваемого узла прямо
+                        // в dragstart, и Chrome немедленно отменяет drag.
+                        // Живой баг 11.09: «выбранная плашка не тащится,
+                        // а после удачного переноса не тащится уже она».
+                        setTimeout(() => {
+                          setDragged(item.nodeId)
+                          onSelect(item.nodeId)
+                        }, 0)
                       }}
                       onDragEnd={() => {
                         setDragged(null)
@@ -281,7 +288,7 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                           if (e.key === 'Enter' && !busy) onSelect(item.nodeId)
                         }}
                         className={cn(
-                          'w-full cursor-grab truncate rounded-md border px-2 py-1.5 text-left text-xs active:cursor-grabbing',
+                          'w-full cursor-grab truncate rounded-md border px-2 py-1.5 text-left text-xs select-none active:cursor-grabbing',
                           selectedId === item.nodeId
                             ? 'border-accent-02 bg-ui-04 text-accent-02'
                             : 'border-ui-03 bg-ui-01 text-ui-06',

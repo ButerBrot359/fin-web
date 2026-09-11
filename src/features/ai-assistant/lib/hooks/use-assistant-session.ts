@@ -69,11 +69,13 @@ export const useAssistantSession = (
   const activeContext = useRef(contextKey)
   const requestVersion = useRef(0)
   const sending = useRef(false)
+  const pendingRequest = useRef<{ payload: string; id: string } | null>(null)
 
   useLayoutEffect(() => {
     activeContext.current = contextKey
     requestVersion.current += 1
     sending.current = false
+    pendingRequest.current = null
   }, [contextKey])
 
   if (sessionKey !== contextKey) {
@@ -106,12 +108,26 @@ export const useAssistantSession = (
         },
       ])
 
+      const payload = JSON.stringify({
+        conversationId,
+        question: trimmed,
+        context,
+      })
+      if (pendingRequest.current?.payload !== payload) {
+        pendingRequest.current = { payload, id: crypto.randomUUID() }
+      }
       mutation.mutate(
-        { conversationId, question: trimmed, context },
+        {
+          conversationId,
+          question: trimmed,
+          context,
+          requestId: pendingRequest.current.id,
+        },
         {
           onSuccess: (answer) => {
             if (!isCurrent()) return
             sending.current = false
+            pendingRequest.current = null
             setConversationId(answer.conversationId)
             setMessages((current) => [
               ...current.map((message) =>
@@ -152,6 +168,7 @@ export const useAssistantSession = (
   const reset = useCallback(() => {
     requestVersion.current += 1
     sending.current = false
+    pendingRequest.current = null
     setMessages([])
     setConversationId(null)
     setIsRestored(false)
@@ -160,6 +177,7 @@ export const useAssistantSession = (
   const startNewChat = useCallback(() => {
     requestVersion.current += 1
     sending.current = false
+    pendingRequest.current = null
     setMessages([])
     setConversationId(null)
     // Explicitly empty: do not restore the previous conversation from cache.

@@ -1,4 +1,5 @@
 import { apiService } from '@/shared/api/api'
+import type { AiAssistantExecution } from '../types/execution'
 import type { ApiResponse } from '@/shared/types/api.types'
 
 import type {
@@ -36,6 +37,29 @@ const LLM_CALL_TIMEOUT_MS = 930_000
 const unwrap = <T>(res: { data: ApiResponse<T> }): T => res.data.data
 
 export const aiAssistantApi = {
+  getExecution: (
+    id: string,
+    signal?: AbortSignal
+  ): Promise<AiAssistantExecution> =>
+    apiService
+      .get<ApiResponse<AiAssistantExecution>>({
+        url: `${BASE_URL}/executions/${encodeURIComponent(id)}`,
+        signal,
+      })
+      .then(unwrap),
+
+  resumeExecution: (
+    id: string,
+    retryFailed = false
+  ): Promise<AiAssistantExecution> =>
+    apiService
+      .post<ApiResponse<AiAssistantExecution>>({
+        url: `${BASE_URL}/executions/${encodeURIComponent(id)}/resume`,
+        data: { retryFailed },
+        timeout: LLM_CALL_TIMEOUT_MS,
+      })
+      .then(unwrap),
+
   ask: (
     request: AiAssistantChatRequest,
     signal?: AbortSignal

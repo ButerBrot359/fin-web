@@ -16,6 +16,7 @@ export function AssistantMessageTimeline({
   messages,
   language,
   disabled,
+  executionDisabled = disabled,
   onAction,
   onOpenDocument,
   onEditQuestion,
@@ -23,6 +24,7 @@ export function AssistantMessageTimeline({
   messages: AssistantChatMessage[]
   language: string
   disabled: boolean
+  executionDisabled?: boolean
   onAction?: (action: AiAssistantAction) => void
   onOpenDocument: (typeCode: string, entryId: number) => void
   onEditQuestion?: (question: string) => void
@@ -70,6 +72,7 @@ export function AssistantMessageTimeline({
                 key={message.id}
                 answer={message.answer}
                 disabled={disabled}
+                executionDisabled={executionDisabled}
                 onOpenDocument={onOpenDocument}
                 onAction={(index) => {
                   const action = message.answer?.actions[index]

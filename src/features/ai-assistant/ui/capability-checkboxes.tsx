@@ -5,6 +5,7 @@ import type { AiAssistantCapability } from '@/entities/ai-assistant'
 import { cn } from '@/shared/lib/utils/cn'
 
 import {
+  isCapabilityAllowed,
   READ_CAPABILITIES,
   WRITE_CAPABILITIES,
   type CapabilityDescriptor,
@@ -66,6 +67,20 @@ export const CapabilityCheckboxes = ({
       >
         {t(row.hintKey)}
       </Typography>
+      {value.includes(row.value) && !isCapabilityAllowed(row.value, value) && (
+        <Typography variant="caption" className="pl-8 text-support-01">
+          {t('aiAssistant.capRequires', {
+            capabilities: [...READ_CAPABILITIES, ...WRITE_CAPABILITIES]
+              .filter(
+                (item) =>
+                  row.requires?.includes(item.value) &&
+                  !value.includes(item.value)
+              )
+              .map((item) => t(item.labelKey))
+              .join(', '),
+          })}
+        </Typography>
+      )}
     </div>
   )
 

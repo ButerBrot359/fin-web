@@ -7,10 +7,14 @@ import type {
 } from '@/entities/ai-assistant'
 import { Button } from '@/shared/ui/buttons'
 
+import { AssistantExecutionStatus } from './assistant-execution-status'
+import { AssistantPostingStatus } from './assistant-posting-status'
+
 interface AssistantAnswerCardProps {
   answer: AiAssistantAnswer
   onAction: (index: number) => void
   disabled?: boolean
+  executionDisabled?: boolean
   /** Открыть созданный документ. Панель уводит на него сразу, это — способ вернуться. */
   onOpenDocument: (typeCode: string, entryId: number) => void
 }
@@ -52,6 +56,7 @@ export const AssistantAnswerCard = ({
   onAction,
   onOpenDocument,
   disabled = false,
+  executionDisabled = disabled,
 }: AssistantAnswerCardProps) => {
   const { t } = useTranslation()
 
@@ -63,6 +68,14 @@ export const AssistantAnswerCard = ({
       >
         {answer.conclusion}
       </Typography>
+
+      {answer.execution && (
+        <AssistantExecutionStatus
+          execution={answer.execution}
+          disabled={executionDisabled}
+          onOpenDocument={onOpenDocument}
+        />
+      )}
 
       {answer.breakdown.length > 0 && (
         <div className="flex min-w-0 flex-col gap-1">
@@ -128,8 +141,13 @@ export const AssistantAnswerCard = ({
                   onOpenDocument(document.typeCode, document.entryId)
                 }}
               >
-                {`${document.presentation} — ${t(document.posted ? 'aiAssistant.documentPosted' : 'aiAssistant.createdUnposted')}`}
+                {document.operationStatus === 'ACCEPTED'
+                  ? document.presentation
+                  : `${document.presentation} — ${t(document.stateFresh === false ? 'aiAssistant.documentStateUnknown' : document.posted ? 'aiAssistant.documentPosted' : 'aiAssistant.createdUnposted')}`}
               </Button>
+              {document.operationStatus === 'ACCEPTED' && (
+                <AssistantPostingStatus document={document} />
+              )}
               {document.warnings.map((warning, index) => (
                 <Typography
                   key={index}

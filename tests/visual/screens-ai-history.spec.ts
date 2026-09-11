@@ -485,3 +485,90 @@ test('disabled AI settings cannot send through the composer', async ({
   }
   expect(sent).toEqual([])
 })
+
+test('saved execution history updates queued posting without reloading the page', async ({
+  page,
+}) => {
+  await fixture(page)
+  const result = {
+    id: 'execution-1',
+    requestId: 'request-1',
+    status: 'WAITING_TASK',
+    steps: [
+      { id: 'post', tool: 'POST_DOCUMENT', status: 'WAITING_TASK', output: {} },
+    ],
+  }
+  let reads = 0
+  await page.route(
+    '**/api/ai-assistant/conversations/25/messages*',
+    (intercepted) =>
+      intercepted.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            hasMore: false,
+            nextBeforeId: null,
+            messages: [
+              {
+                id: 2524,
+                role: 'ASSISTANT',
+                content: 'Проведение запущено',
+                createdAt: '2026-09-10T10:24:00+05:00',
+                answer: {
+                  conclusion: 'Проведение запущено',
+                  execution: result,
+                },
+              },
+            ],
+          },
+        }),
+      })
+  )
+  await page.route(
+    '**/api/ai-assistant/executions/execution-1',
+    (intercepted) => {
+      reads++
+      const data =
+        reads === 1
+          ? result
+          : {
+              ...result,
+              status: 'COMPLETED',
+              steps: [
+                {
+                  id: 'post',
+                  tool: 'POST_DOCUMENT',
+                  status: 'SUCCEEDED',
+                  output: {
+                    document: { typeCode: 'OperatsiyaBukh', entryId: 42 },
+                  },
+                },
+              ],
+            }
+      return intercepted.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ data, success: true }),
+      })
+    }
+  )
+  await page.goto(route + '?conversationId=25')
+  const execution = page.getByRole('region', { name: 'Выполнение действий' })
+  await expect(
+    execution.getByText('Ожидается фоновая операция', { exact: true })
+  ).toBeVisible()
+  await expect(execution.getByText('Выполнено', { exact: true })).toBeVisible({
+    timeout: 8000,
+  })
+  await expect(
+    execution.getByRole('button', { name: 'Открыть документ №42' })
+  ).toBeVisible()
+  await expect(
+    page.locator('[data-assistant-message-id="stored-2524"] time[title]')
+  ).toBeVisible()
+  expect(reads).toBeGreaterThanOrEqual(2)
+  await page.screenshot({
+    path: test.info().outputPath('execution-history.png'),
+    fullPage: true,
+  })
+})

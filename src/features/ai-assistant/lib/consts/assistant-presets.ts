@@ -4,7 +4,7 @@ import type {
 } from '@/entities/ai-assistant'
 import type { TranslationKey } from '@/shared/types/i18n.types'
 
-import { DEFAULT_CAPABILITIES } from './capability-catalog'
+import { DEFAULT_CAPABILITIES, isCapabilityAllowed } from './capability-catalog'
 
 type ContextKind = AiAssistantContext['kind']
 
@@ -46,7 +46,7 @@ const PRESETS: AssistantPreset[] = [
     id: 'check-document',
     labelKey: 'aiAssistant.quickCheckDocument',
     promptKey: 'aiAssistant.presetCheckDocumentPrompt',
-    capability: 'SEARCH_DATA',
+    capability: 'CHECK_DOCUMENT',
     kinds: ['DOCUMENT'],
     requiresEntry: true,
   },
@@ -76,6 +76,22 @@ const PRESETS: AssistantPreset[] = [
     capability: 'SEARCH_DATA',
     kinds: ['DOCUMENT'],
     requiresEntry: true,
+  },
+
+  {
+    id: 'related-documents',
+    labelKey: 'aiAssistant.capRelated',
+    promptKey: 'aiAssistant.capRelatedExample',
+    capability: 'READ_RELATED_DOCUMENTS',
+    kinds: ['DOCUMENT'],
+    requiresEntry: true,
+  },
+  {
+    id: 'batch-check',
+    labelKey: 'aiAssistant.capBatchCheck',
+    promptKey: 'aiAssistant.capBatchCheckExample',
+    capability: 'BATCH_CHECK_DOCUMENTS',
+    kinds: ['DOCUMENT_LIST'],
   },
 
   // --- список документов и новая карточка: вид известен, записи ещё нет
@@ -189,7 +205,7 @@ export const selectPresets = (
   return PRESETS.filter(
     (preset) =>
       preset.kinds.includes(kind) &&
-      allowed.includes(preset.capability) &&
+      isCapabilityAllowed(preset.capability, allowed) &&
       (!preset.requiresEntry || context.entryId != null)
   ).slice(0, MAX_PRESETS)
 }

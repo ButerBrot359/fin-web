@@ -17,12 +17,26 @@ const ids = (
  * сохранённой записи и разрешение организации.
  */
 describe('selectPresets', () => {
+  it('проверка правилами системы требует своей галочки', () => {
+    const context: AiAssistantContext = { kind: 'DOCUMENT', entryId: 42 }
+    expect(ids(context, ['SEARCH_DATA'])).not.toContain('check-document')
+    expect(ids(context, ['CHECK_DOCUMENT'])).toContain('check-document')
+  })
+
+  it('пакетная проверка требует поиск и проверку документа', () => {
+    const context: AiAssistantContext = { kind: 'DOCUMENT_LIST' }
+    expect(ids(context, ['BATCH_CHECK_DOCUMENTS'])).not.toContain('batch-check')
+    expect(
+      ids(context, ['BATCH_CHECK_DOCUMENTS', 'CHECK_DOCUMENT', 'SEARCH_DATA'])
+    ).toContain('batch-check')
+  })
+
   it('над открытым документом предлагает вопросы о нём самом', () => {
     expect(
       ids({ kind: 'DOCUMENT', typeCode: 'OperatsiyaBukh', entryId: 42 }, [
         'SEARCH_DATA',
       ])
-    ).toEqual(['explain-total', 'check-document', 'compare-period'])
+    ).toEqual(['explain-total', 'compare-period'])
   })
 
   it('копия предлагается только там, где есть что копировать и чем', () => {

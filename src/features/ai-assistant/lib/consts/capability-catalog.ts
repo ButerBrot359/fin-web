@@ -10,6 +10,7 @@ export interface CapabilityDescriptor {
   exampleKey: TranslationKey
   /** Действие меняет учёт, а не готовит данные — помечается красным. */
   critical?: boolean
+  requires?: AiAssistantCapability[]
 }
 
 /**
@@ -25,6 +26,47 @@ export interface CapabilityDescriptor {
  * оказывается внизу, а не между двумя безобидными.
  */
 export const READ_CAPABILITIES: CapabilityDescriptor[] = [
+  {
+    value: 'READ_RELATED_DOCUMENTS',
+    requires: ['SEARCH_DATA'],
+    labelKey: 'aiAssistant.capRelated',
+    hintKey: 'aiAssistant.capRelatedHint',
+    exampleKey: 'aiAssistant.capRelatedExample',
+  },
+  {
+    value: 'CHECK_DOCUMENT',
+    labelKey: 'aiAssistant.capCheck',
+    hintKey: 'aiAssistant.capCheckHint',
+    exampleKey: 'aiAssistant.capCheckExample',
+  },
+  {
+    value: 'BATCH_CHECK_DOCUMENTS',
+    labelKey: 'aiAssistant.capBatchCheck',
+    hintKey: 'aiAssistant.capBatchCheckHint',
+    exampleKey: 'aiAssistant.capBatchCheckExample',
+    requires: ['CHECK_DOCUMENT', 'SEARCH_DATA'],
+  },
+  {
+    value: 'DRILLDOWN_REPORT',
+    labelKey: 'aiAssistant.capDrilldown',
+    hintKey: 'aiAssistant.capDrilldownHint',
+    exampleKey: 'aiAssistant.capDrilldownExample',
+    requires: ['RUN_REPORT', 'SEARCH_DATA'],
+  },
+  {
+    value: 'EXPORT_REPORT',
+    labelKey: 'aiAssistant.capExportReport',
+    hintKey: 'aiAssistant.capExportReportHint',
+    exampleKey: 'aiAssistant.capExportReportExample',
+    requires: ['RUN_REPORT'],
+  },
+  {
+    value: 'COMPARE_WITH_1C',
+    labelKey: 'aiAssistant.capCompare1c',
+    hintKey: 'aiAssistant.capCompare1cHint',
+    exampleKey: 'aiAssistant.capCompare1cExample',
+  },
+
   {
     value: 'SEARCH_DATA',
     labelKey: 'aiAssistant.capSearch',
@@ -61,6 +103,43 @@ export const READ_CAPABILITIES: CapabilityDescriptor[] = [
 ]
 
 export const WRITE_CAPABILITIES: CapabilityDescriptor[] = [
+  {
+    value: 'CREATE_FROM_BASIS',
+    labelKey: 'aiAssistant.capBasis',
+    hintKey: 'aiAssistant.capBasisHint',
+    exampleKey: 'aiAssistant.capBasisExample',
+    requires: ['CREATE_DOCUMENT'],
+  },
+  {
+    value: 'FILL_DOCUMENT',
+    labelKey: 'aiAssistant.capFill',
+    hintKey: 'aiAssistant.capFillHint',
+    exampleKey: 'aiAssistant.capFillExample',
+    requires: ['UPDATE_DOCUMENT'],
+  },
+  {
+    value: 'CALCULATE_DOCUMENT',
+    labelKey: 'aiAssistant.capCalculate',
+    hintKey: 'aiAssistant.capCalculateHint',
+    exampleKey: 'aiAssistant.capCalculateExample',
+    requires: ['UPDATE_DOCUMENT'],
+  },
+  {
+    value: 'EDIT_DOCUMENT_ROWS',
+    labelKey: 'aiAssistant.capEditRows',
+    hintKey: 'aiAssistant.capEditRowsHint',
+    exampleKey: 'aiAssistant.capEditRowsExample',
+    requires: ['UPDATE_DOCUMENT'],
+  },
+  {
+    value: 'DELETE_DOCUMENT_ROWS',
+    labelKey: 'aiAssistant.capDeleteRows',
+    hintKey: 'aiAssistant.capDeleteRowsHint',
+    exampleKey: 'aiAssistant.capDeleteRowsExample',
+    requires: ['EDIT_DOCUMENT_ROWS', 'UPDATE_DOCUMENT'],
+    critical: true,
+  },
+
   {
     value: 'CREATE_DOCUMENT',
     labelKey: 'aiAssistant.capCreateDocument',
@@ -119,3 +198,17 @@ export const DEFAULT_CAPABILITIES: AiAssistantCapability[] = [
   'SEARCH_DATA',
   'QUERY_TOTALS',
 ]
+
+/** Составные операции доступны только вместе с базовыми разрешениями. */
+export const isCapabilityAllowed = (
+  capability: AiAssistantCapability,
+  allowed: readonly AiAssistantCapability[]
+): boolean => {
+  const descriptor = [...READ_CAPABILITIES, ...WRITE_CAPABILITIES].find(
+    (row) => row.value === capability
+  )
+  return (
+    allowed.includes(capability) &&
+    (descriptor?.requires ?? []).every((required) => allowed.includes(required))
+  )
+}

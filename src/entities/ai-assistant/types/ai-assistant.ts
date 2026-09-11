@@ -1,5 +1,9 @@
 /** Контур ИИ-помощника: чат поверх формы. */
 
+import type { AiAssistantExecution, AiExecutionStatus } from './execution'
+
+import type { AsyncTaskStatus } from '@/entities/async-task'
+
 import type { LlmProvider } from '@/entities/analytics'
 
 /**
@@ -21,6 +25,17 @@ export type AiAssistantCapability =
   | 'DELETE_DOCUMENT'
   | 'CREATE_DICTIONARY_ENTRY'
   | 'UPDATE_DICTIONARY_ENTRY'
+  | 'READ_RELATED_DOCUMENTS'
+  | 'CREATE_FROM_BASIS'
+  | 'CHECK_DOCUMENT'
+  | 'FILL_DOCUMENT'
+  | 'CALCULATE_DOCUMENT'
+  | 'EDIT_DOCUMENT_ROWS'
+  | 'DELETE_DOCUMENT_ROWS'
+  | 'DRILLDOWN_REPORT'
+  | 'BATCH_CHECK_DOCUMENTS'
+  | 'EXPORT_REPORT'
+  | 'COMPARE_WITH_1C'
 
 /** Объект, поверх которого открыт помощник. Содержимое сервер читает сам. */
 export interface AiAssistantContext {
@@ -36,6 +51,8 @@ export interface AiAssistantContext {
 }
 
 export interface AiAssistantChatRequest {
+  /** Стабильный ключ повторной отправки после потери ответа. */
+  requestId?: string
   conversationId?: number | null
   question: string
   context?: AiAssistantContext | null
@@ -74,6 +91,7 @@ export interface AiAssistantAction {
   entryId?: number | null
   tableCode?: string | null
   attributes?: Record<string, unknown> | null
+  expectedVersion?: number | null
   preview?: string | null
   /** Причина неудачи; пусто — действие доступно. Ошибка показывается сообщением, не кнопкой. */
   error?: string | null
@@ -85,11 +103,19 @@ export interface AiAssistantCreatedDocument {
   presentation: string
   /** Фактическое состояние документа после действия. */
   posted: boolean
+  stateFresh?: boolean | null
+  version?: number | null
+  operationStatus?: 'COMPLETED' | 'ACCEPTED'
+  taskId?: string | null
+  taskStatus?: AsyncTaskStatus | null
+  taskError?: string | null
   warnings: string[]
 }
 
 /** Ответ в формате концепции: вывод, расшифровка, источник, действия. */
 export interface AiAssistantAnswer {
+  status?: AiExecutionStatus
+  execution?: AiAssistantExecution | null
   conversationId: number
   /** Серверное время получения вопроса и формирования ответа, с часовым поясом. */
   userCreatedAt?: string
@@ -111,6 +137,7 @@ export interface AiAssistantConfirmAction {
   kind: 'CREATE_DOCUMENT'
   typeCode: string
   attributes?: Record<string, unknown> | null
+  expectedVersion?: number | null
 }
 
 /** Настройки помощника — отдельные от настроек аналитики. */

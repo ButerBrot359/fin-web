@@ -30,3 +30,10 @@ export type {
 } from './types/conversation'
 
 export { useAiConversationPages } from './lib/hooks/use-ai-conversation-pages'
+
+export type {
+  AiAssistantExecution,
+  AiExecutionStep,
+  AiExecutionStatus,
+  AiStepStatus,
+} from './types/execution'

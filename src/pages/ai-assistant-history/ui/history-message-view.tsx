@@ -1,6 +1,9 @@
 import { useMemo } from 'react'
 import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material'
-import { useAiConversationMessages } from '@/entities/ai-assistant'
+import {
+  useAiConversationMessages,
+  useAiAssistantSettings,
+} from '@/entities/ai-assistant'
 import { AssistantMessageTimeline } from '@/features/ai-assistant'
 import { restoreChatMessages } from '@/features/ai-assistant/lib/hooks/use-restored-assistant-session'
 import { useAssistantHistoryScroll } from '@/features/ai-assistant/lib/hooks/use-assistant-history-scroll'
@@ -17,6 +20,7 @@ export function HistoryMessageView({
   language: string
   onOpenDocument: (typeCode: string, id: number) => void
 }) {
+  const { settings } = useAiAssistantSettings()
   const history = useAiConversationMessages(conversationId, true, true)
   const messages = useMemo(
     () => restoreChatMessages(history.messages),
@@ -91,6 +95,7 @@ export function HistoryMessageView({
           messages={messages}
           language={language}
           disabled
+          executionDisabled={!settings?.enabled}
           onOpenDocument={onOpenDocument}
         />
       </div>

@@ -8,6 +8,7 @@ import { cn } from '@/shared/lib/utils/cn'
 
 import {
   DEFAULT_CAPABILITIES,
+  isCapabilityAllowed,
   READ_CAPABILITIES,
   WRITE_CAPABILITIES,
   type CapabilityDescriptor,
@@ -50,11 +51,11 @@ export const AssistantHelp = ({
   const { t } = useTranslation()
   const allowed = capabilities ?? DEFAULT_CAPABILITIES
   const hasDisabled = [...READ_CAPABILITIES, ...WRITE_CAPABILITIES].some(
-    (row) => !allowed.includes(row.value)
+    (row) => !isCapabilityAllowed(row.value, allowed)
   )
 
   const renderRow = (row: CapabilityDescriptor) => {
-    const isAllowed = allowed.includes(row.value)
+    const isAllowed = isCapabilityAllowed(row.value, allowed)
 
     return (
       <div

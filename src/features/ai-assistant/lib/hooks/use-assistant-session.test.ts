@@ -3,10 +3,22 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import type {
   AiAssistantAnswer,
   AiAssistantContext,
+  AiAssistantChatRequest,
 } from '@/entities/ai-assistant'
 import { useAssistantSession } from './use-assistant-session'
 
-const mocks = vi.hoisted(() => ({ mutate: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+  mutate:
+    vi.fn<
+      (
+        request: AiAssistantChatRequest,
+        options: {
+          onSuccess: (answer: AiAssistantAnswer) => void
+          onError: (error: unknown) => void
+        }
+      ) => void
+    >(),
+}))
 vi.mock('@/entities/ai-assistant', () => ({
   useAskAssistant: () => ({ mutate: mocks.mutate, isPending: false }),
 }))
@@ -31,6 +43,50 @@ const callbacks = () =>
   }
 
 describe('useAssistantSession', () => {
+  it('после потери ответа повторяет тот же вопрос с тем же ключом', () => {
+    const { result } = renderHook(() => useAssistantSession(context))
+    act(() => {
+      result.current.send('Создай копию')
+    })
+    const request = mocks.mutate.mock.calls[0][0]
+    act(() => {
+      mocks.mutate.mock.calls[0][1].onError(new Error('Network'))
+    })
+    act(() => {
+      result.current.send('Создай копию')
+    })
+    expect(mocks.mutate.mock.calls[1][0]).toEqual(request)
+    act(() => {
+      mocks.mutate.mock.calls[1][1].onSuccess(answer)
+    })
+    act(() => {
+      result.current.send('Создай копию')
+    })
+    expect(mocks.mutate.mock.calls[2][0].requestId).not.toBe(request.requestId)
+  })
+
+  it('изменённый вопрос и новый чат получают новый ключ', () => {
+    const { result } = renderHook(() => useAssistantSession(context))
+    act(() => {
+      result.current.send('Создай копию')
+    })
+    const id = mocks.mutate.mock.calls[0][0].requestId
+    act(() => {
+      mocks.mutate.mock.calls[0][1].onError(new Error('Network'))
+    })
+    act(() => {
+      result.current.send('Покажи документ')
+    })
+    expect(mocks.mutate.mock.calls[1][0].requestId).not.toBe(id)
+    act(() => {
+      result.current.startNewChat()
+    })
+    act(() => {
+      result.current.send('Создай копию')
+    })
+    expect(mocks.mutate.mock.calls[2][0].requestId).not.toBe(id)
+  })
+
   beforeEach(() => mocks.mutate.mockReset())
 
   it('не отправляет один запрос дважды до перерендера', () => {

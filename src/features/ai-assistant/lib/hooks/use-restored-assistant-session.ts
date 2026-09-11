@@ -31,6 +31,8 @@ export const restoreChatMessages = (
             missing: saved.missing,
             latencyMs: saved.latencyMs ?? 0,
             requestLogId: saved.requestLogId,
+            ...(saved.execution ? { execution: saved.execution } : {}),
+            ...(saved.status ? { status: saved.status } : {}),
           }
         : undefined
       return {

@@ -19,7 +19,8 @@ export function findNodeIdByBinding(
 
 export function buildValidationErrorPatches(
   root: ViewNode | null,
-  errors: ValidationErrorDetail[] | undefined
+  errors: ValidationErrorDetail[] | undefined,
+  rowAddressed?: ReadonlySet<string>
 ): ViewPatch[] {
   if (!root || !errors?.length) return []
   const patches: ViewPatch[] = []
@@ -27,6 +28,7 @@ export function buildValidationErrorPatches(
   for (const e of errors) {
     const code = e.attributeCode
     if (code == null || code === '') continue
+    if (rowAddressed?.has(code)) continue
     const message = e.message
     if (!message) continue
     const nodeId = findNodeIdByBinding(root, code)

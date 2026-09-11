@@ -41,6 +41,7 @@ import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { ColumnResizeHandle } from './column-resize-handle'
 import { ColumnHeaderLabel } from './column-header-label'
 import { PagedTableFooter } from './paged-table-footer'
+import { AuditHistoryCell } from './audit-history-cell'
 
 interface SimpleTableRow {
   rowId: string
@@ -65,6 +66,7 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
   const label = node.props?.label as string | undefined
   const showRowNumbers = node.props?.showRowNumbers === true
+  const isHistory = node.binding === 'history'
 
   // SCRUM-368: INLINE — строки из state, PAGED (движения/журналы) — страницы
   // из source.url с догрузкой сентинелом/кнопкой (футер внизу таблицы).
@@ -309,6 +311,14 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                               }
                             : { overflowWrap: 'anywhere' }),
                           ...(isResizable ? { overflow: 'hidden' } : {}),
+                          ...(isHistory
+                            ? {
+                                overflowWrap: 'normal',
+                                wordBreak: 'normal',
+                                verticalAlign: 'top',
+                                py: 1.75,
+                              }
+                            : {}),
                           // Постоянная заливка колонки (column-background.ts).
                           // Уступает условной заливке строки: та сообщает о
                           // состоянии записи и не должна теряться под фоном.
@@ -317,9 +327,15 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                             : { backgroundColor: col.backgroundColor }),
                         }}
                       >
-                        {col.binding !== undefined
-                          ? renderCellValue(row[col.binding])
-                          : ''}
+                        {col.binding !== undefined ? (
+                          isHistory ? (
+                            <AuditHistoryCell row={row} binding={col.binding} />
+                          ) : (
+                            renderCellValue(row[col.binding])
+                          )
+                        ) : (
+                          ''
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>

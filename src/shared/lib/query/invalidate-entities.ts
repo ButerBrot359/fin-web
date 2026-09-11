@@ -37,6 +37,13 @@ export const invalidateReferencePickers = (qc: QueryClient) => {
 export const invalidateDocumentListQueries = (qc: QueryClient) => {
   void qc.invalidateQueries({ queryKey: ['document', 'entries'] }) // use-eav-entries список
   void qc.invalidateQueries({ queryKey: ['document-entries'] }) // прочие/легаси-ключи
+  // История открывается отдельной PAGED-таблицей и сохраняет свой кэш.
+  void qc.invalidateQueries({
+    queryKey: ['sdui-table-page'],
+    predicate: ({ queryKey }) =>
+      typeof queryKey[1] === 'string' &&
+      /^\/api\/document-entries\/\d+\/history\/rows$/.test(queryKey[1]),
+  })
   invalidateReferencePickers(qc)
 }
 

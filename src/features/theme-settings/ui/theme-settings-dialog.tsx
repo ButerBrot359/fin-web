@@ -23,7 +23,7 @@ import {
   THEME_PRESETS,
   UI_SCALE_OPTIONS,
   type ThemePresetId,
-} from '../lib/consts/theme-presets'
+} from '@/shared/design/theme-presets'
 
 interface ThemeSettingsDialogProps {
   open: boolean

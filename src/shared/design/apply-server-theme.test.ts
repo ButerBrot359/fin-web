@@ -86,3 +86,36 @@ describe('applyServerTheme', () => {
     })
   })
 })
+
+describe('theme-preset разворачивается применителем (Ф2)', () => {
+  it('маркер пресета без развёрнутых токенов красит акценты пресета', async () => {
+    const { applyServerTheme } = await import('./apply-server-theme')
+    const { THEME_PRESETS } = await import('./theme-presets')
+    const emerald = THEME_PRESETS.find((p) => p.id === 'emerald')
+    if (!emerald) throw new Error('нет пресета emerald')
+
+    applyServerTheme({ 'theme-preset': 'emerald' })
+
+    const accent =
+      document.documentElement.style.getPropertyValue('--accent-02')
+    expect(accent).toBe(emerald.tokens['accent-02'])
+  })
+
+  it('явный токен темы побеждает базу пресета', async () => {
+    const { applyServerTheme } = await import('./apply-server-theme')
+
+    applyServerTheme({ 'theme-preset': 'emerald', 'accent-02': '#123456' })
+
+    expect(document.documentElement.style.getPropertyValue('--accent-02')).toBe(
+      '#123456'
+    )
+  })
+
+  it('неизвестный пресет игнорируется без падения', async () => {
+    const { applyServerTheme } = await import('./apply-server-theme')
+
+    expect(() => {
+      applyServerTheme({ 'theme-preset': 'nonexistent' })
+    }).not.toThrow()
+  })
+})

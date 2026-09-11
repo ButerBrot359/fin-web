@@ -14,7 +14,7 @@ const SRC = 'src'
 // осознанные literal-цвета второго канона, а не дрейф от tokens.ts.
 const ALLOWED_FILES = new Set([
   'src/shared/design/tokens.ts',
-  'src/features/theme-settings/lib/consts/theme-presets.ts',
+  'src/shared/design/theme-presets.ts',
 ])
 
 const walk = (dir: string): string[] =>

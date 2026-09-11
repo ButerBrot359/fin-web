@@ -1,4 +1,5 @@
 import { allTokens } from './tokens'
+import { THEME_PRESETS } from './theme-presets'
 
 /**
  * Накатывает серверную тему на `:root` поверх дефолтов `injectDesignTokens`
@@ -28,7 +29,12 @@ const knownCssVarByKey = (): Map<string, string> =>
  * разъехавшегося позиционирования.
  */
 export const UI_SCALE_TOKEN = 'ui-scale'
-/** Ключ-маркер выбранного пресета темы — фронт его не применяет, только хранит. */
+/**
+ * Ключ выбранного пресета темы. Применитель раскладывает его в токены пресета
+ * КАК БАЗУ (явные токены темы кладутся поверх): диалог тем и так сохраняет
+ * развёрнутые значения, а ИИ-агент (Ф2) шлёт один этот ключ — без развёртки
+ * здесь его «поставь изумрудную» ничего не меняло (живой дефект 11.09).
+ */
 export const THEME_PRESET_TOKEN = 'theme-preset'
 const UI_SCALE_MIN = 0.8
 const UI_SCALE_MAX = 1.5
@@ -40,7 +46,8 @@ export function applyServerTheme(tokens: Record<string, string>): void {
   const root = document.documentElement
   const applied: string[] = []
 
-  for (const [key, value] of Object.entries(tokens)) {
+  const effective = withPresetBase(tokens)
+  for (const [key, value] of Object.entries(effective)) {
     if (typeof value !== 'string') continue
     if (key === UI_SCALE_TOKEN) {
       applyUiScale(root, value)
@@ -62,6 +69,17 @@ export function applyServerTheme(tokens: Record<string, string>): void {
     }
   }
   appliedCssVars = applied
+}
+
+/** База пресета под явными токенами; неизвестный id пресета игнорируется. */
+function withPresetBase(
+  tokens: Record<string, string>
+): Record<string, string> {
+  const presetId = tokens[THEME_PRESET_TOKEN]
+  if (!presetId) return tokens
+  const preset = THEME_PRESETS.find((p) => p.id === presetId)
+  if (!preset) return tokens
+  return { ...preset.tokens, ...tokens }
 }
 
 const appContainer = (): HTMLElement | null => document.getElementById('root')

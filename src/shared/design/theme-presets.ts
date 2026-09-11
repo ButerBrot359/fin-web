@@ -1,4 +1,5 @@
-import type { ThemeTokens } from '@/entities/theme'
+/** Пары «токен → значение»; дублирует ThemeTokens из entities/theme — shared не может импортировать вверх. */
+type ThemeTokens = Record<string, string>
 
 /**
  * Готовые темы оформления (решение владельца 10.09: пользователю — выбор из

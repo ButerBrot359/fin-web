@@ -36,7 +36,29 @@ const LLM_CALL_TIMEOUT_MS = 930_000
  */
 const unwrap = <T>(res: { data: ApiResponse<T> }): T => res.data.data
 
+export interface AiAssistantRequestRecovery {
+  requestId: string
+  conversationId: number | null
+  userMessageId: number | null
+  assistantMessageId?: number
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'INTERRUPTED'
+  answer?: AiAssistantAnswer
+  error?: string
+  userCreatedAt: string
+  createdAt?: string
+}
+
 export const aiAssistantApi = {
+  getRequest: (
+    id: string,
+    signal?: AbortSignal
+  ): Promise<AiAssistantRequestRecovery> =>
+    apiService
+      .get<ApiResponse<AiAssistantRequestRecovery>>({
+        url: `${BASE_URL}/requests/${encodeURIComponent(id)}`,
+        signal,
+      })
+      .then(unwrap),
   getExecution: (
     id: string,
     signal?: AbortSignal

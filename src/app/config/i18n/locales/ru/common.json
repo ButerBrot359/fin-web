@@ -1422,7 +1422,9 @@
     "difference_DATE_MISMATCH": "Дата отличается",
     "difference_DIMENSION_MISMATCH": "Аналитика отличается",
     "difference_BALANCE_MISMATCH": "Остаток отличается",
-    "difference_REVERSAL_MISMATCH": "Признак сторно отличается"
+    "difference_REVERSAL_MISMATCH": "Признак сторно отличается",
+    "historyEarlier": "Ранние сообщения",
+    "requestInterrupted": "Запрос прерван. Автоматический повтор не выполнялся."
   },
   "aiConnections": {
     "title": "Подключения к ИИ",

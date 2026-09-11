@@ -114,6 +114,9 @@ export interface AiAssistantCreatedDocument {
 
 /** Ответ в формате концепции: вывод, расшифровка, источник, действия. */
 export interface AiAssistantAnswer {
+  userMessageId?: number
+  assistantMessageId?: number
+  requestId?: string
   status?: AiExecutionStatus
   execution?: AiAssistantExecution | null
   conversationId: number

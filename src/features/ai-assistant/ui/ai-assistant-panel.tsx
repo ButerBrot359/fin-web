@@ -129,6 +129,7 @@ export const AiAssistantPanel = ({
 
   return (
     <div
+      data-testid="ai-assistant-panel"
       className={cn(
         'fixed right-6 z-[1050] flex max-w-[92vw] flex-col',
         FLOATING_BOTTOM,
@@ -188,8 +189,21 @@ export const AiAssistantPanel = ({
           <div
             ref={scrollRef}
             onScroll={onScroll}
+            data-testid="assistant-messages"
             className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto px-3 pb-3"
           >
+            {hasOlderMessages && !olderMessagesError && (
+              <div className="flex shrink-0 justify-center">
+                <Button
+                  variant="tertiary"
+                  size="small"
+                  disabled={isLoadingOlder}
+                  onClick={loadOlder}
+                >
+                  {t('aiAssistant.historyEarlier')}
+                </Button>
+              </div>
+            )}
             {isLoadingOlder && (
               <Typography variant="body2" role="status" className="text-ui-05">
                 {t('aiAssistant.historyLoading')}

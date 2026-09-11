@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useAuthStore } from '@/features/auth/lib/hooks/use-auth-store'
 import { useTranslation } from 'react-i18next'
 import { requestOpenViewsRefresh } from '@/shared/lib/refresh/open-views-refresh'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -188,12 +189,14 @@ export const useAiConversations = (
   isError: boolean
   retry: () => void
 } => {
+  const ownerId = useAuthStore((state) => state.user?.id)
   const { data, isLoading, isSuccess, isFetching, isError, refetch } = useQuery(
     {
       queryKey: [
         ...aiAssistantKeys.conversations(),
         context?.typeCode ?? '',
         context?.entryId ?? '',
+        ownerId ?? null,
       ],
       queryFn: ({ signal }) => aiAssistantApi.getConversations(context, signal),
       enabled,
@@ -216,11 +219,13 @@ export const useAiConversationMessages = (
   enabled = true,
   refetchOnMount = false
 ) => {
+  const ownerId = useAuthStore((state) => state.user?.id)
   const query = useInfiniteQuery({
     queryKey: [
       ...aiAssistantKeys.conversationMessages(conversationId ?? 0),
       'pages',
       10,
+      ownerId ?? null,
     ],
     initialPageParam: null as number | null,
     queryFn: ({ signal, pageParam }) =>

@@ -130,3 +130,25 @@ describe('assignOrders', () => {
     expect(decisions.get('field.comment')?.order).toBeUndefined()
   })
 })
+
+describe('buildPatchFromDecisions: подписи (Ф5)', () => {
+  it('строка задаёт label, null снимает, undefined не трогает', () => {
+    const current = [
+      { nodeId: 'a', props: { label: 'Старая', colSpan: 12 } },
+      { nodeId: 'b', props: { label: 'Снять' } },
+      { nodeId: 'c', props: { label: 'Не трогать' } },
+    ]
+    const decisions = new Map([
+      ['a', { hidden: false, label: 'Новая' }],
+      ['b', { hidden: false, label: null }],
+      ['c', { hidden: false }],
+    ])
+
+    const patch = buildPatchFromDecisions(current, decisions)
+    const byId = new Map(patch.map((e) => [e.nodeId, e.props]))
+
+    expect(byId.get('a')).toMatchObject({ label: 'Новая' })
+    expect(byId.has('b')).toBe(false)
+    expect(byId.get('c')).toMatchObject({ label: 'Не трогать' })
+  })
+})

@@ -5,6 +5,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  TextField,
   Typography,
 } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -14,7 +15,10 @@ import { Button } from '@/shared/ui/buttons'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { notifyViewSettingsChanged } from '@/shared/lib/design-settings/design-settings-events'
 
-import { viewSettingsApi } from '../api/view-settings-api'
+import {
+  viewSettingsApi,
+  viewSettingsDefaultsApi,
+} from '../api/view-settings-api'
 import { useCustomizeFormStore } from '../lib/customize-form/customize-form-store'
 import {
   assignOrders,
@@ -43,7 +47,8 @@ import { CustomizeFormPreview } from './customize-form-preview'
 import { CustomizeFormRow } from './customize-form-row'
 import { CustomizeFormSectionCard } from './customize-form-section-card'
 
-const settingsKey = (screenKey: string) => ['view-settings', screenKey] as const
+const settingsKey = (screenKey: string, mode: string) =>
+  ['view-settings', mode, screenKey] as const
 
 /**
  * Диалог «Ещё → Изменить форму» (конструктор дизайна, v5 — страница секциями,
@@ -56,15 +61,18 @@ const settingsKey = (screenKey: string) => ['view-settings', screenKey] as const
 export const CustomizeFormDialog: FC = () => {
   const { t } = useTranslation()
   const isOpen = useCustomizeFormStore((s) => s.isOpen)
+  const mode = useCustomizeFormStore((s) => s.mode)
   const close = useCustomizeFormStore((s) => s.close)
+  // Ф5: режим «для всех» пишет админский дефолт тем же диалогом.
+  const api = mode === 'default' ? viewSettingsDefaultsApi : viewSettingsApi
   const screenKey = useTreeStore((s) => s.screenKey)
   const root = useTreeStore((s) => s.root)
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const { data: patch } = useQuery({
-    queryKey: settingsKey(screenKey ?? ''),
-    queryFn: ({ signal }) => viewSettingsApi.get(screenKey ?? '', signal),
+    queryKey: settingsKey(screenKey ?? '', mode),
+    queryFn: ({ signal }) => api.get(screenKey ?? '', signal),
     enabled: isOpen && screenKey != null,
   })
 
@@ -76,6 +84,8 @@ export const CustomizeFormDialog: FC = () => {
     new Map()
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  /** Переопределения подписей (Ф5): '' — снять; отсутствие ключа — не трогали. */
+  const [labels, setLabels] = useState<Map<string, string>>(new Map())
   // Снимок, из которого заполнено состояние: перезаполняем на открытии/приходе
   // патча, не перетирая правки внутри диалога. Подстройка во время рендера.
   const [seededFrom, setSeededFrom] = useState<unknown>(null)
@@ -104,6 +114,13 @@ export const CustomizeFormDialog: FC = () => {
       setWidths(new Map())
     }
     setSelectedId(null)
+    setLabels(
+      new Map(
+        patch
+          .filter((e) => typeof e.props.label === 'string')
+          .map((e) => [e.nodeId, e.props.label as string])
+      )
+    )
   }
 
   const hasSections = sections.length > 0
@@ -117,7 +134,9 @@ export const CustomizeFormDialog: FC = () => {
 
   const finish = async () => {
     if (screenKey != null) {
-      await queryClient.invalidateQueries({ queryKey: settingsKey(screenKey) })
+      await queryClient.invalidateQueries({
+        queryKey: ['view-settings'],
+      })
     }
     notifyViewSettingsChanged()
     close()
@@ -136,16 +155,27 @@ export const CustomizeFormDialog: FC = () => {
       }
       assignOrders(originalRows, rows, decisions)
     }
+    // Подписи (Ф5): дополняем решения переопределениями, не стирая прочие пропы.
+    for (const [nodeId, label] of labels) {
+      const decision = decisions.get(nodeId) ?? { hidden: false }
+      const trimmed = label.trim()
+      const hadBefore = (patch ?? []).some(
+        (e) => e.nodeId === nodeId && typeof e.props.label === 'string'
+      )
+      if (trimmed !== '') decision.label = trimmed
+      else if (hadBefore) decision.label = null
+      decisions.set(nodeId, decision)
+    }
     return buildPatchFromDecisions(patch ?? [], decisions)
   }
 
   const saveMutation = useMutation({
     mutationFn: (nextPatch: ReturnType<typeof buildPatch>) =>
-      viewSettingsApi.put(screenKey ?? '', nextPatch),
+      api.put(screenKey ?? '', nextPatch),
     onSuccess: finish,
   })
   const resetMutation = useMutation({
-    mutationFn: () => viewSettingsApi.reset(screenKey ?? ''),
+    mutationFn: () => api.reset(screenKey ?? ''),
     onSuccess: finish,
   })
   const busy = saveMutation.isPending || resetMutation.isPending
@@ -252,7 +282,7 @@ export const CustomizeFormDialog: FC = () => {
   const importFile = async (file: File) => {
     try {
       const imported = parseViewSettingsFile(await file.text())
-      await viewSettingsApi.put(screenKey ?? '', imported)
+      await api.put(screenKey ?? '', imported)
       await finish()
     } catch (error) {
       showToast(
@@ -275,8 +305,19 @@ export const CustomizeFormDialog: FC = () => {
       maxWidth="md"
       fullWidth
     >
-      <DialogTitle>{t('sdui.customizeForm.title')}</DialogTitle>
+      <DialogTitle>
+        {t(
+          mode === 'default'
+            ? 'sdui.customizeForm.defaultTitle'
+            : 'sdui.customizeForm.title'
+        )}
+      </DialogTitle>
       <DialogContent className="flex flex-col gap-3">
+        {mode === 'default' && (
+          <Typography variant="body2" className="text-support-01">
+            {t('sdui.customizeForm.defaultWarning')}
+          </Typography>
+        )}
         <Typography variant="body2">
           {hasSections
             ? t('sdui.customizeForm.sectionsHint')
@@ -333,21 +374,44 @@ export const CustomizeFormDialog: FC = () => {
         )}
         <div className="border-ui-03 min-h-12 rounded-lg border px-3 py-2">
           {selectedZoneItem ? (
-            <label className="flex cursor-pointer items-center gap-2">
-              <Checkbox
-                size="small"
-                checked={!selectedZoneItem.hidden}
-                onChange={() => {
-                  toggleZoneItem(selectedZoneItem.nodeId)
-                }}
-                disabled={busy}
-              />
-              <Typography variant="body2">
-                {t('sdui.customizeForm.showElement', {
-                  label: selectedZoneItem.label,
-                })}
-              </Typography>
-            </label>
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="flex cursor-pointer items-center gap-2">
+                <Checkbox
+                  size="small"
+                  checked={!selectedZoneItem.hidden}
+                  onChange={() => {
+                    toggleZoneItem(selectedZoneItem.nodeId)
+                  }}
+                  disabled={busy}
+                />
+                <Typography variant="body2">
+                  {t('sdui.customizeForm.showElement', {
+                    label: selectedZoneItem.label,
+                  })}
+                </Typography>
+              </label>
+              {mode === 'default' && (
+                <TextField
+                  size="small"
+                  label={t('sdui.customizeForm.labelField')}
+                  value={
+                    labels.get(selectedZoneItem.nodeId) ??
+                    (selectedZoneItem.label === '⋯'
+                      ? ''
+                      : selectedZoneItem.label)
+                  }
+                  onChange={(e) => {
+                    setLabels((current) =>
+                      new Map(current).set(
+                        selectedZoneItem.nodeId,
+                        e.target.value
+                      )
+                    )
+                  }}
+                  disabled={busy}
+                />
+              )}
+            </div>
           ) : selectedRow && !hasSections ? (
             <CustomizeFormRow
               node={selectedRow}

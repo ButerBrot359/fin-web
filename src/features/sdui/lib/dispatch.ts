@@ -25,7 +25,10 @@ import { usePanelStore } from './stores/panel-store'
 import { useConfirmStore } from './stores/confirm-store'
 import { useUnsavedChangesStore } from './stores/unsaved-changes-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
-import { CUSTOMIZE_FORM_COMMAND } from './customize-form/customize-form-command'
+import {
+  CUSTOMIZE_FORM_COMMAND,
+  CUSTOMIZE_FORM_DEFAULT_COMMAND,
+} from './customize-form/customize-form-command'
 import { useCustomizeFormStore } from './customize-form/customize-form-store'
 import { revealAllTableErrors } from './table-validation-registry'
 import { shouldRevealTableErrors } from './utils/reveal-policy'
@@ -68,14 +71,21 @@ export function useSduiDispatch() {
         onOpenTab?: (tab: ViewTabMeta | null) => void
       }
     ): Promise<boolean> {
-      // Конструктор дизайна Ф4: «Изменить форму» — единственная клиентская
-      // команда контракта. Пункт приходит с бэка обычной MENU_ITEM-нодой, но
+      // Конструктор дизайна Ф4/Ф5: «Изменить форму [для всех]» — клиентские
+      // команды контракта. Пункты приходят с бэка обычными MENU_ITEM-нодами, но
       // серверного хендлера нет — перехват до inflight-гарда и транспорта.
       if (
         action.type === 'COMMAND' &&
-        action.command === CUSTOMIZE_FORM_COMMAND
+        (action.command === CUSTOMIZE_FORM_COMMAND ||
+          action.command === CUSTOMIZE_FORM_DEFAULT_COMMAND)
       ) {
-        useCustomizeFormStore.getState().open()
+        useCustomizeFormStore
+          .getState()
+          .open(
+            action.command === CUSTOMIZE_FORM_DEFAULT_COMMAND
+              ? 'default'
+              : 'user'
+          )
         return true
       }
 

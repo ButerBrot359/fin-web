@@ -31,6 +31,11 @@ export interface NodeDecision {
   colSpan?: number
   /** Явный разрыв строки; undefined — проп снимается. */
   newRow?: boolean
+  /**
+   * Переопределение подписи (словарь v2, Ф5 — админ-дефолты): строка — задать,
+   * `null` — снять прежнее переопределение, undefined — не трогать.
+   */
+  label?: string | null
 }
 
 const CONTAINER_TYPES = new Set(['GROUP', 'TABLE'])
@@ -117,6 +122,8 @@ export function buildPatchFromDecisions(
     else delete props.colSpan
     if (decision.newRow !== undefined) props.newRow = decision.newRow
     else delete props.newRow
+    if (typeof decision.label === 'string') props.label = decision.label
+    else if (decision.label === null) delete props.label
     byNodeId.set(nodeId, props)
   }
   for (const [nodeId, props] of byNodeId) {

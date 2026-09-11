@@ -1,5 +1,6 @@
 import { useRef, useState, type FC } from 'react'
 import { Typography } from '@mui/material'
+import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/shared/lib/utils/cn'
 
@@ -42,6 +43,7 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
   onSelect,
   onChange,
 }) => {
+  const { t } = useTranslation()
   const [dragged, setDragged] = useState<string | null>(null)
   const [target, setTarget] = useState<DropTarget | null>(null)
   const [resizePreview, setResizePreview] = useState<Map<string, number>>(
@@ -72,7 +74,10 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
     return null
   }
 
-  const drop = () => {
+  const drop = (e?: React.DragEvent) => {
+    // Всплытие ячейка → строка вызывало drop дважды — второй проход по
+    // старой модели делал каскад перетекания недетерминированным.
+    e?.stopPropagation()
     if (!dragged || !target) return
     mutate((next) => {
       const source = findItem(next, dragged)
@@ -148,6 +153,17 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
     window.addEventListener('mousemove', move)
     window.addEventListener('mouseup', up)
   }
+
+  const isCellTarget = (
+    zoneIndex: number,
+    rowIndex: number,
+    itemIndex: number
+  ): boolean =>
+    target != null &&
+    !target.newRow &&
+    target.zoneIndex === zoneIndex &&
+    target.rowIndex === rowIndex &&
+    target.itemIndex === itemIndex
 
   const rowSeparator = (zoneIndex: number, rowIndex: number) => (
     <div
@@ -244,14 +260,6 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                       onDragOver={(e) => {
                         e.preventDefault()
                         if (!dragged || dragged === item.nodeId) return
-                        // В строку без свободного места бросить нельзя —
-                        // кроме перестановки внутри неё самой (место
-                        // освободит сам перетаскиваемый).
-                        const source = findItem(zones, dragged)
-                        const sameRow = source?.row === row
-                        const capacity =
-                          rowFreeUnits(row) + (sameRow ? source.item.span : 0)
-                        if (capacity < 1) return
                         const rect = e.currentTarget.getBoundingClientRect()
                         const before = e.clientX < rect.left + rect.width / 2
                         setTarget({
@@ -278,16 +286,40 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                             ? 'border-accent-02 bg-ui-04 text-accent-02'
                             : 'border-ui-03 bg-ui-01 text-ui-06',
                           item.hidden && 'border-dashed opacity-40',
-                          dragged === item.nodeId && 'opacity-30',
-                          !target?.newRow &&
-                            target?.zoneIndex === zoneIndex &&
-                            target.rowIndex === rowIndex &&
-                            target.itemIndex === itemIndex &&
-                            'border-l-accent-02 border-l-2'
+                          dragged === item.nodeId && 'opacity-30'
                         )}
                       >
-                        {item.label}
+                        {item.label === '⋯' ? (
+                          <span className="text-ui-05 italic">
+                            {t('sdui.customizeForm.unnamed')}
+                          </span>
+                        ) : (
+                          item.label
+                        )}
                       </div>
+                      {/* Слоты вставки: при перетаскивании видны ВСЕ доступные
+                          места (иначе казалось, что бросать можно только в
+                          междустрочья — живой отзыв 11.09). */}
+                      {dragged && dragged !== item.nodeId && (
+                        <div
+                          className={cn(
+                            'absolute top-0 bottom-0 -left-[7px] w-1.5 rounded',
+                            isCellTarget(zoneIndex, rowIndex, itemIndex)
+                              ? 'bg-accent-02'
+                              : 'bg-ui-04'
+                          )}
+                        />
+                      )}
+                      {dragged && itemIndex === row.length - 1 && (
+                        <div
+                          className={cn(
+                            'absolute top-0 -right-[7px] bottom-0 w-1.5 rounded',
+                            isCellTarget(zoneIndex, rowIndex, row.length)
+                              ? 'bg-accent-02'
+                              : 'bg-ui-04'
+                          )}
+                        />
+                      )}
                       {/* Ручка ширины: тянется в сторону свободного места строки. */}
                       <div
                         onMouseDown={(e) => {

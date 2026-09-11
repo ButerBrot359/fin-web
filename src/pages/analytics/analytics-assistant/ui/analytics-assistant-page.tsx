@@ -96,7 +96,7 @@ export const AnalyticsAssistantPage = () => {
             <Button
               size="small"
               variant="tertiary"
-              disabled={session.messages.length === 0}
+              disabled={session.isPending || session.messages.length === 0}
               onClick={session.reset}
             >
               {t('analytics.assistant.newChat')}

@@ -12,6 +12,8 @@ export interface GridItem {
   label: string
   span: number
   hidden: boolean
+  /** Зона, в которой элемент живёт в дереве с провода, — для эмиссии moveTo. */
+  homeZoneId: string
 }
 
 export interface GridZone {
@@ -96,6 +98,7 @@ function toZone(
       label: (props.label as string | undefined) ?? '⋯',
       span,
       hidden: userHidden,
+      homeZoneId: grid.id,
     })
     used += span
   }
@@ -135,6 +138,9 @@ export function zoneDecisions(
           colSpan: item.span,
           newRow: rowIndex > 0 && itemIndex === 0,
           order: order++,
+          // Перенос между зонами (словарь v3): элемент лежит не в родной зоне —
+          // бэк вырежет ноду и вставит в целевой грид, order доводит до места.
+          moveTo: zone.zoneId !== item.homeZoneId ? zone.zoneId : undefined,
         })
       })
     })

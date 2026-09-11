@@ -36,6 +36,8 @@ export interface NodeDecision {
    * `null` — снять прежнее переопределение, undefined — не трогать.
    */
   label?: string | null
+  /** Перенос в другую грид-зону (словарь v3); undefined — проп снимается. */
+  moveTo?: string
 }
 
 const CONTAINER_TYPES = new Set(['GROUP', 'TABLE'])
@@ -124,6 +126,11 @@ export function buildPatchFromDecisions(
     else delete props.newRow
     if (typeof decision.label === 'string') props.label = decision.label
     else if (decision.label === null) delete props.label
+    // moveTo НЕ снимается по undefined: после сохранения дерево приходит с уже
+    // перенесённой нодой, и «родной» зоной становится целевая — undefined здесь
+    // значит «нода лежит там же, где в дереве», а не «отменить перенос». Возврат
+    // выражается явным moveTo на исходную зону; полный сброс — DELETE патча.
+    if (decision.moveTo !== undefined) props.moveTo = decision.moveTo
     byNodeId.set(nodeId, props)
   }
   for (const [nodeId, props] of byNodeId) {

@@ -12,6 +12,7 @@ import {
   type GridItem,
   type GridZone,
 } from '../lib/customize-form/grid-zones'
+import { useCustomizeFormDndStore } from '../lib/customize-form/customize-form-dnd-store'
 
 interface CustomizeFormGridEditorProps {
   zones: GridZone[]
@@ -19,6 +20,19 @@ interface CustomizeFormGridEditorProps {
   busy: boolean
   onSelect: (nodeId: string) => void
   onChange: (zones: GridZone[]) => void
+  /**
+   * Бросок элемента ЧУЖОЙ зоны (перенос между блоками, словарь v3): сам
+   * редактор знает только свои зоны — перестановку между секциями делает
+   * диалог. Не передан — чужие броски игнорируются.
+   */
+  onExternalDrop?: (nodeId: string, target: ExternalDropTarget) => void
+}
+
+export interface ExternalDropTarget {
+  zoneId: string
+  rowIndex: number
+  itemIndex: number
+  newRow: boolean
 }
 
 interface DropTarget {
@@ -42,9 +56,14 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
   busy,
   onSelect,
   onChange,
+  onExternalDrop,
 }) => {
   const { t } = useTranslation()
-  const [dragged, setDragged] = useState<string | null>(null)
+  // Глобальный dragged (общий стор): перетаскивание видно ВСЕМ инстансам
+  // редактора — цели подсвечиваются и в чужих зонах (перенос между блоками).
+  const dragged = useCustomizeFormDndStore((s) => s.draggedNodeId)
+  const startDrag = useCustomizeFormDndStore((s) => s.start)
+  const clearDrag = useCustomizeFormDndStore((s) => s.clear)
   const [target, setTarget] = useState<DropTarget | null>(null)
   const [resizePreview, setResizePreview] = useState<Map<string, number>>(
     new Map()
@@ -79,6 +98,21 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
     // старой модели делал каскад перетекания недетерминированным.
     e?.stopPropagation()
     if (!dragged || !target) return
+    // Элемент не из этих зон — перенос между блоками решает диалог.
+    if (!findItem(zones, dragged)) {
+      const zone = zones[target.zoneIndex] as GridZone | undefined
+      if (zone && onExternalDrop) {
+        onExternalDrop(dragged, {
+          zoneId: zone.zoneId,
+          rowIndex: target.rowIndex,
+          itemIndex: target.itemIndex,
+          newRow: target.newRow,
+        })
+      }
+      clearDrag()
+      setTarget(null)
+      return
+    }
     mutate((next) => {
       const source = findItem(next, dragged)
       if (!source) return
@@ -107,7 +141,7 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
         reflowZone(zone, source.item.nodeId)
       }
     })
-    setDragged(null)
+    clearDrag()
     setTarget(null)
   }
 
@@ -256,12 +290,12 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                         // Живой баг 11.09: «выбранная плашка не тащится,
                         // а после удачного переноса не тащится уже она».
                         setTimeout(() => {
-                          setDragged(item.nodeId)
+                          startDrag(item.nodeId)
                           onSelect(item.nodeId)
                         }, 0)
                       }}
                       onDragEnd={() => {
-                        setDragged(null)
+                        clearDrag()
                         setTarget(null)
                       }}
                       onDragOver={(e) => {

@@ -6,7 +6,10 @@ import { cn } from '@/shared/lib/utils/cn'
 
 import type { GridZone } from '../lib/customize-form/grid-zones'
 import type { PageSection, TabInfo } from '../lib/customize-form/page-sections'
-import { CustomizeFormGridEditor } from './customize-form-grid-editor'
+import {
+  CustomizeFormGridEditor,
+  type ExternalDropTarget,
+} from './customize-form-grid-editor'
 
 interface CustomizeFormSectionCardProps {
   section: PageSection
@@ -20,6 +23,8 @@ interface CustomizeFormSectionCardProps {
   onToggleColumn: (tabId: string, columnId: string) => void
   onZoneChange: (zoneId: string, zone: GridZone) => void
   onSelect: (nodeId: string) => void
+  /** Бросок элемента из другой секции — перенос между зонами (словарь v3). */
+  onExternalDrop: (nodeId: string, target: ExternalDropTarget) => void
 }
 
 /**
@@ -40,6 +45,7 @@ export const CustomizeFormSectionCard: FC<CustomizeFormSectionCardProps> = ({
   onToggleColumn,
   onZoneChange,
   onSelect,
+  onExternalDrop,
 }) => {
   const { t } = useTranslation()
 
@@ -66,6 +72,7 @@ export const CustomizeFormSectionCard: FC<CustomizeFormSectionCardProps> = ({
             onChange={(zones) => {
               onZoneChange(tab.zone?.zoneId ?? '', zones[0])
             }}
+            onExternalDrop={onExternalDrop}
           />
         </div>
       )}
@@ -153,6 +160,7 @@ export const CustomizeFormSectionCard: FC<CustomizeFormSectionCardProps> = ({
             onChange={(zones) => {
               onZoneChange(section.zone?.zoneId ?? '', zones[0])
             }}
+            onExternalDrop={onExternalDrop}
           />
         </div>
       )}

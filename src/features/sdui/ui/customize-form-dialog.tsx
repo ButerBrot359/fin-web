@@ -37,6 +37,12 @@ import {
   sectionDecisions,
   type PageSection,
 } from '../lib/customize-form/page-sections'
+import {
+  dropEmptyRows,
+  reflowZone,
+  type GridItem,
+} from '../lib/customize-form/grid-zones'
+import type { ExternalDropTarget } from './customize-form-grid-editor'
 import { buildPreviewModel } from '../lib/customize-form/build-preview-model'
 import {
   downloadViewSettings,
@@ -227,6 +233,42 @@ export const CustomizeFormDialog: FC = () => {
     })
   }
 
+  /**
+   * Перенос элемента МЕЖДУ зонами (словарь v3): вырезать из исходной строки,
+   * вставить в целевую зону по координатам броска; ширина сохраняется,
+   * переполнение целевой строки перетекает как обычно.
+   */
+  const moveAcrossZones = (nodeId: string, target: ExternalDropTarget) => {
+    mutateSections((next) => {
+      const zones = next.flatMap((section) => [
+        ...(section.zone ? [section.zone] : []),
+        ...(section.tabs?.flatMap((tab) => (tab.zone ? [tab.zone] : [])) ?? []),
+      ])
+      let item: GridItem | null = null
+      for (const zone of zones) {
+        for (const row of zone.rows) {
+          const index = row.findIndex((i) => i.nodeId === nodeId)
+          if (index >= 0) {
+            item = row.splice(index, 1)[0]
+            dropEmptyRows(zone)
+            break
+          }
+        }
+        if (item) break
+      }
+      const to = zones.find((zone) => zone.zoneId === target.zoneId)
+      if (!item || !to) return
+      if (target.newRow) {
+        to.rows.splice(Math.min(target.rowIndex, to.rows.length), 0, [item])
+      } else {
+        const row = to.rows[target.rowIndex] as GridItem[] | undefined
+        if (row) row.splice(Math.min(target.itemIndex, row.length), 0, item)
+        else to.rows.push([item])
+        reflowZone(to, item.nodeId)
+      }
+    })
+  }
+
   const toggleZoneItem = (nodeId: string) => {
     mutateSections((next) => {
       for (const section of next) {
@@ -357,6 +399,7 @@ export const CustomizeFormDialog: FC = () => {
               }}
               onZoneChange={replaceZone}
               onSelect={setSelectedId}
+              onExternalDrop={moveAcrossZones}
             />
           ))
         ) : legacyPreview ? (

@@ -39,6 +39,10 @@ import { sumVisibleFooter } from '../../../lib/utils/table-footer'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
+import {
+  ROW_ERROR_BACKGROUND,
+  useTableRowErrorIndexes,
+} from '../../../lib/validation/table-row-errors'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import {
   useSduiSession,
@@ -253,6 +257,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const validation = useTableValidation(node)
   const validationRef = useRef(validation)
   validationRef.current = validation
+  const rowErrors = useTableRowErrorIndexes(node.binding)
 
   // ── SCRUM-363: потоковый ввод — одноразовая цель автофокуса ──
   // Цель в ref (не в state): её смена не должна пересобирать колонки —
@@ -909,10 +914,9 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     sx={{
                       cursor: 'pointer',
                       height: ROW_HEIGHT,
-                      backgroundColor: resolveRowBackground(
-                        rowAppearance,
-                        row.original
-                      ),
+                      backgroundColor: rowErrors.has(row.index)
+                        ? ROW_ERROR_BACKGROUND
+                        : resolveRowBackground(rowAppearance, row.original),
                     }}
                   >
                     {showRowNumbers && (

@@ -1,11 +1,14 @@
 import { useTranslation } from 'react-i18next'
-import { Typography } from '@mui/material'
+import { Box, Button, Typography } from '@mui/material'
+import { useAnalyticsWorkspaceCopy } from '../lib/workspace-copy'
 
 import type { AssistantChatMessage } from '../lib/hooks/use-assistant-session'
 import { AssistantErrorNote } from './assistant-error-note'
 import { MicroLabel } from '@/shared/ui/micro-label'
 
 interface AssistantResultCardProps {
+  onReply?: (text: string) => void
+  disabled?: boolean
   message: AssistantChatMessage
   settingsPath: string
   onShowPayload: (llmRequestId: number) => void
@@ -37,10 +40,19 @@ export const AssistantResultCard = ({
   message,
   settingsPath,
   onShowPayload,
+  onReply,
+  disabled = false,
 }: AssistantResultCardProps) => {
   const { t } = useTranslation()
+  const copy = useAnalyticsWorkspaceCopy()
 
   const { error, spec } = message
+  const questionsSuffix =
+    message.questions?.map((question) => question.text).join('\n') ?? ''
+  const displayText =
+    questionsSuffix && message.text.endsWith(questionsSuffix)
+      ? message.text.slice(0, -questionsSuffix.length).trimEnd()
+      : message.text
   const sourceViews = message.sourceViews ?? []
   const warnings = message.warnings ?? []
   const llmRequestId = message.llmRequestId ?? null
@@ -51,7 +63,7 @@ export const AssistantResultCard = ({
   const title = spec ? (spec.title ?? '') || kindLabel : ''
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg bg-ui-01 p-4">
+    <div className="flex min-w-0 flex-col gap-3 rounded-lg bg-ui-01 p-4 [overflow-wrap:anywhere]">
       {error != null && error !== '' && (
         <AssistantErrorNote text={error} settingsPath={settingsPath} />
       )}
@@ -68,15 +80,73 @@ export const AssistantResultCard = ({
         </div>
       )}
 
-      {message.text && (
+      {displayText && (
         <Typography variant="body2" className="whitespace-pre-wrap text-ui-06">
-          {message.text}
+          {displayText}
         </Typography>
       )}
 
+      {(message.questions?.length ?? 0) > 0 && (
+        <Box sx={{ display: 'grid', gap: 2 }}>
+          <Typography variant="overline" color="primary">
+            {copy.clarify}
+          </Typography>
+          {message.questions?.map((question) => (
+            <Box key={question.id}>
+              <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+                {question.text}
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {question.options.map((option) => (
+                  <Button
+                    data-testid="analytics-clarification-option"
+                    key={option}
+                    disabled={disabled || !onReply}
+                    variant="outlined"
+                    size="small"
+                    onClick={() => onReply?.(`${question.text}: ${option}`)}
+                    sx={{
+                      textTransform: 'none',
+                      whiteSpace: 'normal',
+                      textAlign: 'left',
+                    }}
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      )}
+      {(message.suggestions?.length ?? 0) > 0 && (
+        <Box sx={{ display: 'grid', gap: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            {copy.suggestions}
+          </Typography>
+          {message.suggestions?.map((suggestion) => (
+            <Button
+              key={suggestion}
+              disabled={disabled || !onReply}
+              size="small"
+              onClick={() => onReply?.(suggestion)}
+              sx={{
+                justifyContent: 'flex-start',
+                textAlign: 'left',
+                textTransform: 'none',
+              }}
+            >
+              {suggestion} →
+            </Button>
+          ))}
+        </Box>
+      )}
+
       {sourceViews.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <MicroLabel>{t('analytics.assistant.sourceViews')}</MicroLabel>
+        <details className="min-w-0">
+          <summary className="cursor-pointer text-xs text-ui-05">
+            {t('analytics.assistant.sourceViews')}
+          </summary>
           <div className="flex flex-wrap gap-1.5">
             {sourceViews.map((view) => (
               <Typography
@@ -88,7 +158,7 @@ export const AssistantResultCard = ({
               </Typography>
             ))}
           </div>
-        </div>
+        </details>
       )}
 
       {warnings.length > 0 && (

@@ -5,7 +5,7 @@ import { AnalyticsAssistantPage } from './analytics-assistant-page'
 
 const state = vi.hoisted(() => ({ pending: true, reset: vi.fn() }))
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'ru' } }),
 }))
 vi.mock('@/features/analytics-assistant', () => ({
   useAssistantSession: () => ({
@@ -43,7 +43,7 @@ describe('analytics assistant pending generation', () => {
       </MemoryRouter>
     )
     const button = screen.getByRole('button', {
-      name: 'analytics.assistant.newChat',
+      name: 'Новый диалог',
     })
     expect((button as HTMLButtonElement).disabled).toBe(true)
     fireEvent.click(button)

@@ -36,12 +36,18 @@ export interface ReportParamsUrlState {
  * переключение вкладок и F5 (тот же приём, что на странице отчётов легаси).
  */
 export const useReportParamsUrl = (
-  parameters: AnalyticsParameter[]
+  parameters: AnalyticsParameter[],
+  autoBuild = false
 ): ReportParamsUrlState => {
   const [searchParams, setSearchParams] = useSearchParams()
   const raw = searchParams.get(PARAMS_URL_KEY)
 
-  const applied = useMemo(() => parseUrlValues(raw), [raw])
+  const applied = useMemo(
+    () =>
+      parseUrlValues(raw) ??
+      (autoBuild ? resolveDefaultParams(parameters) : null),
+    [raw, autoBuild, parameters]
+  )
 
   const [values, setValues] = useState<AnalyticsParamValues>(
     () => parseUrlValues(raw) ?? resolveDefaultParams(parameters)

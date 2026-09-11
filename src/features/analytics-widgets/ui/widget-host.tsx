@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { extractErrorText } from '@/features/analytics-assistant/lib/utils/assistant-error'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
@@ -93,6 +94,7 @@ export const WidgetHost = ({
       degradedReason={widget.effectiveTypeReason}
       isLoading={isLoading}
       hasError={error != null}
+      errorText={extractErrorText(error)}
       isEmpty={isEmpty}
       zeroIsValid={type === 'KPI'}
       // У KPI подпись показателя стоит над числом внутри самой плитки —

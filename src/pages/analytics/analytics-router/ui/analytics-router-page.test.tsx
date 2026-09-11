@@ -36,3 +36,29 @@ it('opens the reserved statistics route without fetching a saved analytics item'
   expect(lookup).toHaveBeenCalledWith(undefined)
   expect(lookup).not.toHaveBeenCalledWith('ai-statistics')
 })
+
+vi.mock('@/pages/analytics/analytics-assistant', () => ({
+  AnalyticsAssistantLanding: () => <div>Choose workspace</div>,
+  AnalyticsAssistantPage: ({ kind }: { kind: string }) => (
+    <div>{kind} workspace</div>
+  ),
+}))
+it.each([
+  ['assistant', 'Choose workspace'],
+  ['assistant-dashboards', 'DASHBOARD workspace'],
+  ['assistant-reports', 'REPORT workspace'],
+])('reserves %s instead of fetching an item', async (code, label) => {
+  render(
+    <MemoryRouter initialEntries={[`/modules/Analitika/analytics/${code}`]}>
+      <Routes>
+        <Route
+          path="/modules/:pageCode/analytics/:code"
+          element={<AnalyticsRouterPage />}
+        />
+      </Routes>
+    </MemoryRouter>
+  )
+  expect(await screen.findByText(label)).toBeTruthy()
+  expect(lookup).toHaveBeenCalledWith(undefined)
+  expect(lookup).not.toHaveBeenCalledWith(code)
+})

@@ -42,6 +42,10 @@ import { readVirtualization } from '../../../lib/utils/pagination'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
+import {
+  ROW_ERROR_BACKGROUND,
+  useTableRowErrorIndexes,
+} from '../../../lib/validation/table-row-errors'
 import { resolveCellState } from '../../../lib/utils/resolve-cell-state'
 import { isColumnVisible } from '../../../lib/utils/column-visibility'
 import { omitServiceRowKeys } from '../../../lib/utils/service-row-keys'
@@ -129,6 +133,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const validation = useTableValidation(node)
   const validationRef = useRef(validation)
   validationRef.current = validation
+  const rowErrors = useTableRowErrorIndexes(node.binding)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   // Активация строки уходит на сервер только если бэк прислал action
   // с trigger='activate' у этой ТЧ (props.rowActivate)
@@ -486,10 +491,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                     // более специфичными селекторами оставались видны поверх.
                     sx={{
                       cursor: 'pointer',
-                      backgroundColor: resolveRowBackground(
-                        rowAppearance,
-                        row.original
-                      ),
+                      backgroundColor: rowErrors.has(row.index)
+                        ? ROW_ERROR_BACKGROUND
+                        : resolveRowBackground(rowAppearance, row.original),
                     }}
                   >
                     {showRowNumbers && (

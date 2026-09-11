@@ -13,13 +13,26 @@ export interface AnalyticsGenerateRequest {
   organizationId?: number | null
 }
 
+export type AnalyticsAssistantStatus = 'READY' | 'CLARIFICATION' | 'FAILED'
+export interface AnalyticsClarificationQuestion {
+  id: string
+  text: string
+  options: string[]
+}
 export interface AnalyticsGenerateResponse {
+  createdAt?: string
+  userCreatedAt?: string
+  userMessageId?: number
+  status?: AnalyticsAssistantStatus
+  questions?: AnalyticsClarificationQuestion[]
+  suggestions?: string[]
   conversationId: number
   messageId: number
   spec: AnalyticsSpec | null
   /** Пояснение модели: что она построила и на каких данных. */
   explanation?: string | null
   /** Ссылка на запись аудита — открывает панель «Что ушло в ИИ». */
+  llmRequestIds?: number[]
   llmRequestId?: number | null
   /** Замечания, не помешавшие построению: деградация вида виджета и т.п. */
   warnings: string[]
@@ -30,6 +43,9 @@ export interface AnalyticsGenerateResponse {
 export type AnalyticsMessageRole = 'USER' | 'ASSISTANT'
 
 export interface AnalyticsMessage {
+  status?: AnalyticsAssistantStatus
+  questions?: AnalyticsClarificationQuestion[]
+  suggestions?: string[]
   id: number
   role: AnalyticsMessageRole
   content?: string | null

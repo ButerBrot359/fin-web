@@ -164,6 +164,7 @@ const AppRoutes = () => {
             path="/modules/:pageCode/analytics/:code"
             element={<AnalyticsRouterPage />}
           />
+          <Route path="/analytics/:code" element={<AnalyticsRouterPage />} />
           <Route path="*" element={<SduiCatchAllPage />} />
         </Routes>
       </Suspense>

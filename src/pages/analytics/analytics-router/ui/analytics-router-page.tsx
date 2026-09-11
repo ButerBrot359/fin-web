@@ -8,6 +8,8 @@ import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 
 import {
   ANALYTICS_ASSISTANT_CODE,
+  ANALYTICS_DASHBOARD_ASSISTANT_CODE,
+  ANALYTICS_REPORT_ASSISTANT_CODE,
   ANALYTICS_SETTINGS_CODE,
   ANALYTICS_STATISTICS_CODE,
 } from '../lib/consts/reserved-codes'
@@ -20,6 +22,11 @@ import {
 const AnalyticsAssistantPage = lazy(() =>
   import('@/pages/analytics/analytics-assistant').then((m) => ({
     default: m.AnalyticsAssistantPage,
+  }))
+)
+const AnalyticsAssistantLanding = lazy(() =>
+  import('@/pages/analytics/analytics-assistant').then((m) => ({
+    default: m.AnalyticsAssistantLanding,
   }))
 )
 const AnalyticsAiSettingsPage = lazy(() =>
@@ -58,6 +65,8 @@ export const AnalyticsRouterPage = () => {
 
   const isReserved =
     code === ANALYTICS_ASSISTANT_CODE ||
+    code === ANALYTICS_DASHBOARD_ASSISTANT_CODE ||
+    code === ANALYTICS_REPORT_ASSISTANT_CODE ||
     code === ANALYTICS_SETTINGS_CODE ||
     code === ANALYTICS_STATISTICS_CODE
 
@@ -65,7 +74,11 @@ export const AnalyticsRouterPage = () => {
   const { item, isLoading } = useAnalyticsItem(isReserved ? undefined : code)
 
   const renderContent = () => {
-    if (code === ANALYTICS_ASSISTANT_CODE) return <AnalyticsAssistantPage />
+    if (code === ANALYTICS_ASSISTANT_CODE) return <AnalyticsAssistantLanding />
+    if (code === ANALYTICS_DASHBOARD_ASSISTANT_CODE)
+      return <AnalyticsAssistantPage key="DASHBOARD" kind="DASHBOARD" />
+    if (code === ANALYTICS_REPORT_ASSISTANT_CODE)
+      return <AnalyticsAssistantPage key="REPORT" kind="REPORT" />
     if (code === ANALYTICS_SETTINGS_CODE) return <AnalyticsAiSettingsPage />
     if (code === ANALYTICS_STATISTICS_CODE) return <AnalyticsAiStatisticsPage />
 

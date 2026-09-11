@@ -59,7 +59,7 @@ export const AssistantPreview = ({
       {spec.kind === 'DASHBOARD' ? (
         <DashboardView spec={spec} compact />
       ) : (
-        <ReportView spec={spec} title={title} />
+        <ReportView spec={spec} title={title} autoBuild />
       )}
     </div>
   )

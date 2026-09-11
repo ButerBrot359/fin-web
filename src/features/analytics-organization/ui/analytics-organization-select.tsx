@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useId, useMemo } from 'react'
+import { Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -23,6 +24,7 @@ const ALL = 'all'
  */
 export const AnalyticsOrganizationSelect = () => {
   const { t } = useTranslation()
+  const inputId = useId()
   const organizationId = useAnalyticsOrganizationStore(
     (state) => state.organizationId
   )
@@ -61,10 +63,23 @@ export const AnalyticsOrganizationSelect = () => {
 
   return (
     <div className="w-full sm:w-96">
+      <Typography
+        component="label"
+        htmlFor={inputId}
+        variant="caption"
+        sx={{ display: 'block', mb: 0.5, color: 'text.secondary' }}
+      >
+        {t('analytics.organization.label')}
+      </Typography>
       <AutocompleteInput
         fullWidth
         size="small"
-        label={t('analytics.organization.label')}
+        slotProps={{
+          htmlInput: {
+            id: inputId,
+            'aria-label': t('analytics.organization.label'),
+          },
+        }}
         options={options}
         value={selected}
         loading={isLoading}

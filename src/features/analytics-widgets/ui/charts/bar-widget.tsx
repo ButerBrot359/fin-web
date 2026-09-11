@@ -67,7 +67,11 @@ export const BarWidget = ({
         dataset={data.dataset}
         layout={horizontal ? 'horizontal' : 'vertical'}
         xAxis={horizontal ? VALUE_AXIS : categoryAxis}
-        yAxis={horizontal ? categoryAxis : VALUE_AXIS}
+        yAxis={
+          horizontal
+            ? categoryAxis.map((axis) => ({ ...axis, width: 100 }))
+            : VALUE_AXIS
+        }
         series={series}
         colors={CHART_COLORS}
         grid={horizontal ? { vertical: true } : { horizontal: true }}

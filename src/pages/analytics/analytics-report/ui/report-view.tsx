@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { extractErrorText } from '@/features/analytics-assistant/lib/utils/assistant-error'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
@@ -25,6 +26,7 @@ import { ReportToolbar } from './report-toolbar'
 interface ReportViewProps {
   spec: AnalyticsSpec
   title: string
+  autoBuild?: boolean
 }
 
 /**
@@ -34,7 +36,11 @@ interface ReportViewProps {
  * каждое нажатие в поле нельзя. То же тело переиспользует предпросмотр
  * ассистента.
  */
-export const ReportView = ({ spec, title }: ReportViewProps) => {
+export const ReportView = ({
+  spec,
+  title,
+  autoBuild = false,
+}: ReportViewProps) => {
   const { t, i18n } = useTranslation()
   const isKz = i18n.language === 'kz'
 
@@ -52,7 +58,8 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
   const widget = spec.widgets.find((w) => w.datasetId === dataset?.id)
 
   const { values, setValues, applied, apply } = useReportParamsUrl(
-    spec.parameters
+    spec.parameters,
+    autoBuild
   )
 
   const params = useMemo(
@@ -66,7 +73,7 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
     dataset != null &&
     areRequiredParamsFilled(spec.parameters, applied)
 
-  const { result, isLoading, isError, refetch } = useAnalyticsDataset(
+  const { result, isLoading, isError, error, refetch } = useAnalyticsDataset(
     dataset,
     params,
     enabled
@@ -132,7 +139,7 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
 
       {!isLoading && isError && (
         <Typography variant="body2" className="text-support-01">
-          {t('analytics.errors.executeFailed')}
+          {extractErrorText(error) ?? t('analytics.errors.executeFailed')}
         </Typography>
       )}
 

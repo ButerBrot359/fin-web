@@ -10,3 +10,5 @@ export const ANALYTICS_STATISTICS_CODE = 'ai-statistics'
 
 export const ANALYTICS_DASHBOARD_ASSISTANT_CODE = 'assistant-dashboards'
 export const ANALYTICS_REPORT_ASSISTANT_CODE = 'assistant-reports'
+
+export const ANALYTICS_DICTIONARY_PERMISSIONS_CODE = 'dictionary-permissions'

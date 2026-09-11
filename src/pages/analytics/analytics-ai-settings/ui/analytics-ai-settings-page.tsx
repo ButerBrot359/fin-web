@@ -1,6 +1,7 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Typography } from '@mui/material'
+import { Box, Button, Paper, Typography } from '@mui/material'
+import { useDictionaryPermissionsCopy } from '@/pages/analytics/analytics-dictionary-permissions/lib/copy'
 
 import { useAiSettings } from '@/entities/analytics'
 import {
@@ -23,6 +24,8 @@ import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 export const AnalyticsAiSettingsPage = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { pageCode } = useParams()
+  const { copy } = useDictionaryPermissionsCopy()
   const location = useLocation()
 
   useTabMeta(t('analytics.settings.title'))
@@ -59,6 +62,41 @@ export const AnalyticsAiSettingsPage = () => {
           <AiConnectionsPanel />
 
           <AnalyticsSurfaceForm />
+          <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 2,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Box sx={{ flex: '1 1 240px' }}>
+                <Typography fontWeight={700}>{copy.title}</Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1, lineHeight: 1.7 }}
+                >
+                  {copy.cardHint}
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                data-testid="dictionary-permissions-settings-link"
+                onClick={() => {
+                  void navigate(
+                    pageCode
+                      ? `/modules/${pageCode}/analytics/dictionary-permissions`
+                      : '/analytics/dictionary-permissions'
+                  )
+                }}
+              >
+                {copy.open} →
+              </Button>
+            </Box>
+          </Paper>
 
           <AssistantSettingsForm />
         </div>

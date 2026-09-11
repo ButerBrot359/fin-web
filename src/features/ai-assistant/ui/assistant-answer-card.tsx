@@ -83,17 +83,17 @@ export const AssistantAnswerCard = ({
           {answer.breakdown.map((row, index) => (
             <div
               key={`${row.label ?? 'row'}-${String(index)}`}
-              className="flex items-baseline justify-between gap-3 border-b border-ui-03 pb-1 last:border-0"
+              className="grid min-w-0 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-start gap-3 border-b border-ui-03 pb-1 last:border-0"
             >
               <Typography
                 variant="body2"
-                className="min-w-0 break-words text-ui-06"
+                className="min-w-0 break-words whitespace-pre-wrap text-ui-06 [overflow-wrap:anywhere]"
               >
                 {row.label}
               </Typography>
               <Typography
                 variant="body2"
-                className="shrink-0 tabular-nums text-ui-06"
+                className="min-w-0 break-words whitespace-pre-wrap tabular-nums text-ui-06 [overflow-wrap:anywhere]"
               >
                 {row.value}
               </Typography>
@@ -202,7 +202,7 @@ export const AssistantAnswerCard = ({
                 variant={
                   action.kind === 'CREATE_DOCUMENT' ? 'primary' : 'tertiary'
                 }
-                className="max-w-full"
+                className="h-auto max-w-full text-left whitespace-normal [overflow-wrap:anywhere]"
                 onClick={() => {
                   onAction(index)
                 }}

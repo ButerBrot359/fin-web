@@ -1,3 +1,12 @@
+import type * as SessionPersistence from '../session-persistence'
+import { beforeEach as resetStorage } from 'vitest'
+resetStorage(() => {
+  sessionStorage.clear()
+})
+vi.mock('../session-persistence', async (importOriginal) => ({
+  ...(await importOriginal<typeof SessionPersistence>()),
+  useAssistantOwnerKey: () => 'test-owner',
+}))
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 import type { AiAssistantAnswer } from '@/entities/ai-assistant'

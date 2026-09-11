@@ -1422,7 +1422,9 @@
     "difference_DATE_MISMATCH": "Күні өзгеше",
     "difference_DIMENSION_MISMATCH": "Талдау деректері өзгеше",
     "difference_BALANCE_MISMATCH": "Қалдық өзгеше",
-    "difference_REVERSAL_MISMATCH": "Сторно белгісі өзгеше"
+    "difference_REVERSAL_MISMATCH": "Сторно белгісі өзгеше",
+    "historyEarlier": "Алдыңғы хабарламалар",
+    "requestInterrupted": "Сұрау үзілді. Автоматты түрде қайталанбады."
   },
   "aiConnections": {
     "title": "ЖИ қосылымдары",

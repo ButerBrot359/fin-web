@@ -255,7 +255,7 @@ export const AiAssistantWidget = () => {
         isLoadingOlder={session.isLoadingOlder}
         olderMessagesError={session.olderMessagesError}
         onLoadOlder={session.loadOlder}
-        pendingStartedAt={pendingStartedAt}
+        pendingStartedAt={session.pendingStartedAt ?? pendingStartedAt}
         isPending={
           session.isPending ||
           confirmAction.isPending ||

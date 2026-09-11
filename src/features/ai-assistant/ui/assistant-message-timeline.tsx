@@ -46,7 +46,10 @@ export function AssistantMessageTimeline({
               <time dateTime={timestamp.dayKey}>{timestamp.dayLabel}</time>
             </div>
           )}
-          <div data-assistant-message-id={message.id} className="min-w-0">
+          <div
+            data-assistant-message-id={message.id}
+            className="min-w-0 shrink-0"
+          >
             {message.role === 'USER' ? (
               <div className="flex min-w-0 justify-end">
                 <div className="min-w-0 max-w-[85%] rounded-lg bg-ui-04 px-3 py-2">
@@ -57,15 +60,6 @@ export function AssistantMessageTimeline({
                     {message.text}
                   </Typography>
                 </div>
-              </div>
-            ) : message.error ? (
-              <div
-                key={message.id}
-                className="min-w-0 rounded-lg bg-ui-02 p-3 outline outline-support-01"
-              >
-                <Typography variant="body2" className="break-words text-ui-06">
-                  {message.error}
-                </Typography>
               </div>
             ) : message.answer ? (
               <AssistantAnswerCard
@@ -79,13 +73,23 @@ export function AssistantMessageTimeline({
                   if (action) onAction?.(action)
                 }}
               />
-            ) : (
+            ) : !message.error ? (
               <div key={message.id} className="min-w-0 rounded-lg bg-ui-02 p-3">
                 <Typography
                   variant="body2"
                   className="break-words whitespace-pre-wrap text-ui-06"
                 >
                   {message.text}
+                </Typography>
+              </div>
+            ) : null}
+            {message.error && (
+              <div className="mt-2 min-w-0 rounded-lg bg-ui-02 p-3 outline outline-support-01">
+                <Typography
+                  variant="body2"
+                  className="break-words whitespace-pre-wrap text-ui-06"
+                >
+                  {message.error}
                 </Typography>
               </div>
             )}

@@ -97,7 +97,7 @@ export function AssistantStepOutput({
           <Button
             size="small"
             variant="tertiary"
-            className="justify-start"
+            className="h-auto min-w-0 max-w-full justify-start text-left whitespace-normal [overflow-wrap:anywhere]"
             onClick={() => {
               onOpenDocument(
                 document.typeCode as string,
@@ -114,7 +114,7 @@ export function AssistantStepOutput({
         typeof document.typeCode === 'string' &&
         typeof document.entryId === 'number' && (
           <Link
-            className="text-xs text-interactive-01 underline"
+            className="min-w-0 break-words text-xs text-interactive-01 underline [overflow-wrap:anywhere]"
             to={`/dictionaries/${encodeURIComponent(document.typeCode)}/${String(document.entryId)}`}
           >
             {typeof document.presentation === 'string'
@@ -179,6 +179,7 @@ export function AssistantStepOutput({
           size="small"
           variant="tertiary"
           disabled={downloading}
+          className="h-auto min-w-0 max-w-full text-left whitespace-normal [overflow-wrap:anywhere]"
           onClick={() => {
             void download()
           }}

@@ -37,9 +37,13 @@ import {
   type ReportAltParamValue,
 } from '../lib/utils/params'
 import { ReportAltParamField } from './reportalt-param-field'
+import {
+  ReportAltRowMenu,
+  type ReportAltMenuPosition,
+} from './reportalt-row-menu'
 import { ReportAltSettingsDrawer } from './settings/reportalt-settings-drawer'
 import { printReportAlt } from '../api/reportalt-api'
-import type { RunReportAltBody } from '../types/reportalt'
+import type { ReportAltRowDto, RunReportAltBody } from '../types/reportalt'
 
 /** Сообщение из тела ошибки бэка (api.ts бросает `error.response.data`). */
 const errorMessage = (error: unknown): string | undefined => {
@@ -251,6 +255,58 @@ export const ReportAltPage = () => {
     exportTableToXlsx(reportName, data)
   }
 
+  const [rowMenu, setRowMenu] = useState<{
+    position: ReportAltMenuPosition
+    row: ReportAltRowDto
+    ancestors: ReportAltRowDto[]
+  } | null>(null)
+
+  const menuRow = rowMenu?.row ?? null
+  const openRef =
+    menuRow?.rowRef && menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
+      ? menuRow.rowRef
+      : null
+  const openLabel = openRef
+    ? menuRow?.groupValue
+      ? `${t('osv.openElement')} «${menuRow.groupValue}»`
+      : t('osv.openElement')
+    : null
+  const accountRow = rowMenu
+    ? [...rowMenu.ancestors, rowMenu.row]
+        .reverse()
+        .find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
+    : undefined
+  const accountCardLabel = accountRow
+    ? `${t('osv.accountCard')} ${accountRow.groupValue ?? ''}`.trim()
+    : null
+
+  const handleOpenElement = () => {
+    if (!openRef) return
+    const segment = openRef.domain === 'DICTIONARY' ? 'dictionary' : 'document'
+    void navigate(
+      `/modules/${pageCode}/${segment}/${openRef.typeCode}/${String(openRef.id)}`
+    )
+  }
+
+  const handleOpenAccountCard = () => {
+    if (!accountRow?.rowRef) return
+    const period = appliedBody?.parameters
+      ? (Object.values(appliedBody.parameters).find(
+          (v): v is { from?: string; to?: string } =>
+            typeof v === 'object' &&
+            v !== null &&
+            ('from' in v || 'to' in v)
+        ) ?? {})
+      : {}
+    const params = new URLSearchParams({
+      accountId: String(accountRow.rowRef.id),
+      accountCode: accountRow.groupValue ?? '',
+    })
+    if (period.from) params.set('from', period.from)
+    if (period.to) params.set('to', period.to)
+    void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
+  }
+
   // Печать в PDF: бэк может отвечать 501 (печать не реализована) — тост.
   const [isPrinting, setIsPrinting] = useState(false)
   const handlePrintPdf = () => {
@@ -440,7 +496,16 @@ export const ReportAltPage = () => {
             </Typography>
           ) : (
             <div className="min-h-0 overflow-auto pb-4">
-              <ReportResultView result={result} />
+              <ReportResultView
+                result={result}
+                onRowDoubleClick={(row, ancestors, event) => {
+                  setRowMenu({
+                    position: { top: event.clientY, left: event.clientX },
+                    row,
+                    ancestors,
+                  })
+                }}
+              />
               {/* LEDGER: постраничная подгрузка (F4 — hasMore/nextOffset). */}
               {isLedger && hasNextPage && (
                 <div className="mt-3">
@@ -492,6 +557,17 @@ export const ReportAltPage = () => {
           }}
         />
       )}
+
+      <ReportAltRowMenu
+        position={rowMenu?.position ?? null}
+        onClose={() => {
+          setRowMenu(null)
+        }}
+        openLabel={openLabel}
+        onOpen={handleOpenElement}
+        accountCardLabel={accountCardLabel}
+        onOpenAccountCard={handleOpenAccountCard}
+      />
     </div>
   )
 }

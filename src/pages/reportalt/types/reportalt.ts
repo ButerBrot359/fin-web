@@ -64,7 +64,7 @@ export interface ReportAltColumnDto {
  */
 /** Цель расшифровки строки (SCRUM-370 блок В) — зеркало ReportRowRefDto. */
 export interface ReportAltRowRefDto {
-  domain: 'DOCUMENT' | 'DICTIONARY'
+  domain: 'DOCUMENT' | 'DICTIONARY' | 'ACCOUNT_PLAN'
   typeCode: string
   id: number
 }

@@ -1,3 +1,4 @@
+import type { MouseEvent as ReactMouseEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
@@ -36,6 +37,11 @@ interface TreeTableProps {
   columns: ReportColumnDto[]
   /** Отступ одного уровня дерева в px (1С: обычный 13, уменьшенный 8). */
   indentPx?: number
+  onRowDoubleClick?: (
+    row: ReportRowDto,
+    ancestors: ReportRowDto[],
+    event: ReactMouseEvent
+  ) => void
 }
 
 /** Сетка 1С: тонкие серые линии, плотные ячейки. */
@@ -126,7 +132,12 @@ export const TreeTable = (props: TreeTableProps) => {
   return <PlainTreeTable {...props} />
 }
 
-const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
+const PlainTreeTable = ({
+  result,
+  columns,
+  indentPx = 13,
+  onRowDoubleClick,
+}: TreeTableProps) => {
   const { t, i18n } = useTranslation()
   // Язык РЕНДЕРА = язык, на котором отчёт сформировал бэк (result.language),
   // иначе — язык приложения. Так шапки колонок и итог на языке отчёта, даже
@@ -482,7 +493,22 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
           {table.getRowModel().rows.map((row) => {
             const bold = isGroupRow(row)
             return (
-              <tr key={row.id} className="hover:bg-ui-07">
+              <tr
+                key={row.id}
+                className={`hover:bg-ui-07 ${onRowDoubleClick ? 'cursor-pointer' : ''}`}
+                onDoubleClick={
+                  onRowDoubleClick
+                    ? (e) => {
+                        window.getSelection()?.removeAllRanges()
+                        onRowDoubleClick(
+                          row.original,
+                          row.getParentRows().map((p) => p.original),
+                          e
+                        )
+                      }
+                    : undefined
+                }
+              >
                 <td className={`${tdBase} align-top`}>
                   {renderGroupCell(row)}
                 </td>

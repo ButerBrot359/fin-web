@@ -162,6 +162,42 @@
   "calendar": {
     "today": "Сегодня"
   },
+  "calculator": {
+    "open": "Калькулятор",
+    "expression": "Выражение",
+    "result": "Итог",
+    "apply": "Перенести в поле",
+    "tape": "Лента расчётов",
+    "reuse": "Подставить в выражение",
+    "keys": {
+      "clear": "Очистить всё",
+      "clearEntry": "Стереть последнее число",
+      "backspace": "Удалить символ",
+      "equals": "Вычислить",
+      "negate": "Сменить знак"
+    },
+    "vat": {
+      "vatAdd": "+НДС {{rate}}%",
+      "vatSubtract": "−НДС {{rate}}%",
+      "vatExtract": "НДС {{rate}}%"
+    },
+    "vatHints": {
+      "vatAdd": "Начислить НДС {{rate}}% на сумму",
+      "vatSubtract": "Убрать НДС {{rate}}% из суммы",
+      "vatExtract": "Выделить сумму НДС {{rate}}%"
+    },
+    "notes": {
+      "negate": "смена знака",
+      "vatAdd": "+НДС",
+      "vatSubtract": "−НДС",
+      "vatExtract": "сумма НДС"
+    },
+    "errors": {
+      "syntax": "Проверьте выражение",
+      "divZero": "Деление на ноль",
+      "overflow": "Слишком большое число"
+    }
+  },
   "unsavedChangesDialog": {
     "title": "Сохранить изменения?",
     "message": "Данные были изменены",

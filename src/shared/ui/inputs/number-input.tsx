@@ -1,9 +1,25 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from 'react'
 import { TextField, Tooltip, type TextFieldProps } from '@mui/material'
+
+import { NumberInputCalculator } from './number-input-calculator'
 
 type NumberInputProps = Omit<TextFieldProps, 'variant'> & {
   readOnly?: boolean
   decimal?: boolean
+  /** Кнопка калькулятора справа в поле (суммы документов, ставки, объёмы). */
+  calculator?: boolean
+  /**
+   * Значение перенесено из калькулятора. Владельцу значение уже ушло через
+   * `onChange`; этот колбэк нужен там, где поле шлёт change на blur, — перенос
+   * происходит без фокуса в поле, и blur'а, который бы его зафиксировал, не будет.
+   */
+  onCalculatorApply?: (value: number) => void
   /**
    * Разрядность с бэка (`props.precision`): сколько знаков после запятой
    * показывать, когда поле не редактируется. В эталоне 1С значения стоят с
@@ -70,6 +86,8 @@ export const NumberInput = ({
   readOnly,
   decimal,
   precision,
+  calculator,
+  onCalculatorApply,
   onChange,
   onFocus,
   onBlur,
@@ -218,6 +236,41 @@ export const NumberInput = ({
     onBlur?.(e)
   }
 
+  /**
+   * Перенос результата идёт тем же путём, что и ручной ввод: значение кладём в
+   * input и отдаём владельцу его же `onChange`. Черновик снимаем — поле после
+   * переноса не в фокусе, и показывать оно должно каноничное значение владельца.
+   */
+  const applyCalculatorResult = (result: number) => {
+    const input = inputElRef.current
+    if (input) {
+      input.value = String(result)
+      onChange?.({
+        target: input,
+        currentTarget: input,
+      } as unknown as ChangeEvent<HTMLInputElement>)
+    }
+    setDraft(null)
+    onCalculatorApply?.(result)
+  }
+
+  const inputSlotProps = slotProps?.input as
+    | { endAdornment?: ReactNode }
+    | undefined
+  const showCalculator = calculator && !readOnly && !rest.disabled
+  const endAdornment = showCalculator ? (
+    <>
+      {inputSlotProps?.endAdornment}
+      <NumberInputCalculator
+        value={stripSpaces(rawValue)}
+        precision={precision}
+        onApply={applyCalculatorResult}
+      />
+    </>
+  ) : (
+    inputSlotProps?.endAdornment
+  )
+
   return (
     <Tooltip
       title={displayValue}
@@ -243,6 +296,7 @@ export const NumberInput = ({
           input: {
             ...(slotProps?.input as object),
             readOnly,
+            endAdornment,
           },
           htmlInput: {
             ...(slotProps?.htmlInput as object),

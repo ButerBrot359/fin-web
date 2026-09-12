@@ -162,6 +162,42 @@
   "calendar": {
     "today": "Бүгін"
   },
+  "calculator": {
+    "open": "Калькулятор",
+    "expression": "Өрнек",
+    "result": "Нәтиже",
+    "apply": "Өріске көшіру",
+    "tape": "Есептеу таспасы",
+    "reuse": "Өрнекке қою",
+    "keys": {
+      "clear": "Бәрін тазалау",
+      "clearEntry": "Соңғы санды өшіру",
+      "backspace": "Таңбаны өшіру",
+      "equals": "Есептеу",
+      "negate": "Таңбаны ауыстыру"
+    },
+    "vat": {
+      "vatAdd": "+ҚҚС {{rate}}%",
+      "vatSubtract": "−ҚҚС {{rate}}%",
+      "vatExtract": "ҚҚС {{rate}}%"
+    },
+    "vatHints": {
+      "vatAdd": "Сомаға ҚҚС {{rate}}% қосу",
+      "vatSubtract": "Сомадан ҚҚС {{rate}}% алып тастау",
+      "vatExtract": "ҚҚС {{rate}}% сомасын бөліп көрсету"
+    },
+    "notes": {
+      "negate": "таңбаны ауыстыру",
+      "vatAdd": "+ҚҚС",
+      "vatSubtract": "−ҚҚС",
+      "vatExtract": "ҚҚС сомасы"
+    },
+    "errors": {
+      "syntax": "Өрнекті тексеріңіз",
+      "divZero": "Нөлге бөлу",
+      "overflow": "Сан тым үлкен"
+    }
+  },
   "unsavedChangesDialog": {
     "title": "Өзгерістерді сақтау керек пе?",
     "message": "Деректер өзгертілді",

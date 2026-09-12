@@ -55,6 +55,10 @@ export const NumberFieldNode: FC<NodeProps> = ({ node }) => {
       }}
       decimal={allowDecimal}
       precision={precision}
+      calculator={node.props?.calculator !== false}
+      onCalculatorApply={(result) => {
+        f.fireServerEvent('change', result)
+      }}
       onChange={(e) => {
         const raw = e.target.value
         const parsed = raw === '' ? null : parseFloat(raw)

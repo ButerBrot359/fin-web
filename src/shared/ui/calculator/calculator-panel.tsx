@@ -53,13 +53,13 @@ export const CalculatorPanel: FC<CalculatorPanelProps> = ({
     : undefined
 
   return (
-    <div className="flex w-[320px] flex-col gap-3 p-4">
+    <div className="flex w-[240px] flex-col gap-2 p-3">
       <TextField
         value={calc.expression}
         inputRef={calc.inputRef}
         autoFocus
         fullWidth
-        label={t('calculator.expression')}
+        placeholder={t('calculator.expression')}
         error={!!errorText}
         helperText={errorText}
         onChange={(e) => {
@@ -81,9 +81,8 @@ export const CalculatorPanel: FC<CalculatorPanelProps> = ({
           {t('calculator.result')}
         </Typography>
         <Typography
-          variant="h3"
           data-testid="calculator-result"
-          className="truncate text-ui-06"
+          className="truncate text-h3 text-ui-06"
         >
           {calc.result === null
             ? '—'
@@ -97,7 +96,7 @@ export const CalculatorPanel: FC<CalculatorPanelProps> = ({
 
       <CalculatorKeypad onInsert={calc.insert} onAction={calc.run} />
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-1">
         {VAT_ACTIONS.map((action) => (
           <Button
             key={action}
@@ -108,7 +107,7 @@ export const CalculatorPanel: FC<CalculatorPanelProps> = ({
               calc.run(action)
             }}
             title={t(`calculator.vatHints.${action}`, { rate: VAT_RATE })}
-            className="justify-center px-1"
+            className="h-8 justify-center px-1 py-0"
           >
             {t(`calculator.vat.${action}`, { rate: VAT_RATE })}
           </Button>

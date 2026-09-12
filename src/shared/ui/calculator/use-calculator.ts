@@ -9,7 +9,7 @@ import { formatCalcNumber } from '@/shared/lib/calc/format-calc-number'
 /** Ставка НДС РК. Одно место на весь калькулятор — меняется реформой, не кодом формы. */
 export const VAT_RATE = 12
 
-const TAPE_LIMIT = 5
+const TAPE_LIMIT = 3
 
 /** Разрядность по умолчанию, когда бэк не прислал `precision`: потолок NUMERIC(19,4). */
 const DEFAULT_DECIMALS = 4

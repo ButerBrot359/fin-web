@@ -93,7 +93,7 @@ export const CalculatorKeypad: FC<CalculatorKeypadProps> = ({
         }}
         aria-label={ariaKey ? t(`calculator.keys.${ariaKey}`) : key.label}
         className={cn(
-          'h-10 justify-center px-0 font-medium',
+          'h-8 justify-center px-0 py-0 font-medium',
           toneClasses[key.tone ?? 'digit']
         )}
       >
@@ -103,7 +103,7 @@ export const CalculatorKeypad: FC<CalculatorKeypadProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-4 gap-1">
       {EXTRA_ROW.map(renderKey)}
       {ROWS.flatMap((row, rowIndex) =>
         row.map((key, index) => renderKey(key, rowIndex * 10 + index))

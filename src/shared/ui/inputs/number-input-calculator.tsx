@@ -18,7 +18,7 @@ export const NumberInputCalculator: FC<NumberInputCalculatorProps> = ({
   onApply,
 }) => {
   const { t } = useTranslation()
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+  const [anchorEl, setAnchorEl] = useState<Element | null>(null)
 
   return (
     <>
@@ -28,7 +28,11 @@ export const NumberInputCalculator: FC<NumberInputCalculatorProps> = ({
           edge="end"
           aria-label={t('calculator.open')}
           onClick={(e) => {
-            setAnchorEl(e.currentTarget)
+            // Якорь — само поле, а не кнопка в его правом краю: панель встаёт
+            // слева ОТ ПОЛЯ и не накрывает ни его, ни соседние реквизиты.
+            setAnchorEl(
+              e.currentTarget.closest('.MuiFormControl-root') ?? e.currentTarget
+            )
           }}
         >
           <CalculateOutlinedIcon fontSize="small" />

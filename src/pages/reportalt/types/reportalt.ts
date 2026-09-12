@@ -274,6 +274,7 @@ export interface ReportAltGroupingOptionDto {
   titleRu: string
   titleKz?: string
   kind: ReportAltGroupingOptionKind
+  defaultOn?: boolean
 }
 
 /**

@@ -12,8 +12,13 @@ import { TreeTable } from './tree-table'
 vi.mock('@/shared/assets/icons/arrow-down.svg', () => ({ default: () => null }))
 
 const columns: ReportColumnDto[] = [
-  { code: 'Schet', titleRu: 'Счёт', role: 'DIMENSION' },
-  { code: 'OstatokKonechnyyDt', titleRu: 'Сальдо Дт', role: 'MEASURE' },
+  { code: 'Schet', titleRu: 'Счёт', role: 'DIMENSION', valueType: 'STRING' },
+  {
+    code: 'OstatokKonechnyyDt',
+    titleRu: 'Сальдо Дт',
+    role: 'MEASURE',
+    valueType: 'NUMBER',
+  },
 ]
 
 const subkontoRow: ReportRowDto = {

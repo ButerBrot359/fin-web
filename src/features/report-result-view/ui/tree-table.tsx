@@ -40,7 +40,8 @@ interface TreeTableProps {
   onRowDoubleClick?: (
     row: ReportRowDto,
     ancestors: ReportRowDto[],
-    event: ReactMouseEvent
+    event: ReactMouseEvent,
+    measureCell: boolean
   ) => void
 }
 
@@ -496,20 +497,23 @@ const PlainTreeTable = ({
               <tr
                 key={row.id}
                 className={`hover:bg-ui-07 ${onRowDoubleClick ? 'cursor-pointer' : ''}`}
-                onDoubleClick={
-                  onRowDoubleClick
-                    ? (e) => {
-                        window.getSelection()?.removeAllRanges()
-                        onRowDoubleClick(
-                          row.original,
-                          row.getParentRows().map((p) => p.original),
-                          e
-                        )
-                      }
-                    : undefined
-                }
               >
-                <td className={`${tdBase} align-top`}>
+                <td
+                  className={`${tdBase} align-top`}
+                  onDoubleClick={
+                    onRowDoubleClick
+                      ? (e) => {
+                          window.getSelection()?.removeAllRanges()
+                          onRowDoubleClick(
+                            row.original,
+                            row.getParentRows().map((p) => p.original),
+                            e,
+                            false
+                          )
+                        }
+                      : undefined
+                  }
+                >
                   {renderGroupCell(row)}
                 </td>
                 {bodyColumns.map((col) => (
@@ -520,6 +524,19 @@ const PlainTreeTable = ({
                         ? 'text-right tabular-nums'
                         : ''
                     }`}
+                    onDoubleClick={
+                      onRowDoubleClick
+                        ? (e) => {
+                            window.getSelection()?.removeAllRanges()
+                            onRowDoubleClick(
+                              row.original,
+                              row.getParentRows().map((p) => p.original),
+                              e,
+                              isMeasure(col)
+                            )
+                          }
+                        : undefined
+                    }
                   >
                     <ReportCell
                       subLabels={indicatorSubLabels(row.original.cells)}

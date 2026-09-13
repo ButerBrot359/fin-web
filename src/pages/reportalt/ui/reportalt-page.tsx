@@ -259,11 +259,12 @@ export const ReportAltPage = () => {
     position: ReportAltMenuPosition
     row: ReportAltRowDto
     ancestors: ReportAltRowDto[]
+    measureCell: boolean
   } | null>(null)
 
   const menuRow = rowMenu?.row ?? null
   const openRef =
-    menuRow?.rowRef && menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
+    !rowMenu?.measureCell && menuRow?.rowRef && menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
       ? menuRow.rowRef
       : null
   const openLabel = openRef
@@ -271,11 +272,12 @@ export const ReportAltPage = () => {
       ? `${t('osv.openElement')} «${menuRow.groupValue}»`
       : t('osv.openElement')
     : null
-  const accountRow = rowMenu
-    ? [...rowMenu.ancestors, rowMenu.row]
-        .reverse()
-        .find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
-    : undefined
+  const accountRow =
+    rowMenu && (rowMenu.measureCell || openRef == null)
+      ? [...rowMenu.ancestors, rowMenu.row]
+          .reverse()
+          .find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
+      : undefined
   const accountCardLabel = accountRow
     ? `${t('osv.accountCard')} ${accountRow.groupValue ?? ''}`.trim()
     : null
@@ -498,11 +500,12 @@ export const ReportAltPage = () => {
             <div className="min-h-0 overflow-auto pb-4">
               <ReportResultView
                 result={result}
-                onRowDoubleClick={(row, ancestors, event) => {
+                onRowDoubleClick={(row, ancestors, event, measureCell) => {
                   setRowMenu({
                     position: { top: event.clientY, left: event.clientX },
                     row,
                     ancestors,
+                    measureCell,
                   })
                 }}
               />

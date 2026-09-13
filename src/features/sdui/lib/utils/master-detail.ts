@@ -45,3 +45,24 @@ export function filterDetailRows(
   const masterKeyValue = normalizeKey(selectedMasterRow[masterKey])
   return rows.filter((row) => normalizeKey(row[detailKey]) === masterKeyValue)
 }
+
+/**
+ * Строки detail-ТЧ, когда строка master НЕ выбрана — порт ветки «Иначе»
+ * эталонной `ГрафикВычетаУстановитьОтборСтрок` (КБП,
+ * `РегистрацияЗаявленийПоВычетамИПН.Форма`): там отбор ставится в ПУСТУЮ
+ * ссылку (`Новый ФиксированнаяСтруктура("ВычетИПН", "")`), то есть таблица
+ * показывает только строки без ключа связи, а не график всех вычетов сразу.
+ *
+ * Отличается от {@link filterDetailRows} с `undefined`-master: та ветка
+ * обслуживает отбор по ВНЕШНЕМУ списку (панель сотрудников), где пустой отбор
+ * в эталоне означает «показать всё».
+ */
+export function detailRowsWithoutMaster(
+  rows: TableRow[],
+  detailKey: string
+): TableRow[] {
+  return rows.filter((row) => {
+    const key = normalizeKey(row[detailKey])
+    return key === undefined || key === null || key === ''
+  })
+}

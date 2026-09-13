@@ -69,7 +69,7 @@ export const SettingsGroupingTab = ({
           control={
             <Checkbox
               size="small"
-              checked={value.toggles?.[o.code] === true}
+              checked={value.toggles?.[o.code] ?? o.defaultOn ?? false}
               onChange={(e) => {
                 onChange({
                   ...value,

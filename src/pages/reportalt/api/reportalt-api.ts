@@ -4,6 +4,8 @@ import type { ApiResponse } from '@/shared/types/api.types'
 import type {
   ReportAltDefinitionDto,
   ReportAltMetaDto,
+  ReportAltParamStateBody,
+  ReportAltParamStateDto,
   ReportAltResultDto,
   RunReportAltBody,
 } from '../types/reportalt'
@@ -39,6 +41,19 @@ export const fetchReportAltMeta = (code: string, signal?: AbortSignal) =>
   apiService
     .get<ReportAltMetaDto | ApiResponse<ReportAltMetaDto>>({
       url: `/api/reportalt/${code}/meta`,
+      signal,
+    })
+    .then((res) => unwrap(res.data))
+
+export const fetchReportAltParamState = (
+  code: string,
+  body: ReportAltParamStateBody,
+  signal?: AbortSignal
+) =>
+  apiService
+    .post<ReportAltParamStateDto | ApiResponse<ReportAltParamStateDto>>({
+      url: `/api/reportalt/${code}/param-state`,
+      data: body,
       signal,
     })
     .then((res) => unwrap(res.data))

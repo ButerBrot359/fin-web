@@ -17,7 +17,7 @@ import {
 } from '../lib/cell-helpers'
 
 /** Подпись подстроки-показателя «Кол.» — форматируем количеством (3 знака). */
-const SUB_LABEL_KOLICHESTVO = 'Кол.'
+const SUB_LABELS_KOLICHESTVO = new Set(['Кол.', 'Сан.'])
 
 /**
  * Значение PERIOD-колонки: ISO-строка → 1С-формат по `col.format`
@@ -156,7 +156,9 @@ export const ReportCell = ({
                 blankOnZero={col.blankOnZero}
                 bold={bold}
                 dcIndicator={col.dcIndicator}
-                decimals={subLabels?.[i] === SUB_LABEL_KOLICHESTVO ? 3 : 2}
+                decimals={
+                  SUB_LABELS_KOLICHESTVO.has(subLabels?.[i] ?? '') ? 3 : 2
+                }
               />
             )
           })}

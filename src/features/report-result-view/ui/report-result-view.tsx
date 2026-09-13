@@ -1,3 +1,4 @@
+import type { MouseEvent as ReactMouseEvent } from 'react'
 import { useMemo } from 'react'
 import { Typography } from '@mui/material'
 
@@ -37,6 +38,11 @@ interface ReportResultViewProps {
   onOpenDocument?: (row: ReportRowDto) => void
   /** Серверная расшифровка строки LEDGER (SCRUM-370 блок В) — см. LedgerTable. */
   onDrilldown?: (row: ReportRowDto) => void
+  onRowDoubleClick?: (
+    row: ReportRowDto,
+    ancestors: ReportRowDto[],
+    event: ReactMouseEvent
+  ) => void
 }
 
 /**
@@ -52,6 +58,7 @@ export const ReportResultView = ({
   appearance,
   onOpenDocument,
   onDrilldown,
+  onRowDoubleClick,
 }: ReportResultViewProps) => {
   // Скрываем колонки, выключенные настройками (показатели/группировка), и —
   // когда «Выделять отрицательные» выключено — гасим negativeRed на колонках
@@ -138,7 +145,12 @@ export const ReportResultView = ({
             onDrilldown={onDrilldown}
           />
         ) : (
-          <TreeTable result={result} columns={columns} indentPx={indentPx} />
+          <TreeTable
+            result={result}
+            columns={columns}
+            indentPx={indentPx}
+            onRowDoubleClick={onRowDoubleClick}
+          />
         )}
       </div>
       {result.footerBlock && <ReportSignature signature={result.footerBlock} />}

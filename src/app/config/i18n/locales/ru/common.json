@@ -176,21 +176,8 @@
       "equals": "Вычислить",
       "negate": "Сменить знак"
     },
-    "vat": {
-      "vatAdd": "+НДС {{rate}}%",
-      "vatSubtract": "−НДС {{rate}}%",
-      "vatExtract": "НДС {{rate}}%"
-    },
-    "vatHints": {
-      "vatAdd": "Начислить НДС {{rate}}% на сумму",
-      "vatSubtract": "Убрать НДС {{rate}}% из суммы",
-      "vatExtract": "Выделить сумму НДС {{rate}}%"
-    },
     "notes": {
-      "negate": "смена знака",
-      "vatAdd": "+НДС",
-      "vatSubtract": "−НДС",
-      "vatExtract": "сумма НДС"
+      "negate": "смена знака"
     },
     "errors": {
       "syntax": "Проверьте выражение",

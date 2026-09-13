@@ -6,12 +6,10 @@ import { formatCalcNumber } from '@/shared/lib/calc/format-calc-number'
 import { Button } from '@/shared/ui/buttons'
 import { CalculatorKeypad } from './calculator-keypad'
 import { CalculatorTape } from './calculator-tape'
-import { useCalculator, VAT_RATE } from './use-calculator'
+import { useCalculator } from './use-calculator'
 
 /** Всё, что может встретиться в выражении: цифры, операции, скобки, проценты. */
 const ALLOWED_RE = /^[\d\s\u00a0,.+\-*/():%x\u00d7\u00f7]*$/
-
-const VAT_ACTIONS = ['vatAdd', 'vatSubtract', 'vatExtract'] as const
 
 export interface CalculatorPanelProps {
   /** Текущее значение поля — стартовое содержимое строки выражения. */
@@ -95,24 +93,6 @@ export const CalculatorPanel: FC<CalculatorPanelProps> = ({
       </div>
 
       <CalculatorKeypad onInsert={calc.insert} onAction={calc.run} />
-
-      <div className="grid grid-cols-3 gap-1">
-        {VAT_ACTIONS.map((action) => (
-          <Button
-            key={action}
-            variant="secondary"
-            size="small"
-            disabled={calc.result === null}
-            onClick={() => {
-              calc.run(action)
-            }}
-            title={t(`calculator.vatHints.${action}`, { rate: VAT_RATE })}
-            className="h-8 justify-center px-1 py-0"
-          >
-            {t(`calculator.vat.${action}`, { rate: VAT_RATE })}
-          </Button>
-        ))}
-      </div>
 
       <CalculatorTape
         entries={calc.tape}

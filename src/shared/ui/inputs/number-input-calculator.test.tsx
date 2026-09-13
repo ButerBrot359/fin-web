@@ -77,11 +77,12 @@ describe('NumberInput — калькулятор в поле', () => {
     expect(result()).toBe('35 100,00')
   })
 
-  it('начисляет НДС кнопкой и оставляет след в ленте', () => {
+  it('«=» фиксирует итог и оставляет след в ленте', () => {
     render(<Host initial={10000} />)
     openCalculator()
+    typeExpression('10000*1,12')
 
-    fireEvent.click(screen.getByText('calculator.vat.vatAdd'))
+    fireEvent.click(screen.getByText('='))
 
     expect(result()).toBe('11 200,00')
     expect(screen.getByText('calculator.tape')).toBeTruthy()

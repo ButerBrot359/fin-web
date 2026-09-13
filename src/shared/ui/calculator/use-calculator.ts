@@ -55,7 +55,7 @@ export const useCalculator = ({
     }
   })
 
-  const { value: result, error } = useMemo(
+  const { value: result } = useMemo(
     () => evaluateExpression(expression),
     [expression]
   )
@@ -135,7 +135,6 @@ export const useCalculator = ({
     setExpression,
     inputRef,
     result,
-    error,
     decimals,
     tape,
     insert,

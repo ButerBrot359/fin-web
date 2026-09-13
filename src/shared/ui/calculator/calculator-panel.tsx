@@ -46,10 +46,6 @@ export const CalculatorPanel: FC<CalculatorPanelProps> = ({
     }
   }
 
-  const errorText = calc.error
-    ? t(`calculator.errors.${calc.error}`)
-    : undefined
-
   return (
     <div className="flex w-[240px] flex-col gap-2 p-3">
       <TextField
@@ -58,8 +54,6 @@ export const CalculatorPanel: FC<CalculatorPanelProps> = ({
         autoFocus
         fullWidth
         placeholder={t('calculator.expression')}
-        error={!!errorText}
-        helperText={errorText}
         onChange={(e) => {
           if (ALLOWED_RE.test(e.target.value))
             calc.setExpression(e.target.value)
@@ -70,7 +64,6 @@ export const CalculatorPanel: FC<CalculatorPanelProps> = ({
             inputMode: 'decimal',
             'aria-label': t('calculator.expression'),
           },
-          formHelperText: { sx: { position: 'static', ml: 0 } },
         }}
       />
 

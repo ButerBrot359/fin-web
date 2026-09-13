@@ -19,6 +19,7 @@ import { useReportAltMeta } from '../lib/hooks/use-reportalt-meta'
 import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
 import { useReportAltParamState } from '../lib/hooks/use-reportalt-param-state'
+import { buildAccountCardParams } from '../lib/utils/account-card-link'
 import { buildReportAltExport } from '../lib/utils/build-reportalt-export'
 import {
   SETTINGS_URL_KEY,
@@ -300,12 +301,15 @@ export const ReportAltPage = () => {
             ('from' in v || 'to' in v)
         ) ?? {})
       : {}
-    const params = new URLSearchParams({
-      accountId: String(accountRow.rowRef.id),
-      accountCode: accountRow.groupValue ?? '',
-    })
-    if (period.from) params.set('from', period.from)
-    if (period.to) params.set('to', period.to)
+    const params = buildAccountCardParams(
+      rowMenu ? [...rowMenu.ancestors, rowMenu.row] : [],
+      {
+        accountId: accountRow.rowRef.id,
+        accountCode: accountRow.groupValue ?? '',
+        from: period.from,
+        to: period.to,
+      }
+    )
     void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
   }
 

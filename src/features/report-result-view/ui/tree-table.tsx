@@ -509,9 +509,7 @@ const PlainTreeTable = ({
                     : undefined
                 }
               >
-                <td className={`${tdBase} align-top`}>
-                  {renderGroupCell(row)}
-                </td>
+                <td className={`${tdBase} align-top`}>{renderGroupCell(row)}</td>
                 {bodyColumns.map((col) => (
                   <td
                     key={col.code}

@@ -69,6 +69,11 @@ describe('TreeTable — переходы по строке', () => {
     expect(calls).toHaveLength(1)
     expect(calls[0]?.row.groupValue).toBe('Бумага А4')
     expect(calls[0]?.ancestors.map((a) => a.groupValue)).toEqual(['1316'])
+
+    fireEvent.doubleClick(screen.getAllByText(/150/)[0])
+
+    expect(calls).toHaveLength(2)
+    expect(calls[1]?.row.groupValue).toBe('1316')
   })
 
   it('без обработчика строки не кликабельны', () => {

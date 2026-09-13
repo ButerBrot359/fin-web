@@ -203,6 +203,7 @@ export interface ReportAltParamStateDto {
   disabledParams: string[]
   optionsSources: Record<string, ReportAltOptionsSource>
   messages: Record<string, string>
+  groupingTitles?: Record<string, string>
 }
 
 export interface ReportAltParamStateBody {

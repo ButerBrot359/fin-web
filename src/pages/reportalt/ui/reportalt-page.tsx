@@ -559,6 +559,7 @@ export const ReportAltPage = () => {
           onLangChange={(v) => {
             setParamValue(LANG_PARAM_CODE, v)
           }}
+          groupingTitles={paramState.groupingTitles}
         />
       )}
 

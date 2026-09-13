@@ -6,9 +6,6 @@ import {
 } from '@/shared/lib/calc/evaluate-expression'
 import { formatCalcNumber } from '@/shared/lib/calc/format-calc-number'
 
-/** Ставка НДС РК. Одно место на весь калькулятор — меняется реформой, не кодом формы. */
-export const VAT_RATE = 12
-
 const TAPE_LIMIT = 3
 
 /** Разрядность по умолчанию, когда бэк не прислал `precision`: потолок NUMERIC(19,4). */
@@ -20,12 +17,9 @@ export type CalculatorAction =
   | 'backspace'
   | 'equals'
   | 'negate'
-  | 'vatAdd'
-  | 'vatSubtract'
-  | 'vatExtract'
 
 /** Пометка о том, каким действием получено значение — подпись в ленте. */
-export type CalculatorNote = 'negate' | 'vatAdd' | 'vatSubtract' | 'vatExtract'
+export type CalculatorNote = 'negate'
 
 export interface CalculatorTapeEntry {
   id: number
@@ -129,18 +123,6 @@ export const useCalculator = ({
         return
       case 'negate':
         if (result !== null) commit(-result, 'negate')
-        return
-      case 'vatAdd':
-        if (result !== null) commit(result * (1 + VAT_RATE / 100), 'vatAdd')
-        return
-      case 'vatSubtract':
-        if (result !== null)
-          commit(result / (1 + VAT_RATE / 100), 'vatSubtract')
-        return
-      case 'vatExtract':
-        if (result !== null) {
-          commit(result - result / (1 + VAT_RATE / 100), 'vatExtract')
-        }
         return
     }
   }

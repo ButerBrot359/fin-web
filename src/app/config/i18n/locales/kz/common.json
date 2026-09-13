@@ -176,21 +176,8 @@
       "equals": "Есептеу",
       "negate": "Таңбаны ауыстыру"
     },
-    "vat": {
-      "vatAdd": "+ҚҚС {{rate}}%",
-      "vatSubtract": "−ҚҚС {{rate}}%",
-      "vatExtract": "ҚҚС {{rate}}%"
-    },
-    "vatHints": {
-      "vatAdd": "Сомаға ҚҚС {{rate}}% қосу",
-      "vatSubtract": "Сомадан ҚҚС {{rate}}% алып тастау",
-      "vatExtract": "ҚҚС {{rate}}% сомасын бөліп көрсету"
-    },
     "notes": {
-      "negate": "таңбаны ауыстыру",
-      "vatAdd": "+ҚҚС",
-      "vatSubtract": "−ҚҚС",
-      "vatExtract": "ҚҚС сомасы"
+      "negate": "таңбаны ауыстыру"
     },
     "errors": {
       "syntax": "Өрнекті тексеріңіз",

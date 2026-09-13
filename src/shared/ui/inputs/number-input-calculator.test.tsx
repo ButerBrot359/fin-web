@@ -88,12 +88,14 @@ describe('NumberInput — калькулятор в поле', () => {
     expect(screen.getByText('calculator.tape')).toBeTruthy()
   })
 
-  it('не даёт перенести незаконченное выражение', () => {
+  // Незаконченный набор («100+», «25*») — рабочее состояние, а не ошибка:
+  // ругаться на него нельзя, но и перенести в поле нечего.
+  it('незаконченное выражение не показывает ошибку и не переносится', () => {
     render(<Host />)
     openCalculator()
     typeExpression('100+')
 
-    expect(screen.getByText('calculator.errors.syntax')).toBeTruthy()
+    expect(result()).toBe('—')
     expect(
       screen.getByText('calculator.apply').closest('button')
     ).toHaveProperty('disabled', true)

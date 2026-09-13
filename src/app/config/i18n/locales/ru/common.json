@@ -178,11 +178,6 @@
     },
     "notes": {
       "negate": "смена знака"
-    },
-    "errors": {
-      "syntax": "Проверьте выражение",
-      "divZero": "Деление на ноль",
-      "overflow": "Слишком большое число"
     }
   },
   "unsavedChangesDialog": {

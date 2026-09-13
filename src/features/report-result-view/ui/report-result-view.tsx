@@ -41,8 +41,7 @@ interface ReportResultViewProps {
   onRowDoubleClick?: (
     row: ReportRowDto,
     ancestors: ReportRowDto[],
-    event: ReactMouseEvent,
-    measureCell: boolean
+    event: ReactMouseEvent
   ) => void
 }
 

@@ -46,6 +46,7 @@ import {
 import type { ExternalDropTarget } from './customize-form-grid-editor'
 import { buildPreviewModel } from '../lib/customize-form/build-preview-model'
 import { useTreeStore } from '../lib/stores/tree-store'
+import { mergePatchLayers } from '../lib/customize-form/merge-patch-layers'
 import type { ViewSettingsPatchEntry } from '../api/view-settings-api'
 import { CustomizeFormPreview } from './customize-form-preview'
 import { CustomizeFormRow } from './customize-form-row'
@@ -111,7 +112,20 @@ export const CustomizeFormDialog: FC = () => {
 
   const { data: patch } = useQuery({
     queryKey: settingsKey(screenKey ?? '', mode, profile),
-    queryFn: ({ signal }) => api.get(screenKey ?? '', signal),
+    // Ролевой слой настраивается ПОВЕРХ «для всех»: редактор сеется слиянием
+    // (общий дефолт снизу, ролевой поверх), чтобы админ видел и правил ровно
+    // ту раскладку, которую получит роль. Сохранение пишет полный снимок в
+    // ролевой слой — дальше роль живёт своей копией, детерминированно.
+    queryFn: async ({ signal }) => {
+      if (mode === 'default' && profile !== '') {
+        const [base, override] = await Promise.all([
+          viewSettingsDefaultsApi.get(screenKey ?? '', signal),
+          viewSettingsProfileDefaultsApi.get(screenKey ?? '', profile, signal),
+        ])
+        return mergePatchLayers(base, override)
+      }
+      return api.get(screenKey ?? '', signal)
+    },
     enabled: isOpen && screenKey != null,
   })
 
@@ -208,14 +222,29 @@ export const CustomizeFormDialog: FC = () => {
     return buildPatchFromDecisions(patch ?? [], decisions)
   }
 
+  // Режим «для всех»: сохранение/сброс НЕ закрывают диалог (решение владельца
+  // 15.09) — админ применяет слой, форма под диалогом перерисовывается, и он
+  // продолжает настраивать; выходит сам через «Отмена». Личный режим — прежнее
+  // поведение: сохранил и закрылся.
+  const applyKeepOpen = async () => {
+    // Re-OPEN пересоздаёт SduiScreen (диалог кратко размонтируется), и локальный
+    // выбор слоя пересеется из стора — фиксируем там текущий, чтобы не откатился.
+    useCustomizeFormStore.setState({ initialProfile: profile })
+    await queryClient.invalidateQueries({ queryKey: ['view-settings'] })
+    await queryClient.invalidateQueries({
+      queryKey: ['view-settings-admin-screens'],
+    })
+    notifyViewSettingsChanged()
+  }
+
   const saveMutation = useMutation({
     mutationFn: (nextPatch: ReturnType<typeof buildPatch>) =>
       api.put(screenKey ?? '', nextPatch),
-    onSuccess: finish,
+    onSuccess: mode === 'default' ? applyKeepOpen : finish,
   })
   const resetMutation = useMutation({
     mutationFn: () => api.reset(screenKey ?? ''),
-    onSuccess: finish,
+    onSuccess: mode === 'default' ? applyKeepOpen : finish,
   })
   const busy = saveMutation.isPending || resetMutation.isPending
 

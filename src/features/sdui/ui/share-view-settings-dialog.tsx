@@ -7,7 +7,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/shared/ui/buttons'
@@ -37,12 +37,18 @@ export const ShareViewSettingsDialog: FC<ShareViewSettingsDialogProps> = ({
   onClose,
 }) => {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [name, setName] = useState('')
 
   const publishMutation = useMutation({
     mutationFn: () =>
       viewSettingsPresetsApi.publish(screenKey, name, buildPatch()),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Каталог кэшируется (staleTime 5 мин): без инвалидации только что
+      // опубликованный пресет не появлялся в уже открывавшихся «Готовых».
+      await queryClient.invalidateQueries({
+        queryKey: ['view-settings-presets'],
+      })
       showToast('success', t('sdui.customizeForm.shareSuccess'))
       setName('')
       onClose()

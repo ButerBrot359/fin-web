@@ -58,6 +58,10 @@ export const ViewSettingsPresetsDialog: FC<ViewSettingsPresetsDialogProps> = ({
     queryFn: ({ signal }) =>
       viewSettingsPresetsApi.list(screenKey, search.trim(), signal),
     enabled: open,
+    // Каталог общий: коллега мог опубликовать пресет секунду назад, глобальный
+    // staleTime 5 мин здесь неуместен — каждое открытие модалки перечитывает.
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 
   const applyMutation = useMutation({

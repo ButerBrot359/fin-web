@@ -1,4 +1,4 @@
-import { useRef, useState, type FC } from 'react'
+import { useState, type FC } from 'react'
 import {
   Checkbox,
   Dialog,
@@ -12,7 +12,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/shared/ui/buttons'
-import { showToast } from '@/shared/ui/toast/show-toast'
 import { notifyViewSettingsChanged } from '@/shared/lib/design-settings/design-settings-events'
 
 import {
@@ -44,10 +43,6 @@ import {
 } from '../lib/customize-form/grid-zones'
 import type { ExternalDropTarget } from './customize-form-grid-editor'
 import { buildPreviewModel } from '../lib/customize-form/build-preview-model'
-import {
-  downloadViewSettings,
-  parseViewSettingsFile,
-} from '../lib/customize-form/settings-transfer'
 import { useTreeStore } from '../lib/stores/tree-store'
 import type { ViewSettingsPatchEntry } from '../api/view-settings-api'
 import { CustomizeFormPreview } from './customize-form-preview'
@@ -77,7 +72,6 @@ export const CustomizeFormDialog: FC = () => {
   const screenKey = useTreeStore((s) => s.screenKey)
   const root = useTreeStore((s) => s.root)
   const queryClient = useQueryClient()
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const { data: patch } = useQuery({
     queryKey: settingsKey(screenKey ?? '', mode),
@@ -336,21 +330,6 @@ export const CustomizeFormDialog: FC = () => {
     await finish()
   }
 
-  const importFile = async (file: File) => {
-    try {
-      const imported = parseViewSettingsFile(await file.text())
-      await api.put(screenKey ?? '', imported)
-      await finish()
-    } catch (error) {
-      showToast(
-        'error',
-        error instanceof Error
-          ? error.message
-          : t('sdui.customizeForm.importFailed')
-      )
-    }
-  }
-
   if (!isOpen) return null
 
   const legacyPreview = !hasSections ? buildPreviewModel(root, rows) : null
@@ -502,17 +481,6 @@ export const CustomizeFormDialog: FC = () => {
           </div>
         </DialogContent>
         <DialogActions>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json"
-            hidden
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              e.target.value = ''
-              if (file) void importFile(file)
-            }}
-          />
           {presetsAvailable && (
             <>
               <Button
@@ -535,26 +503,6 @@ export const CustomizeFormDialog: FC = () => {
               </Button>
             </>
           )}
-          <Button
-            variant="tertiary"
-            onClick={() => {
-              downloadViewSettings(
-                screenKey ?? '',
-                patch ?? [],
-                root?.props?.title as string | undefined
-              )
-            }}
-            disabled={busy || screenKey == null || patch == null}
-          >
-            {t('sdui.customizeForm.export')}
-          </Button>
-          <Button
-            variant="tertiary"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={busy || screenKey == null}
-          >
-            {t('sdui.customizeForm.import')}
-          </Button>
           <Button
             variant="tertiary"
             onClick={() => {

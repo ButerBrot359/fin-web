@@ -85,6 +85,9 @@ export const theme = createTheme({
           paddingRight: 20,
           fontSize: 14,
           fontWeight: 500,
+          // Явный line-height: у Select значение — div с наследуемым 23px
+          // (высота поля прыгала до 47 против 44 у текстовых инпутов).
+          lineHeight: '20px',
           color: cssVar(semantic.textPrimary),
           '&.Mui-disabled': { cursor: 'not-allowed' },
           '&.MuiInputBase-inputSizeSmall': {

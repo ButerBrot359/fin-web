@@ -41,8 +41,10 @@ export const TopBarUser = () => {
   const [themeDialogOpen, setThemeDialogOpen] = useState(false)
 
   // Вход в админку конструктора — только админам; признак считает бэк.
+  // Ключ включает пользователя: staleTime Infinity без него показывал пункт
+  // меню следующему вошедшему из кэша предыдущего (админ вышел → бух видел).
   const { data: adminInfo } = useQuery({
-    queryKey: ['view-settings-admin-me'],
+    queryKey: ['view-settings-admin-me', user?.id ?? null],
     queryFn: ({ signal }) => viewSettingsAdminApi.me(signal),
     enabled: user != null,
     staleTime: Infinity,

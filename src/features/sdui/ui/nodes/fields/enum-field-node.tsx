@@ -28,9 +28,13 @@ export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
   // перечисление схлопывается до ~40px и обрезает подпись. Тема задаёт fullWidth
   // только для MuiTextField/MuiPickersTextField, поэтому прочие поля не страдают
   // — они стоят на TextField. Растягиваем контейнер поля, а не сам контрол.
+  // variant="filled": голый Select по умолчанию outlined (56px, прозрачный,
+  // рамка) и выбивался из темы — все остальные поля идут через filled-стили
+  // (белый фон, ~44px, наш лейбл).
   return (
     <FormControl
       fullWidth
+      variant="filled"
       error={!!f.error}
       required={f.required}
       disabled={!f.enabled}

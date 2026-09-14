@@ -43,23 +43,27 @@ const ServerDrivenModulePage = ({
 }) => {
   const location = useLocation()
 
+  // pt-5 — как у легаси-варианта ниже и карточек документов: без него тулбар
+  // модуля (поиск) прилипал вплотную к глобальному топбару.
   return (
-    <SduiScreen
-      onTab={(tab) => {
-        if (!tab) return
-        const pageType = mapKindToPageType(tab.kind)
-        if (!pageType) return
+    <div className="flex h-full flex-col pt-5">
+      <SduiScreen
+        onTab={(tab) => {
+          if (!tab) return
+          const pageType = mapKindToPageType(tab.kind)
+          if (!pageType) return
 
-        const tabId = useWorkspaceTabsStore
-          .getState()
-          .activateOrCreate(location.pathname, location.search, pageType)
+          const tabId = useWorkspaceTabsStore
+            .getState()
+            .activateOrCreate(location.pathname, location.search, pageType)
 
-        if (tabId && tab.title) {
-          useWorkspaceTabsStore.getState().setTabTitle(tabId, tab.title)
-        }
-      }}
-      onOpenFailed={onOpenFailed}
-    />
+          if (tabId && tab.title) {
+            useWorkspaceTabsStore.getState().setTabTitle(tabId, tab.title)
+          }
+        }}
+        onOpenFailed={onOpenFailed}
+      />
+    </div>
   )
 }
 

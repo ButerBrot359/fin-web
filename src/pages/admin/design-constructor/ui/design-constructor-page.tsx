@@ -1,10 +1,11 @@
-import { useState, type FC } from 'react'
+import { useEffect, useState, type FC } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TextField, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import {
+  resetAdminCustomizeAutoOpen,
   viewSettingsAdminApi,
   viewSettingsProfileDefaultsApi,
   type ViewSettingsScreen,
@@ -22,6 +23,12 @@ export const DesignConstructorPage: FC = () => {
   const [search, setSearch] = useState('')
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
   const navigate = useNavigate()
+
+  // Вход в админку сбрасывает «уже открывали» автозапуска редактора: без
+  // этого повторный клик по той же форме и слою не открыл бы диалог.
+  useEffect(() => {
+    resetAdminCustomizeAutoOpen()
+  }, [])
 
   /** Открывает реальную форму с автозапуском диалога настройки слоя. */
   const editLayer = (screen: ViewSettingsScreen, profile: string) => {

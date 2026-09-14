@@ -54,6 +54,13 @@ export const theme = createTheme({
             minHeight: 32,
             height: 36,
           },
+          // Small С ЛЕЙБЛОМ (label — сосед root'а в FormControl): в 36px
+          // плавающему лейблу нет места, он ложится на текст — даём таким
+          // полям геометрию обычного размера. Small без лейбла не задет.
+          'label + &.MuiInputBase-sizeSmall': {
+            height: 'auto',
+            minHeight: 40,
+          },
           '&:hover': { backgroundColor: cssVar(palette.ui01) },
           '&.Mui-focused': {
             backgroundColor: cssVar(palette.ui01),
@@ -84,6 +91,12 @@ export const theme = createTheme({
             paddingTop: 6,
             paddingBottom: 6,
           },
+          // Пара к 'label + &.MuiInputBase-sizeSmall' в root: значение — под
+          // лейблом, как у обычного размера.
+          'label + .MuiInputBase-sizeSmall &': {
+            paddingTop: 18,
+            paddingBottom: 4,
+          },
         },
       },
     },
@@ -96,16 +109,15 @@ export const theme = createTheme({
           // Компактные поля (высота ~44 → ~40): лейбл и значение сжаты по
           // вертикали, поэтому позиции лейбла прибиты руками — дефолтные
           // transform'ы MUI рассчитаны на высоту 56 и уводят лейбл на текст.
-          // Small не трогаем: у него своя геометрия (36px, без плавающего
-          // лейбла в формах).
+          // Small с лейблом получает ту же геометрию (см. MuiFilledInput),
+          // поэтому transform'ы общие для всех filled-лейблов.
           fontSize: 14,
-          '&.MuiInputLabel-filled:not(.MuiInputLabel-sizeSmall)': {
+          '&.MuiInputLabel-filled': {
             transform: 'translate(12px, 10px) scale(1)',
           },
-          '&.MuiInputLabel-filled:not(.MuiInputLabel-sizeSmall).MuiInputLabel-shrink':
-            {
-              transform: 'translate(12px, 3px) scale(0.75)',
-            },
+          '&.MuiInputLabel-filled.MuiInputLabel-shrink': {
+            transform: 'translate(12px, 3px) scale(0.75)',
+          },
           // Figma «Input» (53:592): Filled без фокуса — label остаётся серым
           // (UI 05); синий — только в фокусе. Порядок правил важен: focused
           // объявлен после shrink и перебивает его.

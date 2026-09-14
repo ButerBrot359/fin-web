@@ -49,9 +49,12 @@ import {
   parseViewSettingsFile,
 } from '../lib/customize-form/settings-transfer'
 import { useTreeStore } from '../lib/stores/tree-store'
+import type { ViewSettingsPatchEntry } from '../api/view-settings-api'
 import { CustomizeFormPreview } from './customize-form-preview'
 import { CustomizeFormRow } from './customize-form-row'
 import { CustomizeFormSectionCard } from './customize-form-section-card'
+import { ShareViewSettingsDialog } from './share-view-settings-dialog'
+import { ViewSettingsPresetsDialog } from './view-settings-presets-dialog'
 
 const settingsKey = (screenKey: string, mode: string) =>
   ['view-settings', mode, screenKey] as const
@@ -321,6 +324,18 @@ export const CustomizeFormDialog: FC = () => {
     canMoveDown: rows.slice(index + 1).some((r) => r.parentId === row.parentId),
   })
 
+  // «Поделиться настройками» / «Готовые настройки»: общий каталог пресетов.
+  // Только личный режим — админ-дефолт («для всех») и есть общая настройка.
+  const [shareOpen, setShareOpen] = useState(false)
+  const [presetsOpen, setPresetsOpen] = useState(false)
+  const presetsAvailable = mode !== 'default' && screenKey != null
+
+  const applyPreset = async (presetPatch: ViewSettingsPatchEntry[]) => {
+    await viewSettingsApi.put(screenKey ?? '', presetPatch)
+    setPresetsOpen(false)
+    await finish()
+  }
+
   const importFile = async (file: File) => {
     try {
       const imported = parseViewSettingsFile(await file.text())
@@ -341,200 +356,248 @@ export const CustomizeFormDialog: FC = () => {
   const legacyPreview = !hasSections ? buildPreviewModel(root, rows) : null
 
   return (
-    <Dialog
-      open={isOpen}
-      onClose={busy ? undefined : close}
-      maxWidth="md"
-      fullWidth
-    >
-      <DialogTitle>
-        {t(
-          mode === 'default'
-            ? 'sdui.customizeForm.defaultTitle'
-            : 'sdui.customizeForm.title'
-        )}
-      </DialogTitle>
-      <DialogContent className="flex flex-col gap-3">
-        {mode === 'default' && (
-          <Typography variant="body2" className="text-support-01">
-            {t('sdui.customizeForm.defaultWarning')}
-          </Typography>
-        )}
-        <Typography variant="body2">
-          {hasSections
-            ? t('sdui.customizeForm.sectionsHint')
-            : t('sdui.customizeForm.previewHint')}
-        </Typography>
-        {hasSections ? (
-          sections.map((section, index) => (
-            <CustomizeFormSectionCard
-              key={section.nodeId}
-              section={section}
-              canMoveUp={index > 0}
-              canMoveDown={index < sections.length - 1}
-              busy={busy}
-              selectedId={selectedId}
-              onMove={(direction) => {
-                moveSection(index, direction)
-              }}
-              onToggleSection={() => {
-                mutateSections((next) => {
-                  next[index].hidden = !next[index].hidden
-                })
-              }}
-              onToggleTab={(tabId) => {
-                mutateSections((next) => {
-                  const tab = next[index].tabs?.find((x) => x.nodeId === tabId)
-                  if (tab) tab.hidden = !tab.hidden
-                })
-              }}
-              onToggleColumn={(tabId, columnId) => {
-                mutateSections((next) => {
-                  const tab = next[index].tabs?.find((x) => x.nodeId === tabId)
-                  const column = tab?.tableColumns?.find(
-                    (c) => c.nodeId === columnId
-                  )
-                  if (column) column.hidden = !column.hidden
-                })
-              }}
-              onZoneChange={replaceZone}
-              onSelect={setSelectedId}
-              onExternalDrop={moveAcrossZones}
-            />
-          ))
-        ) : legacyPreview ? (
-          <CustomizeFormPreview
-            model={legacyPreview}
-            selectedId={selectedId}
-            hidden={hidden}
-            widths={widths}
-            onSelect={setSelectedId}
-          />
-        ) : (
-          <Typography variant="body2">
-            {t('sdui.customizeForm.empty')}
-          </Typography>
-        )}
-        <div className="border-ui-03 min-h-12 rounded-lg border px-3 py-2">
-          {selectedZoneItem ? (
-            <div className="flex flex-wrap items-center gap-4">
-              <label className="flex cursor-pointer items-center gap-2">
-                <Checkbox
-                  size="small"
-                  checked={!selectedZoneItem.hidden}
-                  onChange={() => {
-                    toggleZoneItem(selectedZoneItem.nodeId)
-                  }}
-                  disabled={busy}
-                />
-                <Typography variant="body2">
-                  {t('sdui.customizeForm.showElement', {
-                    label: selectedZoneItem.label,
-                  })}
-                </Typography>
-              </label>
-              {mode === 'default' && (
-                <TextField
-                  size="small"
-                  label={t('sdui.customizeForm.labelField')}
-                  value={
-                    labels.get(selectedZoneItem.nodeId) ??
-                    (selectedZoneItem.label === '⋯'
-                      ? ''
-                      : selectedZoneItem.label)
-                  }
-                  onChange={(e) => {
-                    setLabels((current) =>
-                      new Map(current).set(
-                        selectedZoneItem.nodeId,
-                        e.target.value
-                      )
-                    )
-                  }}
-                  disabled={busy}
-                />
-              )}
-            </div>
-          ) : selectedRow && !hasSections ? (
-            <CustomizeFormRow
-              node={selectedRow}
-              hidden={hidden.has(selectedRow.nodeId)}
-              width={widths.get(selectedRow.nodeId)}
-              busy={busy}
-              {...siblingBounds(selectedRow, selectedIndex)}
-              onToggle={() => {
-                toggle(selectedRow.nodeId)
-              }}
-              onMove={(direction) => {
-                move(selectedRow.nodeId, direction)
-              }}
-              onWidthChange={(width) => {
-                setWidths((current) =>
-                  new Map(current).set(selectedRow.nodeId, width)
-                )
-              }}
-            />
-          ) : (
-            <Typography variant="body2" className="text-ui-05 py-1">
-              {t('sdui.customizeForm.selectHint')}
+    <>
+      <Dialog
+        open={isOpen}
+        onClose={busy ? undefined : close}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {t(
+            mode === 'default'
+              ? 'sdui.customizeForm.defaultTitle'
+              : 'sdui.customizeForm.title'
+          )}
+        </DialogTitle>
+        <DialogContent className="flex flex-col gap-3">
+          {mode === 'default' && (
+            <Typography variant="body2" className="text-support-01">
+              {t('sdui.customizeForm.defaultWarning')}
             </Typography>
           )}
-        </div>
-      </DialogContent>
-      <DialogActions>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json"
-          hidden
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            e.target.value = ''
-            if (file) void importFile(file)
-          }}
-        />
-        <Button
-          variant="tertiary"
-          onClick={() => {
-            downloadViewSettings(
-              screenKey ?? '',
-              patch ?? [],
-              root?.props?.title as string | undefined
-            )
-          }}
-          disabled={busy || screenKey == null || patch == null}
-        >
-          {t('sdui.customizeForm.export')}
-        </Button>
-        <Button
-          variant="tertiary"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={busy || screenKey == null}
-        >
-          {t('sdui.customizeForm.import')}
-        </Button>
-        <Button
-          variant="tertiary"
-          onClick={() => {
-            resetMutation.mutate()
-          }}
-          disabled={busy || screenKey == null}
-        >
-          {t('sdui.customizeForm.reset')}
-        </Button>
-        <Button variant="secondary" onClick={close} disabled={busy}>
-          {t('sdui.customizeForm.cancel')}
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => {
-            saveMutation.mutate(buildPatch())
-          }}
-          disabled={busy || screenKey == null || patch == null}
-        >
-          {t('sdui.customizeForm.save')}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <Typography variant="body2">
+            {hasSections
+              ? t('sdui.customizeForm.sectionsHint')
+              : t('sdui.customizeForm.previewHint')}
+          </Typography>
+          {hasSections ? (
+            sections.map((section, index) => (
+              <CustomizeFormSectionCard
+                key={section.nodeId}
+                section={section}
+                canMoveUp={index > 0}
+                canMoveDown={index < sections.length - 1}
+                busy={busy}
+                selectedId={selectedId}
+                onMove={(direction) => {
+                  moveSection(index, direction)
+                }}
+                onToggleSection={() => {
+                  mutateSections((next) => {
+                    next[index].hidden = !next[index].hidden
+                  })
+                }}
+                onToggleTab={(tabId) => {
+                  mutateSections((next) => {
+                    const tab = next[index].tabs?.find(
+                      (x) => x.nodeId === tabId
+                    )
+                    if (tab) tab.hidden = !tab.hidden
+                  })
+                }}
+                onToggleColumn={(tabId, columnId) => {
+                  mutateSections((next) => {
+                    const tab = next[index].tabs?.find(
+                      (x) => x.nodeId === tabId
+                    )
+                    const column = tab?.tableColumns?.find(
+                      (c) => c.nodeId === columnId
+                    )
+                    if (column) column.hidden = !column.hidden
+                  })
+                }}
+                onZoneChange={replaceZone}
+                onSelect={setSelectedId}
+                onExternalDrop={moveAcrossZones}
+              />
+            ))
+          ) : legacyPreview ? (
+            <CustomizeFormPreview
+              model={legacyPreview}
+              selectedId={selectedId}
+              hidden={hidden}
+              widths={widths}
+              onSelect={setSelectedId}
+            />
+          ) : (
+            <Typography variant="body2">
+              {t('sdui.customizeForm.empty')}
+            </Typography>
+          )}
+          <div className="border-ui-03 min-h-12 rounded-lg border px-3 py-2">
+            {selectedZoneItem ? (
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <Checkbox
+                    size="small"
+                    checked={!selectedZoneItem.hidden}
+                    onChange={() => {
+                      toggleZoneItem(selectedZoneItem.nodeId)
+                    }}
+                    disabled={busy}
+                  />
+                  <Typography variant="body2">
+                    {t('sdui.customizeForm.showElement', {
+                      label: selectedZoneItem.label,
+                    })}
+                  </Typography>
+                </label>
+                {mode === 'default' && (
+                  <TextField
+                    size="small"
+                    label={t('sdui.customizeForm.labelField')}
+                    value={
+                      labels.get(selectedZoneItem.nodeId) ??
+                      (selectedZoneItem.label === '⋯'
+                        ? ''
+                        : selectedZoneItem.label)
+                    }
+                    onChange={(e) => {
+                      setLabels((current) =>
+                        new Map(current).set(
+                          selectedZoneItem.nodeId,
+                          e.target.value
+                        )
+                      )
+                    }}
+                    disabled={busy}
+                  />
+                )}
+              </div>
+            ) : selectedRow && !hasSections ? (
+              <CustomizeFormRow
+                node={selectedRow}
+                hidden={hidden.has(selectedRow.nodeId)}
+                width={widths.get(selectedRow.nodeId)}
+                busy={busy}
+                {...siblingBounds(selectedRow, selectedIndex)}
+                onToggle={() => {
+                  toggle(selectedRow.nodeId)
+                }}
+                onMove={(direction) => {
+                  move(selectedRow.nodeId, direction)
+                }}
+                onWidthChange={(width) => {
+                  setWidths((current) =>
+                    new Map(current).set(selectedRow.nodeId, width)
+                  )
+                }}
+              />
+            ) : (
+              <Typography variant="body2" className="text-ui-05 py-1">
+                {t('sdui.customizeForm.selectHint')}
+              </Typography>
+            )}
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (file) void importFile(file)
+            }}
+          />
+          {presetsAvailable && (
+            <>
+              <Button
+                variant="tertiary"
+                onClick={() => {
+                  setShareOpen(true)
+                }}
+                disabled={busy}
+              >
+                {t('sdui.customizeForm.share')}
+              </Button>
+              <Button
+                variant="tertiary"
+                onClick={() => {
+                  setPresetsOpen(true)
+                }}
+                disabled={busy}
+              >
+                {t('sdui.customizeForm.presets')}
+              </Button>
+            </>
+          )}
+          <Button
+            variant="tertiary"
+            onClick={() => {
+              downloadViewSettings(
+                screenKey ?? '',
+                patch ?? [],
+                root?.props?.title as string | undefined
+              )
+            }}
+            disabled={busy || screenKey == null || patch == null}
+          >
+            {t('sdui.customizeForm.export')}
+          </Button>
+          <Button
+            variant="tertiary"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy || screenKey == null}
+          >
+            {t('sdui.customizeForm.import')}
+          </Button>
+          <Button
+            variant="tertiary"
+            onClick={() => {
+              resetMutation.mutate()
+            }}
+            disabled={busy || screenKey == null}
+          >
+            {t('sdui.customizeForm.reset')}
+          </Button>
+          <Button variant="secondary" onClick={close} disabled={busy}>
+            {t('sdui.customizeForm.cancel')}
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              saveMutation.mutate(buildPatch())
+            }}
+            disabled={busy || screenKey == null || patch == null}
+          >
+            {t('sdui.customizeForm.save')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {presetsAvailable && (
+        <>
+          <ShareViewSettingsDialog
+            open={shareOpen}
+            screenKey={screenKey}
+            buildPatch={buildPatch}
+            onClose={() => {
+              setShareOpen(false)
+            }}
+          />
+          <ViewSettingsPresetsDialog
+            open={presetsOpen}
+            screenKey={screenKey}
+            onApply={applyPreset}
+            onClose={() => {
+              setPresetsOpen(false)
+            }}
+          />
+        </>
+      )}
+    </>
   )
 }

@@ -56,6 +56,9 @@ import { ViewSettingsPresetsDialog } from './view-settings-presets-dialog'
 const settingsKey = (screenKey: string, mode: string, profile: string) =>
   ['view-settings', mode, screenKey, profile] as const
 
+/** Значение пункта «Для всех» в селекте слоя (см. комментарий у TextField). */
+const ALL_SCOPE = '__all__'
+
 /**
  * Диалог «Ещё → Изменить форму» (конструктор дизайна, v5 — страница секциями,
  * модель владельца 11.09): страница — вертикальная стопка блоков; блоки
@@ -385,18 +388,19 @@ export const CustomizeFormDialog: FC = () => {
         <DialogContent className="flex flex-col gap-3">
           {mode === 'default' && (
             <>
+              {/* Сентинел вместо '': MUI трактует пустую строку как «ничего не
+                  выбрано» и не показывает пункт «Для всех» выбранным. */}
               <TextField
                 select
-                size="small"
                 label={t('sdui.customizeForm.defaultScope')}
-                value={profile}
+                value={profile === '' ? ALL_SCOPE : profile}
                 onChange={(e) => {
-                  setProfile(e.target.value)
+                  setProfile(e.target.value === ALL_SCOPE ? '' : e.target.value)
                 }}
                 disabled={busy}
                 className="max-w-xs"
               >
-                <MenuItem value="">
+                <MenuItem value={ALL_SCOPE}>
                   {t('sdui.customizeForm.defaultScopeAll')}
                 </MenuItem>
                 {(profiles ?? []).map((p) => (

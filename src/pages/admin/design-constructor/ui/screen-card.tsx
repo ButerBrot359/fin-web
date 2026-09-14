@@ -1,5 +1,5 @@
-import { useState, type FC } from 'react'
-import { MenuItem, TextField, Typography } from '@mui/material'
+import type { FC } from 'react'
+import { Typography } from '@mui/material'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
@@ -19,8 +19,10 @@ interface ScreenCardProps {
 }
 
 /**
- * Карточка выбранной формы в админке: настроенные слои со сбросом и запуск
- * редактора для выбранного слоя («Для всех» или роль).
+ * Карточка выбранной формы в админке: один список слоёв — «Для всех» и каждая
+ * роль — со статусом «настроено». «Настроить»/«Изменить» открывает редактор
+ * формы для этого слоя, «Сбросить» удаляет слой. Никаких отдельных селектов:
+ * весь флоу — выбрал форму → выбрал строку → настроил.
  */
 export const ScreenCard: FC<ScreenCardProps> = ({
   screen,
@@ -29,10 +31,6 @@ export const ScreenCard: FC<ScreenCardProps> = ({
 }) => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const [profile, setProfile] = useState('')
-
-  const profileName = (key: string) =>
-    profiles.find((p) => p.code === key)?.name ?? key
 
   const resetMutation = useMutation({
     mutationFn: (layer: string) =>
@@ -49,85 +47,71 @@ export const ScreenCard: FC<ScreenCardProps> = ({
     },
   })
 
-  const layers = [...(screen.hasDefault ? [''] : []), ...screen.profileKeys]
+  const rows = [
+    {
+      key: '',
+      name: t('sdui.designAdmin.layerAll'),
+      configured: screen.hasDefault,
+    },
+    ...profiles.map((p) => ({
+      key: p.code,
+      name: p.name ?? p.code,
+      configured: screen.profileKeys.includes(p.code),
+    })),
+  ]
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       <div>
         <Typography variant="h6">{screen.nameRu ?? screen.code}</Typography>
-        <Typography variant="caption" className="text-ui-05">
-          {screen.code}
+        <Typography variant="body2" className="text-ui-05">
+          {t('sdui.designAdmin.cardHint')}
         </Typography>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Typography variant="body2" className="font-medium">
-          {t('sdui.designAdmin.layersTitle')}
-        </Typography>
-        {layers.length === 0 && (
-          <Typography variant="body2" className="text-ui-05">
-            {t('sdui.designAdmin.noLayers')}
-          </Typography>
-        )}
-        {layers.map((layer) => (
-          <div
-            key={layer === '' ? '::all' : layer}
-            className="flex items-center justify-between gap-4 rounded-lg border border-solid border-divider px-4 py-2"
-          >
-            <Typography variant="body2">
-              {layer === ''
-                ? t('sdui.designAdmin.layerAll')
-                : profileName(layer)}
-            </Typography>
-            <div className="flex shrink-0 gap-2">
-              <Button
-                variant="tertiary"
-                disabled={resetMutation.isPending}
-                onClick={() => {
-                  resetMutation.mutate(layer)
-                }}
-              >
-                {t('sdui.designAdmin.resetLayer')}
-              </Button>
-              <Button
-                variant="tertiary"
-                onClick={() => {
-                  onEdit(layer)
-                }}
-              >
-                {t('sdui.designAdmin.editLayer')}
-              </Button>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-2 pr-2">
+          {rows.map((row) => (
+            <div
+              key={row.key === '' ? '::all' : row.key}
+              className="flex items-center justify-between gap-4 rounded-lg border border-solid border-divider px-4 py-2"
+            >
+              <div className="min-w-0">
+                <Typography variant="body2" className="truncate font-medium">
+                  {row.name}
+                </Typography>
+                {row.configured && (
+                  <Typography variant="caption" className="text-ui-05">
+                    {t('sdui.designAdmin.configured')}
+                  </Typography>
+                )}
+              </div>
+              <div className="flex shrink-0 gap-2">
+                {row.configured && (
+                  <Button
+                    variant="tertiary"
+                    disabled={resetMutation.isPending}
+                    onClick={() => {
+                      resetMutation.mutate(row.key)
+                    }}
+                  >
+                    {t('sdui.designAdmin.resetLayer')}
+                  </Button>
+                )}
+                <Button
+                  variant={row.configured ? 'tertiary' : 'primary'}
+                  onClick={() => {
+                    onEdit(row.key)
+                  }}
+                >
+                  {row.configured
+                    ? t('sdui.designAdmin.editLayer')
+                    : t('sdui.designAdmin.configure')}
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex items-end gap-2">
-        <TextField
-          select
-          size="small"
-          label={t('sdui.designAdmin.editFor')}
-          value={profile}
-          onChange={(e) => {
-            setProfile(e.target.value)
-          }}
-          className="min-w-64"
-        >
-          <MenuItem value="">{t('sdui.designAdmin.layerAll')}</MenuItem>
-          {profiles.map((p) => (
-            <MenuItem key={p.code} value={p.code}>
-              {p.name ?? p.code}
-            </MenuItem>
           ))}
-        </TextField>
-        <Button
-          variant="primary"
-          onClick={() => {
-            onEdit(profile)
-          }}
-        >
-          {t('sdui.designAdmin.edit')}
-        </Button>
+        </div>
       </div>
     </div>
   )

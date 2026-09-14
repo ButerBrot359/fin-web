@@ -75,6 +75,7 @@ import {
 } from '../../../lib/utils/row-appearance'
 import {
   findSelectedMasterRow,
+  detailRowsWithoutMaster,
   filterDetailRows,
   rowContentSignature,
 } from '../../../lib/utils/master-detail'
@@ -319,6 +320,12 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // трогает доступность команд таблицы.
   const masterDetailRows = useMemo<TableRow[]>(() => {
     if (!isMasterDetail || !masterKey || !detailKey) return sync.rows
+    // Строка master ещё не выбрана: эталон ставит отбор в ПУСТУЮ ссылку, то есть
+    // показывает только строки без ключа связи. Без этой ветки detail показывал
+    // строки ВСЕХ master-строк сразу (график вычета — по всем вычетам документа).
+    if (!selectedMasterRow) {
+      return detailRowsWithoutMaster(sync.rows, detailKey)
+    }
     return filterDetailRows(sync.rows, selectedMasterRow, masterKey, detailKey)
   }, [sync.rows, isMasterDetail, masterKey, detailKey, selectedMasterRow])
 

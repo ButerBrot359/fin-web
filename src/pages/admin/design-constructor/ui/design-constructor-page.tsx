@@ -1,5 +1,5 @@
-import { useEffect, useState, type FC } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, type FC } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { TextField, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -20,9 +20,25 @@ import { ScreenCard } from './screen-card'
  */
 export const DesignConstructorPage: FC = () => {
   const { t } = useTranslation()
-  const [search, setSearch] = useState('')
-  const [selectedCode, setSelectedCode] = useState<string | null>(null)
   const navigate = useNavigate()
+  // Поиск и выбранная форма живут в URL (replace, без мусора в истории):
+  // возврат «назад» из редактора восстанавливает открытую карточку с ролями —
+  // иначе каждую следующую роль пришлось бы искать заново.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const search = searchParams.get('q') ?? ''
+  const selectedCode = searchParams.get('screen')
+
+  const setParam = (key: string, value: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (value === '') next.delete(key)
+        else next.set(key, value)
+        return next
+      },
+      { replace: true }
+    )
+  }
 
   // Вход в админку сбрасывает «уже открывали» автозапуска редактора: без
   // этого повторный клик по той же форме и слою не открыл бы диалог.
@@ -89,7 +105,7 @@ export const DesignConstructorPage: FC = () => {
             placeholder={t('sdui.designAdmin.search')}
             value={search}
             onChange={(e) => {
-              setSearch(e.target.value)
+              setParam('q', e.target.value)
             }}
           />
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -108,7 +124,7 @@ export const DesignConstructorPage: FC = () => {
                     key={screen.code}
                     type="button"
                     onClick={() => {
-                      setSelectedCode(screen.code)
+                      setParam('screen', screen.code)
                     }}
                     className={`flex items-center justify-between gap-2 rounded-lg border border-solid px-4 py-2 text-left ${
                       isSelected

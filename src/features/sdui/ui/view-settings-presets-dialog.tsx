@@ -133,7 +133,7 @@ export const ViewSettingsPresetsDialog: FC<ViewSettingsPresetsDialogProps> = ({
                   <Typography variant="body1" className="truncate font-medium">
                     {preset.name}
                   </Typography>
-                  <Typography variant="caption" className="text-support-01">
+                  <Typography variant="caption" className="text-ui-05">
                     {subtitleOf(preset)}
                   </Typography>
                 </div>
@@ -162,7 +162,7 @@ export const ViewSettingsPresetsDialog: FC<ViewSettingsPresetsDialogProps> = ({
               </div>
             ))}
             {!isLoading && (presets ?? []).length === 0 && (
-              <Typography variant="body2" className="text-support-01">
+              <Typography variant="body2" className="text-ui-05">
                 {t('sdui.customizeForm.presetsEmpty')}
               </Typography>
             )}

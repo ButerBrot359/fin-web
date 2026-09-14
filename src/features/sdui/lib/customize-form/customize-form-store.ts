@@ -13,15 +13,18 @@ export type CustomizeFormMode = 'user' | 'default'
 interface CustomizeFormStoreState {
   isOpen: boolean
   mode: CustomizeFormMode
-  open: (mode?: CustomizeFormMode) => void
+  /** Предвыбранный слой режима default: '' — «для всех», иначе ключ профиля (админка). */
+  initialProfile: string
+  open: (mode?: CustomizeFormMode, initialProfile?: string) => void
   close: () => void
 }
 
 export const useCustomizeFormStore = create<CustomizeFormStoreState>((set) => ({
   isOpen: false,
   mode: 'user',
-  open: (mode = 'user') => {
-    set({ isOpen: true, mode })
+  initialProfile: '',
+  open: (mode = 'user', initialProfile = '') => {
+    set({ isOpen: true, mode, initialProfile })
   },
   close: () => {
     set({ isOpen: false })

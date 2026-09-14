@@ -26,6 +26,7 @@ import type { ViewTabMeta } from '../types/view'
 import { NodeRenderer } from './node-renderer'
 import { DialogHost } from './dialog-host'
 import { CustomizeFormDialog } from './customize-form-dialog'
+import { AdminCustomizeAutoOpen } from './admin-customize-auto-open'
 import { ValidationReportHost } from './validation/validation-report-host'
 import { useValidationReportStore } from '@/entities/validation-report'
 
@@ -270,6 +271,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       <DialogHost />
       <ValidationReportHost />
       <CustomizeFormDialog />
+      <AdminCustomizeAutoOpen />
     </SduiSessionProvider>
   )
 }

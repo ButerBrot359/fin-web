@@ -74,12 +74,14 @@ export const CustomizeFormDialog: FC = () => {
   const queryClient = useQueryClient()
 
   // Пер-ролевые дефолты: в режиме «для всех» админ выбирает слой — общий ('')
-  // или профиль групп доступа. Сбрасывается на «для всех» при каждом открытии.
+  // или профиль групп доступа. На открытии — предвыбор из стора (админка
+  // передаёт роль), по умолчанию «для всех».
+  const initialProfile = useCustomizeFormStore((s) => s.initialProfile)
   const [profile, setProfile] = useState('')
   const [wasOpen, setWasOpen] = useState(false)
   if (isOpen !== wasOpen) {
     setWasOpen(isOpen)
-    if (isOpen) setProfile('')
+    if (isOpen) setProfile(initialProfile)
   }
 
   const { data: profiles } = useQuery({

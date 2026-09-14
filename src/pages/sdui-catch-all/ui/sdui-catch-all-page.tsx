@@ -26,6 +26,8 @@ const CARD_KINDS = new Set([
   'REGISTER',
 ])
 
+const HEADER_ONLY_KINDS = new Set(['REPORT'])
+
 // Восстановление dirty-сессии из sdui-кэша (SduiScreen restore-ветка,
 // src/features/sdui/ui/sdui-screen.tsx) не шлёт OPEN и не зовёт onTab — без
 // сида serverKind остаётся null до следующей навигации, и карточка на
@@ -43,6 +45,7 @@ function seedServerKind(
   if (tab?.pageType === 'document-entry') return 'DOCUMENT'
   if (tab?.pageType === 'dictionary-entry') return 'DICTIONARY'
   if (tab?.pageType === 'information-register-entry') return 'REGISTER'
+  if (tab?.pageType === 'reportalt') return 'REPORT'
   return null
 }
 
@@ -80,6 +83,7 @@ export const SduiCatchAllPage: FC = () => {
   return (
     <SduiCardScreen
       showCardChrome={serverKind !== null && CARD_KINDS.has(serverKind)}
+      showHeader={serverKind !== null && HEADER_ONLY_KINDS.has(serverKind)}
       onTab={authorTab}
       onOpenFailed={(info) => {
         setMode({ kind: 'legacy', screenKind: info?.kind ?? null })

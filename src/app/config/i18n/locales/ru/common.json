@@ -863,7 +863,10 @@
       "presetsDeleteConfirmTitle": "Удалить пресет?",
       "presetsDeleteConfirm": "«{{name}}» исчезнет из каталога у всех.",
       "presetsApplyFailed": "Не удалось применить настройки",
-      "presetsDeleteFailed": "Не удалось удалить пресет"
+      "presetsDeleteFailed": "Не удалось удалить пресет",
+      "defaultScope": "Для кого",
+      "defaultScopeAll": "Для всех",
+      "defaultRoleWarning": "Настройка сохранится как стандарт формы для роли «{{name}}» и применится её пользователям (личные настройки останутся поверх)."
     }
   },
   "tarifikatsiya": {

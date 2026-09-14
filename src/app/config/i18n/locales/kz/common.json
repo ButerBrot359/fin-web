@@ -863,7 +863,10 @@
       "presetsDeleteConfirmTitle": "Пресетті жою керек пе?",
       "presetsDeleteConfirm": "«{{name}}» каталогтан барлығында жоғалады.",
       "presetsApplyFailed": "Баптауларды қолдану мүмкін болмады",
-      "presetsDeleteFailed": "Пресетті жою мүмкін болмады"
+      "presetsDeleteFailed": "Пресетті жою мүмкін болмады",
+      "defaultScope": "Кім үшін",
+      "defaultScopeAll": "Барлығына",
+      "defaultRoleWarning": "Баптау «{{name}}» рөлі үшін пішін стандарты ретінде сақталады және оның пайдаланушыларына қолданылады (жеке баптаулар үстінде қалады)."
     }
   },
   "tarifikatsiya": {

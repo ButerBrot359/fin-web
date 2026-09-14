@@ -5,6 +5,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  MenuItem,
   TextField,
   Typography,
 } from '@mui/material'
@@ -18,6 +19,7 @@ import {
   viewSettingsApi,
   viewSettingsDefaultsApi,
 } from '../api/view-settings-api'
+import { viewSettingsProfileDefaultsApi } from '../api/view-settings-profile-defaults-api'
 import { useCustomizeFormStore } from '../lib/customize-form/customize-form-store'
 import {
   assignOrders,
@@ -51,8 +53,8 @@ import { CustomizeFormSectionCard } from './customize-form-section-card'
 import { ShareViewSettingsDialog } from './share-view-settings-dialog'
 import { ViewSettingsPresetsDialog } from './view-settings-presets-dialog'
 
-const settingsKey = (screenKey: string, mode: string) =>
-  ['view-settings', mode, screenKey] as const
+const settingsKey = (screenKey: string, mode: string, profile: string) =>
+  ['view-settings', mode, screenKey, profile] as const
 
 /**
  * Диалог «Ещё → Изменить форму» (конструктор дизайна, v5 — страница секциями,
@@ -67,14 +69,43 @@ export const CustomizeFormDialog: FC = () => {
   const isOpen = useCustomizeFormStore((s) => s.isOpen)
   const mode = useCustomizeFormStore((s) => s.mode)
   const close = useCustomizeFormStore((s) => s.close)
-  // Ф5: режим «для всех» пишет админский дефолт тем же диалогом.
-  const api = mode === 'default' ? viewSettingsDefaultsApi : viewSettingsApi
   const screenKey = useTreeStore((s) => s.screenKey)
   const root = useTreeStore((s) => s.root)
   const queryClient = useQueryClient()
 
+  // Пер-ролевые дефолты: в режиме «для всех» админ выбирает слой — общий ('')
+  // или профиль групп доступа. Сбрасывается на «для всех» при каждом открытии.
+  const [profile, setProfile] = useState('')
+  const [wasOpen, setWasOpen] = useState(false)
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen)
+    if (isOpen) setProfile('')
+  }
+
+  const { data: profiles } = useQuery({
+    queryKey: ['view-settings-profiles'],
+    queryFn: ({ signal }) => viewSettingsProfileDefaultsApi.profiles(signal),
+    enabled: isOpen && mode === 'default',
+  })
+
+  // Ф5: режим «для всех» пишет админский дефолт тем же диалогом; выбранный
+  // профиль переключает слой на пер-ролевой с той же семантикой полной замены.
+  const api =
+    mode !== 'default'
+      ? viewSettingsApi
+      : profile === ''
+        ? viewSettingsDefaultsApi
+        : {
+            get: (key: string, signal?: AbortSignal) =>
+              viewSettingsProfileDefaultsApi.get(key, profile, signal),
+            put: (key: string, next: ViewSettingsPatchEntry[]) =>
+              viewSettingsProfileDefaultsApi.put(key, profile, next),
+            reset: (key: string) =>
+              viewSettingsProfileDefaultsApi.reset(key, profile),
+          }
+
   const { data: patch } = useQuery({
-    queryKey: settingsKey(screenKey ?? '', mode),
+    queryKey: settingsKey(screenKey ?? '', mode, profile),
     queryFn: ({ signal }) => api.get(screenKey ?? '', signal),
     enabled: isOpen && screenKey != null,
   })
@@ -351,9 +382,37 @@ export const CustomizeFormDialog: FC = () => {
         </DialogTitle>
         <DialogContent className="flex flex-col gap-3">
           {mode === 'default' && (
-            <Typography variant="body2" className="text-support-01">
-              {t('sdui.customizeForm.defaultWarning')}
-            </Typography>
+            <>
+              <TextField
+                select
+                size="small"
+                label={t('sdui.customizeForm.defaultScope')}
+                value={profile}
+                onChange={(e) => {
+                  setProfile(e.target.value)
+                }}
+                disabled={busy}
+                className="max-w-xs"
+              >
+                <MenuItem value="">
+                  {t('sdui.customizeForm.defaultScopeAll')}
+                </MenuItem>
+                {(profiles ?? []).map((p) => (
+                  <MenuItem key={p.code} value={p.code}>
+                    {p.name ?? p.code}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <Typography variant="body2" className="text-support-01">
+                {profile === ''
+                  ? t('sdui.customizeForm.defaultWarning')
+                  : t('sdui.customizeForm.defaultRoleWarning', {
+                      name:
+                        profiles?.find((p) => p.code === profile)?.name ??
+                        profile,
+                    })}
+              </Typography>
+            </>
           )}
           <Typography variant="body2">
             {hasSections

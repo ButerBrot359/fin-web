@@ -49,7 +49,7 @@ export const theme = createTheme({
           borderRadius: 8,
           backgroundColor: cssVar(palette.ui01),
           border: `1px solid ${cssVar(semantic.divider)}`,
-          minHeight: 44,
+          minHeight: 38,
           '&.MuiInputBase-sizeSmall': {
             minHeight: 32,
             height: 36,
@@ -72,11 +72,11 @@ export const theme = createTheme({
           '&::before, &::after': { display: 'none' },
         },
         input: {
-          paddingTop: 22,
-          paddingBottom: 6,
+          paddingTop: 18,
+          paddingBottom: 4,
           paddingLeft: 20,
           paddingRight: 20,
-          fontSize: 16,
+          fontSize: 14,
           fontWeight: 500,
           color: cssVar(semantic.textPrimary),
           '&.Mui-disabled': { cursor: 'not-allowed' },
@@ -93,6 +93,19 @@ export const theme = createTheme({
           color: cssVar(semantic.textSecondary),
           fontWeight: 500,
           left: 8,
+          // Компактные поля (высота ~44 → ~40): лейбл и значение сжаты по
+          // вертикали, поэтому позиции лейбла прибиты руками — дефолтные
+          // transform'ы MUI рассчитаны на высоту 56 и уводят лейбл на текст.
+          // Small не трогаем: у него своя геометрия (36px, без плавающего
+          // лейбла в формах).
+          fontSize: 14,
+          '&.MuiInputLabel-filled:not(.MuiInputLabel-sizeSmall)': {
+            transform: 'translate(12px, 10px) scale(1)',
+          },
+          '&.MuiInputLabel-filled:not(.MuiInputLabel-sizeSmall).MuiInputLabel-shrink':
+            {
+              transform: 'translate(12px, 3px) scale(0.75)',
+            },
           // Figma «Input» (53:592): Filled без фокуса — label остаётся серым
           // (UI 05); синий — только в фокусе. Порядок правил важен: focused
           // объявлен после shrink и перебивает его.
@@ -167,8 +180,8 @@ export const theme = createTheme({
           gap: '4px',
         },
         input: {
-          paddingTop: '22px !important',
-          paddingBottom: '6px !important',
+          paddingTop: '18px !important',
+          paddingBottom: '4px !important',
           paddingLeft: '0 !important',
         },
         endAdornment: {
@@ -283,7 +296,7 @@ export const theme = createTheme({
           borderRadius: 8,
           backgroundColor: cssVar(palette.ui01),
           border: `1px solid ${cssVar(semantic.divider)}`,
-          minHeight: 44,
+          minHeight: 38,
           // У пикеров свои имена size-классов (MuiPickersInputBase-*), общий
           // MuiInputBase-sizeSmall на них не вешается.
           // height прибит: число (FilledInput) и дата (Pickers) в одной
@@ -309,11 +322,11 @@ export const theme = createTheme({
           '&::before, &::after': { display: 'none' },
         },
         input: {
-          paddingTop: 22,
-          paddingBottom: 6,
+          paddingTop: 18,
+          paddingBottom: 4,
           paddingLeft: 20,
           paddingRight: 20,
-          fontSize: 16,
+          fontSize: 14,
           fontWeight: 500,
           color: cssVar(semantic.textPrimary),
           '&.Mui-disabled': { cursor: 'not-allowed' },
@@ -323,11 +336,11 @@ export const theme = createTheme({
           },
         },
         sectionsContainer: {
-          paddingTop: 22,
-          paddingBottom: 6,
+          paddingTop: 18,
+          paddingBottom: 4,
           paddingLeft: 20,
           paddingRight: 8,
-          fontSize: 16,
+          fontSize: 14,
           fontWeight: 500,
           color: cssVar(semantic.textPrimary),
           '.MuiInputBase-sizeSmall &, .MuiPickersInputBase-sizeSmall &, .MuiPickersInputBase-inputSizeSmall &':

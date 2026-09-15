@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { MainPage } from '@/pages/main'
 import { LoginPage } from '@/pages/login'
 import { ChangePasswordPage } from '@/pages/change-password'
+import { FaceIdCallbackPage } from '@/pages/face-id-callback'
 
 import { TopBar } from '@/widgets/top-bar'
 import { Sidebar } from '@/widgets/sidebar'
@@ -87,6 +88,16 @@ const AnalyticsRouterPage = lazy(() =>
     default: m.AnalyticsRouterPage,
   }))
 )
+const FaceIdUserPage = lazy(() =>
+  import('@/pages/face-id-management').then((m) => ({
+    default: m.FaceIdUserPage,
+  }))
+)
+const FaceIdSettingsPage = lazy(() =>
+  import('@/pages/face-id-management').then((m) => ({
+    default: m.FaceIdSettingsPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -106,6 +117,14 @@ const AppRoutes = () => {
           />
           {/* Журнал регистрации действий (приказ МФ РК № 254, п. 27) — только чтение. */}
           <Route path="/admin/audit" element={<AuditLogPage />} />
+          <Route
+            path="/admin/users/:userEntryId/face-id"
+            element={<FaceIdUserPage />}
+          />
+          <Route
+            path="/admin/face-id-settings"
+            element={<FaceIdSettingsPage />}
+          />
           {/*
             Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект
             navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.
@@ -228,6 +247,7 @@ function App() {
           AppRoutes матчится относительно «/», то есть дерево маршрутов не меняется.
         */}
         <Route path={LOGIN_ROUTE} element={<LoginPage />} />
+        <Route path="/auth/face-id/callback" element={<FaceIdCallbackPage />} />
         {/*
           Смена пароля — тоже вне Layout и вне AuthGuard: сюда приводит требование сменить
           пароль, при котором сервер отвечает 403 на всё остальное, включая данные меню и

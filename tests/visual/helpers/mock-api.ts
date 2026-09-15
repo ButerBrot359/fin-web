@@ -106,34 +106,38 @@ export async function mockApi(
       body: readFileSync(join('tests/visual/assets', file)),
     })
   })
-  await page.route('**/api/**', async (route: Route) => {
-    const req = route.request()
-    const url = new URL(req.url())
-    let key = `${req.method()} ${url.pathname}`
-    if (url.pathname === '/api/view' && req.method() === 'POST') {
-      const body = req.postDataJSON() as {
-        route?: string
-        action?: { type?: string; layoutCode?: string }
+  // Только HTTP API: Vite dev также загружает JS-модули из /src/.../api/.
+  await page.route(
+    (url) => url.pathname.startsWith('/api/'),
+    async (route: Route) => {
+      const req = route.request()
+      const url = new URL(req.url())
+      let key = `${req.method()} ${url.pathname}`
+      if (url.pathname === '/api/view' && req.method() === 'POST') {
+        const body = req.postDataJSON() as {
+          route?: string
+          action?: { type?: string; layoutCode?: string }
+        }
+        key = `${key}#${body.action?.type ?? ''}`
+        const discriminator = body.action?.layoutCode ?? body.route
+        if (discriminator && `${key}@${discriminator}` in fixtures) {
+          key = `${key}@${discriminator}`
+        }
       }
-      key = `${key}#${body.action?.type ?? ''}`
-      const discriminator = body.action?.layoutCode ?? body.route
-      if (discriminator && `${key}@${discriminator}` in fixtures) {
-        key = `${key}@${discriminator}`
+      const fixture = fixtures[key]
+      if (isStatusFixture(fixture)) {
+        await route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify(fixture.__body ?? {}),
+          status: fixture.__status,
+        })
+        return
       }
-    }
-    const fixture = fixtures[key]
-    if (isStatusFixture(fixture)) {
       await route.fulfill({
         contentType: 'application/json',
-        body: JSON.stringify(fixture.__body ?? {}),
-        status: fixture.__status,
+        body: JSON.stringify(fixture ?? {}),
+        status: 200,
       })
-      return
     }
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify(fixture ?? {}),
-      status: 200,
-    })
-  })
+  )
 }

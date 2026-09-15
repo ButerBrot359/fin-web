@@ -15,12 +15,17 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('окно авторизации — дефолтное состояние', async ({ page }) => {
-  await mockApi(page, {})
+  await mockApi(page, {
+    'GET /api/auth/face-id/status': { enabled: true, identifyEnabled: true },
+  })
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: 'Вход' })).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Войти', exact: true })
   ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Вход по face id', exact: true })
+  ).toBeEnabled()
   // Прямой скрин + toMatchSnapshot: стабилизатор toHaveScreenshot стабильно
   // терял слой ламп (см. коммент у <img> в login-page) — ретраим-до-стабильного
   // кадра сами (stableScreenshot).
@@ -33,7 +38,9 @@ test('окно авторизации — дефолтное состояние'
 test('низкое окно: карточка досягаема скроллом (html/body overflow hidden)', async ({
   page,
 }) => {
-  await mockApi(page, {})
+  await mockApi(page, {
+    'GET /api/auth/face-id/status': { enabled: true, identifyEnabled: true },
+  })
   await page.setViewportSize({ width: 1440, height: 560 })
   await page.goto('/login')
   const submit = page.getByRole('button', { name: 'Войти', exact: true })
@@ -45,6 +52,7 @@ test('низкое окно: карточка досягаема скролло�
 
 test('окно авторизации — ошибка входа', async ({ page }) => {
   await mockApi(page, {
+    'GET /api/auth/face-id/status': { enabled: true, identifyEnabled: true },
     'POST /api/auth/login': {
       __status: 401,
       __body: { message: 'Неверный логин или пароль' },

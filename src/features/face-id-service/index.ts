@@ -1,4 +1,5 @@
 export { FaceIdLoginButton } from './ui/face-id-login-button'
 export { FaceIdPhotoForm } from './ui/face-id-photo-form'
 export { FaceIdSettingsForm } from './ui/face-id-settings-form'
+export type { FaceIdPhotoTarget } from './types/face-id'
 export { finishFaceIdRedirect, parseFaceIdCallback } from './lib/redirect-flow'

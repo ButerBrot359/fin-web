@@ -9,12 +9,13 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '@/app/config/i18n'
 
-import { enrollFaceIdUser, getFaceIdUser } from '../api/face-id-api'
+import { enrollFaceIdProfile, getFaceIdProfile } from '../api/face-id-api'
 import { FaceIdPhotoForm } from './face-id-photo-form'
 
 vi.mock('../api/face-id-api', () => ({
-  getFaceIdUser: vi.fn(),
-  enrollFaceIdUser: vi.fn(),
+  getFaceIdProfile: vi.fn(),
+  enrollFaceIdProfile: vi.fn(),
+  replaceFaceIdProfile: vi.fn(),
   faceIdHttpStatus: (error: { status?: number }) => error.status,
 }))
 vi.mock('../lib/prepare-photo', () => ({
@@ -30,6 +31,7 @@ const user = (id: number) => ({
   userName: `User ${String(id)}`,
   accountAvailable: true,
   canManage: true,
+  canReplace: false,
   registered: false,
   profile: null,
 })
@@ -46,14 +48,18 @@ function mount(id: number) {
   })
   const ui = (next: number) => (
     <QueryClientProvider client={client}>
-      <FaceIdPhotoForm userEntryId={next} />
+      <FaceIdPhotoForm target={{ kind: 'user', userEntryId: next }} />
     </QueryClientProvider>
   )
   return { ...render(ui(id)), ui }
 }
 
 beforeEach(() => {
-  vi.mocked(getFaceIdUser).mockImplementation((id) => Promise.resolve(user(id)))
+  vi.mocked(getFaceIdProfile).mockImplementation((target) =>
+    Promise.resolve(
+      user(target.kind === 'user' ? target.userEntryId : target.accountId)
+    )
+  )
 })
 afterEach(() => {
   cleanup()
@@ -62,7 +68,7 @@ afterEach(() => {
 
 describe('Face ID photo enrollment', () => {
   it('requires consent and sends only the selected dictionary ID with prepared image', async () => {
-    vi.mocked(enrollFaceIdUser).mockResolvedValue({
+    vi.mocked(enrollFaceIdProfile).mockResolvedValue({
       ...user(123),
       registered: true,
     })
@@ -77,12 +83,13 @@ describe('Face ID photo enrollment', () => {
     fireEvent.click(screen.getByRole('checkbox'))
     fireEvent.click(save)
     await waitFor(() => {
-      expect(enrollFaceIdUser).toHaveBeenCalledExactlyOnceWith(123, 'jpeg-test')
+      expect(enrollFaceIdProfile).toHaveBeenCalledExactlyOnceWith(
+        { kind: 'user', userEntryId: 123 },
+        'jpeg-test'
+      )
     })
     expect(
-      await screen.findByText(
-        'Лицо уже добавлено. Повторная загрузка и замена в этой версии недоступны.'
-      )
+      await screen.findByText('Фото для входа уже добавлено.')
     ).toBeTruthy()
     expect(screen.queryByRole('checkbox')).toBeNull()
   })
@@ -103,11 +110,11 @@ describe('Face ID photo enrollment', () => {
       screen.getByRole<HTMLButtonElement>('button', { name: 'Добавить лицо' })
         .disabled
     ).toBe(true)
-    expect(enrollFaceIdUser).not.toHaveBeenCalled()
+    expect(enrollFaceIdProfile).not.toHaveBeenCalled()
   })
 
   it('blocks resubmission after uncertain result until an explicit status refresh', async () => {
-    vi.mocked(enrollFaceIdUser).mockRejectedValue({ status: 503 })
+    vi.mocked(enrollFaceIdProfile).mockRejectedValue({ status: 503 })
     mount(123)
     await screen.findByText('User 123')
     pick()
@@ -119,20 +126,18 @@ describe('Face ID photo enrollment', () => {
       screen.getByRole<HTMLButtonElement>('button', { name: 'Добавить лицо' })
         .disabled
     ).toBe(true)
-    expect(enrollFaceIdUser).toHaveBeenCalledTimes(1)
-    vi.mocked(getFaceIdUser).mockResolvedValue({
+    expect(enrollFaceIdProfile).toHaveBeenCalledTimes(1)
+    vi.mocked(getFaceIdProfile).mockResolvedValue({
       ...user(123),
       registered: true,
     })
     fireEvent.click(screen.getByRole('button', { name: 'Обновить статус' }))
-    await screen.findByText(
-      'Лицо уже добавлено. Повторная загрузка и замена в этой версии недоступны.'
-    )
-    expect(enrollFaceIdUser).toHaveBeenCalledTimes(1)
+    await screen.findByText('Фото для входа уже добавлено.')
+    expect(enrollFaceIdProfile).toHaveBeenCalledTimes(1)
   })
 
   it('does not interpret a failed status request as an unregistered user', async () => {
-    vi.mocked(getFaceIdUser).mockRejectedValue({ status: 403 })
+    vi.mocked(getFaceIdProfile).mockRejectedValue({ status: 403 })
     mount(123)
     await screen.findByRole('alert')
     expect(screen.queryByRole('button', { name: 'Добавить лицо' })).toBeNull()

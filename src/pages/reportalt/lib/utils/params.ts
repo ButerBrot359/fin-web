@@ -36,6 +36,13 @@ export const LANG_PARAM_CODE = 'YazykFormy'
 
 export const isPeriod = (p: ReportAltParameterDto) => p.dataType === 'PERIOD'
 
+const currentMonth = (): PeriodValue => {
+  const now = new Date()
+  const from = new Date(now.getFullYear(), now.getMonth(), 1)
+  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  return { from: format(from, 'yyyy-MM-dd'), to: format(to, 'yyyy-MM-dd') }
+}
+
 /**
  * Нормализация даты для тела `/run`: бэкенд ждёт локальную дату `yyyy-MM-dd`
  * (границы дня расставляет сам), а инпуты отдают ISO с `Z`.
@@ -123,7 +130,7 @@ export const defaultParamValue = (
     case 'BOOLEAN':
       return false
     case 'PERIOD':
-      return { from: '', to: '' }
+      return currentMonth()
     default:
       // «Язык формы» (YazykFormy) должен всегда показывать выбранный язык
       // (в 1С по умолчанию «Русский»), а не стартовать пустым и молча

@@ -20,6 +20,7 @@ import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
 import { useReportAltParamState } from '../lib/hooks/use-reportalt-param-state'
 import { buildAccountCardParams } from '../lib/utils/account-card-link'
+import { buildDrilldownTargets } from '../lib/utils/report-drilldown'
 import { buildReportAltExport } from '../lib/utils/build-reportalt-export'
 import {
   SETTINGS_URL_KEY,
@@ -40,11 +41,16 @@ import {
 import { ReportAltParamField } from './reportalt-param-field'
 import {
   ReportAltRowMenu,
+  type ReportAltMenuItem,
   type ReportAltMenuPosition,
 } from './reportalt-row-menu'
 import { ReportAltSettingsDrawer } from './settings/reportalt-settings-drawer'
 import { printReportAlt } from '../api/reportalt-api'
-import type { ReportAltRowDto, RunReportAltBody } from '../types/reportalt'
+import type {
+  ReportAltRowDto,
+  ReportAltRowRefDto,
+  RunReportAltBody,
+} from '../types/reportalt'
 
 /** Сообщение из тела ошибки бэка (api.ts бросает `error.response.data`). */
 const errorMessage = (error: unknown): string | undefined => {
@@ -281,34 +287,74 @@ export const ReportAltPage = () => {
     ? `${t('osv.accountCard')} ${accountRow.groupValue ?? ''}`.trim()
     : null
 
-  const handleOpenElement = () => {
-    if (!openRef) return
-    const segment = openRef.domain === 'DICTIONARY' ? 'dictionary' : 'document'
+  const openRowRef = (ref: ReportAltRowRefDto) => {
+    const segment = ref.domain === 'DICTIONARY' ? 'dictionary' : 'document'
     void navigate(
-      `/modules/${pageCode}/${segment}/${openRef.typeCode}/${String(openRef.id)}`
+      `/modules/${pageCode}/${segment}/${ref.typeCode}/${String(ref.id)}`
     )
   }
 
+  const handleOpenElement = () => {
+    if (!openRef) return
+    openRowRef(openRef)
+  }
+
+  const appliedPeriod = appliedBody?.parameters
+    ? (Object.values(appliedBody.parameters).find(
+        (v): v is { from?: string; to?: string } =>
+          typeof v === 'object' && v !== null && ('from' in v || 'to' in v)
+      ) ?? {})
+    : {}
+
   const handleOpenAccountCard = () => {
     if (!accountRow?.rowRef) return
-    const period = appliedBody?.parameters
-      ? (Object.values(appliedBody.parameters).find(
-          (v): v is { from?: string; to?: string } =>
-            typeof v === 'object' &&
-            v !== null &&
-            ('from' in v || 'to' in v)
-        ) ?? {})
-      : {}
     const params = buildAccountCardParams(
       rowMenu ? [...rowMenu.ancestors, rowMenu.row] : [],
       {
         accountId: accountRow.rowRef.id,
         accountCode: accountRow.groupValue ?? '',
-        from: period.from,
-        to: period.to,
+        from: appliedPeriod.from,
+        to: appliedPeriod.to,
       }
     )
     void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
+  }
+
+  const drilldownTargets = rowMenu
+    ? buildDrilldownTargets({
+        chain: [...rowMenu.ancestors, rowMenu.row],
+        accountRow,
+        valueRow: rowMenu.row,
+        from: appliedPeriod.from,
+        to: appliedPeriod.to,
+      })
+    : []
+
+  const rowMenuItems: ReportAltMenuItem[] = []
+  if (openLabel != null) {
+    rowMenuItems.push({
+      key: 'open',
+      label: openLabel,
+      onClick: handleOpenElement,
+    })
+  }
+  if (accountCardLabel != null) {
+    rowMenuItems.push({
+      key: 'accountCard',
+      label: accountCardLabel,
+      onClick: handleOpenAccountCard,
+    })
+  }
+  for (const target of drilldownTargets) {
+    rowMenuItems.push({
+      key: target.kind,
+      label: t(`reportalt.drilldown.${target.kind}`),
+      onClick: () => {
+        void navigate(
+          `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`
+        )
+      },
+    })
   }
 
   // Печать в PDF: бэк может отвечать 501 (печать не реализована) — тост.
@@ -502,6 +548,11 @@ export const ReportAltPage = () => {
             <div className="min-h-0 overflow-auto pb-4">
               <ReportResultView
                 result={result}
+                onDrilldown={(row) => {
+                  if (!row.rowRef || row.rowRef.domain === 'ACCOUNT_PLAN')
+                    return
+                  openRowRef(row.rowRef)
+                }}
                 onRowDoubleClick={(row, ancestors, event) => {
                   setRowMenu({
                     position: { top: event.clientY, left: event.clientX },
@@ -568,10 +619,7 @@ export const ReportAltPage = () => {
         onClose={() => {
           setRowMenu(null)
         }}
-        openLabel={openLabel}
-        onOpen={handleOpenElement}
-        accountCardLabel={accountCardLabel}
-        onOpenAccountCard={handleOpenAccountCard}
+        items={rowMenuItems}
       />
     </div>
   )

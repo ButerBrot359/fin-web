@@ -144,6 +144,7 @@ export interface ReportAltResultDto {
   periodLine?: string
   footerBlock?: ReportAltFormSignatureDto
   groupFloorCodes?: string[]
+  rowRefColumn?: string
   /** Пагинация LEDGER (F4): номер выданной страницы. */
   page?: number
   /** Пагинация LEDGER: размер страницы. */

@@ -349,6 +349,7 @@ export interface ReportResultDto {
    * ([Schet, Podrazdelenie, Mol]). Пусто/отсутствие ⇒ прежнее дерево с отступами.
    */
   groupFloorCodes?: string[]
+  rowRefColumn?: string
 }
 
 /**

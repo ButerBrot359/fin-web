@@ -5,50 +5,41 @@ export interface ReportAltMenuPosition {
   left: number
 }
 
+export interface ReportAltMenuItem {
+  key: string
+  label: string
+  onClick: () => void
+}
+
 interface ReportAltRowMenuProps {
   position: ReportAltMenuPosition | null
   onClose: () => void
-  openLabel: string | null
-  onOpen: () => void
-  accountCardLabel: string | null
-  onOpenAccountCard: () => void
+  items: ReportAltMenuItem[]
 }
 
 export const ReportAltRowMenu = ({
   position,
   onClose,
-  openLabel,
-  onOpen,
-  accountCardLabel,
-  onOpenAccountCard,
+  items,
 }: ReportAltRowMenuProps) => (
   <Menu
-    open={position != null}
+    open={position != null && items.length > 0}
     onClose={onClose}
     anchorReference="anchorPosition"
     anchorPosition={
       position ? { top: position.top, left: position.left } : undefined
     }
   >
-    {openLabel != null && (
+    {items.map((item) => (
       <MenuItem
+        key={item.key}
         onClick={() => {
-          onOpen()
+          item.onClick()
           onClose()
         }}
       >
-        {openLabel}
+        {item.label}
       </MenuItem>
-    )}
-    {accountCardLabel != null && (
-      <MenuItem
-        onClick={() => {
-          onOpenAccountCard()
-          onClose()
-        }}
-      >
-        {accountCardLabel}
-      </MenuItem>
-    )}
+    ))}
   </Menu>
 )

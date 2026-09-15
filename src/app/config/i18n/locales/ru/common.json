@@ -504,6 +504,12 @@
         "LESS": "Меньше",
         "LESS_OR_EQUAL": "Меньше или равно"
       }
+    },
+    "drilldown": {
+      "subkontoCard": "Карточка субконто",
+      "postingsReport": "Отчёт по проводкам",
+      "turnoverByDays": "Обороты счёта по дням",
+      "turnoverByMonths": "Обороты счёта по месяцам"
     }
   },
   "accountPlan": {

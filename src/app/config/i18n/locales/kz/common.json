@@ -504,6 +504,12 @@
         "LESS": "Кіші",
         "LESS_OR_EQUAL": "Кіші немесе тең"
       }
+    },
+    "drilldown": {
+      "subkontoCard": "Субконто карточкасы",
+      "postingsReport": "Жазбалар бойынша есеп",
+      "turnoverByDays": "Шот айналымдары күндер бойынша",
+      "turnoverByMonths": "Шот айналымдары айлар бойынша"
     }
   },
   "accountPlan": {

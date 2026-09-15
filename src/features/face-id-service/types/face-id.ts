@@ -14,6 +14,7 @@ export interface FaceIdUser {
   userName: string
   accountAvailable: boolean
   canManage: boolean
+  canReplace: boolean
   registered: boolean
   profile: {
     id: string
@@ -31,3 +32,8 @@ export interface FaceIdSettings {
   callbackUrl: string
   managementMode: string
 }
+
+/** accountId у self используется только для изоляции UI-кэша между сессиями. */
+export type FaceIdPhotoTarget =
+  | { kind: 'self'; accountId: number }
+  | { kind: 'user'; userEntryId: number }

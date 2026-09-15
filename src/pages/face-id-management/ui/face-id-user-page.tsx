@@ -33,7 +33,7 @@ export function FaceIdUserPage() {
       </div>
       <div className="max-w-3xl">
         {valid ? (
-          <FaceIdPhotoForm userEntryId={id} />
+          <FaceIdPhotoForm target={{ kind: 'user', userEntryId: id }} />
         ) : (
           <Typography role="alert" color="error">
             {t('faceId.invalidUser')}

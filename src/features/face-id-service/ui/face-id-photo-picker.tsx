@@ -13,10 +13,14 @@ export function FaceIdPhotoPicker({
   disabled,
   uploading,
   onSubmit,
+  replacing = false,
+  self = false,
 }: {
   disabled: boolean
   uploading: boolean
   onSubmit: (image: string) => void
+  replacing?: boolean
+  self?: boolean
 }) {
   const { t } = useTranslation()
   const input = useRef<HTMLInputElement>(null)
@@ -103,7 +107,11 @@ export function FaceIdPhotoPicker({
             }}
           />
         }
-        label={<Typography variant="body2">{t('faceId.consent')}</Typography>}
+        label={
+          <Typography variant="body2">
+            {t(self ? 'faceId.selfConsent' : 'faceId.consent')}
+          </Typography>
+        }
       />
       <Button
         variant="primary"
@@ -112,7 +120,9 @@ export function FaceIdPhotoPicker({
           if (photo && consent) onSubmit(photo.image)
         }}
       >
-        {uploading ? t('faceId.uploading') : t('faceId.savePhoto')}
+        {uploading
+          ? t('faceId.uploading')
+          : t(replacing ? 'faceId.saveReplacement' : 'faceId.savePhoto')}
       </Button>
     </div>
   )

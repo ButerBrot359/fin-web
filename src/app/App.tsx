@@ -98,6 +98,11 @@ const FaceIdSettingsPage = lazy(() =>
     default: m.FaceIdSettingsPage,
   }))
 )
+const FaceIdSelfPage = lazy(() =>
+  import('@/pages/face-id-management').then((m) => ({
+    default: m.FaceIdSelfPage,
+  }))
+)
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -125,6 +130,7 @@ const AppRoutes = () => {
             path="/admin/face-id-settings"
             element={<FaceIdSettingsPage />}
           />
+          <Route path="/profile/face-id" element={<FaceIdSelfPage />} />
           {/*
             Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект
             navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.

@@ -5,6 +5,7 @@ import type { TokenPair } from '@/shared/types/auth.types'
 
 import type {
   FaceIdAvailability,
+  FaceIdPhotoTarget,
   FaceIdSettings,
   FaceIdStart,
   FaceIdUser,
@@ -49,22 +50,40 @@ export const completeFaceId = async (body: {
   return data
 }
 
-export const getFaceIdUser = async (
-  userEntryId: number
+const photoPath = (target: FaceIdPhotoTarget): string =>
+  target.kind === 'self'
+    ? '/api/me/face-id'
+    : `/api/users/${String(target.userEntryId)}/face-id`
+
+export const getFaceIdProfile = async (
+  target: FaceIdPhotoTarget
 ): Promise<FaceIdUser> => {
   const { data } = await apiService.get<{ data: FaceIdUser }>({
-    url: `/api/users/${String(userEntryId)}/face-id`,
+    url: photoPath(target),
   })
   return data.data
 }
 
-export const enrollFaceIdUser = async (
-  userEntryId: number,
+export const enrollFaceIdProfile = async (
+  target: FaceIdPhotoTarget,
   image: string
 ): Promise<FaceIdUser> => {
   const { data } = await apiService.post<{ data: FaceIdUser }>({
-    url: `/api/users/${String(userEntryId)}/face-id`,
+    url: photoPath(target),
     data: { image, consent: true },
+    timeout: 45_000,
+  })
+  return data.data
+}
+
+export const replaceFaceIdProfile = async (
+  target: FaceIdPhotoTarget,
+  image: string,
+  expectedProfileId: string
+): Promise<FaceIdUser> => {
+  const { data } = await apiService.put<{ data: FaceIdUser }>({
+    url: photoPath(target),
+    data: { image, consent: true, expectedProfileId },
     timeout: 45_000,
   })
   return data.data

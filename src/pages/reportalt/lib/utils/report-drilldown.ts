@@ -26,6 +26,8 @@ export interface DrilldownOptions {
 
 const CORR_ACCOUNT_GROUP_CODE = 'KorrSchet'
 
+export const DRILLDOWN_URL_KEY = 'rr'
+
 const ETALON_TARGETS: Record<string, DrilldownTargetKind[] | undefined> = {
   OborotnoSaldovayaVedomost: [
     'osvPoSchetu',
@@ -69,6 +71,7 @@ const withPeriod = (
   from?: string,
   to?: string
 ): URLSearchParams => {
+  params.set(DRILLDOWN_URL_KEY, '1')
   if (from && to) params.set('Period', JSON.stringify({ from, to }))
   return params
 }

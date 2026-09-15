@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { ReportAltRowDto } from '../../types/reportalt'
 
 import {
+  DRILLDOWN_URL_KEY,
   buildDrilldownTargets,
   resolveDrilldownKinds,
 } from './report-drilldown'
@@ -202,6 +203,21 @@ describe('buildDrilldownTargets — параметры целевых отчёт
     expect(targets[0].reportCode).toBe('KartochkaSubkonto')
     expect(targets[0].params.get('ZnachenieSubkonto')).toBe('[700]')
     expect(targets[0].params.get('Fkr')).toBe('12')
+  })
+
+  it('Цели расшифровки помечают отчёт «Режимом расшифровки» — панель настроек в нём скрыта', () => {
+    const targets = buildDrilldownTargets({
+      reportCode: 'OborotnoSaldovayaVedomost',
+      chain: [accountRow],
+      accountRow,
+      valueRow: accountRow,
+      ...period,
+    })
+
+    expect(targets).not.toHaveLength(0)
+    for (const target of targets) {
+      expect(target.params.get(DRILLDOWN_URL_KEY)).toBe('1')
+    }
   })
 
   it('Отчёт по проводкам на строке кор. счёта Анализа счёта', () => {

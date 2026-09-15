@@ -21,6 +21,7 @@ import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settin
 import { useReportAltParamState } from '../lib/hooks/use-reportalt-param-state'
 import { buildAccountCardParams } from '../lib/utils/account-card-link'
 import {
+  DRILLDOWN_URL_KEY,
   buildDrilldownTarget,
   resolveDrilldownKinds,
 } from '../lib/utils/report-drilldown'
@@ -106,6 +107,8 @@ export const ReportAltPage = () => {
   )
 
   const [searchParams, setSearchParams] = useSearchParams()
+
+  const rezhimRasshifrovki = searchParams.get(DRILLDOWN_URL_KEY) === '1'
 
   // Черновики полей формы (что пользователь правит до «Сформировать»).
   const [values, setValues] = useState<ParamValues>({})
@@ -227,6 +230,7 @@ export const ReportAltPage = () => {
         const next = new URLSearchParams()
         for (const [k, v] of Object.entries(serialized)) next.set(k, v)
         if (encodedDraft != null) next.set(SETTINGS_URL_KEY, encodedDraft)
+        if (rezhimRasshifrovki) next.set(DRILLDOWN_URL_KEY, '1')
         return next
       },
       { replace: true }
@@ -524,7 +528,7 @@ export const ReportAltPage = () => {
         </Button>
         {/* Панель настроек — для отчётов с наполненным meta (F-S3) ИЛИ когда
             есть «Язык формы» (у ГСМ/МО прочих настроек нет, но язык нужен). */}
-        {(supportsSettings || langParam != null) && (
+        {(supportsSettings || langParam != null) && !rezhimRasshifrovki && (
           <Button
             variant="outlined"
             size="medium"
@@ -607,7 +611,7 @@ export const ReportAltPage = () => {
         )
       )}
 
-      {(supportsSettings || langParam != null) && (
+      {(supportsSettings || langParam != null) && !rezhimRasshifrovki && (
         <ReportAltSettingsDrawer
           open={settingsOpen}
           onClose={() => {

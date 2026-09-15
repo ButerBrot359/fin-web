@@ -20,7 +20,10 @@ import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
 import { useReportAltParamState } from '../lib/hooks/use-reportalt-param-state'
 import { buildAccountCardParams } from '../lib/utils/account-card-link'
-import { buildDrilldownTargets } from '../lib/utils/report-drilldown'
+import {
+  buildDrilldownTarget,
+  resolveDrilldownKinds,
+} from '../lib/utils/report-drilldown'
 import { buildReportAltExport } from '../lib/utils/build-reportalt-export'
 import {
   SETTINGS_URL_KEY,
@@ -320,15 +323,16 @@ export const ReportAltPage = () => {
     void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
   }
 
-  const drilldownTargets = rowMenu
-    ? buildDrilldownTargets({
+  const drilldownOptions = rowMenu
+    ? {
+        reportCode: moduleCode,
         chain: [...rowMenu.ancestors, rowMenu.row],
         accountRow,
         valueRow: rowMenu.row,
         from: appliedPeriod.from,
         to: appliedPeriod.to,
-      })
-    : []
+      }
+    : null
 
   const rowMenuItems: ReportAltMenuItem[] = []
   if (openLabel != null) {
@@ -338,17 +342,33 @@ export const ReportAltPage = () => {
       onClick: handleOpenElement,
     })
   }
-  if (accountCardLabel != null) {
+  for (const kind of drilldownOptions
+    ? resolveDrilldownKinds(drilldownOptions)
+    : []) {
+    if (kind === 'accountCard') {
+      if (accountCardLabel != null) {
+        rowMenuItems.push({
+          key: kind,
+          label: accountCardLabel,
+          onClick: handleOpenAccountCard,
+        })
+      }
+      continue
+    }
+    const target = drilldownOptions
+      ? buildDrilldownTarget(kind, drilldownOptions)
+      : null
+    if (target == null) continue
+    const label =
+      kind === 'osvPoSchetu' ||
+      kind === 'analizScheta' ||
+      kind === 'turnoverByDays' ||
+      kind === 'turnoverByMonths'
+        ? `${t(`reportalt.drilldown.${kind}`)} ${accountRow?.groupValue ?? ''}`.trim()
+        : t(`reportalt.drilldown.${kind}`)
     rowMenuItems.push({
-      key: 'accountCard',
-      label: accountCardLabel,
-      onClick: handleOpenAccountCard,
-    })
-  }
-  for (const target of drilldownTargets) {
-    rowMenuItems.push({
-      key: target.kind,
-      label: t(`reportalt.drilldown.${target.kind}`),
+      key: kind,
+      label,
       onClick: () => {
         void navigate(
           `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`

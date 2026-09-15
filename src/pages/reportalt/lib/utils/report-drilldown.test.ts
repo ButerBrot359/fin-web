@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import type { ReportAltRowDto } from '../../types/reportalt'
 
-import { buildDrilldownTargets } from './report-drilldown'
+import {
+  buildDrilldownTargets,
+  resolveDrilldownKinds,
+} from './report-drilldown'
 
 const accountRow: ReportAltRowDto = {
   level: 0,
@@ -33,68 +36,153 @@ const subkontoRow: ReportAltRowDto = {
   children: [],
 }
 
+const corrAccountRow: ReportAltRowDto = {
+  level: 1,
+  groupCode: 'KorrSchet',
+  groupRefId: 3310,
+  groupValue: '3310',
+  rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 3310 },
+  cells: {},
+  children: [],
+}
+
 const period = { from: '2026-09-01', to: '2026-09-12' }
 
-describe('buildDrilldownTargets', () => {
-  it('для строки субконто даёт карточку субконто, проводки и обороты по дням и месяцам', () => {
-    const targets = buildDrilldownTargets({
-      chain: [accountRow, dimensionRow, subkontoRow],
-      accountRow,
-      valueRow: subkontoRow,
-      ...period,
-    })
-
-    expect(targets.map((tg) => tg.kind)).toEqual([
-      'subkontoCard',
-      'postingsReport',
-      'turnoverByDays',
+describe('resolveDrilldownKinds — состав меню расшифровки по эталону', () => {
+  it('ОСВ: пять целей в порядке эталона', () => {
+    expect(
+      resolveDrilldownKinds({
+        reportCode: 'OborotnoSaldovayaVedomost',
+        chain: [accountRow],
+        accountRow,
+        valueRow: accountRow,
+      })
+    ).toEqual([
+      'osvPoSchetu',
+      'accountCard',
+      'analizScheta',
       'turnoverByMonths',
+      'turnoverByDays',
     ])
-
-    const card = targets[0]
-    expect(card.reportCode).toBe('KartochkaSubkonto')
-    expect(card.params.get('ZnachenieSubkonto')).toBe('[700]')
-    expect(card.params.get('Period')).toBe(
-      JSON.stringify({ from: '2026-09-01', to: '2026-09-12' })
-    )
-    expect(card.params.get('Organizatsiya')).toBe('7')
-
-    const postings = targets[1]
-    expect(postings.reportCode).toBe('OtchetPoProvodkam')
-    expect(postings.params.get('Schet')).toBe('99')
-    expect(postings.params.get('Organizatsiya')).toBe('7')
-
-    expect(targets[2].reportCode).toBe('OborotyScheta')
-    expect(targets[2].params.get('Periodichnost')).toBe('6')
-    expect(targets[3].params.get('Periodichnost')).toBe('9')
   })
 
-  it('строка без субконто карточку субконто не предлагает', () => {
+  it('ОСВ по счёту: только карточка счёта', () => {
+    expect(
+      resolveDrilldownKinds({
+        reportCode: 'OSVPoSchetu',
+        chain: [accountRow, subkontoRow],
+        accountRow,
+        valueRow: subkontoRow,
+      })
+    ).toEqual(['accountCard'])
+  })
+
+  it('Анализ счёта: на строке кор. счёта — отчёт по проводкам', () => {
+    expect(
+      resolveDrilldownKinds({
+        reportCode: 'AnalizScheta',
+        chain: [accountRow, corrAccountRow],
+        accountRow,
+        valueRow: corrAccountRow,
+      })
+    ).toEqual(['postingsReport'])
+  })
+
+  it('Анализ счёта: на обычной строке — карточка счёта', () => {
+    expect(
+      resolveDrilldownKinds({
+        reportCode: 'AnalizScheta',
+        chain: [accountRow, dimensionRow],
+        accountRow,
+        valueRow: dimensionRow,
+      })
+    ).toEqual(['accountCard'])
+  })
+
+  it('Анализ субконто: со счётом — карточка счёта, без счёта — карточка субконто', () => {
+    expect(
+      resolveDrilldownKinds({
+        reportCode: 'AnalizSubkonto',
+        chain: [accountRow, subkontoRow],
+        accountRow,
+        valueRow: subkontoRow,
+      })
+    ).toEqual(['accountCard'])
+    expect(
+      resolveDrilldownKinds({
+        reportCode: 'AnalizSubkonto',
+        chain: [subkontoRow],
+        valueRow: subkontoRow,
+      })
+    ).toEqual(['subkontoCard'])
+  })
+
+  it('Обороты счёта: отчёт по проводкам', () => {
+    expect(
+      resolveDrilldownKinds({
+        reportCode: 'OborotyScheta',
+        chain: [accountRow],
+        accountRow,
+        valueRow: accountRow,
+      })
+    ).toEqual(['postingsReport'])
+  })
+
+  it('Отчёт без правила эталона целей не предлагает', () => {
+    expect(
+      resolveDrilldownKinds({
+        reportCode: 'KartochkaScheta',
+        chain: [accountRow],
+        accountRow,
+        valueRow: accountRow,
+      })
+    ).toEqual([])
+  })
+})
+
+describe('buildDrilldownTargets — параметры целевых отчётов', () => {
+  it('ОСВ: счёт, период и организация уходят в целевые отчёты, периодичность 9 и 6', () => {
     const targets = buildDrilldownTargets({
+      reportCode: 'OborotnoSaldovayaVedomost',
       chain: [accountRow, dimensionRow],
       accountRow,
       valueRow: dimensionRow,
       ...period,
     })
 
-    expect(targets.map((tg) => tg.kind)).toEqual([
-      'postingsReport',
-      'turnoverByDays',
+    expect(targets.map((t) => t.kind)).toEqual([
+      'osvPoSchetu',
+      'analizScheta',
       'turnoverByMonths',
+      'turnoverByDays',
     ])
+
+    const osv = targets[0]
+    expect(osv.reportCode).toBe('OSVPoSchetu')
+    expect(osv.params.get('Schet')).toBe('99')
+    expect(osv.params.get('Organizatsiya')).toBe('7')
+    expect(osv.params.get('Period')).toBe(
+      JSON.stringify({ from: '2026-09-01', to: '2026-09-12' })
+    )
+
+    expect(targets[2].reportCode).toBe('OborotyScheta')
+    expect(targets[2].params.get('Periodichnost')).toBe('9')
+    expect(targets[3].params.get('Periodichnost')).toBe('6')
   })
 
-  it('без строки счёта остаются только цели по значению строки', () => {
+  it('«Карточка счёта» цели-отчёта не даёт — её открывает страница по своему маршруту', () => {
     const targets = buildDrilldownTargets({
-      chain: [subkontoRow],
-      valueRow: subkontoRow,
+      reportCode: 'AnalizScheta',
+      chain: [accountRow, dimensionRow],
+      accountRow,
+      valueRow: dimensionRow,
       ...period,
     })
 
-    expect(targets.map((tg) => tg.kind)).toEqual(['subkontoCard'])
+    expect(targets).toEqual([])
   })
 
-  it('измерения кор. отчётов не попадают в цели, которым они неизвестны', () => {
+  it('Карточка субконто получает значение субконто и измерения строки', () => {
     const fkrRow: ReportAltRowDto = {
       level: 1,
       groupCode: 'FKR',
@@ -104,13 +192,29 @@ describe('buildDrilldownTargets', () => {
       children: [],
     }
     const targets = buildDrilldownTargets({
-      chain: [accountRow, fkrRow, subkontoRow],
-      accountRow,
+      reportCode: 'AnalizSubkonto',
+      chain: [fkrRow, subkontoRow],
       valueRow: subkontoRow,
       ...period,
     })
 
+    expect(targets).toHaveLength(1)
+    expect(targets[0].reportCode).toBe('KartochkaSubkonto')
+    expect(targets[0].params.get('ZnachenieSubkonto')).toBe('[700]')
     expect(targets[0].params.get('Fkr')).toBe('12')
-    expect(targets[1].params.get('Fkr')).toBeNull()
+  })
+
+  it('Отчёт по проводкам на строке кор. счёта Анализа счёта', () => {
+    const targets = buildDrilldownTargets({
+      reportCode: 'AnalizScheta',
+      chain: [accountRow, corrAccountRow],
+      accountRow,
+      valueRow: corrAccountRow,
+      ...period,
+    })
+
+    expect(targets).toHaveLength(1)
+    expect(targets[0].reportCode).toBe('OtchetPoProvodkam')
+    expect(targets[0].params.get('Schet')).toBe('99')
   })
 })

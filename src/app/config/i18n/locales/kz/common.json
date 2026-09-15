@@ -506,8 +506,11 @@
       }
     },
     "drilldown": {
+      "accountCard": "Шот карточкасы",
       "subkontoCard": "Субконто карточкасы",
       "postingsReport": "Жазбалар бойынша есеп",
+      "osvPoSchetu": "Шот бойынша айналым-сальдо",
+      "analizScheta": "Шот талдауы",
       "turnoverByDays": "Шот айналымдары күндер бойынша",
       "turnoverByMonths": "Шот айналымдары айлар бойынша"
     }

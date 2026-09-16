@@ -72,7 +72,7 @@ const deriveFormColumns = (section: ReportFormSectionDto): ReportColumnDto[] =>
     if (loose.role != null && loose.width != null) return col
 
     const values = columnValues(section, col.code)
-    const isOrdinal = ORDINAL_RE.test(col.code) || ORDINAL_RE.test(col.titleRu)
+    const isOrdinal = ORDINAL_RE.test(col.code) || ORDINAL_RE.test(col.titleRu ?? '')
     const allNumeric = values.length > 0 && values.every(isNumericValue)
     const allDate =
       values.length > 0 &&
@@ -109,7 +109,7 @@ const deriveFormColumns = (section: ReportFormSectionDto): ReportColumnDto[] =>
         // Описательная (Счёт/Наименование/Документ) — по длине заголовка/значений.
         const textLen = values.reduce<number>(
           (mx, v) => Math.max(mx, String(v).length),
-          col.titleRu.length
+          (col.titleRu ?? '').length
         )
         patch.width = Math.min(26, Math.max(8, textLen + 2))
       }
@@ -120,7 +120,7 @@ const deriveFormColumns = (section: ReportFormSectionDto): ReportColumnDto[] =>
 
 /** Локализованный заголовок колонки. */
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
-  (isKz ? col.titleKz : col.titleRu) || col.titleRu
+  (isKz ? col.titleKz : col.titleRu) || col.titleRu || ''
 
 /** Локализованный верхний ряд шапки (группа «Дебет субсчетов» и т.п.); '' ⇒ нет. */
 const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>

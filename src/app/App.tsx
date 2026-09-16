@@ -12,6 +12,7 @@ import { Sidebar } from '@/widgets/sidebar'
 
 import { AuthGuard, CHANGE_PASSWORD_ROUTE, LOGIN_ROUTE } from '@/features/auth'
 import { DictSidebarDrawer, useDictSidebarStore } from '@/features/dict-sidebar'
+import { useApplyInterfaceScale } from '@/features/interface-scale'
 import {
   ShellSidebarHost,
   setReferencePickerGateway,
@@ -199,6 +200,7 @@ const AppRoutes = () => {
 
 function App() {
   useWorkspaceTabGatewayBinding()
+  useApplyInterfaceScale()
   const { t, i18n } = useTranslation()
 
   // SCRUM-317 канал №8: центр оповещений копит всё показанное всплывашками

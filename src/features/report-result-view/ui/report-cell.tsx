@@ -10,7 +10,8 @@ import {
   GREEN_1C,
   HEAD_FS,
   formatMoney1C,
-  isMeasure,
+  isDateCell,
+  isNumericCell,
   isRightAligned,
   safeString,
   toNum,
@@ -20,7 +21,7 @@ import {
 const SUB_LABELS_KOLICHESTVO = new Set(['Кол.', 'Сан.'])
 
 /**
- * Значение PERIOD-колонки: ISO-строка → 1С-формат по `col.format`
+ * Значение колонки-даты: ISO-строка → 1С-формат по `col.format`
  * (`dd.MM.yyyy`, с временем — если формат содержит часы).
  */
 const formatPeriodValue = (raw: string, col: ReportColumnDto): string => {
@@ -123,9 +124,9 @@ interface ReportCellProps {
 
 /**
  * Универсальный рендер ячейки по метаданным колонки:
- * - массив в MEASURE ⇒ стопка денежных подстрок (Сумма/Кол. как в 1С);
+ * - массив в числовой ⇒ стопка денежных подстрок (Сумма/Кол. как в 1С);
  * - массив в остальных ⇒ стопка строк (AnalyticsCell);
- * - MEASURE ⇒ денежный 1С-формат (negativeRed/blankOnZero/dcIndicator);
+ * - числовая ⇒ денежный 1С-формат (negativeRed/blankOnZero/dcIndicator);
  * - остальное ⇒ обычный текст (выравнивание по `align`/роли).
  */
 export const ReportCell = ({
@@ -135,7 +136,7 @@ export const ReportCell = ({
   subLabels,
 }: ReportCellProps) => {
   if (Array.isArray(value)) {
-    if (isMeasure(col)) {
+    if (isNumericCell(col)) {
       return (
         <div className="flex flex-col gap-0.5">
           {value.map((v, i) => {
@@ -168,10 +169,10 @@ export const ReportCell = ({
     return <AnalyticsCell items={value.map((v) => safeString(v))} bold={bold} />
   }
 
-  if (isMeasure(col)) {
+  if (isNumericCell(col)) {
     const n = toNum(value)
     if (n == null) {
-      // Не числовое значение в MEASURE-колонке — показываем как текст.
+      // Не числовое значение в числовой колонке — показываем как текст.
       const text = safeString(value)
       if (!text) return null
       return (
@@ -198,7 +199,7 @@ export const ReportCell = ({
 
   let text = safeString(value)
   if (!text) return null
-  if (col.role === 'PERIOD' && /^\d{4}-\d{2}-\d{2}/.test(text)) {
+  if (isDateCell(col) && /^\d{4}-\d{2}-\d{2}/.test(text)) {
     text = formatPeriodValue(text, col)
   }
   return (

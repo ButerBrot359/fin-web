@@ -26,6 +26,7 @@ import {
   HEAD_FS,
   isHighlightRow,
   isMeasure,
+  isNumericCell,
   isRightAligned,
   resolveReportLang,
   indicatorSubLabels,
@@ -546,7 +547,7 @@ const PlainTreeTable = ({
                 <td
                   key={col.code}
                   className={`${tdBase} ${
-                    isMeasure(col) ? 'text-right tabular-nums' : ''
+                    isNumericCell(col) ? 'text-right tabular-nums' : ''
                   }`}
                 >
                   <ReportCell

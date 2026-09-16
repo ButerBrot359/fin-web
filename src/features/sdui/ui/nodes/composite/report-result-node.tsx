@@ -235,6 +235,15 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
           result={result}
           onDrilldown={drilldownCommand ? handleDrilldown : undefined}
         />
+      ) : Renderer ? (
+        // Рендерер на месте, результата нет (отчёт не построился — например,
+        // сервер отклонил параметры): это состояние отчёта, а не поломка UI.
+        <div
+          data-testid="report-result-placeholder"
+          className="flex items-center justify-center py-20"
+        >
+          <Typography className="text-ui-05">{placeholder}</Typography>
+        </div>
       ) : (
         <div
           data-testid="report-result-gateway-missing"

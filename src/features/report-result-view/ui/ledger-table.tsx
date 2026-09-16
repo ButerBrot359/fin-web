@@ -18,7 +18,7 @@ import {
   GREEN_1C,
   HEAD_FS,
   isHighlightRow,
-  isMeasure,
+  isNumericCell,
   isRightAligned,
   isSpanRow,
   resolveReportLang,
@@ -126,7 +126,7 @@ const buildHeadModel = (columns: ReportColumnDto[], isKz: boolean) => {
  */
 const logicalWidth = (col: ReportColumnDto): number => {
   if (col.width != null) return col.width * CHAR_PX
-  if (isMeasure(col)) return 110
+  if (isNumericCell(col)) return 110
   if (col.groupTitleRu) return 60 // подколонка «Счет» под Дебет/Кредит — узкая
   switch (col.role) {
     case 'PERIOD':

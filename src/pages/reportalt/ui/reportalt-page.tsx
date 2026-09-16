@@ -446,6 +446,9 @@ export const ReportAltPage = () => {
         {visibleParams.map((param) => {
           const invalid =
             showErrors && param.required && !isFilled(param, values[param.code])
+          // Незаполненный обязательный параметр объясняется текстом, а не только
+          // красной рамкой: иначе «Сформировать» выглядит как молча не сработавшая.
+          const requiredHint = invalid ? t('errors.required') : undefined
           // PERIOD раскрываем в пару полей «с … по …».
           if (isPeriod(param)) {
             const period = (values[param.code] as PeriodValue | undefined) ?? {
@@ -472,6 +475,7 @@ export const ReportAltPage = () => {
                       setPeriod({ from: typeof v === 'string' ? v : '' })
                     }}
                     invalid={invalid && !period.from}
+                    helperText={!period.from ? requiredHint : undefined}
                   />
                 </div>
                 <div className="w-56">
@@ -487,6 +491,7 @@ export const ReportAltPage = () => {
                       setPeriod({ to: typeof v === 'string' ? v : '' })
                     }}
                     invalid={invalid && !period.to}
+                    helperText={!period.to ? requiredHint : undefined}
                   />
                 </div>
               </div>
@@ -509,7 +514,7 @@ export const ReportAltPage = () => {
                 }}
                 invalid={invalid}
                 disabled={paramState.disabledParams.includes(param.code)}
-                helperText={paramState.messages[param.code]}
+                helperText={paramState.messages[param.code] ?? requiredHint}
                 optionsSource={paramState.optionsSources[param.code]}
               />
             </div>

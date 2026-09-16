@@ -192,6 +192,16 @@ describe('ReportResultNode', () => {
     expect(screen.getByTestId('report-result-gateway-missing')).toBeTruthy()
   })
 
+  it('рендерер есть, результата нет → placeholder, а не плашка «рендерер недоступен»', () => {
+    useInfiniteQuery.mockReturnValue({ ...baseQueryResult, data: undefined })
+    getReportResultGateway.mockReturnValue({ Renderer: () => <div /> })
+
+    render(<ReportResultNode node={nodeWithSource()} />)
+
+    expect(screen.getByTestId('report-result-placeholder')).toBeTruthy()
+    expect(screen.queryByTestId('report-result-gateway-missing')).toBeNull()
+  })
+
   it('LEDGER: страницы мержатся (rows конкатенируются), «Показать ещё» зовёт fetchNextPage', () => {
     const page0 = {
       reportCode: 'OSV',

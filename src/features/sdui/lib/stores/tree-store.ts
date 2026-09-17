@@ -10,12 +10,16 @@ interface TreeStoreState {
   // Дескриптор «закрыть грязную вкладку» с OPEN (SCRUM-283)
   onDirtyClose: ViewNodeAction | null
   layoutCode: string | null
+  // Ключ экрана для /api/view-settings (конструктор дизайна Ф4) — приходит
+  // в ответе OPEN, фронт его не конструирует. null — настройки недоступны.
+  screenKey: string | null
 
   setRoot: (node: ViewNode) => void
   setSession: (id: string, rev: number) => void
   bumpRevision: (rev: number) => void
   setOnDirtyClose: (desc: ViewNodeAction | null) => void
   setLayoutCode: (code: string | null) => void
+  setScreenKey: (key: string | null) => void
   applyPatches: (patches: ViewPatch[]) => void
   clearAllErrors: () => void
   reset: () => void
@@ -27,16 +31,31 @@ export const useTreeStore = create<TreeStoreState>((set, get) => ({
   revision: null,
   onDirtyClose: null,
   layoutCode: null,
+  screenKey: null,
 
-  setRoot: (node) => { set({ root: node }); },
+  setRoot: (node) => {
+    set({ root: node })
+  },
 
-  setOnDirtyClose: (desc) => { set({ onDirtyClose: desc }); },
+  setOnDirtyClose: (desc) => {
+    set({ onDirtyClose: desc })
+  },
 
-  setLayoutCode: (code) => { set({ layoutCode: code }); },
+  setLayoutCode: (code) => {
+    set({ layoutCode: code })
+  },
 
-  setSession: (id, rev) => { set({ formSessionId: id, revision: rev }); },
+  setScreenKey: (key) => {
+    set({ screenKey: key })
+  },
 
-  bumpRevision: (rev) => { set({ revision: rev }); },
+  setSession: (id, rev) => {
+    set({ formSessionId: id, revision: rev })
+  },
+
+  bumpRevision: (rev) => {
+    set({ revision: rev })
+  },
 
   applyPatches: (patches) => {
     const { root } = get()
@@ -50,6 +69,14 @@ export const useTreeStore = create<TreeStoreState>((set, get) => ({
     set({ root: clearErrors(root) })
   },
 
-  reset: () =>
-    { set({ root: null, formSessionId: null, revision: null, onDirtyClose: null, layoutCode: null }); },
+  reset: () => {
+    set({
+      root: null,
+      formSessionId: null,
+      revision: null,
+      onDirtyClose: null,
+      layoutCode: null,
+      screenKey: null,
+    })
+  },
 }))

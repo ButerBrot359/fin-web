@@ -1,0 +1,134 @@
+import { allTokens } from './tokens'
+import { THEME_PRESETS } from './theme-presets'
+
+/**
+ * Накатывает серверную тему на `:root` поверх дефолтов `injectDesignTokens`
+ * (конструктор дизайна Ф3, спека 2026-09-10 §1.2).
+ *
+ * Ключи с провода — канонические имена токенов БЕЗ префикса `--` («accent-02»).
+ * Применяются только токены из реестра `tokens.ts`: неизвестный ключ
+ * игнорируется (бэк намеренно не знает реестра), мусорное значение отбрасывает
+ * сам CSS. Повторный вызов снимает override'ы, исчезнувшие с прошлого раза
+ * (сброс темы), — иначе «Сбросить» не возвращал бы дефолт до перезагрузки.
+ */
+
+const knownCssVarByKey = (): Map<string, string> =>
+  new Map(allTokens().map((t) => [t.cssVar.replace(/^--/, ''), t.cssVar]))
+
+/**
+ * Специальный ключ темы «масштаб интерфейса» (запрос владельца 10.09:
+ * «размер шрифтов во всём приложении»). Не CSS-переменная: раскладка проекта
+ * почти вся в px, поэтому честный способ укрупнить шрифты вместе с
+ * контейнерами — zoom. Значение — множитель строкой («1.1»).
+ *
+ * Zoom ставится на КОНТЕЙНЕР приложения (#root), а не на html: MUI-поповеры
+ * (меню пользователя и т.п.) рендерятся порталами в body — вне зумленного
+ * контейнера они позиционируются в обычных координатах и не съезжают за
+ * экран (живой дефект 10.09: меню пользователя уезжало вправо при 110%).
+ * Плата: сами поповеры остаются в масштабе 100% — приемлемо против
+ * разъехавшегося позиционирования.
+ */
+export const UI_SCALE_TOKEN = 'ui-scale'
+/**
+ * Ключ выбранного пресета темы. Применитель раскладывает его в токены пресета
+ * КАК БАЗУ (явные токены темы кладутся поверх): диалог тем и так сохраняет
+ * развёрнутые значения, а ИИ-агент (Ф2) шлёт один этот ключ — без развёртки
+ * здесь его «поставь изумрудную» ничего не меняло (живой дефект 11.09).
+ */
+export const THEME_PRESET_TOKEN = 'theme-preset'
+const UI_SCALE_MIN = 0.8
+const UI_SCALE_MAX = 1.5
+
+let appliedCssVars: string[] = []
+
+export function applyServerTheme(tokens: Record<string, string>): void {
+  const known = knownCssVarByKey()
+  const root = document.documentElement
+  const applied: string[] = []
+
+  const effective = withPresetBase(tokens)
+  for (const [key, value] of Object.entries(effective)) {
+    if (typeof value !== 'string') continue
+    if (key === UI_SCALE_TOKEN) {
+      applyUiScale(root, value)
+      continue
+    }
+    const cssVar = known.get(key)
+    if (!cssVar) continue
+    root.style.setProperty(cssVar, value)
+    applied.push(cssVar)
+  }
+
+  if (!(UI_SCALE_TOKEN in tokens)) {
+    const container = appContainer()
+    if (container) clearUiScale(container)
+  }
+  for (const cssVar of appliedCssVars) {
+    if (!applied.includes(cssVar)) {
+      root.style.removeProperty(cssVar)
+    }
+  }
+  appliedCssVars = applied
+}
+
+/** База пресета под явными токенами; неизвестный id пресета игнорируется. */
+function withPresetBase(
+  tokens: Record<string, string>
+): Record<string, string> {
+  const presetId = tokens[THEME_PRESET_TOKEN]
+  if (!presetId) return tokens
+  const preset = THEME_PRESETS.find((p) => p.id === presetId)
+  if (!preset) return tokens
+  return { ...preset.tokens, ...tokens }
+}
+
+const appContainer = (): HTMLElement | null => document.getElementById('root')
+
+/**
+ * Активный масштаб. Компенсация размеров считается в ПИКСЕЛЯХ от фактического
+ * innerWidth/innerHeight и пересчитывается на каждый resize: браузерный зум
+ * (Ctrl+±) меняет CSS-пиксели вьюпорта и триггерит resize, а процентная
+ * компенсация в этот момент резолвилась криво (живой дефект 10.09 — тулбар
+ * уезжал за верх при смене браузерного масштаба).
+ */
+let activeScale: number | null = null
+let resizeListenerAttached = false
+
+function applyUiScale(_root: HTMLElement, raw: string): void {
+  const container = appContainer()
+  if (!container) return
+  const parsed = Number(raw)
+  if (Number.isNaN(parsed)) {
+    clearUiScale(container)
+    return
+  }
+  activeScale = Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, parsed))
+  if (!resizeListenerAttached) {
+    resizeListenerAttached = true
+    window.addEventListener('resize', syncUiScale)
+  }
+  syncUiScale()
+}
+
+function syncUiScale(): void {
+  const container = appContainer()
+  if (!container || activeScale == null) return
+  container.style.setProperty('zoom', String(activeScale))
+  // px внутри зумленного элемента рендерятся умноженными на zoom:
+  // innerHeight/масштаб локальных px × масштаб = ровно вьюпорт.
+  container.style.setProperty(
+    'width',
+    `${String(window.innerWidth / activeScale)}px`
+  )
+  container.style.setProperty(
+    'height',
+    `${String(window.innerHeight / activeScale)}px`
+  )
+}
+
+function clearUiScale(container: HTMLElement): void {
+  activeScale = null
+  container.style.removeProperty('zoom')
+  container.style.removeProperty('width')
+  container.style.removeProperty('height')
+}

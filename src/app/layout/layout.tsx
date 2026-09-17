@@ -37,7 +37,10 @@ export const Layout = ({ sidebar, header, children }: LayoutProps) => {
   }
 
   return (
-    <div className="flex h-screen w-full bg-ui-06">
+    // h-full, не h-screen: высота приходит цепочкой html→body→#root (100%),
+    // и при пер-пользовательском масштабе компенсацию делает #root — 100vh
+    // здесь снова ломал бы её (полоса фона снизу при 90%).
+    <div className="flex h-full w-full bg-ui-06">
       {sidebar}
       {/* Карта контента скруглена только сверху-слева (Figma 150:4094);
           нижнего скругления в макете нет — тёмный «язык» слева внизу убран. */}

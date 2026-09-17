@@ -138,6 +138,11 @@ export interface ViewResponse {
   // false его НЕ сбрасывает — вопрос «Сохранить изменения?» задаётся при
   // клиентском dirty ИЛИ серверном formDirty. null — сессии больше нет.
   formDirty?: boolean | null
+  // Ключ экрана для CRUD пер-пользовательских настроек вида
+  // (/api/view-settings/{screenKey}, конструктор дизайна Ф1). Непрозрачный
+  // идентификатор — фронт его не разбирает и не конструирует. null/нет —
+  // настройки вида для этого экрана недоступны (старый бэк, нет сессии).
+  screenKey?: string | null
 }
 
 export interface ViewPatch {

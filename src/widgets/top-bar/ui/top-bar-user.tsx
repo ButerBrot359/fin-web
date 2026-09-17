@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
+import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize'
 import FaceIcon from '@mui/icons-material/Face'
 import LogoutIcon from '@mui/icons-material/Logout'
+import PaletteIcon from '@mui/icons-material/Palette'
 import {
   ListItemIcon,
   ListItemText,
@@ -11,9 +13,12 @@ import {
   MenuItem,
   Typography,
 } from '@mui/material'
+import { useQuery } from '@tanstack/react-query'
 
 import { LOGIN_ROUTE, useAuthStore } from '@/features/auth'
 import { FacePhotoDialog } from '@/features/face-auth'
+import { viewSettingsAdminApi } from '@/features/sdui'
+import { ThemeSettingsDialog } from '@/features/theme-settings'
 import UserIcon from '@/shared/assets/icons/user.svg'
 import { Button } from '@/shared/ui/buttons'
 import { figmaIcons } from '@/shared/ui/icons'
@@ -34,6 +39,17 @@ export const TopBarUser = () => {
   // Якорь меню — в состоянии, а не в ref: значение читается во время рендера.
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null)
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false)
+  const [themeDialogOpen, setThemeDialogOpen] = useState(false)
+
+  // Вход в админку конструктора — только админам; признак считает бэк.
+  // Ключ включает пользователя: staleTime Infinity без него показывал пункт
+  // меню следующему вошедшему из кэша предыдущего (админ вышел → бух видел).
+  const { data: adminInfo } = useQuery({
+    queryKey: ['view-settings-admin-me', user?.id ?? null],
+    queryFn: ({ signal }) => viewSettingsAdminApi.me(signal),
+    enabled: user != null,
+    staleTime: Infinity,
+  })
 
   if (!user) {
     return (
@@ -113,6 +129,32 @@ export const TopBarUser = () => {
 
         <MenuItem
           onClick={() => {
+            setAnchorElement(null)
+            setThemeDialogOpen(true)
+          }}
+        >
+          <ListItemIcon>
+            <PaletteIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t('themeSettings.menuItem')}</ListItemText>
+        </MenuItem>
+
+        {adminInfo?.admin === true && (
+          <MenuItem
+            onClick={() => {
+              setAnchorElement(null)
+              void navigate('/admin/design-constructor')
+            }}
+          >
+            <ListItemIcon>
+              <DashboardCustomizeIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>{t('sdui.designAdmin.menuItem')}</ListItemText>
+          </MenuItem>
+        )}
+
+        <MenuItem
+          onClick={() => {
             void handleLogout()
           }}
         >
@@ -128,6 +170,13 @@ export const TopBarUser = () => {
         userId={user.id}
         onClose={() => {
           setPhotoDialogOpen(false)
+        }}
+      />
+
+      <ThemeSettingsDialog
+        open={themeDialogOpen}
+        onClose={() => {
+          setThemeDialogOpen(false)
         }}
       />
     </>

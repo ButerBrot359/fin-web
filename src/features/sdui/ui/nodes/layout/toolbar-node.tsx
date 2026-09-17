@@ -83,9 +83,11 @@ const OverflowToolbar: FC<NodeProps> = ({ node }) => {
 
   return (
     <OverflowContext.Provider value={{ collapsedNodes }}>
+      {/* mb-2: гэп страницы 16px визуально слепляет тулбар с полями формы —
+          добиваем до 24 (шкала 4px) собственным нижним отступом панели. */}
       <div
         ref={containerRef}
-        className={`flex items-center gap-2${overflowHostId ? '' : ' overflow-x-auto'}`}
+        className={`mb-2 flex items-center gap-2${overflowHostId ? '' : ' overflow-x-auto'}`}
       >
         {children.map((c) => (
           <div

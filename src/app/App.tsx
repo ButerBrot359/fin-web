@@ -28,6 +28,7 @@ import { ReportResultView } from '@/features/report-result-view'
 import type { ReportAltResultDto } from '@/pages/reportalt/types/reportalt'
 
 import { connectToastHistory } from '@/entities/notification-history'
+import { ServerThemeApplier } from '@/entities/theme'
 import { Toaster } from '@/shared/ui/toast/toast'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
@@ -68,6 +69,11 @@ const TreasuryExportPage = lazy(() =>
 )
 const AuditLogPage = lazy(() =>
   import('@/pages/audit-log').then((m) => ({ default: m.AuditLogPage }))
+)
+const DesignConstructorPage = lazy(() =>
+  import('@/pages/admin/design-constructor').then((m) => ({
+    default: m.DesignConstructorPage,
+  }))
 )
 const InactivityLocksPage = lazy(() =>
   import('@/pages/inactivity-locks').then((m) => ({
@@ -132,6 +138,11 @@ const AppRoutes = () => {
             element={<FaceIdSettingsPage />}
           />
           <Route path="/profile/face-id" element={<FaceIdSelfPage />} />
+          {/* Админка конструктора дизайна: стандарты форм для всех и по ролям. */}
+          <Route
+            path="/admin/design-constructor"
+            element={<DesignConstructorPage />}
+          />
           {/*
             Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект
             navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.
@@ -286,6 +297,7 @@ function App() {
           path="*"
           element={
             <AuthGuard>
+              <ServerThemeApplier />
               <Layout
                 sidebar={<ShellSidebarHost fallback={<Sidebar />} />}
                 header={<TopBar />}

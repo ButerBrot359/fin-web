@@ -30,12 +30,14 @@ export const SearchInput = ({
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className={cn('h-9 rounded-md', className)}
+      // h-10 = 40px — ровно высота кнопок тулбара (Button: py-2.5 + строка 20px):
+      // поиск и «Ещё» стоят в одном ряду, разная высота читалась как дефект.
+      className={cn('h-10 rounded-md', className)}
       slotProps={{
         input: {
           disableUnderline: true,
           className:
-            'h-9 gap-[17px] py-2.5 pr-4 pl-2 text-ui-05 placeholder:text-ui-05',
+            'h-10 gap-[17px] py-2.5 pr-4 pl-2 text-ui-05 placeholder:text-ui-05',
           startAdornment: startIcon ? (
             <InputAdornment position="start">{startIcon}</InputAdornment>
           ) : undefined,

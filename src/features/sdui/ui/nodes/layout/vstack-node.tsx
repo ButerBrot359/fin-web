@@ -1,6 +1,7 @@
 import type { FC } from 'react'
 
 import type { NodeProps } from '../../../types/view'
+import { fieldWidth } from '../../../lib/utils/field-node-types'
 import { resolveStackGap } from '../../../lib/utils/resolve-stack-gap'
 import { NodeRenderer } from '../../node-renderer'
 
@@ -29,6 +30,12 @@ export const VStackNode: FC<NodeProps> = ({ node }) => {
         // Ответственный» у нижней кромки формы без хардкода экрана.
         c.props?.pinBottom === true ? (
           <div key={c.id} style={{ marginTop: 'auto' }}>
+            <NodeRenderer node={c} />
+          </div>
+        ) : fieldWidth(c) !== undefined ? (
+          // Пер-пользовательская ширина поля (конструктор дизайна): поле в
+          // колонке занимает заданную ширину, а не всю строку.
+          <div key={c.id} style={{ width: fieldWidth(c), maxWidth: '100%' }}>
             <NodeRenderer node={c} />
           </div>
         ) : (

@@ -43,6 +43,12 @@ interface ReportResultViewProps {
     ancestors: ReportRowDto[],
     event: ReactMouseEvent
   ) => void
+  /** Правый клик по строке дерева — те же действия, что по двойному клику. */
+  onRowContextMenu?: (
+    row: ReportRowDto,
+    ancestors: ReportRowDto[],
+    event: ReactMouseEvent
+  ) => void
 }
 
 /**
@@ -59,6 +65,7 @@ export const ReportResultView = ({
   onOpenDocument,
   onDrilldown,
   onRowDoubleClick,
+  onRowContextMenu,
 }: ReportResultViewProps) => {
   // Скрываем колонки, выключенные настройками (показатели/группировка), и —
   // когда «Выделять отрицательные» выключено — гасим negativeRed на колонках
@@ -150,6 +157,7 @@ export const ReportResultView = ({
             columns={columns}
             indentPx={indentPx}
             onRowDoubleClick={onRowDoubleClick}
+            onRowContextMenu={onRowContextMenu}
           />
         )}
       </div>

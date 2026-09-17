@@ -43,6 +43,16 @@ interface TreeTableProps {
     ancestors: ReportRowDto[],
     event: ReactMouseEvent
   ) => void
+  /**
+   * Правый клик по строке — тот же набор действий, что и по двойному клику
+   * (1С открывает меню выбора обоими способами). Штатное меню браузера
+   * подавляется только когда обработчик передан.
+   */
+  onRowContextMenu?: (
+    row: ReportRowDto,
+    ancestors: ReportRowDto[],
+    event: ReactMouseEvent
+  ) => void
 }
 
 /** Сетка 1С: тонкие серые линии, плотные ячейки. */
@@ -138,6 +148,7 @@ const PlainTreeTable = ({
   columns,
   indentPx = 13,
   onRowDoubleClick,
+  onRowContextMenu,
 }: TreeTableProps) => {
   const { t, i18n } = useTranslation()
   // Язык РЕНДЕРА = язык, на котором отчёт сформировал бэк (result.language),
@@ -496,12 +507,26 @@ const PlainTreeTable = ({
             return (
               <tr
                 key={row.id}
-                className={`hover:bg-ui-07 ${onRowDoubleClick ? 'cursor-pointer' : ''}`}
+                className={`hover:bg-ui-07 ${
+                  onRowDoubleClick || onRowContextMenu ? 'cursor-pointer' : ''
+                }`}
                 onDoubleClick={
                   onRowDoubleClick
                     ? (e) => {
                         window.getSelection()?.removeAllRanges()
                         onRowDoubleClick(
+                          row.original,
+                          row.getParentRows().map((p) => p.original),
+                          e
+                        )
+                      }
+                    : undefined
+                }
+                onContextMenu={
+                  onRowContextMenu
+                    ? (e) => {
+                        e.preventDefault()
+                        onRowContextMenu(
                           row.original,
                           row.getParentRows().map((p) => p.original),
                           e

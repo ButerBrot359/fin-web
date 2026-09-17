@@ -83,4 +83,33 @@ describe('TreeTable — переходы по строке', () => {
       'cursor-pointer'
     )
   })
+  it('правый клик по строке зовёт onRowContextMenu и подавляет меню браузера', () => {
+    const calls: { value: string | undefined; defaultPrevented: boolean }[] = []
+    render(
+      <TreeTable
+        result={result}
+        columns={columns}
+        onRowContextMenu={(row, _ancestors, event) => {
+          calls.push({
+            value: row.groupValue,
+            defaultPrevented: event.defaultPrevented,
+          })
+        }}
+      />
+    )
+
+    fireEvent.contextMenu(screen.getByText('1316'))
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.value).toBe('1316')
+    expect(calls[0]?.defaultPrevented).toBe(true)
+  })
+
+  it('без onRowContextMenu правый клик ничего не делает', () => {
+    render(<TreeTable result={result} columns={columns} />)
+
+    expect(() =>
+      fireEvent.contextMenu(screen.getByText('1316'))
+    ).not.toThrow()
+  })
 })

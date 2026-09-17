@@ -113,3 +113,79 @@ describe('TreeTable — переходы по строке', () => {
     ).not.toThrow()
   })
 })
+describe('TreeTable — дерево с этажами', () => {
+  const floorColumns: ReportColumnDto[] = [
+    { code: 'Schet', titleRu: 'Счёт', role: 'DIMENSION', valueType: 'STRING' },
+    {
+      code: 'Nomenklatura',
+      titleRu: 'Номенклатура',
+      role: 'FIELD',
+      valueType: 'STRING',
+    },
+    {
+      code: 'OstatokKonechnyyDt',
+      titleRu: 'Сальдо Дт',
+      role: 'MEASURE',
+      valueType: 'NUMBER',
+    },
+  ] as unknown as ReportColumnDto[]
+
+  const listovayaStroka: ReportRowDto = {
+    level: 1,
+    cells: { Nomenklatura: 'Бумага А4', OstatokKonechnyyDt: 150 },
+    rowRef: { domain: 'DICTIONARY', typeCode: 'Nomenklatura', id: 700 },
+    children: [],
+  } as unknown as ReportRowDto
+
+  const floorResult = {
+    ...result,
+    columns: floorColumns,
+    groupFloorCodes: ['Schet'],
+    rows: [{ ...accountRow, children: [listovayaStroka] }],
+  } as unknown as ReportResultDto
+
+  const strokaNomenklatury = () =>
+    screen.getByText('Бумага А4').closest('tr') as HTMLTableRowElement
+
+  it('двойной клик по строке работает и когда шапка построена этажами', () => {
+    const calls: ReportRowDto[] = []
+    render(
+      <TreeTable
+        result={floorResult}
+        columns={floorColumns}
+        onRowDoubleClick={(row) => calls.push(row)}
+      />
+    )
+
+    fireEvent.doubleClick(strokaNomenklatury())
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0].cells.Nomenklatura).toBe('Бумага А4')
+  })
+
+  it('правый клик по строке этажного дерева открывает меню', () => {
+    const calls: ReportRowDto[] = []
+    render(
+      <TreeTable
+        result={floorResult}
+        columns={floorColumns}
+        onRowContextMenu={(row) => calls.push(row)}
+      />
+    )
+
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+    })
+    strokaNomenklatury().dispatchEvent(event)
+
+    expect(calls).toHaveLength(1)
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('без обработчиков строки этажного дерева не кликабельны', () => {
+    render(<TreeTable result={floorResult} columns={floorColumns} />)
+
+    expect(strokaNomenklatury().className).not.toContain('cursor-pointer')
+  })
+})

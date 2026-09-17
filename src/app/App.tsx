@@ -237,15 +237,21 @@ function App() {
           onDrilldown={onDrilldown}
           onRowDoubleClick={
             onRowMenu
-              ? (row, _ancestors, event) => {
-                  onRowMenu(row, { top: event.clientY, left: event.clientX })
+              ? (row, ancestors, event) => {
+                  onRowMenu(row, ancestors, {
+                    top: event.clientY,
+                    left: event.clientX,
+                  })
                 }
               : undefined
           }
           onRowContextMenu={
             onRowMenu
-              ? (row, _ancestors, event) => {
-                  onRowMenu(row, { top: event.clientY, left: event.clientX })
+              ? (row, ancestors, event) => {
+                  onRowMenu(row, ancestors, {
+                    top: event.clientY,
+                    left: event.clientX,
+                  })
                 }
               : undefined
           }

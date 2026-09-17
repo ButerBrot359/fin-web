@@ -15,7 +15,11 @@ export interface ReportResultGatewayImpl {
   Renderer: FC<{
     result: unknown
     onDrilldown?: (row: unknown) => void
-    onRowMenu?: (row: unknown, position: { top: number; left: number }) => void
+    onRowMenu?: (
+      row: unknown,
+      ancestors: unknown[],
+      position: { top: number; left: number }
+    ) => void
   }>
   // Панель настроек отчёта (опц., §19.1): полностью реализуется на app-слое
   // (легаси-drawer + meta-фетч). SDUI держит userSettings как unknown.

@@ -128,26 +128,54 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
   const [rowMenu, setRowMenu] = useState<{
     position: ReportRowMenuPosition
     row: unknown
+    ancestors: unknown[]
   } | null>(null)
 
   const menuRow = rowMenu?.row ?? null
   const menuRowRef = (menuRow as { rowRef?: unknown } | null)?.rowRef
   const menuRowLabel = (menuRow as { groupValue?: unknown } | null)?.groupValue
-  const rowMenuActions: ReportRowMenuAction[] =
-    drilldownCommand && menuRowRef != null
-      ? [
-          {
-            key: 'open',
-            label:
-              typeof menuRowLabel === 'string' && menuRowLabel !== ''
-                ? `${t('osv.openElement')} «${menuRowLabel}»`
-                : t('osv.openElement'),
-            onSelect: () => {
-              handleDrilldown(menuRow)
-            },
-          },
-        ]
-      : []
+  // Корень ветки — строка-счёт: её ссылка ведёт в «Карточку счёта», как в 1С.
+  // Клик по самой строке-счёту даёт пустых предков, поэтому цепочка включает саму строку.
+  const menuChain = rowMenu ? [...rowMenu.ancestors, rowMenu.row] : []
+  const accountRow = menuChain[0] as
+    | { rowRef?: { domain?: unknown }; groupValue?: unknown }
+    | undefined
+  const accountRowRef =
+    accountRow?.rowRef?.domain === 'ACCOUNT_PLAN' ? accountRow.rowRef : null
+
+  const rowMenuActions: ReportRowMenuAction[] = !drilldownCommand
+    ? []
+    : [
+        ...(menuRowRef != null
+          ? [
+              {
+                key: 'open',
+                label:
+                  typeof menuRowLabel === 'string' && menuRowLabel !== ''
+                    ? `${t('osv.openElement')} «${menuRowLabel}»`
+                    : t('osv.openElement'),
+                onSelect: () => {
+                  handleDrilldown(menuRow)
+                },
+              },
+            ]
+          : []),
+        ...(accountRowRef != null && accountRowRef !== menuRowRef
+          ? [
+              {
+                key: 'account-card',
+                label: `${t('osv.accountCard')} ${
+                  typeof accountRow?.groupValue === 'string'
+                    ? accountRow.groupValue
+                    : ''
+                }`.trim(),
+                onSelect: () => {
+                  handleDrilldown(accountRow)
+                },
+              },
+            ]
+          : []),
+      ]
 
   const { data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteQuery({
@@ -267,9 +295,9 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
           onDrilldown={drilldownCommand ? handleDrilldown : undefined}
           onRowMenu={
             drilldownCommand
-              ? (row, position) => {
+              ? (row, ancestors, position) => {
                   window.getSelection()?.removeAllRanges()
-                  setRowMenu({ row, position })
+                  setRowMenu({ row, ancestors, position })
                 }
               : undefined
           }

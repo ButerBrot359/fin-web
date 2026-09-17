@@ -9,7 +9,14 @@ export interface ReportResultGatewayImpl {
   // ReportAltResultDto, но SDUI держит его как unknown — не разбирает, не мутирует.
   // onDrilldown (SCRUM-370 блок В) — серверная расшифровка строки LEDGER; SDUI
   // читает у строки ровно одно поле rowRef, остальное непрозрачно (§19.6).
-  Renderer: FC<{ result: unknown; onDrilldown?: (row: unknown) => void }>
+  // onRowMenu — запрос действий по строке (двойной клик ∥ правая кнопка, как в
+  // 1С): рендерер сообщает строку и координаты курсора, само меню рисует SDUI —
+  // состав пунктов знает он (команда расшифровки живёт в пропсах ноды).
+  Renderer: FC<{
+    result: unknown
+    onDrilldown?: (row: unknown) => void
+    onRowMenu?: (row: unknown, position: { top: number; left: number }) => void
+  }>
   // Панель настроек отчёта (опц., §19.1): полностью реализуется на app-слое
   // (легаси-drawer + meta-фетч). SDUI держит userSettings как unknown.
   SettingsPanel?: FC<{

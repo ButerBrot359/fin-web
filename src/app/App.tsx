@@ -231,10 +231,24 @@ function App() {
       // ReportResultView типизирован своим ReportResultDto (не экспортирован
       // из барреля слайса) — gateway держит result как unknown (§ дизайн-док),
       // адаптер приводит на границе, без утечки типа наружу SDUI.
-      Renderer: ({ result, onDrilldown }) => (
+      Renderer: ({ result, onDrilldown, onRowMenu }) => (
         <ReportResultView
           result={result as ReportAltResultDto}
           onDrilldown={onDrilldown}
+          onRowDoubleClick={
+            onRowMenu
+              ? (row, _ancestors, event) => {
+                  onRowMenu(row, { top: event.clientY, left: event.clientX })
+                }
+              : undefined
+          }
+          onRowContextMenu={
+            onRowMenu
+              ? (row, _ancestors, event) => {
+                  onRowMenu(row, { top: event.clientY, left: event.clientX })
+                }
+              : undefined
+          }
         />
       ),
       SettingsPanel: (props) => <ReportSettingsPanel {...props} />,

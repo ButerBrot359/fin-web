@@ -9,6 +9,11 @@ import { Button } from '@/shared/ui/buttons'
 import type { NodeProps, ViewEffect } from '../../../types/view'
 import { readPagination } from '../../../lib/utils/pagination'
 import { getReportResultGateway } from '../../../lib/report-result-gateway'
+import {
+  ReportRowMenu,
+  type ReportRowMenuAction,
+  type ReportRowMenuPosition,
+} from './report-row-menu'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useSduiEffects } from '../../../lib/use-sdui-effects'
 
@@ -117,6 +122,32 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
       value: { rowRef },
     })
   }
+
+  // Меню действий по строке (1С открывает его и двойным кликом, и правой
+  // кнопкой) — состав пунктов знает нода: расшифровка живёт в её пропсах.
+  const [rowMenu, setRowMenu] = useState<{
+    position: ReportRowMenuPosition
+    row: unknown
+  } | null>(null)
+
+  const menuRow = rowMenu?.row ?? null
+  const menuRowRef = (menuRow as { rowRef?: unknown } | null)?.rowRef
+  const menuRowLabel = (menuRow as { groupValue?: unknown } | null)?.groupValue
+  const rowMenuActions: ReportRowMenuAction[] =
+    drilldownCommand && menuRowRef != null
+      ? [
+          {
+            key: 'open',
+            label:
+              typeof menuRowLabel === 'string' && menuRowLabel !== ''
+                ? `${t('osv.openElement')} «${menuRowLabel}»`
+                : t('osv.openElement'),
+            onSelect: () => {
+              handleDrilldown(menuRow)
+            },
+          },
+        ]
+      : []
 
   const { data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteQuery({
@@ -234,6 +265,14 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
         <Renderer
           result={result}
           onDrilldown={drilldownCommand ? handleDrilldown : undefined}
+          onRowMenu={
+            drilldownCommand
+              ? (row, position) => {
+                  window.getSelection()?.removeAllRanges()
+                  setRowMenu({ row, position })
+                }
+              : undefined
+          }
         />
       ) : Renderer ? (
         // Рендерер на месте, результата нет (отчёт не построился — например,
@@ -254,6 +293,14 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
           </Typography>
         </div>
       )}
+
+      <ReportRowMenu
+        position={rowMenu?.position ?? null}
+        actions={rowMenuActions}
+        onClose={() => {
+          setRowMenu(null)
+        }}
+      />
 
       {reportLayout === 'LEDGER' && hasNextPage && (
         <div className="flex justify-center py-2">

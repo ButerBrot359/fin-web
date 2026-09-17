@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import { render, cleanup, screen, fireEvent } from '@testing-library/react'
+import { render, cleanup, screen, fireEvent, act } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 interface QueryConfig {
@@ -200,6 +200,69 @@ describe('ReportResultNode', () => {
 
     expect(screen.getByTestId('report-result-placeholder')).toBeTruthy()
     expect(screen.queryByTestId('report-result-gateway-missing')).toBeNull()
+  })
+
+  it('onRowMenu открывает меню строки: пункт «Открыть» шлёт команду расшифровки', () => {
+    const row = { groupValue: 'ручка', rowRef: { domain: 'DICTIONARY', id: 7 } }
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSV', rows: [row] }] },
+    })
+    let openMenu: ((r: unknown, p: { top: number; left: number }) => void) | undefined
+    getReportResultGateway.mockReturnValue({
+      Renderer: (props: {
+        onRowMenu?: (r: unknown, p: { top: number; left: number }) => void
+      }) => {
+        openMenu = props.onRowMenu
+        return <div data-testid="renderer" />
+      },
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({ drilldownCommand: 'report.drilldown' })}
+      />
+    )
+    expect(openMenu).toBeTypeOf('function')
+    act(() => {
+      openMenu?.(row, { top: 10, left: 20 })
+    })
+
+    fireEvent.click(screen.getByText('osv.openElement «ручка»'))
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'report.drilldown',
+      value: { rowRef: row.rowRef },
+    })
+  })
+
+  it('строка без rowRef меню не даёт — открывать нечего', () => {
+    const row = { groupValue: 'Итого' }
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSV', rows: [row] }] },
+    })
+    let openMenu: ((r: unknown, p: { top: number; left: number }) => void) | undefined
+    getReportResultGateway.mockReturnValue({
+      Renderer: (props: {
+        onRowMenu?: (r: unknown, p: { top: number; left: number }) => void
+      }) => {
+        openMenu = props.onRowMenu
+        return <div data-testid="renderer" />
+      },
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({ drilldownCommand: 'report.drilldown' })}
+      />
+    )
+    act(() => {
+      openMenu?.(row, { top: 10, left: 20 })
+    })
+
+    expect(screen.queryByText(/osv.openElement/)).toBeNull()
   })
 
   it('LEDGER: страницы мержатся (rows конкатенируются), «Показать ещё» зовёт fetchNextPage', () => {

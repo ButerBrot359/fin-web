@@ -34,7 +34,15 @@ interface SettingsPanelStubProps {
 }
 
 interface GatewayImplStub {
-  Renderer: FC<{ result: unknown }>
+  Renderer: FC<{
+    result: unknown
+    onDrilldown?: (row: unknown) => void
+    onRowMenu?: (
+      row: unknown,
+      ancestors: unknown[],
+      position: { top: number; left: number }
+    ) => void
+  }>
   print?: (url: string, body: unknown) => Promise<void>
   exportXlsx?: (result: unknown, reportName: string) => void
   SettingsPanel?: FC<SettingsPanelStubProps>
@@ -208,10 +216,16 @@ describe('ReportResultNode', () => {
       ...baseQueryResult,
       data: { pages: [{ reportCode: 'OSV', rows: [row] }] },
     })
-    let openMenu: ((r: unknown, p: { top: number; left: number }) => void) | undefined
+    let openMenu:
+      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
-        onRowMenu?: (r: unknown, p: { top: number; left: number }) => void
+        onRowMenu?: (
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number }
+        ) => void
       }) => {
         openMenu = props.onRowMenu
         return <div data-testid="renderer" />
@@ -225,7 +239,7 @@ describe('ReportResultNode', () => {
     )
     expect(openMenu).toBeTypeOf('function')
     act(() => {
-      openMenu?.(row, { top: 10, left: 20 })
+      openMenu?.(row, [], { top: 10, left: 20 })
     })
 
     fireEvent.click(screen.getByText('osv.openElement «ручка»'))
@@ -243,10 +257,16 @@ describe('ReportResultNode', () => {
       ...baseQueryResult,
       data: { pages: [{ reportCode: 'OSV', rows: [row] }] },
     })
-    let openMenu: ((r: unknown, p: { top: number; left: number }) => void) | undefined
+    let openMenu:
+      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
-        onRowMenu?: (r: unknown, p: { top: number; left: number }) => void
+        onRowMenu?: (
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number }
+        ) => void
       }) => {
         openMenu = props.onRowMenu
         return <div data-testid="renderer" />
@@ -259,10 +279,95 @@ describe('ReportResultNode', () => {
       />
     )
     act(() => {
-      openMenu?.(row, { top: 10, left: 20 })
+      openMenu?.(row, [], { top: 10, left: 20 })
     })
 
     expect(screen.queryByText(/osv.openElement/)).toBeNull()
+  })
+
+  it('под строкой субконто есть пункт «Карточка счёта» — по ссылке корня ветки', () => {
+    const accountRow = {
+      groupValue: '1316',
+      rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 99 },
+    }
+    const subkontoRow = {
+      groupValue: 'ручка',
+      rowRef: { domain: 'DICTIONARY', typeCode: 'Nomenklatura', id: 7 },
+    }
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSV', rows: [accountRow] }] },
+    })
+    let openMenu:
+      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | undefined
+    getReportResultGateway.mockReturnValue({
+      Renderer: (props: {
+        onRowMenu?: (
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number }
+        ) => void
+      }) => {
+        openMenu = props.onRowMenu
+        return <div data-testid="renderer" />
+      },
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({ drilldownCommand: 'report.drilldown' })}
+      />
+    )
+    act(() => {
+      openMenu?.(subkontoRow, [accountRow], { top: 10, left: 20 })
+    })
+
+    fireEvent.click(screen.getByText('osv.accountCard 1316'))
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'report.drilldown',
+      value: { rowRef: accountRow.rowRef },
+    })
+  })
+
+  it('на самой строке-счёте пункт «Карточка счёта» не дублирует «Открыть»', () => {
+    const accountRow = {
+      groupValue: '1316',
+      rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 99 },
+    }
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSV', rows: [accountRow] }] },
+    })
+    let openMenu:
+      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | undefined
+    getReportResultGateway.mockReturnValue({
+      Renderer: (props: {
+        onRowMenu?: (
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number }
+        ) => void
+      }) => {
+        openMenu = props.onRowMenu
+        return <div data-testid="renderer" />
+      },
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({ drilldownCommand: 'report.drilldown' })}
+      />
+    )
+    act(() => {
+      openMenu?.(accountRow, [], { top: 10, left: 20 })
+    })
+
+    expect(screen.queryByText(/osv.accountCard/)).toBeNull()
+    expect(screen.getByText('osv.openElement «1316»')).toBeTruthy()
   })
 
   it('LEDGER: страницы мержатся (rows конкатенируются), «Показать ещё» зовёт fetchNextPage', () => {

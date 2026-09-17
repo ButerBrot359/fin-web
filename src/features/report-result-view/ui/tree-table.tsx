@@ -55,6 +55,42 @@ interface TreeTableProps {
   ) => void
 }
 
+/**
+ * Атрибуты строки для расшифровки: курсор и оба способа вызова меню — двойной
+ * клик и правый, как в 1С. Общая для обоих деревьев: раньше их пробрасывало
+ * только плоское, и у отчётов с этажами (ОСВ по счёту) расшифровка молча
+ * пропадала.
+ */
+const rowInteraction = (
+  row: Row<ReportRowDto>,
+  onRowDoubleClick?: TreeTableProps['onRowDoubleClick'],
+  onRowContextMenu?: TreeTableProps['onRowContextMenu']
+) => ({
+  className: `hover:bg-ui-07 ${
+    onRowDoubleClick || onRowContextMenu ? 'cursor-pointer' : ''
+  }`,
+  onDoubleClick: onRowDoubleClick
+    ? (e: ReactMouseEvent) => {
+        window.getSelection()?.removeAllRanges()
+        onRowDoubleClick(
+          row.original,
+          row.getParentRows().map((p) => p.original),
+          e
+        )
+      }
+    : undefined,
+  onContextMenu: onRowContextMenu
+    ? (e: ReactMouseEvent) => {
+        e.preventDefault()
+        onRowContextMenu(
+          row.original,
+          row.getParentRows().map((p) => p.original),
+          e
+        )
+      }
+    : undefined,
+})
+
 /** Сетка 1С: тонкие серые линии, плотные ячейки. */
 const tdBase =
   'overflow-hidden whitespace-nowrap border border-pending-gray-1 px-1.5 py-0.5'
@@ -507,33 +543,7 @@ const PlainTreeTable = ({
             return (
               <tr
                 key={row.id}
-                className={`hover:bg-ui-07 ${
-                  onRowDoubleClick || onRowContextMenu ? 'cursor-pointer' : ''
-                }`}
-                onDoubleClick={
-                  onRowDoubleClick
-                    ? (e) => {
-                        window.getSelection()?.removeAllRanges()
-                        onRowDoubleClick(
-                          row.original,
-                          row.getParentRows().map((p) => p.original),
-                          e
-                        )
-                      }
-                    : undefined
-                }
-                onContextMenu={
-                  onRowContextMenu
-                    ? (e) => {
-                        e.preventDefault()
-                        onRowContextMenu(
-                          row.original,
-                          row.getParentRows().map((p) => p.original),
-                          e
-                        )
-                      }
-                    : undefined
-                }
+                {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
               >
                 <td className={`${tdBase} align-top`}>{renderGroupCell(row)}</td>
                 {bodyColumns.map((col) => (
@@ -601,7 +611,13 @@ const PlainTreeTable = ({
  * заголовок детальной колонки (напр. «Дополнительные поля» над «Единица измерения»)
  * — через `groupTitleRu`.
  */
-const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
+const FloorTreeTable = ({
+  result,
+  columns,
+  indentPx = 13,
+  onRowDoubleClick,
+  onRowContextMenu,
+}: TreeTableProps) => {
   const { t, i18n } = useTranslation()
   const reportLang = resolveReportLang(result.language, i18n.language)
   const isKz = reportLang === 'kz'
@@ -939,7 +955,10 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
           {table.getRowModel().rows.map((row) => {
             if (isBandRow(row)) {
               return (
-                <tr key={row.id} className="hover:bg-ui-07">
+                <tr
+                  key={row.id}
+                  {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
+                >
                   <td
                     colSpan={leafColumns.length}
                     className={`${tdBase} align-top`}
@@ -963,7 +982,10 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
               )
             }
             return (
-              <tr key={row.id} className="hover:bg-ui-07">
+              <tr
+                key={row.id}
+                {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
+              >
                 {leafColumns.map((col) => (
                   <td
                     key={col.code}

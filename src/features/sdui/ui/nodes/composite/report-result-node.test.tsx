@@ -34,7 +34,15 @@ interface SettingsPanelStubProps {
 }
 
 interface GatewayImplStub {
-  Renderer: FC<{ result: unknown }>
+  Renderer: FC<{
+    result: unknown
+    onDrilldown?: (row: unknown) => void
+    onRowMenu?: (
+      row: unknown,
+      ancestors: unknown[],
+      position: { top: number; left: number }
+    ) => void
+  }>
   print?: (url: string, body: unknown) => Promise<void>
   exportXlsx?: (result: unknown, reportName: string) => void
   SettingsPanel?: FC<SettingsPanelStubProps>

@@ -325,6 +325,42 @@ describe('useSduiDispatch: поведение по behavior (SCRUM-283)', () => 
     expect(sessionMock.closeAfter).not.toHaveBeenCalled()
   })
 
+  it('пишущая команда сбрасывает кэш истории документа — она видна без F5', async () => {
+    const history = [
+      'sdui-table-page',
+      '/api/document-entries/27862797/history/rows',
+      { language: 'RU' },
+      50,
+    ]
+    queryClient.setQueryData(history, { pages: [] })
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+
+    await result.current(
+      { type: 'COMMAND', command: 'post' },
+      { flushPendingTables: true, resetsDirty: true, closeAfter: false }
+    )
+
+    expect(queryClient.getQueryState(history)?.isInvalidated).toBe(true)
+  })
+
+  it('непишущая команда кэш истории не трогает', async () => {
+    const history = [
+      'sdui-table-page',
+      '/api/document-entries/27862797/history/rows',
+      { language: 'RU' },
+      50,
+    ]
+    queryClient.setQueryData(history, { pages: [] })
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+
+    await result.current(
+      { type: 'COMMAND', command: 'ref.showAll' },
+      { flushPendingTables: false, resetsDirty: false, closeAfter: false }
+    )
+
+    expect(queryClient.getQueryState(history)?.isInvalidated).toBe(false)
+  })
+
   it('commandFailed: true → false, resetDirty/closeAfter НЕ вызваны (SCRUM-277 §3.1)', async () => {
     vi.spyOn(viewTransport, 'post').mockResolvedValue({
       ...commandResponse,

@@ -1,87 +1,41 @@
-import { useState, useEffect, useMemo, useRef, type FC } from 'react'
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-} from '@tanstack/react-table'
-import {
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableFooter,
-  TableHead,
-  TableRow as MuiTableRow,
-  Typography,
-} from '@mui/material'
-import { useTranslation } from 'react-i18next'
-
-import {
-  HEAVY_ROW_VIRTUAL_OPTIONS,
-  useVirtualTableRows,
-} from '@/shared/lib/virtual-rows/use-virtual-table-rows'
+import { useMemo, useRef, type FC } from 'react'
+import { useReactTable, getCoreRowModel } from '@tanstack/react-table'
+import { Paper, Table, TableBody, TableContainer } from '@mui/material'
 
 import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
-import { useTableSync, type TableRow } from '../../../lib/hooks/use-table-sync'
-import { useTableViewportMaxHeight } from '../../../lib/hooks/use-table-viewport-max-height'
-import {
-  useTableSearch,
-  isSearchHit,
-} from '../../../lib/hooks/use-table-search'
-import { createTableHotkeysHandler } from '../../../lib/utils/table-hotkeys'
-import { readVirtualization } from '../../../lib/utils/pagination'
-import {
-  useExternalRowFilter,
-  useExternalRowFilterDeclared,
-} from '../../../lib/hooks/use-external-row-filter'
-import { sumVisibleFooter } from '../../../lib/utils/table-footer'
+import { useTableSync } from '../../../lib/hooks/use-table-sync'
+import { useTableSearch } from '../../../lib/hooks/use-table-search'
+import { useSearchScroll } from '../../../lib/hooks/use-search-scroll'
+import { useTableRowCommands } from '../../../lib/hooks/use-table-row-commands'
+import { useRowSelectionIdentity } from '../../../lib/hooks/use-row-selection-identity'
+import { useMasterDetailRows } from '../../../lib/hooks/use-master-detail-rows'
+import { useAutoAdvance } from '../../../lib/hooks/use-auto-advance'
+import { useStickyHeadOffset } from '../../../lib/hooks/use-sticky-head-offset'
+import { useCellValueApplier } from '../../../lib/hooks/use-cell-value-applier'
+import { useCellRefHandlers } from '../../../lib/hooks/use-cell-ref-handlers'
+import { useTableScrollContainer } from '../../../lib/hooks/use-table-scroll-container'
+import { windowedRows } from '../../../lib/utils/virtual-window'
+import { useExternalRowFilter } from '../../../lib/hooks/use-external-row-filter'
+import { useTableFooterValues } from '../../../lib/hooks/use-table-footer-values'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import {
-  useSduiSession,
-  useBindingValue,
-} from '../../../lib/sdui-session-context'
-import { footerCell } from './table-footer-value'
-import {
   buildColumnDefs,
   extractAllLeafColumns,
-  verticalSubRows,
   VERTICAL_SUB_ROW_HEIGHT,
-  type AutoAdvanceColumnContext,
-  type SduiColumnMetaExtra,
-  type CellRefHandlersFactory,
 } from '../../../lib/utils/build-column-defs'
-import { useSduiDispatch } from '../../../lib/dispatch'
-import {
-  registerCellValueApplier,
-  unregisterCellValueApplier,
-} from '../../../lib/cell-value-appliers'
-import {
-  findAutoAdvanceColumn,
-  type AutoAdvanceTarget,
-} from '../../../lib/utils/table-auto-advance'
-import { renderCellValue } from '../../../lib/utils/cell-value'
-import { omitServiceRowKeys } from '../../../lib/utils/service-row-keys'
-import {
-  parseRowAppearance,
-  resolveRowBackground,
-} from '../../../lib/utils/row-appearance'
-import {
-  findSelectedMasterRow,
-  filterDetailRows,
-  rowContentSignature,
-} from '../../../lib/utils/master-detail'
-import { ColumnResizeHandle } from './column-resize-handle'
+import { parseRowAppearance } from '../../../lib/utils/row-appearance'
 import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
-import { TABLE_GRID_SX } from './table-grid-sx'
-import { tableTextColorSx } from '../../../lib/utils/table-text-color'
-import { SearchHitCell } from './table-search-cell'
+import { editableTableSx } from './editable-table-sx'
 import { buildColumnBackgroundMap } from '../../../lib/utils/column-background'
 import { TableToolbar } from './table-toolbar'
-import { cssVar, palette } from '@/shared/design/tokens'
+import { TableBodyRow } from './table-body-row'
+import { TableEmptyRow } from './table-empty-row'
+import { ComplexTableHead } from './complex-table-head'
+import { ComplexTableFooter, tableHasFooter } from './complex-table-footer'
+import { VirtualSpacerRow } from './virtual-spacer-row'
 
 // Единая высота строки для master-detail пары (SCRUM-282 #3): в ячейках VERTICAL-групп
 // стопки редакторов разной высоты (checkbox+text vs date+date), без общей высоты
@@ -98,45 +52,9 @@ interface ComplexEditableTableProps {
 export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   node,
 }) => {
-  const { t } = useTranslation()
-  const { getValue, setFromServer } = useSduiSession()
-
-  // ADR-0029 Phase 2b: server-driven пикер в ячейке ТЧ. dispatch берём через ref —
-  // он не референциально стабилен (deps location/navigate/session/queryClient), и
-  // захват в мемоизированные колонки пересоздавал бы cell-рендер, роняя фокус.
-  // Фабрика стабильна (deps []): внутри читается только ref, значение — на момент клика.
-  const dispatch = useSduiDispatch()
-  const dispatchRef = useRef(dispatch)
-  dispatchRef.current = dispatch
-  const cellRefHandlers = useMemo<CellRefHandlersFactory>(
-    () => (col, row) => {
-      // Строки БЕЗ БД-id (только что добавленные) тоже идут серверным путём: бэк для них не
-      // ищет строку, а возвращает значение эффектом без applyToParentCommand, и его кладёт
-      // на место relay-selection → applyCellValueLocally.
-      // Команда в actions «голая» (один action на колонку, минтится при композиции,
-      // когда строка ещё неизвестна) — координату строки добавляем здесь.
-      const handler = (trigger: 'showAll' | 'create' | 'open') => {
-        const command = col.actions?.find(
-          (a) => a.trigger === trigger && a.actionId === 'command'
-        )?.command
-        if (!command) return undefined
-        return () => {
-          void dispatchRef.current({
-            type: 'COMMAND',
-            command,
-            sourceNodeId: col.id,
-            value: { rowId: row.rowId, row },
-          })
-        }
-      }
-      return {
-        onServerShowAll: handler('showAll'),
-        onServerCreate: handler('create'),
-        onServerOpen: handler('open'),
-      }
-    },
-    []
-  )
+  // ADR-0029 Phase 2b: server-driven пикер в ячейке ТЧ — стабильная фабрика
+  // с dispatch через ref (см. use-cell-ref-handlers / server-ref-commands).
+  const cellRefHandlers = useCellRefHandlers()
 
   const allowAdd = node.props?.allowAdd === true
   const allowDelete = node.props?.allowDelete === true
@@ -149,20 +67,6 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const tableCommands = node.props?.tableCommands as
     | TableCommandDescriptor[]
     | undefined
-
-  // Master-detail props
-  const masterTable = node.props?.masterTable as string | undefined
-  const masterKey = node.props?.masterKey as string | undefined
-  const detailKey = node.props?.detailKey as string | undefined
-  const isMasterDetail = Boolean(masterTable && masterKey && detailKey)
-
-  // У detail-ТЧ `allowAdd` — это СОСТОЯНИЕ ПРАВИЛА (бэк гоняет его патчами по
-  // составу master: график вычета вводится только «по периодическим платежам»),
-  // а не структурный запрет. Кнопку поэтому не прячем — как в эталоне 1С: она
-  // остаётся активной, а на клик сервер снимает строку и объясняет причину своим
-  // notify. Правило авторитетно на сервере, активная кнопка данные не портит
-  // (frontend-spec-table-row-activate §3.4/§6).
-  const showAdd = allowAdd || isMasterDetail
 
   // Правила условной заливки строк (1С `УсловноеОформление`): разбираются один
   // раз на раскладку, а сработавшее правило ищется на каждой строке — признак
@@ -186,98 +90,60 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     [flatColumns]
   )
 
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
-  const firstHeadRowObserver = useRef<ResizeObserver | null>(null)
-  useEffect(
-    () => () => {
-      firstHeadRowObserver.current?.disconnect()
-    },
-    []
-  )
-  // Подпись содержимого выбранной строки на момент выбора — пара «id +
-  // подпись» (SCRUM-291 §0.5 дефект 2). Устойчивого id строки в контракте
-  // нет: у части типов документов (ИПН) rowId — порядковый номер, и
-  // пересборка ТЧ перенумеровывает строки заново, поэтому «та же запись»
-  // определяется по содержимому, а не по rowId. Пара, а не голая строка:
-  // без rowId в паре переход на другую строку (другое содержимое, другой
-  // rowId) выглядел бы как подмена под старым rowId.
-  const selectedSignatureRef = useRef<{
-    rowId: string
-    signature: string
-  } | null>(null)
-  // Правка пользователя в ВЫБРАННОЙ строке взводит одноразовое разрешение принять
-  // следующее серверное изменение её содержимого как ОТВЕТ на эту правку, а не как
-  // подмену записи. Иначе документ, где сервер дозаполняет строку по выбранной
-  // ссылке («Корректировка параметров учёта ОС»: выбрал ОС → приехали инв. номер,
-  // счёт и стоимости), снимал выделение сам, и следующая построчная команда
-  // («Удалить», «Скопировать») отвечала «Выберите строку». Разрешение одноразовое:
-  // перестройка ТЧ, не вызванная правкой, выделение по-прежнему снимает.
-  const serverEchoAllowedRef = useRef(false)
-
   const sync = useTableSync(node, flatColumns)
+  const syncRef = useRef(sync)
+
+  // ── Master-detail filtering ──
+  const { isMasterDetail, masterKeyValue, masterDetailRows, handleAdd } =
+    useMasterDetailRows(node, sync.rows, flatColumns, sync.addRow)
+
+  // У detail-ТЧ `allowAdd` — это СОСТОЯНИЕ ПРАВИЛА (бэк гоняет его патчами по
+  // составу master: график вычета вводится только «по периодическим платежам»),
+  // а не структурный запрет. Кнопку поэтому не прячем — как в эталоне 1С: она
+  // остаётся активной, а на клик сервер снимает строку и объясняет причину своим
+  // notify. Правило авторитетно на сервере, активная кнопка данные не портит
+  // (frontend-spec-table-row-activate §3.4/§6).
+  const showAdd = allowAdd || isMasterDetail
+
+  // Отбор по внешнему списку (панель сотрудников) — независим от master-detail:
+  // тот связывает ДВЕ ТЧ одного документа, этот фильтрует по витрине формы и не
+  // трогает доступность команд таблицы.
+  const visibleRows = useExternalRowFilter(node, masterDetailRows)
+
+  const selection = useRowSelectionIdentity(node.binding, visibleRows)
+
   // Stable ref for memoized cell callbacks — avoids stale closures.
   // updateCell обёрнут: правка ВЫБРАННОЙ строки — собственный ввод
-  // пользователя, а не подмена записи сервером. Сброс захваченной подписи
-  // ПЕРЕД вызовом настоящего updateCell — эффект ниже увидит «подписи ещё
-  // нет» на следующем рендере и просто пере-снимет свежую, не сочтя правку
-  // подменой (иначе обе редактируемые таблицы ИПН теряли бы выделение на
-  // каждый введённый символ).
-  const syncRef = useRef(sync)
+  // пользователя, а не подмена записи сервером (см. noteUserEdit в
+  // use-row-selection-identity).
   syncRef.current = {
     ...sync,
     updateCell: (rowId: string, binding: string, value: unknown) => {
-      if (rowId === selectedRowId) {
-        selectedSignatureRef.current = null
-        serverEchoAllowedRef.current = true
-      }
+      selection.noteUserEdit(rowId)
       sync.updateCell(rowId, binding, value)
     },
   }
 
-  // ADR-0029: значение, выбранное/созданное для строки БЕЗ БД-id, сервер применить не может —
-  // он возвращает его эффектом без applyToParentCommand, а кладём его мы (см.
-  // cell-value-appliers). Колонку узнаём по id узла, строку — по rowId.
-  useEffect(() => {
-    const token = registerCellValueApplier((columnNodeId, rowId, value) => {
-      const col = flatColumns.find((c) => c.id === columnNodeId)
-      if (!col) return false
-      syncRef.current.updateCell(rowId, col.binding, value)
-      syncRef.current.commitCell()
-      return true
-    })
-    return () => {
-      unregisterCellValueApplier(token)
-    }
-  }, [flatColumns])
+  useCellValueApplier(flatColumns, syncRef)
 
   const validation = useTableValidation(node)
   const validationRef = useRef(validation)
   validationRef.current = validation
 
-  // ── SCRUM-363: потоковый ввод — одноразовая цель автофокуса ──
-  // Цель в ref (не в state): её смена не должна пересобирать колонки —
-  // пересборка ремонтирует активный редактор и сбрасывает фокус. Ре-рендер и
-  // активацию цели заказывает отдельный tick.
-  const autoAdvanceTargetRef = useRef<AutoAdvanceTarget | null>(null)
-  const autoAdvanceSeqRef = useRef(0)
-  const [autoAdvanceTick, setAutoAdvanceTick] = useState(0)
-  // Колбэк commit — через ref: колонки мемоизированы, а замыкание должно быть
-  // свежим (тот же приём, что syncRef выше).
-  const autoAdvanceCommitRef = useRef<(rowId: string, binding: string) => void>(
-    () => undefined
-  )
-  const autoAdvanceCtx = useMemo<AutoAdvanceColumnContext | undefined>(
-    () =>
-      autoAdvance
-        ? {
-            targetRef: autoAdvanceTargetRef,
-            onCellCommit: (rowId, binding) => {
-              autoAdvanceCommitRef.current(rowId, binding)
-            },
-          }
-        : undefined,
-    [autoAdvance]
-  )
+  // Виртуализация SCRUM-368 + внутренний скролл SCRUM-327 — общий контейнер;
+  // окно виртуализации — по видимому (для master-detail уже отфильтрованному)
+  // набору.
+  const { containerRef, virt, maxHeight, setContainerRef } =
+    useTableScrollContainer(node, visibleRows.length)
+
+  // ── SCRUM-363: потоковый ввод — механика автоперехода ──
+  const { autoAdvanceCtx, handleAddWithAutoAdvance } = useAutoAdvance({
+    enabled: autoAdvance,
+    flatColumns,
+    syncRef,
+    handleAdd,
+    containerRef,
+  })
 
   const tableColumns = useMemo(
     () =>
@@ -292,127 +158,9 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     [node.children, autoAdvanceCtx, cellRefHandlers]
   )
 
-  // ── Master-detail filtering ──
-  // Реактивные подписки (SCRUM-282 #4): getValue давал разовый снимок,
-  // detail не ре-рендерился при выборе master-строки.
-  const selectedMasterRowId = useBindingValue(
-    isMasterDetail && masterTable ? masterTable + '.__selectedRowId' : undefined
-  ) as string | undefined
-  const masterRows = useBindingValue(
-    isMasterDetail && masterTable ? masterTable : undefined
-  ) as TableRow[] | undefined
-
-  const selectedMasterRow = findSelectedMasterRow(
-    masterRows,
-    selectedMasterRowId
-  )
-  const masterKeyValue =
-    selectedMasterRow && masterKey ? selectedMasterRow[masterKey] : undefined
-
-  // Отбор по внешнему списку (панель сотрудников) — независим от master-detail:
-  // тот связывает ДВЕ ТЧ одного документа, этот фильтрует по витрине формы и не
-  // трогает доступность команд таблицы.
-  const masterDetailRows = useMemo<TableRow[]>(() => {
-    if (!isMasterDetail || !masterKey || !detailKey) return sync.rows
-    return filterDetailRows(sync.rows, selectedMasterRow, masterKey, detailKey)
-  }, [sync.rows, isMasterDetail, masterKey, detailKey, selectedMasterRow])
-
-  const visibleRows = useExternalRowFilter(node, masterDetailRows)
-  const externalFilterDeclared = useExternalRowFilterDeclared(node)
-
-  // Индекс выбранной строки в текущем видимом наборе (не в полном sync.rows —
-  // при активном master-detail фильтре это разные массивы, SCRUM-282 C1).
-  const selectedVisibleIndex =
-    selectedRowId != null
-      ? visibleRows.findIndex((r) => r.rowId === selectedRowId)
-      : -1
-
-  // Сброс выбора, если выбранная строка выпала из видимого набора (смена
-  // master-строки, удаление/фильтрация — SCRUM-282 I2) ИЛИ была подменена
-  // сервером под тем же rowId (SCRUM-291 §0.5 дефект 2): у части типов
-  // документов (ИПН и другие, где строки ТЧ собирает хендлер) rowId —
-  // порядковый номер, и пересборка ТЧ перенумеровывает строки заново — номер
-  // остаётся, запись за ним меняется. Устойчивого id строки в контракте пока
-  // нет, поэтому «та же запись» определяется по содержимому
-  // (`rowContentSignature`), а не по rowId.
-  //
-  // ВАЖНО: сброс снимает и публикацию выбора в сторе
-  // (`setFromServer(..., null)`), не только локальный `selectedRowId` —
-  // detail-таблица фильтрует именно по опубликованному значению
-  // (`masterTable + '.__selectedRowId'`), и без снятия публикации она
-  // продолжила бы показывать чужой график даже после локального сброса.
-  //
-  // Остаточная неточность (сознательный размен): серверная нормализация
-  // значения уже ВЫБРАННОЙ строки (например, округление) тоже прочитается
-  // как подмена и сбросит выделение — «безопасный», хоть и избыточный, сброс
-  // предпочтительнее «опасной» пропущенной подмены, пока нет устойчивого id
-  // строки (ADR-0027 или его аналог).
-  useEffect(() => {
-    if (selectedRowId == null) {
-      selectedSignatureRef.current = null
-      return
-    }
-
-    const resetSelection = () => {
-      selectedSignatureRef.current = null
-      setSelectedRowId(null)
-      if (node.binding) {
-        setFromServer(node.binding + '.__selectedRowId', null)
-      }
-    }
-
-    const row = visibleRows.find((r) => r.rowId === selectedRowId)
-    if (row === undefined) {
-      resetSelection()
-      return
-    }
-
-    const signature = rowContentSignature(row)
-    const captured = selectedSignatureRef.current
-    const substituted =
-      captured !== null &&
-      captured.rowId === selectedRowId &&
-      captured.signature !== signature
-
-    if (substituted && serverEchoAllowedRef.current) {
-      // Ответ сервера на собственную правку пользователя — принимаем новую подпись.
-      serverEchoAllowedRef.current = false
-    } else if (substituted) {
-      resetSelection()
-      return
-    }
-
-    selectedSignatureRef.current = { rowId: selectedRowId, signature }
-  }, [visibleRows, selectedRowId, node.binding, setFromServer])
-
   // ── Footer ──
-  const serverFooter = node.binding
-    ? (getValue(node.binding + '.footer') as
-        | Record<string, unknown>
-        | undefined)
-    : undefined
-
-  const footerValues = useMemo(() => {
-    if (!externalFilterDeclared || !serverFooter) return serverFooter
-    return { ...serverFooter, ...sumVisibleFooter(node.children, visibleRows) }
-  }, [externalFilterDeclared, serverFooter, node.children, visibleRows])
-
-  const hasFooter = Boolean(
-    footerValues &&
-    tableColumns.some((col) => {
-      // Check if any leaf column (recursively) has a footer defined
-      const hasFooterDef = (c: (typeof tableColumns)[number]): boolean => {
-        if ('columns' in c && Array.isArray(c.columns)) {
-          return c.columns.some(hasFooterDef)
-        }
-        // Итоги под-колонок ВЕРТИКАЛЬНОЙ группы лежат в meta.footerKeys:
-        // сама группа — одна колонка TanStack и своего `footer` не имеет.
-        const meta = c.meta as SduiColumnMetaExtra | undefined
-        return Boolean(c.footer) || Boolean(meta?.footerKeys)
-      }
-      return hasFooterDef(col)
-    })
-  )
+  const footerValues = useTableFooterValues(node, visibleRows)
+  const hasFooter = Boolean(footerValues && tableHasFooter(tableColumns))
 
   const sizing = useSduiColumnSizing(node)
 
@@ -427,20 +175,12 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     onColumnSizingChange: sizing.onColumnSizingChange,
   })
 
-  // Сетка (рамка + линии между колонками) — всегда: она не зависит от ресайза.
-  // Фиксированные ширины — только при ресайзе; иначе раскладка остаётся
-  // прежней авто-шириной MUI (важно для многоуровневых шапок и футера).
-  const tableSx = {
-    ...TABLE_GRID_SX,
-    ...tableTextColorSx(node.props),
-    ...(sizing.isResizable
-      ? {
-          tableLayout: 'fixed' as const,
-          width: table.getTotalSize() + (showRowNumbers ? ROW_NUMBER_WIDTH : 0),
-          minWidth: '100%',
-        }
-      : {}),
-  }
+  // Сетка + фиксированные ширины при ресайзе — см. editable-table-sx.ts.
+  const tableSx = editableTableSx(
+    node.props,
+    sizing.isResizable,
+    table.getTotalSize() + (showRowNumbers ? ROW_NUMBER_WIDTH : 0)
+  )
 
   // Серверная реакция на активацию строки — тот же момент, что и публикация
   // выбора для master-detail фильтра; фильтр остаётся клиентским.
@@ -451,238 +191,42 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // добавляется сверху и выделение не трогает.
   const openRow = useRowOpen(node)
 
-  // Publish selected rowId to session for detail tables
   const handleRowClick = (rowId: string) => {
-    if (rowId !== selectedRowId) serverEchoAllowedRef.current = false
-    setSelectedRowId(rowId)
-    if (node.binding) {
-      setFromServer(node.binding + '.__selectedRowId', rowId)
-    }
+    selection.selectRow(rowId)
     activateRow(rowId)
-  }
-
-  // Detail-таблица: новая строка сразу получает ключ связи выбранной master-строки;
-  // без выбранной master-строки добавление заблокировано (canAdd ниже) — как в 1С.
-  // Возвращает созданную строку (SCRUM-363: автофокусу нужен точный rowId).
-  const handleAdd = (): TableRow | null => {
-    if (isMasterDetail && detailKey) {
-      if (masterKeyValue === undefined) return null
-      return sync.addRow(flatColumns, { [detailKey]: masterKeyValue })
-    }
-    return sync.addRow(flatColumns)
-  }
-
-  // ── SCRUM-363: механика автоперехода (§4.2–§4.5 спеки) ──
-
-  // Ставит цель на первую подходящую ячейку строки (после afterBinding);
-  // false — подходящих справа нет.
-  const setAutoAdvanceTarget = (row: TableRow, afterBinding?: string) => {
-    const col = findAutoAdvanceColumn(flatColumns, row, afterBinding)
-    if (!col) return false
-    autoAdvanceTargetRef.current = {
-      rowId: row.rowId,
-      binding: col.binding,
-      cellWidget: col.cellWidget,
-      sequence: ++autoAdvanceSeqRef.current,
-    }
-    setAutoAdvanceTick((t) => t + 1)
-    return true
-  }
-
-  // Конец строки (§4.5): ровно одна новая строка через тот же addRow, что и
-  // кнопка; если и в ней подходящих ячеек нет — стоп, без рекурсии.
-  const activateAutoAdvance = (row: TableRow, afterBinding?: string) => {
-    if (setAutoAdvanceTarget(row, afterBinding)) return
-    if (afterBinding === undefined) return
-    const newRow = handleAdd()
-    if (newRow) setAutoAdvanceTarget(newRow)
-  }
-
-  // Переход после commit (§4.4): только если commit пришёл из ТЕКУЩЕЙ ячейки
-  // цепочки (посторонний blur-commit не должен воровать фокус, §4.6), и только
-  // после того, как EVENT/PATCH roundtrip завершён и рендер применил патчи —
-  // автозаполненные сервером поля (FizicheskoeLitso) уже не пустые и пропускаются.
-  const handleAutoAdvanceCommit = (rowId: string, binding: string) => {
-    const target = autoAdvanceTargetRef.current
-    if (target?.rowId !== rowId || target.binding !== binding) return
-    syncRef.current
-      .flushPending()
-      .then(
-        () =>
-          new Promise<void>((resolve) => {
-            requestAnimationFrame(() => {
-              resolve()
-            })
-          })
-      )
-      .then(() => {
-        const actualRow = syncRef.current.rows.find((r) => r.rowId === rowId)
-        if (!actualRow) return
-        activateAutoAdvance(actualRow, binding)
-      })
-      .catch(() => {
-        // Ошибка отправки снимка: цепочку не продолжаем, фокус не трогаем.
-      })
-  }
-  autoAdvanceCommitRef.current = handleAutoAdvanceCommit
-
-  // Кнопка «Добавить» (§4.3): в autoAdvance-таблице фокус сам встаёт в первую
-  // подходящую ячейку новой строки; обычные таблицы автофокус не получают.
-  const handleAddWithAutoAdvance = () => {
-    const row = handleAdd()
-    if (autoAdvance && row) setAutoAdvanceTarget(row)
-  }
-  // Удаляем по rowId из ПОЛНОГО массива sync.rows (SCRUM-282 C1): selectedVisibleIndex
-  // указывает на позицию в отфильтрованном visibleRows и не годится для sync.deleteRow.
-  const handleRemove = () => {
-    if (selectedRowId === null) return
-    const globalIndex = sync.rows.findIndex((r) => r.rowId === selectedRowId)
-    if (globalIndex >= 0) sync.deleteRow(globalIndex)
-    setSelectedRowId(null)
-  }
-  // Копия строки: существующий addRow с пресетами из выбранной строки (без rowId —
-  // buildEmptyRow сгенерирует новый tmp-id). Ссылочные ячейки {id, presentation}
-  // копируются как есть, служебные ключи — нет: состояние посчитано бэком для
-  // строки-источника и к копии не относится (см. service-row-keys).
-  const handleCopy = () => {
-    if (selectedRowId === null) return
-    const src = sync.rows.find((r) => r.rowId === selectedRowId)
-    if (!src) return
-    const { rowId: _rowId, ...values } = omitServiceRowKeys(src)
-    sync.addRow(flatColumns, values)
-  }
-  // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail в
-  // тулбаре) — там visibleRows === sync.rows, поэтому selectedVisibleIndex совпадает
-  // с глобальным индексом и move корректен.
-  const handleMoveUp = () => {
-    if (selectedVisibleIndex > 0) {
-      sync.moveRow(selectedVisibleIndex, selectedVisibleIndex - 1)
-    }
-  }
-  const handleMoveDown = () => {
-    if (
-      selectedVisibleIndex >= 0 &&
-      selectedVisibleIndex < visibleRows.length - 1
-    ) {
-      sync.moveRow(selectedVisibleIndex, selectedVisibleIndex + 1)
-    }
   }
 
   const search = useTableSearch(
     visibleRows,
     flatColumns.map((c) => ({ id: c.id, binding: c.binding }))
   )
-  const containerRef = useRef<HTMLDivElement | null>(null)
 
-  // Виртуализация строк (SCRUM-368): в DOM — только видимое окно видимого
-  // набора (для master-detail — уже отфильтрованного). Ниже порога хука рендер
-  // прежний (все строки).
-  const virt = useVirtualTableRows(
-    visibleRows.length,
-    readVirtualization(node),
-    HEAVY_ROW_VIRTUAL_OPTIONS
-  )
-  // SCRUM-327: вертикальный скролл живёт внутри ТЧ (maxHeight по вьюпорту),
-  // страница документа не растягивается; окно виртуализации — от контейнера.
-  const viewport = useTableViewportMaxHeight()
-  const setContainerRef = (node: HTMLDivElement | null) => {
-    containerRef.current = node
-    viewport.setNode(node)
-    virt.setContainerRef(node)
-  }
+  const { headTopOffset, setFirstHeadRowRef } = useStickyHeadOffset()
 
-  // Высота ПЕРВОГО ряда шапки: второй ряд двухуровневой шапки прилипает под ним
-  // (MUI задаёт всем sticky-ячейкам top:0, и без смещения ряды наложились бы).
-  // Замер, а не константа: высота ряда зависит от шрифта, переносов подписи и
-  // масштаба страницы. ResizeObserver — потому что подписи переносятся при
-  // ресайзе колонок, то есть высота меняется без перемонтирования.
-  const [headTopOffset, setHeadTopOffset] = useState(0)
-  const setFirstHeadRowRef = (row: HTMLTableRowElement | null) => {
-    firstHeadRowObserver.current?.disconnect()
-    if (!row) return
-    setHeadTopOffset(row.offsetHeight)
-    // jsdom (юнит-тесты) ResizeObserver не даёт — там достаточно замера выше.
-    if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(() => {
-      setHeadTopOffset(row.offsetHeight)
-    })
-    observer.observe(row)
-    firstHeadRowObserver.current = observer
-  }
+  useSearchScroll(search, visibleRows, virt, containerRef)
 
-  // Скролл к текущему совпадению поиска (§6.5: поиск не фильтрует строки).
-  // При виртуализации строка совпадения может быть вне окна — сначала подводим
-  // окно к её индексу, затем после кадра доводим по горизонтали к самой ячейке.
-  useEffect(
-    () => {
-      const current = search.current
-      if (!current) return
-      const idx = visibleRows.findIndex((r) => r.rowId === current.rowId)
-      if (idx >= 0) virt.scrollToRow(idx)
-      requestAnimationFrame(() => {
-        containerRef.current
-          ?.querySelector('[data-search-hit="true"]')
-          ?.scrollIntoView({ block: 'nearest' })
-      })
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search.current?.rowId, search.current?.columnId]
-  )
-
-  // Активация цели (§5.5): после render находим ячейку СТРОГО внутри своего
-  // контейнера (две таблицы на форме — общий document.querySelector нашёл бы
-  // чужую), фокусируем её ввод; ссылочной/enum-ячейке раскрываем список.
-  // consumed — одноразовость автооткрытия: повторный ручной фокус в той же
-  // ячейке список сам не раскрывает (§4.6), но commit по ней цепочку продолжает.
-  useEffect(() => {
-    if (autoAdvanceTick === 0) return
-    const target = autoAdvanceTargetRef.current
-    if (!target || target.consumed) return
-    const frame = requestAnimationFrame(() => {
-      target.consumed = true
-      const container = containerRef.current
-      if (!container) return
-      const cell = container.querySelector(
-        `[data-sdui-row-id="${CSS.escape(target.rowId)}"] ` +
-          `[data-sdui-cell-binding="${CSS.escape(target.binding)}"]`
-      )
-      if (!cell) return
-      const input = cell.querySelector<HTMLElement>(
-        'input, textarea, [role="combobox"]'
-      )
-      input?.focus()
-      if (target.cellWidget === 'REFERENCE_FIELD') {
-        // openOnFocus обычно раскрывает список сам; страховка кадром позже —
-        // штатный триггер (программный focus при пустых options может не
-        // открыть). Проверка aria-expanded защищает от повторного toggle.
-        requestAnimationFrame(() => {
-          if (input?.getAttribute('aria-expanded') !== 'true') {
-            cell
-              .querySelector<HTMLElement>('button[aria-label="Open"]')
-              ?.click()
-          }
-        })
-      } else if (target.cellWidget === 'ENUM_FIELD') {
-        // MUI Select открывается по mousedown на combobox-триггере.
-        cell
-          .querySelector<HTMLElement>('[role="combobox"]')
-          ?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-      }
-    })
-    return () => {
-      cancelAnimationFrame(frame)
-    }
-  }, [autoAdvanceTick])
-
-  const handleKeyDown = createTableHotkeysHandler({
+  const commands = useTableRowCommands({
+    sync,
+    columns: flatColumns,
+    visibleRows,
+    selectedRowId: selection.selectedRowId,
+    selectedVisibleIndex: selection.selectedVisibleIndex,
     onAdd: handleAddWithAutoAdvance,
-    onCopy: handleCopy,
-    onRemove: handleRemove,
-    onMoveUp: handleMoveUp,
-    onMoveDown: handleMoveDown,
-    onFocusSearch: search.focusInput,
-    onClearSearch: search.clear,
+    clearSelection: selection.clearSelection,
+    // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail
+    // в тулбаре) — там visibleRows === sync.rows, поэтому видимый индекс
+    // совпадает с глобальным и move корректен.
+    globalIndexOf: (visibleIndex) => visibleIndex,
+    search,
   })
+
+  // Колонок в разметке — столько, сколько РИСУЕТСЯ. flatColumns.length
+  // (extractAllLeafColumns) для этого не годится: он по своему контракту
+  // считает и скрытые колонки, и каждую под-колонку VERTICAL-группы отдельно,
+  // хотя группа рисуется одной ячейкой. У «Начислений» это дало бы 11 против
+  // 6 реальных.
+  const spacerColSpan =
+    table.getVisibleLeafColumns().length + (showRowNumbers ? 1 : 0)
 
   return (
     // Тянемся на всю высоту колонки HSTACK, чтобы master и detail заканчивались
@@ -692,7 +236,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     // tabIndex/onKeyDown — хоткеи командной панели ТЧ (SCRUM-302).
     <div
       tabIndex={-1}
-      onKeyDown={handleKeyDown}
+      onKeyDown={commands.handleKeyDown}
       style={{
         outline: 'none',
         display: 'flex',
@@ -703,26 +247,16 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     >
       <div style={{ marginBottom: 8 }}>
         <TableToolbar
-          onAdd={handleAddWithAutoAdvance}
-          onMoveUp={handleMoveUp}
-          onMoveDown={handleMoveDown}
-          onRemove={handleRemove}
-          onCopy={handleCopy}
-          canMoveUp={!isMasterDetail && selectedVisibleIndex > 0}
-          canMoveDown={
-            !isMasterDetail &&
-            selectedVisibleIndex >= 0 &&
-            selectedVisibleIndex < visibleRows.length - 1
-          }
-          canRemove={selectedRowId !== null}
-          canCopy={selectedRowId !== null}
+          {...commands.toolbarProps}
+          canMoveUp={!isMasterDetail && commands.canMoveUp}
+          canMoveDown={!isMasterDetail && commands.canMoveDown}
           canAdd={!isMasterDetail || masterKeyValue !== undefined}
           allowAdd={showAdd}
           allowReorder={allowReorder && !isMasterDetail}
           allowDelete={allowDelete}
           commands={tableCommands}
           search={search}
-          selectedRowId={selectedRowId}
+          selectedRowId={selection.selectedRowId}
         />
       </div>
       {/* basis auto, а не 0: контейнер растёт до высоты колонки, но никогда не
@@ -736,7 +270,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           // Высоту даёт либо замер по вьюпорту, либо растянутый предок — в обоих
           // случаях скролл внутренний, поэтому overflowY общий.
           overflowY: 'auto',
-          ...(viewport.maxHeight != null && { maxHeight: viewport.maxHeight }),
+          ...(maxHeight != null && { maxHeight }),
         }}
       >
         <Table
@@ -744,7 +278,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           // Шапка колонок остаётся видимой при внутреннем скролле (SCRUM-327).
           // Двухуровневая шапка (VERTICAL-группы) тоже прилипает: MUI ставит
           // всем рядам top:0, и второй ряд наезжал бы на первый — поэтому его
-          // ячейкам ниже задаётся top = высота первого ряда (headTopOffset).
+          // ячейкам задаётся top = высота первого ряда (см. ComplexTableHead).
           stickyHeader
           sx={tableSx}
         >
@@ -754,255 +288,61 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
               leadingWidth={showRowNumbers ? ROW_NUMBER_WIDTH : undefined}
             />
           )}
-          <TableHead>
-            {table.getHeaderGroups().map((hg, hgIndex) => (
-              <MuiTableRow
-                key={hg.id}
-                ref={hgIndex === 0 ? setFirstHeadRowRef : undefined}
-              >
-                {showRowNumbers && hgIndex === 0 && (
-                  <TableCell
-                    rowSpan={table.getHeaderGroups().length}
-                    sx={{
-                      width: ROW_NUMBER_WIDTH,
-                      textAlign: 'center',
-                      fontWeight: 600,
-                      // Дефолтный padding MUI size="small" — 6px 16px, то есть
-                      // 32px из 48px ширины колонки уходят в отступы и «N»
-                      // остаётся 16px. Сжимаем, как уже сделано у ячейки тела.
-                      p: '4px 8px',
-                    }}
-                  >
-                    {t('table.rowNumber')}
-                  </TableCell>
-                )}
-                {hg.headers.map((header) => {
-                  if (header.isPlaceholder) {
-                    return (
-                      <TableCell key={header.id} colSpan={header.colSpan} />
-                    )
-                  }
-                  // VERTICAL-группа сама держит сетку под-строк и рисует
-                  // разделитель во всю ширину — свой padding ячейки сдвинул бы
-                  // подписи вниз относительно редакторов и обрезал линию.
-                  const extra = header.column.columnDef.meta as
-                    | SduiColumnMetaExtra
-                    | undefined
-                  // Ручка — только на ЛИСТОВОЙ колонке: групповой заголовок
-                  // (subHeaders непусты) шириной не владеет, её задают листья.
-                  const canResizeHere =
-                    header.subHeaders.length === 0 &&
-                    header.column.getCanResize()
-                  return (
-                    <TableCell
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      // overflow:hidden — безусловно: подпись шире колонки
-                      // должна обрезаться и без ресайза, иначе она выходит за
-                      // границы ячейки и наезжает на соседний заголовок.
-                      // position НЕ трогаем — см. editable-table-head.tsx:
-                      // `relative` замещал бы `sticky` от stickyHeader, и шапка
-                      // с включённым ресайзом уезжала бы при прокрутке строк.
-                      sx={{
-                        overflow: 'hidden',
-                        // Второй ряд шапки прилипает ПОД первым, а не к top:0.
-                        ...(hgIndex > 0 ? { top: headTopOffset } : {}),
-                        ...(extra?.verticalGroup ? { p: 0 } : {}),
-                      }}
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                      {canResizeHere && (
-                        <ColumnResizeHandle
-                          isResizing={header.column.getIsResizing()}
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                        />
-                      )}
-                    </TableCell>
-                  )
-                })}
-              </MuiTableRow>
-            ))}
-          </TableHead>
+          <ComplexTableHead
+            table={table}
+            showRowNumbers={showRowNumbers}
+            headTopOffset={headTopOffset}
+            setFirstHeadRowRef={setFirstHeadRowRef}
+          />
           <TableBody ref={virt.setBodyRef}>
             {visibleRows.length === 0 ? (
-              <MuiTableRow>
-                {/* Колонок в разметке — столько, сколько РИСУЕТСЯ. Прежний
-                    flatColumns.length (extractAllLeafColumns) для этого не
-                    годится: он по своему контракту считает и скрытые колонки, и
-                    каждую под-колонку VERTICAL-группы отдельно, хотя группа
-                    рисуется одной ячейкой. У «Начислений» это дало бы 11 против
-                    6 реальных. */}
-                <TableCell
-                  colSpan={
-                    table.getVisibleLeafColumns().length +
-                    (showRowNumbers ? 1 : 0)
-                  }
-                  align="center"
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    {t('table.empty')}
-                  </Typography>
-                </TableCell>
-              </MuiTableRow>
+              <TableEmptyRow colSpan={spacerColSpan} />
             ) : (
               <>
                 {virt.paddingTop > 0 && (
-                  <MuiTableRow aria-hidden="true">
-                    <TableCell
-                      colSpan={
-                        table.getVisibleLeafColumns().length +
-                        (showRowNumbers ? 1 : 0)
-                      }
-                      sx={{
-                        height: virt.paddingTop,
-                        p: 0,
-                        border: 0,
-                        // SCRUM-368: фантомные линии строк вместо белого при быстром скролле
-                        background: `repeating-linear-gradient(to bottom, transparent 0 119px, ${cssVar(palette.pendingGray3)} 119px 120px)`,
-                      }}
-                    />
-                  </MuiTableRow>
+                  <VirtualSpacerRow
+                    height={virt.paddingTop}
+                    colSpan={spacerColSpan}
+                  />
                 )}
-                {(virt.virtualItems
-                  ? virt.virtualItems.map(
-                      (item) => table.getRowModel().rows[item.index]
-                    )
-                  : table.getRowModel().rows
-                ).map((row) => (
-                  <MuiTableRow
-                    key={row.id}
-                    hover
-                    data-index={virt.isVirtualized ? row.index : undefined}
-                    data-sdui-row-id={row.original.rowId}
-                    data-sdui-row-index={row.index}
-                    ref={virt.measureRow}
-                    selected={row.id === selectedRowId}
-                    onClick={() => {
-                      handleRowClick(row.id)
-                    }}
-                    onDoubleClick={(event) => {
-                      openRow(row.id, event)
-                    }}
-                    // Заливка идёт ПРОСТЫМ `backgroundColor` в sx — у выделения
-                    // и ховера MUI селекторы с классом-модификатором
-                    // (`.MuiTableRow-root.Mui-selected`), они специфичнее и
-                    // остаются видимыми поверх условного фона. Иначе выделенная
-                    // зелёная строка была бы неотличима от невыделенной.
-                    sx={{
-                      cursor: 'pointer',
-                      height: ROW_HEIGHT,
-                      backgroundColor: resolveRowBackground(
-                        rowAppearance,
-                        row.original
-                      ),
-                    }}
-                  >
-                    {showRowNumbers && (
-                      <TableCell
-                        sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}
-                      >
-                        <Typography variant="body2" color="text.secondary">
-                          {row.index + 1}
-                        </Typography>
-                      </TableCell>
-                    )}
-                    {row.getVisibleCells().map((cell) => (
-                      <SearchHitCell
-                        key={cell.id}
-                        columnId={cell.column.id}
-                        isHit={isSearchHit(
-                          search.current,
-                          row.original.rowId,
-                          cell.column.id
-                        )}
-                        backgroundColor={
-                          // Условная заливка строки перекрывает постоянную
-                          // заливку колонки — см. column-background.ts.
-                          resolveRowBackground(rowAppearance, row.original)
-                            ? undefined
-                            : columnBackgrounds.get(cell.column.id)
-                        }
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </SearchHitCell>
-                    ))}
-                  </MuiTableRow>
-                ))}
-                {virt.paddingBottom > 0 && (
-                  <MuiTableRow aria-hidden="true">
-                    <TableCell
-                      colSpan={
-                        table.getVisibleLeafColumns().length +
-                        (showRowNumbers ? 1 : 0)
-                      }
-                      sx={{
-                        height: virt.paddingBottom,
-                        p: 0,
-                        border: 0,
-                        background: `repeating-linear-gradient(to bottom, transparent 0 119px, ${cssVar(palette.pendingGray3)} 119px 120px)`,
+                {windowedRows(virt.virtualItems, table.getRowModel().rows).map(
+                  (row) => (
+                    <TableBodyRow
+                      key={row.id}
+                      row={row}
+                      selected={row.id === selection.selectedRowId}
+                      onRowClick={() => {
+                        handleRowClick(row.id)
                       }}
+                      onRowDoubleClick={(event) => {
+                        openRow(row.id, event)
+                      }}
+                      showRowNumbers={showRowNumbers}
+                      rowAppearance={rowAppearance}
+                      columnBackgrounds={columnBackgrounds}
+                      searchCurrent={search.current}
+                      isVirtualized={virt.isVirtualized}
+                      measureRow={virt.measureRow}
+                      sduiRowId={row.original.rowId}
+                      rowHeight={ROW_HEIGHT}
                     />
-                  </MuiTableRow>
+                  )
+                )}
+                {virt.paddingBottom > 0 && (
+                  <VirtualSpacerRow
+                    height={virt.paddingBottom}
+                    colSpan={spacerColSpan}
+                  />
                 )}
               </>
             )}
           </TableBody>
           {hasFooter && footerValues && (
-            <TableFooter>
-              {table.getFooterGroups().map((fg) => (
-                <MuiTableRow key={fg.id}>
-                  {showRowNumbers && <TableCell />}
-                  {fg.headers.map((header) => {
-                    const meta = header.column.columnDef.meta as
-                      | SduiColumnMetaExtra
-                      | undefined
-                    // ВЕРТИКАЛЬНАЯ группа: итоги идут стопкой той же сетки, что
-                    // и значения — иначе второй итог показать негде.
-                    if (meta?.footerKeys) {
-                      return (
-                        <TableCell
-                          key={header.id}
-                          colSpan={header.colSpan}
-                          sx={{ p: 0 }}
-                        >
-                          {verticalSubRows(
-                            meta.footerKeys.map((key, index) => ({
-                              key: key ?? `empty-${String(index)}`,
-                              content: footerCell(
-                                key != null && footerValues[key] !== undefined
-                                  ? renderCellValue(footerValues[key])
-                                  : ''
-                              ),
-                            })),
-                            16,
-                            true,
-                            meta.subRowCount ?? meta.footerKeys.length
-                          )}
-                        </TableCell>
-                      )
-                    }
-                    const footerId = header.column.columnDef.footer
-                    const footerText =
-                      typeof footerId === 'string' &&
-                      footerValues[footerId] !== undefined
-                        ? renderCellValue(footerValues[footerId])
-                        : ''
-                    return (
-                      <TableCell key={header.id} colSpan={header.colSpan}>
-                        {footerCell(footerText)}
-                      </TableCell>
-                    )
-                  })}
-                </MuiTableRow>
-              ))}
-            </TableFooter>
+            <ComplexTableFooter
+              table={table}
+              footerValues={footerValues}
+              showRowNumbers={showRowNumbers}
+            />
           )}
         </Table>
       </TableContainer>

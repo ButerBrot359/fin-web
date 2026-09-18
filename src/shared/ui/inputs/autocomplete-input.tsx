@@ -1,12 +1,6 @@
-import {
-  type HTMLAttributes,
-  type KeyboardEvent,
-  type ReactNode,
-  useMemo,
-} from 'react'
+import { type KeyboardEvent, type ReactNode, useMemo } from 'react'
 import {
   Autocomplete,
-  Paper,
   TextField,
   Tooltip,
   type SxProps,
@@ -17,63 +11,9 @@ import type { AutocompleteRenderInputParams } from '@mui/material/Autocomplete'
 import { useTranslation } from 'react-i18next'
 
 import type { SelectOption } from '@/shared/types/select-option'
-import { cssVar, palette, semantic, shadows } from '@/shared/design/tokens'
+import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
-interface FooterButtonsProps {
-  onShowAll?: () => void
-  onAdd?: () => void
-  showAllLabel: string
-  addLabel: string
-}
-
-function createFooterPaper({
-  onShowAll,
-  onAdd,
-  showAllLabel,
-  addLabel,
-}: FooterButtonsProps) {
-  function FooterPaper(props: HTMLAttributes<HTMLDivElement>) {
-    return (
-      <Paper
-        {...props}
-        sx={{
-          borderRadius: '8px',
-          boxShadow: cssVar(shadows.popup),
-          overflow: 'hidden',
-        }}
-      >
-        {props.children}
-        <div className="flex items-center justify-between border-t border-ui-04 py-3">
-          {onShowAll && (
-            <button
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault()
-                onShowAll()
-              }}
-              className="cursor-pointer rounded-lg px-4 py-2.5 text-body1 font-medium text-accent-02"
-            >
-              {showAllLabel}
-            </button>
-          )}
-          {onAdd && (
-            <button
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault()
-                onAdd()
-              }}
-              className="cursor-pointer rounded-lg px-4 py-2.5 text-body1 font-medium text-accent-02"
-            >
-              {addLabel}
-            </button>
-          )}
-        </div>
-      </Paper>
-    )
-  }
-  return FooterPaper
-}
+import { createFooterPaper } from './footer-paper'
 
 interface AutocompleteInputBaseProps {
   inputValue?: string
@@ -273,39 +213,45 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
     )
   }
 
+  /** Пропы, идентичные для обеих веток (multiple и single): одна точка правки. */
+  const commonProps = {
+    size,
+    fullWidth,
+    inputValue,
+    options,
+    onInputChange,
+    onOpen,
+    openOnFocus,
+    autoHighlight,
+    filterOptions: onInputChange ? (x: SelectOption[]) => x : undefined,
+    getOptionLabel: (option: SelectOption) => option.label,
+    // Ключ опции — id: дефолтный ключ MUI по label роняет/дублирует опции
+    // с одинаковым представлением (например, полные тёзки у физлиц).
+    getOptionKey: (option: SelectOption) => option.id,
+    isOptionEqualToValue: (option: SelectOption, val: SelectOption) =>
+      option.id === val.id,
+    readOnly,
+    disabled,
+    loading,
+    sx,
+    slots: PaperComponent ? { paper: PaperComponent } : undefined,
+    slotProps: {
+      popper: { style: { minWidth: 300 } },
+    },
+    loadingText: t('inputs.loading'),
+    noOptionsText: t('inputs.noOptions'),
+    renderInput,
+  }
+
   if (props.multiple) {
     return (
       <Autocomplete
         multiple
-        size={size}
-        fullWidth={fullWidth}
+        {...commonProps}
         value={props.value}
-        inputValue={inputValue}
-        options={options}
         onChange={(_e, newValue) => {
           props.onChange(newValue)
         }}
-        onInputChange={onInputChange}
-        onOpen={onOpen}
-        openOnFocus={openOnFocus}
-        autoHighlight={autoHighlight}
-        filterOptions={onInputChange ? (x) => x : undefined}
-        getOptionLabel={(option) => option.label}
-        // Ключ опции — id: дефолтный ключ MUI по label роняет/дублирует опции
-        // с одинаковым представлением (например, полные тёзки у физлиц).
-        getOptionKey={(option) => option.id}
-        isOptionEqualToValue={(option, val) => option.id === val.id}
-        readOnly={readOnly}
-        disabled={disabled}
-        loading={loading}
-        sx={sx}
-        slots={PaperComponent ? { paper: PaperComponent } : undefined}
-        slotProps={{
-          popper: { style: { minWidth: 300 } },
-        }}
-        loadingText={t('inputs.loading')}
-        noOptionsText={t('inputs.noOptions')}
-        renderInput={renderInput}
       />
     )
   }
@@ -324,35 +270,11 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
       }}
     >
       <Autocomplete
-        size={size}
-        fullWidth={fullWidth}
+        {...commonProps}
         value={props.value}
-        inputValue={inputValue}
-        options={options}
         onChange={(_e, newValue) => {
           props.onChange(newValue)
         }}
-        onInputChange={onInputChange}
-        onOpen={onOpen}
-        openOnFocus={openOnFocus}
-        autoHighlight={autoHighlight}
-        filterOptions={onInputChange ? (x) => x : undefined}
-        getOptionLabel={(option) => option.label}
-        // Ключ опции — id: дефолтный ключ MUI по label роняет/дублирует опции
-        // с одинаковым представлением (например, полные тёзки у физлиц).
-        getOptionKey={(option) => option.id}
-        isOptionEqualToValue={(option, val) => option.id === val.id}
-        readOnly={readOnly}
-        disabled={disabled}
-        loading={loading}
-        sx={sx}
-        slots={PaperComponent ? { paper: PaperComponent } : undefined}
-        slotProps={{
-          popper: { style: { minWidth: 300 } },
-        }}
-        loadingText={t('inputs.loading')}
-        noOptionsText={t('inputs.noOptions')}
-        renderInput={renderInput}
       />
     </Tooltip>
   )

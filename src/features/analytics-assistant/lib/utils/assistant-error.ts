@@ -1,15 +1,21 @@
+import { ApiHttpError } from '@/shared/api/api-error'
+
 /**
  * Разбор ошибок ассистента.
  *
- * `makeRequest` в `shared/api/api.ts` бросает ТЕЛО ответа, а не `AxiosError`:
- * HTTP-статуса здесь нет, различать случаи можно только по содержимому.
- * Поэтому вместо «unknown» показываем пользователю текст, пришедший с бэкенда.
+ * `makeRequest` в `shared/api/api.ts` бросает `ApiHttpError` (W-6): тело ответа
+ * лежит в `.body`, различать случаи можно только по его содержимому. Поэтому
+ * вместо «unknown» показываем пользователю текст, пришедший с бэкенда.
  */
 
 const TEXT_KEYS = ['message', 'error', 'detail', 'title', 'description']
 
-/** Человекочитаемый текст изброшенного тела ответа (или `null`). */
+/** Человекочитаемый текст из тела ошибки API (или `null`). */
 export const extractErrorText = (error: unknown): string | null => {
+  // Текст сервера — только из тела; генерик-сообщение самого класса
+  // («HTTP 500») пользователю не показываем, как раньше не показывали
+  // пустое тело.
+  if (error instanceof ApiHttpError) return extractErrorText(error.body)
   if (typeof error === 'string') return error || null
   if (error instanceof Error) return error.message || null
   if (error == null || typeof error !== 'object') return null

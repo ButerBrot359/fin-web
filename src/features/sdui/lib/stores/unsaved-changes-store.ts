@@ -27,6 +27,10 @@ export const useUnsavedChangesStore = create<UnsavedChangesStoreState>(
 
     ask: () =>
       new Promise<UnsavedChangesAnswer>((resolve) => {
+        // Повторный ask при открытом диалоге: прежний resolve нельзя молча
+        // перезаписать — ждущий его вызывающий завис бы навсегда. Отвечаем
+        // ему «Отмена» (форма остаётся открытой), как при закрытии диалога.
+        get().resolve?.('cancel')
         set({ open: true, resolve })
       }),
 

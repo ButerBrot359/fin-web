@@ -6,6 +6,8 @@ import {
   type AiAssistantAnswer,
   type AiAssistantContext,
 } from '@/entities/ai-assistant'
+import { ApiHttpError } from '@/shared/api/api-error'
+import { getApiErrorMessage } from '@/shared/lib/utils/get-api-error-message'
 
 import { useDesignRefresh } from './use-design-refresh'
 
@@ -32,6 +34,11 @@ const nextId = (): string =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 
 const errorText = (error: unknown): string => {
+  // Ошибка API летит классом ApiHttpError (W-6): текст сервера — в теле;
+  // без текста в теле — общий фолбэк, генерик «HTTP 500» не показываем.
+  if (error instanceof ApiHttpError) {
+    return getApiErrorMessage(error) ?? i18n.t('aiAssistant.answerFailed')
+  }
   if (error instanceof Error) return error.message
   if (typeof error === 'object' && error !== null && 'message' in error) {
     return String((error as { message: unknown }).message)

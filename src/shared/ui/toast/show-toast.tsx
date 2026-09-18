@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 
 import { cssVar, palette, semantic, shadows } from '@/shared/design/tokens'
 
@@ -72,67 +73,89 @@ const ToastContent = ({
   title,
   description,
   onClick,
-}: ToastContentProps) => (
-  <div
-    onClick={
-      onClick
-        ? () => {
-            onClick()
+}: ToastContentProps) => {
+  const { t } = useTranslation()
+  return (
+    <div
+      // Скринридер обязан озвучить всплывашку, не получая фокуса: ошибки —
+      // сразу (assertive), остальное — в паузе (polite).
+      role="status"
+      aria-live={type === 'error' ? 'assertive' : 'polite'}
+      onClick={
+        onClick
+          ? () => {
+              onClick()
+              toast.dismiss(id)
+            }
+          : undefined
+      }
+      style={{
+        background: cssVar(palette.ui01),
+        borderLeft: `4px solid ${borderColorMap[type]}`,
+        borderRadius: '8px',
+        boxShadow: cssVar(shadows.popup),
+        padding: '12px 16px',
+        width: '351px',
+        display: 'flex',
+        flexDirection: description ? 'column' : 'row',
+        gap: '6px',
+        overflow: 'hidden',
+        fontFamily: "'Google Sans', system-ui, sans-serif",
+        cursor: onClick ? 'pointer' : undefined,
+      }}
+    >
+      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        <AttentionIcon color={iconColorMap[type]} />
+        <span
+          style={{
+            flex: 1,
+            fontWeight: 700,
+            fontSize: '16px',
+            color: cssVar(semantic.textPrimary),
+            minWidth: 0,
+          }}
+        >
+          {title}
+        </span>
+        <button
+          type="button"
+          aria-label={t('actions.close')}
+          onClick={(e) => {
+            // Крестик закрывает всплывашку, не срабатывая как переход по ней.
+            e.stopPropagation()
             toast.dismiss(id)
-          }
-        : undefined
-    }
-    style={{
-      background: cssVar(palette.ui01),
-      borderLeft: `4px solid ${borderColorMap[type]}`,
-      borderRadius: '8px',
-      boxShadow: cssVar(shadows.popup),
-      padding: '12px 16px',
-      width: '351px',
-      display: 'flex',
-      flexDirection: description ? 'column' : 'row',
-      gap: '6px',
-      overflow: 'hidden',
-      fontFamily: "'Google Sans', system-ui, sans-serif",
-      cursor: onClick ? 'pointer' : undefined,
-    }}
-  >
-    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-      <AttentionIcon color={iconColorMap[type]} />
-      <span
-        style={{
-          flex: 1,
-          fontWeight: 700,
-          fontSize: '16px',
-          color: cssVar(semantic.textPrimary),
-          minWidth: 0,
-        }}
-      >
-        {title}
-      </span>
-      <span
-        onClick={(e) => {
-          // Крестик закрывает всплывашку, не срабатывая как переход по ней.
-          e.stopPropagation()
-          toast.dismiss(id)
-        }}
-      >
-        <CloseIcon />
-      </span>
+          }}
+          // Настоящая кнопка (доступна с клавиатуры), но выглядит как прежний
+          // голый крестик: сбрасываем дефолтные стили button.
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            margin: 0,
+            font: 'inherit',
+            color: 'inherit',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+          }}
+        >
+          <CloseIcon />
+        </button>
+      </div>
+      {description && (
+        <span
+          style={{
+            fontWeight: 500,
+            fontSize: '14px',
+            color: cssVar(semantic.textPrimary),
+          }}
+        >
+          {description}
+        </span>
+      )}
     </div>
-    {description && (
-      <span
-        style={{
-          fontWeight: 500,
-          fontSize: '14px',
-          color: cssVar(semantic.textPrimary),
-        }}
-      >
-        {description}
-      </span>
-    )}
-  </div>
-)
+  )
+}
 
 export interface ToastEvent {
   type: ToastType

@@ -40,6 +40,49 @@ export const isApiTransportError = (
 ): error is ApiTransportError => error instanceof ApiTransportError
 
 /**
+ * Техническое сообщение для консоли/логов из тела ошибки API. Пользовательский
+ * текст достают потребители из `body` (см. `getApiErrorMessage`): здесь только
+ * эвристика по типовым формам бэкенда (`message` у Spring/`ApiErrorBody`,
+ * `detail`/`error` у прочих) с фолбэком на HTTP-статус.
+ */
+const httpErrorMessage = (
+  body: unknown,
+  status: number | undefined
+): string => {
+  if (typeof body === 'string' && body.trim()) return body
+  if (body && typeof body === 'object') {
+    const b = body as Record<string, unknown>
+    for (const key of ['message', 'detail', 'error']) {
+      const value = b[key]
+      if (typeof value === 'string' && value.trim()) return value
+    }
+  }
+  return status !== undefined ? `HTTP ${String(status)}` : 'HTTP error'
+}
+
+/**
+ * Ошибка API с телом ответа (W-6). Раньше `makeRequest` бросал СЫРОЕ тело
+ * (`throw error.response?.data`): наверх летел нетипизированный объект без
+ * HTTP-статуса и без стектрейса, а при пустом теле — `undefined`. Теперь любая
+ * не-транспортная и не-409 ошибка — этот класс: `status` — HTTP-статус (может
+ * отсутствовать только у не-HTTP сбоев), `body` — распарсенное тело как есть.
+ */
+export class ApiHttpError extends Error {
+  readonly status: number | undefined
+  readonly body: unknown
+
+  constructor(status: number | undefined, body: unknown) {
+    super(httpErrorMessage(body, status))
+    this.name = 'ApiHttpError'
+    this.status = status
+    this.body = body
+  }
+}
+
+export const isApiHttpError = (error: unknown): error is ApiHttpError =>
+  error instanceof ApiHttpError
+
+/**
  * HTTP 409 от бэкенда — конфликт блокировок (SCRUM-330): объект занят другим
  * пользователем/фоновой задачей (`OBJECT_LOCKED`) либо доменная блокировка
  * (`LOCK_CONFLICT`). `message` бэка — готовый русский текст «кем занято»,
@@ -109,4 +152,30 @@ export const classifyTransportFailure = (
   if (status === undefined) return 'network'
 
   return GATEWAY_TIMEOUT_STATUSES.has(status) ? 'gateway' : null
+}
+
+/**
+ * Единый маппинг ошибок axios в типизированные ошибки API — общий для основного
+ * клиента (`api.ts`) и `form-configs-api.ts`:
+ *  - отмена запроса (AbortSignal / смена ключа TanStack Query) — НЕ сбой:
+ *    пробрасывается исходной ошибкой axios, иначе отменённые запросы начали бы
+ *    показывать тосты;
+ *  - обрыв транспорта (таймаут / нет сети / 504 от ingress) → {@link ApiTransportError};
+ *  - 409 (конфликт блокировок, SCRUM-330) → {@link ApiConflictError};
+ *  - остальные ответы с ошибкой → {@link ApiHttpError} со статусом и телом.
+ */
+export const rethrowApiError = (error: unknown): never => {
+  if (error instanceof AxiosError) {
+    if (error.code === AxiosError.ERR_CANCELED) throw error
+
+    const transportKind = classifyTransportFailure(error)
+    if (transportKind) {
+      throw new ApiTransportError(transportKind, error.response?.status)
+    }
+    if (error.response?.status === 409) {
+      throw apiConflictErrorFromBody(error.response.data)
+    }
+    throw new ApiHttpError(error.response?.status, error.response?.data)
+  }
+  throw error
 }

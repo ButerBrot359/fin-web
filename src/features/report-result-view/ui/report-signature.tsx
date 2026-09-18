@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
 import { cssVar, palette } from '@/shared/design/tokens'
@@ -16,7 +17,8 @@ export const ReportSignature = ({
 }: {
   signature: ReportFormSignatureDto
 }) => {
-  const captions = signature.captions ?? ['подпись']
+  const { t } = useTranslation()
+  const captions = signature.captions ?? [t('reports.signatureCaption')]
   const lastIdx = captions.length - 1
   return (
     <div className="mt-8 flex flex-wrap items-start gap-x-8 gap-y-3">

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { ApiHttpError } from '@/shared/api/api-error'
+
 import { fetchTask } from '../../api/tasks-api'
 import type { AsyncTask } from '../../types/async-task'
 import { isTerminalTaskStatus } from '../task-status'
@@ -7,13 +9,9 @@ import { isTerminalTaskStatus } from '../task-status'
 // Тот же темп, что у SDUI-вотчера (use-task-watcher.ts)
 export const TASK_COMPLETION_POLL_INTERVAL_MS = 2500
 
-// apiService на 4xx бросает тело ответа ({status, error, message}), не AxiosError
+// apiService на 4xx бросает ApiHttpError с HTTP-статусом (W-6)
 function isNotFoundError(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    (err as { status?: unknown }).status === 404
-  )
+  return err instanceof ApiHttpError && err.status === 404
 }
 
 /**

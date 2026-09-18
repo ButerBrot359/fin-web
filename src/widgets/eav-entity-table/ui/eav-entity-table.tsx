@@ -18,6 +18,7 @@ import {
 import { useAutoFitColumnsByContent } from '@/shared/lib/table-autofit/use-auto-fit-columns'
 
 import { cn } from '@/shared/lib/utils/cn'
+import { getApiErrorMessage } from '@/shared/lib/utils/get-api-error-message'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import emptyImage from '@/shared/assets/info/empty.png'
 
@@ -63,15 +64,9 @@ export const EavEntityTable = <T extends { id: number }>({
 
   useEffect(() => {
     if (!isError) return
-    const apiError = error as {
-      message?: string
-      data?: { message?: string }
-    } | null
-    const description =
-      apiError?.data?.message ??
-      apiError?.message ??
-      (typeof error === 'string' ? error : undefined)
-    showToast('error', t('tableFilter.errorRequest'), description)
+    // API-слой бросает ApiHttpError с телом в `.body` (W-6): текст сервера
+    // достаёт общий хелпер (data.message / message / строка — как раньше).
+    showToast('error', t('tableFilter.errorRequest'), getApiErrorMessage(error))
   }, [isError, error, t])
 
   const scrollRef = useRef<HTMLDivElement>(null)

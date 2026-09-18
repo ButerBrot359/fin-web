@@ -1,8 +1,4 @@
-import axios, {
-  AxiosError,
-  type AxiosRequestConfig,
-  type AxiosResponse,
-} from 'axios'
+import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
 
 import i18n from '@/app/config/i18n'
 import type {
@@ -11,11 +7,7 @@ import type {
   RequestWithDataConfig,
 } from '@/shared/types/api.types'
 
-import {
-  ApiTransportError,
-  apiConflictErrorFromBody,
-  classifyTransportFailure,
-} from './api-error'
+import { rethrowApiError } from './api-error'
 import { attachAuthInterceptors } from './auth/attach-auth-interceptors'
 
 /**
@@ -61,30 +53,13 @@ instance.interceptors.request.use((config) => {
 // подставляется последним — на уже сформированный конфиг.
 attachAuthInterceptors(instance)
 
+// Все сбои запроса летят наверх типизированными ошибками (`ApiTransportError` /
+// `ApiConflictError` / `ApiHttpError` — W-6): маппинг общий с form-configs-api,
+// подробности — в `rethrowApiError` (api-error.ts).
 const makeRequest = <T>(
   config: AxiosRequestConfig
 ): Promise<AxiosResponse<T>> =>
-  instance.request<T>(config).catch((error: unknown) => {
-    if (error instanceof AxiosError) {
-      // Обрыв транспорта (таймаут / нет сети / 504 от ingress): тела ответа либо
-      // нет вовсе, либо это html-заглушка шлюза — прокидывать её наверх нельзя,
-      // раньше в таком случае наружу летел `undefined` и UI не мог отличить
-      // «сервер всё ещё считает» от ошибки валидации. Даём типизированную ошибку.
-      const transportKind = classifyTransportFailure(error)
-      if (transportKind) {
-        throw new ApiTransportError(transportKind, error.response?.status)
-      }
-      // 409 — конфликт блокировок (SCRUM-330): «сырое» тело теряло HTTP-статус,
-      // и UI не мог отличить «объект занят, повторите» от ошибки валидации.
-      // Типизированная ошибка сохраняет code/message; остальные статусы летят
-      // телом ответа, как раньше.
-      if (error.response?.status === 409) {
-        throw apiConflictErrorFromBody(error.response.data)
-      }
-      throw error.response?.data
-    }
-    throw error
-  })
+  instance.request<T>(config).catch(rethrowApiError)
 
 const get = <T = unknown>({ url, params, signal, timeout }: RequestConfig) =>
   makeRequest<T>({ method: 'GET', url, params, signal, timeout })

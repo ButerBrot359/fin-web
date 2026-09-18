@@ -1,7 +1,9 @@
+import { ApiHttpError } from '@/shared/api/api-error'
 import type { ApiErrorResponse } from '@/shared/types/api.types'
 
-// The API layer (shared/api/api.ts) throws the raw response body on error,
-// so the value caught here is usually the parsed error payload, not an Error.
+// The API layer (shared/api/api.ts) throws ApiHttpError with the parsed
+// response body in `.body` (W-6); older call sites may still pass the raw
+// payload, so both shapes are unwrapped here.
 const isApiErrorResponse = (value: unknown): value is ApiErrorResponse =>
   typeof value === 'object' && value !== null
 
@@ -10,10 +12,13 @@ const isApiErrorResponse = (value: unknown): value is ApiErrorResponse =>
  * backend message can be shown to the user instead of a generic text.
  * Prefers field-level validation messages (e.g. DOCUMENT_VALIDATION), then
  * falls back to the top-level message. Returns undefined when nothing can be
- * derived (caller shows a fallback).
+ * derived (caller shows a fallback) — the generic `ApiHttpError.message`
+ * ("HTTP 500") is deliberately NOT used here.
  */
 export const getApiErrorMessage = (error: unknown): string | undefined => {
-  if (typeof error === 'string') return error
+  if (error instanceof ApiHttpError) return getApiErrorMessage(error.body)
+
+  if (typeof error === 'string') return error || undefined
 
   if (!isApiErrorResponse(error)) return undefined
 
@@ -22,5 +27,11 @@ export const getApiErrorMessage = (error: unknown): string | undefined => {
     .filter((message): message is string => Boolean(message))
     .join('\n')
 
-  return detailMessage || error.data?.message || error.message || error.error || undefined
+  return (
+    detailMessage ||
+    error.data?.message ||
+    error.message ||
+    error.error ||
+    undefined
+  )
 }

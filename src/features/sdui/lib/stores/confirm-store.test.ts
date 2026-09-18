@@ -19,6 +19,18 @@ describe('confirm-store', () => {
     await expect(promise).resolves.toBe(false)
   })
 
+  it('повторный ask при открытом диалоге резолвит предыдущий промис отказом', async () => {
+    const p1 = useConfirmStore.getState().ask('первый')
+    // Второй вопрос до ответа на первый: p1 не должен зависнуть навсегда.
+    const p2 = useConfirmStore.getState().ask('второй')
+
+    await expect(p1).resolves.toBe(false)
+    expect(useConfirmStore.getState().message).toBe('второй')
+
+    useConfirmStore.getState().answer(true)
+    await expect(p2).resolves.toBe(true)
+  })
+
   it('повторный ask после ответа работает (стор переиспользуемый)', async () => {
     const p1 = useConfirmStore.getState().ask('первый')
     useConfirmStore.getState().answer(true)

@@ -5,18 +5,15 @@ import {
   isTerminalTaskStatus,
   useAsyncTaskStore,
 } from '@/entities/async-task'
+import { ApiHttpError } from '@/shared/api/api-error'
 
 import { useSduiDispatch } from '../dispatch'
 
 export const TASK_POLL_INTERVAL_MS = 2500
 
 function isNotFoundError(err: unknown): boolean {
-  // apiService на 4xx бросает тело ответа ({status, error, message}), не AxiosError
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    (err as { status?: unknown }).status === 404
-  )
+  // apiService на 4xx бросает ApiHttpError с HTTP-статусом (W-6)
+  return err instanceof ApiHttpError && err.status === 404
 }
 
 // SCRUM-330 §3.3–3.4: вотчер фоновых задач формы. Поллит задачи СВОЕЙ сессии

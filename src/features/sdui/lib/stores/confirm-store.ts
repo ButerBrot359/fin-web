@@ -19,6 +19,10 @@ export const useConfirmStore = create<ConfirmStoreState>((set, get) => ({
 
   ask: (message) =>
     new Promise<boolean>((resolve) => {
+      // Повторный ask при открытом диалоге: прежний resolve нельзя молча
+      // перезаписать — ждущий его вызывающий завис бы навсегда. Отвечаем
+      // ему отказом (false), как если бы пользователь закрыл диалог.
+      get().resolve?.(false)
       set({ open: true, message, resolve })
     }),
 

@@ -6,6 +6,7 @@ import {
   useAsyncTaskStore,
   type AsyncTask,
 } from '@/entities/async-task'
+import { ApiHttpError } from '@/shared/api/api-error'
 
 import { TASK_POLL_INTERVAL_MS, useTaskWatcher } from './use-task-watcher'
 
@@ -65,7 +66,10 @@ describe('useTaskWatcher (SCRUM-330 §3.3–3.4)', () => {
 
   it('404 на опросе → тоже рапорт task.finished (сервер вернёт кнопки)', async () => {
     useAsyncTaskStore.getState().track(makeTask('RUNNING'), 'fs-1')
-    vi.mocked(fetchTask).mockRejectedValue({ status: 404, error: 'NOT_FOUND' })
+    // apiService бросает ApiHttpError (W-6), статус — HTTP-статус ответа
+    vi.mocked(fetchTask).mockRejectedValue(
+      new ApiHttpError(404, { status: 404, error: 'NOT_FOUND' })
+    )
 
     renderHook(() => {
       useTaskWatcher('fs-1')

@@ -20,6 +20,7 @@ import {
   NumberInput,
   TextInput,
 } from '@/shared/ui/inputs'
+import { ApiHttpError } from '@/shared/api/api-error'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import type { SelectOption } from '@/shared/types/select-option'
 
@@ -531,8 +532,10 @@ export const FinancingPlanUploadPage = () => {
 
 /** Достаём человекочитаемое сообщение из ошибки бэка (envelope/обычный axios). */
 function extractErrorMessage(error: unknown): string | undefined {
-  if (error && typeof error === 'object') {
-    const e = error as {
+  // API-слой бросает ApiHttpError (W-6): тело ответа — в `.body`.
+  const source = error instanceof ApiHttpError ? error.body : error
+  if (source && typeof source === 'object') {
+    const e = source as {
       message?: string
       data?: { message?: string }
       errors?: { message?: string }[]

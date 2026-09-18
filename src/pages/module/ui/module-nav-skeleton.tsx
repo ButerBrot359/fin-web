@@ -1,8 +1,4 @@
-const ShimmerBlock = ({ className }: { className?: string }) => (
-  <div
-    className={`animate-shimmer rounded-md bg-linear-to-r from-ui-02 via-ui-03/30 to-ui-02 bg-size-[800px_100%] ${className ?? ''}`}
-  />
-)
+import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 
 const ItemSkeleton = ({ width }: { width: string }) => (
   <li className="flex items-center px-2 py-1">

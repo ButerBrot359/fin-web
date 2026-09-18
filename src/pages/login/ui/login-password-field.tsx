@@ -5,7 +5,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import { IconButton, InputAdornment, TextField } from '@mui/material'
 
-import { loginFieldSx } from './login-field-sx'
+import { loginFieldSx } from '@/features/auth'
 
 interface LoginPasswordFieldProps {
   value: string

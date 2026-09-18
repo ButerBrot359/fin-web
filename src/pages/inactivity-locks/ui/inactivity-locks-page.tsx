@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
   Table,
@@ -14,10 +15,11 @@ import {
 import {
   getInactivityLocks,
   unlockInactivity,
-  type InactivityLock,
 } from '../api/inactivity-locks-api'
 import { Button } from '@/shared/ui/buttons/button'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
+
+const LOCKS_QUERY_KEY = ['inactivity-locks']
 
 /**
  * Снятие блокировок по бездействию (ТЗ §А4, требование заказчика от 08.09.2026).
@@ -27,60 +29,64 @@ import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
  * основание: чьё согласие, на чём. Оно уходит в журнал регистрации, поэтому кнопка не работает,
  * пока поле пустое.
  *
- * Список после снятия блокировки перечитывается целиком, а не правится на месте: заблокирован
- * человек или нет, решает сервер по своему порогу, и держать на клиенте вторую копию этого правила
- * значит однажды показать список, расходящийся с тем, кого действительно не пускают.
+ * Список после снятия блокировки перечитывается целиком (инвалидация запроса), а не правится на
+ * месте: заблокирован человек или нет, решает сервер по своему порогу, и держать на клиенте
+ * вторую копию этого правила значит однажды показать список, расходящийся с тем, кого
+ * действительно не пускают. staleTime: 0 — по той же причине список перечитывается и при каждом
+ * заходе на страницу.
  */
 export const InactivityLocksPage = () => {
   const { t } = useTranslation()
-  const [locks, setLocks] = useState<InactivityLock[] | null>(null)
+  const queryClient = useQueryClient()
   const [reasons, setReasons] = useState<Record<number, string>>({})
-  const [busyUserId, setBusyUserId] = useState<number | null>(null)
-  const [error, setError] = useState<string | null>(null)
 
-  const reload = useCallback(() => {
-    getInactivityLocks()
-      .then((loaded) => {
-        setLocks(loaded)
-        setError(null)
-      })
-      .catch(() => {
-        setLocks([])
-        setError(t('inactivityLocks.loadFailed'))
-      })
-  }, [t])
+  const locksQuery = useQuery({
+    queryKey: LOCKS_QUERY_KEY,
+    queryFn: getInactivityLocks,
+    staleTime: 0,
+  })
 
-  useEffect(reload, [reload])
+  const unlockMutation = useMutation({
+    mutationFn: ({
+      appUserId,
+      reason,
+    }: {
+      appUserId: number
+      reason: string
+    }) => unlockInactivity(appUserId, reason),
+    onSuccess: (_data, { appUserId }) => {
+      // Основание после успешной разблокировки не хранится: строка уходит из списка, а её
+      // текст уже записан в журнал регистрации на сервере.
+      setReasons((previous) =>
+        Object.fromEntries(
+          Object.entries(previous).filter(([key]) => key !== String(appUserId))
+        )
+      )
+      void queryClient.invalidateQueries({ queryKey: LOCKS_QUERY_KEY })
+    },
+  })
+
+  // Погашена только строка, по которой ушёл запрос, — остальные остаются рабочими.
+  const busyUserId = unlockMutation.isPending
+    ? unlockMutation.variables.appUserId
+    : null
 
   const handleUnlock = (appUserId: number) => {
     const reason = (reasons[appUserId] ?? '').trim()
     if (!reason) return
-
-    setBusyUserId(appUserId)
-    unlockInactivity(appUserId, reason)
-      .then(() => {
-        // Основание после успешной разблокировки не хранится: строка уходит из списка, а её
-        // текст уже записан в журнал регистрации на сервере.
-        setReasons((previous) =>
-          Object.fromEntries(
-            Object.entries(previous).filter(
-              ([key]) => key !== String(appUserId)
-            )
-          )
-        )
-        reload()
-      })
-      .catch(() => {
-        setError(t('inactivityLocks.unlockFailed'))
-      })
-      .finally(() => {
-        setBusyUserId(null)
-      })
+    unlockMutation.mutate({ appUserId, reason })
   }
 
-  if (locks === null) {
+  if (locksQuery.isPending) {
     return <PageSkeleton />
   }
+
+  const locks = locksQuery.data ?? []
+  const error = unlockMutation.isError
+    ? t('inactivityLocks.unlockFailed')
+    : locksQuery.isError
+      ? t('inactivityLocks.loadFailed')
+      : null
 
   return (
     <div className="flex flex-col gap-4 p-6">

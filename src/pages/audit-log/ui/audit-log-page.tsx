@@ -1,23 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Typography,
-} from '@mui/material'
+import { Typography } from '@mui/material'
 
-import { Button } from '@/shared/ui/buttons/button'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 
-import {
-  getAuditLog,
-  type AuditLogPage as AuditPage,
-} from '../api/audit-log-api'
+import { getAuditLog } from '../api/audit-log-api'
 import { AuditLogFilters, type AuditLogFilterValues } from './audit-log-filters'
+import { AuditLogTable } from './audit-log-table'
+import { AuditLogPagination } from './audit-log-pagination'
 
 const EMPTY_FILTERS: AuditLogFilterValues = {
   from: '',
@@ -43,46 +35,32 @@ const PAGE_SIZE = 50
  * Исключение — выпадающие списки отбора: там подписи нужны до загрузки данных.
  *
  * <b>Пустые ячейки — норма.</b> У событий входа и выхода нет объекта, у неудачного входа может не
- * быть пользователя (учётной записи с таким логином может не существовать). Показывать это как
- * ошибку данных нельзя.
+ * быть пользователя (учётной записи с таким логином может не существовать).
  */
 export const AuditLogPage = () => {
   const { t } = useTranslation()
   const [applied, setApplied] = useState<AuditLogFilterValues>(EMPTY_FILTERS)
   const [draft, setDraft] = useState<AuditLogFilterValues>(EMPTY_FILTERS)
   const [page, setPage] = useState(0)
-  const [data, setData] = useState<AuditPage | null>(null)
-  const [isLoading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(() => {
-    setLoading(true)
-    getAuditLog({
-      from: applied.from ? `${applied.from}:00` : undefined,
-      to: applied.to ? `${applied.to}:00` : undefined,
-      userLogin: applied.userLogin,
-      action: applied.action,
-      outcome: applied.outcome,
-      page,
-      size: PAGE_SIZE,
-    })
-      .then((loaded) => {
-        setData(loaded)
-        setError(null)
-      })
-      .catch(() => {
-        setError(t('auditLog.loadFailed'))
-      })
-      .finally(() => {
-        setLoading(false)
-      })
-  }, [applied, page, t])
-
-  // Запрос на монтировании и при смене отбора/страницы. Индикатор загрузки поднимается синхронно,
-  // до ухода запроса, — иначе таблица секунду показывает старые строки как актуальные; тем же
-  // приёмом и с тем же подавлением правила это сделано в reportalt-page.tsx.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(load, [load])
+  // При смене отбора/страницы старые строки остаются на экране (keepPreviousData) с
+  // погашенными контролами — как и раньше, без мигания скелетоном. staleTime: 0 — журнал
+  // перечитывается при каждом заходе на страницу: проверяющему нужна актуальная лента.
+  const { data, isPending, isFetching, isError } = useQuery({
+    queryKey: ['audit-log', applied, page],
+    queryFn: () =>
+      getAuditLog({
+        from: applied.from ? `${applied.from}:00` : undefined,
+        to: applied.to ? `${applied.to}:00` : undefined,
+        userLogin: applied.userLogin,
+        action: applied.action,
+        outcome: applied.outcome,
+        page,
+        size: PAGE_SIZE,
+      }),
+    placeholderData: keepPreviousData,
+    staleTime: 0,
+  })
 
   const applyFilters = () => {
     // Страница сбрасывается вместе с отбором: остаться на 40-й странице нового отбора значит
@@ -97,7 +75,7 @@ export const AuditLogPage = () => {
     setApplied(EMPTY_FILTERS)
   }
 
-  if (data === null && isLoading) {
+  if (isPending) {
     return <PageSkeleton />
   }
 
@@ -118,12 +96,12 @@ export const AuditLogPage = () => {
         onChange={setDraft}
         onApply={applyFilters}
         onReset={resetFilters}
-        disabled={isLoading}
+        disabled={isFetching}
       />
 
-      {error && (
+      {isError && (
         <Typography role="alert" variant="body2" color="error">
-          {error}
+          {t('auditLog.loadFailed')}
         </Typography>
       )}
 
@@ -134,89 +112,21 @@ export const AuditLogPage = () => {
       {rows.length === 0 ? (
         <Typography variant="body2">{t('auditLog.empty')}</Typography>
       ) : (
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>{t('auditLog.occurredAt')}</TableCell>
-              <TableCell>{t('auditLog.user')}</TableCell>
-              <TableCell>{t('auditLog.action')}</TableCell>
-              <TableCell>{t('auditLog.outcome')}</TableCell>
-              <TableCell>{t('auditLog.object')}</TableCell>
-              <TableCell>{t('auditLog.message')}</TableCell>
-              <TableCell>{t('auditLog.clientAddress')}</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell className="whitespace-nowrap">
-                  {new Date(row.occurredAt).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  {row.userName ?? row.userLogin ?? ''}
-                  {row.userLogin && row.userLogin !== row.userName && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                    >
-                      {row.userLogin}
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell>{row.actionPresentation}</TableCell>
-                <TableCell>{row.outcomePresentation}</TableCell>
-                <TableCell>
-                  {row.entryPresentation ?? ''}
-                  {row.typeCode && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                    >
-                      {row.typeCode}
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell>{row.message ?? ''}</TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {row.clientAddress ?? ''}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <AuditLogTable rows={rows} />
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center gap-4">
-          <Button
-            variant="secondary"
-            disabled={isLoading || currentPage === 0}
-            onClick={() => {
-              setPage((previous) => Math.max(0, previous - 1))
-            }}
-          >
-            {t('auditLog.previous')}
-          </Button>
-
-          <Typography variant="body2">
-            {t('auditLog.pageOf', {
-              page: currentPage + 1,
-              total: totalPages,
-            })}
-          </Typography>
-
-          <Button
-            variant="secondary"
-            disabled={isLoading || currentPage + 1 >= totalPages}
-            onClick={() => {
-              setPage((previous) => previous + 1)
-            }}
-          >
-            {t('auditLog.next')}
-          </Button>
-        </div>
+        <AuditLogPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          disabled={isFetching}
+          onPrevious={() => {
+            setPage((previous) => Math.max(0, previous - 1))
+          }}
+          onNext={() => {
+            setPage((previous) => previous + 1)
+          }}
+        />
       )}
     </div>
   )

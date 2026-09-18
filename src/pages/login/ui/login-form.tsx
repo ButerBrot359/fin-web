@@ -4,12 +4,11 @@ import { useTranslation } from 'react-i18next'
 
 import { Typography } from '@mui/material'
 
-import { REDIRECT_PARAM, useAuthStore } from '@/features/auth'
+import { REDIRECT_PARAM, extractAuthError, useAuthStore } from '@/features/auth'
 import { FaceLoginButton } from '@/features/face-auth'
 import { getLastLogin } from '@/shared/api/auth/token-storage'
 import { Button } from '@/shared/ui/buttons/button'
 
-import { extractAuthError } from '../lib/extract-auth-error'
 import { LoginNameField } from './login-name-field'
 import { LoginPasswordField } from './login-password-field'
 

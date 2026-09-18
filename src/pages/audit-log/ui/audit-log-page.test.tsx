@@ -6,10 +6,25 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import '@/app/config/i18n'
 
 import { AuditLogPage } from './audit-log-page'
+
+// Страница живёт на useQuery — тестам нужен провайдер. Клиент на каждый рендер
+// свой (кэш не перетекает между тестами), retry выключен, чтобы тест отказа
+// не ждал повторных попыток.
+const renderPage = () =>
+  render(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <AuditLogPage />
+    </QueryClientProvider>
+  )
 
 const getAuditLog = vi.fn()
 
@@ -64,7 +79,7 @@ describe('AuditLogPage', () => {
   it('показывает запись с серверными подписями действия и исхода', async () => {
     getAuditLog.mockResolvedValue(page())
 
-    render(<AuditLogPage />)
+    renderPage()
 
     expect(await screen.findByText('Вход в систему')).toBeTruthy()
     expect(screen.getByText('Выполнено')).toBeTruthy()
@@ -74,7 +89,7 @@ describe('AuditLogPage', () => {
   it('отправляет только заполненные отборы и сбрасывает страницу', async () => {
     getAuditLog.mockResolvedValue(page({ totalPages: 3, totalElements: 120 }))
 
-    render(<AuditLogPage />)
+    renderPage()
     await screen.findByText('Вход в систему')
 
     fireEvent.click(screen.getByRole('button', { name: 'Вперёд' }))
@@ -108,7 +123,7 @@ describe('AuditLogPage', () => {
       page({ content: [], totalElements: 0, totalPages: 0 })
     )
 
-    render(<AuditLogPage />)
+    renderPage()
 
     expect(await screen.findByText('Записей нет')).toBeTruthy()
   })
@@ -116,7 +131,7 @@ describe('AuditLogPage', () => {
   it('одна страница — постраничности нет', async () => {
     getAuditLog.mockResolvedValue(page())
 
-    render(<AuditLogPage />)
+    renderPage()
     await screen.findByText('Вход в систему')
 
     expect(screen.queryByRole('button', { name: 'Вперёд' })).toBeNull()
@@ -125,7 +140,7 @@ describe('AuditLogPage', () => {
   it('отказ сервера показывается сообщением, а не пустым экраном', async () => {
     getAuditLog.mockRejectedValue(new Error('нет сети'))
 
-    render(<AuditLogPage />)
+    renderPage()
 
     expect(
       await screen.findByText('Не удалось получить журнал. Повторите попытку')

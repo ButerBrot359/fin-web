@@ -6,10 +6,24 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import '@/app/config/i18n'
 
 import { InactivityLocksPage } from './inactivity-locks-page'
+
+// Страница живёт на useQuery/useMutation — тестам нужен провайдер. Клиент на
+// каждый рендер свой (кэш не перетекает между тестами), retry выключен.
+const renderPage = () =>
+  render(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <InactivityLocksPage />
+    </QueryClientProvider>
+  )
 
 const getInactivityLocks = vi.fn()
 const unlockInactivity = vi.fn()
@@ -47,7 +61,7 @@ describe('InactivityLocksPage', () => {
   it('показывает заблокированных с числом дней и порогом', async () => {
     getInactivityLocks.mockResolvedValue([lock])
 
-    render(<InactivityLocksPage />)
+    renderPage()
 
     expect(await screen.findByText('Иванов Иван Иванович')).toBeTruthy()
     expect(screen.getByText('27 / 3')).toBeTruthy()
@@ -56,7 +70,7 @@ describe('InactivityLocksPage', () => {
   it('не даёт разблокировать без основания', async () => {
     getInactivityLocks.mockResolvedValue([lock])
 
-    render(<InactivityLocksPage />)
+    renderPage()
     const button = await screen.findByRole<HTMLButtonElement>('button', {
       name: 'Разблокировать',
     })
@@ -70,7 +84,7 @@ describe('InactivityLocksPage', () => {
     getInactivityLocks.mockResolvedValueOnce([lock]).mockResolvedValueOnce([])
     unlockInactivity.mockResolvedValue(undefined)
 
-    render(<InactivityLocksPage />)
+    renderPage()
     const field = await screen.findByPlaceholderText(
       'Кто согласовал и на каком основании'
     )
@@ -89,7 +103,7 @@ describe('InactivityLocksPage', () => {
   it('пустой список — не ошибка, а обычное состояние', async () => {
     getInactivityLocks.mockResolvedValue([])
 
-    render(<InactivityLocksPage />)
+    renderPage()
 
     expect(await screen.findByText('Заблокированных нет')).toBeTruthy()
   })

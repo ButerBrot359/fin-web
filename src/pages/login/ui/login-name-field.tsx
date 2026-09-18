@@ -13,7 +13,7 @@ import {
 import { requestSelectionList } from '@/shared/api/auth/auth-endpoints'
 import { getKnownLogins } from '@/shared/api/auth/token-storage'
 
-import { loginFieldSx } from './login-field-sx'
+import { loginFieldSx } from '@/features/auth'
 
 interface LoginNameFieldProps {
   value: string

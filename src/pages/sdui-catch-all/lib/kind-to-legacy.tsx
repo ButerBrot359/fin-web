@@ -1,75 +1,63 @@
 import { lazy, type ReactElement } from 'react'
 
+import { lazyNamed } from '@/shared/lib/utils/lazy-named'
+
 // Ленивые легаси-страницы (композиционный слой знает оба мира).
-const DocumentPage = lazy(() =>
-  import('@/pages/documents/document-list').then((m) => ({
-    default: m.DocumentPage,
-  }))
+const DocumentPage = lazyNamed(
+  () => import('@/pages/documents/document-list'),
+  'DocumentPage'
 )
-const DocumentMovementsPage = lazy(() =>
-  import('@/pages/documents/document-movements').then((m) => ({
-    default: m.DocumentMovementsPage,
-  }))
+const DocumentMovementsPage = lazyNamed(
+  () => import('@/pages/documents/document-movements'),
+  'DocumentMovementsPage'
 )
-const DictionaryPage = lazy(() =>
-  import('@/pages/dictionaries/dictionary-list').then((m) => ({
-    default: m.DictionaryPage,
-  }))
+const DictionaryPage = lazyNamed(
+  () => import('@/pages/dictionaries/dictionary-list'),
+  'DictionaryPage'
 )
-const InformationRegisterPage = lazy(() =>
-  import('@/pages/information-register/information-register-list').then(
-    (m) => ({
-      default: m.InformationRegisterPage,
-    })
-  )
+const InformationRegisterPage = lazyNamed(
+  () => import('@/pages/information-register/information-register-list'),
+  'InformationRegisterPage'
 )
-const AccumulationRegisterPage = lazy(() =>
-  import('@/pages/accumulation-register/accumulation-register-list').then(
-    (m) => ({
-      default: m.AccumulationRegisterPage,
-    })
-  )
+const AccumulationRegisterPage = lazyNamed(
+  () => import('@/pages/accumulation-register/accumulation-register-list'),
+  'AccumulationRegisterPage'
 )
-const AccountingRegisterPage = lazy(() =>
-  import('@/pages/accounting-register/accounting-register-list').then((m) => ({
-    default: m.AccountingRegisterPage,
-  }))
+const AccountingRegisterPage = lazyNamed(
+  () => import('@/pages/accounting-register/accounting-register-list'),
+  'AccountingRegisterPage'
 )
-const AccountPlanPage = lazy(() =>
-  import('@/pages/account-plan/account-plan-list').then((m) => ({
-    default: m.AccountPlanPage,
-  }))
+const AccountPlanPage = lazyNamed(
+  () => import('@/pages/account-plan/account-plan-list'),
+  'AccountPlanPage'
 )
-const OsvReportPage = lazy(() =>
-  import('@/pages/osv-report/osv-report-list').then((m) => ({
-    default: m.OsvReportPage,
-  }))
+const OsvReportPage = lazyNamed(
+  () => import('@/pages/osv-report/osv-report-list'),
+  'OsvReportPage'
 )
-const ReportPage = lazy(() =>
-  import('@/pages/reports/report-list').then((m) => ({ default: m.ReportPage }))
+const ReportPage = lazyNamed(
+  () => import('@/pages/reports/report-list'),
+  'ReportPage'
 )
-const ReportAltPage = lazy(() =>
-  import('@/pages/reportalt').then((m) => ({ default: m.ReportAltPage }))
+const ReportAltPage = lazyNamed(
+  () => import('@/pages/reportalt'),
+  'ReportAltPage'
 )
-const FinancingPlanUploadPage = lazy(() =>
-  import('@/pages/financing-plan-upload').then((m) => ({
-    default: m.FinancingPlanUploadPage,
-  }))
+const FinancingPlanUploadPage = lazyNamed(
+  () => import('@/pages/financing-plan-upload'),
+  'FinancingPlanUploadPage'
 )
-const UniversalDomainPage = lazy(() =>
-  import('@/pages/universal-domain/universal-domain-list').then((m) => ({
-    default: m.UniversalDomainPage,
-  }))
+const UniversalDomainPage = lazyNamed(
+  () => import('@/pages/universal-domain/universal-domain-list'),
+  'UniversalDomainPage'
 )
-const LegacyDocumentEntryPage = lazy(() =>
-  import('@/pages/documents/documents-entry').then((m) => ({
-    default: m.LegacyDocumentEntryPage,
-  }))
+const LegacyDocumentEntryPage = lazyNamed(
+  () => import('@/pages/documents/documents-entry'),
+  'LegacyDocumentEntryPage'
 )
-const LegacyDictionaryEntryPage = lazy(() =>
-  import('@/pages/dictionaries/dictionary-entry').then((m) => ({
-    default: m.LegacyDictionaryEntryPage,
-  }))
+const LegacyDictionaryEntryPage = lazyNamed(
+  () => import('@/pages/dictionaries/dictionary-entry'),
+  'LegacyDictionaryEntryPage'
 )
 const DocumentRedirectList = lazy(() =>
   import('@/pages/documents/document-redirect').then((m) => ({

@@ -1,22 +1,21 @@
-import { Suspense, lazy, type ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { BackgroundStatusBar } from '@/features/background-tasks'
 import { WorkspacePanelHost } from '@/features/sdui'
+import { lazyNamed } from '@/shared/lib/utils/lazy-named'
 
 // Код-сплиттинг: виджеты поддержки и ИИ-помощника — плавающие кнопки поверх
 // любой страницы, но их зависимости тяжёлые (livekit-client ~400 КБ min у
 // звонков). Ленивая загрузка выносит их из критического главного чанка;
 // чанки докачиваются сразу после монтирования оболочки, вне критического пути.
-const SupportCallWidget = lazy(() =>
-  import('@/features/support-call').then((m) => ({
-    default: m.SupportCallWidget,
-  }))
+const SupportCallWidget = lazyNamed(
+  () => import('@/features/support-call'),
+  'SupportCallWidget'
 )
-const AiAssistantWidget = lazy(() =>
-  import('@/features/ai-assistant').then((m) => ({
-    default: m.AiAssistantWidget,
-  }))
+const AiAssistantWidget = lazyNamed(
+  () => import('@/features/ai-assistant'),
+  'AiAssistantWidget'
 )
 import {
   performTabBack,

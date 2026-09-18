@@ -4,14 +4,15 @@ import { useTranslation } from 'react-i18next'
 
 import { TextField, Typography } from '@mui/material'
 
-import { LOGIN_ROUTE, useAuthStore } from '@/features/auth'
+import {
+  LOGIN_ROUTE,
+  extractAuthError,
+  loginFieldSx,
+  useAuthStore,
+} from '@/features/auth'
 import { requestChangePassword } from '@/shared/api/auth/auth-endpoints'
 import { getAccessToken } from '@/shared/api/auth/token-storage'
 import { Button } from '@/shared/ui/buttons/button'
-
-import { extractAuthError } from '@/pages/login/lib/extract-auth-error'
-
-import { loginFieldSx } from '@/pages/login/ui/login-field-sx'
 
 /**
  * Форма смены пароля.

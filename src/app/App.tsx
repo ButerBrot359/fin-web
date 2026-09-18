@@ -1,234 +1,40 @@
-import { Suspense, lazy, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { Suspense, useEffect } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
-import { MainPage } from '@/pages/main'
 import { LoginPage } from '@/pages/login'
 import { ChangePasswordPage } from '@/pages/change-password'
 
 import { TopBar } from '@/widgets/top-bar'
 import { Sidebar } from '@/widgets/sidebar'
-
-import { AuthGuard, CHANGE_PASSWORD_ROUTE, LOGIN_ROUTE } from '@/features/auth'
-// Reference-picker-gateway (SDUI → легаси-справочники): реализация — push в
-// стор dict-sidebar. Стор импортируется напрямую (не через барель), чтобы
-// статическая часть моста оставалась крошечной, а тяжёлый UI дровера
-// (dict-sidebar + form-renderer) уезжал в отдельный ленивый чанк ниже.
-import { useDictSidebarStore } from '@/features/dict-sidebar/lib/hooks/use-dict-sidebar-store'
-import {
-  ShellSidebarHost,
-  setReferencePickerGateway,
-  setReportResultGateway,
-} from '@/features/sdui'
 import { WorkspaceTabSync } from '@/widgets/workspace-tab-bar'
 
-// SCRUM-291 K2: REPORT_RESULT-нода SDUI монтирует легаси-рендерер результата
-// отчёта только через gateway (`setReportResultGateway`) — прямой импорт
-// легаси в SDUI запрещён (CLAUDE.md). Легаси-импорты живут ИСКЛЮЧИТЕЛЬНО
-// здесь, в app/.
-import { ReportResultView } from '@/features/report-result-view'
-import type { ReportAltResultDto } from '@/pages/reportalt/types/reportalt'
+import { AuthGuard, CHANGE_PASSWORD_ROUTE, LOGIN_ROUTE } from '@/features/auth'
+import { ShellSidebarHost } from '@/features/sdui'
 
 import { connectToastHistory } from '@/entities/notification-history'
 import { ServerThemeApplier } from '@/entities/theme'
+import { lazyNamed } from '@/shared/lib/utils/lazy-named'
 import { Toaster } from '@/shared/ui/toast/toast'
-import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
-import { ErrorBoundary } from '@/shared/ui/error-boundary/error-boundary'
 
 import { Layout } from './layout/layout'
+import { AppRoutes } from './routes'
 import { useWorkspaceTabGatewayBinding } from './providers/workspace-tab-binding'
-import { ReportSettingsPanel } from './providers/report-settings-panel'
+import { useSduiGateways } from './providers/use-sdui-gateways'
 
-const ModulePage = lazy(() =>
-  import('@/pages/module').then((m) => ({ default: m.ModulePage }))
-)
-const InformationRegisterRedirect = lazy(() =>
-  import('@/pages/information-register/information-register-redirect').then(
-    (m) => ({
-      default: m.InformationRegisterRedirect,
-    })
-  )
-)
-const AccountPlanEntryPage = lazy(() =>
-  import('@/pages/account-plan/account-plan-entry').then((m) => ({
-    default: m.AccountPlanEntryPage,
-  }))
-)
-const AccountCardPage = lazy(() =>
-  import('@/pages/account-card').then((m) => ({
-    default: m.AccountCardPage,
-  }))
-)
-const UniversalDomainEntryPage = lazy(() =>
-  import('@/pages/universal-domain/universal-domain-entry').then((m) => ({
-    default: m.UniversalDomainEntryPage,
-  }))
-)
-const TreasuryExportPage = lazy(() =>
-  import('@/features/treasury-export').then((m) => ({
-    default: m.TreasuryExportPage,
-  }))
-)
-const AuditLogPage = lazy(() =>
-  import('@/pages/audit-log').then((m) => ({ default: m.AuditLogPage }))
-)
-const DesignConstructorPage = lazy(() =>
-  import('@/pages/admin/design-constructor').then((m) => ({
-    default: m.DesignConstructorPage,
-  }))
-)
-const InactivityLocksPage = lazy(() =>
-  import('@/pages/inactivity-locks').then((m) => ({
-    default: m.InactivityLocksPage,
-  }))
-)
-const SduiCatchAllPage = lazy(() =>
-  import('@/pages/sdui-catch-all').then((m) => ({
-    default: m.SduiCatchAllPage,
-  }))
-)
-const AnalyticsRouterPage = lazy(() =>
-  import('@/pages/analytics/analytics-router').then((m) => ({
-    default: m.AnalyticsRouterPage,
-  }))
-)
 // Дровер легаси-справочников: всегда смонтирован, но тянет form-renderer и
 // компанию — лениво, чтобы не грузить их в главном чанке. Чанк докачивается
 // сразу после старта приложения, вне критического пути.
-const DictSidebarDrawer = lazy(() =>
-  import('@/features/dict-sidebar').then((m) => ({
-    default: m.DictSidebarDrawer,
-  }))
+const DictSidebarDrawer = lazyNamed(
+  () => import('@/features/dict-sidebar'),
+  'DictSidebarDrawer'
 )
-
-const AppRoutes = () => {
-  const location = useLocation()
-
-  return (
-    <ErrorBoundary key={location.pathname}>
-      <Suspense fallback={<PageSkeleton />}>
-        <Routes>
-          <Route path="/" element={<MainPage />} />
-          {/*
-            Снятие блокировок по бездействию (ТЗ §А4). Обычная страница под Layout, а не экран
-            входа: её открывает уже вошедший администратор, чтобы вернуть доступ другому.
-          */}
-          <Route
-            path="/admin/inactivity-locks"
-            element={<InactivityLocksPage />}
-          />
-          {/* Журнал регистрации действий (приказ МФ РК № 254, п. 27) — только чтение. */}
-          <Route path="/admin/audit" element={<AuditLogPage />} />
-          {/* Админка конструктора дизайна: стандарты форм для всех и по ролям. */}
-          <Route
-            path="/admin/design-constructor"
-            element={<DesignConstructorPage />}
-          />
-          {/*
-            Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект
-            navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.
-          */}
-          <Route path="/treasury-export" element={<TreasuryExportPage />} />
-          <Route path="/modules/:pageCode" element={<ModulePage />} />
-          {/*
-            SCRUM-45: плоские ссылки с бэка /information-registers/:typeCode…
-            (navigate из list.rowOpen, list.create, «Записать и закрыть»).
-            Порядок важен: /new раньше /:entryId.
-          */}
-          <Route
-            path="/information-registers/:typeCode"
-            element={<InformationRegisterRedirect mode="list" />}
-          />
-          <Route
-            path="/information-registers/:typeCode/new"
-            element={<InformationRegisterRedirect mode="new" />}
-          />
-          <Route
-            path="/information-registers/:typeCode/:entryId"
-            element={<InformationRegisterRedirect mode="entry" />}
-          />
-          <Route
-            path="/modules/:pageCode/accountplan/:moduleCode/new"
-            element={<AccountPlanEntryPage />}
-          />
-          <Route
-            path="/modules/:pageCode/accountplan/:moduleCode/:entryId"
-            element={<AccountPlanEntryPage />}
-          />
-          {/* Карточка счёта — drill-down из ОСВ (двойной клик по строке). */}
-          <Route
-            path="/modules/:pageCode/account-card"
-            element={<AccountCardPage />}
-          />
-          {/* SCRUM-388: SDUI-карточка записи универсального домена (ПВР).
-              Список остаётся на catch-all (422 → легаси UniversalDomainPage). */}
-          <Route
-            path="/modules/:pageCode/calculationplan/:moduleCode/:entryId"
-            element={<UniversalDomainEntryPage />}
-          />
-          {/*
-            Аналитика: пункт меню type="Analytics" → сегмент "analytics".
-            Маршрут один на весь раздел — дашборды и отчёты заводит пользователь
-            в рантайме, их коды заранее неизвестны. Что рендерить (ассистент,
-            настройки, дашборд или отчёт), решает диспетчер по `:code`.
-            Идёт до catch-all: тот подхватывает всё неизвестное и увёл бы раздел
-            в SDUI-экран.
-          */}
-          <Route
-            path="/modules/:pageCode/analytics/:code"
-            element={<AnalyticsRouterPage />}
-          />
-          <Route path="*" element={<SduiCatchAllPage />} />
-        </Routes>
-      </Suspense>
-    </ErrorBoundary>
-  )
-}
 
 function App() {
   useWorkspaceTabGatewayBinding()
-  const { t, i18n } = useTranslation()
+  useSduiGateways()
 
   // SCRUM-317 канал №8: центр оповещений копит всё показанное всплывашками
   useEffect(() => connectToastHistory(), [])
-
-  useEffect(() => {
-    setReferencePickerGateway((req) => {
-      useDictSidebarStore.getState().push({
-        mode: req.mode,
-        domain: req.domain,
-        typeCode: req.typeCode,
-        entryId: req.entryId,
-        selectedId: req.selectedId,
-        onSelect: req.onSelect,
-        searchParams: req.searchParams,
-      })
-    })
-    return () => {
-      setReferencePickerGateway(null)
-    }
-  }, [])
-
-  // SCRUM-291 K2: реализация REPORT_RESULT-gateway — легаси-рендерер
-  // `ReportResultView` (чистый, принимает {result}), печать/экспорт — те же
-  // легаси-эндпоинты/утилиты, что использует `reportalt-page.tsx`.
-  useEffect(() => {
-    setReportResultGateway({
-      // ReportResultView типизирован своим ReportResultDto (не экспортирован
-      // из барреля слайса) — gateway держит result как unknown (§ дизайн-док),
-      // адаптер приводит на границе, без утечки типа наружу SDUI.
-      Renderer: ({ result, onDrilldown }) => (
-        <ReportResultView
-          result={result as ReportAltResultDto}
-          onDrilldown={onDrilldown}
-        />
-      ),
-      SettingsPanel: (props) => <ReportSettingsPanel {...props} />,
-    })
-    return () => {
-      setReportResultGateway(null)
-    }
-  }, [t, i18n])
 
   return (
     <BrowserRouter>

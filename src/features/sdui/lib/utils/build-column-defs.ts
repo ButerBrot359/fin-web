@@ -17,6 +17,9 @@ import { isNoWrapColumn } from './nowrap-columns'
 import type { AutoAdvanceTarget } from './table-auto-advance'
 import {
   VERTICAL_SUB_ROW_HEIGHT,
+  type SubRowItem,
+  horizontalSubCells,
+  isHorizontalSubGroup,
   maxVerticalSubRows,
   verticalSubRows,
 } from './vertical-sub-rows'
@@ -243,15 +246,45 @@ function buildColumnDefsInner(
         // (frontend-spec-ipn-vertical-group-header.md §1).
         // Fallback на groupLabel — если все под-колонки скрыты или без подписей:
         // пустая шапка читалась бы как сломанная колонка.
-        const subLabels = visibleChildren
-          .map((child) => nodeToTableColumnDef(child))
-          .filter((col) => col.label !== '')
+        // Под-колонки под-строки: обычная колонка — она сама, вложенная
+        // ГОРИЗОНТАЛЬНАЯ подгруппа — её видимые дети в ряд (эталон 1С, см.
+        // isHorizontalSubGroup).
+        const subRowColumns = (child: ViewNode): TableColumnDef[] =>
+          isHorizontalSubGroup(child)
+            ? (child.children ?? [])
+                .filter((leaf) => leaf.props?.visible !== false)
+                .map((leaf) => nodeToTableColumnDef(leaf))
+            : [nodeToTableColumnDef(child)]
+
+        /** Под-строка: одна ячейка либо ряд ячеек вложенной подгруппы. */
+        const subRow = (
+          child: ViewNode,
+          render: (col: TableColumnDef) => ReactNode
+        ): SubRowItem => {
+          const cols = subRowColumns(child)
+          if (cols.length === 1) {
+            return { key: cols[0].id, content: render(cols[0]) }
+          }
+          return {
+            key: child.id,
+            content: horizontalSubCells(
+              cols.map((col) => ({ key: col.id, content: render(col) }))
+            ),
+          }
+        }
+
+        const subLabels = visibleChildren.filter((child) =>
+          subRowColumns(child).some((col) => col.label !== '')
+        )
 
         // Итоги под-колонок: слот на под-строку, null — итога нет. Порядок тот
         // же, что у шапки и ячейки (visibleChildren), поэтому итог встаёт под
-        // своим значением.
+        // своим значением. У вложенной подгруппы итога нет: подвал ТЧ адресует
+        // значения плоским ключом колонки, а под-строка тут делится на несколько.
         const footerKeys = visibleChildren.map((child) =>
-          child.props?.footer === true ? child.id : null
+          !isHorizontalSubGroup(child) && child.props?.footer === true
+            ? child.id
+            : null
         )
         const meta: SduiColumnMetaExtra = {
           verticalGroup: true,
@@ -270,10 +303,7 @@ function buildColumnDefsInner(
             subLabels.length > 0
               ? () =>
                   verticalSubRows(
-                    subLabels.map((col) => ({
-                      key: col.id,
-                      content: columnHeaderContent(col),
-                    })),
+                    subLabels.map((child) => subRow(child, columnHeaderContent)),
                     16,
                     true,
                     subRowCount
@@ -281,17 +311,11 @@ function buildColumnDefsInner(
               : () => createElement(ColumnHeaderLabel, { label: groupLabel }),
           cell: (info: CellContext<TableRow, unknown>) =>
             verticalSubRows(
-              visibleChildren.map((child) => {
-                const childCol = nodeToTableColumnDef(child)
-                return {
-                  key: childCol.id,
-                  content: buildCellEditorElement(
-                    childCol,
-                    info.row.original,
-                    deps
-                  ),
-                }
-              }),
+              visibleChildren.map((child) =>
+                subRow(child, (childCol) =>
+                  buildCellEditorElement(childCol, info.row.original, deps)
+                )
+              ),
               0,
               false,
               subRowCount

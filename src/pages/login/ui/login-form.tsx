@@ -6,6 +6,7 @@ import { Typography } from '@mui/material'
 
 import { REDIRECT_PARAM, extractAuthError, useAuthStore } from '@/features/auth'
 import { FaceLoginButton } from '@/features/face-auth'
+import { FaceIdLoginButton } from '@/features/face-id-service'
 import { getLastLogin } from '@/shared/api/auth/token-storage'
 import { Button } from '@/shared/ui/buttons/button'
 
@@ -130,7 +131,7 @@ export const LoginForm = () => {
           светочувствительности пользователь обязан видеть работающий путь входа, а не
           выяснять, куда делся привычный. Кнопка сама уходит в неактивное состояние, пока не
           введён логин: серверу нужно знать, чей эталон сверять. */}
-      <div className="mt-2 flex flex-col items-stretch gap-1">
+      <div className="mt-2 flex flex-col items-stretch gap-2">
         <FaceLoginButton
           login={login}
           disabled={isSubmitting}
@@ -144,6 +145,10 @@ export const LoginForm = () => {
               replace: true,
             })
           }}
+        />
+        <FaceIdLoginButton
+          disabled={isSubmitting}
+          returnPath={searchParams.get(REDIRECT_PARAM)}
         />
       </div>
     </form>

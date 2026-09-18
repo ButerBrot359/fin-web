@@ -95,6 +95,15 @@ export const palette = {
     '--pending-delta-neutral-bg',
     'rgba(159, 169, 186, 0.14)'
   ),
+  // Заливка строки ТЧ, адресованной серверной 422-ошибкой: support01 на ~12%
+  // непрозрачности (значение зафиксировано при слиянии фичи как есть).
+  pendingRowErrorBg: t('--pending-row-error-bg', 'rgba(244, 72, 42, 0.12)'),
+  // Серии графиков страницы «Статистика ИИ»: значения зафиксированы при
+  // слиянии фичи как есть, канонизация — по чек-листу аудита (Ф3/Ф4).
+  pendingAiStatsPrimary: t('--pending-ai-stats-primary', '#635bff'),
+  pendingAiStatsError: t('--pending-ai-stats-error', '#e66b65'),
+  pendingAiStatsSecondary: t('--pending-ai-stats-secondary', '#39b8ab'),
+  pendingAiStatsCost: t('--pending-ai-stats-cost', '#d39c3f'),
 } satisfies Record<string, DesignToken>
 
 // Семантические алиасы: код читает смысл, значение — ссылка на палитру.

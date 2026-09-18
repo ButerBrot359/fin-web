@@ -1,4 +1,10 @@
+import type {
+  AnalyticsDictionaryPermission,
+  AnalyticsDictionaryPermissionPage,
+} from '../types/dictionary-permissions'
 import { apiService } from '@/shared/api/api'
+import type { AiStatistics, AiStatisticsFilters } from '../types/ai-statistics'
+import type { AnalyticsOrganization } from '../types/organization'
 import type { ApiResponse } from '@/shared/types/api.types'
 
 import type {
@@ -76,6 +82,37 @@ const LLM_CALL_TIMEOUT_MS = 930_000
 const unwrap = <T>(res: { data: ApiResponse<T> }): T => res.data.data
 
 export const analyticsApi = {
+  getDictionaryPermissions: (
+    q: string,
+    page: number,
+    signal?: AbortSignal
+  ): Promise<AnalyticsDictionaryPermissionPage> =>
+    apiService
+      .get<
+        ApiResponse<AnalyticsDictionaryPermissionPage>
+      >({ url: `${BASE_URL}/ai-settings/dictionary-permissions`, params: { q, page, size: 50 }, signal })
+      .then(unwrap),
+  updateDictionaryPermission: (
+    typeCode: string,
+    allowed: boolean
+  ): Promise<AnalyticsDictionaryPermission> =>
+    apiService
+      .put<
+        ApiResponse<AnalyticsDictionaryPermission>
+      >({ url: `${BASE_URL}/ai-settings/dictionary-permissions/${encodeURIComponent(typeCode)}`, data: { allowed } })
+      .then(unwrap),
+  getAiStatistics: (
+    filters: AiStatisticsFilters,
+    signal?: AbortSignal
+  ): Promise<AiStatistics> =>
+    apiService
+      .get<ApiResponse<AiStatistics>>({
+        url: `${BASE_URL}/ai-statistics`,
+        params: { ...filters },
+        signal,
+      })
+      .then(unwrap),
+
   /** Индекс витрин: то, из чего ассистент выбирает источники данных. */
   getCatalogIndex: (
     signal?: AbortSignal
@@ -106,6 +143,15 @@ export const analyticsApi = {
     apiService
       .post<ApiResponse<AnalyticsCatalogRebuildResult>>({
         url: `${BASE_URL}/catalog/rebuild`,
+        signal,
+      })
+      .then(unwrap),
+
+  /** Организации для отбора данных: действующие, без групп, по алфавиту. */
+  getOrganizations: (signal?: AbortSignal): Promise<AnalyticsOrganization[]> =>
+    apiService
+      .get<ApiResponse<AnalyticsOrganization[]>>({
+        url: `${BASE_URL}/organizations`,
         signal,
       })
       .then(unwrap),

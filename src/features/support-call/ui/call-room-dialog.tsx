@@ -6,9 +6,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/shared/lib/utils/cn'
+import { SUPPORT_WIDGET_OPEN_EVENT } from '@/shared/lib/widgets/widget-launchers'
 
 import type { SupportCallSession } from '../model/types'
 import { ActiveCallBar } from './active-call-bar'
+import type { FloatingCallPosition } from '../lib/use-call-bar-drag'
 import { callSounds } from '../lib/call-sounds'
 import { STAGE_THEME } from '../lib/stage-theme'
 import { RemoteControlProvider } from '../model/remote-control-provider'
@@ -54,6 +56,17 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
   const [minimized, setMinimized] = useState(false)
+  const [floatingPosition, setFloatingPosition] =
+    useState<FloatingCallPosition | null>(null)
+  useEffect(() => {
+    const restore = () => {
+      setMinimized(false)
+    }
+    window.addEventListener(SUPPORT_WIDGET_OPEN_EVENT, restore)
+    return () => {
+      window.removeEventListener(SUPPORT_WIDGET_OPEN_EVENT, restore)
+    }
+  }, [])
 
   /** Контейнер сцены: поверхность управления ищет внутри него видео с показанным экраном. */
   const stageRef = useRef<HTMLDivElement>(null)
@@ -124,6 +137,8 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
 
         {minimized ? (
           <ActiveCallBar
+            position={floatingPosition}
+            onPositionChange={setFloatingPosition}
             seconds={seconds}
             onRestore={() => {
               setMinimized(false)

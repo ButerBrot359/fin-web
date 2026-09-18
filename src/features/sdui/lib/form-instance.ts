@@ -5,6 +5,8 @@ import {
 
 import { consumeFreshFormInstance } from './fresh-form-instance'
 
+export { prepareFreshFormInstanceId } from '@/features/workspace-tabs/lib/utils/form-instance-id'
+
 /**
  * Идентификатор экземпляра формы для маршрута — уходит в `action.formInstanceId` на КАЖДОМ
  * OPEN (фронт-спека 03.09.2026 §5.1).

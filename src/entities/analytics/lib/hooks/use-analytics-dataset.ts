@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import { analyticsApi } from '../../api/analytics-api'
+import { useAnalyticsOrganizationStore } from '../../model/organization-store'
 import { analyticsKeys } from '../query-keys'
 import type { AnalyticsDataset } from '../../types/spec'
 import type { AnalyticsQueryResult } from '../../types/query'
@@ -29,6 +30,10 @@ interface UseAnalyticsDatasetResult {
  * `sqlHash` уходит на бэкенд вместе с SQL: расхождение означает, что клиент
  * работает с устаревшей спецификацией, и бэкенд отвечает 409.
  *
+ * Организация берётся из общего выбора раздела здесь, а не приходит пропсом:
+ * это единственный вход на выполнение, и так ни один виджет не выполнится мимо
+ * выбора. Не выбрана — сервер показывает все организации.
+ *
  * `retry: false` — повторять отклонённый guardrails SQL бессмысленно, ответ не
  * изменится; `refetchOnWindowFocus: false` — запросы аналитики тяжёлые, они
  * пересобираются по кнопке и по смене параметров, а не при возврате на вкладку.
@@ -52,15 +57,23 @@ export const useAnalyticsDataset = (
   }, [dataset, params])
 
   const serializedParams = JSON.stringify(datasetParams)
+  const organizationId = useAnalyticsOrganizationStore(
+    (state) => state.organizationId
+  )
 
   const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
-    queryKey: analyticsKeys.dataset(dataset?.sqlHash ?? '', serializedParams),
+    queryKey: analyticsKeys.dataset(
+      dataset?.sqlHash ?? '',
+      serializedParams,
+      organizationId
+    ),
     queryFn: ({ signal }) =>
       analyticsApi.executeQuery(
         {
           sql: dataset!.sql,
           sqlHash: dataset!.sqlHash,
           parameters: datasetParams,
+          organizationId,
         },
         signal
       ),

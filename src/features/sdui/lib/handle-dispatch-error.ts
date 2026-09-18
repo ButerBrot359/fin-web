@@ -10,6 +10,7 @@ import {
   DOCUMENT_VALIDATION_CODE,
   buildValidationErrorPatches,
 } from './validation-highlight'
+import { rowAddressedTableCodes } from './validation/table-row-errors'
 import {
   parseValidationReport,
   useValidationReportStore,
@@ -45,16 +46,17 @@ export function handleDispatchError(
     error.code === DOCUMENT_VALIDATION_CODE
   ) {
     session.clearAllErrors()
+    const report = parseValidationReport(error.validation)
     session.applyTreePatches(
       buildValidationErrorPatches(
         session.getTree?.() ?? session.tree,
-        error.errors
+        error.errors,
+        rowAddressedTableCodes(report)
       )
     )
     // SCRUM-317 §3.2/§3.3: отчёт из тела 422 кладётся ТЕМ ЖЕ редьюсером,
     // что 200-эффект. operation на этом канале null — подставляем команду,
     // которую сами отправили. Есть панель — тост-дубль не показываем.
-    const report = parseValidationReport(error.validation)
     if (report && report.messages.length > 0) {
       useValidationReportStore.getState().setReport(ctx.pathname, {
         ...report,

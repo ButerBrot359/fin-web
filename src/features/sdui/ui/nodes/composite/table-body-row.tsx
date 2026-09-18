@@ -9,13 +9,16 @@ import {
   type TableSearchMatch,
 } from '../../../lib/hooks/use-table-search'
 import { resolveRowBackground } from '../../../lib/utils/row-appearance'
+import { ROW_ERROR_BACKGROUND } from '../../../lib/validation/table-row-errors'
 import { SearchHitCell } from './table-search-cell'
 
 interface TableBodyRowProps {
   row: Row<TableRow>
   selected: boolean
-  onRowClick: () => void
+  onRowClick: (event: MouseEvent) => void
   onRowDoubleClick: (event: MouseEvent) => void
+  /** Строка адресована серверной 422-ошибкой — заливка поверх условной. */
+  rowError?: boolean
   showRowNumbers: boolean
   /** Правила условной заливки строк (row-appearance.ts). */
   rowAppearance: RowAppearanceRule[]
@@ -42,6 +45,7 @@ export const TableBodyRow: FC<TableBodyRowProps> = ({
   selected,
   onRowClick,
   onRowDoubleClick,
+  rowError,
   showRowNumbers,
   rowAppearance,
   columnBackgrounds,
@@ -67,7 +71,9 @@ export const TableBodyRow: FC<TableBodyRowProps> = ({
     sx={{
       cursor: 'pointer',
       ...(rowHeight !== undefined ? { height: rowHeight } : {}),
-      backgroundColor: resolveRowBackground(rowAppearance, row.original),
+      backgroundColor: rowError
+        ? ROW_ERROR_BACKGROUND
+        : resolveRowBackground(rowAppearance, row.original),
     }}
   >
     {showRowNumbers && (

@@ -11,6 +11,7 @@ import { resolveRowBackground } from '../../../lib/utils/row-appearance'
 import { isNoWrapColumn } from '../../../lib/utils/nowrap-columns'
 import { ColumnHeaderLabel } from './column-header-label'
 import { ColumnResizeHandle } from './column-resize-handle'
+import { AuditHistoryCell } from './audit-history-cell'
 import type { UseManualColumnResizeResult } from '../../../lib/hooks/use-manual-column-resize'
 
 interface ReadOnlyHeaderCellProps {
@@ -61,6 +62,8 @@ interface ReadOnlyTableRowProps {
   showRowNumbers: boolean
   rowAppearance: RowAppearanceRule[]
   isResizable: boolean
+  /** ТЧ журнала аудита (binding=history): свой рендерер ячейки и вёрстка. */
+  isHistory?: boolean
   isVirtualized: boolean
   measureRow: ((node: HTMLTableRowElement | null) => void) | undefined
 }
@@ -73,6 +76,7 @@ export const ReadOnlyTableRow: FC<ReadOnlyTableRowProps> = ({
   showRowNumbers,
   rowAppearance,
   isResizable,
+  isHistory,
   isVirtualized,
   measureRow,
 }) => (
@@ -106,6 +110,14 @@ export const ReadOnlyTableRow: FC<ReadOnlyTableRowProps> = ({
               }
             : { overflowWrap: 'anywhere' }),
           ...(isResizable ? { overflow: 'hidden' } : {}),
+          ...(isHistory
+            ? {
+                overflowWrap: 'normal',
+                wordBreak: 'normal',
+                verticalAlign: 'top',
+                py: 1.75,
+              }
+            : {}),
           // Постоянная заливка колонки (column-background.ts).
           // Уступает условной заливке строки: та сообщает о
           // состоянии записи и не должна теряться под фоном.
@@ -114,7 +126,15 @@ export const ReadOnlyTableRow: FC<ReadOnlyTableRowProps> = ({
             : { backgroundColor: col.backgroundColor }),
         }}
       >
-        {col.binding !== undefined ? renderCellValue(row[col.binding]) : ''}
+        {col.binding !== undefined ? (
+          isHistory ? (
+            <AuditHistoryCell row={row} binding={col.binding} />
+          ) : (
+            renderCellValue(row[col.binding])
+          )
+        ) : (
+          ''
+        )}
       </TableCell>
     ))}
   </TableRow>

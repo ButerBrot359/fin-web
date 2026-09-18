@@ -47,7 +47,7 @@ export const AssistantContextBar = ({ context }: AssistantContextBarProps) => {
   }
 
   return (
-    <div className="flex flex-col gap-0.5 rounded-md bg-ui-02 px-3 py-2">
+    <div className="flex min-w-0 flex-col gap-0.5 rounded-md bg-ui-02 px-3 py-2">
       <Typography
         component="span"
         fontSize={11}
@@ -58,7 +58,7 @@ export const AssistantContextBar = ({ context }: AssistantContextBarProps) => {
       >
         {t('aiAssistant.context')}
       </Typography>
-      <Typography variant="body2" className="text-ui-06">
+      <Typography variant="body2" className="break-words text-ui-06">
         {label()}
       </Typography>
     </div>

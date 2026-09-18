@@ -1,4 +1,5 @@
 import { apiService } from '@/shared/api/api'
+import type { AiAssistantExecution } from '../types/execution'
 import type { ApiResponse } from '@/shared/types/api.types'
 
 import type {
@@ -12,7 +13,8 @@ import type {
 } from '../types/ai-assistant'
 import type {
   AiConversation,
-  AiConversationMessage,
+  AiConversationPage,
+  AiConversationMessagePage,
 } from '../types/conversation'
 
 const BASE_URL = '/api/ai-assistant'
@@ -34,7 +36,52 @@ const LLM_CALL_TIMEOUT_MS = 930_000
  */
 const unwrap = <T>(res: { data: ApiResponse<T> }): T => res.data.data
 
+export interface AiAssistantRequestRecovery {
+  requestId: string
+  conversationId: number | null
+  userMessageId: number | null
+  assistantMessageId?: number
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'INTERRUPTED'
+  answer?: AiAssistantAnswer
+  error?: string
+  userCreatedAt: string
+  createdAt?: string
+}
+
 export const aiAssistantApi = {
+  getRequest: (
+    id: string,
+    signal?: AbortSignal
+  ): Promise<AiAssistantRequestRecovery> =>
+    apiService
+      .get<ApiResponse<AiAssistantRequestRecovery>>({
+        url: `${BASE_URL}/requests/${encodeURIComponent(id)}`,
+        signal,
+      })
+      .then(unwrap),
+  getExecution: (
+    id: string,
+    signal?: AbortSignal
+  ): Promise<AiAssistantExecution> =>
+    apiService
+      .get<ApiResponse<AiAssistantExecution>>({
+        url: `${BASE_URL}/executions/${encodeURIComponent(id)}`,
+        signal,
+      })
+      .then(unwrap),
+
+  resumeExecution: (
+    id: string,
+    retryFailed = false
+  ): Promise<AiAssistantExecution> =>
+    apiService
+      .post<ApiResponse<AiAssistantExecution>>({
+        url: `${BASE_URL}/executions/${encodeURIComponent(id)}/resume`,
+        data: { retryFailed },
+        timeout: LLM_CALL_TIMEOUT_MS,
+      })
+      .then(unwrap),
+
   ask: (
     request: AiAssistantChatRequest,
     signal?: AbortSignal
@@ -101,13 +148,27 @@ export const aiAssistantApi = {
       })
       .then(unwrap),
 
+  getConversationPage: (
+    beforeId: number | null,
+    signal?: AbortSignal
+  ): Promise<AiConversationPage> =>
+    apiService
+      .get<ApiResponse<AiConversationPage>>({
+        url: `${BASE_URL}/conversations/page`,
+        params: { limit: 10, ...(beforeId != null ? { beforeId } : {}) },
+        signal,
+      })
+      .then(unwrap),
+
   getConversationMessages: (
     id: number,
-    signal?: AbortSignal
-  ): Promise<AiConversationMessage[]> =>
+    signal?: AbortSignal,
+    beforeId?: number | null
+  ): Promise<AiConversationMessagePage> =>
     apiService
-      .get<ApiResponse<AiConversationMessage[]>>({
+      .get<ApiResponse<AiConversationMessagePage>>({
         url: `${BASE_URL}/conversations/${String(id)}/messages`,
+        params: { limit: 10, ...(beforeId != null ? { beforeId } : {}) },
         signal,
       })
       .then(unwrap),

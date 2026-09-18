@@ -22,6 +22,7 @@ import { windowedRows } from '../../../lib/utils/virtual-window'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
+import { useTableRowErrorIndexes } from '../../../lib/validation/table-row-errors'
 import { isColumnVisible } from '../../../lib/utils/column-visibility'
 import { parseRowAppearance } from '../../../lib/utils/row-appearance'
 import { useExternalRowFilter } from '../../../lib/hooks/use-external-row-filter'
@@ -82,6 +83,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const validation = useTableValidation(node)
   const validationRef = useRef(validation)
   validationRef.current = validation
+  const rowErrors = useTableRowErrorIndexes(node.binding)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   // Активация строки уходит на сервер только если бэк прислал action
   // с trigger='activate' у этой ТЧ (props.rowActivate)
@@ -121,7 +123,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   )
 
   // Виртуализация SCRUM-368 + внутренний скролл SCRUM-327 — общий контейнер.
-  const { containerRef, virt, maxHeight, setContainerRef } =
+  const { containerRef, virt, maxHeight, minHeight, setContainerRef } =
     useTableScrollContainer(node, visibleRows.length)
 
   useSearchScroll(search, visibleRows, virt, containerRef)
@@ -223,6 +225,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           flex: '1 1 auto',
           overflowY: 'auto',
           ...(maxHeight != null && { maxHeight }),
+          // Пол высоты растянутой карточки — см. minHeight в
+          // useTableViewportMaxHeight: без него ТЧ схлопывалась до шапки колонок.
+          ...(minHeight != null && { minHeight }),
         }}
       >
         {/* Шапка колонок видима при внутреннем скролле (SCRUM-327) */}
@@ -257,6 +262,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                       key={row.id}
                       row={row}
                       selected={selectedIndex === row.index}
+                      rowError={rowErrors.has(row.index)}
                       onRowClick={() => {
                         setSelectedIndex(row.index)
                         activateRow(row.id)

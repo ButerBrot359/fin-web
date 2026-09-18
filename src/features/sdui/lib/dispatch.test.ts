@@ -16,6 +16,7 @@ import { useCommandInflightStore } from './stores/command-inflight-store'
 import { useAsyncTaskStore } from '@/entities/async-task'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { apiService } from '@/shared/api/api'
+import { formInstanceIdFor } from '@/features/workspace-tabs/lib/utils/form-instance-id'
 
 // Мутабельная локация: тесты подменяют search между рендерами
 const router = vi.hoisted(() => ({
@@ -104,6 +105,53 @@ describe('useSduiDispatch: wire-route OPEN-запроса', () => {
   // Пин WI-F (SCRUM-265): route обязан включать query string — бэк читает
   // ?basisId= из route OPEN-запроса (applyBasisFill). Ключи кэша/вкладок
   // при этом остаются pathname-based (см. sdui-screen / sdui-cache-store).
+  it('rejects a background OPEN after the view changed and closes only the unused new session', async () => {
+    vi.clearAllMocks()
+    const previousInstance = formInstanceIdFor(router.pathname)
+    const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+
+    expect(
+      await result.current({ type: 'OPEN' }, null, false, {
+        freshOpen: true,
+        acceptOpenResponse: () => false,
+      })
+    ).toBe(false)
+    expect(post).toHaveBeenCalledWith(
+      expect.objectContaining({
+        formSessionId: null,
+        action: expect.objectContaining({ type: 'OPEN' }),
+      })
+    )
+    expect(post).toHaveBeenCalledWith({
+      formSessionId: 'fs-1',
+      action: { type: 'CLOSE' },
+    })
+    expect(sessionMock.setRoot).not.toHaveBeenCalled()
+    expect(sessionMock.setSession).not.toHaveBeenCalled()
+    expect(sessionMock.replaceAll).not.toHaveBeenCalled()
+    expect(formInstanceIdFor(router.pathname)).toBe(previousInstance)
+    expect(post.mock.calls[0][0].action.formInstanceId).not.toBe(
+      previousInstance
+    )
+  })
+
+  it('a successful fresh OPEN adopts its new draft scope rather than restoring an old snapshot', async () => {
+    const previousInstance = formInstanceIdFor(router.pathname)
+    const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    expect(
+      await result.current({ type: 'OPEN' }, null, false, {
+        freshOpen: true,
+        acceptOpenResponse: () => true,
+      })
+    ).toBe(true)
+    expect(formInstanceIdFor(router.pathname)).not.toBe(previousInstance)
+    expect(formInstanceIdFor(router.pathname)).toBe(
+      post.mock.calls[0][0].action.formInstanceId
+    )
+  })
+
   it('route содержит query string, когда она есть в URL (?basisId)', async () => {
     router.search = '?basisId=42'
     const post = vi.spyOn(viewTransport, 'post').mockResolvedValue(openResponse)

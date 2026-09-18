@@ -59,6 +59,7 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
   const label = node.props?.label as string | undefined
   const showRowNumbers = node.props?.showRowNumbers === true
+  const isHistory = node.binding === 'history'
 
   // SCRUM-368: INLINE — строки из state, PAGED (движения/журналы) — страницы
   // из source.url с догрузкой сентинелом/кнопкой (футер внизу таблицы).
@@ -262,6 +263,7 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                     showRowNumbers={showRowNumbers}
                     rowAppearance={rowAppearance}
                     isResizable={isResizable}
+                    isHistory={isHistory}
                     isVirtualized={isVirtualized}
                     measureRow={measureRow}
                   />

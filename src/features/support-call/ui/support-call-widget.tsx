@@ -1,9 +1,12 @@
 import HeadsetMicIcon from '@mui/icons-material/HeadsetMic'
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useAuthStore } from '@/features/auth/lib/hooks/use-auth-store'
+import { FLOATING_BOTTOM } from '@/shared/lib/utils/floating-widgets'
+import { cn } from '@/shared/lib/utils/cn'
+import { SUPPORT_WIDGET_OPEN_EVENT } from '@/shared/lib/widgets/widget-launchers'
 
 import type { SupportCallSession } from '../model/types'
 import {
@@ -42,6 +45,19 @@ export const SupportCallWidget = () => {
 
   const { mutate: endCall } = useEndSupportCall()
 
+  useEffect(() => {
+    const openWidget = () => {
+      if (!user || session) return
+      if (restoreAvailable && restored) setSession(restored)
+      else if (isAgent) setQueueOpen(true)
+      else setCallerOpen(true)
+    }
+    window.addEventListener(SUPPORT_WIDGET_OPEN_EVENT, openWidget)
+    return () => {
+      window.removeEventListener(SUPPORT_WIDGET_OPEN_EVENT, openWidget)
+    }
+  }, [user, session, restoreAvailable, restored, isAgent])
+
   if (!user) return null
 
   return (
@@ -49,7 +65,7 @@ export const SupportCallWidget = () => {
       {/* Во время разговора кнопки нет: её угол занимает свёрнутая плашка разговора, а звать
           поддержку, уже разговаривая с ней, незачем. */}
       {!session && (
-        <div className="fixed right-6 bottom-6 z-[1050]">
+        <div className={cn('fixed right-6 z-[1050]', FLOATING_BOTTOM)}>
           {/* Возврат в разговор — состояние ТОЙ ЖЕ кнопки, а не вторая плашка рядом.
             Отдельный элемент выглядел чужеродно и занимал место постоянно, хотя нужен
             в редком случае: вкладку перезагрузили посреди звонка. */}
@@ -111,6 +127,7 @@ export const SupportCallWidget = () => {
 
       {session && (
         <CallRoomDialog
+          key={session.callId}
           session={session}
           onClose={(byUser) => {
             // Разговор заканчивает тот, кто этого захотел: сервер закрывает обращение и

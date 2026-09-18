@@ -2,6 +2,15 @@
 
 import type { LlmProvider } from '@/entities/analytics'
 
+export interface AiConnectionPricing {
+  inputPerMillion: number | null
+  outputPerMillion: number | null
+  cacheReadPerMillion: number | null
+  cacheWritePerMillion: number | null
+  cacheWrite5mPerMillion: number | null
+  cacheWrite1hPerMillion: number | null
+}
+
 export interface AiConnection {
   id: number
   /** Человекочитаемое имя: по нему подключение выбирают в контурах. */
@@ -17,6 +26,9 @@ export interface AiConnection {
   external: boolean
   usedBy: ('ANALYTICS' | 'ASSISTANT')[]
   updatedAt?: string | null
+  pricing?: AiConnectionPricing | null
+  pricingCurrency?: 'USD'
+  cacheEnabled?: boolean
 }
 
 export interface AiConnectionUpdate {
@@ -28,6 +40,8 @@ export interface AiConnectionUpdate {
   apiKey: string | null
   temperature: number
   maxTokens: number
+  pricing?: AiConnectionPricing | null
+  cacheEnabled?: boolean | null
 }
 
 export interface AiConnectionTestResult {

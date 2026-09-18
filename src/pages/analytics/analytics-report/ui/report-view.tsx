@@ -1,10 +1,15 @@
 import { useMemo } from 'react'
+import { extractErrorText } from '@/features/analytics-assistant/lib/utils/assistant-error'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
 import { useAnalyticsDataset } from '@/entities/analytics'
 import type { AnalyticsSpec } from '@/entities/analytics'
 import { AnalyticsTable } from '@/features/analytics-widgets'
+import {
+  AnalyticsOrganizationSelect,
+  useSelectedOrganizationName,
+} from '@/features/analytics-organization'
 import {
   AnalyticsParamsPanel,
   areRequiredParamsFilled,
@@ -24,6 +29,7 @@ import { ReportToolbar } from './report-toolbar'
 interface ReportViewProps {
   spec: AnalyticsSpec
   title: string
+  autoBuild?: boolean
 }
 
 /**
@@ -33,7 +39,11 @@ interface ReportViewProps {
  * каждое нажатие в поле нельзя. То же тело переиспользует предпросмотр
  * ассистента.
  */
-export const ReportView = ({ spec, title }: ReportViewProps) => {
+export const ReportView = ({
+  spec,
+  title,
+  autoBuild = false,
+}: ReportViewProps) => {
   const { t, i18n } = useTranslation()
 
   const dataset = useMemo(() => {
@@ -50,7 +60,8 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
   const widget = spec.widgets.find((w) => w.datasetId === dataset?.id)
 
   const { values, setValues, applied, apply } = useReportParamsUrl(
-    spec.parameters
+    spec.parameters,
+    autoBuild
   )
 
   const params = useMemo(
@@ -64,7 +75,7 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
     dataset != null &&
     areRequiredParamsFilled(spec.parameters, applied)
 
-  const { result, isLoading, isError, refetch } = useAnalyticsDataset(
+  const { result, isLoading, isError, error, refetch } = useAnalyticsDataset(
     dataset,
     params,
     enabled
@@ -76,6 +87,7 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
     if (apply() && enabled) void refetch()
   }
 
+  const organizationName = useSelectedOrganizationName()
   const columns = dataset?.columns ?? []
   const hasRows = result != null && result.rows.length > 0
 
@@ -91,14 +103,17 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
         />
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button
-          variant="primary"
-          disabled={!canBuild || isLoading}
-          onClick={handleBuild}
-        >
-          {t('analytics.report.build')}
-        </Button>
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="flex flex-wrap items-end gap-3">
+          <AnalyticsOrganizationSelect />
+          <Button
+            variant="primary"
+            disabled={!canBuild || isLoading}
+            onClick={handleBuild}
+          >
+            {t('analytics.report.build')}
+          </Button>
+        </div>
 
         <ReportToolbar
           disabled={!hasRows}
@@ -126,7 +141,7 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
 
       {!isLoading && isError && (
         <Typography variant="body2" className="text-support-01">
-          {t('analytics.errors.executeFailed')}
+          {extractErrorText(error) ?? t('analytics.errors.executeFailed')}
         </Typography>
       )}
 
@@ -145,7 +160,11 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
               rows={result.rows}
               specColumns={columns}
               encoding={widget?.encoding}
-              title={title}
+              // Организация — в заголовке таблицы: на печати отчёт без неё
+              // неоднозначен, а «все организации» отдельно не подписываем.
+              title={
+                organizationName ? `${title} · ${organizationName}` : title
+              }
               showTotals
             />
           </div>

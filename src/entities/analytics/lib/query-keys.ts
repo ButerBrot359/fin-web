@@ -1,3 +1,5 @@
+import type { AiStatisticsFilters } from '../types/ai-statistics'
+
 /**
  * Ключи кэша раздела «Аналитика».
  *
@@ -14,15 +16,19 @@ export const analyticsKeys = {
   widgetKinds: () => ['analytics', 'widget-kinds'] as const,
   items: (kind?: string) => ['analytics', 'items', kind ?? 'all'] as const,
   item: (code: string) => ['analytics', 'item', code] as const,
+  aiStatistics: (filters: AiStatisticsFilters) =>
+    ['analytics', 'ai-statistics', filters] as const,
   aiSettings: () => ['analytics', 'ai-settings'] as const,
   models: (provider: string, baseUrl?: string) =>
     ['analytics', 'models', provider, baseUrl ?? ''] as const,
   conversation: (id: number) => ['analytics', 'conversation', id] as const,
   llmRequest: (id: number) => ['analytics', 'llm-request', id] as const,
+  organizations: () => ['analytics', 'organizations'] as const,
   /**
-   * Результат датасета кэшируется по хэшу SQL и значениям параметров: два
-   * виджета на одном датасете с одинаковыми параметрами делят один запрос.
+   * Результат датасета кэшируется по хэшу SQL, значениям параметров и
+   * организации: два виджета на одном датасете с одинаковыми параметрами делят
+   * один запрос, а смена организации перезапрашивает всё, что на экране.
    */
-  dataset: (sqlHash: string, params: string) =>
-    ['analytics', 'execute', sqlHash, params] as const,
+  dataset: (sqlHash: string, params: string, organizationId: number | null) =>
+    ['analytics', 'execute', sqlHash, params, organizationId ?? 'all'] as const,
 }

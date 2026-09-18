@@ -1,4 +1,7 @@
-import { Typography } from '@mui/material'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
+import { SupportHeaderButton } from '@/features/support-call'
+import { openAiWidget } from '@/shared/lib/widgets/widget-launchers'
+import { Tooltip, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import MenuIcon from '@/shared/assets/icons/menu.svg'
@@ -66,6 +69,18 @@ export const TopBar = () => {
 
         <div className="mx-1 h-7 w-px bg-ui-04" aria-hidden="true" />
 
+        <Tooltip title={t('aiAssistant.open')}>
+          <span>
+            <Button
+              variant="tertiary"
+              aria-label={t('aiAssistant.open')}
+              onClick={openAiWidget}
+              startIcon={<AutoAwesomeIcon sx={{ fontSize: 20 }} />}
+            />
+          </span>
+        </Tooltip>
+        <SupportHeaderButton />
+        <div className="mx-1 h-7 w-px bg-ui-04" aria-hidden="true" />
         <TopBarUser />
 
         <div className="mx-1 h-7 w-px bg-ui-04" aria-hidden="true" />

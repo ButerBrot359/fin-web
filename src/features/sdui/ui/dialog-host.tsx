@@ -236,6 +236,7 @@ export const DialogHost = () => {
                 paper: {
                   sx: {
                     width,
+                    maxWidth: '100vw',
                     borderTopLeftRadius: 40,
                     borderBottomLeftRadius: 40,
                     backgroundColor: PANEL_BG,

@@ -1,6 +1,41 @@
 /** Контур ИИ-помощника: чат поверх формы. */
 
+import type { AiAssistantExecution, AiExecutionStatus } from './execution'
+
+import type { AsyncTaskStatus } from '@/entities/async-task'
+
 import type { LlmProvider } from '@/entities/analytics'
+
+/**
+ * Что помощнику разрешено делать.
+ *
+ * Умеет он всё перечисленное; галочки решают, что позволено. Тот же набор проверяется
+ * на сервере перед каждым действием.
+ */
+export type AiAssistantCapability =
+  | 'SEARCH_DATA'
+  | 'QUERY_TOTALS'
+  | 'READ_MOVEMENTS'
+  | 'RUN_REPORT'
+  | 'PRINT_DOCUMENT'
+  | 'CREATE_DOCUMENT'
+  | 'UPDATE_DOCUMENT'
+  | 'POST_DOCUMENT'
+  | 'UNPOST_DOCUMENT'
+  | 'DELETE_DOCUMENT'
+  | 'CREATE_DICTIONARY_ENTRY'
+  | 'UPDATE_DICTIONARY_ENTRY'
+  | 'READ_RELATED_DOCUMENTS'
+  | 'CREATE_FROM_BASIS'
+  | 'CHECK_DOCUMENT'
+  | 'FILL_DOCUMENT'
+  | 'CALCULATE_DOCUMENT'
+  | 'EDIT_DOCUMENT_ROWS'
+  | 'DELETE_DOCUMENT_ROWS'
+  | 'DRILLDOWN_REPORT'
+  | 'BATCH_CHECK_DOCUMENTS'
+  | 'EXPORT_REPORT'
+  | 'COMPARE_WITH_1C'
 
 /** Объект, поверх которого открыт помощник. Содержимое сервер читает сам. */
 export interface AiAssistantContext {
@@ -16,6 +51,8 @@ export interface AiAssistantContext {
 }
 
 export interface AiAssistantChatRequest {
+  /** Стабильный ключ повторной отправки после потери ответа. */
+  requestId?: string
   conversationId?: number | null
   question: string
   context?: AiAssistantContext | null
@@ -35,33 +72,63 @@ export interface AiAssistantBreakdownRow {
  * не меняют. `CREATE_DOCUMENT` уходит отдельным подтверждённым вызовом.
  */
 export interface AiAssistantAction {
-  kind: 'SHOW_ROWS' | 'OPEN_DOCUMENT' | 'CREATE_DOCUMENT'
+  kind:
+    | 'SHOW_ROWS'
+    | 'OPEN_DOCUMENT'
+    | 'PRINT_DOCUMENT'
+    | 'CREATE_DOCUMENT'
+    // Изменения сервер выполняет в ходе ответа; неудачи приходят с error.
+    | 'COPY_DOCUMENT'
+    | 'UPDATE_DOCUMENT'
+    | 'POST_DOCUMENT'
+    | 'UNPOST_DOCUMENT'
+    | 'DELETE_DOCUMENT'
+    | 'RESTORE_DOCUMENT'
+    | 'CREATE_DICTIONARY_ENTRY'
+    | 'UPDATE_DICTIONARY_ENTRY'
   label?: string | null
   typeCode?: string | null
   entryId?: number | null
   tableCode?: string | null
   attributes?: Record<string, unknown> | null
+  expectedVersion?: number | null
   preview?: string | null
+  /** Причина неудачи; пусто — действие доступно. Ошибка показывается сообщением, не кнопкой. */
+  error?: string | null
 }
 
 export interface AiAssistantCreatedDocument {
   entryId: number
   typeCode: string
   presentation: string
-  /** Всегда false: помощник документы не проводит. */
+  /** Фактическое состояние документа после действия. */
   posted: boolean
+  stateFresh?: boolean | null
+  version?: number | null
+  operationStatus?: 'COMPLETED' | 'ACCEPTED'
+  taskId?: string | null
+  taskStatus?: AsyncTaskStatus | null
+  taskError?: string | null
   warnings: string[]
 }
 
 /** Ответ в формате концепции: вывод, расшифровка, источник, действия. */
 export interface AiAssistantAnswer {
+  userMessageId?: number
+  assistantMessageId?: number
+  requestId?: string
+  status?: AiExecutionStatus
+  execution?: AiAssistantExecution | null
   conversationId: number
+  /** Серверное время получения вопроса и формирования ответа, с часовым поясом. */
+  userCreatedAt?: string
+  createdAt?: string
   conclusion: string
   breakdown: AiAssistantBreakdownRow[]
   sources: string[]
   actions: AiAssistantAction[]
   /** Чего не хватило для ответа; пусто — хватило всего. */
-  /** Документы, созданные помощником в этом ответе. Всегда не проведённые. */
+  /** Документы, созданные или изменённые помощником в этом ответе. */
   created: AiAssistantCreatedDocument[]
   missing?: string | null
   requestLogId?: number | null
@@ -81,11 +148,13 @@ export interface AiAssistantConfirmAction {
   kind: 'CREATE_DOCUMENT'
   typeCode: string
   attributes?: Record<string, unknown> | null
+  expectedVersion?: number | null
 }
 
 /** Настройки помощника — отдельные от настроек аналитики. */
 export interface AiAssistantSettings {
   organizationId?: number | null
+  capabilities: AiAssistantCapability[]
   /** Выбранное подключение из реестра; пусто — контур не настроен. */
   connectionId?: number | null
   provider: LlmProvider
@@ -103,6 +172,8 @@ export interface AiAssistantSettings {
 }
 
 export interface AiAssistantSettingsUpdate {
+  /** null — не менять сохранённые; пустой массив — снять все. */
+  capabilities: AiAssistantCapability[] | null
   /** Выбранное подключение из реестра; пусто — контур не настроен. */
   connectionId?: number | null
   provider: LlmProvider

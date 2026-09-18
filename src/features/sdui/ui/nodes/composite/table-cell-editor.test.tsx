@@ -184,3 +184,39 @@ describe('TableCellEditor — колонка без переноса (noWrap)', 
     expect(container.querySelector('textarea')).toBeNull()
   })
 })
+
+/**
+ * props.cellHyperlink — порт «CellHyperlink = Истина» ячейки таблицы 1С: значение выглядит
+ * ссылкой и открывается одним кликом (у «Аналитики БУ» Авансового отчёта так открывается
+ * окно выбора субконто). Сам клик обрабатывает строка таблицы по маркеру в DOM.
+ */
+describe('TableCellEditor — ячейка-ссылка', () => {
+  it('readonly + cellHyperlink рисует ссылку с маркером и якорем биндинга', () => {
+    const { container } = render(
+      <TableCellEditor
+        {...base}
+        readonly
+        binding="SchetOtneseniyaZatratSubkontoNadpis"
+        value="<...>"
+        props={{ cellHyperlink: true }}
+      />
+    )
+
+    const link = container.querySelector('[data-sdui-cell-hyperlink="true"]')
+    expect(link).toBeTruthy()
+    expect(link?.tagName).toBe('BUTTON')
+    expect(link?.getAttribute('data-sdui-cell-binding')).toBe(
+      'SchetOtneseniyaZatratSubkontoNadpis'
+    )
+    expect(link?.textContent).toBe('<...>')
+  })
+
+  it('без пропа readonly-ячейка остаётся обычным текстом', () => {
+    const { container } = render(
+      <TableCellEditor {...base} readonly binding="A" value="текст" />
+    )
+
+    expect(container.querySelector('[data-sdui-cell-hyperlink]')).toBeNull()
+    expect(container.textContent).toBe('текст')
+  })
+})

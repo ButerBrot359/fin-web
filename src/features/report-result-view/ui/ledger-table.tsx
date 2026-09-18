@@ -18,7 +18,7 @@ import {
   GREEN_1C,
   HEAD_FS,
   isHighlightRow,
-  isMeasure,
+  isNumericCell,
   isRightAligned,
   isSpanRow,
   resolveReportLang,
@@ -71,7 +71,7 @@ const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
  */
 const logicalWidth = (col: ReportColumnDto): number => {
   if (col.width != null) return col.width * CHAR_PX
-  if (isMeasure(col)) return 110
+  if (isNumericCell(col)) return 110
   if (col.groupTitleRu) return 60 // подколонка «Счет» под Дебет/Кредит — узкая
   switch (col.role) {
     case 'PERIOD':
@@ -238,19 +238,44 @@ export const LedgerTable = ({
             : undefined
         }
       >
-        {columns.map((col) => (
-          <td
-            key={col.code}
-            className={`${td} ${isRightAligned(col) ? 'text-right' : ''}`}
-          >
-            <ReportCell
-              value={row.cells[col.code]}
-              col={col}
-              bold={highlight}
-              subLabels={rowSubLabels(row)}
-            />
-          </td>
-        ))}
+        {columns.map((col) => {
+          const asLink =
+            openRow != null &&
+            result.rowRefColumn === col.code &&
+            row.rowRef != null &&
+            row.cells[col.code] !== '' &&
+            row.cells[col.code] != null
+          return (
+            <td
+              key={col.code}
+              className={`${td} ${isRightAligned(col) ? 'text-right' : ''}`}
+            >
+              {asLink ? (
+                <button
+                  type="button"
+                  className="cursor-pointer text-left text-accent-02 underline"
+                  onClick={() => {
+                    openRow(row)
+                  }}
+                >
+                  <ReportCell
+                    value={row.cells[col.code]}
+                    col={col}
+                    bold={highlight}
+                    subLabels={rowSubLabels(row)}
+                  />
+                </button>
+              ) : (
+                <ReportCell
+                  value={row.cells[col.code]}
+                  col={col}
+                  bold={highlight}
+                  subLabels={rowSubLabels(row)}
+                />
+              )}
+            </td>
+          )
+        })}
       </tr>
     )
   }

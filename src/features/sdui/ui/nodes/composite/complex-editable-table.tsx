@@ -20,6 +20,7 @@ import { useTableFooterValues } from '../../../lib/hooks/use-table-footer-values
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
 import { useRowOpen } from '../../../lib/hooks/use-row-open'
 import { useTableValidation } from '../../../lib/hooks/use-table-validation'
+import { useTableRowErrorIndexes } from '../../../lib/validation/table-row-errors'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import {
   buildColumnDefs,
@@ -129,11 +130,12 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const validation = useTableValidation(node)
   const validationRef = useRef(validation)
   validationRef.current = validation
+  const rowErrors = useTableRowErrorIndexes(node.binding)
 
   // Виртуализация SCRUM-368 + внутренний скролл SCRUM-327 — общий контейнер;
   // окно виртуализации — по видимому (для master-detail уже отфильтрованному)
   // набору.
-  const { containerRef, virt, maxHeight, setContainerRef } =
+  const { containerRef, virt, maxHeight, minHeight, setContainerRef } =
     useTableScrollContainer(node, visibleRows.length)
 
   // ── SCRUM-363: потоковый ввод — механика автоперехода ──
@@ -271,6 +273,9 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           // случаях скролл внутренний, поэтому overflowY общий.
           overflowY: 'auto',
           ...(maxHeight != null && { maxHeight }),
+          // Пол высоты растянутой карточки — см. minHeight в
+          // useTableViewportMaxHeight: без него ТЧ схлопывалась до шапки колонок.
+          ...(minHeight != null && { minHeight }),
         }}
       >
         <Table
@@ -311,9 +316,21 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                       key={row.id}
                       row={row}
                       selected={row.id === selection.selectedRowId}
-                      onRowClick={() => {
+                      onRowClick={(event) => {
                         handleRowClick(row.id)
+                        // Ячейка-ссылка (props.cellHyperlink, порт CellHyperlink 1С)
+                        // открывается ОДНИМ кликом — тем же событием, что двойной
+                        // клик по строке, только жест другой.
+                        if (
+                          event.target instanceof Element &&
+                          event.target.closest(
+                            '[data-sdui-cell-hyperlink="true"]'
+                          )
+                        ) {
+                          openRow(row.id, event)
+                        }
                       }}
+                      rowError={rowErrors.has(row.index)}
                       onRowDoubleClick={(event) => {
                         openRow(row.id, event)
                       }}

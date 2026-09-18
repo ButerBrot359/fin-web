@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconButton, Skeleton, Tooltip, Typography } from '@mui/material'
+import {
+  Button,
+  IconButton,
+  Skeleton,
+  Tooltip,
+  Typography,
+} from '@mui/material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 
 import { MICRO_LABEL_SX } from '@/shared/ui/micro-label'
@@ -12,6 +18,7 @@ export interface WidgetCardProps {
   isDegraded?: boolean
   degradedReason?: string | null
   isLoading?: boolean
+  errorText?: string | null
   hasError?: boolean
   isEmpty?: boolean
   /** KPI: ноль — это ответ, а не «нет данных». Пустое состояние подавляется. */
@@ -39,6 +46,7 @@ export const WidgetCard = ({
   degradedReason,
   isLoading,
   hasError,
+  errorText,
   isEmpty,
   zeroIsValid,
   hideTitle,
@@ -63,10 +71,15 @@ export const WidgetCard = ({
     }
     if (hasError) {
       return (
-        <div className={messageClass}>
-          <Typography className="text-body2 text-support-01">
-            {t('analytics.dashboard.widgetError')}
+        <div className={`${messageClass} flex-col gap-2 overflow-auto`}>
+          <Typography className="text-body2 text-support-01 [overflow-wrap:anywhere]">
+            {errorText ?? t('analytics.dashboard.widgetError')}
           </Typography>
+          {onRefresh && (
+            <Button size="small" onClick={onRefresh}>
+              {t('analytics.dashboard.refresh')}
+            </Button>
+          )}
         </div>
       )
     }

@@ -15,6 +15,7 @@ interface SduiCardScreenProps {
   // (условны только соседние элементы), чтобы список → карточка не приводил
   // к повторному OPEN (инвариант «SduiScreen монтируется один раз», SCRUM-360 этап B).
   showCardChrome: boolean
+  showHeader?: boolean
   onTab?: (tab: ViewTabMeta | null) => void
   onOpenFailed?: (info?: { kind?: string }) => void
   onRouteUnknown?: () => void
@@ -22,6 +23,7 @@ interface SduiCardScreenProps {
 
 export const SduiCardScreen: FC<SduiCardScreenProps> = ({
   showCardChrome,
+  showHeader = false,
   onTab,
   onOpenFailed,
   onRouteUnknown,
@@ -38,7 +40,7 @@ export const SduiCardScreen: FC<SduiCardScreenProps> = ({
 
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
-      {(showCardChrome || isListScreen) && (
+      {(showCardChrome || showHeader || isListScreen) && (
         <PageHeader title={pageTitle} onClose={handleClose} />
       )}
       <SduiScreen

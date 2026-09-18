@@ -18,6 +18,13 @@ import { exportTableToXlsx } from '@/shared/lib/table-export'
 import { useReportAltMeta } from '../lib/hooks/use-reportalt-meta'
 import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
+import { useReportAltParamState } from '../lib/hooks/use-reportalt-param-state'
+import { buildAccountCardParams } from '../lib/utils/account-card-link'
+import {
+  DRILLDOWN_URL_KEY,
+  buildDrilldownTarget,
+  resolveDrilldownKinds,
+} from '../lib/utils/report-drilldown'
 import { buildReportAltExport } from '../lib/utils/build-reportalt-export'
 import {
   SETTINGS_URL_KEY,
@@ -36,9 +43,18 @@ import {
   type ReportAltParamValue,
 } from '../lib/utils/params'
 import { ReportAltParamField } from './reportalt-param-field'
+import {
+  ReportAltRowMenu,
+  type ReportAltMenuItem,
+  type ReportAltMenuPosition,
+} from './reportalt-row-menu'
 import { ReportAltSettingsDrawer } from './settings/reportalt-settings-drawer'
 import { printReportAlt } from '../api/reportalt-api'
-import type { RunReportAltBody } from '../types/reportalt'
+import type {
+  ReportAltRowDto,
+  ReportAltRowRefDto,
+  RunReportAltBody,
+} from '../types/reportalt'
 
 /** Сообщение из тела ошибки бэка (api.ts бросает `error.response.data`). */
 const errorMessage = (error: unknown): string | undefined => {
@@ -92,9 +108,12 @@ export const ReportAltPage = () => {
 
   const [searchParams, setSearchParams] = useSearchParams()
 
+  const rezhimRasshifrovki = searchParams.get(DRILLDOWN_URL_KEY) === '1'
+
   // Черновики полей формы (что пользователь правит до «Сформировать»).
   const [values, setValues] = useState<ParamValues>({})
   const [showErrors, setShowErrors] = useState(false)
+  const { paramState, refreshParamState } = useReportAltParamState(moduleCode)
 
   // Инициализация черновиков из URL (или дефолтов) при загрузке meta и при
   // перемонтировании вкладки (searchParams в зависимостях).
@@ -109,7 +128,10 @@ export const ReportAltPage = () => {
     // Сознательная синхронизация черновика формы из URL+meta при их смене.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setValues(next)
-  }, [meta, searchParams])
+    if (meta.parameters.some((p) => p.refreshesForm)) {
+      void refreshParamState(normalizeBodyDates(next, meta.parameters), null)
+    }
+  }, [meta, searchParams, refreshParamState])
 
   // Пользовательские настройки (MVP — клиентские, F-S1): черновик панели,
   // применённая дельта из URL/localStorage для тела /run.
@@ -177,7 +199,16 @@ export const ReportAltPage = () => {
   }, [meta, values])
 
   const setParamValue = (code: string, v: ReportAltParamValue) => {
-    setValues((prev) => ({ ...prev, [code]: v }))
+    const next = { ...values, [code]: v }
+    setValues(next)
+    if (!meta?.parameters.find((p) => p.code === code)?.refreshesForm) return
+    void refreshParamState(
+      normalizeBodyDates(next, meta.parameters),
+      code
+    ).then((state) => {
+      if (!state || Object.keys(state.values).length === 0) return
+      setValues((prev) => ({ ...prev, ...(state.values as ParamValues) }))
+    })
   }
 
   const handleSubmit = () => {
@@ -199,6 +230,7 @@ export const ReportAltPage = () => {
         const next = new URLSearchParams()
         for (const [k, v] of Object.entries(serialized)) next.set(k, v)
         if (encodedDraft != null) next.set(SETTINGS_URL_KEY, encodedDraft)
+        if (rezhimRasshifrovki) next.set(DRILLDOWN_URL_KEY, '1')
         return next
       },
       { replace: true }
@@ -235,6 +267,118 @@ export const ReportAltPage = () => {
       t('reportalt.total')
     )
     exportTableToXlsx(reportName, data)
+  }
+
+  const [rowMenu, setRowMenu] = useState<{
+    position: ReportAltMenuPosition
+    row: ReportAltRowDto
+    ancestors: ReportAltRowDto[]
+  } | null>(null)
+
+  const menuRow = rowMenu?.row ?? null
+  const openRef =
+    menuRow?.rowRef && menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
+      ? menuRow.rowRef
+      : null
+  const openLabel = openRef
+    ? menuRow?.groupValue
+      ? `${t('osv.openElement')} «${menuRow.groupValue}»`
+      : t('osv.openElement')
+    : null
+  const accountRow = rowMenu
+    ? [...rowMenu.ancestors, rowMenu.row]
+        .reverse()
+        .find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
+    : undefined
+  const accountCardLabel = accountRow
+    ? `${t('osv.accountCard')} ${accountRow.groupValue ?? ''}`.trim()
+    : null
+
+  const openRowRef = (ref: ReportAltRowRefDto) => {
+    const segment = ref.domain === 'DICTIONARY' ? 'dictionary' : 'document'
+    void navigate(
+      `/modules/${pageCode}/${segment}/${ref.typeCode}/${String(ref.id)}`
+    )
+  }
+
+  const handleOpenElement = () => {
+    if (!openRef) return
+    openRowRef(openRef)
+  }
+
+  const appliedPeriod = appliedBody?.parameters
+    ? (Object.values(appliedBody.parameters).find(
+        (v): v is { from?: string; to?: string } =>
+          typeof v === 'object' && v !== null && ('from' in v || 'to' in v)
+      ) ?? {})
+    : {}
+
+  const handleOpenAccountCard = () => {
+    if (!accountRow?.rowRef) return
+    const params = buildAccountCardParams(
+      rowMenu ? [...rowMenu.ancestors, rowMenu.row] : [],
+      {
+        accountId: accountRow.rowRef.id,
+        accountCode: accountRow.groupValue ?? '',
+        from: appliedPeriod.from,
+        to: appliedPeriod.to,
+      }
+    )
+    void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
+  }
+
+  const drilldownOptions = rowMenu
+    ? {
+        reportCode: moduleCode,
+        chain: [...rowMenu.ancestors, rowMenu.row],
+        accountRow,
+        valueRow: rowMenu.row,
+        from: appliedPeriod.from,
+        to: appliedPeriod.to,
+      }
+    : null
+
+  const rowMenuItems: ReportAltMenuItem[] = []
+  if (openLabel != null) {
+    rowMenuItems.push({
+      key: 'open',
+      label: openLabel,
+      onClick: handleOpenElement,
+    })
+  }
+  for (const kind of drilldownOptions
+    ? resolveDrilldownKinds(drilldownOptions)
+    : []) {
+    if (kind === 'accountCard') {
+      if (accountCardLabel != null) {
+        rowMenuItems.push({
+          key: kind,
+          label: accountCardLabel,
+          onClick: handleOpenAccountCard,
+        })
+      }
+      continue
+    }
+    const target = drilldownOptions
+      ? buildDrilldownTarget(kind, drilldownOptions)
+      : null
+    if (target == null) continue
+    const label =
+      kind === 'osvPoSchetu' ||
+      kind === 'analizScheta' ||
+      kind === 'turnoverByDays' ||
+      kind === 'turnoverByMonths'
+        ? `${t(`reportalt.drilldown.${kind}`)} ${accountRow?.groupValue ?? ''}`.trim()
+        : t(`reportalt.drilldown.${kind}`)
+    rowMenuItems.push({
+      key: kind,
+      label,
+      onClick: () => {
+        void navigate(
+          `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`
+        )
+      },
+    })
   }
 
   // Печать в PDF: бэк может отвечать 501 (печать не реализована) — тост.
@@ -302,6 +446,9 @@ export const ReportAltPage = () => {
         {visibleParams.map((param) => {
           const invalid =
             showErrors && param.required && !isFilled(param, values[param.code])
+          // Незаполненный обязательный параметр объясняется текстом, а не только
+          // красной рамкой: иначе «Сформировать» выглядит как молча не сработавшая.
+          const requiredHint = invalid ? t('errors.required') : undefined
           // PERIOD раскрываем в пару полей «с … по …».
           if (isPeriod(param)) {
             const period = (values[param.code] as PeriodValue | undefined) ?? {
@@ -328,6 +475,7 @@ export const ReportAltPage = () => {
                       setPeriod({ from: typeof v === 'string' ? v : '' })
                     }}
                     invalid={invalid && !period.from}
+                    helperText={!period.from ? requiredHint : undefined}
                   />
                 </div>
                 <div className="w-56">
@@ -343,6 +491,7 @@ export const ReportAltPage = () => {
                       setPeriod({ to: typeof v === 'string' ? v : '' })
                     }}
                     invalid={invalid && !period.to}
+                    helperText={!period.to ? requiredHint : undefined}
                   />
                 </div>
               </div>
@@ -364,6 +513,9 @@ export const ReportAltPage = () => {
                   setParamValue(param.code, v)
                 }}
                 invalid={invalid}
+                disabled={paramState.disabledParams.includes(param.code)}
+                helperText={paramState.messages[param.code] ?? requiredHint}
+                optionsSource={paramState.optionsSources[param.code]}
               />
             </div>
           )
@@ -381,7 +533,7 @@ export const ReportAltPage = () => {
         </Button>
         {/* Панель настроек — для отчётов с наполненным meta (F-S3) ИЛИ когда
             есть «Язык формы» (у ГСМ/МО прочих настроек нет, но язык нужен). */}
-        {(supportsSettings || langParam != null) && (
+        {(supportsSettings || langParam != null) && !rezhimRasshifrovki && (
           <Button
             variant="outlined"
             size="medium"
@@ -423,7 +575,21 @@ export const ReportAltPage = () => {
             </Typography>
           ) : (
             <div className="min-h-0 overflow-auto pb-4">
-              <ReportResultView result={result} />
+              <ReportResultView
+                result={result}
+                onDrilldown={(row) => {
+                  if (!row.rowRef || row.rowRef.domain === 'ACCOUNT_PLAN')
+                    return
+                  openRowRef(row.rowRef)
+                }}
+                onRowDoubleClick={(row, ancestors, event) => {
+                  setRowMenu({
+                    position: { top: event.clientY, left: event.clientX },
+                    row,
+                    ancestors,
+                  })
+                }}
+              />
               {/* LEDGER: постраничная подгрузка (F4 — hasMore/nextOffset). */}
               {isLedger && hasNextPage && (
                 <div className="mt-3">
@@ -450,7 +616,7 @@ export const ReportAltPage = () => {
         )
       )}
 
-      {(supportsSettings || langParam != null) && (
+      {(supportsSettings || langParam != null) && !rezhimRasshifrovki && (
         <ReportAltSettingsDrawer
           open={settingsOpen}
           onClose={() => {
@@ -473,8 +639,17 @@ export const ReportAltPage = () => {
           onLangChange={(v) => {
             setParamValue(LANG_PARAM_CODE, v)
           }}
+          groupingTitles={paramState.groupingTitles}
         />
       )}
+
+      <ReportAltRowMenu
+        position={rowMenu?.position ?? null}
+        onClose={() => {
+          setRowMenu(null)
+        }}
+        items={rowMenuItems}
+      />
     </div>
   )
 }

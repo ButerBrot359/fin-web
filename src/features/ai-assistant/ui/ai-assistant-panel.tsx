@@ -1,31 +1,61 @@
-import { useEffect, useRef } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
 import type {
   AiAssistantAction,
+  AiAssistantCapability,
   AiAssistantContext,
 } from '@/entities/ai-assistant'
 import { Button } from '@/shared/ui/buttons'
+import { FLOATING_BOTTOM } from '@/shared/lib/utils/floating-widgets'
 import { cn } from '@/shared/lib/utils/cn'
 
-import { QUICK_QUESTION_KEYS } from '../lib/consts/quick-questions'
 import type { AssistantChatMessage } from '../lib/hooks/use-assistant-session'
-import { AssistantAnswerCard } from './assistant-answer-card'
+import { useAssistantHistoryScroll } from '../lib/hooks/use-assistant-history-scroll'
+import { AssistantMessageTimeline } from './assistant-message-timeline'
+import { AssistantPendingStatus } from './assistant-pending-status'
 import { AssistantComposer } from './assistant-composer'
 import { AssistantContextBar } from './assistant-context-bar'
+import { AssistantHelp } from './assistant-help'
+import { AssistantPanelHeader } from './assistant-panel-header'
+import { AssistantPresets } from './assistant-presets'
 
 interface AiAssistantPanelProps {
   open: boolean
   minimized: boolean
+  /** Увеличенный размер окна. Не полноэкранный: панель работает ПОВЕРХ формы. */
+  enlarged: boolean
+  /** Вместо ленты диалога показана справка. */
+  helpOpen: boolean
+  onToggleHelp: () => void
+  onToggleSize: () => void
   context: AiAssistantContext
+  /** Разрешения организации; `null` — ещё не загружены. */
+  capabilities: AiAssistantCapability[] | null
   messages: AssistantChatMessage[]
   isPending: boolean
+  pendingStartedAt?: number
+  draft?: string
+  onDraftChange?: (value: string) => void
+  unavailableReason?: string
+  onRetrySettings?: () => void
+  historyLoading?: boolean
+  historyError?: boolean
+  onRetryHistory?: () => void
+  hasOlderMessages?: boolean
+  isLoadingOlder?: boolean
+  olderMessagesError?: boolean
+  onLoadOlder?: () => void
+  onOpenHistory?: () => void
+  onNewChat?: () => void
+  newChatDisabled?: boolean
   onClose: () => void
   onToggleMinimize: () => void
   onSend: (question: string) => void
   onAction: (action: AiAssistantAction) => void
-  historySlot?: React.ReactNode
+  /** Открыть документ, созданный помощником. */
+  onOpenDocument: (typeCode: string, entryId: number) => void
 }
 
 /**
@@ -46,137 +76,206 @@ interface AiAssistantPanelProps {
 export const AiAssistantPanel = ({
   open,
   minimized,
+  enlarged,
+  helpOpen,
+  onToggleHelp,
+  onToggleSize,
   context,
+  capabilities,
   messages,
   isPending,
+  pendingStartedAt,
+  draft,
+  onDraftChange,
+  unavailableReason,
+  onRetrySettings,
+  historyLoading = false,
+  historyError = false,
+  onRetryHistory,
+  hasOlderMessages = false,
+  isLoadingOlder = false,
+  olderMessagesError = false,
+  onLoadOlder,
   onClose,
+  onOpenHistory,
+  onNewChat,
+  newChatDisabled,
   onToggleMinimize,
   onSend,
   onAction,
-  historySlot,
+  onOpenDocument,
 }: AiAssistantPanelProps) => {
-  const { t } = useTranslation()
-  const bottomRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open || minimized) return
-    bottomRef.current?.scrollIntoView({
-      // Плавную прокрутку отключаем для тех, кто просил меньше движения.
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        ? 'auto'
-        : 'smooth',
-    })
-  }, [messages.length, isPending, open, minimized])
+  const { t, i18n } = useTranslation()
+  const [localDraft, setLocalDraft] = useState('')
+  const value = draft ?? localDraft
+  const changeDraft = onDraftChange ?? setLocalDraft
+  const sendDisabled =
+    isPending || historyLoading || historyError || !!unavailableReason
+  const messageIds = useMemo(
+    () => messages.map((message) => message.id),
+    [messages]
+  )
+  const { scrollRef, onScroll, loadOlder } = useAssistantHistoryScroll({
+    active: open && !minimized && !helpOpen,
+    messageIds,
+    isPending,
+    hasOlderMessages,
+    isLoadingOlder,
+    olderMessagesError,
+    onLoadOlder,
+  })
 
   if (!open) return null
 
-  const hasDocument =
-    context.kind !== 'NONE' && context.kind !== 'DICTIONARY_LIST'
-
   return (
     <div
+      data-testid="ai-assistant-panel"
       className={cn(
-        'fixed right-6 bottom-6 z-[1050] flex w-[26rem] max-w-[92vw] flex-col',
+        'fixed right-6 z-[1050] flex max-w-[92vw] flex-col',
+        FLOATING_BOTTOM,
         'overflow-hidden rounded-2xl bg-ui-01 shadow-popup',
-        minimized ? 'h-auto' : 'h-[min(38rem,75vh)]'
+        // Увеличенный размер намеренно НЕ во весь экран: смысл панели в том, чтобы
+        // под ней оставался виден документ, о котором идёт разговор.
+        enlarged ? 'w-[42rem]' : 'w-[26rem]',
+        minimized
+          ? 'h-auto'
+          : enlarged
+            ? 'h-[min(50rem,88vh)]'
+            : 'h-[min(38rem,75vh)]'
       )}
     >
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-ui-03 px-4 py-3">
-        <Typography variant="subtitle2" className="truncate text-ui-06">
-          {t('aiAssistant.title')}
-        </Typography>
-        <div className="flex shrink-0 items-center gap-1">
-          {historySlot}
-          <Button size="small" variant="tertiary" onClick={onToggleMinimize}>
-            {t(minimized ? 'aiAssistant.expand' : 'aiAssistant.minimize')}
-          </Button>
-          <Button size="small" variant="tertiary" onClick={onClose}>
-            {t('actions.close')}
-          </Button>
-        </div>
-      </div>
+      <AssistantPanelHeader
+        minimized={minimized}
+        enlarged={enlarged}
+        helpOpen={helpOpen}
+        onToggleHelp={onToggleHelp}
+        onToggleSize={onToggleSize}
+        onToggleMinimize={onToggleMinimize}
+        onClose={onClose}
+        onOpenHistory={onOpenHistory}
+        onNewChat={onNewChat}
+        newChatDisabled={newChatDisabled}
+      />
 
-      {!minimized && (
+      {!minimized && helpOpen && (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto p-3">
+          <AssistantHelp
+            capabilities={capabilities}
+            disabled={sendDisabled}
+            onAsk={(question) => {
+              onSend(question)
+              // Возврат к ленте: ответ придёт туда, и оставаться в справке значило бы
+              // ждать его на экране, где он не появится.
+              onToggleHelp()
+            }}
+          />
+        </div>
+      )}
+
+      {!minimized && !helpOpen && (
         <>
-          <div className="flex shrink-0 flex-col gap-2 px-4 py-3">
+          <div className="flex shrink-0 flex-col gap-2 px-3 pt-3 pb-2">
             <AssistantContextBar context={context} />
-            {hasDocument && messages.length === 0 && (
-              <div className="flex flex-wrap gap-2">
-                {QUICK_QUESTION_KEYS.map((key) => (
-                  <Button
-                    key={key}
-                    size="small"
-                    variant="tertiary"
-                    disabled={isPending}
-                    onClick={() => {
-                      onSend(t(key))
-                    }}
-                  >
-                    {t(key)}
-                  </Button>
-                ))}
-              </div>
+            {messages.length === 0 && !historyLoading && !historyError && (
+              <AssistantPresets
+                context={context}
+                capabilities={capabilities}
+                disabled={sendDisabled}
+                onSelect={onSend}
+              />
             )}
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-3">
-            {messages.length === 0 && (
+          <div
+            ref={scrollRef}
+            onScroll={onScroll}
+            data-testid="assistant-messages"
+            className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto px-3 pb-3"
+          >
+            {hasOlderMessages && !olderMessagesError && (
+              <div className="flex shrink-0 justify-center">
+                <Button
+                  variant="tertiary"
+                  size="small"
+                  disabled={isLoadingOlder}
+                  onClick={loadOlder}
+                >
+                  {t('aiAssistant.historyEarlier')}
+                </Button>
+              </div>
+            )}
+            {isLoadingOlder && (
+              <Typography variant="body2" role="status" className="text-ui-05">
+                {t('aiAssistant.historyLoading')}
+              </Typography>
+            )}
+            {olderMessagesError && (
+              <div>
+                <Typography variant="body2">
+                  {t('aiAssistant.historyLoadFailed')}
+                </Typography>
+                <Button
+                  variant="tertiary"
+                  disabled={isLoadingOlder}
+                  onClick={loadOlder}
+                >
+                  {t('aiAssistant.historyRetry')}
+                </Button>
+              </div>
+            )}
+            {messages.length === 0 && !historyLoading && !historyError && (
               <Typography variant="body2" className="text-ui-05">
                 {t('aiAssistant.empty')}
               </Typography>
             )}
 
-            {messages.map((message) =>
-              message.role === 'USER' ? (
-                <div key={message.id} className="flex justify-end">
-                  <div className="max-w-[85%] rounded-lg bg-ui-04 px-3 py-2">
-                    <Typography
-                      variant="body2"
-                      className="whitespace-pre-wrap text-ui-06"
-                    >
-                      {message.text}
-                    </Typography>
-                  </div>
-                </div>
-              ) : message.error ? (
-                <div
-                  key={message.id}
-                  className="rounded-lg bg-ui-02 p-3 outline outline-support-01"
-                >
-                  <Typography variant="body2" className="text-ui-06">
-                    {message.error}
-                  </Typography>
-                </div>
-              ) : message.answer ? (
-                <AssistantAnswerCard
-                  key={message.id}
-                  answer={message.answer}
-                  onAction={(index) => {
-                    const action = message.answer?.actions[index]
-                    if (action) onAction(action)
-                  }}
-                />
-              ) : (
-                <div key={message.id} className="rounded-lg bg-ui-02 p-3">
-                  <Typography
-                    variant="body2"
-                    className="whitespace-pre-wrap text-ui-06"
-                  >
-                    {message.text}
-                  </Typography>
-                </div>
-              )
-            )}
+            <AssistantMessageTimeline
+              messages={messages}
+              language={i18n.language}
+              disabled={sendDisabled}
+              onEditQuestion={changeDraft}
+              onAction={onAction}
+              onOpenDocument={onOpenDocument}
+            />
 
-            {isPending && (
-              <Typography variant="body2" className="text-ui-05">
-                {t('aiAssistant.thinking')}
-              </Typography>
+            {isPending && pendingStartedAt != null && (
+              <AssistantPendingStatus startedAt={pendingStartedAt} />
             )}
-            <div ref={bottomRef} />
           </div>
 
-          <AssistantComposer disabled={isPending} onSend={onSend} />
+          {historyLoading && (
+            <Typography variant="body2" className="px-3 text-ui-05">
+              {t('aiAssistant.historyLoading')}
+            </Typography>
+          )}
+          {historyError && (
+            <div className="px-3">
+              <Typography variant="body2">
+                {t('aiAssistant.historyLoadFailed')}
+              </Typography>
+              <Button variant="tertiary" onClick={onRetryHistory}>
+                {t('aiAssistant.historyRetry')}
+              </Button>
+            </div>
+          )}
+          {unavailableReason && (
+            <div className="px-3 py-2" role="status">
+              <Typography variant="body2" className="text-ui-05">
+                {unavailableReason}
+              </Typography>
+              {onRetrySettings && (
+                <Button variant="tertiary" onClick={onRetrySettings}>
+                  {t('aiAssistant.historyRetry')}
+                </Button>
+              )}
+            </div>
+          )}
+          <AssistantComposer
+            value={value}
+            onChange={changeDraft}
+            disabled={sendDisabled}
+            onSend={onSend}
+          />
         </>
       )}
     </div>

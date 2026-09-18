@@ -1,114 +1,94 @@
-import type { ChangeEvent, KeyboardEvent } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Typography } from '@mui/material'
-
+import { useRef } from 'react'
+import type { KeyboardEvent } from 'react'
+import { Box, Button, TextField, Typography } from '@mui/material'
 import type { AnalyticsItemKind } from '@/entities/analytics'
-import { Button } from '@/shared/ui/buttons'
-import { cn } from '@/shared/lib/utils/cn'
-
-import { MicroLabel } from '@/shared/ui/micro-label'
-
+import { useAnalyticsWorkspaceCopy } from '../lib/workspace-copy'
 interface AssistantComposerProps {
   value: string
   onChange: (value: string) => void
   onSubmit: () => void
   kind: AnalyticsItemKind
-  onKindChange: (kind: AnalyticsItemKind) => void
   isPending: boolean
 }
-
-/** `as const` обязателен: ключи перевода типизированы по ru/common.json. */
-const KIND_OPTIONS = [
-  { value: 'DASHBOARD', labelKey: 'analytics.assistant.kindDashboard' },
-  { value: 'REPORT', labelKey: 'analytics.assistant.kindReport' },
-] as const
-
-/**
- * Ввод промпта: выбор вида представления, поле (Enter — отправка,
- * Shift+Enter — перенос) и «Построить».
- *
- * «Построить» — единственный акцент панели: переключатель приглушён до
- * микро-лейбла с сегментами, поле живёт на тонированной подложке без рамки.
- * Так в панели ровно одна кнопка, на которую хочется нажать.
- */
 export const AssistantComposer = ({
   value,
   onChange,
   onSubmit,
   kind,
-  onKindChange,
   isPending,
 }: AssistantComposerProps) => {
-  const { t } = useTranslation()
-
-  const canSend = value.trim().length > 0 && !isPending
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== 'Enter' || event.shiftKey) return
+  const copy = useAnalyticsWorkspaceCopy(kind)
+  const composing = useRef(false)
+  const canSend = !!value.trim() && !isPending
+  const keyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (
+      event.key !== 'Enter' ||
+      event.shiftKey ||
+      event.nativeEvent.isComposing ||
+      composing.current
+    )
+      return
     event.preventDefault()
     if (canSend) onSubmit()
   }
-
-  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    onChange(event.target.value)
-  }
-
   return (
-    <div className="flex flex-col gap-3 rounded-lg bg-ui-01 p-3">
-      <div className="flex items-center gap-3">
-        <MicroLabel>{t('analytics.assistant.kind')}</MicroLabel>
-
-        <div className="flex gap-0.5 rounded-md bg-ui-02 p-0.5">
-          {KIND_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={kind === option.value}
-              onClick={() => {
-                onKindChange(option.value)
-              }}
-              className={cn(
-                'cursor-pointer rounded-sm px-3 py-1 transition-colors',
-                kind === option.value
-                  ? 'bg-ui-01 text-ui-06'
-                  : 'text-ui-05 hover:text-ui-06'
-              )}
-            >
-              <Typography
-                component="span"
-                className={cn(
-                  'text-[13px]',
-                  kind === option.value && 'font-semibold'
-                )}
-              >
-                {t(option.labelKey)}
-              </Typography>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <textarea
+    <Box
+      sx={{
+        flexShrink: 0,
+        p: 2,
+        borderTop: 1,
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
+      }}
+    >
+      <TextField
+        fullWidth
+        multiline
+        minRows={2}
+        maxRows={6}
         value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        placeholder={t('analytics.assistant.placeholder')}
-        rows={3}
         disabled={isPending}
-        className="w-full resize-none rounded-lg border border-transparent bg-ui-02 px-3 py-2 text-body2 text-ui-06 outline-none placeholder:text-ui-05 focus:border-accent-02 disabled:opacity-60"
+        placeholder={copy.placeholder}
+        onChange={(event) => { onChange(event.target.value); }}
+        onKeyDown={keyDown}
+        onCompositionStart={() => {
+          composing.current = true
+        }}
+        onCompositionEnd={() => {
+          composing.current = false
+        }}
+        slotProps={{
+          htmlInput: {
+            'aria-label': copy.placeholder,
+            'data-testid': 'analytics-composer-input',
+          },
+        }}
       />
-
-      <div className="flex items-center justify-between gap-3">
-        <Typography component="span" className="text-[11px] text-ui-05">
-          {t('analytics.assistant.enterHint')}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+          mt: 1,
+        }}
+      >
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontSize: 11 }}
+        >
+          {copy.keyHint}
         </Typography>
-
-        <Button variant="primary" disabled={!canSend} onClick={onSubmit}>
-          {isPending
-            ? t('analytics.assistant.generating')
-            : t('analytics.assistant.send')}
+        <Button
+          variant="contained"
+          disabled={!canSend}
+          onClick={onSubmit}
+          sx={{ flexShrink: 0 }}
+        >
+          {copy.send} ↑
         </Button>
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }

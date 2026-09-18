@@ -107,6 +107,25 @@ describe('buildValidationErrorPatches', () => {
     ])
   })
 
+  it('ТЧ с адресом строки не красится целиком — подсвечиваются строки', () => {
+    const patches = buildValidationErrorPatches(
+      tree,
+      [
+        err('TMZ', 'Дубль по ключу. Повторяются строки 3, 4.'),
+        err('MOL', 'Не заполнен МОЛ'),
+      ],
+      new Set(['TMZ'])
+    )
+    expect(patches).toEqual([
+      {
+        op: 'setProp',
+        nodeId: 'form.f.mol',
+        key: 'error',
+        value: 'Не заполнен МОЛ',
+      },
+    ])
+  })
+
   it('два сообщения на один узел: побеждает первое', () => {
     const patches = buildValidationErrorPatches(tree, [
       err('TMZ', 'строка 1'),

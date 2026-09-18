@@ -37,6 +37,8 @@ export {
   closeAllSduiSessions,
 } from './lib/language-session-control'
 export { openMovementsForEntry } from './lib/open-movements'
+export { fetchReferenceOptions } from './api/reference-options'
+export { useReferenceOptions } from './lib/hooks/use-reference-options'
 export { mapKindToPageType } from './lib/tab-kind'
 export { useCustomizeFormStore } from './lib/customize-form/customize-form-store'
 export { viewSettingsAdminApi } from './api/view-settings-admin-api'

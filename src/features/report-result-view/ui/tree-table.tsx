@@ -1,3 +1,4 @@
+import type { MouseEvent as ReactMouseEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
@@ -25,8 +26,10 @@ import {
   HEAD_FS,
   isHighlightRow,
   isMeasure,
+  isNumericCell,
   isRightAligned,
   resolveReportLang,
+  indicatorSubLabels,
 } from '../lib/cell-helpers'
 import { buildHeadModel } from '../lib/head-model'
 import { ReportCell } from './report-cell'
@@ -36,7 +39,58 @@ interface TreeTableProps {
   columns: ReportColumnDto[]
   /** Отступ одного уровня дерева в px (1С: обычный 13, уменьшенный 8). */
   indentPx?: number
+  onRowDoubleClick?: (
+    row: ReportRowDto,
+    ancestors: ReportRowDto[],
+    event: ReactMouseEvent
+  ) => void
+  /**
+   * Правый клик по строке — тот же набор действий, что и по двойному клику
+   * (1С открывает меню выбора обоими способами). Штатное меню браузера
+   * подавляется только когда обработчик передан.
+   */
+  onRowContextMenu?: (
+    row: ReportRowDto,
+    ancestors: ReportRowDto[],
+    event: ReactMouseEvent
+  ) => void
 }
+
+/**
+ * Атрибуты строки для расшифровки: курсор и оба способа вызова меню — двойной
+ * клик и правый, как в 1С. Общая для обоих деревьев: раньше их пробрасывало
+ * только плоское, и у отчётов с этажами (ОСВ по счёту) расшифровка молча
+ * пропадала.
+ */
+const rowInteraction = (
+  row: Row<ReportRowDto>,
+  onRowDoubleClick?: TreeTableProps['onRowDoubleClick'],
+  onRowContextMenu?: TreeTableProps['onRowContextMenu']
+) => ({
+  className: `hover:bg-ui-07 ${
+    onRowDoubleClick || onRowContextMenu ? 'cursor-pointer' : ''
+  }`,
+  onDoubleClick: onRowDoubleClick
+    ? (e: ReactMouseEvent) => {
+        window.getSelection()?.removeAllRanges()
+        onRowDoubleClick(
+          row.original,
+          row.getParentRows().map((p) => p.original),
+          e
+        )
+      }
+    : undefined,
+  onContextMenu: onRowContextMenu
+    ? (e: ReactMouseEvent) => {
+        e.preventDefault()
+        onRowContextMenu(
+          row.original,
+          row.getParentRows().map((p) => p.original),
+          e
+        )
+      }
+    : undefined,
+})
 
 /** Сетка 1С: тонкие серые линии, плотные ячейки. */
 const tdBase =
@@ -97,7 +151,13 @@ export const TreeTable = (props: TreeTableProps) => {
   return <PlainTreeTable {...props} />
 }
 
-const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
+const PlainTreeTable = ({
+  result,
+  columns,
+  indentPx = 13,
+  onRowDoubleClick,
+  onRowContextMenu,
+}: TreeTableProps) => {
   const { t, i18n } = useTranslation()
   // Язык РЕНДЕРА = язык, на котором отчёт сформировал бэк (result.language),
   // иначе — язык приложения. Так шапки колонок и итог на языке отчёта, даже
@@ -345,10 +405,11 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
           {table.getRowModel().rows.map((row) => {
             const bold = isGroupRow(row)
             return (
-              <tr key={row.id} className="hover:bg-ui-07">
-                <td className={`${tdBase} align-top`}>
-                  {renderGroupCell(row)}
-                </td>
+              <tr
+                key={row.id}
+                {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
+              >
+                <td className={`${tdBase} align-top`}>{renderGroupCell(row)}</td>
                 {bodyColumns.map((col) => (
                   <td
                     key={col.code}
@@ -359,6 +420,7 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                     }`}
                   >
                     <ReportCell
+                      subLabels={indicatorSubLabels(row.original.cells)}
                       value={row.original.cells[col.code]}
                       col={col}
                       bold={bold}
@@ -384,10 +446,15 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                 <td
                   key={col.code}
                   className={`${tdBase} ${
-                    isMeasure(col) ? 'text-right tabular-nums' : ''
+                    isNumericCell(col) ? 'text-right tabular-nums' : ''
                   }`}
                 >
-                  <ReportCell value={result.total[col.code]} col={col} bold />
+                  <ReportCell
+                    subLabels={indicatorSubLabels(result.total)}
+                    value={result.total[col.code]}
+                    col={col}
+                    bold
+                  />
                 </td>
               ))}
             </tr>
@@ -408,7 +475,13 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
  * заголовок детальной колонки (напр. «Дополнительные поля» над «Единица измерения»)
  * — через `groupTitleRu`.
  */
-const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
+const FloorTreeTable = ({
+  result,
+  columns,
+  indentPx = 13,
+  onRowDoubleClick,
+  onRowContextMenu,
+}: TreeTableProps) => {
   const { t, i18n } = useTranslation()
   const reportLang = resolveReportLang(result.language, i18n.language)
   const isKz = reportLang === 'kz'
@@ -650,7 +723,10 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
           {table.getRowModel().rows.map((row) => {
             if (isBandRow(row)) {
               return (
-                <tr key={row.id} className="hover:bg-ui-07">
+                <tr
+                  key={row.id}
+                  {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
+                >
                   <td
                     colSpan={leafColumns.length}
                     className={`${tdBase} align-top`}
@@ -663,6 +739,7 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                       className={`${tdBase} align-top text-right tabular-nums`}
                     >
                       <ReportCell
+                        subLabels={indicatorSubLabels(row.original.cells)}
                         value={row.original.cells[m.code]}
                         col={m}
                         bold
@@ -673,7 +750,10 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
               )
             }
             return (
-              <tr key={row.id} className="hover:bg-ui-07">
+              <tr
+                key={row.id}
+                {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
+              >
                 {leafColumns.map((col) => (
                   <td
                     key={col.code}
@@ -682,6 +762,7 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                     }`}
                   >
                     <ReportCell
+                      subLabels={indicatorSubLabels(row.original.cells)}
                       value={row.original.cells[col.code]}
                       col={col}
                     />
@@ -692,7 +773,11 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
                     key={m.code}
                     className={`${tdBase} align-top text-right tabular-nums`}
                   >
-                    <ReportCell value={row.original.cells[m.code]} col={m} />
+                    <ReportCell
+                      subLabels={indicatorSubLabels(row.original.cells)}
+                      value={row.original.cells[m.code]}
+                      col={m}
+                    />
                   </td>
                 ))}
               </tr>

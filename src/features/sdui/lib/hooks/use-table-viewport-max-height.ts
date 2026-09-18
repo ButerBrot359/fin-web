@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * (SCRUM-368) переключается на него как на скролл-предок (data-own-scroll).
  */
 
-/** Запас под подвал формы и отступы; подвал generic-формы не замеряем. */
+/** Нижняя граница запаса под подвал формы; фактический запас замеряется. */
 const BOTTOM_RESERVE_PX = 148
 
 /**
@@ -43,9 +43,42 @@ const findPageScroller = (element: HTMLElement): HTMLElement | null => {
   return null
 }
 
+const contentBelow = (
+  element: HTMLElement,
+  scroller: HTMLElement | null
+): number => {
+  const height = element.offsetHeight
+  if (scroller) {
+    const topInContent =
+      element.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top +
+      scroller.scrollTop
+    return Math.max(0, scroller.scrollHeight - (topInContent + height))
+  }
+  const topInDocument = element.getBoundingClientRect().top + window.scrollY
+  return Math.max(
+    0,
+    document.documentElement.scrollHeight - (topInDocument + height)
+  )
+}
+
 export interface TableViewportMaxHeight {
   /** px или null, пока контейнер не смонтирован/не замерен. */
   maxHeight: number | null
+  /**
+   * Пол высоты для РАСТЯНУТОЙ карточки (px) либо null, если высоту задаёт замер.
+   * <p>
+   * В растянутой карточке высота ТЧ приходит по цепочке flex, и у каждого звена
+   * стоит {@code minHeight: 0} — иначе подвал не прижался бы к нижней кромке.
+   * Обратная сторона: когда шапка формы высокая, а окно низкое, той же цепочке
+   * нечего раздать, и контейнер ТЧ сжимается до одной прилипшей шапки колонок —
+   * строки формально в DOM, но видна полоска в несколько пикселей («не видно
+   * строк, хотя ползунок в самом низу», Авансовый отчёт, 10.09.2026).
+   * <p>
+   * Пол тот же, что у замеряемого пути ({@link MIN_HEIGHT_PX}), и смысл тот же:
+   * лучше вернуть прокрутку страницы, чем оставить таблицу нерабочей.
+   */
+  minHeight: number | null
   /** Повесить на контейнер ТЧ (совместим с другими ref-колбэками). */
   setNode: (node: HTMLElement | null) => void
 }
@@ -53,6 +86,7 @@ export interface TableViewportMaxHeight {
 export function useTableViewportMaxHeight(): TableViewportMaxHeight {
   const nodeRef = useRef<HTMLElement | null>(null)
   const [maxHeight, setMaxHeight] = useState<number | null>(null)
+  const [minHeight, setMinHeight] = useState<number | null>(null)
 
   const setNode = useCallback((node: HTMLElement | null) => {
     nodeRef.current = node
@@ -64,8 +98,10 @@ export function useTableViewportMaxHeight(): TableViewportMaxHeight {
       if (!node) return
       if (findStretchedAncestor(node)) {
         setMaxHeight(null)
+        setMinHeight(MIN_HEIGHT_PX)
         return
       }
+      setMinHeight(null)
       const scroller = findPageScroller(node)
       // Верх контейнера в системе координат прокрутки страницы: инвариантен к
       // текущему scrollTop (как measureScrollMargin в use-virtual-table-rows).
@@ -75,9 +111,10 @@ export function useTableViewportMaxHeight(): TableViewportMaxHeight {
           scroller.scrollTop
         : node.getBoundingClientRect().top + window.scrollY
       const viewportH = scroller ? scroller.clientHeight : window.innerHeight
+      const reserve = Math.max(BOTTOM_RESERVE_PX, contentBelow(node, scroller))
       const next = Math.max(
         MIN_HEIGHT_PX,
-        Math.floor(viewportH - top - BOTTOM_RESERVE_PX)
+        Math.floor(viewportH - top - reserve)
       )
       setMaxHeight((prev) => (prev === next ? prev : next))
     }
@@ -99,5 +136,5 @@ export function useTableViewportMaxHeight(): TableViewportMaxHeight {
     }
   }, [])
 
-  return { maxHeight, setNode }
+  return { maxHeight, minHeight, setNode }
 }

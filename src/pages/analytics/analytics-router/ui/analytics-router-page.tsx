@@ -8,7 +8,11 @@ import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 
 import {
   ANALYTICS_ASSISTANT_CODE,
+  ANALYTICS_DICTIONARY_PERMISSIONS_CODE,
+  ANALYTICS_DASHBOARD_ASSISTANT_CODE,
+  ANALYTICS_REPORT_ASSISTANT_CODE,
   ANALYTICS_SETTINGS_CODE,
+  ANALYTICS_STATISTICS_CODE,
 } from '../lib/consts/reserved-codes'
 
 /**
@@ -21,9 +25,24 @@ const AnalyticsAssistantPage = lazy(() =>
     default: m.AnalyticsAssistantPage,
   }))
 )
+const AnalyticsAssistantLanding = lazy(() =>
+  import('@/pages/analytics/analytics-assistant').then((m) => ({
+    default: m.AnalyticsAssistantLanding,
+  }))
+)
 const AnalyticsAiSettingsPage = lazy(() =>
   import('@/pages/analytics/analytics-ai-settings').then((m) => ({
     default: m.AnalyticsAiSettingsPage,
+  }))
+)
+const AnalyticsAiStatisticsPage = lazy(() =>
+  import('@/pages/analytics/analytics-ai-statistics').then((m) => ({
+    default: m.AnalyticsAiStatisticsPage,
+  }))
+)
+const AnalyticsDictionaryPermissionsPage = lazy(() =>
+  import('@/pages/analytics/analytics-dictionary-permissions').then((m) => ({
+    default: m.AnalyticsDictionaryPermissionsPage,
   }))
 )
 const AnalyticsDashboardPage = lazy(() =>
@@ -43,22 +62,34 @@ const AnalyticsReportPage = lazy(() =>
  *
  * Так сделано потому, что дашборды и отчёты заводятся пользователем в рантайме
  * — их коды заранее неизвестны, отдельного маршрута под каждый быть не может.
- * Что рендерить, решает `kind` сохранённого объекта. Два кода зарезервированы
- * под служебные страницы и до бэкенда не доходят: `assistant` и `settings`.
+ * Что рендерить, решает `kind` сохранённого объекта. Три кода зарезервированы
+ * под служебные страницы и до бэкенда не доходят: `assistant`, `settings` и `ai-statistics`.
  */
 export const AnalyticsRouterPage = () => {
   const { t } = useTranslation()
   const { code } = useParams<{ code: string }>()
 
   const isReserved =
-    code === ANALYTICS_ASSISTANT_CODE || code === ANALYTICS_SETTINGS_CODE
+    code === ANALYTICS_ASSISTANT_CODE ||
+    code === ANALYTICS_DICTIONARY_PERMISSIONS_CODE ||
+    code === ANALYTICS_DASHBOARD_ASSISTANT_CODE ||
+    code === ANALYTICS_REPORT_ASSISTANT_CODE ||
+    code === ANALYTICS_SETTINGS_CODE ||
+    code === ANALYTICS_STATISTICS_CODE
 
   // Служебные коды объектами не являются — запрос по ним не делаем.
   const { item, isLoading } = useAnalyticsItem(isReserved ? undefined : code)
 
   const renderContent = () => {
-    if (code === ANALYTICS_ASSISTANT_CODE) return <AnalyticsAssistantPage />
+    if (code === ANALYTICS_DICTIONARY_PERMISSIONS_CODE)
+      return <AnalyticsDictionaryPermissionsPage />
+    if (code === ANALYTICS_ASSISTANT_CODE) return <AnalyticsAssistantLanding />
+    if (code === ANALYTICS_DASHBOARD_ASSISTANT_CODE)
+      return <AnalyticsAssistantPage key="DASHBOARD" kind="DASHBOARD" />
+    if (code === ANALYTICS_REPORT_ASSISTANT_CODE)
+      return <AnalyticsAssistantPage key="REPORT" kind="REPORT" />
     if (code === ANALYTICS_SETTINGS_CODE) return <AnalyticsAiSettingsPage />
+    if (code === ANALYTICS_STATISTICS_CODE) return <AnalyticsAiStatisticsPage />
 
     if (isLoading) return <PageSkeleton />
 

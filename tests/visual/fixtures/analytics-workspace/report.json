@@ -1,0 +1,235 @@
+{
+  "answer": {
+    "data": {
+      "conversationId": 1,
+      "messageId": 4,
+      "userMessageId": 3,
+      "userCreatedAt": "2026-09-11T14:37:34.558724",
+      "createdAt": "2026-09-11T14:37:34.559219",
+      "spec": {
+        "specVersion": 1,
+        "kind": "REPORT",
+        "title": "Расходы по месяцам",
+        "titleKz": null,
+        "description": null,
+        "parameters": [],
+        "datasets": [
+          {
+            "id": "monthly",
+            "sql": "SELECT to_char(period, 'YYYY-MM') AS category, SUM(summa) AS amount FROM analytics.v_areg_zhurnalprovodokgosuchrezhdeniya GROUP BY to_char(period, 'YYYY-MM') ORDER BY category LIMIT 100",
+            "sqlHash": "ad6942a9c36c556624bd2309748f111dee8683d96d5ace7ad627f9b78297cd41",
+            "parameters": [],
+            "columns": [
+              {
+                "name": "category",
+                "label": null,
+                "labelKz": null,
+                "type": "STRING",
+                "format": "PLAIN",
+                "total": "NONE"
+              },
+              {
+                "name": "amount",
+                "label": null,
+                "labelKz": null,
+                "type": "DECIMAL",
+                "format": "PLAIN",
+                "total": "NONE"
+              }
+            ]
+          }
+        ],
+        "layout": {
+          "columns": 12,
+          "rowHeight": 80
+        },
+        "widgets": [
+          {
+            "id": "monthly",
+            "type": "TABLE",
+            "title": null,
+            "titleKz": null,
+            "datasetId": "monthly",
+            "position": {
+              "x": 0,
+              "y": 0,
+              "w": 12,
+              "h": 4
+            },
+            "encoding": {
+              "value": null,
+              "delta": null,
+              "label": null,
+              "x": null,
+              "y": [],
+              "series": null,
+              "stacked": false,
+              "columns": [
+                {
+                  "field": "category",
+                  "aggregate": "NONE",
+                  "format": null,
+                  "label": null,
+                  "labelKz": null
+                },
+                {
+                  "field": "amount",
+                  "aggregate": "NONE",
+                  "format": null,
+                  "label": null,
+                  "labelKz": null
+                }
+              ],
+              "groupBy": [],
+              "sort": [],
+              "markdown": null
+            },
+            "effectiveType": null,
+            "effectiveTypeReason": null,
+            "options": {}
+          }
+        ],
+        "sourceViews": ["analytics.v_areg_zhurnalprovodokgosuchrezhdeniya"]
+      },
+      "explanation": "Построено по витринам: analytics.v_areg_zhurnalprovodokgosuchrezhdeniya",
+      "warnings": [],
+      "violations": [],
+      "repaired": false,
+      "llmRequestIds": [2, 3],
+      "status": "READY",
+      "questions": [],
+      "suggestions": []
+    },
+    "success": true
+  },
+  "query": {
+    "data": {
+      "columns": [
+        {
+          "name": "category",
+          "type": "STRING",
+          "sqlType": "text"
+        },
+        {
+          "name": "amount",
+          "type": "DECIMAL",
+          "sqlType": "numeric"
+        }
+      ],
+      "rows": [
+        ["2026-01", 100.0],
+        ["2026-02", 200.0]
+      ],
+      "rowCount": 2,
+      "truncated": false,
+      "executionMs": 12,
+      "sqlHash": "ad6942a9c36c556624bd2309748f111dee8683d96d5ace7ad627f9b78297cd41"
+    },
+    "success": true
+  },
+  "item": {
+    "data": {
+      "code": "SinteticheskieRaskhodyB848e424Da884ba082fcDda1a656456e",
+      "kind": "REPORT",
+      "organizationId": 32,
+      "titleRu": "Синтетические расходы b848e424-da88-4ba0-82fc-dda1a656456e",
+      "titleKz": null,
+      "description": null,
+      "spec": {
+        "specVersion": 1,
+        "kind": "REPORT",
+        "title": "Расходы по месяцам",
+        "titleKz": null,
+        "description": null,
+        "parameters": [],
+        "datasets": [
+          {
+            "id": "monthly",
+            "sql": "SELECT to_char(period, 'YYYY-MM') AS category, SUM(summa) AS amount FROM analytics.v_areg_zhurnalprovodokgosuchrezhdeniya GROUP BY to_char(period, 'YYYY-MM') ORDER BY category LIMIT 100",
+            "sqlHash": "ad6942a9c36c556624bd2309748f111dee8683d96d5ace7ad627f9b78297cd41",
+            "parameters": [],
+            "columns": [
+              {
+                "name": "category",
+                "label": null,
+                "labelKz": null,
+                "type": "STRING",
+                "format": "PLAIN",
+                "total": "NONE"
+              },
+              {
+                "name": "amount",
+                "label": null,
+                "labelKz": null,
+                "type": "DECIMAL",
+                "format": "PLAIN",
+                "total": "NONE"
+              }
+            ]
+          }
+        ],
+        "layout": {
+          "columns": 12,
+          "rowHeight": 80
+        },
+        "widgets": [
+          {
+            "id": "monthly",
+            "type": "TABLE",
+            "title": null,
+            "titleKz": null,
+            "datasetId": "monthly",
+            "position": {
+              "x": 0,
+              "y": 0,
+              "w": 12,
+              "h": 4
+            },
+            "encoding": {
+              "value": null,
+              "delta": null,
+              "label": null,
+              "x": null,
+              "y": [],
+              "series": null,
+              "stacked": false,
+              "columns": [
+                {
+                  "field": "category",
+                  "aggregate": "NONE",
+                  "format": null,
+                  "label": null,
+                  "labelKz": null
+                },
+                {
+                  "field": "amount",
+                  "aggregate": "NONE",
+                  "format": null,
+                  "label": null,
+                  "labelKz": null
+                }
+              ],
+              "groupBy": [],
+              "sort": [],
+              "markdown": null
+            },
+            "effectiveType": null,
+            "effectiveTypeReason": null,
+            "options": {}
+          }
+        ],
+        "sourceViews": ["analytics.v_areg_zhurnalprovodokgosuchrezhdeniya"]
+      },
+      "specVersion": 1,
+      "tags": null,
+      "sortOrder": 0,
+      "isFavorite": false,
+      "isActive": true,
+      "createdAt": "2026-09-11T14:37:34.584229",
+      "updatedAt": "2026-09-11T14:37:34.584232",
+      "createdBy": null,
+      "updatedBy": null
+    },
+    "success": true
+  }
+}

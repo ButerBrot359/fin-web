@@ -8,6 +8,24 @@ import { useSduiDispatch } from '../../../lib/dispatch'
 import { registerRevealHandler } from '../../../lib/validation/reveal-bus'
 import { subtreeHasBinding } from '../../../lib/validation/subtree-has-binding'
 
+/**
+ * Пол высоты РАСТЯНУТОЙ ленты вкладок.
+ *
+ * <p>Раньше у внешнего контейнера стоял {@code minHeight: 0}: лента ужималась
+ * под низкое окно до нуля, а таблица внутри (у её контейнера свой пол в 240px)
+ * вылезала за границы вкладки и рисовалась ПОВЕРХ итогов и подвала — «таблица
+ * накладывается друг на друга» (Авансовый отчёт, 10.09.2026). Переполнение
+ * flex-колонки не двигает соседей, оно просто вытекает наружу.
+ *
+ * <p>С полом лента не может стать ниже своего минимума, поэтому подвал встаёт
+ * НИЖЕ таблицы, а лишнюю высоту забирает прокрутка карточки (см.
+ * {@code PageNode}). Значение — сумма минимумов: лента вкладок (~40) + отступ
+ * (16) + командная панель ТЧ (~40) + пол таблицы (240). Проверено в Chromium на
+ * раскладке Авансового отчёта: окно 790 — таблица 268px без наложения, окно
+ * 1200 — 509px и подвал прижат к низу, как было.
+ */
+const STRETCHED_MIN_HEIGHT = 336
+
 export const TabsNode: FC<NodeProps> = ({ node }) => {
   const [activeIndex, setActiveIndex] = useState(0)
   const dispatch = useSduiDispatch()
@@ -118,6 +136,10 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
   // props.flex — растяжка ленты вкладок на всю оставшуюся высоту карточки
   // («Растягивать по вертикали» группы страниц 1С). Задаётся точечно раскладкой:
   // без пропа лента остаётся высотой по содержимому, как была.
+  //
+  // Внешнее звено ленты получает ПОЛ высоты (см. STRETCHED_MIN_HEIGHT), внутреннее
+  // остаётся сжимаемым (minHeight: 0) — только так таблица внутри упирается в
+  // границы вкладки и сохраняет собственную прокрутку.
   const stretch = node.props?.flex !== undefined
 
   const content = (
@@ -153,7 +175,7 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 flex: node.props?.flex as number | string,
-                minHeight: 0,
+                minHeight: STRETCHED_MIN_HEIGHT,
               }
             : undefined
       }

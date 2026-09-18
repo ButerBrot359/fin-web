@@ -15,6 +15,8 @@ export { isKazakh, pickLabel, pickTitle } from './lib/pick-label'
 
 export { useAnalyticsCatalogIndex } from './lib/hooks/use-analytics-catalog'
 export { useAnalyticsDataset } from './lib/hooks/use-analytics-dataset'
+export { useAnalyticsOrganizations } from './lib/hooks/use-analytics-organizations'
+export { useAnalyticsOrganizationStore } from './model/organization-store'
 export { useWidgetKinds } from './lib/hooks/use-widget-kinds'
 export {
   useAnalyticsItems,
@@ -84,3 +86,15 @@ export type {
   AnalyticsItemSummary,
   AnalyticsWidgetKind,
 } from './types/item'
+export type { AnalyticsOrganization } from './types/organization'
+
+export { useAiStatistics } from './lib/hooks/use-ai-statistics'
+export type {
+  AiStatistics,
+  AiStatisticsFilters,
+  AiStatisticsGroupBy,
+  AiStatisticsSurface,
+  AiStatisticsMetrics,
+  AiStatisticsBucket,
+  AiStatisticsModel,
+} from './types/ai-statistics'

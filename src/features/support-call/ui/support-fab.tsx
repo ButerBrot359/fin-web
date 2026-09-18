@@ -2,6 +2,7 @@ import { Tooltip } from '@mui/material'
 import type { ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils/cn'
+import { WIDGET_LAUNCHER_CONFIG } from '@/shared/lib/widgets/widget-launchers'
 
 export type FabTone = 'brand' | 'alert' | 'live'
 
@@ -41,7 +42,14 @@ export const SupportFab = ({
   children: ReactNode
 }) => (
   <Tooltip title={label} placement="left">
-    <span className="relative inline-flex">
+    <span
+      className="relative inline-flex"
+      style={
+        WIDGET_LAUNCHER_CONFIG.showFloatingButtons
+          ? undefined
+          : { display: 'none' }
+      }
+    >
       {pulsing && (
         <span
           className={cn(

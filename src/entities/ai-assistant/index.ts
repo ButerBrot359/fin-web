@@ -11,6 +11,7 @@ export {
 } from './lib/hooks/use-ai-assistant'
 export type {
   AiAssistantAction,
+  AiAssistantCapability,
   AiAssistantAnswer,
   AiAssistantBreakdownRow,
   AiAssistantChatRequest,
@@ -23,5 +24,16 @@ export type {
 } from './types/ai-assistant'
 export type {
   AiConversation,
+  AiConversationPage,
   AiConversationMessage,
+  AiConversationMessagePage,
 } from './types/conversation'
+
+export { useAiConversationPages } from './lib/hooks/use-ai-conversation-pages'
+
+export type {
+  AiAssistantExecution,
+  AiExecutionStep,
+  AiExecutionStatus,
+  AiStepStatus,
+} from './types/execution'

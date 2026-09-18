@@ -22,10 +22,24 @@ export const resolveReportLang = (
 export const isMeasure = (col: ReportColumnDto): boolean =>
   col.role === 'MEASURE'
 
-/** Эффективное выравнивание ячейки: явный `align` ∥ по роли (MEASURE ⇒ right). */
+/**
+ * Числовая ячейка: роль MEASURE ∥ явно объявленный бэком числовой `valueType`.
+ * Колонки сумм вне роли MEASURE (карточка счёта, отчёт по проводкам — там суммы
+ * объявлены ATTRIBUTE) иначе печатались бы сырым числом без разрядов.
+ */
+export const isNumericCell = (col: ReportColumnDto): boolean =>
+  isMeasure(col) || col.valueType === 'DECIMAL' || col.valueType === 'NUMBER'
+
+/** Дата по объявленному типу значения; `PERIOD` — историческая роль той же семантики. */
+export const isDateCell = (col: ReportColumnDto): boolean =>
+  col.role === 'PERIOD' ||
+  col.valueType === 'DATE' ||
+  col.valueType === 'DATETIME'
+
+/** Эффективное выравнивание ячейки: явный `align` ∥ по роли (числовая ⇒ right). */
 export const isRightAligned = (col: ReportColumnDto): boolean => {
   if (col.align) return col.align === 'RIGHT'
-  return isMeasure(col)
+  return isNumericCell(col)
 }
 
 /**
@@ -100,3 +114,10 @@ export const safeString = (v: unknown): string => {
 /** Значение ячейки строки по коду колонки. */
 export const cellValue = (row: ReportRowDto, code: string): unknown =>
   row.cells[code]
+
+export const indicatorSubLabels = (
+  cells: Record<string, unknown>
+): string[] | undefined => {
+  const v = cells.Pokazatel
+  return Array.isArray(v) ? v.map((x) => String(x)) : undefined
+}

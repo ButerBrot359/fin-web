@@ -21,6 +21,7 @@ import { viewSettingsAdminApi } from '@/features/sdui'
 import { ThemeSettingsDialog } from '@/features/theme-settings'
 import UserIcon from '@/shared/assets/icons/user.svg'
 import { Button } from '@/shared/ui/buttons'
+import { figmaIcons } from '@/shared/ui/icons'
 
 /**
  * Текущий пользователь в шапке и меню с выходом.
@@ -110,6 +111,20 @@ export const TopBarUser = () => {
             <FaceIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>{t('auth.face.photo.title')}</ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            setAnchorElement(null)
+            void navigate('/profile/face-id')
+          }}
+        >
+          <ListItemIcon>{figmaIcons['eye-opened']}</ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2">
+              {t('faceId.selfPhotoTitle')}
+            </Typography>
+          </ListItemText>
         </MenuItem>
 
         <MenuItem

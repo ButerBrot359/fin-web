@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  detailRowsWithoutMaster,
   filterDetailRows,
   findSelectedMasterRow,
   rowContentSignature,
@@ -105,5 +106,26 @@ describe('rowContentSignature', () => {
     expect(rowContentSignature({ rowId: 'a' })).not.toBe(
       rowContentSignature({ rowId: 'a', VychetIPN: '' })
     )
+  })
+})
+
+// Эталон КБП (РегистрацияЗаявленийПоВычетамИПН.Форма,
+// ГрафикВычетаУстановитьОтборСтрок): без текущей строки master отбор detail-ТЧ
+// ставится в пустую ссылку — график чужих вычетов не показывается.
+describe('detailRowsWithoutMaster', () => {
+  it('оставляет только строки без ключа связи', () => {
+    const rows = [
+      { rowId: 'd1', VychetIPN: { id: 1 } },
+      { rowId: 'd2', VychetIPN: null },
+      { rowId: 'd3', VychetIPN: '' },
+      { rowId: 'd4' },
+    ]
+    expect(
+      detailRowsWithoutMaster(rows, 'VychetIPN').map((r) => r.rowId)
+    ).toEqual(['d2', 'd3', 'd4'])
+  })
+
+  it('все строки со связью — пустой набор', () => {
+    expect(detailRowsWithoutMaster(detailRows, 'VychetIPN')).toEqual([])
   })
 })

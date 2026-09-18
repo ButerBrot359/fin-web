@@ -16,6 +16,8 @@ import { LoginForm } from './login-form'
 
 const signIn = vi.fn()
 
+vi.mock('@/features/face-id-service', () => ({ FaceIdLoginButton: () => null }))
+
 vi.mock('@/features/auth', async () => {
   const actual = await vi.importActual<typeof AuthModule>('@/features/auth')
   return {

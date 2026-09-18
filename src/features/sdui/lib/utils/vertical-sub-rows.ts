@@ -120,6 +120,56 @@ export function verticalSubRows(
 }
 
 /**
+ * Вложенная ГОРИЗОНТАЛЬНАЯ подгруппа внутри вертикальной — эталон 1С
+ * ({@code ColumnGroup} c {@code <Group>Horizontal</Group>} внутри вертикальной
+ * группы). Одна под-строка делится на несколько ячеек в ряд: у «Аналитики
+ * затрат» Авансового отчёта это «Источник финансирования | ФКР» сверху и
+ * «Код платных услуг | Специфика» снизу — две под-строки по две ячейки, а не
+ * четыре подписи стопкой.
+ */
+export function isHorizontalSubGroup(node: ViewNode): boolean {
+  if ((node.type as string) !== 'COLUMN_GROUP') return false
+  const orientation =
+    (node.props?.orientation as string | undefined) ?? 'HORIZONTAL'
+  return orientation === 'HORIZONTAL'
+}
+
+/**
+ * Ряд ячеек одной под-строки. Ширина делится поровну ({@code 1fr} с нулевым
+ * минимумом — длинное значение обрезается, а не растягивает соседа), между
+ * ячейками — вертикальная линия, как в сетке 1С.
+ */
+export function horizontalSubCells(items: SubRowItem[]): ReactNode {
+  return createElement(
+    'div',
+    {
+      style: {
+        height: '100%',
+        display: 'grid',
+        gridTemplateColumns: `repeat(${String(items.length)}, minmax(0, 1fr))`,
+        alignItems: 'center',
+      },
+    },
+    ...items.map((item, index) =>
+      createElement(
+        'div',
+        {
+          key: item.key,
+          className: index > 0 ? 'border-l border-ui-03' : undefined,
+          style: {
+            minWidth: 0,
+            paddingLeft: index > 0 ? 8 : 0,
+            paddingRight: 8,
+            boxSizing: 'border-box' as const,
+          },
+        },
+        item.content
+      )
+    )
+  )
+}
+
+/**
  * Сколько под-строк у самой большой VERTICAL-группы поддерева. Ноль — если
  * вертикальных групп нет вовсе.
  *

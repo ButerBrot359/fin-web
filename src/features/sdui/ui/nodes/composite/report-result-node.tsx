@@ -9,6 +9,11 @@ import { Button } from '@/shared/ui/buttons'
 import type { NodeProps, ViewEffect } from '../../../types/view'
 import { readPagination } from '../../../lib/utils/pagination'
 import { getReportResultGateway } from '../../../lib/report-result-gateway'
+import {
+  ReportRowMenu,
+  type ReportRowMenuAction,
+  type ReportRowMenuPosition,
+} from './report-row-menu'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useSduiEffects } from '../../../lib/use-sdui-effects'
 
@@ -117,6 +122,60 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
       value: { rowRef },
     })
   }
+
+  // Меню действий по строке (1С открывает его и двойным кликом, и правой
+  // кнопкой) — состав пунктов знает нода: расшифровка живёт в её пропсах.
+  const [rowMenu, setRowMenu] = useState<{
+    position: ReportRowMenuPosition
+    row: unknown
+    ancestors: unknown[]
+  } | null>(null)
+
+  const menuRow = rowMenu?.row ?? null
+  const menuRowRef = (menuRow as { rowRef?: unknown } | null)?.rowRef
+  const menuRowLabel = (menuRow as { groupValue?: unknown } | null)?.groupValue
+  // Корень ветки — строка-счёт: её ссылка ведёт в «Карточку счёта», как в 1С.
+  // Клик по самой строке-счёту даёт пустых предков, поэтому цепочка включает саму строку.
+  const menuChain = rowMenu ? [...rowMenu.ancestors, rowMenu.row] : []
+  const accountRow = menuChain[0] as
+    | { rowRef?: { domain?: unknown }; groupValue?: unknown }
+    | undefined
+  const accountRowRef =
+    accountRow?.rowRef?.domain === 'ACCOUNT_PLAN' ? accountRow.rowRef : null
+
+  const rowMenuActions: ReportRowMenuAction[] = !drilldownCommand
+    ? []
+    : [
+        ...(menuRowRef != null
+          ? [
+              {
+                key: 'open',
+                label:
+                  typeof menuRowLabel === 'string' && menuRowLabel !== ''
+                    ? `${t('osv.openElement')} «${menuRowLabel}»`
+                    : t('osv.openElement'),
+                onSelect: () => {
+                  handleDrilldown(menuRow)
+                },
+              },
+            ]
+          : []),
+        ...(accountRowRef != null && accountRowRef !== menuRowRef
+          ? [
+              {
+                key: 'account-card',
+                label: `${t('osv.accountCard')} ${
+                  typeof accountRow?.groupValue === 'string'
+                    ? accountRow.groupValue
+                    : ''
+                }`.trim(),
+                onSelect: () => {
+                  handleDrilldown(accountRow)
+                },
+              },
+            ]
+          : []),
+      ]
 
   const { data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteQuery({
@@ -234,7 +293,24 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
         <Renderer
           result={result}
           onDrilldown={drilldownCommand ? handleDrilldown : undefined}
+          onRowMenu={
+            drilldownCommand
+              ? (row, ancestors, position) => {
+                  window.getSelection()?.removeAllRanges()
+                  setRowMenu({ row, ancestors, position })
+                }
+              : undefined
+          }
         />
+      ) : Renderer ? (
+        // Рендерер на месте, результата нет (отчёт не построился — например,
+        // сервер отклонил параметры): это состояние отчёта, а не поломка UI.
+        <div
+          data-testid="report-result-placeholder"
+          className="flex items-center justify-center py-20"
+        >
+          <Typography className="text-ui-05">{placeholder}</Typography>
+        </div>
       ) : (
         <div
           data-testid="report-result-gateway-missing"
@@ -245,6 +321,14 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
           </Typography>
         </div>
       )}
+
+      <ReportRowMenu
+        position={rowMenu?.position ?? null}
+        actions={rowMenuActions}
+        onClose={() => {
+          setRowMenu(null)
+        }}
+      />
 
       {reportLayout === 'LEDGER' && hasNextPage && (
         <div className="flex justify-center py-2">

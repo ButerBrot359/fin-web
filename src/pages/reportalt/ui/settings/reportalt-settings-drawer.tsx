@@ -44,6 +44,7 @@ interface ReportAltSettingsDrawerProps {
   langParam?: ReportAltParameterDto | null
   langValue?: string
   onLangChange?: (value: string) => void
+  groupingTitles?: Record<string, string>
 }
 
 /**
@@ -63,6 +64,7 @@ export const ReportAltSettingsDrawer = ({
   langParam,
   langValue,
   onLangChange,
+  groupingTitles,
 }: ReportAltSettingsDrawerProps) => {
   const { t, i18n } = useTranslation()
   const isKz = i18n.language === 'kz'
@@ -74,7 +76,11 @@ export const ReportAltSettingsDrawer = ({
   )
   const orderFields = availableFields.filter((f) => f.availableAsOrder === true)
   const filterFields = meta.filters ?? []
-  const groupingOptions = meta.availableGroupings ?? []
+  const groupingOptions = (meta.availableGroupings ?? []).map((o) =>
+    groupingTitles?.[o.code]
+      ? { ...o, titleRu: groupingTitles[o.code], titleKz: groupingTitles[o.code] }
+      : o
+  )
 
   // Флажки оформления: из meta; фолбэк — встроенный highlightNegatives
   // (в 1С по умолчанию включён), пока meta-узел не зафиксирован контрактом.

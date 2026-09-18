@@ -270,7 +270,7 @@ export interface ReportMetaDto {
  * годится (нет домена; у 7/10 отчётов там не документ).
  */
 export interface ReportRowRefDto {
-  domain: 'DOCUMENT' | 'DICTIONARY'
+  domain: 'DOCUMENT' | 'DICTIONARY' | 'ACCOUNT_PLAN'
   typeCode: string
   id: number
 }
@@ -349,6 +349,7 @@ export interface ReportResultDto {
    * ([Schet, Podrazdelenie, Mol]). Пусто/отсутствие ⇒ прежнее дерево с отступами.
    */
   groupFloorCodes?: string[]
+  rowRefColumn?: string
 }
 
 /**

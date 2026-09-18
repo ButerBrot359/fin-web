@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   useLocation,
   useNavigate,
@@ -70,8 +70,24 @@ export function useSduiCardBinding() {
     (useTreeStore((s) => s.root?.props?.title) as string | undefined) ?? ''
   const pageTitle = dirty ? `${baseTitle} *` : baseTitle
 
-  const [tabTitle, setTabTitle] = useState('')
-  useTabMeta(tabTitle)
+  // Заголовок предыдущего экрана не должен доехать до вкладки следующего:
+  // SduiCardScreen не размонтируется на смене маршрута (SCRUM-360 этап B), и
+  // до ответа OPEN в состоянии лежит имя прошлой формы — вкладка показывала
+  // чужое название, пока не придёт своё. Заголовок хранится вместе с маршрутом,
+  // которому принадлежит, и на смене маршрута сбрасывается тем же рендером —
+  // до эффектов, поэтому чужое имя в стор вкладок не уходит. Пустой заголовок
+  // useTabMeta не пишет, так что имя уже названной вкладки этим не теряется.
+  const [titleState, setTitleState] = useState({
+    route: location.pathname,
+    title: '',
+  })
+  if (titleState.route !== location.pathname) {
+    setTitleState({ route: location.pathname, title: '' })
+  }
+  const setTabTitle = useCallback((title: string) => {
+    setTitleState((prev) => ({ route: prev.route, title }))
+  }, [])
+  useTabMeta(titleState.title)
 
   const closeCurrentTab = () => {
     useFormCacheStore.getState().removeTab(location.pathname)
@@ -132,7 +148,7 @@ export function useSduiCardBinding() {
         if (!didNavigate) navigateToNeighborTab(navigate)
       },
     }),
-    [navigate]
+    [navigate, setTabTitle]
   )
 
   return { tabsApi, pageTitle, unsavedDialog, handleClose }

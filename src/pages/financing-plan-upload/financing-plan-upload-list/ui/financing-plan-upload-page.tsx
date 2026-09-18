@@ -118,7 +118,7 @@ export const FinancingPlanUploadPage = () => {
     vidPlana: null,
     istochnikFinansirovaniyaId: null,
     dvizhenieFinansirovaniyaId: null,
-    sheetName: '',
+    sheetName: DEFAULT_SHEET_NAME,
     startRow: 2,
     columnOffset: null,
     vTysTenge: false,
@@ -155,14 +155,27 @@ export const FinancingPlanUploadPage = () => {
     setOperationDialogOpen(false)
   }
 
-  const canParse =
-    !!file &&
-    form.organizatsiyaId != null &&
-    !!form.vidPlana &&
-    form.istochnikFinansirovaniyaId != null &&
-    !parseMutation.isPending
+  const missingForParse = [
+    ...(form.organizatsiyaId == null
+      ? [t('financingPlanUpload.organization')]
+      : []),
+    ...(!form.vidPlana ? [t('financingPlanUpload.planType')] : []),
+    ...(form.istochnikFinansirovaniyaId == null
+      ? [t('financingPlanUpload.source')]
+      : []),
+    ...(!file ? [t('financingPlanUpload.fileName')] : []),
+  ]
 
   const handleParse = () => {
+    if (missingForParse.length > 0) {
+      showToast(
+        'warning',
+        t('financingPlanUpload.fillRequired', {
+          fields: missingForParse.join(', '),
+        })
+      )
+      return
+    }
     if (!file || form.organizatsiyaId == null || !form.vidPlana) return
     const sheetName = form.sheetName.trim()
     parseMutation.mutate(
@@ -186,6 +199,22 @@ export const FinancingPlanUploadPage = () => {
       {
         onSuccess: (result) => {
           setParseResult(result)
+          if (result.errors.length > 0) {
+            showToast(
+              'warning',
+              t('financingPlanUpload.parsedWithErrors', {
+                count: result.rows.length,
+                errors: result.errors.length,
+              })
+            )
+          } else if (result.rows.length === 0) {
+            showToast('warning', t('financingPlanUpload.parsedEmpty'))
+          } else {
+            showToast(
+              'success',
+              t('financingPlanUpload.parsed', { count: result.rows.length })
+            )
+          }
         },
         onError: (error) => {
           setParseResult(null)
@@ -501,7 +530,7 @@ export const FinancingPlanUploadPage = () => {
         <div>
           <Button
             variant="contained"
-            disabled={!canParse}
+            disabled={parseMutation.isPending}
             onClick={handleParse}
             sx={{ height: 40 }}
           >

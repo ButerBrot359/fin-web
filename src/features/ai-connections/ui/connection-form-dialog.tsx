@@ -5,18 +5,24 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
   TextField,
   Typography,
 } from '@mui/material'
 
 import type { LlmProvider } from '@/entities/analytics'
-import {
-  PROVIDER_OPTIONS,
-  type AiConnection,
-  type AiConnectionUpdate,
-} from '@/entities/ai-connection'
+import type { AiConnection, AiConnectionUpdate } from '@/entities/ai-connection'
+import type { TranslationKey } from '@/shared/types/i18n.types'
 import { Button } from '@/shared/ui/buttons'
+
+import { ApiKeyField } from './api-key-field'
+import { ModelAutocomplete } from './model-autocomplete'
+import { ProviderSelector } from './provider-selector'
+import { ConnectionPricingSection } from './connection-pricing-section'
+import {
+  pricingDraft,
+  pricingRequest,
+  validPricing,
+} from '../lib/pricing/connection-pricing'
 
 interface ConnectionFormDialogProps {
   open: boolean
@@ -36,14 +42,34 @@ const emptyForm = (connection: AiConnection | null): AiConnectionUpdate => ({
   apiKey: '',
   temperature: connection?.temperature ?? 0.2,
   maxTokens: connection?.maxTokens ?? 8000,
+  cacheEnabled: connection?.cacheEnabled ?? false,
 })
 
 /**
- * Форма подключения.
+ * Пояснение под полем обычным текстом, а НЕ через `helperText`.
  *
- * <p>Здесь описываются провайдер, ключ и модель — один раз. Контуры потом только
- * выбирают из готовых, поэтому три модели одного провайдера заводятся тремя
- * подключениями с одним ключом, а не тремя копиями настроек.
+ * <p>Тема проекта позиционирует `MuiFormHelperText` абсолютно (`bottom: -18`), то есть
+ * резервирует под подпись ровно одну строку. Любая подсказка длиннее одной строки
+ * вылезает за неё и наезжает на следующее поле — именно это и происходило с подсказками
+ * про адрес API и максимум токенов. Обычный блок под полем занимает столько места,
+ * сколько ему нужно.
+ */
+const FieldHint = ({ textKey }: { textKey: TranslationKey }) => {
+  const { t } = useTranslation()
+
+  return (
+    <Typography variant="caption" className="-mt-2 block text-ui-05">
+      {t(textKey)}
+    </Typography>
+  )
+}
+
+/**
+ * Форма подключения к ИИ.
+ *
+ * <p>Провайдер выбирается карточками, а модель — автокомплитом с каталогом провайдера:
+ * оба компонента переехали сюда из прежней формы настроек аналитики, где были написаны и
+ * обкатаны.
  */
 export const ConnectionFormDialog = ({
   open,
@@ -54,6 +80,7 @@ export const ConnectionFormDialog = ({
 }: ConnectionFormDialogProps) => {
   const { t } = useTranslation()
   const [form, setForm] = useState<AiConnectionUpdate>(emptyForm(connection))
+  const [prices, setPrices] = useState(() => pricingDraft(connection?.pricing))
   const [syncedId, setSyncedId] = useState<number | null>(
     connection?.id ?? null
   )
@@ -63,6 +90,7 @@ export const ConnectionFormDialog = ({
   if ((connection?.id ?? null) !== syncedId) {
     setSyncedId(connection?.id ?? null)
     setForm(emptyForm(connection))
+    setPrices(pricingDraft(connection?.pricing))
   }
 
   const isLocal = form.provider === 'LOCAL'
@@ -75,41 +103,34 @@ export const ConnectionFormDialog = ({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>{t('aiConnections.formTitle')}</DialogTitle>
       <DialogContent>
         <div className="flex flex-col gap-4 pt-2">
           <TextField
             label={t('aiConnections.name')}
-            helperText={t('aiConnections.nameHint')}
             value={form.name}
             onChange={(event) => {
               patch({ name: event.target.value })
             }}
           />
+          <FieldHint textKey="aiConnections.nameHint" />
 
-          <TextField
-            select
-            label={t('analytics.settings.provider')}
+          <ProviderSelector
             value={form.provider}
-            onChange={(event) => {
-              // Смена провайдера очищает модель: идентификаторы у провайдеров свои.
-              patch({ provider: event.target.value as LlmProvider, model: '' })
+            onChange={(next: LlmProvider) => {
+              // Смена провайдера очищает модель: идентификаторы у провайдеров свои,
+              // и модель Claude в OpenAI не существует.
+              patch({ provider: next, model: '', cacheEnabled: false })
             }}
-          >
-            {PROVIDER_OPTIONS.map((provider) => (
-              <MenuItem key={provider.value} value={provider.value}>
-                {t(provider.labelKey)}
-              </MenuItem>
-            ))}
-          </TextField>
+          />
 
-          <TextField
-            label={t('analytics.settings.model')}
-            helperText={t('analytics.settings.modelHint')}
+          <ModelAutocomplete
+            provider={form.provider}
+            baseUrl={form.baseUrl ?? ''}
             value={form.model}
-            onChange={(event) => {
-              patch({ model: event.target.value })
+            onChange={(model) => {
+              patch({ model, cacheEnabled: false })
             }}
           />
 
@@ -117,33 +138,35 @@ export const ConnectionFormDialog = ({
             required={isLocal}
             error={baseUrlMissing}
             label={t('analytics.settings.baseUrl')}
-            helperText={t(
-              isLocal
-                ? 'analytics.settings.baseUrlHintLocal'
-                : 'analytics.settings.baseUrlHint'
-            )}
             value={form.baseUrl ?? ''}
+            // Браузер подставлял сюда ФИО пользователя, приняв поле за имя.
+            // `off` Chrome на текстовых полях игнорирует, а НЕИЗВЕСТНЫЙ токен
+            // трактует как «автозаполнение выключено» — это работает.
+            autoComplete="ai-connection-base-url"
+            name="ai-connection-base-url"
             onChange={(event) => {
               patch({ baseUrl: event.target.value })
             }}
           />
-
-          <TextField
-            type="password"
-            autoComplete="off"
-            label={t('analytics.settings.apiKey')}
-            helperText={t(
+          <FieldHint
+            textKey={
               isLocal
-                ? 'analytics.settings.apiKeyHintLocal'
-                : 'analytics.settings.apiKeyHint'
-            )}
+                ? 'analytics.settings.baseUrlHintLocal'
+                : 'analytics.settings.baseUrlHint'
+            }
+          />
+
+          <ApiKeyField
             value={form.apiKey ?? ''}
-            onChange={(event) => {
-              patch({ apiKey: event.target.value })
+            savedMask={connection?.apiKeyMask}
+            hasSavedKey={connection?.hasApiKey ?? false}
+            optional={isLocal}
+            onChange={(apiKey) => {
+              patch({ apiKey })
             }}
           />
 
-          <div className="flex gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <TextField
               type="number"
               label={t('analytics.settings.temperature')}
@@ -155,13 +178,24 @@ export const ConnectionFormDialog = ({
             <TextField
               type="number"
               label={t('analytics.settings.maxTokens')}
-              helperText={t('aiConnections.maxTokensHint')}
               value={form.maxTokens}
               onChange={(event) => {
                 patch({ maxTokens: Number(event.target.value) })
               }}
             />
           </div>
+          <FieldHint textKey="aiConnections.maxTokensHint" />
+
+          <ConnectionPricingSection
+            draft={prices}
+            onChange={setPrices}
+            provider={form.provider}
+            model={form.model}
+            cacheEnabled={form.cacheEnabled ?? false}
+            onCacheChange={(cacheEnabled) => {
+              patch({ cacheEnabled })
+            }}
+          />
 
           {!isLocal && (
             <Typography variant="body2" className="text-support-01">
@@ -176,10 +210,11 @@ export const ConnectionFormDialog = ({
         </Button>
         <Button
           variant="primary"
-          disabled={isSaving || incomplete}
+          disabled={isSaving || incomplete || !validPricing(prices)}
           onClick={() => {
             onSubmit({
               ...form,
+              pricing: pricingRequest(prices),
               name: form.name.trim(),
               model: form.model.trim(),
               baseUrl: (form.baseUrl ?? '').trim() || null,

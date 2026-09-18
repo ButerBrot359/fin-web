@@ -1,22 +1,38 @@
-import { useState } from 'react'
+import {
+  AI_WIDGET_NEW_CHAT_EVENT,
+  AI_WIDGET_OPEN_EVENT,
+} from '@/shared/lib/widgets/widget-launchers'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import {
-  useAiConversationMessages,
-  useAiConversations,
+  useAiAssistantSettings,
   useConfirmAssistantAction,
   type AiAssistantAction,
+  type AiAssistantAnswer,
 } from '@/entities/ai-assistant'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-import {
-  useAssistantSession,
-  type AssistantChatMessage,
-} from '../lib/hooks/use-assistant-session'
+import { useAssistantDraft } from '../lib/hooks/use-assistant-draft'
+import { useAssistantPrint } from '../lib/hooks/use-assistant-print'
+import { useRestoredAssistantSession } from '../lib/hooks/use-restored-assistant-session'
 import { useFormContext } from '../lib/hooks/use-form-context'
 import { AiAssistantFab } from './ai-assistant-fab'
 import { AiAssistantPanel } from './ai-assistant-panel'
+
+/**
+ * Адрес карточки документа.
+ *
+ * Раздел берётся из адреса текущей страницы: помощник живёт в макете и открывается
+ * откуда угодно, а `Main` — запасной вариант для страниц вне разделов.
+ */
+const documentPath = (
+  pageCode: string | undefined,
+  typeCode: string,
+  entryId: number
+): string =>
+  `/modules/${pageCode ?? 'Main'}/document/${typeCode}/${String(entryId)}`
 
 /**
  * Корень контура помощника: кнопка, панель, восстановление переписки и обработка действий.
@@ -30,62 +46,158 @@ import { AiAssistantPanel } from './ai-assistant-panel'
  */
 export const AiAssistantWidget = () => {
   const { t } = useTranslation()
+  const [pendingStartedAt, setPendingStartedAt] = useState<number>()
+  const [chatVersion, setChatVersion] = useState(0)
   const [open, setOpen] = useState(false)
   const [minimized, setMinimized] = useState(false)
+  const [enlarged, setEnlarged] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  useEffect(() => {
+    const openWidget = () => {
+      setOpen(true)
+      setMinimized(false)
+      setHelpOpen(false)
+    }
+    window.addEventListener(AI_WIDGET_OPEN_EVENT, openWidget)
+    return () => {
+      window.removeEventListener(AI_WIDGET_OPEN_EVENT, openWidget)
+    }
+  }, [])
   const context = useFormContext()
-  const session = useAssistantSession(context)
   const confirmAction = useConfirmAssistantAction()
+  const printDocument = useAssistantPrint()
   const navigate = useNavigate()
   const { pageCode } = useParams<{ pageCode: string }>()
 
-  // Диалог по этому объекту тянем только при открытой панели: закрытый помощник
-  // не повод дёргать сервер на каждой смене страницы.
-  const { conversations } = useAiConversations(
-    { typeCode: context.typeCode, entryId: context.entryId },
-    open
-  )
-  // Индексом, а не optional chaining: при выключенном noUncheckedIndexedAccess
-  // TypeScript считает элемент всегда заданным, и линтер справедливо называет
-  // проверку лишней. Длина массива — единственный честный признак.
-  const restoredId = conversations.length > 0 ? conversations[0].id : null
-  const { messages: storedMessages } = useAiConversationMessages(
-    open && session.isEmpty ? restoredId : null
-  )
-
-  // Восстановление в рендере, а не в эффекте: линтер проекта запрещает setState
-  // в эффекте, и лишний проход показал бы пустую ленту поверх уже полученной.
-  if (
-    open &&
-    session.isEmpty &&
-    restoredId != null &&
-    storedMessages.length > 0
-  ) {
-    session.restore(
-      restoredId,
-      storedMessages
-        // Роль TOOL — что помощник прочитал из базы. В журнале она нужна, в ленте
-        // диалога это шум: человек перечитывает разговор, а не протокол чтений.
-        .filter((message) => message.role !== 'TOOL')
-        .map<AssistantChatMessage>((message) => ({
-          id: `stored-${String(message.id)}`,
-          role: message.role === 'USER' ? 'USER' : 'ASSISTANT',
-          text: message.content,
-        }))
-    )
-  }
-
-  const documentPath = (typeCode: string, entryId: number): string =>
-    `/modules/${pageCode ?? 'Main'}/document/${typeCode}/${String(entryId)}`
-
-  const handleAction = (action: AiAssistantAction) => {
-    if (action.kind === 'OPEN_DOCUMENT' && action.typeCode && action.entryId) {
-      void navigate(documentPath(action.typeCode, action.entryId))
+  const openDocument = useCallback(
+    (typeCode: string, entryId: number) => {
       // Панель не закрываем: помощник затем и нужен, чтобы смотреть в документ
       // и продолжать спрашивать о нём.
+      void navigate(documentPath(pageCode, typeCode, entryId))
+    },
+    [navigate, pageCode]
+  )
+
+  /** Результат мутации открывается для проверки пользователем. */
+  const openAffectedDocument = useCallback(
+    (answer: AiAssistantAnswer) => {
+      // Индексом, а не optional chaining: при выключенном noUncheckedIndexedAccess
+      // TypeScript считает элемент всегда заданным, и линтер называет проверку лишней.
+      if (answer.created.length === 0) return
+      const created = answer.created[0]
+      showToast(
+        'success',
+        t('aiAssistant.actionCompleted'),
+        created.presentation
+      )
+      if (
+        context.kind !== 'DOCUMENT' ||
+        context.typeCode !== created.typeCode ||
+        context.entryId !== created.entryId
+      ) {
+        openDocument(created.typeCode, created.entryId)
+      }
+    },
+    [openDocument, t, context.kind, context.typeCode, context.entryId]
+  )
+
+  const session = useRestoredAssistantSession(
+    context,
+    open,
+    openAffectedDocument
+  )
+
+  const draftKey = JSON.stringify([
+    context.kind,
+    context.typeCode,
+    context.entryId,
+  ])
+  const { draft, setDraft } = useAssistantDraft(draftKey)
+
+  const newChatDisabled =
+    session.isPending || confirmAction.isPending || printDocument.isPending
+  const startNewChat = session.startNewChat
+  const handleNewChat = useCallback(() => {
+    setOpen(true)
+    setMinimized(false)
+    setHelpOpen(false)
+    if (!newChatDisabled) {
+      setDraft('')
+      startNewChat()
+      setChatVersion((current) => current + 1)
+    }
+  }, [newChatDisabled, setDraft, startNewChat])
+
+  useEffect(() => {
+    window.addEventListener(AI_WIDGET_NEW_CHAT_EVENT, handleNewChat)
+    return () => {
+      window.removeEventListener(AI_WIDGET_NEW_CHAT_EVENT, handleNewChat)
+    }
+  }, [handleNewChat])
+
+  // Разрешения нужны, чтобы не предлагать заготовку, которую сервер отклонит, и
+  // чтобы справка называла выключенное выключенным. Тоже только при открытой панели.
+  const {
+    settings,
+    isLoading: settingsLoading,
+    isError: settingsError,
+    retry: retrySettings,
+  } = useAiAssistantSettings(open)
+  const capabilities = settings?.capabilities ?? null
+  const unavailableReason = settingsLoading
+    ? t('aiAssistant.settingsLoading')
+    : !settings || settingsError
+      ? t('aiAssistant.settingsLoadFailed')
+      : !settings.enabled
+        ? t('aiAssistant.assistantDisabled')
+        : undefined
+  const handleSend = (question: string) => {
+    if (
+      !unavailableReason &&
+      !newChatDisabled &&
+      session.isRestored &&
+      question.trim()
+    ) {
+      setPendingStartedAt(Date.now())
+      session.send(question)
+    }
+  }
+
+  const handleAction = (action: AiAssistantAction) => {
+    if (session.isPending || confirmAction.isPending || printDocument.isPending)
+      return
+    if (action.error) return
+    if (
+      (action.kind === 'PRINT_DOCUMENT' || action.kind === 'CREATE_DOCUMENT') &&
+      (!settings?.enabled || !capabilities?.includes(action.kind))
+    ) {
+      showToast('error', t('aiAssistant.actionUnavailable'))
+      return
+    }
+    if (action.kind === 'SHOW_ROWS' && action.tableCode) {
+      handleSend(t('aiAssistant.showRowsPrompt', { table: action.tableCode }))
+      return
+    }
+    if (action.kind === 'OPEN_DOCUMENT' && action.typeCode && action.entryId) {
+      openDocument(action.typeCode, action.entryId)
+      return
+    }
+
+    if (action.kind === 'PRINT_DOCUMENT' && action.typeCode && action.entryId) {
+      setPendingStartedAt(Date.now())
+      printDocument.mutate(
+        { typeCode: action.typeCode, entryId: action.entryId },
+        {
+          onError: () => {
+            showToast('error', t('aiAssistant.printFailed'))
+          },
+        }
+      )
       return
     }
 
     if (action.kind === 'CREATE_DOCUMENT' && action.typeCode) {
+      setPendingStartedAt(Date.now())
       confirmAction.mutate(
         {
           kind: 'CREATE_DOCUMENT',
@@ -95,14 +207,16 @@ export const AiAssistantWidget = () => {
         {
           onSuccess: (created) => {
             showToast('success', t('aiAssistant.created'), created.presentation)
-            void navigate(documentPath(created.typeCode, created.entryId))
+            openDocument(created.typeCode, created.entryId)
           },
           onError: () => {
             showToast('error', t('aiAssistant.createFailed'))
           },
         }
       )
+      return
     }
+    showToast('error', t('aiAssistant.actionUnavailable'))
   }
 
   return (
@@ -116,19 +230,59 @@ export const AiAssistantWidget = () => {
         />
       )}
       <AiAssistantPanel
+        key={chatVersion}
         open={open}
         minimized={minimized}
+        enlarged={enlarged}
+        helpOpen={helpOpen}
+        onToggleHelp={() => {
+          setHelpOpen((current) => !current)
+        }}
+        onToggleSize={() => {
+          setEnlarged((current) => !current)
+        }}
         context={context}
+        capabilities={capabilities}
+        draft={draft}
+        onDraftChange={setDraft}
+        unavailableReason={unavailableReason}
+        onRetrySettings={settingsError ? retrySettings : undefined}
         messages={session.messages}
-        isPending={session.isPending || confirmAction.isPending}
+        historyLoading={session.historyLoading}
+        historyError={session.historyError}
+        onRetryHistory={session.retryHistory}
+        hasOlderMessages={session.hasOlderMessages}
+        isLoadingOlder={session.isLoadingOlder}
+        olderMessagesError={session.olderMessagesError}
+        onLoadOlder={session.loadOlder}
+        pendingStartedAt={session.pendingStartedAt ?? pendingStartedAt}
+        isPending={
+          session.isPending ||
+          confirmAction.isPending ||
+          printDocument.isPending
+        }
+        onNewChat={handleNewChat}
+        newChatDisabled={newChatDisabled}
+        onOpenHistory={() => {
+          setOpen(false)
+          const query =
+            session.conversationId != null
+              ? `?conversationId=${String(session.conversationId)}`
+              : ''
+          void navigate(`/modules/${pageCode ?? 'Main'}/ai-history${query}`)
+        }}
         onClose={() => {
           setOpen(false)
+          // Следующее открытие — снова диалог: кнопка внизу экрана обещает помощника,
+          // а не справку, на которой его закрыли.
+          setHelpOpen(false)
         }}
         onToggleMinimize={() => {
           setMinimized((current) => !current)
         }}
-        onSend={session.send}
+        onSend={handleSend}
         onAction={handleAction}
+        onOpenDocument={openDocument}
       />
     </>
   )

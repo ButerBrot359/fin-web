@@ -64,7 +64,7 @@ export interface ReportAltColumnDto {
  */
 /** Цель расшифровки строки (SCRUM-370 блок В) — зеркало ReportRowRefDto. */
 export interface ReportAltRowRefDto {
-  domain: 'DOCUMENT' | 'DICTIONARY'
+  domain: 'DOCUMENT' | 'DICTIONARY' | 'ACCOUNT_PLAN'
   typeCode: string
   id: number
 }
@@ -144,6 +144,7 @@ export interface ReportAltResultDto {
   periodLine?: string
   footerBlock?: ReportAltFormSignatureDto
   groupFloorCodes?: string[]
+  rowRefColumn?: string
   /** Пагинация LEDGER (F4): номер выданной страницы. */
   page?: number
   /** Пагинация LEDGER: размер страницы. */
@@ -189,6 +190,26 @@ export interface ReportAltParameterDto {
   /** Логическая группа параметра (period/account/organization/…). */
   group?: string
   allowedValues?: ReportAltAllowedValue[]
+  dependsOnParam?: { param: string; resolver: string }
+  refreshesForm?: boolean
+}
+
+export interface ReportAltOptionsSource {
+  url: string
+  params?: Record<string, string>
+}
+
+export interface ReportAltParamStateDto {
+  values: Record<string, unknown>
+  disabledParams: string[]
+  optionsSources: Record<string, ReportAltOptionsSource>
+  messages: Record<string, string>
+  groupingTitles?: Record<string, string>
+}
+
+export interface ReportAltParamStateBody {
+  parameters: Record<string, unknown>
+  changedParam: string | null
 }
 
 /** Строка списка отчётов (`GET /api/reportalt/reports`) и `meta.definition`. */
@@ -255,6 +276,7 @@ export interface ReportAltGroupingOptionDto {
   titleRu: string
   titleKz?: string
   kind: ReportAltGroupingOptionKind
+  defaultOn?: boolean
 }
 
 /**

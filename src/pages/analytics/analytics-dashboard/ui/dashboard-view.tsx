@@ -4,6 +4,7 @@ import { Typography } from '@mui/material'
 
 import type { AnalyticsSpec } from '@/entities/analytics'
 import { DashboardGrid, WidgetGridItem } from '@/features/analytics-widgets'
+import { AnalyticsOrganizationSelect } from '@/features/analytics-organization'
 import {
   AnalyticsParamsPanel,
   areRequiredParamsFilled,
@@ -87,13 +88,16 @@ export const DashboardView = ({
         />
       )}
 
-      {!compact && (
-        <div className="flex justify-end">
+      {/* Выбор организации — и в компактном предпросмотре ассистента: данные там
+          уже отобраны по нему, и без поля это был бы невидимый фильтр. */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <AnalyticsOrganizationSelect />
+        {!compact && (
           <Button size="small" variant="secondary" onClick={handleRefresh}>
             {t('analytics.dashboard.refresh')}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       <DashboardGrid layout={spec.layout}>
         {spec.widgets.map((widget) => (

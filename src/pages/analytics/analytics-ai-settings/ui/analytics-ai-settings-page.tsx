@@ -1,6 +1,7 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Typography } from '@mui/material'
+import { Box, Button, Paper, Typography } from '@mui/material'
+import { useDictionaryPermissionsCopy } from '@/pages/analytics/analytics-dictionary-permissions/lib/copy'
 
 import { useAiSettings } from '@/entities/analytics'
 import {
@@ -23,6 +24,8 @@ import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 export const AnalyticsAiSettingsPage = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { pageCode } = useParams()
+  const { copy } = useDictionaryPermissionsCopy()
   const location = useLocation()
 
   useTabMeta(t('analytics.settings.title'))
@@ -40,24 +43,69 @@ export const AnalyticsAiSettingsPage = () => {
     <div className="flex h-full flex-col gap-5 overflow-y-auto bg-ui-02 pt-5 pb-6">
       <PageHeader title={t('analytics.settings.title')} onClose={handleClose} />
 
-      {/* Ширина ограничена: поля ввода на всю ширину экрана нечитаемы, а форма
-          настроек — не таблица, ей не нужен весь рабочий стол. */}
-      <div className="flex w-full max-w-[720px] flex-col gap-4">
-        <Typography variant="body2" className="text-ui-05">
-          {t('analytics.settings.subtitle')}
-        </Typography>
+      {/* Две колонки: настройки слева, раскрытие «что уходит в ИИ» справа.
+          Раньше раскрытие занимало всю ширину сверху и уводило сами настройки за
+          пределы экрана — решение о провайдере принимается, ГЛЯДЯ на то, какие
+          данные ему достанутся, а не вспоминая прочитанное выше.
 
-        {/* Раскрытие по обоим контурам сразу и ПЕРЕД формами: решение о
-            провайдере принимается зная, какие данные ему достанутся. */}
-        <AiDisclosurePanel />
+          На узком экране колонки складываются в одну, и раскрытие снова идёт
+          первым: без места для двух колонок порядок «сначала прочитай» остаётся
+          единственным способом показать цену выбора до самого выбора. */}
+      <div className="flex w-full flex-col gap-4 xl:flex-row xl:items-start">
+        <div className="flex w-full min-w-0 flex-col gap-4 xl:max-w-[720px]">
+          <Typography variant="body2" className="text-ui-05">
+            {t('analytics.settings.subtitle')}
+          </Typography>
 
-        {/* Подключения — первыми: контуры ниже выбирают из уже заведённых,
-            и порядок на экране повторяет порядок действий. */}
-        <AiConnectionsPanel />
+          {/* Подключения — первыми: контуры ниже выбирают из уже заведённых,
+              и порядок на экране повторяет порядок действий. */}
+          <AiConnectionsPanel />
 
-        <AnalyticsSurfaceForm />
+          <AnalyticsSurfaceForm />
+          <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 2,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Box sx={{ flex: '1 1 240px' }}>
+                <Typography fontWeight={700}>{copy.title}</Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1, lineHeight: 1.7 }}
+                >
+                  {copy.cardHint}
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                data-testid="dictionary-permissions-settings-link"
+                onClick={() => {
+                  void navigate(
+                    pageCode
+                      ? `/modules/${pageCode}/analytics/dictionary-permissions`
+                      : '/analytics/dictionary-permissions'
+                  )
+                }}
+              >
+                {copy.open} →
+              </Button>
+            </Box>
+          </Paper>
 
-        <AssistantSettingsForm />
+          <AssistantSettingsForm />
+        </div>
+
+        {/* Липкая: настройки длиннее раскрытия, и при прокрутке к галочкам
+            предупреждение должно оставаться перед глазами. */}
+        <div className="w-full min-w-0 xl:sticky xl:top-5 xl:w-[26rem] xl:shrink-0">
+          <AiDisclosurePanel />
+        </div>
       </div>
     </div>
   )

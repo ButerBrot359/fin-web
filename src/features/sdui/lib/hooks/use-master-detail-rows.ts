@@ -2,7 +2,11 @@ import { useMemo } from 'react'
 
 import type { ViewNode } from '../../types/view'
 import { useBindingValue } from '../sdui-session-context'
-import { findSelectedMasterRow, filterDetailRows } from '../utils/master-detail'
+import {
+  findSelectedMasterRow,
+  detailRowsWithoutMaster,
+  filterDetailRows,
+} from '../utils/master-detail'
 import type {
   TableColumnDef,
   TableRow,
@@ -56,6 +60,12 @@ export function useMasterDetailRows(
   // трогает доступность команд таблицы.
   const masterDetailRows = useMemo<TableRow[]>(() => {
     if (!isMasterDetail || !masterKey || !detailKey) return rows
+    // Строка master ещё не выбрана: эталон ставит отбор в ПУСТУЮ ссылку, то есть
+    // показывает только строки без ключа связи. Без этой ветки detail показывал
+    // строки ВСЕХ master-строк сразу (график вычета — по всем вычетам документа).
+    if (!selectedMasterRow) {
+      return detailRowsWithoutMaster(rows, detailKey)
+    }
     return filterDetailRows(rows, selectedMasterRow, masterKey, detailKey)
   }, [rows, isMasterDetail, masterKey, detailKey, selectedMasterRow])
 

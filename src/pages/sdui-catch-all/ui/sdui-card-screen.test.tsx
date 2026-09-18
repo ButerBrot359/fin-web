@@ -48,11 +48,14 @@ vi.mock('@/widgets/page-header', () => ({
   ),
 }))
 
-const renderAt = (path: string, showCardChrome: boolean) =>
+const renderAt = (path: string, showCardChrome: boolean, showHeader = false) =>
   render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter initialEntries={[path]}>
-        <SduiCardScreen showCardChrome={showCardChrome} />
+        <SduiCardScreen
+          showCardChrome={showCardChrome}
+          showHeader={showHeader}
+        />
       </MemoryRouter>
     </QueryClientProvider>
   )
@@ -160,5 +163,21 @@ describe('SduiCardScreen', () => {
 
     expect(screenState.mountCount).toBe(1)
     expect(screen.getByTestId('page-header')).toBeTruthy()
+  })
+})
+
+describe('SduiCardScreen — шапка формы отчёта', () => {
+  afterEach(cleanup)
+
+  it('showHeader рисует шапку без карточной обвязки', () => {
+    renderAt('/modules/Otchety/reportalt/OborotnoSaldovayaVedomost', false, true)
+
+    expect(screen.getByTestId('page-header')).toBeTruthy()
+  })
+
+  it('без showHeader и карточной обвязки шапки нет', () => {
+    renderAt('/modules/Otchety/reportalt/OborotnoSaldovayaVedomost', false)
+
+    expect(screen.queryByTestId('page-header')).toBeNull()
   })
 })

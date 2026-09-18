@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
@@ -9,7 +9,12 @@ import {
   Typography,
 } from '@mui/material'
 
-import { useAccountPlanList } from '@/entities/account-plan'
+import {
+  SUBCONTO_BU_TYPE_CODE,
+  useAccountPlanList,
+  useSubcontoBuTypes,
+} from '@/entities/account-plan'
+import { fetchReferenceOptions, useReferenceOptions } from '@/features/sdui'
 import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
 import {
   AutocompleteInput,
@@ -20,8 +25,14 @@ import {
 import type { SelectOption } from '@/shared/types/select-option'
 import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
-import type { ReportAltParameterDto } from '../types/reportalt'
+import type {
+  ReportAltOptionsSource,
+  ReportAltParameterDto,
+} from '../types/reportalt'
 import type { ReportAltParamValue } from '../lib/utils/params'
+
+/** Маркер домена «План видов характеристик» в `referenceDomain` параметра. */
+const CHARACTERISTICS_PLAN_PREFIX = 'CHARACTERISTICS_PLAN:'
 
 interface ReportAltParamFieldProps {
   param: ReportAltParameterDto
@@ -29,6 +40,9 @@ interface ReportAltParamFieldProps {
   onChange: (value: ReportAltParamValue) => void
   /** Подсветить незаполненный обязательный параметр после «Сформировать». */
   invalid?: boolean
+  disabled?: boolean
+  helperText?: string
+  optionsSource?: ReportAltOptionsSource
 }
 
 /**
@@ -41,6 +55,9 @@ export const ReportAltParamField = ({
   value,
   onChange,
   invalid,
+  disabled,
+  helperText,
+  optionsSource,
 }: ReportAltParamFieldProps) => {
   const { t, i18n } = useTranslation()
   const isKz = i18n.language === 'kz'
@@ -51,10 +68,29 @@ export const ReportAltParamField = ({
   // лениво по типу параметра.
   const isAccountRef =
     param.dataType === 'ACCOUNT_LIST' || param.dataType === 'ACCOUNT_REF'
+
+  // Маркер домена «План видов характеристик» (не Dictionary) — напр. VidSubkonto
+  // Карточки счёта/субконто, referenceDomain = "CHARACTERISTICS_PLAN:VidySubcontoBu".
+  // Без этой ветки домен ушёл бы в useDictionaryEntries как typeCode справочника
+  // (/api/dictionaries/CHARACTERISTICS_PLAN:VidySubcontoBu → пусто). Та же развилка,
+  // что в легаси `report-param-field`.
+  const isCharacteristicsRef =
+    param.referenceDomain?.startsWith(CHARACTERISTICS_PLAN_PREFIX) ?? false
+  const characteristicsTypeCode = isCharacteristicsRef
+    ? param.referenceDomain!.slice(CHARACTERISTICS_PLAN_PREFIX.length)
+    : null
+
   const isDictRef =
-    param.dataType === 'DICTIONARY_REF' ||
-    param.dataType === 'ENUM_REF' ||
-    param.dataType === 'REF_LIST'
+    !isCharacteristicsRef &&
+    (param.dataType === 'DICTIONARY_REF' ||
+      param.dataType === 'ENUM_REF' ||
+      param.dataType === 'REF_LIST')
+
+  // Единственный поддержанный ПВХ-домен — «Виды субконто (БУ)»; при появлении других
+  // обобщить на generic-хук по characteristicsTypeCode (тот же TODO, что в легаси).
+  const { subcontoTypes } = useSubcontoBuTypes(
+    isCharacteristicsRef && characteristicsTypeCode === SUBCONTO_BU_TYPE_CODE
+  )
 
   // referenceDomain="ACCOUNT_PLAN" — маркер домена, а не typeCode плана.
   const accountTypeCode =
@@ -69,13 +105,27 @@ export const ReportAltParamField = ({
     isDictRef ? (param.referenceDomain ?? null) : null
   )
 
+  // Пул счетов «Списка счетов» ограничен счетами ОТЧЁТА (как в 1С — в выпадающем
+  // списке только счета ордера, а не весь план счетов; так же ведёт себя легаси
+  // `report-param-field`). Источник — defaultValue параметра (ID счетов отчёта,
+  // подставляет бэк). Пусто ⇒ показываем весь план (прежнее поведение для прочих
+  // ACCOUNT_LIST-параметров без дефолта).
+  const allowedAccountIds = useMemo<Set<number> | null>(() => {
+    if (param.dataType !== 'ACCOUNT_LIST') return null
+    const def = param.defaultValue
+    if (!Array.isArray(def) || def.length === 0) return null
+    return new Set(def.map((v) => Number(v)))
+  }, [param.dataType, param.defaultValue])
+
   const refOptions = useMemo<SelectOption[]>(() => {
     if (isAccountRef) {
-      return accounts.map((a) => ({
-        id: a.id,
-        code: a.code,
-        label: a.nameRu ? `${a.code} — ${a.nameRu}` : a.code,
-      }))
+      return accounts
+        .filter((a) => !allowedAccountIds || allowedAccountIds.has(a.id))
+        .map((a) => ({
+          id: a.id,
+          code: a.code,
+          label: a.nameRu ? `${a.code} — ${a.nameRu}` : a.code,
+        }))
     }
     if (isDictRef) {
       return dictEntries.map((e) => ({
@@ -84,8 +134,45 @@ export const ReportAltParamField = ({
         label: e.displayName ?? e.nameRu ?? e.code ?? String(e.id),
       }))
     }
+    if (isCharacteristicsRef) {
+      return subcontoTypes.map((s) => ({
+        id: s.id,
+        code: s.code,
+        label: s.nameRu ? `${s.code} — ${s.nameRu}` : s.code,
+      }))
+    }
     return []
-  }, [isAccountRef, isDictRef, accounts, dictEntries])
+  }, [
+    isAccountRef,
+    isDictRef,
+    isCharacteristicsRef,
+    accounts,
+    dictEntries,
+    subcontoTypes,
+    allowedAccountIds,
+  ])
+
+  const optionsUrl = optionsSource?.url ?? null
+  const optionsParams = optionsSource?.params
+  const {
+    options: sourceOptions,
+    loading: sourceLoading,
+    load: loadSourceOptions,
+    loadDebounced: loadSourceOptionsDebounced,
+  } = useReferenceOptions(
+    (search?: string) =>
+      optionsUrl
+        ? fetchReferenceOptions({
+            url: optionsUrl,
+            params: optionsParams,
+            search,
+          })
+        : Promise.resolve([]),
+    JSON.stringify(optionsSource ?? null)
+  )
+  const [pickedLabels, setPickedLabels] = useState<
+    Partial<Record<number, string>>
+  >({})
 
   switch (param.dataType) {
     case 'DATE':
@@ -108,14 +195,35 @@ export const ReportAltParamField = ({
     case 'REF_LIST': {
       // Множественный выбор; значение — массив ID записей.
       const selectedIds = Array.isArray(value) ? value : []
-      const selected = refOptions.filter((o) =>
-        selectedIds.includes(Number(o.id))
-      )
+      const listOptions = optionsUrl ? sourceOptions : refOptions
+      const selected = optionsUrl
+        ? selectedIds.map<SelectOption>((id) => ({
+            id,
+            code: String(id),
+            label:
+              sourceOptions.find((o) => Number(o.id) === id)?.label ??
+              pickedLabels[id] ??
+              `#${String(id)}`,
+          }))
+        : refOptions.filter((o) => selectedIds.includes(Number(o.id)))
       return (
         <Autocomplete
           multiple
           disableCloseOnSelect
           forcePopupIcon
+          disabled={disabled}
+          {...(optionsUrl
+            ? {
+                filterOptions: (opts: SelectOption[]) => opts,
+                loading: sourceLoading,
+                onOpen: () => {
+                  loadSourceOptions()
+                },
+                onInputChange: (_e: unknown, text: string, reason: string) => {
+                  if (reason === 'input') loadSourceOptionsDebounced(text)
+                },
+              }
+            : {})}
           // Ширину задаёт контейнер строки параметров (w-72) — поле не шире
           // соседей и не наезжает на них (прежний фикс sx={{width:300}} вылезал
           // за контейнер). Высота — обычный tall-инпут темы (minHeight 44,
@@ -188,9 +296,15 @@ export const ReportAltParamField = ({
               </Box>
             )
           }}
-          options={refOptions}
+          options={listOptions}
           value={selected}
           onChange={(_e, next) => {
+            if (optionsUrl) {
+              setPickedLabels((prev) => ({
+                ...prev,
+                ...Object.fromEntries(next.map((o) => [Number(o.id), o.label])),
+              }))
+            }
             onChange(next.map((o) => Number(o.id)))
           }}
           getOptionLabel={(o) => o.label}
@@ -215,6 +329,7 @@ export const ReportAltParamField = ({
               label={label}
               required={param.required}
               error={invalid}
+              helperText={helperText}
             />
           )}
         />
@@ -239,6 +354,8 @@ export const ReportAltParamField = ({
           label={label}
           required={param.required}
           error={invalid}
+          disabled={disabled}
+          helperText={helperText}
           fullWidth
         />
       )
@@ -292,6 +409,7 @@ export const ReportAltParamField = ({
         <FormControlLabel
           control={
             <Checkbox
+              disabled={disabled}
               checked={value === true}
               onChange={(e) => {
                 onChange(e.target.checked)
@@ -299,6 +417,7 @@ export const ReportAltParamField = ({
             />
           }
           label={label}
+          disabled={disabled}
         />
       )
 

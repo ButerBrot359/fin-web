@@ -43,7 +43,11 @@ export const useSaveCurrentSpec = (
           onSuccess: (item: AnalyticsItem) => {
             showToast('success', t('analytics.item.saved'))
             onDone()
-            void navigate(`/modules/${pageCode}/analytics/${item.code}`)
+            void navigate(
+              pageCode
+                ? `/modules/${pageCode}/analytics/${item.code}`
+                : `/analytics/${item.code}`
+            )
           },
           onError: (error: unknown) => {
             showToast(

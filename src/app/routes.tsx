@@ -49,6 +49,22 @@ const AnalyticsRouterPage = lazyNamed(
   () => import('@/pages/analytics/analytics-router'),
   'AnalyticsRouterPage'
 )
+const AiAssistantHistoryPage = lazyNamed(
+  () => import('@/pages/ai-assistant-history'),
+  'AiAssistantHistoryPage'
+)
+const FaceIdUserPage = lazyNamed(
+  () => import('@/pages/face-id-management'),
+  'FaceIdUserPage'
+)
+const FaceIdSettingsPage = lazyNamed(
+  () => import('@/pages/face-id-management'),
+  'FaceIdSettingsPage'
+)
+const FaceIdSelfPage = lazyNamed(
+  () => import('@/pages/face-id-management'),
+  'FaceIdSelfPage'
+)
 
 export const AppRoutes = () => {
   const location = useLocation()
@@ -68,6 +84,15 @@ export const AppRoutes = () => {
           />
           {/* Журнал регистрации действий (приказ МФ РК № 254, п. 27) — только чтение. */}
           <Route path="/admin/audit" element={<AuditLogPage />} />
+          <Route
+            path="/admin/users/:userEntryId/face-id"
+            element={<FaceIdUserPage />}
+          />
+          <Route
+            path="/admin/face-id-settings"
+            element={<FaceIdSettingsPage />}
+          />
+          <Route path="/profile/face-id" element={<FaceIdSelfPage />} />
           {/* Админка конструктора дизайна: стандарты форм для всех и по ролям. */}
           <Route
             path="/admin/design-constructor"
@@ -124,9 +149,14 @@ export const AppRoutes = () => {
             в SDUI-экран.
           */}
           <Route
+            path="/modules/:pageCode/ai-history"
+            element={<AiAssistantHistoryPage />}
+          />
+          <Route
             path="/modules/:pageCode/analytics/:code"
             element={<AnalyticsRouterPage />}
           />
+          <Route path="/analytics/:code" element={<AnalyticsRouterPage />} />
           <Route path="*" element={<SduiCatchAllPage />} />
         </Routes>
       </Suspense>

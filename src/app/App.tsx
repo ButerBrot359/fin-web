@@ -3,12 +3,14 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 import { LoginPage } from '@/pages/login'
 import { ChangePasswordPage } from '@/pages/change-password'
+import { FaceIdCallbackPage } from '@/pages/face-id-callback'
 
 import { TopBar } from '@/widgets/top-bar'
 import { Sidebar } from '@/widgets/sidebar'
 import { WorkspaceTabSync } from '@/widgets/workspace-tab-bar'
 
 import { AuthGuard, CHANGE_PASSWORD_ROUTE, LOGIN_ROUTE } from '@/features/auth'
+import { useApplyInterfaceScale } from '@/features/interface-scale'
 import { ShellSidebarHost } from '@/features/sdui'
 
 import { connectToastHistory } from '@/entities/notification-history'
@@ -32,6 +34,7 @@ const DictSidebarDrawer = lazyNamed(
 function App() {
   useWorkspaceTabGatewayBinding()
   useSduiGateways()
+  useApplyInterfaceScale()
 
   // SCRUM-317 канал №8: центр оповещений копит всё показанное всплывашками
   useEffect(() => connectToastHistory(), [])
@@ -47,6 +50,7 @@ function App() {
           AppRoutes матчится относительно «/», то есть дерево маршрутов не меняется.
         */}
         <Route path={LOGIN_ROUTE} element={<LoginPage />} />
+        <Route path="/auth/face-id/callback" element={<FaceIdCallbackPage />} />
         {/*
           Смена пароля — тоже вне Layout и вне AuthGuard: сюда приводит требование сменить
           пароль, при котором сервер отвечает 403 на всё остальное, включая данные меню и

@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import i18n from 'i18next'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
+import { invalidateDocumentListQueries } from '@/shared/lib/query/invalidate-entities'
 
 import type {
   ActionBehavior,
@@ -215,7 +216,15 @@ export function useSduiDispatch() {
           // generation) возвращает false, чтобы ячейка откатила локальный буфер.
           if (res.commandFailed === true) return false
           if (action.type === 'COMMAND') {
-            if (shouldReset) session.resetDirty()
+            if (shouldReset) {
+              session.resetDirty()
+              // Команда записала объект (resetsDirty — маркер пишущих команд в
+              // каталоге поведений: save/post/unpost/пометка на удаление). SDUI
+              // пишет мимо TanStack Query, поэтому открытые рядом списки и
+              // история документа остались бы на старых данных до F5 — раньше
+              // кэши сбрасывались только при уходе с карточки.
+              invalidateDocumentListQueries(queryClient)
+            }
             // Уже ли сервер увёл (эффект navigate)? Хост по этому флагу решает,
             // навигировать ли самому: закрытие вкладки (save+closeAfter, без
             // серверного navigate) → сесть на соседнюю; postAndClose (navigate в

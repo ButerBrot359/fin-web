@@ -2,13 +2,8 @@ import { useDataChannel, useRoomContext } from '@livekit/components-react'
 import { Track } from 'livekit-client'
 import { useCallback, useRef, useState } from 'react'
 
-import {
-  applyClick,
-  applyKey,
-  applyMove,
-  applyScroll,
-  hideRemoteCursor,
-} from '../lib/remote-control-apply'
+import { applyClick, applyKey, applyScroll } from '../lib/remote-control-apply'
+import { applyMove, hideRemoteCursor } from '../lib/remote-cursor'
 import type { RemoteControlMessage } from '../lib/remote-control-protocol'
 import {
   REMOTE_CONTROL_TOPIC,
@@ -75,6 +70,10 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
     }
   }
 
+  // Единственный useCallback хука — и он обязателен: идентичность обработчика управляет
+  // переподпиской useDataChannel, и новый колбэк на каждый рендер означал бы переподписку
+  // на каждый рендер. Остальные функции хука уходят потребителям через контекст, чьё
+  // значение и так пересобирается каждый рендер, — стабильность им ничего не даёт.
   const handle = useCallback(
     (message: { payload: Uint8Array; from?: { identity: string } }) => {
       const parsed = decodeControl(message.payload)
@@ -144,52 +143,42 @@ export const useRemoteControl = (isCaller: boolean): UseRemoteControl => {
    * ненадёжного канала не стоит механизма, который перестаёт работать без единой ошибки.
    * Частоту ограничивает отправитель — см. поверхность перехвата.
    */
-  const post = useCallback(
-    (message: RemoteControlMessage) => {
-      void sendRaw(encodeControl(message), {
-        reliable: true,
-        topic: REMOTE_CONTROL_TOPIC,
-      })
-    },
-    [sendRaw]
-  )
+  const post = (message: RemoteControlMessage) => {
+    void sendRaw(encodeControl(message), {
+      reliable: true,
+      topic: REMOTE_CONTROL_TOPIC,
+    })
+  }
 
-  const request = useCallback(() => {
+  const request = () => {
     move('requested')
     post({ kind: 'request' })
-  }, [post])
+  }
 
-  const decide = useCallback(
-    (granted: boolean) => {
-      move(granted ? 'active' : 'idle')
-      // Тип показываемой поверхности берём из собственного трека: только сама вкладка даёт
-      // точное совпадение картинки у агента с областью просмотра здесь.
-      const share = room.localParticipant.getTrackPublication(
-        Track.Source.ScreenShare
-      )
-      const surface =
-        share?.track?.mediaStreamTrack.getSettings().displaySurface
-      post({ kind: 'decision', granted, surface })
-    },
-    [post, room]
-  )
+  const decide = (granted: boolean) => {
+    move(granted ? 'active' : 'idle')
+    // Тип показываемой поверхности берём из собственного трека: только сама вкладка даёт
+    // точное совпадение картинки у агента с областью просмотра здесь.
+    const share = room.localParticipant.getTrackPublication(
+      Track.Source.ScreenShare
+    )
+    const surface = share?.track?.mediaStreamTrack.getSettings().displaySurface
+    post({ kind: 'decision', granted, surface })
+  }
 
-  const revoke = useCallback(() => {
+  const revoke = () => {
     move('idle')
     post({ kind: 'revoke' })
-  }, [post])
+  }
 
-  const send = useCallback(
-    (
-      action: Omit<Extract<RemoteControlMessage, { kind: 'action' }>, 'kind'>
-    ) => {
-      if (stateRef.current !== 'active') {
-        return
-      }
-      post({ kind: 'action', ...action })
-    },
-    [post]
-  )
+  const send = (
+    action: Omit<Extract<RemoteControlMessage, { kind: 'action' }>, 'kind'>
+  ) => {
+    if (stateRef.current !== 'active') {
+      return
+    }
+    post({ kind: 'action', ...action })
+  }
 
   return { state, peerSurface, request, decide, revoke, send }
 }

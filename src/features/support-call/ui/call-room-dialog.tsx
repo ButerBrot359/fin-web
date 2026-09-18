@@ -1,62 +1,23 @@
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
-import HeadsetMicIcon from '@mui/icons-material/HeadsetMic'
-import {
-  GridLayout,
-  LiveKitRoom,
-  ParticipantTile,
-  RoomAudioRenderer,
-  isTrackReference,
-  useConnectionState,
-  useRemoteParticipants,
-  useTracks,
-} from '@livekit/components-react'
+import { LiveKitRoom, RoomAudioRenderer } from '@livekit/components-react'
 import '@livekit/components-styles'
-import { ConnectionState, Track } from 'livekit-client'
-import type { CSSProperties, RefObject } from 'react'
+import type { CSSProperties } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/shared/lib/utils/cn'
-import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
 import type { SupportCallSession } from '../model/types'
 import { ActiveCallBar } from './active-call-bar'
-import { callSounds, startRingback } from '../lib/call-sounds'
-import { useRemoteControlContext } from '../model/remote-control-context'
+import { callSounds } from '../lib/call-sounds'
+import { STAGE_THEME } from '../lib/stage-theme'
 import { RemoteControlProvider } from '../model/remote-control-provider'
 import { CallControls } from './call-controls'
-import { RemoteControlBanner } from './remote-control-banner'
-import { RemoteControlConsent } from './remote-control-consent'
-import { RemoteControlSurface } from './remote-control-surface'
+import { AgentControlSurface, RemoteControlLayer } from './remote-control-layer'
+import { RoomStage } from './room-stage'
+import { RoomStatusLine } from './room-status-line'
 import { ScreenShareBadge } from './screen-share-badge'
 import { SupportDialog } from './support-dialog'
-
-/**
- * Тёмная сцена разговора в палитре webbuh.
- *
- * <p>LiveKit красит свои примитивы собственными переменными, и по умолчанию это чужая тёмно-серая
- * тема. Переопределяем их на цвета сайта — тогда плитки участников, подписи и рамки выглядят
- * частью webbuh, а не встроенным виджетом.
- */
-const STAGE_THEME = {
-  // Сырые palette-токены, не semantic: тёмный ФОН сцены — это ui06 как цвет
-  // поверхности, а не «цвет текста»; серверная тема фазы 2, меняя textPrimary,
-  // не должна перекрашивать фон звонилки (финальное ревью Ф1+Ф2, seed §3).
-  '--lk-bg': cssVar(palette.ui06),
-  '--lk-bg2': cssVar(palette.pendingDark1),
-  '--lk-bg3': cssVar(palette.pendingDark2),
-  '--lk-fg': cssVar(palette.ui01),
-  '--lk-fg2': cssVar(palette.ui03),
-  '--lk-fg3': cssVar(palette.ui05),
-  '--lk-accent-bg': cssVar(semantic.primary),
-  '--lk-accent-fg': cssVar(palette.ui01),
-  '--lk-danger': cssVar(semantic.error),
-  '--lk-success': cssVar(semantic.brand),
-  '--lk-border-color': cssVar(palette.pendingLkBorder),
-  '--lk-border-radius': '12px',
-  '--lk-grid-gap': '12px',
-  '--lk-font-family': '"Google Sans", system-ui, sans-serif',
-} as const
 
 interface CallRoomDialogProps {
   session: SupportCallSession
@@ -247,158 +208,5 @@ export const CallRoomDialog = ({ session, onClose }: CallRoomDialogProps) => {
       {/* Звук участников — вне окна: свёрнутый разговор обязан оставаться слышимым. */}
       <RoomAudioRenderer />
     </LiveKitRoom>
-  )
-}
-
-/** Как назвать агента в вопросе о согласии: имя из токена, иначе его identity в комнате. */
-const agentName = (peers: { name?: string; identity: string }[]): string => {
-  const peer = peers.at(0)
-  return peer?.name ?? peer?.identity ?? ''
-}
-
-/**
- * Удалённое управление внутри комнаты (ADR-0050).
- *
- * <p>Только сторона обратившегося: вопрос о согласии и красная полоса. Слой перехвата у агента
- * живёт внутри сцены — см. {@link AgentControlSurface}.
- */
-const RemoteControlLayer = ({ isCaller }: { isCaller: boolean }) => {
-  const control = useRemoteControlContext()
-  const peers = useRemoteParticipants()
-
-  if (!isCaller) {
-    return null
-  }
-
-  return (
-    <>
-      {control.state === 'requested' && (
-        <RemoteControlConsent
-          agentName={agentName(peers)}
-          onDecide={(granted) => {
-            if (granted) {
-              callSounds.screenOn()
-            }
-            control.decide(granted)
-          }}
-        />
-      )}
-      {control.state === 'active' && (
-        <RemoteControlBanner
-          onRevoke={() => {
-            callSounds.screenOff()
-            control.revoke()
-          }}
-        />
-      )}
-    </>
-  )
-}
-
-/**
- * Слой перехвата у агента.
- *
- * <p>Живёт ВНУТРИ сцены, потому что позиционируется по ней. Раньше висел на уровне комнаты:
- * `absolute inset-0` без опорного контейнера рядом, да ещё и под модальным окном — мышь агента
- * до него не доходила вовсе, и управление выглядело нерабочим.
- */
-const AgentControlSurface = ({
-  stageRef,
-}: {
-  stageRef: RefObject<HTMLDivElement | null>
-}) => {
-  const control = useRemoteControlContext()
-  return control.state === 'active' ? (
-    <RemoteControlSurface
-      stageRef={stageRef}
-      onAction={control.send}
-      peerSurface={control.peerSurface}
-    />
-  ) : null
-}
-
-/** Что происходит с соединением — строкой под заголовком, а не молчанием в чёрном прямоугольнике. */
-const RoomStatusLine = ({ isCaller }: { isCaller: boolean }) => {
-  const { t } = useTranslation()
-  const state = useConnectionState()
-  const peers = useRemoteParticipants()
-
-  if (state !== ConnectionState.Connected) {
-    return t('support.connecting')
-  }
-  if (peers.length === 0) {
-    // Роль решает так же, как на сцене: агенту не может «отвечать поддержка» — он ею и является,
-    // и если он остался один, значит собеседник ушёл.
-    return t(isCaller ? 'support.waitingForAgent' : 'support.peerLeft')
-  }
-  return peers.map((peer) => peer.name ?? peer.identity).join(', ')
-}
-
-/**
- * Сцена разговора.
- *
- * <p><b>Показанный экран занимает её целиком.</b> Ради экрана звонок и затевается: на нём мелкий
- * бухгалтерский текст, суммы и коды счетов, и в трети окна разобрать их невозможно. Плиток
- * участников рядом нет — камеру в этом контуре включить нечем, так что рядом с экраном стояли бы
- * два прямоугольника с именами, а имена и так написаны в шапке окна.
- */
-const RoomStage = ({ isCaller }: { isCaller: boolean }) => {
-  const { t } = useTranslation()
-  const peers = useRemoteParticipants()
-  const alone = peers.length === 0
-
-  // Гудок ожидания — только у звонящего и только пока он в комнате один. Без него человек
-  // смотрит в тишину и не понимает, идёт вызов или всё сломалось; смолкает гудок ровно в тот
-  // момент, когда поддержка подключилась, и это единственный сигнал «вас взяли», который
-  // слышно, не глядя в экран. Агенту он не положен: агент никого не вызывает — если он остался
-  // один, значит собеседник ушёл, и гудок сказал бы ровно обратное правде.
-  useEffect(() => {
-    if (!alone || !isCaller) {
-      return undefined
-    }
-    return startRingback()
-  }, [alone, isCaller])
-
-  // Камера остаётся в списке с заглушкой, хотя включить её нечем: именно заглушка рисует
-  // плитку участника с именем. Без неё собеседник, который ничего не показывает, исчезал бы
-  // из окна совсем.
-  const tracks = useTracks(
-    [
-      { source: Track.Source.Camera, withPlaceholder: true },
-      { source: Track.Source.ScreenShare, withPlaceholder: false },
-    ],
-    { onlySubscribed: false }
-  )
-
-  const screenShare = tracks
-    .filter(isTrackReference)
-    .find((track) => track.source === Track.Source.ScreenShare)
-
-  if (screenShare) {
-    return <ParticipantTile trackRef={screenShare} className="h-full w-full" />
-  }
-
-  if (peers.length === 0) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-        <span className="relative flex h-14 w-14 items-center justify-center">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-02/30" />
-          <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-accent-02">
-            <HeadsetMicIcon
-              sx={{ fontSize: 22, color: cssVar(palette.ui01) }}
-            />
-          </span>
-        </span>
-        <span className="text-body1 text-ui-03">
-          {t(isCaller ? 'support.waitingForAgent' : 'support.peerLeft')}
-        </span>
-      </div>
-    )
-  }
-
-  return (
-    <GridLayout tracks={tracks} style={{ height: '100%' }}>
-      <ParticipantTile />
-    </GridLayout>
   )
 }

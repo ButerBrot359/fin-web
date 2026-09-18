@@ -14,24 +14,22 @@
  * агент их подсказывает словами.
  */
 
-import { cssVar, palette, semantic, shadows } from '@/shared/design/tokens'
-
-interface Point {
+export interface Point {
   x: number
   y: number
 }
 
 /** Доли области просмотра → пиксели этой страницы. Разные экраны сторон здесь и сходятся. */
-const toViewport = (share: Point): Point => ({
+export const toViewport = (share: Point): Point => ({
   x: Math.round(share.x * window.innerWidth),
   y: Math.round(share.y * window.innerHeight),
 })
 
-const elementAt = (point: Point): Element | null =>
+export const elementAt = (point: Point): Element | null =>
   document.elementFromPoint(point.x, point.y)
 
 /** Общая часть мышиных событий: без координат React-обработчики получат нули. */
-const mouseInit = (point: Point): MouseEventInit => ({
+export const mouseInit = (point: Point): MouseEventInit => ({
   bubbles: true,
   cancelable: true,
   composed: true,
@@ -72,67 +70,6 @@ export const applyClick = (share: Point, double = false): void => {
       new MouseEvent('dblclick', { ...mouseInit(point), detail: 2 })
     )
   }
-}
-
-const CURSOR_ID = 'webbuh-remote-cursor'
-
-/**
- * Курсор агента на управляемом экране.
- *
- * <p><b>Без него управление невидимо.</b> Синтетические события не двигают настоящий указатель
- * системы: человек видел бы, как сами собой нажимаются кнопки, но не понимал бы, куда смотрит
- * собеседник и что тот сейчас нажмёт. Отдельная стрелка отвечает на оба вопроса и заодно служит
- * постоянным напоминанием, что экраном управляют.
- *
- * <p>Рисуется в самом документе, а не в React-дереве: управление приходит из обработчика
- * сообщений, живущего вне рендера, и заводить ради курсора состояние с перерисовкой на каждое
- * движение мыши — лишняя работа тридцать раз в секунду.
- */
-const cursorElement = (): HTMLElement => {
-  const existing = document.getElementById(CURSOR_ID)
-  if (existing) {
-    return existing
-  }
-  const cursor = document.createElement('div')
-  cursor.id = CURSOR_ID
-  cursor.setAttribute('aria-hidden', 'true')
-  cursor.style.cssText = [
-    'position:fixed',
-    'z-index:2147483647',
-    // Не перехватывает события: иначе курсор закрывал бы собой то, по чему кликает.
-    'pointer-events:none',
-    'width:16px',
-    'height:16px',
-    // ОСТРИЁ В ЛЕВОМ ВЕРХНЕМ УГЛУ — там же, где left/top, то есть ровно в точке действия.
-    // С острым углом снизу (и отрицательным отступом) стрелка рисовалась на полтора десятка
-    // пикселей ниже настоящей точки: агент целился верно, а указатель показывал мимо.
-    'margin:0',
-    'border-radius:2px 50% 50% 50%',
-    `background:${cssVar(semantic.primary)}`,
-    `box-shadow:0 0 0 2px ${cssVar(palette.ui01)}, ${cssVar(shadows.pendingRemoteCursor)}`,
-    'transition:left 60ms linear, top 60ms linear',
-  ].join(';')
-  document.body.appendChild(cursor)
-  return cursor
-}
-
-/** Убирает курсор агента. Зовётся, как только управление перестаёт действовать. */
-export const hideRemoteCursor = (): void => {
-  document.getElementById(CURSOR_ID)?.remove()
-}
-
-/**
- * Наведение: двигает курсор агента и посылает `mousemove`, чтобы срабатывали подсказки и
- * наведённые состояния под ним.
- */
-export const applyMove = (share: Point): void => {
-  const point = toViewport(share)
-  const cursor = cursorElement()
-  cursor.style.left = `${String(point.x)}px`
-  cursor.style.top = `${String(point.y)}px`
-
-  const target = elementAt(point)
-  target?.dispatchEvent(new MouseEvent('mousemove', mouseInit(point)))
 }
 
 /**

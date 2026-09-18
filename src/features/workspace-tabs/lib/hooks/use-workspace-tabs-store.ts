@@ -31,6 +31,18 @@ interface WorkspaceTabsStore {
   updateTabPath: (tabId: string, path: string, search: string) => void
 }
 
+/**
+ * Добавляет вкладку, соблюдая лимит MAX_TABS: первая вкладка (самая ранняя,
+ * обычно «домашняя» для сессии) сохраняется, вытесняется старейшая из остальных.
+ */
+function appendWithLimit(
+  tabs: WorkspaceTab[],
+  tab: WorkspaceTab
+): WorkspaceTab[] {
+  const next = [...tabs, tab]
+  return next.length > MAX_TABS ? [next[0], ...next.slice(2)] : next
+}
+
 function updateTab(
   tabs: WorkspaceTab[],
   tabId: string,
@@ -88,12 +100,7 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
           createdAt: Date.now(),
         }
 
-        let newTabs = [...tabs, tab]
-        if (newTabs.length > MAX_TABS) {
-          newTabs = [newTabs[0], ...newTabs.slice(2)]
-        }
-
-        set({ tabs: newTabs, activeTabId: id })
+        set({ tabs: appendWithLimit(tabs, tab), activeTabId: id })
         return id
       },
 
@@ -129,12 +136,7 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
           createdAt: Date.now(),
         }
 
-        let newTabs = [...tabs, tab]
-        if (newTabs.length > MAX_TABS) {
-          newTabs = [newTabs[0], ...newTabs.slice(2)]
-        }
-
-        set({ tabs: newTabs, activeTabId: id })
+        set({ tabs: appendWithLimit(tabs, tab), activeTabId: id })
       },
 
       closeTab: (tabId) => {

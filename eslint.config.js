@@ -80,7 +80,13 @@ export default tseslint.config(
     rules: {
       // Известный цикл в легаси: dict-sidebar ⇄ form-renderer — поэтому warn.
       // maxDepth 6 — минимум, при котором этот цикл (через barrel'ы) виден.
-      'import/no-cycle': ['warn', { maxDepth: 6, ignoreExternal: true }],
+      // Правило парсит транзитивный граф импортов и стоит минуты — поэтому
+      // включается только при LINT_CYCLES=1 (полный прогон), иначе pre-commit
+      // (lint-staged) растягивается с секунд до минут на каждый коммит.
+      'import/no-cycle':
+        process.env.LINT_CYCLES === '1'
+          ? ['warn', { maxDepth: 6, ignoreExternal: true }]
+          : 'off',
       // Направление слоёв FSD: app > pages > widgets > features > entities > shared.
       // target — кто импортирует, from — откуда импортировать запрещено.
       'import/no-restricted-paths': [

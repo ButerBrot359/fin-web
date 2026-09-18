@@ -7,6 +7,8 @@ export {
   useTestAiConnection,
   useUpdateAiConnection,
 } from './lib/hooks/use-ai-connections'
+export { PROVIDER_OPTIONS } from './lib/consts/providers'
+export type { ProviderOption } from './lib/consts/providers'
 export type {
   AiConnection,
   AiConnectionTestResult,

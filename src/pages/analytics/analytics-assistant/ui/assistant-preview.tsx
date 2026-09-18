@@ -3,8 +3,8 @@ import { Typography } from '@mui/material'
 
 import type { AnalyticsSpec } from '@/entities/analytics'
 import { MicroLabel } from '@/shared/ui/micro-label'
-import { DashboardView } from '@/pages/analytics/analytics-dashboard/ui/dashboard-view'
-import { ReportView } from '@/pages/analytics/analytics-report/ui/report-view'
+import { DashboardView } from '@/pages/analytics/analytics-dashboard'
+import { ReportView } from '@/pages/analytics/analytics-report'
 
 interface AssistantPreviewProps {
   spec: AnalyticsSpec | null

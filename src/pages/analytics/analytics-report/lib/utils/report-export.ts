@@ -2,6 +2,7 @@ import type {
   AnalyticsColumn,
   AnalyticsQueryResult,
 } from '@/entities/analytics'
+import { pickLabel } from '@/entities/analytics'
 import { buildExportData, formatValue } from '@/features/analytics-widgets'
 import { exportTableToXlsx } from '@/shared/lib/table-export'
 import { downloadBlob } from '@/shared/lib/xlsx/write-xlsx'
@@ -30,15 +31,6 @@ const CSV_BOM = '\uFEFF'
 const escapeCell = (value: string): string =>
   /[";\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
 
-const headerLabel = (
-  column: AnalyticsColumn | undefined,
-  fallback: string,
-  isKz: boolean
-): string => {
-  if (!column) return fallback
-  return (isKz ? column.labelKz : column.label) ?? column.label ?? fallback
-}
-
 /**
  * CSV для русской локали: разделитель `;` и BOM в начале — без BOM Excel
  * открывает файл в ANSI и кириллица превращается в кракозябры.
@@ -49,13 +41,13 @@ const headerLabel = (
 export const buildReportCsv = (
   columns: AnalyticsColumn[],
   result: AnalyticsQueryResult,
-  isKz = false
+  lang?: string | null
 ): string => {
   const spec = new Map(columns.map((column) => [column.name, column]))
 
   const header = result.columns
     .map((column) =>
-      escapeCell(headerLabel(spec.get(column.name), column.name, isKz))
+      escapeCell(pickLabel(spec.get(column.name), column.name, lang))
     )
     .join(';')
 
@@ -70,7 +62,7 @@ export const buildReportCsv = (
   return CSV_BOM + [header, ...lines].join('\r\n')
 }
 
-const sanitizeFileName = (name: string): string =>
+export const sanitizeFileName = (name: string): string =>
   name
     .replace(/[\\/:*?"<>|]/g, ' ')
     .replace(/\s+/g, ' ')
@@ -81,9 +73,9 @@ export const exportReportToCsv = (
   fileName: string,
   columns: AnalyticsColumn[],
   result: AnalyticsQueryResult,
-  isKz = false
+  lang?: string | null
 ): void => {
-  const blob = new Blob([buildReportCsv(columns, result, isKz)], {
+  const blob = new Blob([buildReportCsv(columns, result, lang)], {
     type: 'text/csv;charset=utf-8',
   })
   downloadBlob(blob, `${sanitizeFileName(fileName)}.csv`)

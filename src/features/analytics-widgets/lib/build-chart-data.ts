@@ -7,9 +7,10 @@ import type {
   AnalyticsQueryResult,
   AnalyticsValueFormat,
 } from '@/entities/analytics'
+import { pickLabel } from '@/entities/analytics'
 
 import { colorAt } from './chart-colors'
-import { formatValue, pickLabel, toFiniteNumber } from './format-value'
+import { formatValue, toFiniteNumber } from './format-value'
 
 /** Ключ оси X в датасете `@mui/x-charts`. */
 export const X_KEY = 'x'

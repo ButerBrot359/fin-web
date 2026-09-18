@@ -6,6 +6,7 @@ import type {
   AnalyticsEncoding,
   AnalyticsQueryResult,
 } from '@/entities/analytics'
+import { pickLabel } from '@/entities/analytics'
 
 import {
   aggregateNumbers,
@@ -14,7 +15,7 @@ import {
   findColumnIndex,
   resolveFormat,
 } from '../../lib/build-chart-data'
-import { formatValue, pickLabel } from '../../lib/format-value'
+import { formatValue } from '../../lib/format-value'
 import { cssVar, semantic } from '@/shared/design/tokens'
 import { MICRO_LABEL_SX } from '@/shared/ui/micro-label'
 import {

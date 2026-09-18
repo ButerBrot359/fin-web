@@ -6,13 +6,13 @@ import type { AnalyticsSpec } from '@/entities/analytics'
 import { DashboardGrid, WidgetGridItem } from '@/features/analytics-widgets'
 import {
   AnalyticsParamsPanel,
+  areRequiredParamsFilled,
   expandParams,
   resolveDefaultParams,
 } from '@/features/analytics-params'
 import type { AnalyticsParamValues } from '@/features/analytics-params'
 import { Button } from '@/shared/ui/buttons'
 
-import { areRequiredParamsFilled } from '../lib/utils/params-ready'
 import { DashboardWidgetCard } from './dashboard-widget-card'
 
 interface DashboardViewProps {

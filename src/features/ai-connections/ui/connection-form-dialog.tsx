@@ -11,17 +11,12 @@ import {
 } from '@mui/material'
 
 import type { LlmProvider } from '@/entities/analytics'
-import type { AiConnection, AiConnectionUpdate } from '@/entities/ai-connection'
+import {
+  PROVIDER_OPTIONS,
+  type AiConnection,
+  type AiConnectionUpdate,
+} from '@/entities/ai-connection'
 import { Button } from '@/shared/ui/buttons'
-import type { TranslationKey } from '@/shared/types/i18n.types'
-
-/** Провайдеры общие для обоих контуров, подписи берём из ключей аналитики. */
-const PROVIDERS: { value: LlmProvider; labelKey: TranslationKey }[] = [
-  { value: 'LOCAL', labelKey: 'analytics.settings.providerLocal' },
-  { value: 'ANTHROPIC', labelKey: 'analytics.settings.providerAnthropic' },
-  { value: 'OPENAI', labelKey: 'analytics.settings.providerOpenai' },
-  { value: 'OPENROUTER', labelKey: 'analytics.settings.providerOpenrouter' },
-]
 
 interface ConnectionFormDialogProps {
   open: boolean
@@ -102,7 +97,7 @@ export const ConnectionFormDialog = ({
               patch({ provider: event.target.value as LlmProvider, model: '' })
             }}
           >
-            {PROVIDERS.map((provider) => (
+            {PROVIDER_OPTIONS.map((provider) => (
               <MenuItem key={provider.value} value={provider.value}>
                 {t(provider.labelKey)}
               </MenuItem>

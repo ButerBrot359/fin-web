@@ -16,6 +16,7 @@ import type {
   AnalyticsQueryColumn,
   AnalyticsValueFormat,
 } from '@/entities/analytics'
+import { pickLabel } from '@/entities/analytics'
 import { cn } from '@/shared/lib/utils/cn'
 
 import { buildSpecMap, findColumnIndex } from '../lib/build-chart-data'
@@ -24,7 +25,7 @@ import {
   sortRows,
   type AnalyticsTableRow,
 } from '../lib/build-table-model'
-import { formatValue, pickLabel } from '../lib/format-value'
+import { formatValue } from '../lib/format-value'
 import { MICRO_LABEL_SX } from '@/shared/ui/micro-label'
 
 export interface AnalyticsTableProps {

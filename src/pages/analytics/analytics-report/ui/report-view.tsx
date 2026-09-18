@@ -5,10 +5,13 @@ import { Typography } from '@mui/material'
 import { useAnalyticsDataset } from '@/entities/analytics'
 import type { AnalyticsSpec } from '@/entities/analytics'
 import { AnalyticsTable } from '@/features/analytics-widgets'
-import { AnalyticsParamsPanel, expandParams } from '@/features/analytics-params'
+import {
+  AnalyticsParamsPanel,
+  areRequiredParamsFilled,
+  expandParams,
+} from '@/features/analytics-params'
 import { Button } from '@/shared/ui/buttons'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
-import { areRequiredParamsFilled } from '@/pages/analytics/analytics-dashboard/lib/utils/params-ready'
 
 import { useReportParamsUrl } from '../lib/hooks/use-report-params-url'
 import {
@@ -32,7 +35,6 @@ interface ReportViewProps {
  */
 export const ReportView = ({ spec, title }: ReportViewProps) => {
   const { t, i18n } = useTranslation()
-  const isKz = i18n.language === 'kz'
 
   const dataset = useMemo(() => {
     const widgetDatasetId = spec.widgets.find((w) => w.datasetId)?.datasetId
@@ -106,7 +108,7 @@ export const ReportView = ({ spec, title }: ReportViewProps) => {
             }
           }}
           onExportCsv={() => {
-            if (result) exportReportToCsv(title, columns, result, isKz)
+            if (result) exportReportToCsv(title, columns, result, i18n.language)
           }}
           onPrint={() => {
             window.print()

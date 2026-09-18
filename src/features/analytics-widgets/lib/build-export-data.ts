@@ -3,10 +3,11 @@ import type {
   AnalyticsQueryColumn,
   AnalyticsValueFormat,
 } from '@/entities/analytics'
+import { pickLabel } from '@/entities/analytics'
 import type { TableExportData } from '@/shared/lib/table-export'
 import type { XlsxCell, XlsxColumnMeta } from '@/shared/lib/xlsx/write-xlsx'
 
-import { formatValue, pickLabel, toFiniteNumber } from './format-value'
+import { formatValue, toFiniteNumber } from './format-value'
 
 const NUMERIC_FORMATS: AnalyticsValueFormat[] = [
   'MONEY',

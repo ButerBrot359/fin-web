@@ -2,9 +2,8 @@ import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
 import type { LlmProvider } from '@/entities/analytics'
+import { PROVIDER_OPTIONS } from '@/entities/ai-connection'
 import { cn } from '@/shared/lib/utils/cn'
-
-import { PROVIDER_OPTIONS } from '../lib/consts/providers'
 
 interface ProviderSelectorProps {
   value: LlmProvider

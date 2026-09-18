@@ -11,6 +11,8 @@ export type { AnalyticsCatalogRebuildResult } from './api/analytics-api'
 
 export { analyticsKeys } from './lib/query-keys'
 
+export { isKazakh, pickLabel, pickTitle } from './lib/pick-label'
+
 export { useAnalyticsCatalogIndex } from './lib/hooks/use-analytics-catalog'
 export { useAnalyticsDataset } from './lib/hooks/use-analytics-dataset'
 export { useWidgetKinds } from './lib/hooks/use-widget-kinds'

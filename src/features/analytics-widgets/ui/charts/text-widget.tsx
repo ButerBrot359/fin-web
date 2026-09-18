@@ -1,84 +1,13 @@
 import { Fragment, useMemo, type ReactNode } from 'react'
 import { Typography } from '@mui/material'
 
+import { parseTextBlocks, type TextBlock } from '../../lib/parse-text-blocks'
+
 export interface TextWidgetProps {
   markdown?: string | null
 }
 
-type Block =
-  | { kind: 'heading'; level: number; text: string }
-  | { kind: 'list'; ordered: boolean; items: string[] }
-  | { kind: 'paragraph'; lines: string[] }
-
-const HEADING_RE = /^(#{1,3})\s+(.*)$/
-const BULLET_RE = /^[-*]\s+(.*)$/
-const ORDERED_RE = /^\d+[.)]\s+(.*)$/
 const BOLD_RE = /(\*\*[^*]+\*\*)/g
-
-/**
- * Минимальный markdown: заголовки, абзацы, списки и `**жирный**`.
- * Разметку собираем React-элементами — никакого `dangerouslySetInnerHTML`,
- * поэтому текст из спецификации не может внести в страницу разметку.
- */
-const parseBlocks = (source: string): Block[] => {
-  const blocks: Block[] = []
-  let paragraph: string[] = []
-  let listItems: string[] = []
-  let listOrdered = false
-
-  const flushParagraph = (): void => {
-    if (paragraph.length > 0) {
-      blocks.push({ kind: 'paragraph', lines: paragraph })
-      paragraph = []
-    }
-  }
-  const flushList = (): void => {
-    if (listItems.length > 0) {
-      blocks.push({ kind: 'list', ordered: listOrdered, items: listItems })
-      listItems = []
-    }
-  }
-
-  source.split(/\r?\n/).forEach((raw) => {
-    const line = raw.trim()
-    if (line === '') {
-      flushParagraph()
-      flushList()
-      return
-    }
-
-    const heading = HEADING_RE.exec(line)
-    if (heading) {
-      flushParagraph()
-      flushList()
-      blocks.push({
-        kind: 'heading',
-        level: heading[1].length,
-        text: heading[2],
-      })
-      return
-    }
-
-    const bullet = BULLET_RE.exec(line)
-    const ordered = bullet ? null : ORDERED_RE.exec(line)
-    const item = bullet ?? ordered
-    if (item) {
-      flushParagraph()
-      const isOrdered = bullet === null
-      if (listOrdered !== isOrdered) flushList()
-      listOrdered = isOrdered
-      listItems.push(item[1])
-      return
-    }
-
-    flushList()
-    paragraph.push(line)
-  })
-
-  flushParagraph()
-  flushList()
-  return blocks
-}
 
 const renderInline = (text: string): ReactNode[] =>
   text
@@ -98,7 +27,7 @@ const headingClass = (level: number): string => {
   return 'text-body1'
 }
 
-const renderBlock = (block: Block, index: number): ReactNode => {
+const renderBlock = (block: TextBlock, index: number): ReactNode => {
   if (block.kind === 'heading') {
     return (
       <Typography
@@ -141,7 +70,7 @@ const renderBlock = (block: Block, index: number): ReactNode => {
 
 /** Текстовый виджет: содержимое берётся из `encoding.markdown`. */
 export const TextWidget = ({ markdown }: TextWidgetProps) => {
-  const blocks = useMemo(() => parseBlocks(markdown ?? ''), [markdown])
+  const blocks = useMemo(() => parseTextBlocks(markdown ?? ''), [markdown])
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-auto">

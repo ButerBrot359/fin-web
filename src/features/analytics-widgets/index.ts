@@ -13,11 +13,6 @@ export type { WidgetCardProps } from './ui/widget-card'
 export { AnalyticsTable } from './ui/analytics-table'
 export type { AnalyticsTableProps } from './ui/analytics-table'
 
-export {
-  formatValue,
-  formatNumber,
-  pickLabel,
-  pickTitle,
-} from './lib/format-value'
+export { formatValue, formatNumber } from './lib/format-value'
 export { buildExportData } from './lib/build-export-data'
 export { CHART_COLORS, colorAt } from './lib/chart-colors'

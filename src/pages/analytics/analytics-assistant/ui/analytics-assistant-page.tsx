@@ -14,7 +14,7 @@ import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { Button } from '@/shared/ui/buttons'
 // Код служебной страницы настроек — один на весь раздел (см. диспетчер).
-import { ANALYTICS_SETTINGS_CODE } from '@/pages/analytics/analytics-router/lib/consts/reserved-codes'
+import { ANALYTICS_SETTINGS_CODE } from '@/pages/analytics/analytics-router'
 
 import { useSaveCurrentSpec } from '../lib/hooks/use-save-current-spec'
 import { AssistantPreview } from './assistant-preview'

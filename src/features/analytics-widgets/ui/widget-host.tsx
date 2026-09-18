@@ -7,8 +7,8 @@ import type {
   AnalyticsQueryResult,
   AnalyticsWidget,
 } from '@/entities/analytics'
+import { pickTitle } from '@/entities/analytics'
 
-import { pickTitle } from '../lib/format-value'
 import { AnalyticsTable } from './analytics-table'
 import { WidgetCard } from './widget-card'
 import { BarWidget } from './charts/bar-widget'

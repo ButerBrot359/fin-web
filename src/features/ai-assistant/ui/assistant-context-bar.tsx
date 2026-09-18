@@ -27,17 +27,20 @@ export const AssistantContextBar = ({ context }: AssistantContextBarProps) => {
       case 'DOCUMENT':
         return context.entryId
           ? `${type} №${String(context.entryId)}`
-          : `${type} — список документов`
+          : t('aiAssistant.contextDocumentList', { type })
       case 'DOCUMENT_LIST':
-        return `${type} — список документов`
+        return t('aiAssistant.contextDocumentList', { type })
       case 'DOCUMENT_NEW':
-        return `${type} — новый документ`
+        return t('aiAssistant.contextNewDocument', { type })
       case 'DICTIONARY':
         return context.entryId
-          ? `${type} — запись №${String(context.entryId)}`
-          : `${type} — справочник`
+          ? t('aiAssistant.contextDictionaryEntry', {
+              type,
+              id: String(context.entryId),
+            })
+          : t('aiAssistant.contextDictionary', { type })
       case 'DICTIONARY_LIST':
-        return `${type} — справочник`
+        return t('aiAssistant.contextDictionary', { type })
       default:
         return t('aiAssistant.contextNone')
     }

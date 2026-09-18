@@ -53,7 +53,9 @@ const compare = (a: unknown, b: unknown, type: AnalyticsValueType): number => {
     const left = parseDateValue(a)?.getTime() ?? 0
     return left - (parseDateValue(b)?.getTime() ?? 0)
   }
-  return asText(a).localeCompare(asText(b), 'ru')
+  // Локаль не фиксируем: сравнение идёт по локали окружения пользователя,
+  // жёсткое 'ru' ломало бы порядок для казахского алфавита.
+  return asText(a).localeCompare(asText(b))
 }
 
 /** Сортировка строк результата по колонке; пустые значения всегда внизу. */

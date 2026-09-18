@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { useGenerateSpec } from '@/entities/analytics'
 import type {
@@ -50,81 +50,62 @@ export const useAssistantSession = (
   const [kind, setKind] = useState<AnalyticsItemKind>(initialKind)
 
   const seq = useRef(0)
-  const nextId = useCallback(() => {
+  const nextId = (): string => {
     seq.current += 1
     return `m${String(seq.current)}`
-  }, [])
+  }
 
   const { mutate, isPending } = useGenerateSpec()
 
-  const push = useCallback((message: AssistantChatMessage) => {
+  const push = (message: AssistantChatMessage): void => {
     setMessages((prev) => [...prev, message])
-  }, [])
+  }
 
-  const handleResponse = useCallback(
-    (response: AnalyticsGenerateResponse) => {
-      setConversationId(response.conversationId)
-      if (response.spec) setCurrentSpec(response.spec)
-      push({
-        id: nextId(),
-        role: 'ASSISTANT',
-        text: response.explanation ?? '',
-        spec: response.spec,
-        llmRequestId: response.llmRequestId,
-        sourceViews: response.spec?.sourceViews ?? [],
-        warnings: response.warnings,
-        error: response.error,
-      })
-    },
-    [nextId, push]
-  )
+  const handleResponse = (response: AnalyticsGenerateResponse): void => {
+    setConversationId(response.conversationId)
+    if (response.spec) setCurrentSpec(response.spec)
+    push({
+      id: nextId(),
+      role: 'ASSISTANT',
+      text: response.explanation ?? '',
+      spec: response.spec,
+      llmRequestId: response.llmRequestId,
+      sourceViews: response.spec?.sourceViews ?? [],
+      warnings: response.warnings,
+      error: response.error,
+    })
+  }
 
-  const handleError = useCallback(
-    (error: unknown) => {
-      push({
-        id: nextId(),
-        role: 'ASSISTANT',
-        text: '',
-        error: extractErrorText(error) ?? '',
-      })
-    },
-    [nextId, push]
-  )
+  const handleError = (error: unknown): void => {
+    push({
+      id: nextId(),
+      role: 'ASSISTANT',
+      text: '',
+      error: extractErrorText(error) ?? '',
+    })
+  }
 
-  const send = useCallback(
-    (prompt: string) => {
-      const text = prompt.trim()
-      if (!text || isPending) return
+  const send = (prompt: string): void => {
+    const text = prompt.trim()
+    if (!text || isPending) return
 
-      push({ id: nextId(), role: 'USER', text })
-      mutate(
-        {
-          prompt: text,
-          kind,
-          conversationId,
-          currentSpec,
-        },
-        { onSuccess: handleResponse, onError: handleError }
-      )
-    },
-    [
-      conversationId,
-      currentSpec,
-      handleError,
-      handleResponse,
-      isPending,
-      kind,
-      mutate,
-      nextId,
-      push,
-    ]
-  )
+    push({ id: nextId(), role: 'USER', text })
+    mutate(
+      {
+        prompt: text,
+        kind,
+        conversationId,
+        currentSpec,
+      },
+      { onSuccess: handleResponse, onError: handleError }
+    )
+  }
 
-  const reset = useCallback(() => {
+  const reset = (): void => {
     setMessages([])
     setCurrentSpec(null)
     setConversationId(null)
-  }, [])
+  }
 
   return {
     messages,

@@ -5,6 +5,7 @@ import type {
   AnalyticsAllowedValue,
   AnalyticsParameter,
 } from '@/entities/analytics'
+import { pickLabel } from '@/entities/analytics'
 import { DateTimeInput, NumberInput, TextInput } from '@/shared/ui/inputs'
 
 import type { AnalyticsDateRangeValue } from '../types/params'
@@ -17,18 +18,6 @@ export interface ParamFieldProps {
   onChange: (value: unknown) => void
   disabled?: boolean
 }
-
-const isKz = (lang: string): boolean => {
-  const normalized = lang.toLowerCase()
-  return normalized.startsWith('kz') || normalized.startsWith('kk')
-}
-
-const labelOf = (
-  source: { label?: string | null; labelKz?: string | null },
-  fallback: string,
-  lang: string
-): string =>
-  (isKz(lang) ? source.labelKz : source.label) ?? source.label ?? fallback
 
 /** Текст значения для контрола: объекты в текстовое поле не попадают. */
 const asText = (value: unknown): string => {
@@ -71,7 +60,7 @@ export const ParamField = ({
 }: ParamFieldProps) => {
   const { t, i18n } = useTranslation()
   const lang = i18n.language
-  const label = labelOf(parameter, parameter.code, lang)
+  const label = pickLabel(parameter, parameter.code, lang)
 
   if (parameter.type === 'DATE') {
     return (
@@ -118,7 +107,9 @@ export const ParamField = ({
 
   if (parameter.type === 'ENUM') {
     const options: AnalyticsAllowedValue[] = parameter.allowedValues ?? []
-    const selected = options.findIndex(
+    // Значение контрола — текст самого значения опции, а не её индекс:
+    // индекс «плывёт» при любом изменении списка допустимых значений.
+    const selected = options.find(
       (option) => asText(option.value) === asText(value)
     )
     return (
@@ -128,18 +119,19 @@ export const ParamField = ({
         label={label}
         disabled={disabled}
         required={parameter.required}
-        value={selected >= 0 ? String(selected) : ''}
+        value={selected ? asText(selected.value) : ''}
         onChange={(event) => {
           const raw = event.target.value
-          onChange(raw === '' ? null : options[Number(raw)].value)
+          const option = options.find((item) => asText(item.value) === raw)
+          onChange(raw === '' || !option ? null : option.value)
         }}
       >
         {!parameter.required && (
           <MenuItem value="">{t('analytics.params.notSet')}</MenuItem>
         )}
-        {options.map((option, index) => (
-          <MenuItem key={index} value={String(index)}>
-            {labelOf(option, asText(option.value), lang)}
+        {options.map((option) => (
+          <MenuItem key={asText(option.value)} value={asText(option.value)}>
+            {pickLabel(option, asText(option.value), lang)}
           </MenuItem>
         ))}
       </TextInput>

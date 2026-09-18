@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
+import i18n from 'i18next'
 
 import {
   useAskAssistant,
@@ -35,7 +36,7 @@ const errorText = (error: unknown): string => {
   if (typeof error === 'object' && error !== null && 'message' in error) {
     return String((error as { message: unknown }).message)
   }
-  return 'Не удалось получить ответ помощника'
+  return i18n.t('aiAssistant.answerFailed')
 }
 
 /**
@@ -58,53 +59,50 @@ export const useAssistantSession = (
   const mutation = useAskAssistant()
   const refreshDesign = useDesignRefresh()
 
-  const send = useCallback(
-    (question: string) => {
-      const trimmed = question.trim()
-      if (!trimmed || mutation.isPending) return
+  const send = (question: string): void => {
+    const trimmed = question.trim()
+    if (!trimmed || mutation.isPending) return
 
-      setMessages((current) => [
-        ...current,
-        { id: nextId(), role: 'USER', text: trimmed },
-      ])
+    setMessages((current) => [
+      ...current,
+      { id: nextId(), role: 'USER', text: trimmed },
+    ])
 
-      mutation.mutate(
-        { conversationId, question: trimmed, context },
-        {
-          onSuccess: (answer) => {
-            refreshDesign(answer)
-            setConversationId(answer.conversationId)
-            setMessages((current) => [
-              ...current,
-              {
-                id: nextId(),
-                role: 'ASSISTANT',
-                text: answer.conclusion,
-                answer,
-              },
-            ])
-          },
-          onError: (error) => {
-            setMessages((current) => [
-              ...current,
-              {
-                id: nextId(),
-                role: 'ASSISTANT',
-                text: '',
-                error: errorText(error),
-              },
-            ])
-          },
-        }
-      )
-    },
-    [context, conversationId, mutation, refreshDesign]
-  )
+    mutation.mutate(
+      { conversationId, question: trimmed, context },
+      {
+        onSuccess: (answer) => {
+          refreshDesign(answer)
+          setConversationId(answer.conversationId)
+          setMessages((current) => [
+            ...current,
+            {
+              id: nextId(),
+              role: 'ASSISTANT',
+              text: answer.conclusion,
+              answer,
+            },
+          ])
+        },
+        onError: (error) => {
+          setMessages((current) => [
+            ...current,
+            {
+              id: nextId(),
+              role: 'ASSISTANT',
+              text: '',
+              error: errorText(error),
+            },
+          ])
+        },
+      }
+    )
+  }
 
-  const reset = useCallback(() => {
+  const reset = (): void => {
     setMessages([])
     setConversationId(null)
-  }, [])
+  }
 
   /**
    * Подставляет переписку, сохранённую на сервере.
@@ -112,13 +110,13 @@ export const useAssistantSession = (
    * Только в пустую ленту: восстановление не должно затирать вопрос, который человек
    * успел задать, пока история подгружалась.
    */
-  const restore = useCallback(
-    (restoredId: number, restored: AssistantChatMessage[]) => {
-      setMessages((current) => (current.length === 0 ? restored : current))
-      setConversationId((current) => current ?? restoredId)
-    },
-    []
-  )
+  const restore = (
+    restoredId: number,
+    restored: AssistantChatMessage[]
+  ): void => {
+    setMessages((current) => (current.length === 0 ? restored : current))
+    setConversationId((current) => current ?? restoredId)
+  }
 
   return {
     messages,

@@ -1,0 +1,78 @@
+import { render, screen, cleanup } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+
+import type { ViewNode } from '../../../types/view'
+
+import { ListQuickFilters, readQuickFilters } from './list-quick-filters'
+
+afterEach(cleanup)
+
+const column = (
+  field: string,
+  title: string,
+  extra: Record<string, unknown> = {}
+): ViewNode =>
+  ({
+    id: `col.${field}`,
+    type: 'TABLE_COLUMN',
+    props: {
+      title,
+      filterField: field,
+      filterOps: ['equals'],
+      filterValueOptions: [{ value: '1', label: 'Первый' }],
+      ...extra,
+    },
+  }) as unknown as ViewNode
+
+const listNode = (quickFilterFields: unknown): ViewNode =>
+  ({ id: 'list', type: 'LIST', props: { quickFilterFields } }) as unknown as ViewNode
+
+describe('Панель отбора списка', () => {
+  it('поля панели собираются по quickFilterFields в порядке сервера', () => {
+    const filters = readQuickFilters(
+      listNode(['Organizatsiya', 'VidOtcheta']),
+      [column('VidOtcheta', 'Вид отчёта'), column('Organizatsiya', 'Организация')],
+      {}
+    )
+
+    expect(filters.map((f) => f.field)).toEqual(['Organizatsiya', 'VidOtcheta'])
+    expect(filters[0].label).toBe('Организация')
+  })
+
+  it('операция берётся из filterDefaultOp, иначе — первая доступная', () => {
+    const [sDefault] = readQuickFilters(
+      listNode(['A']),
+      [column('A', 'А', { filterDefaultOp: 'in' })],
+      {}
+    )
+    const [bezDefault] = readQuickFilters(listNode(['B']), [column('B', 'Б')], {})
+
+    expect(sDefault.op).toBe('in')
+    expect(bezDefault.op).toBe('equals')
+  })
+
+  it('поле без своей колонки в панель не попадает — сервер и колонки разошлись', () => {
+    const filters = readQuickFilters(listNode(['Net']), [column('A', 'А')], {})
+
+    expect(filters).toEqual([])
+  })
+
+  it('без quickFilterFields панель пуста и ничего не рисует', () => {
+    expect(readQuickFilters(listNode(undefined), [column('A', 'А')], {})).toEqual([])
+
+    const { container } = render(<ListQuickFilters filters={[]} onApply={() => {}} />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('подпись поля выводится рядом с контролом', () => {
+    const filters = readQuickFilters(
+      listNode(['Organizatsiya']),
+      [column('Organizatsiya', 'Организация')],
+      {}
+    )
+
+    render(<ListQuickFilters filters={filters} onApply={() => {}} />)
+
+    expect(screen.getByText('Организация')).toBeInTheDocument()
+  })
+})

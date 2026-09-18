@@ -23,6 +23,7 @@ import {
   isSpanRow,
   resolveReportLang,
 } from '../lib/cell-helpers'
+import { buildHeadModel } from '../lib/head-model'
 import { ReportCell } from './report-cell'
 
 interface LedgerTableProps {
@@ -61,62 +62,6 @@ const thTextSx = { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
 /** Локализованный заголовок колонки. */
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
-
-/** Локализованный верхний ряд шапки (группа колонок «Дебет»/«Кредит»). */
-const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
-  ((isKz ? col.groupTitleKz : col.groupTitleRu) || col.groupTitleRu) ?? ''
-
-/** Ячейка верхнего ряда двухуровневой шапки: либо группа colspan, либо rowspan. */
-interface HeadCell {
-  key: string
-  title: string
-  colSpan: number
-  rowSpan: number
-  col?: ReportColumnDto
-}
-
-/**
- * Модель двухуровневой шапки: соседние колонки с одинаковым groupTitle
- * объединяются в группу (colspan) с подколонками во втором ряду; колонки
- * без groupTitle занимают оба ряда (rowspan=2). Если групп нет вообще —
- * шапка одноуровневая.
- */
-const buildHeadModel = (columns: ReportColumnDto[], isKz: boolean) => {
-  const hasGroups = columns.some((c) => columnGroupTitle(c, isKz))
-  if (!hasGroups) return null
-
-  const topRow: HeadCell[] = []
-  const subRow: { key: string; col: ReportColumnDto }[] = []
-  let i = 0
-  while (i < columns.length) {
-    const col = columns[i]
-    const group = columnGroupTitle(col, isKz)
-    if (!group) {
-      topRow.push({
-        key: col.code,
-        title: columnTitle(col, isKz),
-        colSpan: 1,
-        rowSpan: 2,
-        col,
-      })
-      i++
-      continue
-    }
-    let j = i
-    while (j < columns.length && columnGroupTitle(columns[j], isKz) === group) {
-      subRow.push({ key: columns[j].code, col: columns[j] })
-      j++
-    }
-    topRow.push({
-      key: `grp-${col.code}`,
-      title: group,
-      colSpan: j - i,
-      rowSpan: 1,
-    })
-    i = j
-  }
-  return { topRow, subRow }
-}
 
 /**
  * «Логическая» ширина колонки: приоритет — ширина из backend (`width` в
@@ -225,10 +170,15 @@ export const LedgerTable = ({
     })
   }
 
-  const headModel = useMemo(
-    () => buildHeadModel(columns, isKz),
-    [columns, isKz]
-  )
+  // Двухуровневая шапка: соседние колонки с одинаковым groupTitle → группа
+  // (colspan) с подколонками во втором ряду; без groupTitle — rowspan=2.
+  // Разбор склейки « — » НЕ применяется (историческое поведение LEDGER).
+  const headModel = useMemo(() => {
+    const model = buildHeadModel(columns, { isKz, levels: 2 })
+    return model.hasGroups
+      ? { topRow: model.topRow, subRow: model.leafRow }
+      : null
+  }, [columns, isKz])
 
   if (result.rows.length === 0) {
     return (

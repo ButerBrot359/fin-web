@@ -5,7 +5,10 @@ import type {
   XlsxRowKind,
 } from '@/shared/lib/xlsx/write-xlsx'
 import { formatDate } from '@/shared/lib/utils/date'
-import { formatReportTitle } from '@/features/report-result-view'
+import {
+  formatReportTitle,
+  isHighlightRow,
+} from '@/features/report-result-view'
 
 import type {
   ReportAltColumnDto,
@@ -17,23 +20,12 @@ import type {
 const columnTitle = (col: ReportAltColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
 
-/** Виды строк, выделяемые в выгрузке (итоги/сальдо/группы). */
-const HIGHLIGHT_KINDS = new Set([
-  'GROUP_HEADER',
-  'OPENING_BALANCE',
-  'TURNOVER',
-  'CLOSING_BALANCE',
-  'SUBTOTAL',
-  'TOTAL',
-])
-
 const rowKindOf = (row: ReportAltRowDto): XlsxRowKind =>
-  row.rowKind != null && HIGHLIGHT_KINDS.has(row.rowKind) ? 'highlight' : 'data'
+  isHighlightRow(row.rowKind) ? 'highlight' : 'data'
 
 /** Span-строка LEDGER (Сальдо/Обороты/Итого) с подписью labelText. */
 const isSpanRow = (row: ReportAltRowDto): boolean =>
-  row.rowKind != null &&
-  HIGHLIGHT_KINDS.has(row.rowKind) &&
+  isHighlightRow(row.rowKind) &&
   row.rowKind !== 'GROUP_HEADER' &&
   row.labelText != null
 

@@ -6,7 +6,12 @@ import type {
   XlsxRowKind,
 } from '@/shared/lib/xlsx/write-xlsx'
 import { formatDate } from '@/shared/lib/utils/date'
-import { formatMoney1C, formatReportTitle } from '@/features/report-result-view'
+import {
+  buildHeadModel,
+  formatMoney1C,
+  formatReportTitle,
+  isHighlightRow,
+} from '@/features/report-result-view'
 
 import type {
   ReportColumnDto,
@@ -21,33 +26,21 @@ const POKAZATEL_COL = 'Pokazatel'
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
 
-/** Локализованный верхний ряд шапки (группа колонок «Дебет»/«Кредит»). */
-const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
-  ((isKz ? col.groupTitleKz : col.groupTitleRu) || col.groupTitleRu) ?? ''
-
 /** Вид строки — span-строка (Сальдо/Обороты/Итого) С ПОДПИСЬЮ labelText. */
-const HIGHLIGHT_KINDS = new Set([
-  'GROUP_HEADER',
-  'OPENING_BALANCE',
-  'TURNOVER',
-  'CLOSING_BALANCE',
-  'SUBTOTAL',
-  'TOTAL',
-])
-
 const isSpanExportRow = (row: ReportRowDto): boolean =>
-  row.rowKind != null &&
-  HIGHLIGHT_KINDS.has(row.rowKind) &&
+  isHighlightRow(row.rowKind) &&
   row.rowKind !== 'GROUP_HEADER' &&
   row.labelText != null
 
 const rowKindOf = (row: ReportRowDto): XlsxRowKind =>
-  row.rowKind != null && HIGHLIGHT_KINDS.has(row.rowKind) ? 'highlight' : 'data'
+  isHighlightRow(row.rowKind) ? 'highlight' : 'data'
 
 /**
  * Двухуровневая шапка листа из колонок с `groupTitle` («Дебет» над
  * [Счет|Сумма]); колонки без группы занимают оба ряда (rowSpan=2).
- * Если групп нет — одноуровневая.
+ * Если групп нет — одноуровневая. Модель строит общий {@link buildHeadModel}
+ * (глубина 2, без разбора склейки « — » — историческое поведение экспорта);
+ * здесь она раскладывается в XlsxHeaderCell с абсолютными индексами колонок.
  */
 const buildHeaderRows = (
   columns: ReportColumnDto[],
@@ -55,9 +48,9 @@ const buildHeaderRows = (
   leadColumnTitle?: string
 ): XlsxHeaderCell[][] => {
   const offset = leadColumnTitle != null ? 1 : 0
-  const hasGroups = columns.some((c) => columnGroupTitle(c, isKz))
+  const model = buildHeadModel(columns, { isKz, levels: 2 })
 
-  if (!hasGroups) {
+  if (!model.hasGroups) {
     const row: XlsxHeaderCell[] = []
     if (leadColumnTitle != null) row.push({ text: leadColumnTitle, col: 0 })
     columns.forEach((c, i) =>
@@ -71,25 +64,15 @@ const buildHeaderRows = (
   if (leadColumnTitle != null) {
     top.push({ text: leadColumnTitle, col: 0, rowSpan: 2 })
   }
-  let i = 0
-  while (i < columns.length) {
-    const group = columnGroupTitle(columns[i], isKz)
-    if (!group) {
-      top.push({
-        text: columnTitle(columns[i], isKz),
-        col: i + offset,
-        rowSpan: 2,
-      })
-      i++
-      continue
-    }
-    let j = i
-    while (j < columns.length && columnGroupTitle(columns[j], isKz) === group) {
-      sub.push({ text: columnTitle(columns[j], isKz), col: j + offset })
-      j++
-    }
-    top.push({ text: group, col: i + offset, colSpan: j - i })
-    i = j
+  for (const cell of model.topRow) {
+    top.push(
+      cell.col != null
+        ? { text: cell.title, col: cell.col0 + offset, rowSpan: 2 }
+        : { text: cell.title, col: cell.col0 + offset, colSpan: cell.colSpan }
+    )
+  }
+  for (const leaf of model.leafRow) {
+    sub.push({ text: columnTitle(leaf.col, isKz), col: leaf.col0 + offset })
   }
   return [top, sub]
 }

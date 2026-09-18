@@ -28,6 +28,7 @@ import {
   isRightAligned,
   resolveReportLang,
 } from '../lib/cell-helpers'
+import { buildHeadModel } from '../lib/head-model'
 import { ReportCell } from './report-cell'
 
 interface TreeTableProps {
@@ -75,37 +76,8 @@ const bodyColWidthPx = (col: ReportColumnDto): number => {
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
 
-// Разделитель уровней при ВРЕМЕННОЙ склейке от бэка: « — » (em-dash в пробелах).
-// Пока бэк не отдаёт subGroupTitle, он склеивает «Группа — Подгруппа» в groupTitle
-// (напр. «Оборот с … — Итого приход»); внутренний период — обычный дефис « - »,
-// поэтому режем строго по em-dash. Когда бэк начнёт слать subGroupTitle — он
-// приоритетнее, и разбор не задействуется.
-const LEVEL_SEP = /\s—\s/
-
-const rawGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
-  ((isKz ? col.groupTitleKz : col.groupTitleRu) || col.groupTitleRu) ?? ''
-
-const rawSubGroupTitle = (col: ReportColumnDto, isKz: boolean): string =>
-  ((isKz ? col.subGroupTitleKz : col.subGroupTitleRu) || col.subGroupTitleRu) ??
-  ''
-
-/** Верхний ряд шапки: при склейке без subGroupTitle — левая часть « — ». */
-const columnGroupTitle = (col: ReportColumnDto, isKz: boolean): string => {
-  const raw = rawGroupTitle(col, isKz)
-  if (!rawSubGroupTitle(col, isKz)) {
-    const parts = raw.split(LEVEL_SEP)
-    if (parts.length > 1) return parts[0]
-  }
-  return raw
-}
-
-/** Средний ряд шапки: subGroupTitle бэка, иначе правая часть склейки « — ». */
-const columnSubGroupTitle = (col: ReportColumnDto, isKz: boolean): string => {
-  const sub = rawSubGroupTitle(col, isKz)
-  if (sub) return sub
-  const parts = rawGroupTitle(col, isKz).split(LEVEL_SEP)
-  return parts.length > 1 ? parts.slice(1).join('—') : ''
-}
+/** Опции сборки шапки tree-table: разбор склейки « — » включён (LEVEL_SEP). */
+const HEAD_OPTS = { parseLevelSep: true } as const
 
 /**
  * TREE-таблица результата (как ОСВ в 1С): рекурсивное дерево по
@@ -179,46 +151,10 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
   })
 
   const headModel = useMemo(() => {
-    const hasGroups = bodyColumns.some((c) => columnGroupTitle(c, isKz))
-    if (!hasGroups) return null
-    const topRow: {
-      key: string
-      title: string
-      colSpan: number
-      rowSpan: number
-    }[] = []
-    const subRow: { key: string; col: ReportColumnDto }[] = []
-    let i = 0
-    while (i < bodyColumns.length) {
-      const col = bodyColumns[i]
-      const group = columnGroupTitle(col, isKz)
-      if (!group) {
-        topRow.push({
-          key: col.code,
-          title: columnTitle(col, isKz),
-          colSpan: 1,
-          rowSpan: 2,
-        })
-        i++
-        continue
-      }
-      let j = i
-      while (
-        j < bodyColumns.length &&
-        columnGroupTitle(bodyColumns[j], isKz) === group
-      ) {
-        subRow.push({ key: bodyColumns[j].code, col: bodyColumns[j] })
-        j++
-      }
-      topRow.push({
-        key: `grp-${col.code}`,
-        title: group,
-        colSpan: j - i,
-        rowSpan: 1,
-      })
-      i = j
-    }
-    return { topRow, subRow }
+    const model = buildHeadModel(bodyColumns, { isKz, levels: 2, ...HEAD_OPTS })
+    return model.hasGroups
+      ? { topRow: model.topRow, subRow: model.leafRow }
+      : null
   }, [bodyColumns, isKz])
 
   // Трёхуровневая шапка (Блок Д): groupTitle → subGroupTitle → title. Строится
@@ -227,82 +163,10 @@ const PlainTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
   //  - группа без subGroupTitle у колонки → mid-ячейка rowSpan=2 (title колонки);
   //  - есть subGroupTitle → group (top) / subGroup (mid, colSpan) / title (bot).
   const headModel3 = useMemo(() => {
-    const hasSub = bodyColumns.some((c) => columnSubGroupTitle(c, isKz))
-    if (!hasSub) return null
-
-    const topRow: {
-      key: string
-      title: string
-      colSpan: number
-      rowSpan: number
-    }[] = []
-    const midRow: {
-      key: string
-      title: string
-      colSpan: number
-      rowSpan: number
-    }[] = []
-    const botRow: { key: string; col: ReportColumnDto }[] = []
-
-    let i = 0
-    while (i < bodyColumns.length) {
-      const col = bodyColumns[i]
-      const group = columnGroupTitle(col, isKz)
-      if (!group) {
-        topRow.push({
-          key: col.code,
-          title: columnTitle(col, isKz),
-          colSpan: 1,
-          rowSpan: 3,
-        })
-        i++
-        continue
-      }
-      let j = i
-      while (
-        j < bodyColumns.length &&
-        columnGroupTitle(bodyColumns[j], isKz) === group
-      ) {
-        j++
-      }
-      topRow.push({
-        key: `grp-${col.code}`,
-        title: group,
-        colSpan: j - i,
-        rowSpan: 1,
-      })
-      let k = i
-      while (k < j) {
-        const c = bodyColumns[k]
-        const sub = columnSubGroupTitle(c, isKz)
-        if (!sub) {
-          midRow.push({
-            key: c.code,
-            title: columnTitle(c, isKz),
-            colSpan: 1,
-            rowSpan: 2,
-          })
-          k++
-          continue
-        }
-        let m = k
-        while (m < j && columnSubGroupTitle(bodyColumns[m], isKz) === sub) {
-          m++
-        }
-        midRow.push({
-          key: `sub-${c.code}`,
-          title: sub,
-          colSpan: m - k,
-          rowSpan: 1,
-        })
-        for (let x = k; x < m; x++) {
-          botRow.push({ key: bodyColumns[x].code, col: bodyColumns[x] })
-        }
-        k = m
-      }
-      i = j
-    }
-    return { topRow, midRow, botRow }
+    const model = buildHeadModel(bodyColumns, { isKz, levels: 3, ...HEAD_OPTS })
+    return model.hasSub
+      ? { topRow: model.topRow, midRow: model.midRow, botRow: model.leafRow }
+      : null
   }, [bodyColumns, isKz])
 
   if (result.rows.length === 0) {
@@ -566,46 +430,13 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
   // Двухэтажный заголовок детальных колонок (напр. «Дополнительные поля» над
   // «Единица измерения»): верхний ряд групп + нижний ряд титулов колонок группы.
   const leafHead = useMemo(() => {
-    const hasGroups = leafColumns.some((c) => columnGroupTitle(c, isKz))
-    const leafRows = hasGroups ? 2 : 1
-    const topRow: {
-      key: string
-      title: string
-      colSpan: number
-      rowSpan: number
-    }[] = []
-    const subRow: { key: string; col: ReportColumnDto }[] = []
-    let i = 0
-    while (i < leafColumns.length) {
-      const col = leafColumns[i]
-      const group = columnGroupTitle(col, isKz)
-      if (!group) {
-        topRow.push({
-          key: col.code,
-          title: columnTitle(col, isKz),
-          colSpan: 1,
-          rowSpan: leafRows,
-        })
-        i++
-        continue
-      }
-      let j = i
-      while (
-        j < leafColumns.length &&
-        columnGroupTitle(leafColumns[j], isKz) === group
-      ) {
-        subRow.push({ key: leafColumns[j].code, col: leafColumns[j] })
-        j++
-      }
-      topRow.push({
-        key: `grp-${col.code}`,
-        title: group,
-        colSpan: j - i,
-        rowSpan: 1,
-      })
-      i = j
+    const model = buildHeadModel(leafColumns, { isKz, levels: 2, ...HEAD_OPTS })
+    return {
+      hasGroups: model.hasGroups,
+      leafRows: model.hasGroups ? 2 : 1,
+      topRow: model.topRow,
+      subRow: model.leafRow,
     }
-    return { hasGroups, leafRows, topRow, subRow }
   }, [leafColumns, isKz])
 
   // Многоуровневая шапка МЕР (форма 326): groupTitle → subGroupTitle → title.
@@ -614,77 +445,14 @@ const FloorTreeTable = ({ result, columns, indentPx = 13 }: TreeTableProps) => {
   // - группа без subGroupTitle (Остаток) → title в mid-ряду rowSpan=2;
   // - есть subGroupTitle (Оборот: Дебет/Кредит) → group/subGroup/title по рядам.
   const measureHead3 = useMemo(() => {
-    const hasGroups = measureColumns.some((c) => columnGroupTitle(c, isKz))
-    if (!hasGroups) return null
-    const topRow: {
-      key: string
-      title: string
-      colSpan: number
-      rowSpan: number
-    }[] = []
-    const midRow: {
-      key: string
-      title: string
-      colSpan: number
-      rowSpan: number
-    }[] = []
-    const botRow: { key: string; col: ReportColumnDto }[] = []
-    let i = 0
-    while (i < measureColumns.length) {
-      const col = measureColumns[i]
-      const group = columnGroupTitle(col, isKz)
-      if (!group) {
-        topRow.push({
-          key: col.code,
-          title: columnTitle(col, isKz),
-          colSpan: 1,
-          rowSpan: 3,
-        })
-        i++
-        continue
-      }
-      let j = i
-      while (
-        j < measureColumns.length &&
-        columnGroupTitle(measureColumns[j], isKz) === group
-      )
-        j++
-      topRow.push({
-        key: `grp-${col.code}`,
-        title: group,
-        colSpan: j - i,
-        rowSpan: 1,
-      })
-      let k = i
-      while (k < j) {
-        const c = measureColumns[k]
-        const sub = columnSubGroupTitle(c, isKz)
-        if (!sub) {
-          midRow.push({
-            key: c.code,
-            title: columnTitle(c, isKz),
-            colSpan: 1,
-            rowSpan: 2,
-          })
-          k++
-          continue
-        }
-        let m = k
-        while (m < j && columnSubGroupTitle(measureColumns[m], isKz) === sub)
-          m++
-        midRow.push({
-          key: `sub-${c.code}`,
-          title: sub,
-          colSpan: m - k,
-          rowSpan: 1,
-        })
-        for (let x = k; x < m; x++)
-          botRow.push({ key: measureColumns[x].code, col: measureColumns[x] })
-        k = m
-      }
-      i = j
-    }
-    return { topRow, midRow, botRow }
+    const model = buildHeadModel(measureColumns, {
+      isKz,
+      levels: 3,
+      ...HEAD_OPTS,
+    })
+    return model.hasGroups
+      ? { topRow: model.topRow, midRow: model.midRow, botRow: model.leafRow }
+      : null
   }, [measureColumns, isKz])
 
   const totalHeaderRows = floorCodes.length + leafHead.leafRows

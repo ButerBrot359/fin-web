@@ -1,7 +1,5 @@
 import { useState, type FC } from 'react'
 import { Box, IconButton } from '@mui/material'
-import type { Theme } from '@mui/material'
-import type { SystemStyleObject } from '@mui/system'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { useTranslation } from 'react-i18next'
 
@@ -17,9 +15,14 @@ import {
   type OptionsParamValue,
 } from '../../../lib/utils/resolve-options-params'
 import {
+  fromSelectOption,
+  referenceToSelectOption,
+} from '../../../lib/utils/reference-value'
+import {
   readonlyCellTextStyle,
   nowrapCellTextStyle,
 } from './table-cell-editor-styles'
+import { wrapperSx, nowrapWrapperSx } from './reference-cell-editor-styles'
 
 interface ReferenceCellEditorProps {
   colProps: Record<string, unknown>
@@ -84,73 +87,6 @@ function readReferenceCellProps(
   return colProps as ReferenceCellProps
 }
 
-// Компактная стилизация под ячейку ТЧ — по образцу cellSx/dateCellSx
-// из table-cell-editor.tsx (прозрачный фон, без рамки, высота 28px).
-const inputBase = {
-  backgroundColor: 'transparent !important',
-  border: 'none !important',
-  borderRadius: '0 !important',
-  minHeight: '28px !important',
-  padding: '0 8px !important',
-}
-
-const wrapperSx: SystemStyleObject<Theme> = {
-  width: '100%',
-  '& .MuiFormControl-root': { mb: 0, position: 'static' },
-  '& .MuiFilledInput-root': {
-    ...inputBase,
-    // Кнопки (стрелка списка, «открыть карточку») прижаты к ВЕРХУ, а не к
-    // середине: значение многострочное, и на двух строках центрированные
-    // иконки уезжали бы к середине текста.
-    alignItems: 'flex-start',
-  },
-  '& .MuiAutocomplete-input': {
-    padding: '4px 0 !important',
-    fontSize: '14px !important',
-    // Значение поля — textarea (multilineInput), перенос по ширине колонки.
-    // resize: none — ручка изменения размера в ячейке ТЧ неуместна.
-    resize: 'none',
-    overflowWrap: 'anywhere',
-  },
-  '& .MuiAutocomplete-endAdornment': { top: 2 },
-}
-
-/**
- * Тот же пикер в колонке БЕЗ переноса («Источник финансирования»): значение —
- * однострочный <input> (multilineInput={false}), поэтому кнопки центрируются по
- * высоте поля, а не прижимаются к верху, а не влезший «хвост» наименования
- * срезается многоточием.
- */
-const nowrapWrapperSx: SystemStyleObject<Theme> = {
-  width: '100%',
-  '& .MuiFormControl-root': { mb: 0, position: 'static' },
-  '& .MuiFilledInput-root': { ...inputBase, alignItems: 'center' },
-  '& .MuiAutocomplete-input': {
-    padding: '4px 0 !important',
-    fontSize: '14px !important',
-    textOverflow: 'ellipsis',
-  },
-  '& .MuiAutocomplete-endAdornment': { top: 2 },
-}
-
-interface CellReferenceValue {
-  id: number | string
-  presentation?: unknown
-}
-
-function isReferenceValue(value: unknown): value is CellReferenceValue {
-  return value !== null && typeof value === 'object' && 'id' in value
-}
-
-function toSelectOption(value: unknown): SelectOption | null {
-  if (!isReferenceValue(value)) return null
-  return {
-    id: Number(value.id),
-    code: String(value.id),
-    label: renderCellValue(value),
-  }
-}
-
 export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   colProps,
   value,
@@ -203,7 +139,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
   // Ссылка на value обязана быть стабильной между рендерами, иначе MUI стирает набранный
   // текст на каждом нажатии клавиши — см. useStableSelectOption. Хук стоит ДО ранних
   // возвратов ниже: порядок вызова хуков не должен зависеть от условия.
-  const selectedOption = useStableSelectOption(toSelectOption(value))
+  const selectedOption = useStableSelectOption(referenceToSelectOption(value))
 
   // ENUM-колонка без optionsSource и без фолбэка (нет targetTypeCode):
   // graceful-деградация — нейтральное отображение, не рабочий пикер без данных
@@ -218,7 +154,7 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
 
   const applySelected = (opt: SelectOption | null) => {
     // Полный ссылочный объект {id, presentation}, не bare id (спека §1.3(a), TODO-2)
-    const newVal = opt ? { id: Number(opt.id), presentation: opt.label } : null
+    const newVal = opt ? fromSelectOption(opt) : null
     onChange(newVal)
     resetOptions()
     onCommit()

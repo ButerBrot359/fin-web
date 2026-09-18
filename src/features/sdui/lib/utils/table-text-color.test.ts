@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest'
 
-import { tableTextColor, tableTextColorSx } from './table-text-color'
+import { textColorProp, tableTextColorSx } from './table-text-color'
 
-describe('tableTextColor', () => {
-  it('цвет из props таблицы', () => {
-    expect(tableTextColor({ textColor: '#B22222' })).toBe('#B22222')
+describe('textColorProp', () => {
+  it('цвет из props узла (таблицы или колонки — функция одна)', () => {
+    expect(textColorProp({ textColor: '#B22222' })).toBe('#B22222')
   })
 
   it('пропа нет — цвет темы', () => {
-    expect(tableTextColor({})).toBeUndefined()
-    expect(tableTextColor(undefined)).toBeUndefined()
+    expect(textColorProp({})).toBeUndefined()
+    expect(textColorProp(undefined)).toBeUndefined()
   })
 
   it('мусор игнорируется', () => {
-    expect(tableTextColor({ textColor: '  ' })).toBeUndefined()
-    expect(tableTextColor({ textColor: 42 })).toBeUndefined()
+    expect(textColorProp({ textColor: '  ' })).toBeUndefined()
+    expect(textColorProp({ textColor: 42 })).toBeUndefined()
   })
 })
 

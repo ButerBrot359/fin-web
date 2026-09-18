@@ -1,14 +1,21 @@
 /**
- * Цвет текста ВСЕЙ таблицы (`TABLE.props.textColor`) — порт «ЦветТекста»
- * элемента управляемой формы 1С. Эталонный случай — таблица ошибок ЭСФ, там
- * текст красный (#B22222).
+ * Цвет текста из `props.textColor` — порт «ЦветТекста» 1С. Одна функция на два
+ * механизма (тела совпадали дословно, дубль слит):
  *
- * Отдельный проп, а не тема: цвет приходит с раскладкой конкретной таблицы, и
+ * <p>— узел ТАБЛИЦЫ (`TABLE.props.textColor`) красит ВСЮ таблицу (эталон —
+ * таблица ошибок ЭСФ, красный #B22222) — см. `tableTextColorSx` ниже;
+ *
+ * <p>— узел КОЛОНКИ (`TABLE_COLUMN.props.textColor`) красит одну колонку —
+ * порт УсловногоОформления СКД с пустым отбором (эталон — «К выплате» свода
+ * «Итоги», #0000FF), читается в read-only-header-model.ts. Механизмы
+ * независимы; колоночный, как более точный, перекрывает табличный.
+ *
+ * <p>Отдельный проп, а не тема: цвет приходит с раскладкой конкретного узла, и
  * задавать его глобально нельзя. Отсутствие пропа — прежний цвет темы.
  */
 
-/** Цвет из props узла таблицы; пустая строка и не-строка = пропа нет. */
-export function tableTextColor(
+/** Цвет из props узла; пустая строка и не-строка = пропа нет. */
+export function textColorProp(
   props: Record<string, unknown> | undefined
 ): string | undefined {
   const raw = props?.textColor
@@ -23,6 +30,6 @@ export function tableTextColor(
 export function tableTextColorSx(
   props: Record<string, unknown> | undefined
 ): Record<string, unknown> {
-  const color = tableTextColor(props)
+  const color = textColorProp(props)
   return color ? { '& .MuiTableCell-root': { color } } : {}
 }

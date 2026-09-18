@@ -7,7 +7,8 @@
 import type { ViewNode } from '../../types/view'
 import { nodeToTableColumnDef } from './build-column-defs'
 import { isNodeVisible } from './column-visibility'
-import { columnBackground, columnTextColor } from './column-background'
+import { columnBackground } from './column-background'
+import { textColorProp } from './table-text-color'
 
 export interface ReadOnlyColumnDef {
   id: string
@@ -55,7 +56,7 @@ export function extractReadOnlyColumns(
       minWidth: col.minWidth,
       resizable: col.resizable,
       backgroundColor: columnBackground(col.props),
-      textColor: columnTextColor(col.props),
+      textColor: textColorProp(col.props),
     }
   })
 }

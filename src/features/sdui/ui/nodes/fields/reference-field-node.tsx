@@ -1,8 +1,4 @@
 import { useState, type FC } from 'react'
-import { IconButton } from '@mui/material'
-import ContentCopyIcon from '@mui/icons-material/ContentCopy'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import { useTranslation } from 'react-i18next'
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
@@ -15,78 +11,23 @@ import type { OptionsParamValue } from '../../../lib/utils/resolve-options-param
 import { fetchReferenceOptions } from '../../../api/reference-options'
 import { openReferencePicker } from '../../../lib/reference-picker-gateway'
 import {
+  toSelectOption,
+  fromSelectOption,
+  toReferenceArray,
+  type ReferenceValue,
+} from '../../../lib/utils/reference-value'
+import { readReferenceAffordances } from '../../../lib/utils/reference-affordances'
+import {
   useStableSelectOption,
   useStableSelectOptions,
 } from '../../../lib/hooks/use-stable-select-option'
+import { ReferenceEndActions } from './reference-end-actions'
 
 const EMPTY_OPTIONS: SelectOption[] = []
-
-interface ReferenceValue {
-  id: number
-  presentation: string
-}
-
-function toSelectOption(ref: ReferenceValue): SelectOption {
-  return { id: ref.id, code: String(ref.id), label: ref.presentation }
-}
-
-function fromSelectOption(opt: SelectOption): ReferenceValue {
-  return { id: Number(opt.id), presentation: opt.label }
-}
-
-// SCRUM-291 §19.3: props.multiple — значение узла в состоянии формы должно
-// нормализоваться в массив ReferenceValue независимо от того, в какой форме
-// оно там оказалось: сам массив, одиночный объект {id, presentation} (сервер
-// когда-то прислал/сохранил его как одиночное значение) или голый скаляр
-// number/string (id без presentation). Presentation для голого скаляра
-// неизвестна — используем String(id) как заглушку.
-function toReferenceValue(raw: unknown): ReferenceValue | null {
-  if (raw == null) return null
-  if (typeof raw === 'number' || typeof raw === 'string') {
-    return { id: Number(raw), presentation: String(raw) }
-  }
-  if (typeof raw === 'object' && 'id' in raw) {
-    const obj = raw as { id: unknown; presentation?: unknown }
-    const presentation =
-      typeof obj.presentation === 'string' ||
-      typeof obj.presentation === 'number'
-        ? String(obj.presentation)
-        : String(obj.id)
-    return { id: Number(obj.id), presentation }
-  }
-  return null
-}
-
-// Поле над табличной частью ждёт ссылки, но строку ТЧ ({rowId, <колонка>: {id, presentation}})
-// сюда приносит любой источник, который не привёл значение к контракту: команда таблицы,
-// доменный обработчик, восстановленный черновик. Без разбора по колонке (props.binding) поле
-// рисует пустоту при заполненной табличной части — выбор пользователя выглядит исчезнувшим.
-function toReferenceValueOrRow(
-  raw: unknown,
-  binding?: string
-): ReferenceValue | null {
-  const direct = toReferenceValue(raw)
-  if (direct || !binding) return direct
-  if (raw && typeof raw === 'object' && binding in raw) {
-    return toReferenceValue((raw as Record<string, unknown>)[binding])
-  }
-  return null
-}
-
-function toReferenceArray(raw: unknown, binding?: string): ReferenceValue[] {
-  if (Array.isArray(raw)) {
-    return raw
-      .map((item) => toReferenceValueOrRow(item, binding))
-      .filter((v): v is ReferenceValue => v !== null)
-  }
-  const single = toReferenceValueOrRow(raw, binding)
-  return single ? [single] : []
-}
 
 export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
   const dispatch = useSduiDispatch()
-  const { t } = useTranslation()
 
   const domain = node.props?.domain as string | undefined
   const multiSelectBinding = node.props?.binding as string | undefined
@@ -173,27 +114,9 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   }
 
   // SCRUM-291 §18.3: props.allow* — единственный источник видимости affordance'ов.
-  // Асимметрия дефолтов не случайна и повторяет серверную (ReferenceAffordanceResolver):
-  // allowShowAll открыт, пока явно не false; остальные три закрыты, пока явно не true.
-  const showAllAction = node.actions?.find(
-    (a) => a.trigger === 'showAll' && a.actionId === 'command'
-  )
-  const allowShowAll = node.props?.allowShowAll as boolean | undefined
-
-  const createAction = node.actions?.find(
-    (a) => a.trigger === 'create' && a.actionId === 'command'
-  )
-  const allowCreate = node.props?.allowCreate as boolean | undefined
-
-  const openAction = node.actions?.find(
-    (a) => a.trigger === 'open' && a.actionId === 'command'
-  )
-  const allowOpen = node.props?.allowOpen as boolean | undefined
-
-  const copyAction = node.actions?.find(
-    (a) => a.trigger === 'copy' && a.actionId === 'command'
-  )
-  const allowCopy = node.props?.allowCopy as boolean | undefined
+  // Асимметрия дефолтов (allowShowAll открыт, остальные закрыты) — см.
+  // reference-affordances.ts.
+  const { showAll, create, open, copy } = readReferenceAffordances(node)
 
   // Общие пропы автокомплита — одинаковые и для одиночного, и для мульти-режима
   // (§19.3): формула видимости showAll/create не зависит от multiple, J уже
@@ -227,25 +150,25 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
       }
     },
     onShowAll:
-      showAllAction && allowShowAll !== false
+      showAll.action && showAll.allow !== false
         ? () =>
             void dispatch({
               type: 'COMMAND',
-              command: showAllAction.command!,
+              command: showAll.action!.command!,
               sourceNodeId: node.id,
             })
-        : !showAllAction && (allowShowAll ?? canBrowse)
+        : !showAll.action && (showAll.allow ?? canBrowse)
           ? openDictList
           : undefined,
     // SCRUM-360 (v5-back): гейт RefActionsCompletenessIT (C1.4a) зелёный —
     // props-only фолбэк `allowCreate ?? canBrowse` снят. Создание идёт только
     // серверной командой create; без createAction кнопки «Добавить» нет.
     onAdd:
-      createAction && allowCreate === true
+      create.action && create.allow === true
         ? () =>
             void dispatch({
               type: 'COMMAND',
-              command: createAction.command!,
+              command: create.action!.command!,
               sourceNodeId: node.id,
             })
         : undefined,
@@ -267,71 +190,23 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
           {...commonInputProps}
           endAction={
             !selectedOption ? undefined : (
-              <>
-                {openAction ? (
-                  allowOpen === true ? (
-                    <IconButton
-                      aria-label={t('inputs.openReference')}
-                      sx={{ p: '4px', borderRadius: '6px' }}
-                      tabIndex={-1}
-                      onMouseDown={(e) => {
-                        e.preventDefault()
-                        void dispatch({
-                          type: 'COMMAND',
-                          command: openAction.command!,
-                          sourceNodeId: node.id,
-                        })
-                      }}
-                    >
-                      <OpenInNewIcon
-                        className="text-ui-05"
-                        sx={{ fontSize: 20 }}
-                      />
-                    </IconButton>
-                  ) : null
-                ) : canBrowse ? (
-                  <IconButton
-                    aria-label={t('inputs.openReference')}
-                    sx={{ p: '4px', borderRadius: '6px' }}
-                    tabIndex={-1}
-                    onMouseDown={(e) => {
-                      e.preventDefault()
-                      openReferencePicker({
-                        mode: 'edit',
-                        domain: domain!,
-                        typeCode: targetTypeCode,
-                        entryId: selectedOption.id,
-                        onSelect: applySelected,
-                      })
-                    }}
-                  >
-                    <OpenInNewIcon
-                      className="text-ui-05"
-                      sx={{ fontSize: 20 }}
-                    />
-                  </IconButton>
-                ) : null}
-                {copyAction && allowCopy === true ? (
-                  <IconButton
-                    aria-label={t('inputs.copyReference')}
-                    sx={{ p: '4px', borderRadius: '6px' }}
-                    tabIndex={-1}
-                    onMouseDown={(e) => {
-                      e.preventDefault()
-                      void dispatch({
-                        type: 'COMMAND',
-                        command: copyAction.command!,
-                        sourceNodeId: node.id,
-                      })
-                    }}
-                  >
-                    <ContentCopyIcon
-                      className="text-ui-05"
-                      sx={{ fontSize: 20 }}
-                    />
-                  </IconButton>
-                ) : null}
-              </>
+              <ReferenceEndActions
+                nodeId={node.id}
+                open={open}
+                copy={copy}
+                canBrowse={canBrowse}
+                onLegacyOpen={() => {
+                  // Вызывается только при canBrowse (гейт в ReferenceEndActions),
+                  // поэтому domain/targetTypeCode здесь заведомо заданы.
+                  openReferencePicker({
+                    mode: 'edit',
+                    domain: domain!,
+                    typeCode: targetTypeCode!,
+                    entryId: selectedOption.id,
+                    onSelect: applySelected,
+                  })
+                }}
+              />
             )
           }
         />

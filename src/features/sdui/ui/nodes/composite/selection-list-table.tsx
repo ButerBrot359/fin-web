@@ -25,6 +25,7 @@ import { useResolvedOptionsParams } from '../../../lib/hooks/use-resolved-option
 import type { OptionsParamValue } from '../../../lib/utils/resolve-options-params'
 import { fetchReferenceOptions } from '../../../api/reference-options'
 import { renderCellValue } from '../../../lib/utils/cell-value'
+import { fromSelectOption } from '../../../lib/utils/reference-value'
 import { extractReadOnlyColumns } from '../../../lib/utils/read-only-header-model'
 import { openReferencePicker } from '../../../lib/reference-picker-gateway'
 
@@ -182,7 +183,7 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
     publish(
       existing ?? {
         rowId: String(opt.id),
-        Sotrudnik: { id: Number(opt.id), presentation: opt.label },
+        Sotrudnik: fromSelectOption(opt),
       },
       opt
     )

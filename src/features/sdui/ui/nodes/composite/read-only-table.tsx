@@ -17,7 +17,6 @@ import { ShimmerBlock } from '@/shared/ui/page-skeleton/page-skeleton'
 import type { NodeProps } from '../../../types/view'
 import { usePagedTableRows } from '../../../lib/hooks/use-paged-table-rows'
 import { readVirtualization } from '../../../lib/utils/pagination'
-import { renderCellValue } from '../../../lib/utils/cell-value'
 import {
   SDUI_DEFAULT_COLUMN_WIDTH,
   SDUI_MIN_COLUMN_WIDTH,
@@ -29,17 +28,12 @@ import {
   type HeaderCell,
   type ReadOnlyColumnDef,
 } from '../../../lib/utils/read-only-header-model'
-import {
-  parseRowAppearance,
-  resolveRowBackground,
-} from '../../../lib/utils/row-appearance'
-import { isNoWrapColumn } from '../../../lib/utils/nowrap-columns'
+import { parseRowAppearance } from '../../../lib/utils/row-appearance'
 import { TABLE_GRID_SX } from './table-grid-sx'
 import { tableTextColorSx } from '../../../lib/utils/table-text-color'
 import { useManualColumnResize } from '../../../lib/hooks/use-manual-column-resize'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
-import { ColumnResizeHandle } from './column-resize-handle'
-import { ColumnHeaderLabel } from './column-header-label'
+import { ReadOnlyHeaderCell, ReadOnlyTableRow } from './read-only-table-row'
 import { PagedTableFooter } from './paged-table-footer'
 
 interface SimpleTableRow {
@@ -126,28 +120,12 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
     byId.get(cell.id)?.resizable !== false
 
   const renderHeaderCell = (cell: HeaderCell) => (
-    <TableCell
+    <ReadOnlyHeaderCell
       key={cell.id}
-      colSpan={cell.colSpan}
-      rowSpan={cell.rowSpan}
-      align={cell.align}
-      // overflow:hidden — безусловно: обрезка заголовка нужна и без ресайза,
-      // иначе подпись шире колонки выходит за её границы. position НЕ трогаем:
-      // ячейке шапки его уже задал stickyHeader (`sticky`), и прежний
-      // `relative` — якорь ручки ресайза — замещал бы закрепление (та же
-      // регрессия, что чинилась в editable-table-head.tsx). Ручке достаточно
-      // sticky: это тоже позиционированный элемент.
-      sx={{ overflow: 'hidden' }}
-    >
-      <ColumnHeaderLabel label={cell.label} align={cell.align ?? 'left'} />
-      {canResize(cell) && (
-        <ColumnResizeHandle
-          isResizing={resize.resizingColumnId === cell.id}
-          onMouseDown={resize.mouseDownHandler(cell.id)}
-          onTouchStart={resize.touchStartHandler(cell.id)}
-        />
-      )}
-    </TableCell>
+      cell={cell}
+      resizable={canResize(cell)}
+      resize={resize}
+    />
   )
 
   const totalWidth =
@@ -276,53 +254,17 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                   </TableRow>
                 )}
                 {renderedRows.map(({ row, index }) => (
-                  <TableRow
+                  <ReadOnlyTableRow
                     key={row.rowId}
-                    data-index={isVirtualized ? index : undefined}
-                    ref={measureRow}
-                    // Условная заливка строки (см. row-appearance.ts): правило
-                    // живёт на узле таблицы, признак — в данных строки.
-                    sx={{
-                      backgroundColor: resolveRowBackground(rowAppearance, row),
-                    }}
-                  >
-                    {showRowNumbers && (
-                      <TableCell align="center">{index + 1}</TableCell>
-                    )}
-                    {columns.map((col) => (
-                      <TableCell
-                        key={col.id}
-                        // overflowWrap:anywhere — безусловно: ширины колонок
-                        // фиксированы, и «неразрывное» значение (код, счёт,
-                        // номер без пробелов) без него не переносится, а при
-                        // включённом ресайзе ещё и срезается overflow:hidden.
-                        // Исключение — колонки isNoWrapColumn (шапка ТЧ
-                        // «Начисления» в эталоне 1С): там перенос раздувает
-                        // каждую строку, и значение держится в одну строку с
-                        // многоточием.
-                        sx={{
-                          ...(isNoWrapColumn(col.binding ?? '', col.label)
-                            ? {
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                              }
-                            : { overflowWrap: 'anywhere' }),
-                          ...(isResizable ? { overflow: 'hidden' } : {}),
-                          // Постоянная заливка колонки (column-background.ts).
-                          // Уступает условной заливке строки: та сообщает о
-                          // состоянии записи и не должна теряться под фоном.
-                          ...(resolveRowBackground(rowAppearance, row)
-                            ? {}
-                            : { backgroundColor: col.backgroundColor }),
-                        }}
-                      >
-                        {col.binding !== undefined
-                          ? renderCellValue(row[col.binding])
-                          : ''}
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                    row={row}
+                    index={index}
+                    columns={columns}
+                    showRowNumbers={showRowNumbers}
+                    rowAppearance={rowAppearance}
+                    isResizable={isResizable}
+                    isVirtualized={isVirtualized}
+                    measureRow={measureRow}
+                  />
                 ))}
                 {paddingBottom > 0 && (
                   <TableRow aria-hidden="true">

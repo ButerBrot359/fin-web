@@ -10,6 +10,7 @@ import SearchIcon from '@/shared/assets/icons/search.svg'
 import { useDebouncedValue } from '@/shared/lib/hooks/use-debounced-value'
 import { SearchInput } from '@/shared/ui/inputs/search-input'
 import { ListFilterChips, type ListFilterChip } from './list-filter-chips'
+import { ListQuickFilters, readQuickFilters } from './list-quick-filters'
 import {
   buildListColumns,
   type ListRow,
@@ -76,6 +77,19 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   // без clearFilter/clearAllFilters-действий панель не рендерим вовсе.
   const filterChips =
     (node.props?.filterChips as ListFilterChip[] | undefined) ?? []
+  // Панель отбора над таблицей (как в журнале 1С). Значения берём из тех же чипов, что
+  // рисуются под панелью: показанное в панели и снятое чипом — одно состояние.
+  const quickFilterValues = useMemo(
+    () =>
+      Object.fromEntries(
+        filterChips.map((chip) => [chip.field, (chip as { value?: unknown }).value])
+      ),
+    [filterChips]
+  )
+  const quickFilters = useMemo(
+    () => readQuickFilters(node, columnNodes, quickFilterValues),
+    [node, columnNodes, quickFilterValues]
+  )
   // Подавление дублей in-flight: пока предыдущий list.applySort не завершился —
   // повторные клики по заголовкам игнорируются («последний выигрывает» не требуется).
   const sortInFlightRef = useRef(false)
@@ -214,6 +228,20 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
           />
         )}
       </div>
+
+      {filterCommand && (
+        <ListQuickFilters
+          filters={quickFilters}
+          onApply={(field, op, value) => {
+            void dispatch({
+              type: 'COMMAND',
+              command: filterCommand,
+              value: value === undefined ? { field, op } : { field, op, value },
+              sourceNodeId: node.id,
+            })
+          }}
+        />
+      )}
 
       {clearFilterCommand && clearAllFiltersCommand && (
         <ListFilterChips

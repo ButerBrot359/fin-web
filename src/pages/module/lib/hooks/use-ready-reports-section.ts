@@ -6,7 +6,10 @@ import { ModuleElementType } from '@/entities/module'
 import type { ModuleSection } from '@/entities/module'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
-import { fetchReportsList } from '@/pages/reports/report-list'
+// Импорт напрямую из api-файла, а не из бареля слайса: барель реэкспортирует
+// ReportPage, и статический импорт бареля утаскивал бы весь UI отчётов в чанк
+// ModulePage — при том что сам ReportPage грузится лениво из sdui-catch-all.
+import { fetchReportsList } from '@/pages/reports/report-list/api/reports-api'
 
 /**
  * Модуль, в который добавляется подраздел «Готовые отчёты».

@@ -10,7 +10,11 @@ import { TopBar } from '@/widgets/top-bar'
 import { Sidebar } from '@/widgets/sidebar'
 
 import { AuthGuard, CHANGE_PASSWORD_ROUTE, LOGIN_ROUTE } from '@/features/auth'
-import { DictSidebarDrawer, useDictSidebarStore } from '@/features/dict-sidebar'
+// Reference-picker-gateway (SDUI → легаси-справочники): реализация — push в
+// стор dict-sidebar. Стор импортируется напрямую (не через барель), чтобы
+// статическая часть моста оставалась крошечной, а тяжёлый UI дровера
+// (dict-sidebar + form-renderer) уезжал в отдельный ленивый чанк ниже.
+import { useDictSidebarStore } from '@/features/dict-sidebar/lib/hooks/use-dict-sidebar-store'
 import {
   ShellSidebarHost,
   setReferencePickerGateway,
@@ -86,6 +90,14 @@ const SduiCatchAllPage = lazy(() =>
 const AnalyticsRouterPage = lazy(() =>
   import('@/pages/analytics/analytics-router').then((m) => ({
     default: m.AnalyticsRouterPage,
+  }))
+)
+// Дровер легаси-справочников: всегда смонтирован, но тянет form-renderer и
+// компанию — лениво, чтобы не грузить их в главном чанке. Чанк докачивается
+// сразу после старта приложения, вне критического пути.
+const DictSidebarDrawer = lazy(() =>
+  import('@/features/dict-sidebar').then((m) => ({
+    default: m.DictSidebarDrawer,
   }))
 )
 
@@ -246,7 +258,9 @@ function App() {
               >
                 <AppRoutes />
               </Layout>
-              <DictSidebarDrawer />
+              <Suspense fallback={null}>
+                <DictSidebarDrawer />
+              </Suspense>
             </AuthGuard>
           }
         />

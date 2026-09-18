@@ -1,10 +1,23 @@
-import type { ReactNode } from 'react'
+import { Suspense, lazy, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { BackgroundStatusBar } from '@/features/background-tasks'
 import { WorkspacePanelHost } from '@/features/sdui'
-import { AiAssistantWidget } from '@/features/ai-assistant'
-import { SupportCallWidget } from '@/features/support-call'
+
+// Код-сплиттинг: виджеты поддержки и ИИ-помощника — плавающие кнопки поверх
+// любой страницы, но их зависимости тяжёлые (livekit-client ~400 КБ min у
+// звонков). Ленивая загрузка выносит их из критического главного чанка;
+// чанки докачиваются сразу после монтирования оболочки, вне критического пути.
+const SupportCallWidget = lazy(() =>
+  import('@/features/support-call').then((m) => ({
+    default: m.SupportCallWidget,
+  }))
+)
+const AiAssistantWidget = lazy(() =>
+  import('@/features/ai-assistant').then((m) => ({
+    default: m.AiAssistantWidget,
+  }))
+)
 import {
   performTabBack,
   performTabClose,
@@ -72,13 +85,17 @@ export const Layout = ({ sidebar, header, children }: LayoutProps) => {
         <WorkspaceTabBar />
       </div>
       {/* Живая поддержка (ADR-0050): доступна с любой страницы. */}
-      <SupportCallWidget />
+      <Suspense fallback={null}>
+        <SupportCallWidget />
+      </Suspense>
 
       {/* ИИ-помощник (концепция «AI-помощник в 1С»): постоянная кнопка доступна
           с любой страницы, панель открывается поверх формы и её не перестраивает.
           Стоит НАД кнопкой поддержки — правый нижний угол во время звонка
           занимает панель звонка. */}
-      <AiAssistantWidget />
+      <Suspense fallback={null}>
+        <AiAssistantWidget />
+      </Suspense>
     </div>
   )
 }

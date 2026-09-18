@@ -1,73 +1,39 @@
-# React + TypeScript + Vite
+# fin-web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+CRM-система с бухучётом и динамическим рендерингом UI по JSON-схеме от бэкенда (SDUI).
 
-Currently, two official plugins are available:
+React 19 · TypeScript 5.9 · Vite 7 · TailwindCSS · Zustand · TanStack Query/Table · React Hook Form + Zod
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Быстрый старт
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm ci
+cp .env.example .env   # заполнить значения
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Команды
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Команда                           | Что делает                    |
+| --------------------------------- | ----------------------------- |
+| `npm run dev`                     | Dev-сервер                    |
+| `npm run build`                   | Прод-сборка (tsc -b + vite)   |
+| `npm test`                        | Unit-тесты (vitest)           |
+| `npm run test:visual`             | Визуальные тесты (playwright) |
+| `npm run lint` / `npm run format` | ESLint / Prettier             |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Документация
+
+- **[CLAUDE.md](CLAUDE.md)** — правила кода, структура FSD, граница SDUI/легаси, команды
+- **[docs/design-rules.md](docs/design-rules.md)** — правила дизайна (токены, отступы, кнопки, иконки)
+- **[docs/api/](docs/api/)** — документация API бэкенда (+ OpenAPI-спеки)
+- **[docs/superpowers/specs/](docs/superpowers/specs/)** — архитектурные спеки; ключевые:
+  - `2026-07-02-sdui-course-audit.md` — авторитетная спека SDUI-архитектуры
+  - `2026-07-02-sdui-code-review.md` — карта границы легаси/SDUI
+  - `2026-09-04-sdui-design-constructor-spec.md` — конструктор дизайна
+
+## Архитектура в двух словах
+
+Два мира: **SDUI** (бэкенд присылает дерево нод через `POST /api/view`, фронт рендерит без бизнес-логики) и **легаси** (статические страницы, удаляется по мере миграции). Прямые импорты между мирами запрещены; мост — только gateway-паттерн через `app/`. Подробности и таблица зон — в [CLAUDE.md](CLAUDE.md).
+
+`form-configs-server/` — вспомогательный Node-сервер (генерация форм-конфигов, ИИ-фичи); `ANTHROPIC_API_KEY` он получает в рантайме из окружения (в k8s — секрет `fin-web-secret`), ключ не запекается в образ.

@@ -8,6 +8,7 @@ import {
   unregisterPendingFlush,
 } from '../pending-table-commits'
 import { omitServiceRowKeys } from '../utils/service-row-keys'
+import { buildEmptyRow, reconcileRows, sameRows } from './table-sync-model'
 
 export interface TableColumnDef {
   id: string
@@ -40,15 +41,6 @@ export interface TableRow {
 
 const EMPTY_ROWS: TableRow[] = []
 
-/**
- * Префикс rowId локально добавленной строки — той, которой сервер ещё не видел.
- * Всё остальное — серверные rowId (после save приходит remap на реальные id).
- * Нужна в двух местах: где строка создаётся (buildEmptyRow) и где фильтруется
- * при реконсиляции dirty→merged — раньше префикс был захардкожен в первом и НЕ
- * читался во втором, из-за чего серверная строка воскресала дублем.
- */
-const TMP_ROW_ID_PREFIX = 'tmp-'
-
 export interface UseTableSyncResult {
   rows: TableRow[]
   updateCell: (rowId: string, binding: string, value: unknown) => void
@@ -69,58 +61,6 @@ export interface UseTableSyncResult {
    * патчи применены к локальному состоянию (инвариант flush-before-save).
    */
   flushPending: () => Promise<void>
-}
-
-function buildEmptyRow(columns: TableColumnDef[]): TableRow {
-  const row: TableRow = { rowId: `${TMP_ROW_ID_PREFIX}${crypto.randomUUID()}` }
-  for (const col of columns) {
-    switch (col.dataType) {
-      case 'STRING':
-      case 'TEXT':
-        row[col.binding] = ''
-        break
-      case 'INTEGER':
-      case 'DECIMAL':
-        row[col.binding] = 0
-        break
-      case 'BOOLEAN':
-        row[col.binding] = false
-        break
-      default:
-        row[col.binding] = null
-        break
-    }
-  }
-  return row
-}
-
-/**
- * Сериализация с сортировкой ключей — для сравнения «локальный снимок vs
- * отправленный». Обычный JSON.stringify считал бы расхождением разный порядок
- * ключей: локальная строка собирается спредом `{ ...r, [binding]: value }`, а
- * канон приходит с сервера в своём порядке. Ложное расхождение стоило бы
- * лишнего EVENT'а на каждом сохранении.
- */
-function stableStringify(value: unknown): string {
-  // JSON.stringify(undefined) === undefined, а тип в lib.d.ts обещает string —
-  // отсекаем явной веткой, иначе `?? 'null'` считается лишним и падает лint.
-  if (value === undefined) return 'null'
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value)
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map(stableStringify).join(',')}]`
-  }
-  const entries = Object.entries(value as Record<string, unknown>)
-    .filter(([, v]) => v !== undefined)
-    .sort(([a], [b]) => (a < b ? -1 : 1))
-  return `{${entries
-    .map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`)
-    .join(',')}}`
-}
-
-function sameRows(a: TableRow[] | null, b: TableRow[] | null): boolean {
-  return stableStringify(a) === stableStringify(b)
 }
 
 /**
@@ -302,29 +242,8 @@ export function useTableSync(
       return
     }
 
-    // Re-apply dirty snapshot over canon
-    const merged = canonRows.map((row) => {
-      const patch = dirty.get(row.rowId)
-      if (!patch) return row
-      const result = { ...row }
-      for (const [key, val] of Object.entries(patch)) {
-        // Skip readonly columns — those come from server
-        if (!readonlyBindings.current.has(key)) {
-          result[key] = val
-        }
-      }
-      return result
-    })
-
-    // Keep rows that exist only locally (added while in-flight, with tmp- ids).
-    // «Нет в каноне» ≠ «добавлена локально»: серверная строка выпадает из канона
-    // и при перенумерации/пересборке ТЧ. Её патч приземлять некуда — отбрасываем,
-    // а не превращаем в строку-дубль. Только tmp--строки достойны воскрешения.
-    for (const [rowId, patch] of dirty) {
-      if (!rowId.startsWith(TMP_ROW_ID_PREFIX)) continue
-      if (canonRows.some((r) => r.rowId === rowId)) continue
-      merged.push({ rowId, ...patch } as TableRow)
-    }
+    // Наложение dirty-снимка на канон — чистая часть в table-sync-model.
+    const merged = reconcileRows(canonRows, dirty, readonlyBindings.current)
 
     setLocalRows(merged)
     localRowsRef.current = merged

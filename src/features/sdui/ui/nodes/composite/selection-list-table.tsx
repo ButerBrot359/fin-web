@@ -1,38 +1,24 @@
-import { useMemo, useRef, useState, type FC } from 'react'
+import { useMemo, useState, type FC } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-} from '@mui/material'
+import { Box, TextField, Typography } from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons'
 import { AutocompleteInput } from '@/shared/ui/inputs'
-import type { SelectOption } from '@/shared/types/select-option'
 
 import type { NodeProps } from '../../../types/view'
 import { useSduiSession } from '../../../lib/sdui-session-context'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
 import { useResolvedOptionsParams } from '../../../lib/hooks/use-resolved-options-params'
+import {
+  useSelectionPublish,
+  type SelectionRow,
+} from '../../../lib/hooks/use-selection-publish'
 import type { OptionsParamValue } from '../../../lib/utils/resolve-options-params'
 import { fetchReferenceOptions } from '../../../api/reference-options'
 import { renderCellValue } from '../../../lib/utils/cell-value'
-import { fromSelectOption } from '../../../lib/utils/reference-value'
 import { extractReadOnlyColumns } from '../../../lib/utils/read-only-header-model'
-import { openReferencePicker } from '../../../lib/reference-picker-gateway'
-
-interface SelectionRow {
-  rowId: string
-  [key: string]: unknown
-}
+import { SelectionListRows } from './selection-list-rows'
 
 /**
  * Список-ОТБОР: витрина формы, выбор строки в которой фильтрует другие таблицы
@@ -59,11 +45,6 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
     const raw = node.binding ? getValue(node.binding) : undefined
     return Array.isArray(raw) ? (raw as SelectionRow[]) : []
   }, [getValue, node.binding])
-
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
-  const [selectedOption, setSelectedOption] = useState<SelectOption | null>(
-    null
-  )
 
   // Порт «Отбор по сотруднику» → «Показать все» (1С: единое поле отбора и есть
   // автодополнение по справочнику Сотрудники, «Показать все» — ссылка внутри его
@@ -124,82 +105,22 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
     return rendered || row.rowId
   }
 
-  // Хвост очереди отправленных EVENT'ов этого узла. dispatch.ts даёт in-flight-
-  // гард от параллельных запросов ТОЛЬКО action.type === 'COMMAND' (SCRUM-330,
-  // строка 71); EVENT-путь им не защищён. При быстром переключении сотрудников
-  // это гонка: два запроса уходят параллельно, и если ответ на БОЛЕЕ РАННИЙ
-  // клик придёт по сети ПОЗЖЕ ответа на следующий, его patches применяются
-  // последними и откатывают своды/подвалы «Итого» на прошлого сотрудника —
-  // воспроизведено на стенде 03.09.2026 (footer показывал суммы предыдущего
-  // выбора, хотя строки таблицы уже отфильтрованы по новому). Сериализация
-  // очередью промисов гарантирует, что ответы применяются строго в порядке
-  // кликов, а не в порядке прихода по сети.
-  const pendingRef = useRef<Promise<unknown>>(Promise.resolve())
-
-  // Выбор публикуется дважды: в сессию — для клиентского отбора строк ТЧ
-  // (ОтборСтрокТабЧастей), и EVENT'ом на сервер — потому что от того же выбора
-  // зависят свод «Итоги» (набор ФизЛица) и подвалы «Итого» вкладок
-  // (ЗаполнитьПоляИтогиПоТабЧастям). Порт СписокСотрудниковВыбор :1103.
-  const publish = (row: SelectionRow | null, option?: SelectOption | null) => {
-    const rowId = row?.rowId ?? null
-    setSelectedRowId(rowId)
-    setSelectedOption(
-      row
-        ? (option ?? { id: row.rowId, code: row.rowId, label: rowLabel(row) })
-        : null
-    )
-    if (node.binding) {
-      setFromServer(node.binding + '.__selectedRowId', rowId)
-    }
-    if (
-      node.actions?.some(
-        (a) => a.trigger === 'change' && a.actionId === 'fieldEvent'
-      )
-    ) {
-      pendingRef.current = pendingRef.current.then(() =>
-        dispatch({
-          type: 'EVENT',
-          sourceNodeId: node.id,
-          trigger: 'change',
-          value: row,
-        })
-      )
-    }
-  }
-
-  // Выбор из справочника (и live-поиск в поле отбора, и «Показать все» —
-  // ссылка footer'а автокомплита): если сотрудник уже виден в панели (есть в ТЧ
-  // документа), публикуем ЕГО строку, с обоими ключами отбора (Sotrudnik +
-  // FizicheskoeLitso). Иначе строим минимальную: ФизЛицо сервер не пришлёт по
-  // голому справочнику Sotrudniki, отбор восьми налоговых ТЧ по такому
-  // сотруднику не сработает — деградация терпимая (нечего фильтровать, раз его
-  // нет ни в одной ТЧ), а не потеря данных.
-  const selectFromDictionary = (opt: SelectOption | null) => {
-    if (!opt) {
-      publish(null)
-      return
-    }
-    const existing = rows.find((r) => r.rowId === String(opt.id))
-    publish(
-      existing ?? {
-        rowId: String(opt.id),
-        Sotrudnik: fromSelectOption(opt),
-      },
-      opt
-    )
-  }
-
-  const showAllFromDictionary = () => {
-    if (!pickerDomain || !pickerTypeCode) return
-    openReferencePicker({
-      mode: 'list',
-      domain: pickerDomain,
-      typeCode: pickerTypeCode,
-      searchParams: pickerSearchParams,
-      selectedId: selectedRowId ?? undefined,
-      onSelect: selectFromDictionary,
-    })
-  }
+  const {
+    selectedRowId,
+    selectedOption,
+    publish,
+    selectFromDictionary,
+    showAllFromDictionary,
+  } = useSelectionPublish({
+    node,
+    rows,
+    rowLabel,
+    setFromServer,
+    dispatch,
+    pickerDomain,
+    pickerTypeCode,
+    pickerSearchParams,
+  })
 
   if ((node.props?.visible as boolean | undefined) === false) return null
 
@@ -261,57 +182,14 @@ export const SelectionListTable: FC<NodeProps> = ({ node }) => {
         />
       )}
 
-      <TableContainer
-        component={Paper}
-        variant="outlined"
-        sx={{ flex: '1 1 auto', overflowY: 'auto' }}
-      >
-        {/* Список-отбор прокручивается внутри себя — шапка закреплена, иначе
-            при прокрутке не видно, по какой колонке идёт отбор. */}
-        <Table size="small" stickyHeader>
-          <TableHead>
-            <TableRow>
-              {columns.map((col) => (
-                <TableCell key={col.id}>
-                  <Typography variant="body2" fontWeight={600}>
-                    {col.label}
-                  </Typography>
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {visibleRows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={Math.max(columns.length, 1)}>
-                  <Typography variant="body2" color="text.secondary">
-                    {t('table.empty')}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            )}
-            {visibleRows.map((row) => (
-              <TableRow
-                key={row.rowId}
-                hover
-                selected={row.rowId === selectedRowId}
-                className="cursor-pointer"
-                onClick={() => {
-                  publish(row.rowId === selectedRowId ? null : row)
-                }}
-              >
-                {columns.map((col) => (
-                  <TableCell key={col.id}>
-                    {renderCellValue(
-                      col.binding ? row[col.binding] : undefined
-                    )}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <SelectionListRows
+        columns={columns}
+        rows={visibleRows}
+        selectedRowId={selectedRowId}
+        onRowClick={(row) => {
+          publish(row.rowId === selectedRowId ? null : row)
+        }}
+      />
     </Box>
   )
 }

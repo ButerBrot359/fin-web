@@ -100,6 +100,23 @@ export type TabelMatrixCommand =
   | SelectEmployeeCommand
   | DeleteEmployeeCommand
 
+export interface SotrudnikPickerContract {
+  domain?: string
+  targetTypeCode?: string
+  filter?: Record<string, unknown>
+  optionsSource?: { url: string; params?: Record<string, string> }
+}
+
+/** Контракт пикера — из выданной бэком колонки `…col.sotrudnik` (spec v1 §3). */
+export function findSotrudnikContract(node: ViewNode): SotrudnikPickerContract {
+  const col = (node.children ?? []).find(
+    (c) =>
+      c.type === 'TABLE_COLUMN' &&
+      (c.id.endsWith('.col.sotrudnik') || c.binding === 'Sotrudnik')
+  )
+  return (col?.props ?? {}) as SotrudnikPickerContract
+}
+
 /**
  * Дискриминатор матрицы — все ТРИ признака одновременно (spec v1 §2).
  * Запрещено определять матрицу по подписи, порядку узлов или числу колонок.

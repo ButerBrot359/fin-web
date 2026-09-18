@@ -6,7 +6,10 @@ import { useDebouncedValue } from '@/shared/lib/hooks/use-debounced-value'
 
 import type { NodeProps } from '../../../../types/view'
 import { useBindingValue } from '../../../../lib/sdui-session-context'
-import { parseTabelMatrixPayload } from './tabel-matrix-contract'
+import {
+  findSotrudnikContract,
+  parseTabelMatrixPayload,
+} from './tabel-matrix-contract'
 import {
   dayHeader,
   filterEmployees,
@@ -14,10 +17,7 @@ import {
   withKindPresentations,
 } from './tabel-matrix-logic'
 import { useTabelMatrixQueue } from './tabel-matrix-queue'
-import {
-  findSotrudnikContract,
-  useTabelMatrixActions,
-} from './use-tabel-matrix-actions'
+import { useTabelMatrixActions } from './use-tabel-matrix-actions'
 import { TabelMatrixGrid } from './tabel-matrix-grid'
 import { TabelMatrixToolbar } from './tabel-matrix-toolbar'
 import { TabelPodborDialog } from './tabel-matrix-podbor-dialog'

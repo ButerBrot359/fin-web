@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-import type { ViewNode } from '../../../../types/view'
 import { useConfirmStore } from '../../../../lib/stores/confirm-store'
 import { openReferencePicker } from '../../../../lib/reference-picker-gateway'
 import type {
+  SotrudnikPickerContract,
   TabelEmployee,
   TabelManualWorkKind,
   TabelMatrixPayload,
@@ -14,30 +14,7 @@ import type {
 } from './tabel-matrix-contract'
 import { buildReplaceEmployee, normalizeCellInput } from './tabel-matrix-logic'
 import type { TabelMatrixQueue } from './tabel-matrix-queue'
-
-export interface SotrudnikPickerContract {
-  domain?: string
-  targetTypeCode?: string
-  filter?: Record<string, unknown>
-  optionsSource?: { url: string; params?: Record<string, string> }
-}
-
-/** Контракт пикера — из выданной бэком колонки `…col.sotrudnik` (spec v1 §3). */
-export function findSotrudnikContract(node: ViewNode): SotrudnikPickerContract {
-  const col = (node.children ?? []).find(
-    (c) =>
-      c.type === 'TABLE_COLUMN' &&
-      (c.id.endsWith('.col.sotrudnik') || c.binding === 'Sotrudnik')
-  )
-  return (col?.props ?? {}) as SotrudnikPickerContract
-}
-
-/** Черновые виды времени, привязанные к generation (spec v1 §5): к payload
- * другой generation черновики не применяются. */
-interface DraftKinds {
-  generation: number
-  byEmployee: Record<string, TabelManualWorkKind[]>
-}
+import { useTabelDraftKinds } from './use-tabel-draft-kinds'
 
 export interface TabelMatrixActions {
   activeId: string | null
@@ -65,14 +42,14 @@ export function useTabelMatrixActions(
 ): TabelMatrixActions {
   const { t } = useTranslation()
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [drafts, setDrafts] = useState<DraftKinds>({
-    generation: -1,
-    byEmployee: {},
-  })
+  const { draftKindsFor, addWorkKind, removeDraftKind } = useTabelDraftKinds(
+    payload,
+    activeId
+  )
   const generation = payload?.generation ?? -1
 
-  // Новый payload: чистим ссылку на исчезнувшего сотрудника; черновики,
-  // уже сохранённые сервером (вид появился в payload), убираем из drafts.
+  // Новый payload: чистим ссылку на исчезнувшего сотрудника (черновики
+  // реконсилирует useTabelDraftKinds по той же смене generation).
   const prevGenerationRef = useRef(generation)
   useEffect(() => {
     if (prevGenerationRef.current === generation || !payload) return
@@ -80,25 +57,7 @@ export function useTabelMatrixActions(
     const ids = new Set(payload.employees.map((e) => e.employeeNodeId))
     // eslint-disable-next-line react-hooks/set-state-in-effect -- реакция на смену серверной generation
     setActiveId((prev) => (prev && ids.has(prev) ? prev : null))
-    setDrafts((prev) => {
-      const next: Record<string, TabelManualWorkKind[]> = {}
-      for (const [empId, kinds] of Object.entries(prev.byEmployee)) {
-        const employee = payload.employees.find(
-          (e) => e.employeeNodeId === empId
-        )
-        if (!employee) continue
-        const saved = new Set(employee.workKinds.map((k) => k.workTimeKindRef))
-        const rest = kinds.filter((k) => !saved.has(k.workTimeKindRef))
-        if (rest.length > 0) next[empId] = rest
-      }
-      return { generation, byEmployee: next }
-    })
   }, [generation, payload])
-
-  const draftKindsFor = (employeeNodeId: string): TabelManualWorkKind[] =>
-    drafts.generation === generation
-      ? (drafts.byEmployee[employeeNodeId] ?? [])
-      : []
 
   const selectEmployee = (employee: TabelEmployee) => {
     if (activeId === employee.employeeNodeId) return
@@ -202,32 +161,6 @@ export function useTabelMatrixActions(
     })
   }
 
-  const addWorkKind = (kind: TabelManualWorkKind) => {
-    if (!activeId || !payload) return
-    const employee = payload.employees.find(
-      (e) => e.employeeNodeId === activeId
-    )
-    if (!employee) return
-    const exists =
-      employee.workKinds.some(
-        (k) => k.workTimeKindRef === kind.workTimeKindRef
-      ) ||
-      draftKindsFor(activeId).some(
-        (k) => k.workTimeKindRef === kind.workTimeKindRef
-      )
-    if (exists) {
-      showToast('info', t('sdui.tabel.kindAlreadyAdded'))
-      return
-    }
-    setDrafts((prev) => ({
-      generation,
-      byEmployee: {
-        ...(prev.generation === generation ? prev.byEmployee : {}),
-        [activeId]: [...draftKindsFor(activeId), kind],
-      },
-    }))
-  }
-
   const deleteEmployee = (employee: TabelEmployee) => {
     const name = employee.employeePresentation ?? String(employee.employeeRef)
     void useConfirmStore
@@ -253,15 +186,7 @@ export function useTabelMatrixActions(
     draft: boolean
   ) => {
     if (draft) {
-      setDrafts((prev) => ({
-        generation,
-        byEmployee: {
-          ...prev.byEmployee,
-          [employee.employeeNodeId]: draftKindsFor(
-            employee.employeeNodeId
-          ).filter((k) => k.workTimeKindRef !== kind.workTimeKindRef),
-        },
-      }))
+      removeDraftKind(employee.employeeNodeId, kind.workTimeKindRef)
       return
     }
     const name = kind.workTimeKindPresentation ?? String(kind.workTimeKindRef)

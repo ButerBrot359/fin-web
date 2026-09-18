@@ -26,16 +26,14 @@ import { YearSelector } from '../year-selector'
 import { DayKindLegend } from '../day-kind-legend'
 import { ProductionDayCell } from './production-day-cell'
 import { ProductionCalendarToolbar } from './production-calendar-toolbar'
-import { ProductionDayKindMenu } from './production-day-kind-menu'
-import { ProductionDayContextMenu } from './production-day-context-menu'
-import { ProductionTransferDialog } from './production-transfer-dialog'
 import { ProductionTransferList } from './production-transfer-list'
 import { ProductionBaseField } from './production-base-field'
-import { ProductionYearChangeDialog } from './production-year-change-dialog'
-import { ProductionPrintPreview } from './production-print-preview'
+import {
+  ProductionCalendarOverlays,
+  type MenuPosition,
+} from './production-calendar-overlays'
+import { useProductionCalendarCommands } from './use-production-calendar-commands'
 import { useProductionCalendarYearChange } from './use-production-calendar-year-change'
-
-type MenuPosition = { left: number; top: number } | null
 
 // Карточка производственного календаря, contract v2 (SCRUM-277). Владеет только
 // orchestration-состоянием (§13.4); данные дней/переносов/базы — исключительно
@@ -57,7 +55,6 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
     null
   )
   const [saveWarningDismissed, setSaveWarningDismissed] = useState(false)
-  const [busy, setBusy] = useState(false)
 
   const year = p.year
   const supported =
@@ -68,27 +65,27 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
     supported && p.draftId != null && p.draftVersion != null && year != null
   const editable = draftReady && p.editable === true
 
-  const sendDraftCommand = async (
-    command: string,
-    value: Record<string, unknown> = {}
-  ): Promise<boolean> => {
-    // Неполная identity — команду не отправляем (§13.4).
-    if (!draftReady) return false
-    setBusy(true)
-    const ok = await dispatch({
-      type: 'COMMAND',
-      command,
-      sourceNodeId: node.id,
-      value: {
-        draftId: p.draftId,
-        expectedDraftVersion: p.draftVersion,
-        calendarYear: year,
-        ...value,
+  const { busy, sendDraftCommand, changeSelectedDay, transferDay, print } =
+    useProductionCalendarCommands({
+      nodeId: node.id,
+      props: p,
+      draftReady,
+      dispatch,
+      selectedDate,
+      clearSelection: () => {
+        setSelectedDate(null)
+      },
+      closeKindMenu: () => {
+        setKindMenuPosition(null)
+      },
+      closeTransferDialog: () => {
+        setTransferDialogOpen(false)
+      },
+      resetPrintDismissals: () => {
+        setSaveWarningDismissed(false)
+        setDismissedPrintKey(null)
       },
     })
-    setBusy(false)
-    return ok
-  }
 
   const yearChange = useProductionCalendarYearChange({
     nodeId: node.id,
@@ -134,36 +131,6 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
     // Правый клик выбирает дату (§13.5).
     setSelectedDate(date)
     setContextMenuPosition(position)
-  }
-
-  const changeSelectedDay = async (targetKindCode: string) => {
-    setKindMenuPosition(null)
-    if (selectedDate == null) return
-    // selectedDates — массив ровно из одного элемента: форма провода (v11 §4.2).
-    const ok = await sendDraftCommand('proizvkalendar.dni.izmenit', {
-      selectedDates: [selectedDate],
-      targetKindCode,
-    })
-    // Успех очищает выбор (§13.5); неуспех сохраняет его для повтора.
-    if (ok) setSelectedDate(null)
-  }
-
-  const transferDay = async (firstDate: string, secondDate: string) => {
-    const ok = await sendDraftCommand('proizvkalendar.den.perenesti', {
-      firstDate,
-      secondDate,
-    })
-    if (ok) {
-      setTransferDialogOpen(false)
-      setSelectedDate(null)
-    }
-  }
-
-  const print = () => {
-    // Повторный запрос печати снова показывает и warning, и готовый result.
-    setSaveWarningDismissed(false)
-    setDismissedPrintKey(null)
-    void sendDraftCommand('proizvkalendar.print')
   }
 
   const cellAriaLabel = (iso: string) => {
@@ -277,64 +244,33 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
         />
       )}
       <ProductionTransferList transfers={p.transfers ?? []} />
-      <ProductionDayContextMenu
-        position={contextMenuPosition}
-        canChangeDay={canChangeDay && selectedDate != null}
-        canTransferDay={canTransferSelected}
-        onChangeDay={() => {
-          setKindMenuPosition(contextMenuPosition)
-          setContextMenuPosition(null)
-        }}
-        onTransferDay={() => {
-          setContextMenuPosition(null)
-          setTransferDialogOpen(true)
-        }}
-        onClose={() => {
-          setContextMenuPosition(null)
-        }}
-      />
-      <ProductionDayKindMenu
-        position={kindMenuPosition}
+      <ProductionCalendarOverlays
+        contextMenuPosition={contextMenuPosition}
+        setContextMenuPosition={setContextMenuPosition}
+        kindMenuPosition={kindMenuPosition}
+        setKindMenuPosition={setKindMenuPosition}
+        transferDialogOpen={transferDialogOpen}
+        setTransferDialogOpen={setTransferDialogOpen}
+        canChangeDay={canChangeDay}
+        canTransferSelected={canTransferSelected}
+        selectedDate={selectedDate}
         dayKinds={dayKinds}
-        onPick={(kindCode) => {
+        sourceDay={sourceDay}
+        year={year}
+        busy={busy}
+        onChangeDayKind={(kindCode) => {
           void changeSelectedDay(kindCode)
         }}
-        onClose={() => {
-          setKindMenuPosition(null)
-        }}
-      />
-      <ProductionTransferDialog
-        open={transferDialogOpen}
-        sourceDay={sourceDay}
-        calendarYear={year}
-        busy={busy}
-        onConfirm={(firstDate, secondDate) => {
+        onTransferDay={(firstDate, secondDate) => {
           void transferDay(firstDate, secondDate)
         }}
-        onClose={() => {
-          setTransferDialogOpen(false)
+        yearChange={yearChange}
+        projection={projection}
+        printOpen={printOpen}
+        onDismissPrint={() => {
+          setDismissedPrintKey(printKey)
         }}
       />
-      <ProductionYearChangeDialog
-        open={yearChange.dialogOpen}
-        targetYear={yearChange.pendingYear}
-        busy={yearChange.busy}
-        onSave={() => {
-          void yearChange.save()
-        }}
-        onDiscard={() => {
-          void yearChange.discard()
-        }}
-        onCancel={yearChange.cancel}
-      />
-      {projection != null && printOpen && (
-        <ProductionPrintPreview
-          projection={projection}
-          onClose={() => {
-            setDismissedPrintKey(printKey)
-          }}
-        />
-      )}
     </div>
   )
 }

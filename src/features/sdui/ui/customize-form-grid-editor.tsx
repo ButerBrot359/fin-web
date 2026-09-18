@@ -1,18 +1,25 @@
-import { useRef, useState, type FC } from 'react'
+import { useState, type FC } from 'react'
 import { Typography } from '@mui/material'
-import { useTranslation } from 'react-i18next'
 
 import { cn } from '@/shared/lib/utils/cn'
 
 import {
   GRID_UNITS,
+  cloneZones,
   dropEmptyRows,
-  reflowZone,
-  rowFreeUnits,
-  type GridItem,
   type GridZone,
 } from '../lib/customize-form/grid-zones'
+import {
+  applyGridDrop,
+  findGridItem,
+  type ExternalDropTarget,
+  type GridDropTarget,
+} from '../lib/customize-form/grid-drop'
 import { useCustomizeFormDndStore } from '../lib/customize-form/customize-form-dnd-store'
+import { gridRowKey, useGridResize } from '../lib/hooks/use-grid-resize'
+import { GridEditorItem } from './grid-editor-item'
+
+export type { ExternalDropTarget }
 
 interface CustomizeFormGridEditorProps {
   zones: GridZone[]
@@ -26,21 +33,6 @@ interface CustomizeFormGridEditorProps {
    * диалог. Не передан — чужие броски игнорируются.
    */
   onExternalDrop?: (nodeId: string, target: ExternalDropTarget) => void
-}
-
-export interface ExternalDropTarget {
-  zoneId: string
-  rowIndex: number
-  itemIndex: number
-  newRow: boolean
-}
-
-interface DropTarget {
-  zoneIndex: number
-  /** Индекс строки; вставка НОВОЙ строкой кодируется rowIndex с newRow=true. */
-  rowIndex: number
-  itemIndex: number
-  newRow: boolean
 }
 
 /**
@@ -58,40 +50,22 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
   onChange,
   onExternalDrop,
 }) => {
-  const { t } = useTranslation()
   // Глобальный dragged (общий стор): перетаскивание видно ВСЕМ инстансам
   // редактора — цели подсвечиваются и в чужих зонах (перенос между блоками).
   const dragged = useCustomizeFormDndStore((s) => s.draggedNodeId)
-  const startDrag = useCustomizeFormDndStore((s) => s.start)
   const clearDrag = useCustomizeFormDndStore((s) => s.clear)
-  const [target, setTarget] = useState<DropTarget | null>(null)
-  const [resizePreview, setResizePreview] = useState<Map<string, number>>(
-    new Map()
-  )
-  const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const [target, setTarget] = useState<GridDropTarget | null>(null)
 
-  const mutate = (fn: (next: GridZone[]) => void) => {
-    const next = zones.map((z) => ({
-      ...z,
-      rows: z.rows.map((r) => r.map((i) => ({ ...i }))),
-    }))
-    fn(next)
-    next.forEach(dropEmptyRows)
-    onChange(next)
-  }
-
-  const findItem = (
-    list: GridZone[],
-    nodeId: string
-  ): { zone: GridZone; row: GridItem[]; item: GridItem } | null => {
-    for (const zone of list) {
-      for (const row of zone.rows) {
-        const item = row.find((i) => i.nodeId === nodeId)
-        if (item) return { zone, row, item }
-      }
+  const { resizePreview, rowRefs, startResize } = useGridResize(
+    zones,
+    (nodeId, span) => {
+      const next = cloneZones(zones)
+      const found = findGridItem(next, nodeId)
+      if (found) found.item.span = span
+      next.forEach(dropEmptyRows)
+      onChange(next)
     }
-    return null
-  }
+  )
 
   const drop = (e?: React.DragEvent) => {
     // Всплытие ячейка → строка вызывало drop дважды — второй проход по
@@ -99,7 +73,7 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
     e?.stopPropagation()
     if (!dragged || !target) return
     // Элемент не из этих зон — перенос между блоками решает диалог.
-    if (!findItem(zones, dragged)) {
+    if (!findGridItem(zones, dragged)) {
       const zone = zones[target.zoneIndex] as GridZone | undefined
       if (zone && onExternalDrop) {
         onExternalDrop(dragged, {
@@ -109,83 +83,11 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
           newRow: target.newRow,
         })
       }
-      clearDrag()
-      setTarget(null)
-      return
+    } else {
+      onChange(applyGridDrop(zones, dragged, target))
     }
-    mutate((next) => {
-      const source = findItem(next, dragged)
-      if (!source) return
-      const zone = next[target.zoneIndex]
-      const sourceItemIndex = source.row.indexOf(source.item)
-      source.row.splice(sourceItemIndex, 1)
-      if (target.newRow) {
-        // Индекс строки-цели фиксировался ДО удаления: опустевшая строка
-        // источника выше цели сдвигает нумерацию на единицу.
-        let rowIndex = target.rowIndex
-        if (source.row.length === 0) {
-          const emptyIndex = zone.rows.indexOf(source.row)
-          if (emptyIndex >= 0 && emptyIndex < rowIndex) rowIndex--
-          zone.rows.splice(emptyIndex, 1)
-        }
-        zone.rows.splice(rowIndex, 0, [source.item])
-      } else {
-        const row = zone.rows[target.rowIndex] as GridItem[] | undefined
-        if (!row) return
-        let index = target.itemIndex
-        // Перестановка внутри своей строки: удаление источника сместило цель.
-        if (row === source.row && sourceItemIndex < index) index--
-        // Вставка БЕЗ ужатия: переполненная строка перетекает на следующую
-        // (reflowZone), как текст — интуиция «подвинься» вместо запрета.
-        row.splice(Math.min(index, row.length), 0, source.item)
-        reflowZone(zone, source.item.nodeId)
-      }
-    })
     clearDrag()
     setTarget(null)
-  }
-
-  const startResize = (
-    e: React.MouseEvent,
-    zoneIndex: number,
-    rowIndex: number,
-    nodeId: string
-  ) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const rowEl = rowRefs.current.get(
-      `${String(zoneIndex)}:${String(rowIndex)}`
-    )
-    if (!rowEl) return
-    const unit = rowEl.getBoundingClientRect().width / GRID_UNITS
-    const zone = zones[zoneIndex]
-    const row = zone.rows[rowIndex]
-    const item = row.find((i) => i.nodeId === nodeId)
-    if (!item) return
-    const startX = e.clientX
-    const startSpan = item.span
-    const maxSpan = startSpan + rowFreeUnits(row)
-
-    const move = (ev: MouseEvent) => {
-      const deltaUnits = Math.round((ev.clientX - startX) / unit)
-      const span = Math.max(1, Math.min(maxSpan, startSpan + deltaUnits))
-      setResizePreview(new Map([[nodeId, span]]))
-    }
-    const up = (ev: MouseEvent) => {
-      window.removeEventListener('mousemove', move)
-      window.removeEventListener('mouseup', up)
-      const deltaUnits = Math.round((ev.clientX - startX) / unit)
-      const span = Math.max(1, Math.min(maxSpan, startSpan + deltaUnits))
-      setResizePreview(new Map())
-      if (span !== startSpan) {
-        mutate((next) => {
-          const found = findItem(next, nodeId)
-          if (found) found.item.span = span
-        })
-      }
-    }
-    window.addEventListener('mousemove', move)
-    window.addEventListener('mouseup', up)
   }
 
   const isCellTarget = (
@@ -237,10 +139,7 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                 <div
                   ref={(el) => {
                     if (el)
-                      rowRefs.current.set(
-                        `${String(zoneIndex)}:${String(rowIndex)}`,
-                        el
-                      )
+                      rowRefs.current.set(gridRowKey(zoneIndex, rowIndex), el)
                   }}
                   className="grid gap-x-2"
                   style={{
@@ -272,37 +171,25 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                   onDrop={drop}
                 >
                   {row.map((item, itemIndex) => (
-                    <div
+                    <GridEditorItem
                       key={item.nodeId}
-                      style={{
-                        gridColumn: `span ${String(resizePreview.get(item.nodeId) ?? item.span)}`,
-                        minWidth: 0,
-                      }}
-                      className="relative"
-                      draggable={!busy}
-                      onDragStart={(e) => {
-                        e.dataTransfer.effectAllowed = 'move'
-                        // Без setData часть браузеров не инициализирует drag.
-                        e.dataTransfer.setData('text/plain', item.nodeId)
-                        // setState — СТРОГО следующим тиком: синхронный
-                        // ре-рендер меняет классы перетаскиваемого узла прямо
-                        // в dragstart, и Chrome немедленно отменяет drag.
-                        // Живой баг 11.09: «выбранная плашка не тащится,
-                        // а после удачного переноса не тащится уже она».
-                        setTimeout(() => {
-                          startDrag(item.nodeId)
-                          onSelect(item.nodeId)
-                        }, 0)
-                      }}
-                      onDragEnd={() => {
-                        clearDrag()
-                        setTarget(null)
-                      }}
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        if (!dragged || dragged === item.nodeId) return
-                        const rect = e.currentTarget.getBoundingClientRect()
-                        const before = e.clientX < rect.left + rect.width / 2
+                      item={item}
+                      span={resizePreview.get(item.nodeId) ?? item.span}
+                      isLastInRow={itemIndex === row.length - 1}
+                      selected={selectedId === item.nodeId}
+                      busy={busy}
+                      leftSlotActive={isCellTarget(
+                        zoneIndex,
+                        rowIndex,
+                        itemIndex
+                      )}
+                      rightSlotActive={isCellTarget(
+                        zoneIndex,
+                        rowIndex,
+                        row.length
+                      )}
+                      onSelect={onSelect}
+                      onHover={(before) => {
                         setTarget({
                           zoneIndex,
                           rowIndex,
@@ -311,65 +198,13 @@ export const CustomizeFormGridEditor: FC<CustomizeFormGridEditorProps> = ({
                         })
                       }}
                       onDrop={drop}
-                    >
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => {
-                          if (!busy) onSelect(item.nodeId)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !busy) onSelect(item.nodeId)
-                        }}
-                        className={cn(
-                          'w-full cursor-grab truncate rounded-md border px-2 py-1.5 text-left text-xs select-none active:cursor-grabbing',
-                          selectedId === item.nodeId
-                            ? 'border-accent-02 bg-ui-04 text-accent-02'
-                            : 'border-ui-03 bg-ui-01 text-ui-06',
-                          item.hidden && 'border-dashed opacity-40',
-                          dragged === item.nodeId && 'opacity-30'
-                        )}
-                      >
-                        {item.label === '⋯' ? (
-                          <span className="text-ui-05 italic">
-                            {t('sdui.customizeForm.unnamed')}
-                          </span>
-                        ) : (
-                          item.label
-                        )}
-                      </div>
-                      {/* Слоты вставки: при перетаскивании видны ВСЕ доступные
-                          места (иначе казалось, что бросать можно только в
-                          междустрочья — живой отзыв 11.09). */}
-                      {dragged && dragged !== item.nodeId && (
-                        <div
-                          className={cn(
-                            'absolute top-0 bottom-0 -left-[7px] w-1.5 rounded',
-                            isCellTarget(zoneIndex, rowIndex, itemIndex)
-                              ? 'bg-accent-02'
-                              : 'bg-ui-04'
-                          )}
-                        />
-                      )}
-                      {dragged && itemIndex === row.length - 1 && (
-                        <div
-                          className={cn(
-                            'absolute top-0 -right-[7px] bottom-0 w-1.5 rounded',
-                            isCellTarget(zoneIndex, rowIndex, row.length)
-                              ? 'bg-accent-02'
-                              : 'bg-ui-04'
-                          )}
-                        />
-                      )}
-                      {/* Ручка ширины: тянется в сторону свободного места строки. */}
-                      <div
-                        onMouseDown={(e) => {
-                          startResize(e, zoneIndex, rowIndex, item.nodeId)
-                        }}
-                        className="hover:bg-accent-02 absolute top-1 right-0 bottom-1 w-1.5 cursor-col-resize rounded"
-                        role="presentation"
-                      />
-                    </div>
+                      onTargetClear={() => {
+                        setTarget(null)
+                      }}
+                      onResizeStart={(e) => {
+                        startResize(e, zoneIndex, rowIndex, item.nodeId)
+                      }}
+                    />
                   ))}
                 </div>
               </div>

@@ -7,10 +7,10 @@ import { useModule } from '@/entities/module'
 import type { DictEntry } from '@/features/dict-sidebar/api/dict-sidebar-api'
 import {
   ActiveFiltersBar,
-  useDebouncedValue,
   useFilterUrlSync,
   useTableFilterRequest,
 } from '@/features/table-filter'
+import { useDebouncedValue } from '@/shared/lib/hooks/use-debounced-value'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import {
   DICTIONARY_DOMAIN_CONFIG,

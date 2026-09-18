@@ -6,10 +6,10 @@ import type { SortingState } from '@tanstack/react-table'
 
 import {
   ActiveFiltersBar,
-  useDebouncedValue,
   useFilterUrlSync,
   useTableFilterRequest,
 } from '@/features/table-filter'
+import { useDebouncedValue } from '@/shared/lib/hooks/use-debounced-value'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import {
   INFORMATION_REGISTER_DOMAIN_CONFIG,

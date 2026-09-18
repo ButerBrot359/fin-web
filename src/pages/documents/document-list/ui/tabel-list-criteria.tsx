@@ -5,11 +5,11 @@ import { useQuery } from '@tanstack/react-query'
 import { getDocumentType } from '@/entities/document-type'
 import type { DocumentAttribute } from '@/entities/document-type'
 import {
-  useDebouncedValue,
   useDictionarySearch,
   useTableFilterStore,
   useTableFilters,
 } from '@/features/table-filter'
+import { useDebouncedValue } from '@/shared/lib/hooks/use-debounced-value'
 import {
   getUniversalSearchUrl,
   resolveAttributeDomain,

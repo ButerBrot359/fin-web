@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
-import { useDebouncedValue } from '@/features/table-filter'
+import { useDebouncedValue } from '@/shared/lib/hooks/use-debounced-value'
 
 import type { NodeProps } from '../../../../types/view'
 import { useBindingValue } from '../../../../lib/sdui-session-context'

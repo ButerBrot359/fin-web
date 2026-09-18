@@ -9,7 +9,7 @@ import {
 } from '@/shared/lib/consts/data-types'
 import type { SelectOption } from '@/shared/types/select-option'
 
-import { useDebouncedValue } from '../lib/hooks/use-debounced-value'
+import { useDebouncedValue } from '@/shared/lib/hooks/use-debounced-value'
 import { useDictionarySearch } from '../lib/hooks/use-dictionary-search'
 import { useEnumValues } from '../lib/hooks/use-enum-values'
 

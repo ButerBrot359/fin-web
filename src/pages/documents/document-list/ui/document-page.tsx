@@ -7,11 +7,11 @@ import { useDocumentType } from '@/entities/document-type'
 import type { DocumentEntry } from '@/entities/document-entry'
 import {
   ActiveFiltersBar,
-  useDebouncedValue,
   useFilterUrlSync,
   useTableFilterRequest,
   useTableFilterStore,
 } from '@/features/table-filter'
+import { useDebouncedValue } from '@/shared/lib/hooks/use-debounced-value'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import {
   DOCUMENT_DOMAIN_CONFIG,

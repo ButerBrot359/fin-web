@@ -1,13 +1,13 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { buildCommonEffectDeps } from './build-effect-deps'
+import {
+  buildCommonEffectDeps,
+  buildDialogEffectDeps,
+} from './build-effect-deps'
 import { createEffectHandler } from './effect-handler'
-import { openDialogAsPanel } from './open-dialog-panel'
-import { relaySelectionToParent } from './relay-selection'
 import { useSduiSession } from './sdui-session-context'
 import { useConfirmStore } from './stores/confirm-store'
-import { usePanelStore } from './stores/panel-store'
 
 // SCRUM-288: эффект-рантайм для нод (button-node, report-result-node). В отличие
 // от dispatch: confirm обслуживает ТОЛЬКО confirmRequest (панель session-less —
@@ -24,32 +24,15 @@ export function useSduiEffects() {
     queryClient,
     setSearchParams,
   })
-  const handler = createEffectHandler({
+  const handler: ReturnType<typeof createEffectHandler> = createEffectHandler({
     ...common,
-    closeDialog: (effect) => {
-      if (effect.id) usePanelStore.getState().remove(effect.id)
-      relaySelectionToParent(effect, (effects) => {
+    // Мосты закрытия/замены панели — общие с dispatch (build-effect-deps).
+    ...buildDialogEffectDeps({
+      session,
+      playAll: (effects) => {
         handler.playAll(effects)
-      })
-    },
-    replaceDialog: (closes, open) => {
-      // Пересборка панели одной транзакцией — тот же путь, что в dispatch:
-      // без него closeDialog+openDialog из одного ответа дают кадр без панели
-      // и повторную анимацию появления («окно мигает»).
-      const closeIds = closes
-        .map((e) => e.id)
-        .filter((id): id is string => typeof id === 'string')
-      openDialogAsPanel(
-        open,
-        session.getSession().formSessionId ?? undefined,
-        closeIds
-      )
-      for (const close of closes) {
-        relaySelectionToParent(close, (effects) => {
-          handler.playAll(effects)
-        })
-      }
-    },
+      },
+    }),
     confirm: (effect) => {
       void useConfirmStore
         .getState()

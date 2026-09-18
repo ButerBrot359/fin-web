@@ -5,25 +5,18 @@ import i18n from 'i18next'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-import type { ActionBehavior, ViewAction, ViewTabMeta } from '../types/view'
-import {
-  viewTransport,
-  ViewConflictError,
-  ViewHttpError,
-} from '../api/view-transport'
-import { applyValuePatches } from './patch-applier'
-import {
-  DOCUMENT_VALIDATION_CODE,
-  buildValidationErrorPatches,
-} from './validation-highlight'
-import { validatePatches } from './validation'
-import { handleConflict } from './conflict-handler'
-import { createEffectHandler } from './effect-handler'
+import type {
+  ActionBehavior,
+  ViewAction,
+  ViewEffect,
+  ViewTabMeta,
+} from '../types/view'
+import { viewTransport } from '../api/view-transport'
+import { applyOpenResponse, applyServerPatches } from './apply-view-response'
+import { buildDispatchEffectHandler } from './build-dispatch-effect-deps'
+import { handleDispatchError } from './handle-dispatch-error'
 import { isRetryableAfterReopen } from './reopen-retry-policy'
 import { useSduiSession } from './sdui-session-context'
-import { usePanelStore } from './stores/panel-store'
-import { useConfirmStore } from './stores/confirm-store'
-import { useUnsavedChangesStore } from './stores/unsaved-changes-store'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import {
   CUSTOMIZE_FORM_COMMAND,
@@ -32,22 +25,9 @@ import {
 import { useCustomizeFormStore } from './customize-form/customize-form-store'
 import { revealAllTableErrors } from './table-validation-registry'
 import { shouldRevealTableErrors } from './utils/reveal-policy'
-import { openDialogAsPanel } from './open-dialog-panel'
-import { relaySelectionToParent } from './relay-selection'
-import { buildCommonEffectDeps } from './build-effect-deps'
 import { currentFormInstanceId } from './form-instance'
 import { useCommandInflightStore } from './stores/command-inflight-store'
-import {
-  clearFormSession,
-  readFormSession,
-  saveFormSession,
-} from './form-session-storage'
-import { useAsyncTaskStore } from '@/entities/async-task'
-import {
-  parseValidationReport,
-  useValidationReportStore,
-} from '@/entities/validation-report'
-import { useAlertStore } from './stores/alert-store'
+import { clearFormSession, readFormSession } from './form-session-storage'
 
 export function useSduiDispatch() {
   const location = useLocation()
@@ -104,21 +84,6 @@ export function useSduiDispatch() {
         useCommandInflightStore.getState().begin(inflightKey)
       }
 
-      const {
-        replaceAll,
-        merge,
-        setSession,
-        setRoot,
-        bumpRevision,
-        applyTreePatches,
-        clearAllErrors,
-        setFromServer,
-        resetDirty,
-        setDirty,
-        closeAfter,
-        setOnDirtyClose,
-      } = session
-
       // Поведение действия приходит с бэка (SCRUM-283). Фолбэки асимметричны намеренно:
       // забытый flush = молчаливая потеря правок ТЧ → безопасная сторона true;
       // забытые resetsDirty/closeAfter безвредны (заметны) → false.
@@ -126,116 +91,17 @@ export function useSduiDispatch() {
       const shouldReset = behavior?.resetsDirty ?? false
       const shouldClose = behavior?.closeAfter ?? false
 
-      const common = buildCommonEffectDeps({
+      const effectHandler = buildDispatchEffectHandler({
         navigate,
         session,
         queryClient,
         setSearchParams,
+        pathname: location.pathname,
+        redispatch: (a, b) => dispatchAction(a, b),
       })
-      const effectHandler = createEffectHandler({
-        ...common,
-        closeDialog: (effect) => {
-          if (effect.id) usePanelStore.getState().remove(effect.id)
-          relaySelectionToParent(effect, (effects) => {
-            effectHandler.playAll(effects)
-          })
-        },
-        replaceDialog: (closes, open) => {
-          // Одна транзакция стора вместо remove+push: панель не исчезает ни на
-          // кадр, и хост не проигрывает анимацию появления (см. panel-store).
-          const closeIds = closes
-            .map((e) => e.id)
-            .filter((id): id is string => typeof id === 'string')
-          openDialogAsPanel(
-            open,
-            session.getSession().formSessionId ?? undefined,
-            closeIds
-          )
-          // Ретрансляция выбора родителю к анимации отношения не имеет, но
-          // живёт на ЗАКРЫВАЕМОМ эффекте — пропустить её здесь значило бы
-          // потерять её в паре (SCRUM-265: выбор из дочерней панели).
-          for (const close of closes) {
-            relaySelectionToParent(close, (effects) => {
-              effectHandler.playAll(effects)
-            })
-          }
-        },
-        confirm: (effect) => {
-          // SCRUM-288 §2.3/§2.4: session-less подтверждение (панель) исполняет
-          // confirmRequest; иначе — форм-сессионный COMMAND с confirmBehavior.
-          void useConfirmStore
-            .getState()
-            .ask(effect.message ?? '')
-            .then((ok) => {
-              if (!ok) {
-                // SCRUM-276: «Нет» — тоже серверный исход, когда бэк дал
-                // cancelCommand (field.rollback:Nomer): без него отменённое
-                // значение оставалось бы в серверной сессии.
-                if (effect.cancelCommand) {
-                  void dispatchAction({
-                    type: 'COMMAND',
-                    command: effect.cancelCommand,
-                  })
-                }
-                return
-              }
-              if (effect.confirmRequest) {
-                void effectHandler.executeActionRequest(effect.confirmRequest)
-                return
-              }
-              void dispatchAction(
-                { type: 'COMMAND', command: effect.confirmCommand ?? '' },
-                effect.confirmBehavior
-              )
-            })
-        },
-        validationReport: (effect) => {
-          // SCRUM-317 §3.1/§3.3: отчёт ПОЛНОСТЬЮ заменяет прежний список
-          // экрана; пустой — гасит панель (успешная операция без замечаний).
-          // Ключ — маршрут вкладки: тот же, что у sdui-cache-store.
-          const report = parseValidationReport(effect.report)
-          if (report) {
-            useValidationReportStore
-              .getState()
-              .setReport(location.pathname, report)
-          }
-        },
-        alert: (effect) => {
-          useAlertStore
-            .getState()
-            .show(effect.message ?? '', effect.title ?? null)
-        },
-        taskStarted: (effect) => {
-          // SCRUM-330 §3.3: фоновая операция запущена — задача приезжает в
-          // эффекте целиком (иначе до первого опроса показывать было бы нечего).
-          // Кладём в стор с привязкой к сессии; поллинг и рапорт task.finished —
-          // на вотчере экрана (use-task-watcher). Сессию читаем в момент
-          // эффекта: на OPEN-ответе setSession уже отработал.
-          const sid = session.getSession().formSessionId
-          if (effect.task && sid) {
-            useAsyncTaskStore.getState().track(effect.task, sid)
-          }
-        },
-        unsavedChanges: (effect) => {
-          // Три ответа — три исхода: «Да» и «Нет» уходят серверными командами в
-          // ТУ ЖЕ сессию, «Отмена» не шлёт ничего (форма остаётся открытой).
-          // «Нет» — тоже команда, а не локальное закрытие: несохранённое лежит
-          // в серверной сессии, и без неё оно всплыло бы при следующем открытии.
-          void useUnsavedChangesStore
-            .getState()
-            .ask()
-            .then((answer) => {
-              if (answer === 'cancel') return
-              const command =
-                answer === 'save' ? effect.saveCommand : effect.discardCommand
-              if (!command) return
-              void dispatchAction(
-                { type: 'COMMAND', command },
-                answer === 'save' ? effect.saveBehavior : effect.discardBehavior
-              )
-            })
-        },
-      })
+      const playEffects = (effects: ViewEffect[]) => {
+        effectHandler.playAll(effects)
+      }
 
       const reopen = async () => {
         // isRetry: мы уже внутри повтора после восстановления — второй
@@ -295,44 +161,23 @@ export function useSduiDispatch() {
         })
 
         if (action.type === 'OPEN') {
-          setSession(res.formSessionId, res.revision)
-          saveFormSession(route, res.formSessionId)
-          session.setLayoutCode?.(action.layoutCode ?? null)
-          session.setScreenKey?.(res.screenKey ?? null)
-          if (res.tree) setRoot(res.tree)
-          setOnDirtyClose?.(res.onDirtyClose ?? null)
-          opts?.onOpenTab?.(res.tab ?? null)
-          replaceAll(res.state ?? {})
-          // SCRUM-276 (черновики): OPEN с подмешанным черновиком приходит с
-          // formDirty=true — форма сразу «изменена», как в 1С. Латч после
-          // replaceAll (он сбрасывает dirty в false).
-          if (res.formDirty === true) setDirty(true)
-          // Apply handler.handleOpen patches (e.g. required/enabled/label defaults)
-          const openPatches = validatePatches(res.patches)
-          applyTreePatches(openPatches)
-          applyValuePatches(openPatches, setFromServer)
-          effectHandler.playAll(res.effects ?? [])
+          applyOpenResponse(session, res, {
+            route,
+            layoutCode: action.layoutCode,
+            onOpenTab: opts?.onOpenTab,
+            playEffects,
+          })
         } else if (action.type === 'CLOSE') {
           // reset is done by SduiScreen on unmount
           // Сессия закрыта штатно — резюмить после F5 больше нечего (SCRUM-330)
           clearFormSession(route)
         } else {
-          // EVENT or COMMAND — order is critical: revision → clear old errors → tree patches → value patches → effects
-          bumpRevision(res.revision)
-          if (action.type === 'COMMAND') clearAllErrors()
-          const patches = validatePatches(res.patches)
-          applyTreePatches(patches)
-          applyValuePatches(patches, setFromServer)
-          merge(res.statePatch ?? {})
-          // SCRUM-288 §2.5: серверный dirty авторитетен и ПЕРЕКРЫВАЕТ клиентский флаг
-          // (включая false с LIST/REPORT). null/undefined — «решай сам».
-          if (res.dirty != null) setDirty(res.dirty)
-          // SCRUM-276 (черновики): серверные правки scratch (заполнение ТЧ,
-          // команды) в клиентский dirty не попадают — formDirty=true латчит
-          // его, чтобы закрытие вкладки задало «Сохранить изменения?».
-          // false клиентский флаг не трогает (условие: клиентский ИЛИ серверный).
-          if (res.formDirty === true) setDirty(true)
-          effectHandler.playAll(res.effects ?? []) // navigate играет здесь…
+          // EVENT или COMMAND — единый порядок применения ответа (включая
+          // авторитетный серверный dirty) — в applyServerPatches.
+          applyServerPatches(session, res, {
+            clearErrors: action.type === 'COMMAND',
+            playEffects, // navigate играет здесь…
+          })
           // SCRUM-277 §3.1: commandFailed=true — неуспех команды на 200-ответе.
           // Патчи/эффекты уже применены (бэк ими показывает причину), но
           // resetsDirty/closeAfter выполнять нельзя, и вызывающий код обязан
@@ -341,7 +186,7 @@ export function useSduiDispatch() {
           // generation) возвращает false, чтобы ячейка откатила локальный буфер.
           if (res.commandFailed === true) return false
           if (action.type === 'COMMAND') {
-            if (shouldReset) resetDirty()
+            if (shouldReset) session.resetDirty()
             // Уже ли сервер увёл (эффект navigate)? Хост по этому флагу решает,
             // навигировать ли самому: закрытие вкладки (save+closeAfter, без
             // серверного navigate) → сесть на соседнюю; postAndClose (navigate в
@@ -349,69 +194,20 @@ export function useSduiDispatch() {
             const didNavigate = (res.effects ?? []).some(
               (e) => e.type === 'navigate'
             )
-            if (shouldClose) closeAfter?.(didNavigate) // …закрытие — после эффектов
+            if (shouldClose) session.closeAfter?.(didNavigate) // …закрытие — после эффектов
           }
         }
         return true
       } catch (error) {
-        if (
-          error instanceof ViewHttpError &&
-          error.status === 422 &&
-          error.code === DOCUMENT_VALIDATION_CODE
-        ) {
-          clearAllErrors()
-          applyTreePatches(
-            buildValidationErrorPatches(
-              session.getTree?.() ?? session.tree,
-              error.errors
-            )
-          )
-          // SCRUM-317 §3.2/§3.3: отчёт из тела 422 кладётся ТЕМ ЖЕ редьюсером,
-          // что 200-эффект. operation на этом канале null — подставляем команду,
-          // которую сами отправили. Есть панель — тост-дубль не показываем.
-          const report = parseValidationReport(error.validation)
-          if (report && report.messages.length > 0) {
-            useValidationReportStore.getState().setReport(location.pathname, {
-              ...report,
-              operation:
-                report.operation ??
-                (action.type === 'COMMAND' ? (action.command ?? null) : null),
-            })
-          } else {
-            showToast('error', error.message || i18n.t('sdui.requestError'))
-          }
-        } else if (error instanceof ViewConflictError) {
-          const retry =
-            !isRetry && action.type !== 'OPEN'
-              ? () => dispatchAction(action, behavior, true)
-              : null
-          handleConflict(error.data, { setSession, replaceAll }, retry, reopen)
-        } else if (error instanceof ViewHttpError && action.type === 'OPEN') {
-          // Единый гейт раскатки под catch-all (§2 бэк-спеки SCRUM-290):
-          // ROUTE_UNKNOWN → «не найдено»; SCREEN_NOT_SDUI / унаследованный
-          // 404 → легаси-фолбэк. Без подходящего колбэка — общий тост, как раньше.
-          if (
-            error.status === 404 &&
-            error.code === 'ROUTE_UNKNOWN' &&
-            opts?.onRouteUnknown
-          ) {
-            opts.onRouteUnknown()
-          } else if (
-            error.status === 422 &&
-            error.code === 'SCREEN_NOT_SDUI' &&
-            opts?.onOpenNotFound
-          ) {
-            opts.onOpenNotFound({ kind: error.kind })
-          } else if (error.status === 404 && opts?.onOpenNotFound) {
-            opts.onOpenNotFound(undefined)
-          } else {
-            showToast('error', error.message || i18n.t('sdui.requestError'))
-          }
-        } else {
-          const message =
-            error instanceof Error ? error.message : i18n.t('sdui.requestError')
-          showToast('error', message)
-        }
+        handleDispatchError(error, {
+          action,
+          isRetry,
+          pathname: location.pathname,
+          session,
+          opts,
+          retry: () => dispatchAction(action, behavior, true),
+          reopen,
+        })
         return false
       } finally {
         if (inflightKey) useCommandInflightStore.getState().end(inflightKey)

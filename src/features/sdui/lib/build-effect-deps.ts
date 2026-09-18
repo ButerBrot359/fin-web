@@ -3,10 +3,13 @@ import type { QueryClient } from '@tanstack/react-query'
 
 import { invalidateDictionaryQueries } from '@/shared/lib/query/invalidate-entities'
 
+import type { ViewEffect } from '../types/view'
 import { viewTransport } from '../api/view-transport'
 import type { EffectHandlerDeps } from './effect-handler'
 import { openDialogAsPanel } from './open-dialog-panel'
+import { relaySelectionToParent } from './relay-selection'
 import type { SduiSessionValue } from './sdui-session-context'
+import { usePanelStore } from './stores/panel-store'
 import { armNewTab } from './workspace-tab-gateway'
 import { markFreshFormInstance } from '@/features/workspace-tabs/lib/fresh-form-instance-registry'
 import { isCreateRoute } from './fresh-form-instance'
@@ -66,6 +69,40 @@ export function buildCommonEffectDeps(
     replaceUrl: (route) => {
       const i = route.indexOf('?')
       ctx.setSearchParams(i >= 0 ? route.slice(i + 1) : '', { replace: true })
+    },
+  }
+}
+
+// Мосты closeDialog/replaceDialog одинаковы у обоих эффект-рантаймов (dispatch
+// и use-sdui-effects) и вынесены сюда. `playAll` ссылается на сам хэндлер —
+// вызывающий передаёт ленивую обёртку `(effects) => handler.playAll(effects)`.
+export function buildDialogEffectDeps(ctx: {
+  session: SduiSessionValue
+  playAll: (effects: ViewEffect[]) => void
+}): Pick<EffectHandlerDeps, 'closeDialog' | 'replaceDialog'> {
+  return {
+    closeDialog: (effect) => {
+      if (effect.id) usePanelStore.getState().remove(effect.id)
+      relaySelectionToParent(effect, ctx.playAll)
+    },
+    replaceDialog: (closes, open) => {
+      // Одна транзакция стора вместо remove+push: панель не исчезает ни на
+      // кадр, и хост не проигрывает анимацию появления (см. panel-store) —
+      // иначе closeDialog+openDialog из одного ответа дают «окно мигает».
+      const closeIds = closes
+        .map((e) => e.id)
+        .filter((id): id is string => typeof id === 'string')
+      openDialogAsPanel(
+        open,
+        ctx.session.getSession().formSessionId ?? undefined,
+        closeIds
+      )
+      // Ретрансляция выбора родителю к анимации отношения не имеет, но
+      // живёт на ЗАКРЫВАЕМОМ эффекте — пропустить её здесь значило бы
+      // потерять её в паре (SCRUM-265: выбор из дочерней панели).
+      for (const close of closes) {
+        relaySelectionToParent(close, ctx.playAll)
+      }
     },
   }
 }

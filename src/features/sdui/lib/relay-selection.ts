@@ -4,8 +4,7 @@ import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { ViewEffect, ViewResponse } from '../types/view'
 import { ViewConflictError, viewTransport } from '../api/view-transport'
-import { applyValuePatches } from './patch-applier'
-import { validatePatches } from './validation'
+import { applyServerPatches } from './apply-view-response'
 import { usePanelStore } from './stores/panel-store'
 import { getPanelPatchSink } from './panel-patch-registry'
 import { useTreeStore } from './stores/tree-store'
@@ -23,29 +22,47 @@ function applyRelayResponse(
     // подставляется выбранное значение). Раньше здесь обновлялась только
     // ревизия, а patches/statePatch отбрасывались: выбор во вложенной панели
     // доезжал до сервера, но в окне-родителе поле оставалось пустым.
-    // Порядок тот же, что в dispatch: ревизия → сброс ошибок → патчи дерева →
-    // патчи значений → statePatch → эффекты.
+    // Порядок тот же, что в dispatch — applyServerPatches; ревизию панели
+    // бампит updateSession выше (у sink метода нет).
     const sink = getPanelPatchSink(parentPanelId)
     // Нет приёмника — панель уже размонтирована (успели закрыть): применять
     // патчи некуда, но ревизия обновлена и эффекты сыграть надо.
     if (sink) {
-      sink.clearAllErrors()
-      const patches = validatePatches(res.patches)
-      sink.applyTreePatches(patches)
-      applyValuePatches(patches, sink.setFromServer)
-      sink.merge(res.statePatch ?? {})
+      applyServerPatches(sink, res, { clearErrors: true, playEffects })
+    } else {
+      playEffects(res.effects ?? [])
     }
   } else {
     const tree = useTreeStore.getState()
     const vs = useViewStateStore.getState()
-    tree.bumpRevision(res.revision)
-    tree.clearAllErrors()
-    const patches = validatePatches(res.patches)
-    tree.applyPatches(patches)
-    applyValuePatches(patches, vs.setFromServer)
-    vs.merge(res.statePatch ?? {})
+    applyServerPatches(
+      {
+        bumpRevision: tree.bumpRevision,
+        clearAllErrors: tree.clearAllErrors,
+        applyTreePatches: tree.applyPatches,
+        setFromServer: vs.setFromServer,
+        merge: vs.merge,
+      },
+      res,
+      { clearErrors: true, playEffects }
+    )
   }
-  playEffects(res.effects ?? [])
+}
+
+// Единый репортёр ошибок ретрансляции: устаревшая сессия родителя — штатный
+// warning (панель пережила родителя), остальное — error с текстом.
+function reportRelayError(error: unknown): void {
+  if (
+    error instanceof ViewConflictError &&
+    error.data.code === 'SESSION_NOT_FOUND'
+  ) {
+    showToast('warning', i18n.t('sdui.refSelectStale'))
+  } else {
+    showToast(
+      'error',
+      error instanceof Error ? error.message : i18n.t('sdui.error')
+    )
+  }
 }
 
 // Выбор в дочерней панели (реф-пикер) ретранслируется в родительскую сессию
@@ -83,55 +100,34 @@ export function relaySelectionToParent(
     value: effect.applyToParentValue,
   }
 
-  void viewTransport
-    .post({
+  const post = (revision: number | null) =>
+    viewTransport.post({
       formSessionId: effect.applyToParentSessionId,
-      revision: parentRevision,
+      revision,
       action,
     })
-    .then((res) => {
+
+  void (async () => {
+    try {
+      const res = await post(parentRevision)
       applyRelayResponse(res, parentPanelId, playEffects)
-    })
-    .catch((error) => {
+    } catch (error) {
       if (
         error instanceof ViewConflictError &&
         error.data.code === 'STALE_REVISION'
       ) {
+        // Ревизия родителя устарела (например, он сам успел получить патчи):
+        // один повтор со свежей ревизией из тела конфликта.
         const freshRevision = error.data.currentRevision ?? parentRevision
-        void viewTransport
-          .post({
-            formSessionId: effect.applyToParentSessionId,
-            revision: freshRevision,
-            action,
-          })
-          .then((res) => {
-            applyRelayResponse(res, parentPanelId, playEffects)
-          })
-          .catch((retryError) => {
-            if (
-              retryError instanceof ViewConflictError &&
-              retryError.data.code === 'SESSION_NOT_FOUND'
-            ) {
-              showToast('warning', i18n.t('sdui.refSelectStale'))
-            } else {
-              showToast(
-                'error',
-                retryError instanceof Error
-                  ? retryError.message
-                  : i18n.t('sdui.error')
-              )
-            }
-          })
-      } else if (
-        error instanceof ViewConflictError &&
-        error.data.code === 'SESSION_NOT_FOUND'
-      ) {
-        showToast('warning', i18n.t('sdui.refSelectStale'))
-      } else {
-        showToast(
-          'error',
-          error instanceof Error ? error.message : i18n.t('sdui.error')
-        )
+        try {
+          const res = await post(freshRevision)
+          applyRelayResponse(res, parentPanelId, playEffects)
+        } catch (retryError) {
+          reportRelayError(retryError)
+        }
+        return
       }
-    })
+      reportRelayError(error)
+    }
+  })()
 }

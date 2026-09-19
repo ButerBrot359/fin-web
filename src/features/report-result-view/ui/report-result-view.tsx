@@ -15,7 +15,7 @@ import { FormView } from './form-view'
 import { LedgerTable } from './ledger-table'
 import { TreeTable } from './tree-table'
 import { ReportHeaderBlocks } from './report-header-blocks'
-import { ReportSignature } from './report-signature'
+import { ReportSignatures } from './report-signatures'
 
 /** Настройки вкладки «Оформление» (проброс из панели настроек отчёта). */
 export interface ReportResultAppearance {
@@ -162,15 +162,17 @@ export const ReportResultView = ({
         )}
       </div>
       {/* Подписей у приказного бланка может быть несколько (казначейство и учреждение):
-          список главнее одиночной подписи, как и в печати. */}
-      {(result.footerBlocks?.length
-        ? result.footerBlocks
-        : result.footerBlock
-          ? [result.footerBlock]
-          : []
-      ).map((signature, i) => (
-        <ReportSignature key={i} signature={signature} />
-      ))}
+          список главнее одиночной подписи, как и в печати. Сторона `side` раскладывает их
+          в две колонки — слева казначейство, справа учреждение (макет формы 4-20). */}
+      <ReportSignatures
+        signatures={
+          result.footerBlocks?.length
+            ? result.footerBlocks
+            : result.footerBlock
+              ? [result.footerBlock]
+              : []
+        }
+      />
     </div>
   )
 }

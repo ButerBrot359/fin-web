@@ -78,6 +78,10 @@ export interface ReportFormSignatureDto {
   role: string
   name?: string
   captions?: string[]
+  /** Сторона бланка: приказные формы подписывают в две колонки. */
+  side?: 'LEFT' | 'RIGHT'
+  /** Печатать «М.П.» после подписи. */
+  stampAfter?: boolean
 }
 
 /**

@@ -90,6 +90,33 @@ describe('VidOperatsiiChoiceDialog', () => {
     })
   })
 
+  it('заголовок берётся из пропа узла — тем же окном выбирают форму отчёта', () => {
+    render(
+      <VidOperatsiiChoiceDialog
+        node={withOptions({ title: 'Выберите отчет' })}
+      />
+    )
+
+    expect(screen.getByText('Выберите отчет')).not.toBeNull()
+  })
+
+  it('без title в пропах — заголовок «Выберите операцию» из словаря', () => {
+    const { title: _title, ...bez } = withOptions().props!
+    render(
+      <VidOperatsiiChoiceDialog
+        node={
+          {
+            id: `dialog.vidOperatsii.${TYPE}`,
+            type: 'PAGE',
+            props: bez,
+          } as ViewNode
+        }
+      />
+    )
+
+    expect(screen.getByText('selectOperationDialog.title')).not.toBeNull()
+  })
+
   it('вид без команды в список не попадает (битый проп бэка)', () => {
     render(
       <VidOperatsiiChoiceDialog

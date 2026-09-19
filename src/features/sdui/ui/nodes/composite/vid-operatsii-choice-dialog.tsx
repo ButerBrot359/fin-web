@@ -48,6 +48,10 @@ export const VidOperatsiiChoiceDialog: FC<NodeProps> = ({ node }) => {
   const cancelCommand = node.props?.vidOperatsiiCancelCommand as
     | string
     | undefined
+  // Заголовок приезжает с сервера: тем же окном журнал регламентированных отчётов выбирает
+  // форму отчёта («Выберите отчет»), а не вид операции.
+  const title =
+    typeof node.props?.title === 'string' ? node.props.title : undefined
 
   const handleSelect = (code: string) => {
     const chosen = options.find((o) => o.code === code)
@@ -67,6 +71,7 @@ export const VidOperatsiiChoiceDialog: FC<NodeProps> = ({ node }) => {
       onSelect={handleSelect}
       operations={options}
       isLoading={false}
+      title={title}
     />
   )
 }

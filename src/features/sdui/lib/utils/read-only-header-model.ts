@@ -25,6 +25,8 @@ export interface ReadOnlyColumnDef {
   backgroundColor?: string
   /** Постоянный цвет текста ячеек колонки (props.textColor). */
   textColor?: string
+  /** Тип данных колонки: по нему решается, разделять ли разряды числа пробелом. */
+  dataType?: string
 }
 
 /**
@@ -57,6 +59,7 @@ export function extractReadOnlyColumns(
       resizable: col.resizable,
       backgroundColor: columnBackground(col.props),
       textColor: textColorProp(col.props),
+      dataType: col.dataType,
     }
   })
 }

@@ -23,6 +23,11 @@ interface SelectOperationDialogProps {
   onSelect: (operationCode: string) => void
   operations: SelectOperationItem[]
   isLoading: boolean
+  /**
+   * Заголовок окна. Без него — «Выберите операцию»: тот же диалог служит выбором формы
+   * отчёта в журнале регламентированной отчётности, и заголовок там приезжает с сервера.
+   */
+  title?: string
 }
 
 export const SelectOperationDialog = ({
@@ -31,6 +36,7 @@ export const SelectOperationDialog = ({
   onSelect,
   operations,
   isLoading,
+  title,
 }: SelectOperationDialogProps) => {
   const { t } = useTranslation()
   const [selected, setSelected] = useState('')
@@ -56,7 +62,7 @@ export const SelectOperationDialog = ({
             p: 0,
             m: 0,
             minWidth: 560,
-            maxWidth: 'none',
+            maxWidth: 720,
           },
         },
       }}
@@ -65,7 +71,7 @@ export const SelectOperationDialog = ({
         {/* Header */}
         <div className="flex items-center gap-6 w-full">
           <h2 className="flex-1 text-[26px] font-bold text-ui-06 leading-normal">
-            {t('selectOperationDialog.title')}
+            {title ?? t('selectOperationDialog.title')}
           </h2>
           <button
             type="button"
@@ -114,7 +120,7 @@ export const SelectOperationDialog = ({
                   />
                 }
                 label={
-                  <span className="text-base font-medium text-ui-06 leading-normal whitespace-nowrap">
+                  <span className="text-base font-medium text-ui-06 leading-normal">
                     {op.name}
                   </span>
                 }

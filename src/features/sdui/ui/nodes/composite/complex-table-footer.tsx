@@ -7,7 +7,7 @@ import {
   verticalSubRows,
   type SduiColumnMetaExtra,
 } from '../../../lib/utils/build-column-defs'
-import { renderCellValue } from '../../../lib/utils/cell-value'
+import { formatFooterValue } from '../../../lib/utils/format-footer-value'
 import { footerCell } from './table-footer-value'
 
 /**
@@ -62,7 +62,7 @@ export const ComplexTableFooter: FC<ComplexTableFooterProps> = ({
                     key: key ?? `empty-${String(index)}`,
                     content: footerCell(
                       key != null && footerValues[key] !== undefined
-                        ? renderCellValue(footerValues[key])
+                        ? formatFooterValue(footerValues[key])
                         : ''
                     ),
                   })),
@@ -76,7 +76,7 @@ export const ComplexTableFooter: FC<ComplexTableFooterProps> = ({
           const footerId = header.column.columnDef.footer
           const footerText =
             typeof footerId === 'string' && footerValues[footerId] !== undefined
-              ? renderCellValue(footerValues[footerId])
+              ? formatFooterValue(footerValues[footerId])
               : ''
           return (
             <TableCell key={header.id} colSpan={header.colSpan}>

@@ -78,8 +78,8 @@ describe('подвал ТЧ под внешним отбором', () => {
     const { container } = renderTable(<TableNode node={node()} />)
 
     const footer = container.querySelector('tfoot')?.textContent ?? ''
-    expect(footer).toContain('471788')
-    expect(footer).not.toContain('3141484')
+    expect(footer).toContain('471 788')
+    expect(footer).not.toContain('3 141 484')
   })
 
   it('отбор снят → итог по всем строкам, не дожидаясь ответа сервера', () => {
@@ -94,7 +94,7 @@ describe('подвал ТЧ под внешним отбором', () => {
     const { container } = renderTable(<TableNode node={node()} />)
 
     const footer = container.querySelector('tfoot')?.textContent ?? ''
-    expect(footer).toContain('667337')
+    expect(footer).toContain('667 337')
     expect(footer).not.toContain('195549')
   })
 
@@ -106,7 +106,7 @@ describe('подвал ТЧ под внешним отбором', () => {
     const { container } = renderTable(<TableNode node={bezOtbora} />)
 
     expect(container.querySelector('tfoot')?.textContent ?? '').toContain(
-      '3141484'
+      '3 141 484'
     )
   })
 })

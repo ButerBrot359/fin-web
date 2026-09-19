@@ -2,7 +2,7 @@ import type { FC } from 'react'
 import { TableCell, TableRow } from '@mui/material'
 
 import type { RowAppearanceRule } from '../../../types/view'
-import { renderCellValue } from '../../../lib/utils/cell-value'
+import { formatNumericCell } from '../../../lib/utils/format-numeric-cell'
 import type {
   HeaderCell,
   ReadOnlyColumnDef,
@@ -130,7 +130,10 @@ export const ReadOnlyTableRow: FC<ReadOnlyTableRowProps> = ({
           isHistory ? (
             <AuditHistoryCell row={row} binding={col.binding} />
           ) : (
-            renderCellValue(row[col.binding])
+            // Разряды числовых колонок разделяются пробелом — как в карточке
+            // документа; цифровые СТРОКИ (БИН, ИИК, номер) не трогаем, отбор
+            // идёт по dataType колонки.
+            formatNumericCell(row[col.binding], col.dataType)
           )
         ) : (
           ''

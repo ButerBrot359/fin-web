@@ -572,6 +572,15 @@
       "analizScheta": "Шот талдауы",
       "turnoverByDays": "Шот айналымдары күндер бойынша",
       "turnoverByMonths": "Шот айналымдары айлар бойынша"
+    },
+    "period": {
+      "quickLabel": "Жылдам кезең",
+      "currentMonth": "Ағымдағы ай",
+      "previousMonth": "Өткен ай",
+      "currentQuarter": "Ағымдағы тоқсан",
+      "previousQuarter": "Өткен тоқсан",
+      "currentYear": "Ағымдағы жыл",
+      "previousYear": "Өткен жыл"
     }
   },
   "accountPlan": {

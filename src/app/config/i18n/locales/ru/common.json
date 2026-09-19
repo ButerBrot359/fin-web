@@ -572,6 +572,15 @@
       "analizScheta": "Анализ счёта",
       "turnoverByDays": "Обороты счёта по дням",
       "turnoverByMonths": "Обороты счёта по месяцам"
+    },
+    "period": {
+      "quickLabel": "Быстрый период",
+      "currentMonth": "Текущий месяц",
+      "previousMonth": "Предыдущий месяц",
+      "currentQuarter": "Текущий квартал",
+      "previousQuarter": "Предыдущий квартал",
+      "currentYear": "Текущий год",
+      "previousYear": "Предыдущий год"
     }
   },
   "accountPlan": {

@@ -42,6 +42,12 @@ import {
   type PeriodValue,
   type ReportAltParamValue,
 } from '../lib/utils/params'
+import {
+  initialParamRaw,
+  readParamDraft,
+  saveParamDraft,
+} from '../lib/utils/param-draft'
+import { PeriodQuickSelect } from './period-quick-select'
 import { ReportAltParamField } from './reportalt-param-field'
 import {
   ReportAltRowMenu,
@@ -119,9 +125,13 @@ export const ReportAltPage = () => {
   // перемонтировании вкладки (searchParams в зависимостях).
   useEffect(() => {
     if (!meta) return
+    // Набранный, но не применённый отбор переживает уход на другую вкладку:
+    // из URL приходит только применённое «Сформировать», остальное — из черновика
+    // сессии (см. param-draft.ts). URL главнее: он описывает таблицу на экране.
+    const draft = readParamDraft(moduleCode)
     const next: ParamValues = {}
     for (const param of meta.parameters) {
-      const raw = searchParams.get(param.code)
+      const raw = initialParamRaw(param, searchParams.get(param.code), draft)
       next[param.code] =
         raw != null ? deserializeParam(raw, param) : defaultParamValue(param)
     }
@@ -131,7 +141,7 @@ export const ReportAltPage = () => {
     if (meta.parameters.some((p) => p.refreshesForm)) {
       void refreshParamState(normalizeBodyDates(next, meta.parameters), null)
     }
-  }, [meta, searchParams, refreshParamState])
+  }, [meta, moduleCode, searchParams, refreshParamState])
 
   // Пользовательские настройки (MVP — клиентские, F-S1): черновик панели,
   // применённая дельта из URL/localStorage для тела /run.
@@ -201,13 +211,20 @@ export const ReportAltPage = () => {
   const setParamValue = (code: string, v: ReportAltParamValue) => {
     const next = { ...values, [code]: v }
     setValues(next)
+    // Черновик пишем на каждую правку: уход на другую вкладку происходит без
+    // всякого «сохранить», и единственный момент, когда значение ещё есть, — этот.
+    saveParamDraft(moduleCode, next)
     if (!meta?.parameters.find((p) => p.code === code)?.refreshesForm) return
     void refreshParamState(
       normalizeBodyDates(next, meta.parameters),
       code
     ).then((state) => {
       if (!state || Object.keys(state.values).length === 0) return
-      setValues((prev) => ({ ...prev, ...(state.values as ParamValues) }))
+      setValues((prev) => {
+        const merged = { ...prev, ...(state.values as ParamValues) }
+        saveParamDraft(moduleCode, merged)
+        return merged
+      })
     })
   }
 
@@ -492,6 +509,16 @@ export const ReportAltPage = () => {
                     }}
                     invalid={invalid && !period.to}
                     helperText={!period.to ? requiredHint : undefined}
+                  />
+                </div>
+                {/* Быстрый период: месяц/квартал/год одним действием. Поля дат
+                    остаются рабочими — список только проставляет в них границы. */}
+                <div className="w-48">
+                  <PeriodQuickSelect
+                    period={period}
+                    onChange={(next) => {
+                      setParamValue(param.code, next)
+                    }}
                   />
                 </div>
               </div>

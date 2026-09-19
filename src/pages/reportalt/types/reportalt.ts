@@ -143,6 +143,8 @@ export interface ReportAltResultDto {
   headerBlocks?: ReportAltHeaderBlockDto[]
   periodLine?: string
   footerBlock?: ReportAltFormSignatureDto
+  /** Подписи бланка, когда их несколько (приказные формы 4-09 и 4-20 подписывают двое). */
+  footerBlocks?: ReportAltFormSignatureDto[]
   groupFloorCodes?: string[]
   rowRefColumn?: string
   /** Пагинация LEDGER (F4): номер выданной страницы. */

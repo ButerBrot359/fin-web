@@ -161,7 +161,16 @@ export const ReportResultView = ({
           />
         )}
       </div>
-      {result.footerBlock && <ReportSignature signature={result.footerBlock} />}
+      {/* Подписей у приказного бланка может быть несколько (казначейство и учреждение):
+          список главнее одиночной подписи, как и в печати. */}
+      {(result.footerBlocks?.length
+        ? result.footerBlocks
+        : result.footerBlock
+          ? [result.footerBlock]
+          : []
+      ).map((signature, i) => (
+        <ReportSignature key={i} signature={signature} />
+      ))}
     </div>
   )
 }

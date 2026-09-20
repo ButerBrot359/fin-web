@@ -57,6 +57,23 @@ export const ListQuickFilters: FC<ListQuickFiltersProps> = ({
   )
 }
 
+/**
+ * Подпись поля панели: сервер кладёт заголовок колонки списка в `header` (NodeProps.HEADER),
+ * `title`/`label` у колонки нет вовсе — пока панель читала только их, пользователь видел
+ * технический код поля («Organizatsiya» вместо «Организация», обращение 20.09.2026).
+ * Нестроковые значения игнорируются: подписью может быть только строка.
+ */
+const podpisKolonki = (
+  props: Record<string, unknown> | undefined,
+  field: string
+): string => {
+  for (const key of ['header', 'title', 'label']) {
+    const raw = props?.[key]
+    if (typeof raw === 'string' && raw.trim() !== '') return raw
+  }
+  return field
+}
+
 /** Разбор `quickFilterFields` в готовые к отрисовке поля панели. */
 export const readQuickFilters = (
   node: ViewNode,
@@ -83,7 +100,7 @@ export const readQuickFilters = (
     return [
       {
         field,
-        label: String(column.props?.title ?? column.props?.label ?? field),
+        label: podpisKolonki(column.props, field),
         op,
         column: {
           dataType: column.props?.dataType as string | undefined,

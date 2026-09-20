@@ -82,7 +82,10 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   const quickFilterValues = useMemo(
     () =>
       Object.fromEntries(
-        filterChips.map((chip) => [chip.field, (chip as { value?: unknown }).value])
+        filterChips.map((chip) => [
+          chip.field,
+          (chip as { value?: unknown }).value,
+        ])
       ),
     [filterChips]
   )
@@ -205,22 +208,39 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-2">
-      <div className="flex items-center justify-between">
-        {periodCommand ? (
+      {/* Период, отборы и поиск — ОДНОЙ строкой, как шапка журнала 1С: там «Период»,
+          «Организация» и прочие параметры стоят в ряд, а не двумя этажами над таблицей
+          (обращение 20.09.2026). Ряд переносится, когда параметров больше, чем ширины. */}
+      <div className="flex flex-wrap items-center gap-4">
+        {periodCommand && (
           <ListPeriodControl
             period={periodProp ?? { from: null, to: null }}
             command={periodCommand}
             nodeId={node.id}
             dispatch={dispatch}
           />
-        ) : (
-          <div />
         )}
+
+        {filterCommand && (
+          <ListQuickFilters
+            filters={quickFilters}
+            onApply={(field, op, value) => {
+              void dispatch({
+                type: 'COMMAND',
+                command: filterCommand,
+                value:
+                  value === undefined ? { field, op } : { field, op, value },
+                sourceNodeId: node.id,
+              })
+            }}
+          />
+        )}
+
         {searchable && (
           <SearchInput
             placeholder={t('pageToolbar.search')}
             value={search}
-            className="w-62.5 bg-ui-01"
+            className="ml-auto w-62.5 bg-ui-01"
             onChange={(e) => {
               setSearch(e.target.value)
             }}
@@ -228,20 +248,6 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
           />
         )}
       </div>
-
-      {filterCommand && (
-        <ListQuickFilters
-          filters={quickFilters}
-          onApply={(field, op, value) => {
-            void dispatch({
-              type: 'COMMAND',
-              command: filterCommand,
-              value: value === undefined ? { field, op } : { field, op, value },
-              sourceNodeId: node.id,
-            })
-          }}
-        />
-      )}
 
       {clearFilterCommand && clearAllFiltersCommand && (
         <ListFilterChips

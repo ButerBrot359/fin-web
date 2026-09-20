@@ -104,12 +104,20 @@ export interface ReportAltFormSignatureDto {
 
 /** Секция официального бланка со своими колонками-графами. */
 export interface ReportAltFormSectionDto {
+  /** Страница бланка, на которой печатается секция (см. `ReportAltFormDto.pages`). */
+  pageCode?: string
   title?: string
   openingLine?: string
   columns: ReportAltColumnDto[]
   rows: ReportAltRowDto[]
   numberGraphs?: boolean
   graphNumberStart?: number
+}
+
+/** Страница официального бланка: бэкенд задаёт состав и названия, как в 1С. */
+export interface ReportAltFormPageDto {
+  code: string
+  title: string
 }
 
 /** Официальный бланк (layout=FORM): шапка, секции, подписи. */
@@ -122,6 +130,8 @@ export interface ReportAltFormDto {
   periodLine?: string
   vedomostTitle?: string
   accountsLine?: string
+  /** Страницы бланка; пусто — бланк показывается одним полотном. */
+  pages?: ReportAltFormPageDto[]
   sections: ReportAltFormSectionDto[]
   footerLines?: string[]
   signatures?: ReportAltFormSignatureDto[]

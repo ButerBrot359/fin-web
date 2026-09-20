@@ -99,7 +99,32 @@ export function useTableRowCommands({
     if (selectedRowId === null) return
     const globalIndex = sync.rows.findIndex((r) => r.rowId === selectedRowId)
     if (globalIndex >= 0) sync.deleteRow(globalIndex)
-    clearSelection()
+    vydelitPosleUdaleniya()
+  }
+
+  /**
+   * Текущей становится строка, вставшая на место удалённой (последнюю сменяет предыдущая) —
+   * так ведёт себя таблица 1С. Иначе после каждого удаления выделение пропадало и строку
+   * приходилось выбирать мышью заново: удалить десяток позиций подряд было нечем
+   * (обращение 20.09.2026 по доверенности).
+   */
+  const vydelitPosleUdaleniya = () => {
+    const ostalos = visibleRows.length - 1
+    if (selectedVisibleIndex < 0 || ostalos <= 0) {
+      clearSelection()
+      return
+    }
+    const indeks = Math.min(selectedVisibleIndex, ostalos - 1)
+    if (onMoved !== undefined) {
+      // Индексная селекция (editable): строка ниже сдвигается на место удалённой.
+      onMoved(indeks)
+      return
+    }
+    // Селекция по rowId (complex): берём соседа из ДОудалённого набора — строку ниже, а у
+    // последней строки предыдущую (её индекс уже посчитан в indeks).
+    const indeksSoseda =
+      selectedVisibleIndex < ostalos ? selectedVisibleIndex + 1 : indeks
+    selectRow?.(visibleRows[indeksSoseda].rowId)
   }
 
   // Копия строки: существующий addRow с пресетами из выбранной строки (без

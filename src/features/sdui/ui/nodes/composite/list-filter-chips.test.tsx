@@ -99,4 +99,45 @@ describe('ListFilterChips', () => {
 
     expect(screen.getAllByLabelText('table.filterRemoveChip')).toHaveLength(1)
   })
+
+  it('только маршрутные чипы → «Сбросить все» не рендерится: снимать нечего', () => {
+    render(
+      <ListFilterChips
+        chips={[
+          {
+            field: 'VidOperatsii',
+            label: 'Вид операции равно: Расчёт амортизации',
+            fixed: true,
+          },
+        ]}
+        onRemove={vi.fn()}
+        onClearAll={vi.fn()}
+      />
+    )
+
+    expect(
+      screen.queryByRole('button', { name: 'table.filterClearAll' })
+    ).toBeNull()
+  })
+
+  it('рядом со съёмным чипом «Сбросить все» остаётся', () => {
+    render(
+      <ListFilterChips
+        chips={[
+          {
+            field: 'VidOperatsii',
+            label: 'Вид операции равно: Расчёт амортизации',
+            fixed: true,
+          },
+          { field: 'Organizatsiya', label: 'Организация равно: ГУ «Тест»' },
+        ]}
+        onRemove={vi.fn()}
+        onClearAll={vi.fn()}
+      />
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'table.filterClearAll' })
+    ).toBeInTheDocument()
+  })
 })

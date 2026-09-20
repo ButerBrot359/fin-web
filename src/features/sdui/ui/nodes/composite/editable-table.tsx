@@ -202,6 +202,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   return (
     <div
       tabIndex={-1}
+      data-sdui-table-keyboard="true"
       style={{
         outline: 'none',
         display: 'flex',

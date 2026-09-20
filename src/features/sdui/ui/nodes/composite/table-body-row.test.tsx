@@ -76,3 +76,24 @@ describe('Первый клик делает строку текущей, вто
     expect(fireEvent.mouseDown(screen.getByText('Бумага А4'))).toBe(true)
   })
 })
+
+describe('Текущая строка видна: сплошная заливка и маркер слева', () => {
+  it('выделенная строка получает собственный фон, а не дефолтные 8% MUI', () => {
+    otrisovat({ selected: true, yacheyka: <span>Бумага А4</span> })
+
+    const stroka = screen.getByText('Бумага А4').closest('tr')
+    expect(stroka).not.toBeNull()
+    expect(getComputedStyle(stroka as Element).backgroundColor).toBe(
+      'var(--ui-08, #c4d6f5)'
+    )
+  })
+
+  it('невыделенная строка фон не красит', () => {
+    otrisovat({ selected: false, yacheyka: <span>Бумага А4</span> })
+
+    const stroka = screen.getByText('Бумага А4').closest('tr')
+    expect(getComputedStyle(stroka as Element).backgroundColor).not.toBe(
+      'var(--ui-08, #c4d6f5)'
+    )
+  })
+})

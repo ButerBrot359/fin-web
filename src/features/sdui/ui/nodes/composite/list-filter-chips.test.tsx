@@ -80,4 +80,23 @@ describe('ListFilterChips', () => {
       screen.queryByRole('button', { name: 'table.filterClearAll' })
     ).toBeNull()
   })
+
+  it('маршрутный чип (fixed) рисуется без крестика — отбор по виду операции не снимается', () => {
+    render(
+      <ListFilterChips
+        chips={[
+          {
+            field: 'VidOperatsii',
+            label: 'Вид операции равно: Расчёт амортизации',
+            fixed: true,
+          },
+          { field: 'Organizatsiya', label: 'Организация равно: ГУ «Тест»' },
+        ]}
+        onRemove={vi.fn()}
+        onClearAll={vi.fn()}
+      />
+    )
+
+    expect(screen.getAllByLabelText('table.filterRemoveChip')).toHaveLength(1)
+  })
 })

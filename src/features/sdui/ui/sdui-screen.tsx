@@ -24,6 +24,7 @@ import {
   type SduiSessionValue,
 } from '../lib/sdui-session-context'
 import { reopenFormForLanguageChange } from '../lib/language-reopen'
+import { isStretchedRoot } from '../lib/utils/stretched-root'
 import type { ViewTabMeta } from '../types/view'
 import { NodeRenderer } from './node-renderer'
 import { DialogHost } from './dialog-host'
@@ -265,12 +266,24 @@ export const SduiScreen: FC<SduiScreenProps> = ({
 
   if (!tree) return <PageSkeleton />
 
+  // Своя прокрутка растянутому корню обязательна по той же причине, что в PageNode:
+  // у ТЧ внутри есть пол высоты, и в низком окне она вытекала бы поверх подвала.
+  const rastyanutyyKoren = isStretchedRoot(tree)
+
   return (
     <SduiSessionProvider value={sessionValue}>
       {/* SCRUM-317: граница поиска якорей тултипа — свой экран, не документ
           целиком (панели-порталы рендерят те же узлы). display:contents не
           участвует в раскладке. */}
-      <div style={{ display: 'contents' }} data-sdui-screen-root>
+      <div
+        className={
+          rastyanutyyKoren
+            ? 'flex min-h-0 flex-1 flex-col overflow-y-auto'
+            : undefined
+        }
+        style={rastyanutyyKoren ? undefined : { display: 'contents' }}
+        data-sdui-screen-root
+      >
         <NodeRenderer node={tree} />
       </div>
       <DialogHost />

@@ -131,6 +131,50 @@ export interface ReportFormDto {
   noteLines?: string[]
 }
 
+/** Оформление ячейки бланка — снимок стиля макета 1С. */
+export interface ReportSpreadsheetCellStyleDto {
+  fontName?: string
+  fontSize?: number
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+  color?: string
+  background?: string
+  align?: string
+  verticalAlign?: string
+  wrap?: boolean
+  rotation?: number
+  borderTop?: string
+  borderRight?: string
+  borderBottom?: string
+  borderLeft?: string
+  borderColor?: string
+}
+
+/** Ячейка табличного документа бланка. */
+export interface ReportSpreadsheetCellDto {
+  row: number
+  column: number
+  rowSpan?: number
+  colSpan?: number
+  text?: string
+  style?: ReportSpreadsheetCellStyleDto
+}
+
+/** Страница бланка: сетка в пикселях, как в утверждённом макете. */
+export interface ReportSpreadsheetSheetDto {
+  code: string
+  title: string
+  columnWidths: number[]
+  rowHeights: number[]
+  cells: ReportSpreadsheetCellDto[]
+}
+
+/** Табличный документ бланка — то же, что уходит в печать. */
+export interface ReportSpreadsheetDto {
+  sheets: ReportSpreadsheetSheetDto[]
+}
+
 /** Тип параметра отчёта — определяет, какой инпут рендерить в форме. */
 export type ReportParameterType =
   | 'DATE'
@@ -343,6 +387,12 @@ export interface ReportResultDto {
   subtitleLines?: string[]
   /** Официальный бланк (layout=FORM): мемориальные ордера. */
   form?: ReportFormDto
+  /**
+   * Табличный документ утверждённого бланка — то, что 1С показывает после
+   * «Сформировать». Приходит вместе с `form`; когда он есть, рисуем его, потому
+   * что сетка, шрифты и цвета бланка утверждены приказом.
+   */
+  spreadsheet?: ReportSpreadsheetDto
   /**
    * Язык, на котором бэк сформировал отчёт («ru» | «kz»/«kk»). Рендерер выбирает
    * titleRu/titleKz и локаль итога ПО НЕМУ, а не по языку приложения (отчёт

@@ -40,6 +40,14 @@ interface TableBodyRowProps {
  * ComplexEditableTable (разметка была дословно одинакова, различия — в
  * опциональных props).
  */
+/**
+ * Интерактивные элементы ячейки: на них первый клик по НЕвыделенной строке гасится, чтобы
+ * сработало выделение, а не сразу правка. Ячейка-ссылка (порт {@code CellHyperlink} 1С)
+ * исключена намеренно — она по эталону открывается одним кликом.
+ */
+const REDAKTIRUEMOE =
+  'input, textarea, button, [contenteditable="true"], [role="combobox"]'
+
 export const TableBodyRow: FC<TableBodyRowProps> = ({
   row,
   selected,
@@ -63,6 +71,18 @@ export const TableBodyRow: FC<TableBodyRowProps> = ({
     ref={measureRow}
     selected={selected}
     onClick={onRowClick}
+    // Первый клик по строке делает её текущей, и только второй открывает ячейку на правку —
+    // так ведёт себя таблица 1С. До этого ячейка становилась редактируемой сразу: клик по
+    // ТМЗ вместо выделения строки открывал выбор другого ТМЗ (обращение 20.09.2026).
+    // Гасим ТОЛЬКО фокус (preventDefault на mousedown) — сам клик доходит до onClick и
+    // выделяет строку.
+    onMouseDownCapture={(event) => {
+      if (selected) return
+      const target = event.target
+      if (!(target instanceof Element)) return
+      if (target.closest('[data-sdui-cell-hyperlink="true"]')) return
+      if (target.closest(REDAKTIRUEMOE)) event.preventDefault()
+    }}
     onDoubleClick={onRowDoubleClick}
     // Заливка идёт ПРОСТЫМ `backgroundColor` в sx — у выделения и ховера MUI
     // селекторы с классом-модификатором (`.MuiTableRow-root.Mui-selected`),

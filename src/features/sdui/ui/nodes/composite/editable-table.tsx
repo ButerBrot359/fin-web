@@ -186,6 +186,11 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     clearSelection: () => {
       setSelectedIndex(null)
     },
+    // Селекция здесь индексная, а хук оперирует rowId — переводим по видимому набору.
+    selectRow: (rowId) => {
+      const index = visibleRows.findIndex((row) => row.rowId === rowId)
+      if (index >= 0) setSelectedIndex(index)
+    },
     globalIndexOf,
     // Индексная селекция: выделение сдвигается вслед за перемещённой строкой.
     onMoved: (toVisibleIndex) => {

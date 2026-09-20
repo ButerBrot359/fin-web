@@ -215,6 +215,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     selectedVisibleIndex: selection.selectedVisibleIndex,
     onAdd: handleAddWithAutoAdvance,
     clearSelection: selection.clearSelection,
+    selectRow: selection.selectRow,
     // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail
     // в тулбаре) — там visibleRows === sync.rows, поэтому видимый индекс
     // совпадает с глобальным и move корректен.

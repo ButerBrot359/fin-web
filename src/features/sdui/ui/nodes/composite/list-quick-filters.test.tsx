@@ -85,6 +85,32 @@ describe('Панель отбора списка', () => {
     expect(bezDefault.op).toBe('equals')
   })
 
+  it('поле без колонки рисуется по quickFilterMeta — отбор эталона может не быть колонкой', () => {
+    // «Подразделение» у «Корректировки параметров учёта ОС»: в отборах формы 1С есть, среди
+    // колонок списка нет. Метаданные такого поля сервер шлёт в props.quickFilterMeta.
+    const spisok = {
+      id: 'list',
+      type: 'LIST',
+      props: {
+        quickFilterFields: ['Podrazdelenie'],
+        quickFilterMeta: {
+          Podrazdelenie: {
+            header: 'Подразделение',
+            filterField: 'Podrazdelenie',
+            filterOps: ['equals'],
+            filterValueOptions: [{ value: '1', label: 'Первый' }],
+          },
+        },
+      },
+    } as unknown as ViewNode
+
+    const [filtr] = readQuickFilters(spisok, [], {})
+
+    expect(filtr.field).toBe('Podrazdelenie')
+    expect(filtr.label).toBe('Подразделение')
+    expect(filtr.op).toBe('equals')
+  })
+
   it('поле без своей колонки в панель не попадает — сервер и колонки разошлись', () => {
     const filters = readQuickFilters(listNode(['Net']), [column('A', 'А')], {})
 

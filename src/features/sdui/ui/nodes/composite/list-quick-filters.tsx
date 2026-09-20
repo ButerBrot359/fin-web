@@ -83,9 +83,19 @@ export const readQuickFilters = (
   const fields = node.props?.quickFilterFields
   if (!Array.isArray(fields)) return []
 
+  // Поле панели может не иметь колонки в списке: состав панели берётся из эталона формы 1С,
+  // а там встречаются отборы по реквизитам, которых среди колонок нет («Подразделение» у
+  // «Корректировки параметров учёта ОС»). Для таких полей сервер шлёт метаданные отдельно.
+  const metaPoPolyu = (node.props?.quickFilterMeta ?? {}) as Record<
+    string,
+    Record<string, unknown> | undefined
+  >
+
   return fields.flatMap((raw) => {
     const field = String(raw)
-    const column = columnNodes.find((c) => c.props?.filterField === field)
+    const column =
+      columnNodes.find((c) => c.props?.filterField === field) ??
+      (metaPoPolyu[field] ? { props: metaPoPolyu[field] } : undefined)
     if (!column) return []
 
     const ops = column.props?.filterOps

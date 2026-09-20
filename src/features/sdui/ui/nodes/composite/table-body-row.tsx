@@ -8,6 +8,8 @@ import {
   isSearchHit,
   type TableSearchMatch,
 } from '../../../lib/hooks/use-table-search'
+import { palette, cssVar } from '@/shared/design/tokens'
+
 import { resolveRowBackground } from '../../../lib/utils/row-appearance'
 import { ROW_ERROR_BACKGROUND } from '../../../lib/validation/table-row-errors'
 import { SearchHitCell } from './table-search-cell'
@@ -47,6 +49,15 @@ interface TableBodyRowProps {
  */
 const REDAKTIRUEMOE =
   'input, textarea, button, [contenteditable="true"], [role="combobox"]'
+
+/**
+ * Текущая строка ТЧ. Дефолт MUI (`Mui-selected` — primary на 8% прозрачности) на
+ * зебре списка почти не читался: «границы и цвет выделенной строки практически не
+ * отличаются от остальных строк» (тестировщик, 20.09.2026). В 1С текущая строка
+ * залита сплошным цветом и отбита слева маркером, поэтому видно её сразу.
+ */
+const VYDELENNAYA_STROKA_FON = cssVar(palette.ui08)
+const VYDELENNAYA_STROKA_MARKER = cssVar(palette.accent02)
 
 export const TableBodyRow: FC<TableBodyRowProps> = ({
   row,
@@ -90,6 +101,15 @@ export const TableBodyRow: FC<TableBodyRowProps> = ({
     // выделенная зелёная строка была бы неотличима от невыделенной.
     sx={{
       cursor: 'pointer',
+      '&.MuiTableRow-root.Mui-selected': {
+        backgroundColor: VYDELENNAYA_STROKA_FON,
+      },
+      '&.MuiTableRow-root.Mui-selected:hover': {
+        backgroundColor: VYDELENNAYA_STROKA_FON,
+      },
+      '&.MuiTableRow-root.Mui-selected > td:first-of-type': {
+        boxShadow: `inset 3px 0 0 ${VYDELENNAYA_STROKA_MARKER}`,
+      },
       ...(rowHeight !== undefined ? { height: rowHeight } : {}),
       backgroundColor: rowError
         ? ROW_ERROR_BACKGROUND

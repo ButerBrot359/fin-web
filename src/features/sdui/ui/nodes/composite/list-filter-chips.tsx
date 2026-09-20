@@ -6,6 +6,12 @@ import CloseIcon from '@mui/icons-material/Close'
 export interface ListFilterChip {
   field: string
   label: string
+  /**
+   * Отбор задан маршрутом (пункт меню), снимать его нельзя — чип рисуется без крестика.
+   * В 1С это поле отбора формы списка с `ReadOnly`: «Регламентная операция» открывается
+   * командой раздела, и вид операции пользователь только видит.
+   */
+  fixed?: boolean
 }
 
 export interface ListFilterChipsProps {
@@ -40,9 +46,13 @@ export const ListFilterChips: FC<ListFilterChipsProps> = ({
           size="small"
           variant="outlined"
           label={chip.label}
-          onDelete={() => {
-            onRemove(chip.field)
-          }}
+          onDelete={
+            chip.fixed === true
+              ? undefined
+              : () => {
+                  onRemove(chip.field)
+                }
+          }
           deleteIcon={
             <CloseIcon
               fontSize="small"

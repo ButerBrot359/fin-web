@@ -34,6 +34,8 @@ export interface UseTableRowCommandsParams {
   onAdd: () => void
   /** Снять выделение после удаления строки. */
   clearSelection: () => void
+  /** Выделить строку по rowId — переход стрелками ↑/↓ (поведение таблицы 1С). */
+  selectRow?: (rowId: string) => void
   /**
    * Перевод ВИДИМОГО индекса в индекс полного массива для moveRow
    * (SCRUM-282 C1): editable считает его по rowId (отбор строк разрежает
@@ -83,6 +85,7 @@ export function useTableRowCommands({
   selectedVisibleIndex,
   onAdd,
   clearSelection,
+  selectRow,
   globalIndexOf,
   onMoved,
   search,
@@ -137,8 +140,28 @@ export function useTableRowCommands({
     onMoved?.(selectedVisibleIndex + 1)
   }
 
+  // Стрелки водят по строкам: без выделения начинаем с первой (↓) или последней (↑) —
+  // так же ведёт себя таблица 1С, когда текущей строки ещё нет.
+  const perehod = (shag: -1 | 1) => {
+    if (selectRow === undefined || visibleRows.length === 0) return
+    const tekushchiy = selectedVisibleIndex
+    const sleduyushchiy =
+      tekushchiy < 0
+        ? shag === 1
+          ? 0
+          : visibleRows.length - 1
+        : Math.min(Math.max(tekushchiy + shag, 0), visibleRows.length - 1)
+    selectRow(visibleRows[sleduyushchiy].rowId)
+  }
+
   const handleKeyDown = createTableHotkeysHandler({
     onAdd: handleAdd,
+    onSelectPrev: () => {
+      perehod(-1)
+    },
+    onSelectNext: () => {
+      perehod(1)
+    },
     onCopy: handleCopy,
     onRemove: handleRemove,
     onMoveUp: handleMoveUp,

@@ -1,4 +1,4 @@
-import type { FC, MouseEvent } from 'react'
+import { useEffect, useRef, type FC, type MouseEvent } from 'react'
 import { TableCell, TableRow as MuiTableRow, Typography } from '@mui/material'
 import { flexRender, type Row } from '@tanstack/react-table'
 
@@ -59,6 +59,9 @@ const REDAKTIRUEMOE =
 const VYDELENNAYA_STROKA_FON = cssVar(palette.ui08)
 const VYDELENNAYA_STROKA_MARKER = cssVar(palette.accent02)
 
+/** Контейнер таблицы, который слушает хоткеи (стрелки, Insert, Delete, F9). */
+const KONTEYNER_KLAVIATURY = '[data-sdui-table-keyboard="true"]'
+
 export const TableBodyRow: FC<TableBodyRowProps> = ({
   row,
   selected,
@@ -73,71 +76,99 @@ export const TableBodyRow: FC<TableBodyRowProps> = ({
   measureRow,
   sduiRowId,
   rowHeight,
-}) => (
-  <MuiTableRow
-    hover
-    data-index={isVirtualized ? row.index : undefined}
-    {...(sduiRowId !== undefined ? { 'data-sdui-row-id': sduiRowId } : {})}
-    data-sdui-row-index={row.index}
-    ref={measureRow}
-    selected={selected}
-    onClick={onRowClick}
-    // Первый клик по строке делает её текущей, и только второй открывает ячейку на правку —
-    // так ведёт себя таблица 1С. До этого ячейка становилась редактируемой сразу: клик по
-    // ТМЗ вместо выделения строки открывал выбор другого ТМЗ (обращение 20.09.2026).
-    // Гасим ТОЛЬКО фокус (preventDefault на mousedown) — сам клик доходит до onClick и
-    // выделяет строку.
-    onMouseDownCapture={(event) => {
-      if (selected) return
-      const target = event.target
-      if (!(target instanceof Element)) return
-      if (target.closest('[data-sdui-cell-hyperlink="true"]')) return
-      if (target.closest(REDAKTIRUEMOE)) event.preventDefault()
-    }}
-    onDoubleClick={onRowDoubleClick}
-    // Заливка идёт ПРОСТЫМ `backgroundColor` в sx — у выделения и ховера MUI
-    // селекторы с классом-модификатором (`.MuiTableRow-root.Mui-selected`),
-    // они специфичнее и остаются видимыми поверх условного фона. Иначе
-    // выделенная зелёная строка была бы неотличима от невыделенной.
-    sx={{
-      cursor: 'pointer',
-      '&.MuiTableRow-root.Mui-selected': {
-        backgroundColor: VYDELENNAYA_STROKA_FON,
-      },
-      '&.MuiTableRow-root.Mui-selected:hover': {
-        backgroundColor: VYDELENNAYA_STROKA_FON,
-      },
-      '&.MuiTableRow-root.Mui-selected > td:first-of-type': {
-        boxShadow: `inset 3px 0 0 ${VYDELENNAYA_STROKA_MARKER}`,
-      },
-      ...(rowHeight !== undefined ? { height: rowHeight } : {}),
-      backgroundColor: rowError
-        ? ROW_ERROR_BACKGROUND
-        : resolveRowBackground(rowAppearance, row.original),
-    }}
-  >
-    {showRowNumbers && (
-      <TableCell sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}>
-        <Typography variant="body2" color="text.secondary">
-          {row.index + 1}
-        </Typography>
-      </TableCell>
-    )}
-    {row.getVisibleCells().map((cell) => (
-      <SearchHitCell
-        key={cell.id}
-        columnId={cell.column.id}
-        isHit={isSearchHit(searchCurrent, row.original.rowId, cell.column.id)}
-        backgroundColor={
-          // Условная заливка строки перекрывает постоянную заливку колонки —
-          // см. column-background.ts.
-          resolveRowBackground(rowAppearance, row.original)
-            ? undefined
-            : columnBackgrounds.get(cell.column.id)
+}) => {
+  const strokaRef = useRef<HTMLTableRowElement | null>(null)
+
+  // Текущая строка всегда видна: стрелками ↑/↓ выделение уходит за нижнюю кромку
+  // прокрутки, и без доводки таблица выглядела «не реагирующей» на клавиши —
+  // приходилось догонять колесом мыши (обращение 20.09.2026 по доверенности).
+  // block: 'nearest' — строка уже в кадре ничего не двигает.
+  useEffect(() => {
+    const stroka = strokaRef.current
+    // typeof — jsdom метода не реализует, а падать в тестах компоненту незачем.
+    if (selected && typeof stroka?.scrollIntoView === 'function') {
+      stroka.scrollIntoView({ block: 'nearest' })
+    }
+  }, [selected])
+
+  const privyazatRef = (node: HTMLTableRowElement | null) => {
+    strokaRef.current = node
+    measureRow?.(node)
+  }
+
+  return (
+    <MuiTableRow
+      hover
+      data-index={isVirtualized ? row.index : undefined}
+      {...(sduiRowId !== undefined ? { 'data-sdui-row-id': sduiRowId } : {})}
+      data-sdui-row-index={row.index}
+      ref={privyazatRef}
+      selected={selected}
+      onClick={onRowClick}
+      // Первый клик по строке делает её текущей, и только второй открывает ячейку на правку —
+      // так ведёт себя таблица 1С. До этого ячейка становилась редактируемой сразу: клик по
+      // ТМЗ вместо выделения строки открывал выбор другого ТМЗ (обращение 20.09.2026).
+      // Гасим ТОЛЬКО фокус (preventDefault на mousedown) — сам клик доходит до onClick и
+      // выделяет строку.
+      onMouseDownCapture={(event) => {
+        const target = event.target
+        if (!(target instanceof Element)) return
+        if (target.closest('[data-sdui-cell-hyperlink="true"]')) return
+        const vRedaktiruemom = target.closest(REDAKTIRUEMOE) !== null
+        if (!selected && vRedaktiruemom) event.preventDefault()
+        // Фокус уходит контейнеру таблицы, иначе хоткеи (стрелки, Insert, Delete)
+        // не доходят: гашение фокуса выше оставляло его на body, и клавиатура по
+        // строкам не работала вовсе.
+        if (!vRedaktiruemom || !selected) {
+          const konteyner = target.closest(KONTEYNER_KLAVIATURY)
+          if (konteyner instanceof HTMLElement) konteyner.focus()
         }
-      >
-        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-      </SearchHitCell>
-    ))}
-  </MuiTableRow>
-)
+      }}
+      onDoubleClick={onRowDoubleClick}
+      // Заливка идёт ПРОСТЫМ `backgroundColor` в sx — у выделения и ховера MUI
+      // селекторы с классом-модификатором (`.MuiTableRow-root.Mui-selected`),
+      // они специфичнее и остаются видимыми поверх условного фона. Иначе
+      // выделенная зелёная строка была бы неотличима от невыделенной.
+      sx={{
+        cursor: 'pointer',
+        '&.MuiTableRow-root.Mui-selected': {
+          backgroundColor: VYDELENNAYA_STROKA_FON,
+        },
+        '&.MuiTableRow-root.Mui-selected:hover': {
+          backgroundColor: VYDELENNAYA_STROKA_FON,
+        },
+        '&.MuiTableRow-root.Mui-selected > td:first-of-type': {
+          boxShadow: `inset 3px 0 0 ${VYDELENNAYA_STROKA_MARKER}`,
+        },
+        ...(rowHeight !== undefined ? { height: rowHeight } : {}),
+        backgroundColor: rowError
+          ? ROW_ERROR_BACKGROUND
+          : resolveRowBackground(rowAppearance, row.original),
+      }}
+    >
+      {showRowNumbers && (
+        <TableCell sx={{ width: 48, textAlign: 'center', p: '4px 8px' }}>
+          <Typography variant="body2" color="text.secondary">
+            {row.index + 1}
+          </Typography>
+        </TableCell>
+      )}
+      {row.getVisibleCells().map((cell) => (
+        <SearchHitCell
+          key={cell.id}
+          columnId={cell.column.id}
+          isHit={isSearchHit(searchCurrent, row.original.rowId, cell.column.id)}
+          backgroundColor={
+            // Условная заливка строки перекрывает постоянную заливку колонки —
+            // см. column-background.ts.
+            resolveRowBackground(rowAppearance, row.original)
+              ? undefined
+              : columnBackgrounds.get(cell.column.id)
+          }
+        >
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </SearchHitCell>
+      ))}
+    </MuiTableRow>
+  )
+}

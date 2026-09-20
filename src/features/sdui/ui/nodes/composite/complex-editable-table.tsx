@@ -239,6 +239,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     // tabIndex/onKeyDown — хоткеи командной панели ТЧ (SCRUM-302).
     <div
       tabIndex={-1}
+      data-sdui-table-keyboard="true"
       onKeyDown={commands.handleKeyDown}
       style={{
         outline: 'none',

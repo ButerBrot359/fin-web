@@ -12,6 +12,8 @@ function makeHandlers(): TableHotkeyHandlers {
     onRemove: vi.fn(),
     onMoveUp: vi.fn(),
     onMoveDown: vi.fn(),
+    onSelectPrev: vi.fn(),
+    onSelectNext: vi.fn(),
     onFocusSearch: vi.fn(),
     onClearSearch: vi.fn(),
   }
@@ -120,5 +122,39 @@ describe('createTableHotkeysHandler (SCRUM-302)', () => {
     onKeyDown(keyEvent({ key: 'Enter', targetTag: 'input' }))
 
     for (const fn of Object.values(h)) expect(fn).not.toHaveBeenCalled()
+  })
+
+  it('стрелки ↑/↓ водят по строкам — платформенное поведение таблицы 1С', () => {
+    // Обращение 20.09.2026 (доверенность): «стрелочками спускаться вниз или вверх —
+    // таблица не реагирует, приходится колесиком мышки».
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+
+    onKeyDown(keyEvent({ key: 'ArrowDown' }))
+    onKeyDown(keyEvent({ key: 'ArrowUp' }))
+
+    expect(h.onSelectNext).toHaveBeenCalledTimes(1)
+    expect(h.onSelectPrev).toHaveBeenCalledTimes(1)
+  })
+
+  it('внутри ячейки стрелки остаются за курсором ввода', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+
+    onKeyDown(keyEvent({ key: 'ArrowDown', targetTag: 'input' }))
+    onKeyDown(keyEvent({ key: 'ArrowUp', targetTag: 'textarea' }))
+
+    expect(h.onSelectNext).not.toHaveBeenCalled()
+    expect(h.onSelectPrev).not.toHaveBeenCalled()
+  })
+
+  it('Ctrl+Shift+стрелки по-прежнему переставляют строку, а не переходят по ней', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+
+    onKeyDown(keyEvent({ key: 'ArrowDown', ctrlKey: true, shiftKey: true }))
+
+    expect(h.onMoveDown).toHaveBeenCalledTimes(1)
+    expect(h.onSelectNext).not.toHaveBeenCalled()
   })
 })

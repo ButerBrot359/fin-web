@@ -5,6 +5,10 @@
 
 export interface TableHotkeyHandlers {
   onAdd: () => void
+  /** ↑ — перейти на строку выше (в 1С стрелки водят по строкам таблицы). */
+  onSelectPrev: () => void
+  /** ↓ — перейти на строку ниже. */
+  onSelectNext: () => void
   onCopy: () => void
   onRemove: () => void
   onMoveUp: () => void
@@ -65,6 +69,21 @@ export function createTableHotkeysHandler(
     if (e.key === 'Delete') {
       e.preventDefault()
       handlers.onRemove()
+      return
+    }
+    // Переход по строкам стрелками — платформенное поведение таблицы 1С. Без него
+    // в длинной табличной части приходилось крутить колесо мыши: клавиши «не
+    // реагировали» (обращение 20.09.2026 по доверенности). Модификаторы уже
+    // разобраны выше (Ctrl+Shift+стрелки переставляют строку), а внутри ячейки
+    // стрелки остаются за курсором — сюда мы не доходим (isEditableTarget).
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      handlers.onSelectPrev()
+      return
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      handlers.onSelectNext()
     }
   }
 }

@@ -138,6 +138,50 @@ export interface ReportAltFormDto {
   noteLines?: string[]
 }
 
+/** Оформление ячейки бланка — снимок стиля макета 1С. */
+export interface ReportAltSpreadsheetCellStyleDto {
+  fontName?: string
+  fontSize?: number
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+  color?: string
+  background?: string
+  align?: string
+  verticalAlign?: string
+  wrap?: boolean
+  rotation?: number
+  borderTop?: string
+  borderRight?: string
+  borderBottom?: string
+  borderLeft?: string
+  borderColor?: string
+}
+
+/** Ячейка табличного документа бланка. */
+export interface ReportAltSpreadsheetCellDto {
+  row: number
+  column: number
+  rowSpan?: number
+  colSpan?: number
+  text?: string
+  style?: ReportAltSpreadsheetCellStyleDto
+}
+
+/** Страница бланка: сетка в пикселях, как в утверждённом макете. */
+export interface ReportAltSpreadsheetSheetDto {
+  code: string
+  title: string
+  columnWidths: number[]
+  rowHeights: number[]
+  cells: ReportAltSpreadsheetCellDto[]
+}
+
+/** Табличный документ бланка — то же, что уходит в печать. */
+export interface ReportAltSpreadsheetDto {
+  sheets: ReportAltSpreadsheetSheetDto[]
+}
+
 /** Результат формирования отчёта (`POST /api/reportalt/{code}/run`). */
 export interface ReportAltResultDto {
   reportCode: string
@@ -153,6 +197,8 @@ export interface ReportAltResultDto {
   organizationTitle?: string
   subtitleLines?: string[]
   form?: ReportAltFormDto
+  /** Табличный документ утверждённого бланка — рисуется вместо построчных секций. */
+  spreadsheet?: ReportAltSpreadsheetDto
   language?: string
   headerBlocks?: ReportAltHeaderBlockDto[]
   periodLine?: string

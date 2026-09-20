@@ -12,6 +12,7 @@ import type {
 
 import { formatReportTitle } from '../lib/format-title'
 import { FormView } from './form-view'
+import { SpreadsheetView } from './spreadsheet-view'
 import { LedgerTable } from './ledger-table'
 import { TreeTable } from './tree-table'
 import { ReportHeaderBlocks } from './report-header-blocks'
@@ -89,6 +90,12 @@ export const ReportResultView = ({
   const isLedger = result.layout === 'LEDGER'
   // Гос-бланк (М-44): титул и период центрируются над таблицей, как в 1С.
   const isBlank = !!result.headerBlocks && result.headerBlocks.length > 0
+
+  // Утверждённый бланк, снятый с макета 1С, рисуется как табличный документ —
+  // ровно тот же, что уходит в печать.
+  if (result.spreadsheet && result.spreadsheet.sheets.length > 0) {
+    return <SpreadsheetView spreadsheet={result.spreadsheet} />
+  }
 
   // Официальный бланк (мемориальный ордер) — своя шапка, заголовок не нужен.
   if (result.layout === 'FORM' && result.form) {

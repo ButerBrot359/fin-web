@@ -76,6 +76,69 @@ describe('useTableRowCommands', () => {
       expect(sync.deleteRow).not.toHaveBeenCalled()
       expect(params.clearSelection).not.toHaveBeenCalled()
     })
+
+    it('индексная селекция: после удаления текущей становится строка, вставшая на её место', () => {
+      const full = rows('a', 'b', 'c')
+      const onMoved = vi.fn()
+      const { result } = setup({
+        sync: makeSync(full),
+        visibleRows: full,
+        selectedRowId: 'b',
+        selectedVisibleIndex: 1,
+        onMoved,
+      })
+
+      result.current.handleRemove()
+
+      expect(onMoved).toHaveBeenCalledWith(1)
+    })
+
+    it('индексная селекция: удалили последнюю — текущей становится предыдущая', () => {
+      const full = rows('a', 'b', 'c')
+      const onMoved = vi.fn()
+      const { result } = setup({
+        sync: makeSync(full),
+        visibleRows: full,
+        selectedRowId: 'c',
+        selectedVisibleIndex: 2,
+        onMoved,
+      })
+
+      result.current.handleRemove()
+
+      expect(onMoved).toHaveBeenCalledWith(1)
+    })
+
+    it('селекция по rowId: после удаления текущей становится соседняя строка', () => {
+      const full = rows('a', 'b', 'c')
+      const selectRow = vi.fn()
+      const { result } = setup({
+        sync: makeSync(full),
+        visibleRows: full,
+        selectedRowId: 'b',
+        selectedVisibleIndex: 1,
+        selectRow,
+      })
+
+      result.current.handleRemove()
+
+      expect(selectRow).toHaveBeenCalledWith('c')
+    })
+
+    it('удалили единственную строку — выделение снимается', () => {
+      const full = rows('a')
+      const { result, params } = setup({
+        sync: makeSync(full),
+        visibleRows: full,
+        selectedRowId: 'a',
+        selectedVisibleIndex: 0,
+        onMoved: vi.fn(),
+      })
+
+      result.current.handleRemove()
+
+      expect(params.clearSelection).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('copy', () => {

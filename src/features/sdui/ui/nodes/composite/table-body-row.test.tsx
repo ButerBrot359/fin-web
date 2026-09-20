@@ -97,3 +97,47 @@ describe('Текущая строка видна: сплошная заливк�
     )
   })
 })
+
+describe('Клик по строке отдаёт фокус таблице — иначе стрелки не работают', () => {
+  const otrisovatVKonteynere = (selected: boolean) =>
+    render(
+      <div data-sdui-table-keyboard="true" tabIndex={-1}>
+        <Table>
+          <TableBody>
+            <TableBodyRow
+              row={stroka(<input aria-label="ТМЗ" />)}
+              selected={selected}
+              onRowClick={vi.fn()}
+              onRowDoubleClick={vi.fn()}
+              showRowNumbers={false}
+              rowAppearance={[]}
+              columnBackgrounds={new Map()}
+              searchCurrent={null}
+              isVirtualized={false}
+              measureRow={undefined}
+            />
+          </TableBody>
+        </Table>
+      </div>
+    )
+
+  it('клик по невыделенной строке фокусирует контейнер с хоткеями', () => {
+    const { container } = otrisovatVKonteynere(false)
+
+    fireEvent.mouseDown(screen.getByLabelText('ТМЗ'))
+
+    expect(document.activeElement).toBe(
+      container.querySelector('[data-sdui-table-keyboard="true"]')
+    )
+  })
+
+  it('во второй клик по выделенной строке фокус остаётся у ячейки', () => {
+    const { container } = otrisovatVKonteynere(true)
+
+    fireEvent.mouseDown(screen.getByLabelText('ТМЗ'))
+
+    expect(document.activeElement).not.toBe(
+      container.querySelector('[data-sdui-table-keyboard="true"]')
+    )
+  })
+})

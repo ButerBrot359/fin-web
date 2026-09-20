@@ -634,6 +634,39 @@ describe('ListNode — 2d: период (from/to)', () => {
     dispatchMock.mockReset()
   })
 
+  it('период и панель отбора стоят одной строкой, как шапка журнала 1С', () => {
+    const node = {
+      id: 'lst',
+      type: 'LIST',
+      props: {
+        source: { url: '/x/search', method: 'POST' },
+        period: { from: null, to: null },
+        quickFilterFields: ['Organizatsiya'],
+        quickFilterMeta: {
+          Organizatsiya: {
+            header: 'Организация',
+            dataType: 'STRING',
+            filterOps: ['eq'],
+          },
+        },
+      },
+      children: [],
+      actions: [
+        { trigger: 'activate', command: 'list.rowOpen:TypeX' },
+        { trigger: 'period', command: 'list.applyPeriod:TypeX' },
+        { trigger: 'filter', command: 'list.applyFilter:TypeX' },
+      ],
+    } as unknown as ViewNode
+
+    render(<ListNode node={node} />)
+
+    const ryad = screen
+      .getByTestId('date-input-table.periodFrom')
+      .closest('div.flex-wrap')
+    expect(ryad).not.toBeNull()
+    expect(ryad?.contains(screen.getByText('Организация'))).toBe(true)
+  })
+
   it('period-действие есть → рендерятся два инпута даты', () => {
     render(<ListNode node={periodNode({ from: null, to: null })} />)
     expect(screen.getByTestId('date-input-table.periodFrom')).toBeTruthy()

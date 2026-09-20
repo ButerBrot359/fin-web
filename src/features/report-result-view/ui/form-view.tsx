@@ -68,13 +68,24 @@ const columnValues = (
  * длинному значению (не обрезаемся и не растягиваем зря). Колонки, где бэк уже
  * задал role и width, не трогаем.
  */
+/**
+ * Заголовок колонки строкой.
+ *
+ * <p>Тип обещает `string`, но бэкенд исторически может прислать `null` — на это есть тест
+ * «titleRu = null — бланк рендерится, а не падает». Приведение здесь и нужно, чтобы бланк не
+ * падал на таком ответе.
+ */
+const zagolovok = (col: ReportColumnDto): string =>
+  (col.titleRu as string | null | undefined) ?? ''
+
 const deriveFormColumns = (section: ReportFormSectionDto): ReportColumnDto[] =>
   section.columns.map((col) => {
     const loose = col as LooseColumn
     if (loose.role != null && loose.width != null) return col
 
     const values = columnValues(section, col.code)
-    const isOrdinal = ORDINAL_RE.test(col.code) || ORDINAL_RE.test(col.titleRu)
+    const isOrdinal =
+      ORDINAL_RE.test(col.code) || ORDINAL_RE.test(zagolovok(col))
     const allNumeric = values.length > 0 && values.every(isNumericValue)
     const allDate =
       values.length > 0 &&
@@ -111,7 +122,7 @@ const deriveFormColumns = (section: ReportFormSectionDto): ReportColumnDto[] =>
         // Описательная (Счёт/Наименование/Документ) — по длине заголовка/значений.
         const textLen = values.reduce<number>(
           (mx, v) => Math.max(mx, String(v).length),
-          col.titleRu.length
+          zagolovok(col).length
         )
         patch.width = Math.min(26, Math.max(8, textLen + 2))
       }

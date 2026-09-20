@@ -1,4 +1,5 @@
 import { Typography } from '@mui/material'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { cssVar, palette } from '@/shared/design/tokens'
@@ -73,7 +74,7 @@ const deriveFormColumns = (section: ReportFormSectionDto): ReportColumnDto[] =>
     if (loose.role != null && loose.width != null) return col
 
     const values = columnValues(section, col.code)
-    const isOrdinal = ORDINAL_RE.test(col.code) || ORDINAL_RE.test(col.titleRu ?? '')
+    const isOrdinal = ORDINAL_RE.test(col.code) || ORDINAL_RE.test(col.titleRu)
     const allNumeric = values.length > 0 && values.every(isNumericValue)
     const allDate =
       values.length > 0 &&
@@ -110,7 +111,7 @@ const deriveFormColumns = (section: ReportFormSectionDto): ReportColumnDto[] =>
         // Описательная (Счёт/Наименование/Документ) — по длине заголовка/значений.
         const textLen = values.reduce<number>(
           (mx, v) => Math.max(mx, String(v).length),
-          (col.titleRu ?? '').length
+          col.titleRu.length
         )
         patch.width = Math.min(26, Math.max(8, textLen + 2))
       }
@@ -336,6 +337,22 @@ export const FormView = ({
   // Язык бланка — по языку отчёта (может отличаться от языка UI), фолбэк на UI.
   const isKz = resolveReportLang(language, i18n.language) === 'kz'
 
+  // Страницы бланка приходят с бэкенда: состав и названия — свойство утверждённой формы,
+  // а не интерфейса. Пустой список означает бланк без деления на страницы.
+  const stranitsy = useMemo(() => form.pages ?? [], [form.pages])
+  const [aktivnayaStranitsa, setAktivnayaStranitsa] = useState(
+    stranitsy.length > 0 ? stranitsy[0].code : undefined
+  )
+  const vidimyeSektsii = useMemo(
+    () =>
+      stranitsy.length > 1
+        ? form.sections.filter(
+            (s) => (s.pageCode ?? stranitsy[0].code) === aktivnayaStranitsa
+          )
+        : form.sections,
+    [form.sections, stranitsy, aktivnayaStranitsa]
+  )
+
   return (
     <div className="flex w-full flex-col gap-1 bg-white text-pending-text-1">
       {/* Гриф и номер формы. */}
@@ -414,8 +431,32 @@ export const FormView = ({
             «Список счетов» и примечание-Ескерту, не часть названия формы). */}
       </div>
 
+      {/* Навигация по страницам бланка: у ФНО бланк утверждён постранично, и 1С
+          показывает такой же список слева. Состав страниц задаёт бэкенд. */}
+      {stranitsy.length > 1 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {stranitsy.map((page) => (
+            <button
+              key={page.code}
+              type="button"
+              onClick={() => {
+                setAktivnayaStranitsa(page.code)
+              }}
+              className={
+                'rounded border px-3 py-1 text-sm ' +
+                (page.code === aktivnayaStranitsa
+                  ? 'border-transparent bg-[var(--color-primary)] text-white'
+                  : 'border-[var(--color-border)] bg-transparent')
+              }
+            >
+              {page.title}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Секции (дебет/кредит субсчёта). */}
-      {form.sections.map((section, i) => (
+      {vidimyeSektsii.map((section, i) => (
         <div key={i} className="mt-3 flex flex-col gap-1">
           {section.title && (
             <Typography

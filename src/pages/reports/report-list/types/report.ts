@@ -58,7 +58,15 @@ export type ReportColumnFamily =
 export type ReportLayout = 'LEDGER' | 'TREE' | 'FORM'
 
 /** Секция бланка (дебет/кредит субсчёта) со СВОИМИ колонками-графами. */
+/** Страница официального бланка: состав и названия задаёт бэкенд, как в 1С. */
+export interface ReportFormPageDto {
+  code: string
+  title: string
+}
+
 export interface ReportFormSectionDto {
+  /** Страница бланка, на которой печатается секция (см. `ReportFormDto.pages`). */
+  pageCode?: string
   /** Заголовок секции («Дебет субсчёта № 1010»). */
   title?: string
   /** Строка остатка на начало («Остаток на начало месяца: 0»). */
@@ -113,6 +121,8 @@ export interface ReportFormDto {
   vedomostTitle?: string
   /** «№ 1010». */
   accountsLine?: string
+  /** Страницы бланка; пусто — бланк показывается одним полотном. */
+  pages?: ReportFormPageDto[]
   sections: ReportFormSectionDto[]
   /** Строки футера («Остаток на конец месяца: …») — ДО подписей. */
   footerLines?: string[]

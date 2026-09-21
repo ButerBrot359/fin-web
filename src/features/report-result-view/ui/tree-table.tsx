@@ -24,6 +24,7 @@ import {
   DATA_FS,
   GREEN_1C,
   HEAD_FS,
+  hasAppearance,
   isHighlightRow,
   isMeasure,
   isNumericCell,
@@ -239,11 +240,16 @@ const PlainTreeTable = ({
     )
   }
 
-  /** Выделенная 1С-строка: группа дерева либо строка-итог по rowKind. */
+  /** Выделенная 1С-строка: группа дерева, строка-итог по rowKind либо счёт-группа плана счетов. */
   const isGroupRow = (row: Row<ReportRowDto>): boolean =>
     isHighlightRow(row.original.rowKind) ||
     (row.original.rowKind == null && row.depth === 0) ||
-    row.original.rowKind === 'GROUP_HEADER'
+    row.original.rowKind === 'GROUP_HEADER' ||
+    hasAppearance(row.original, 'BOLD_GROUP')
+
+  /** Ячейка погашена бэкендом для ЭТОЙ строки (эталон: валютные графы у невалютного счёта). */
+  const isBlankCell = (row: Row<ReportRowDto>, code: string): boolean =>
+    row.original.blankColumns?.includes(code) === true
 
   const treeHeaderTitle = treeColumn
     ? columnTitle(treeColumn, isKz)
@@ -409,7 +415,9 @@ const PlainTreeTable = ({
                 key={row.id}
                 {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
               >
-                <td className={`${tdBase} align-top`}>{renderGroupCell(row)}</td>
+                <td className={`${tdBase} align-top`}>
+                  {renderGroupCell(row)}
+                </td>
                 {bodyColumns.map((col) => (
                   <td
                     key={col.code}
@@ -419,12 +427,14 @@ const PlainTreeTable = ({
                         : ''
                     }`}
                   >
-                    <ReportCell
-                      subLabels={indicatorSubLabels(row.original.cells)}
-                      value={row.original.cells[col.code]}
-                      col={col}
-                      bold={bold}
-                    />
+                    {isBlankCell(row, col.code) ? null : (
+                      <ReportCell
+                        subLabels={indicatorSubLabels(row.original.cells)}
+                        value={row.original.cells[col.code]}
+                        col={col}
+                        bold={bold}
+                      />
+                    )}
                   </td>
                 ))}
               </tr>

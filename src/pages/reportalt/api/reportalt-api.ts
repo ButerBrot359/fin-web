@@ -97,11 +97,18 @@ export const saveReportAlt = (
  * Кнопка «Выгрузить в XML» формы 1С. Квартал бэк определяет по переданной дате — декларация
  * сдаётся за квартал целиком.
  */
+/** Признаки шапки декларации, которые ставит пользователь: расчёт о них не знает. */
+export interface VygruzkaFnoPriznaki {
+  vidDeklaratsii?: string | null
+  nomerUvedomleniya?: string | null
+  dataUvedomleniya?: string | null
+}
+
 export const vygruzkaFno = (
   kodFormy: string,
   organizatsiyaId: number,
   period: string,
-  vidDeklaratsii?: string | null,
+  priznaki: VygruzkaFnoPriznaki = {},
   signal?: AbortSignal
 ) =>
   apiService.getFileBlob({
@@ -109,7 +116,15 @@ export const vygruzkaFno = (
     params: {
       organizatsiyaId,
       period,
-      ...(vidDeklaratsii ? { vidDeklaratsii } : {}),
+      ...(priznaki.vidDeklaratsii
+        ? { vidDeklaratsii: priznaki.vidDeklaratsii }
+        : {}),
+      ...(priznaki.nomerUvedomleniya
+        ? { nomerUvedomleniya: priznaki.nomerUvedomleniya }
+        : {}),
+      ...(priznaki.dataUvedomleniya
+        ? { dataUvedomleniya: priznaki.dataUvedomleniya }
+        : {}),
     },
     signal,
   })

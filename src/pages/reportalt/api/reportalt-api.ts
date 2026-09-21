@@ -91,6 +91,29 @@ export const saveReportAlt = (
     signal,
   })
 
+/**
+ * Файл ФНО: GET /api/otchetnost/fno/{kodFormy}.
+ *
+ * Кнопка «Выгрузить в XML» формы 1С. Квартал бэк определяет по переданной дате — декларация
+ * сдаётся за квартал целиком.
+ */
+export const vygruzkaFno = (
+  kodFormy: string,
+  organizatsiyaId: number,
+  period: string,
+  vidDeklaratsii?: string | null,
+  signal?: AbortSignal
+) =>
+  apiService.getFileBlob({
+    url: `/api/otchetnost/fno/${kodFormy}`,
+    params: {
+      organizatsiyaId,
+      period,
+      ...(vidDeklaratsii ? { vidDeklaratsii } : {}),
+    },
+    signal,
+  })
+
 export const fetchReportAltParamState = (
   code: string,
   body: ReportAltParamStateBody,

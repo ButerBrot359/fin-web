@@ -16,7 +16,11 @@ import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { exportTableToXlsx } from '@/shared/lib/table-export'
 
-import { fetchReportAltBlank, saveReportAlt } from '../api/reportalt-api'
+import {
+  fetchReportAltBlank,
+  saveReportAlt,
+  vygruzkaFno,
+} from '../api/reportalt-api'
 import { useReportAltMeta } from '../lib/hooks/use-reportalt-meta'
 import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
@@ -195,9 +199,13 @@ export const ReportAltPage = () => {
 
   // Незаполненный бланк: 1С открывает форму отчёта пустым утверждённым листом и наполняет его
   // только по «Заполнить». Отчёты без бланка отвечают пустым телом — тогда показывать нечего.
+  // «Добавить строку» и «Удалить строку» формы 1С меняют число строк в таблицах приложений:
+  // в макете строка одна и размножается по этому числу.
+  const [strokBlanka, setStrokBlanka] = useState(1)
   const { data: pustoyBlank } = useQuery({
-    queryKey: ['reportalt-blank', moduleCode],
-    queryFn: ({ signal }) => fetchReportAltBlank(moduleCode, signal),
+    queryKey: ['reportalt-blank', moduleCode, strokBlanka],
+    queryFn: ({ signal }) =>
+      fetchReportAltBlank(moduleCode, strokBlanka, signal),
     enabled: moduleCode.length > 0,
     staleTime: Infinity,
   })
@@ -254,7 +262,9 @@ export const ReportAltPage = () => {
    */
   const handleSave = () => {
     if (!meta) return
-    const organizatsiya = meta.parameters.find((p) => p.valueType === 'DICTIONARY_REF')
+    const organizatsiya = meta.parameters.find(
+      (p) => p.valueType === 'DICTIONARY_REF'
+    )
     const period = meta.parameters.find((p) => p.valueType === 'PERIOD')
     const periodValue = period
       ? (values[period.code] as PeriodValue | undefined)
@@ -463,6 +473,45 @@ export const ReportAltPage = () => {
 
   // Печать в PDF: бэк может отвечать 501 (печать не реализована) — тост.
   const [isPrinting, setIsPrinting] = useState(false)
+  /**
+   * «Выгрузить в XML» формы 1С: файл ФНО по организации и кварталу отчёта.
+   *
+   * Коды форм налоговой отчётности бэк принимает в виде «200.00» — у нас он живёт в наименовании
+   * отчёта, поэтому берётся оттуда; отчёты, у которых такого кода нет, выгрузку не поддерживают.
+   */
+  const handleExportXml = () => {
+    const kodFormy = /\d{3}\.\d{2}/.exec(reportName)?.[0]
+    const organizatsiya = meta?.parameters.find(
+      (p) => p.valueType === 'DICTIONARY_REF'
+    )
+    const period = meta?.parameters.find((p) => p.valueType === 'PERIOD')
+    const organizatsiyaId = organizatsiya
+      ? values[organizatsiya.code]
+      : undefined
+    const periodValue = period
+      ? (values[period.code] as PeriodValue | undefined)
+      : undefined
+
+    if (
+      !kodFormy ||
+      typeof organizatsiyaId !== 'number' ||
+      !periodValue?.from
+    ) {
+      showToast('warning', t('reportalt.exportXmlUnavailable'))
+      return
+    }
+    void vygruzkaFno(kodFormy, organizatsiyaId, periodValue.from)
+      .then((res) => {
+        const ssylka = document.createElement('a')
+        ssylka.href = URL.createObjectURL(res.data)
+        ssylka.download = `${kodFormy}.xml`
+        ssylka.click()
+      })
+      .catch((e: unknown) => {
+        showToast('error', t('reportalt.exportXmlUnavailable'), errorMessage(e))
+      })
+  }
+
   const handlePrintPdf = () => {
     if (!appliedBody || isPrinting) return
     // Язык печати — выбранный «Язык формы» (YazykFormy): берём применённое
@@ -651,6 +700,35 @@ export const ReportAltPage = () => {
               onClick={handleSave}
             >
               {t('reportalt.save')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              onClick={handleExportXml}
+            >
+              {t('reportalt.exportXml')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              onClick={() => {
+                setStrokBlanka((prev) => prev + 1)
+              }}
+            >
+              {t('reportalt.addRow')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              disabled={strokBlanka <= 1}
+              onClick={() => {
+                setStrokBlanka((prev) => Math.max(prev - 1, 1))
+              }}
+            >
+              {t('reportalt.removeRow')}
             </Button>
           </>
         )}

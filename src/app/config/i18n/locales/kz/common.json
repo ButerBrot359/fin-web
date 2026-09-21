@@ -581,7 +581,17 @@
       "previousQuarter": "Өткен тоқсан",
       "currentYear": "Ағымдағы жыл",
       "previousYear": "Өткен жыл"
-    }
+    },
+    "fill": "Толтыру",
+    "clear": "Тазарту",
+    "refresh": "Жаңарту",
+    "exportXml": "XML-ге жүктеу",
+    "exportXmlUnavailable": "Бұл форма үшін XML-ге жүктеу қолжетімсіз",
+    "save": "Сақтау",
+    "saved": "Есеп сақталды",
+    "saveError": "Есепті сақтау мүмкін болмады",
+    "addRow": "Жол қосу",
+    "removeRow": "Жолды жою"
   },
   "accountPlan": {
     "title": "Шоттар жоспары",

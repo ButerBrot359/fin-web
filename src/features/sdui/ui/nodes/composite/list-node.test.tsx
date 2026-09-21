@@ -217,6 +217,20 @@ describe('ListNode — транспорт', () => {
     dispatchMock.mockReset()
   })
 
+  it('поиск стоит правой группой ряда — последним элементом после периода и отборов', () => {
+    const node = {
+      ...searchNode,
+      props: { ...searchNode.props, searchable: true },
+    } as unknown as ViewNode
+    render(<ListNode node={node} />)
+
+    const input = screen.getByPlaceholderText('pageToolbar.search')
+    const ryad = input.closest('div.justify-between')
+    expect(ryad).not.toBeNull()
+    // Поле поиска — в ПОСЛЕДНЕЙ группе ряда: слева период и отборы, справа поиск.
+    expect(ryad?.lastElementChild?.contains(input)).toBe(true)
+  })
+
   it('queryKey содержит method и body из source', () => {
     render(<ListNode node={searchNode} />)
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

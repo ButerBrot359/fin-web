@@ -29,6 +29,10 @@ const TreasuryExportPage = lazyNamed(
   () => import('@/features/treasury-export'),
   'TreasuryExportPage'
 )
+const SwiftExportPage = lazyNamed(
+  () => import('@/features/swift-export'),
+  'SwiftExportPage'
+)
 const AuditLogPage = lazyNamed(
   () => import('@/pages/audit-log'),
   'AuditLogPage'
@@ -103,6 +107,7 @@ export const AppRoutes = () => {
             navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.
           */}
           <Route path="/treasury-export" element={<TreasuryExportPage />} />
+          <Route path="/swift-export" element={<SwiftExportPage />} />
           <Route path="/modules/:pageCode" element={<ModulePage />} />
           {/*
             SCRUM-45: плоские ссылки с бэка /information-registers/:typeCode…

@@ -217,6 +217,49 @@ describe('ListNode — транспорт', () => {
     dispatchMock.mockReset()
   })
 
+  it('совпадения строки поиска подсвечены в ячейках — видно, по какой колонке нашлось', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: {
+        pages: [
+          {
+            data: {
+              content: [{ id: 1, Nomer: 'ABZ00-00052' }],
+              last: true,
+              number: 0,
+              totalElements: 1,
+            },
+          },
+        ],
+      },
+    })
+    const node = {
+      ...searchNode,
+      props: { ...searchNode.props, searchable: true },
+      children: [
+        {
+          id: 'col-nomer',
+          type: 'TABLE_COLUMN',
+          props: { header: 'Номер', attributeCode: 'Nomer' },
+        },
+      ],
+    } as unknown as ViewNode
+
+    const { container } = render(<ListNode node={node} />)
+    fireEvent.change(screen.getByPlaceholderText('pageToolbar.search'), {
+      target: { value: '52' },
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400))
+    })
+
+    const marks = container.querySelectorAll('tbody mark')
+    expect(marks).toHaveLength(1)
+    expect(marks[0].textContent).toBe('52')
+  })
+
   it('поиск стоит правой группой ряда — последним элементом после периода и отборов', () => {
     const node = {
       ...searchNode,

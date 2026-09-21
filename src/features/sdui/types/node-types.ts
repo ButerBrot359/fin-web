@@ -38,6 +38,10 @@ export type NodeType =
   | 'CALENDAR'
   | 'PRODUCTION_CALENDAR_CLASSIFIER_PICKER'
   | 'REPORT_RESULT'
+  // SCRUM-308 §4.1 (ADR-0078_SDUI): дерево групп пользователей. Модель PUSH —
+  // все узлы приезжают сразу, раскрытость ветки — состояние клиента.
+  | 'TREE'
+  | 'TREE_NODE'
   // Action (3)
   | 'BUTTON'
   | 'MENU_ITEM'

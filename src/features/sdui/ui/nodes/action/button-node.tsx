@@ -1,5 +1,7 @@
 import { useState, type FC } from 'react'
-import { Divider, Menu, Tooltip } from '@mui/material'
+import { Divider, Menu } from '@mui/material'
+
+import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
 
 import { Button } from '@/shared/ui/buttons'
 
@@ -131,14 +133,8 @@ export const ButtonNode: FC<NodeProps> = ({ node }) => {
 
   return (
     <>
-      {tooltip ? (
-        // span-обёртка обязательна: без неё tooltip не работает на disabled-кнопке
-        <Tooltip title={tooltip}>
-          <span style={{ display: 'inline-flex' }}>{buttonEl}</span>
-        </Tooltip>
-      ) : (
-        buttonEl
-      )}
+      {/* SCRUM-308 §9.1: показ причины — одна общая обёртка на все узлы */}
+      <DisabledReasonTooltip reason={tooltip}>{buttonEl}</DisabledReasonTooltip>
       {isDropdown && (
         <Menu
           anchorEl={menuAnchor}

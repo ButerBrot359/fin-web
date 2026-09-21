@@ -23,6 +23,8 @@ import { LabelNode } from '../ui/nodes/display/label-node'
 import { TextNode } from '../ui/nodes/display/text-node'
 import { BadgeNode } from '../ui/nodes/display/badge-node'
 import { IconNode } from '../ui/nodes/display/icon-node'
+import { TreeNode } from '../ui/nodes/display/tree-node'
+import { TreeItemNode } from '../ui/nodes/display/tree-item-node'
 // Fields
 import { TextFieldNode } from '../ui/nodes/fields/text-field-node'
 import { TextAreaNode } from '../ui/nodes/fields/text-area-node'
@@ -81,6 +83,8 @@ const registry: Record<string, FC<NodeProps>> = {
   REPORT_RESULT: ReportResultNode,
   CALENDAR: CalendarNode,
   PRODUCTION_CALENDAR_CLASSIFIER_PICKER: ProductionCalendarClassifierPickerNode,
+  TREE: TreeNode,
+  TREE_NODE: TreeItemNode,
   BUTTON: ButtonNode,
   MENU_ITEM: MenuItemNode,
   LINK: LinkNode,

@@ -125,3 +125,62 @@ describe('EnumFieldNode форма значения', () => {
     delete state.SposobZapolneniya
   })
 })
+
+// SCRUM-308 §3.1/§3.5: причина недоступности узла и отдельных опций.
+describe('EnumFieldNode — недоступность (SCRUM-308)', () => {
+  afterEach(cleanup)
+
+  it('погашенное поле несёт причину в aria-label обёртки (props.tooltip)', () => {
+    const n = {
+      id: 'f.rezhim',
+      type: 'ENUM_FIELD',
+      binding: 'RezhimZapuska',
+      props: {
+        label: 'Режим запуска',
+        options: [],
+        visible: true,
+        enabled: false,
+        tooltip:
+          'Режим запуска задаётся клиентом 1С:Предприятия и в веб-клиенте не применяется',
+      },
+    } as unknown as ViewNode
+    render(<EnumFieldNode node={n} />)
+    expect(
+      screen.getByLabelText(
+        'Режим запуска задаётся клиентом 1С:Предприятия и в веб-клиенте не применяется'
+      )
+    ).toBeTruthy()
+  })
+
+  it('опция с disabled не выбирается; у доступных опций ключей disabled нет', () => {
+    delete state.Pokazat
+    const n = {
+      id: 'f.pokazat',
+      type: 'ENUM_FIELD',
+      binding: 'Pokazat',
+      props: {
+        label: 'Показывать',
+        visible: true,
+        enabled: true,
+        options: [
+          { value: 'vse', label: 'Все' },
+          {
+            value: 'ustarevshie',
+            label: 'Устаревшие',
+            code: 'ustarevshie',
+            disabled: true,
+            disabledReason: 'Отбор устаревших профилей не перенесён',
+          },
+        ],
+      },
+    } as unknown as ViewNode
+    render(<EnumFieldNode node={n} />)
+    fireEvent.mouseDown(screen.getByRole('combobox'))
+    const listbox = within(screen.getByRole('listbox'))
+    const disabledOpt = listbox.getByText('Устаревшие').closest('li')
+    expect(disabledOpt?.getAttribute('aria-disabled')).toBe('true')
+    // §9.1: даже доставленный мимо MUI клик не пишет значение
+    fireEvent.click(listbox.getByText('Устаревшие'))
+    expect(state.Pokazat).toBeUndefined()
+  })
+})

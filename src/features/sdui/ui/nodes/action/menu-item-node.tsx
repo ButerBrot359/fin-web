@@ -1,5 +1,7 @@
 import type { FC } from 'react'
-import { MenuItem, Tooltip } from '@mui/material'
+import { MenuItem } from '@mui/material'
+
+import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
 
 import type { ActionBehavior, NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -85,12 +87,10 @@ export const MenuItemNode: FC<NodeProps> = ({ node }) => {
     </MenuItem>
   )
 
-  return tooltip ? (
-    // span-обёртка обязательна: без неё tooltip не работает на disabled-пункте
-    <Tooltip title={tooltip}>
-      <span style={{ display: 'block' }}>{item}</span>
-    </Tooltip>
-  ) : (
-    item
+  // SCRUM-308 §9.1: показ причины — одна общая обёртка на все узлы
+  return (
+    <DisabledReasonTooltip reason={tooltip} block>
+      {item}
+    </DisabledReasonTooltip>
   )
 }

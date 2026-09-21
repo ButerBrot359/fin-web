@@ -350,7 +350,7 @@ describe('ListFilterFunnel', () => {
     )
     openPopover()
 
-    fireEvent.change(screen.getByTestId('filter-enum-select'), {
+    fireEvent.change(screen.getByTestId('ref-select'), {
       target: { value: 'OUT' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'table.filterApply' }))

@@ -192,7 +192,11 @@ const SheetView = ({
                         }}
                       />
                     ) : (
-                      (kletka.text ?? '')
+                      ((kletka.field != null
+                        ? blankValues?.[kletka.field]
+                        : undefined) ??
+                      kletka.text ??
+                      '')
                     )}
                   </td>
                 ) : (
@@ -322,19 +326,19 @@ export const SpreadsheetView = ({
   onBlankValueChange,
   vybrannayaOblast,
   onVyborOblasti,
+  aktivnayaStranitsa,
+  onVyborStranitsy,
 }: SpreadsheetViewProps) => {
   const sheets = spreadsheet.sheets
-  const [aktivnyy, setAktivnyy] = useState(0)
+  const [svoyaStranitsa, setSvoyuStranitsu] = useState<number>(0)
+  const aktivnyy: number = aktivnayaStranitsa ?? svoyaStranitsa
+  const vybrat: (indeks: number) => void = onVyborStranitsy ?? setSvoyuStranitsu
   if (sheets.length === 0) return null
   const sheet = sheets[Math.min(aktivnyy, sheets.length - 1)]
   return (
     <div className="flex min-h-0 gap-3">
       {sheets.length > 1 && (
-        <SpisokStranits
-          sheets={sheets}
-          aktivnyy={aktivnyy}
-          onVybor={setAktivnyy}
-        />
+        <SpisokStranits sheets={sheets} aktivnyy={aktivnyy} onVybor={vybrat} />
       )}
       <div className="min-w-0 flex-1 overflow-auto">
         <SheetView

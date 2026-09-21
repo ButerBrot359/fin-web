@@ -149,4 +149,27 @@ describe('SpreadsheetView — табличный документ бланка',
 
     expect(vybrano).toEqual(['s_200_00_001_1', null])
   })
+
+  it('очищенная область показывается пустой и без обработчика ввода', () => {
+    const dokumentSOblastyu: ReportSpreadsheetDto = {
+      sheets: [
+        {
+          code: 'Страница 1',
+          title: 'Страница 1',
+          columnWidths: [80],
+          rowHeights: [20],
+          cells: [{ row: 0, column: 0, text: '100', field: 's_200_00_001_1' }],
+        },
+      ],
+    }
+
+    render(
+      <SpreadsheetView
+        spreadsheet={dokumentSOblastyu}
+        blankValues={{ s_200_00_001_1: '' }}
+      />
+    )
+
+    expect(screen.queryByText('100')).toBeNull()
+  })
 })

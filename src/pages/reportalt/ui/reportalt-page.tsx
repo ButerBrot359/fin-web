@@ -22,6 +22,10 @@ import {
   vygruzkaFno,
 } from '../api/reportalt-api'
 import { rasshifrovkaKletki } from '../lib/utils/blank-drilldown'
+import {
+  pustyeOblastiStranits,
+  stranitsaPrilozheniya,
+} from '../lib/utils/blank-ochistka'
 import { useReportAltMeta } from '../lib/hooks/use-reportalt-meta'
 import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
@@ -167,6 +171,7 @@ export const ReportAltPage = () => {
   const [blankValues, setBlankValues] = useState<Record<string, string>>({})
   // Выделенная клетка бланка: в 1С «Расшифровать» работает от имени области текущей области.
   const [vybrannayaOblast, setVybrannayaOblast] = useState<string | null>(null)
+  const [aktivnayaStranitsa, setAktivnayaStranitsa] = useState(0)
   const izmenitKletku = useCallback((field: string, value: string) => {
     setBlankValues((prev) => ({ ...prev, [field]: value }))
   }, [])
@@ -223,6 +228,13 @@ export const ReportAltPage = () => {
     isFetchingNextPage,
     refetch,
   } = useRunReportAlt(moduleCode, appliedBody, appliedBody != null, isLedger)
+
+  // Бланк на экране: заполненный после «Сформировать», иначе пустой утверждённый лист.
+  const blankDokument = result?.spreadsheet ?? pustoyBlank
+  const estPrilozhenie20005 =
+    blankDokument?.sheets.some((s) =>
+      stranitsaPrilozheniya(s.title, '200.05')
+    ) ?? false
 
   // Ошибка формирования (422 — невалидные параметры / слишком большой
   // результат; прочее) — тостом, с сообщением бэка при наличии.
@@ -302,6 +314,17 @@ export const ReportAltPage = () => {
       next.delete(p.code)
     })
     setSearchParams(next, { replace: true })
+  }
+
+  /**
+   * «Очистить текущую страницу» и «Очистить приложение 200.05» формы 1С: стираются области
+   * только выбранных страниц, остальной бланк остаётся заполненным.
+   */
+  const ochistitStranitsy = (
+    nuzhna: (title: string, indeks: number) => boolean
+  ) => {
+    const pustye = pustyeOblastiStranits(blankDokument, nuzhna)
+    setBlankValues((prev) => ({ ...prev, ...pustye }))
   }
 
   const handleSubmit = () => {
@@ -482,6 +505,9 @@ export const ReportAltPage = () => {
    * Коды форм налоговой отчётности бэк принимает в виде «200.00» — у нас он живёт в наименовании
    * отчёта, поэтому берётся оттуда; отчёты, у которых такого кода нет, выгрузку не поддерживают.
    */
+  const stroka = (znachenie: ReportAltParamValue): string | null =>
+    typeof znachenie === 'string' && znachenie.length > 0 ? znachenie : null
+
   const handleExportXml = () => {
     const kodFormy = /\d{3}\.\d{2}/.exec(reportName)?.[0]
     const organizatsiya = meta?.parameters.find(
@@ -503,7 +529,11 @@ export const ReportAltPage = () => {
       showToast('warning', t('reportalt.exportXmlUnavailable'))
       return
     }
-    void vygruzkaFno(kodFormy, organizatsiyaId, periodValue.from)
+    void vygruzkaFno(kodFormy, organizatsiyaId, periodValue.from, {
+      vidDeklaratsii: stroka(values.VidDeklaratsii),
+      nomerUvedomleniya: stroka(values.NomerUvedomleniya),
+      dataUvedomleniya: stroka(values.DataUvedomleniya),
+    })
       .then((res) => {
         const ssylka = document.createElement('a')
         ssylka.href = URL.createObjectURL(res.data)
@@ -745,6 +775,31 @@ export const ReportAltPage = () => {
               variant="outlined"
               size="medium"
               sx={{ height: 48, flexShrink: 0 }}
+              disabled={blankDokument == null}
+              onClick={() => {
+                ochistitStranitsy((_, indeks) => indeks === aktivnayaStranitsa)
+              }}
+            >
+              {t('reportalt.clearPage')}
+            </Button>
+            {estPrilozhenie20005 && (
+              <Button
+                variant="outlined"
+                size="medium"
+                sx={{ height: 48, flexShrink: 0 }}
+                onClick={() => {
+                  ochistitStranitsy((title) =>
+                    stranitsaPrilozheniya(title, '200.05')
+                  )
+                }}
+              >
+                {t('reportalt.clearPrilozhenie20005')}
+              </Button>
+            )}
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
               onClick={() => {
                 setStrokBlanka((prev) => prev + 1)
               }}
@@ -814,6 +869,8 @@ export const ReportAltPage = () => {
                 onBlankValueChange={izmenitKletku}
                 vybrannayaOblast={vybrannayaOblast}
                 onVyborOblasti={setVybrannayaOblast}
+                aktivnayaStranitsa={aktivnayaStranitsa}
+                onVyborStranitsy={setAktivnayaStranitsa}
                 onDrilldown={(row) => {
                   if (!row.rowRef || row.rowRef.domain === 'ACCOUNT_PLAN')
                     return
@@ -855,6 +912,8 @@ export const ReportAltPage = () => {
             onBlankValueChange={izmenitKletku}
             vybrannayaOblast={vybrannayaOblast}
             onVyborOblasti={setVybrannayaOblast}
+            aktivnayaStranitsa={aktivnayaStranitsa}
+            onVyborStranitsy={setAktivnayaStranitsa}
           />
         </div>
       ) : (

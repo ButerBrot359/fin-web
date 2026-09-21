@@ -32,6 +32,8 @@ interface TableToolbarProps {
   commands?: TableCommandDescriptor[]
   search: TableSearchApi
   selectedRowId?: string | null
+  /** rowId всех выделенных строк — серверная «Удалить» снимает их разом, как в 1С. */
+  selectedRowIds?: string[]
 }
 
 export const TableToolbar = ({
@@ -51,6 +53,7 @@ export const TableToolbar = ({
   commands = [],
   search,
   selectedRowId = null,
+  selectedRowIds = [],
 }: TableToolbarProps) => {
   const { t, i18n } = useTranslation()
   const dispatch = useSduiDispatch()
@@ -65,6 +68,10 @@ export const TableToolbar = ({
     ROW_SCOPED_COMMANDS.some((prefix) => cmd.command.startsWith(prefix + ':'))
 
   const runCommand = (cmd: TableCommandDescriptor) => {
+    // Выделено несколько строк — «Удалить» уходит списком rowIds: сервер снимает их одной
+    // командой, а не N запросами с пересчётом итогов на каждый (порт поведения таблицы 1С).
+    const mnozhestvennoeUdalenie =
+      cmd.command.startsWith('table.deleteRow:') && selectedRowIds.length > 1
     void dispatch(
       {
         type: 'COMMAND',
@@ -72,7 +79,11 @@ export const TableToolbar = ({
         // rowId нужен построчным командам (table.copyRow); сервер читает его
         // через extractRowId только у них, прочие игнорируют (SCRUM-332 §1).
         // Спред, а не value:undefined — иначе ключ value ломает прежние тесты.
-        ...(selectedRowId ? { value: { rowId: selectedRowId } } : {}),
+        ...(mnozhestvennoeUdalenie
+          ? { value: { rowIds: selectedRowIds } }
+          : selectedRowId
+            ? { value: { rowId: selectedRowId } }
+            : {}),
       },
       cmd.behavior
     )

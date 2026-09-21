@@ -25,6 +25,11 @@ export interface UseTableRowCommandsParams {
   visibleRows: TableRow[]
   /** rowId выбранной строки; null — выбора нет. */
   selectedRowId: string | null
+  /**
+   * rowId ВСЕХ выделенных строк (Ctrl/Shift, Ctrl+A) в порядке видимого набора. Пусто —
+   * выделения нет и команда работает по текущей строке, как раньше.
+   */
+  selectedRowIds?: string[]
   /** Индекс выбранной строки в ВИДИМОМ наборе; -1 — выбора нет. */
   selectedVisibleIndex: number
   /**
@@ -34,8 +39,12 @@ export interface UseTableRowCommandsParams {
   onAdd: () => void
   /** Снять выделение после удаления строки. */
   clearSelection: () => void
-  /** Выделить строку по rowId — переход стрелками ↑/↓ (поведение таблицы 1С). */
+  /** Выделить строку по rowId — переход стрелками (поведение таблицы 1С). */
   selectRow?: (rowId: string) => void
+  /** Выделить все видимые строки (Ctrl+A). */
+  selectAll?: () => void
+  /** Расширить выделение до строки с данным видимым индексом (Shift и стрелки). */
+  extendSelection?: (visibleIndex: number) => void
   /**
    * Перевод ВИДИМОГО индекса в индекс полного массива для moveRow
    * (SCRUM-282 C1): editable считает его по rowId (отбор строк разрежает
@@ -82,10 +91,13 @@ export function useTableRowCommands({
   columns,
   visibleRows,
   selectedRowId,
+  selectedRowIds = [],
   selectedVisibleIndex,
   onAdd,
   clearSelection,
   selectRow,
+  selectAll,
+  extendSelection,
   globalIndexOf,
   onMoved,
   search,
@@ -96,10 +108,30 @@ export function useTableRowCommands({
   // индекс указывает на позицию в отфильтрованном visibleRows и не годится
   // для sync.deleteRow.
   const handleRemove = () => {
-    if (selectedRowId === null) return
-    const globalIndex = sync.rows.findIndex((r) => r.rowId === selectedRowId)
-    if (globalIndex >= 0) sync.deleteRow(globalIndex)
+    const udalyaemye = udalyaemyeRowIds()
+    if (udalyaemye.length === 0) return
+    // По убыванию индекса: sync.deleteRow принимает позицию в полном массиве, и удаление
+    // сверху вниз сдвигало бы позиции ещё не удалённых строк.
+    const indeksy = udalyaemye
+      .map((rowId) => sync.rows.findIndex((r) => r.rowId === rowId))
+      .filter((index) => index >= 0)
+      .sort((a, b) => b - a)
+    indeksy.forEach((index) => {
+      sync.deleteRow(index)
+    })
+    if (indeksy.length > 1) {
+      // Выделенного диапазона больше нет — текущей строки в 1С после такого удаления тоже
+      // нет, пока пользователь не выберет её сам.
+      clearSelection()
+      return
+    }
     vydelitPosleUdaleniya()
+  }
+
+  /** Что удаляем: выделенный набор, а без него — текущую строку (прежнее поведение). */
+  const udalyaemyeRowIds = (): string[] => {
+    if (selectedRowIds.length > 0) return selectedRowIds
+    return selectedRowId === null ? [] : [selectedRowId]
   }
 
   /**
@@ -167,7 +199,7 @@ export function useTableRowCommands({
 
   // Стрелки водят по строкам: без выделения начинаем с первой (↓) или последней (↑) —
   // так же ведёт себя таблица 1С, когда текущей строки ещё нет.
-  const perehod = (shag: -1 | 1) => {
+  const perehod = (shag: -1 | 1, rasshirit = false) => {
     if (selectRow === undefined || visibleRows.length === 0) return
     const tekushchiy = selectedVisibleIndex
     const sleduyushchiy =
@@ -177,6 +209,7 @@ export function useTableRowCommands({
           : visibleRows.length - 1
         : Math.min(Math.max(tekushchiy + shag, 0), visibleRows.length - 1)
     selectRow(visibleRows[sleduyushchiy].rowId)
+    if (rasshirit) extendSelection?.(sleduyushchiy)
   }
 
   const handleKeyDown = createTableHotkeysHandler({
@@ -193,12 +226,19 @@ export function useTableRowCommands({
     onMoveDown: handleMoveDown,
     onFocusSearch: search.focusInput,
     onClearSearch: search.clear,
+    onSelectAll: selectAll,
+    onExtendPrev: () => {
+      perehod(-1, true)
+    },
+    onExtendNext: () => {
+      perehod(1, true)
+    },
   })
 
   const canMoveUp = selectedVisibleIndex > 0
   const canMoveDown =
     selectedVisibleIndex >= 0 && selectedVisibleIndex < visibleRows.length - 1
-  const canRemove = selectedRowId !== null
+  const canRemove = selectedRowId !== null || selectedRowIds.length > 0
   const canCopy = selectedRowId !== null
 
   return {

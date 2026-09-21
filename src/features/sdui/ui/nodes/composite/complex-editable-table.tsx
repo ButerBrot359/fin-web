@@ -7,6 +7,7 @@ import { useTableSync } from '../../../lib/hooks/use-table-sync'
 import { useTableSearch } from '../../../lib/hooks/use-table-search'
 import { useSearchScroll } from '../../../lib/hooks/use-search-scroll'
 import { useTableRowCommands } from '../../../lib/hooks/use-table-row-commands'
+import { useTableMultiSelection } from '../../../lib/hooks/use-table-multi-selection'
 import { useRowSelectionIdentity } from '../../../lib/hooks/use-row-selection-identity'
 import { useMasterDetailRows } from '../../../lib/hooks/use-master-detail-rows'
 import { useAutoAdvance } from '../../../lib/hooks/use-auto-advance'
@@ -193,8 +194,21 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // добавляется сверху и выделение не трогает.
   const openRow = useRowOpen(node)
 
-  const handleRowClick = (rowId: string) => {
+  // Выделение НЕСКОЛЬКИХ строк (Ctrl/Shift/Ctrl+A) поверх текущей строки — как в 1С.
+  const vybor = useTableMultiSelection(visibleRows)
+
+  // Выделение живёт только при текущей строке: её снимают и снаружи (подмена записи под тем
+  // же rowId, SCRUM-291 §0.5), и тогда «Удалить» обязана погаснуть вместе с ней.
+  const vydelennyeRowIds =
+    selection.selectedRowId === null ? [] : vybor.vydelennyeRowIds
+
+  const handleRowClick = (
+    rowId: string,
+    visibleIndex: number,
+    mods: { ctrl: boolean; shift: boolean }
+  ) => {
     selection.selectRow(rowId)
+    vybor.klik(rowId, visibleIndex, mods)
     activateRow(rowId)
   }
 
@@ -212,10 +226,19 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     columns: flatColumns,
     visibleRows,
     selectedRowId: selection.selectedRowId,
+    selectedRowIds: vydelennyeRowIds,
     selectedVisibleIndex: selection.selectedVisibleIndex,
     onAdd: handleAddWithAutoAdvance,
-    clearSelection: selection.clearSelection,
-    selectRow: selection.selectRow,
+    clearSelection: () => {
+      selection.clearSelection()
+      vybor.tolkoOdna(null)
+    },
+    selectRow: (rowId) => {
+      selection.selectRow(rowId)
+      vybor.tolkoOdna(rowId)
+    },
+    selectAll: vybor.vydelitVse,
+    extendSelection: vybor.rasshirit,
     // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail
     // в тулбаре) — там visibleRows === sync.rows, поэтому видимый индекс
     // совпадает с глобальным и move корректен.
@@ -261,6 +284,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           commands={tableCommands}
           search={search}
           selectedRowId={selection.selectedRowId}
+          selectedRowIds={vydelennyeRowIds}
         />
       </div>
       {/* basis auto, а не 0: контейнер растёт до высоты колонки, но никогда не
@@ -317,9 +341,15 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     <TableBodyRow
                       key={row.id}
                       row={row}
-                      selected={row.id === selection.selectedRowId}
+                      selected={
+                        row.id === selection.selectedRowId ||
+                        vybor.vydelennye.has(row.original.rowId)
+                      }
                       onRowClick={(event) => {
-                        handleRowClick(row.id)
+                        handleRowClick(row.original.rowId, row.index, {
+                          ctrl: event.ctrlKey || event.metaKey,
+                          shift: event.shiftKey,
+                        })
                         // Ячейка-ссылка (props.cellHyperlink, порт CellHyperlink 1С)
                         // открывается ОДНИМ кликом — тем же событием, что двойной
                         // клик по строке, только жест другой.

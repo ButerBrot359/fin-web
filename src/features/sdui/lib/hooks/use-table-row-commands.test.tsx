@@ -56,6 +56,39 @@ describe('useTableRowCommands', () => {
   })
 
   describe('remove', () => {
+    it('выделено несколько строк — удаляются все, индексами по убыванию', () => {
+      const full = rows('a', 'b', 'c', 'd')
+      const { result, sync, params } = setup({
+        sync: makeSync(full),
+        visibleRows: full,
+        selectedRowId: 'b',
+        selectedRowIds: ['b', 'd'],
+        selectedVisibleIndex: 1,
+      })
+
+      result.current.handleRemove()
+
+      expect(sync.deleteRow.mock.calls.map((c) => c[0] as number)).toEqual([
+        3, 1,
+      ])
+      expect(params.clearSelection).toHaveBeenCalled()
+    })
+
+    it('выделения нет — удаляется текущая строка, как раньше', () => {
+      const full = rows('a', 'b', 'c')
+      const { result, sync } = setup({
+        sync: makeSync(full),
+        visibleRows: full,
+        selectedRowId: 'b',
+        selectedRowIds: [],
+        selectedVisibleIndex: 1,
+      })
+
+      result.current.handleRemove()
+
+      expect(sync.deleteRow.mock.calls.map((c) => c[0] as number)).toEqual([1])
+    })
+
     it('удаляет по rowId из ПОЛНОГО массива (SCRUM-282 C1) и снимает выделение', () => {
       const full = rows('a', 'b', 'c')
       const { result, sync, params } = setup({

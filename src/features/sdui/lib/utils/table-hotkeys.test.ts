@@ -16,6 +16,9 @@ function makeHandlers(): TableHotkeyHandlers {
     onSelectNext: vi.fn(),
     onFocusSearch: vi.fn(),
     onClearSearch: vi.fn(),
+    onSelectAll: vi.fn(),
+    onExtendPrev: vi.fn(),
+    onExtendNext: vi.fn(),
   }
 }
 
@@ -156,5 +159,39 @@ describe('createTableHotkeysHandler (SCRUM-302)', () => {
 
     expect(h.onMoveDown).toHaveBeenCalledTimes(1)
     expect(h.onSelectNext).not.toHaveBeenCalled()
+  })
+})
+
+describe('выделение нескольких строк (порт таблицы 1С)', () => {
+  it('Ctrl+A выделяет все строки таблицы', () => {
+    const handlers = makeHandlers()
+    const e = keyEvent({ key: 'a', ctrlKey: true })
+    createTableHotkeysHandler(handlers)(e as never)
+    expect(handlers.onSelectAll).toHaveBeenCalledTimes(1)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).toHaveBeenCalled()
+  })
+
+  it('Ctrl+A внутри ячейки остаётся выделением текста', () => {
+    const handlers = makeHandlers()
+    const e = keyEvent({ key: 'a', ctrlKey: true, targetTag: 'input' })
+    createTableHotkeysHandler(handlers)(e as never)
+    expect(handlers.onSelectAll).not.toHaveBeenCalled()
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).not.toHaveBeenCalled()
+  })
+
+  it('Shift и стрелки расширяют выделение, а не просто переводят строку', () => {
+    const handlers = makeHandlers()
+    createTableHotkeysHandler(handlers)(
+      keyEvent({ key: 'ArrowDown', shiftKey: true }) as never
+    )
+    createTableHotkeysHandler(handlers)(
+      keyEvent({ key: 'ArrowUp', shiftKey: true }) as never
+    )
+    expect(handlers.onExtendNext).toHaveBeenCalledTimes(1)
+    expect(handlers.onExtendPrev).toHaveBeenCalledTimes(1)
+    expect(handlers.onSelectNext).not.toHaveBeenCalled()
+    expect(handlers.onSelectPrev).not.toHaveBeenCalled()
   })
 })

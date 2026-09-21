@@ -14,9 +14,15 @@ export function useTabMeta(title: string, tabId?: string) {
   // Переход «новый документ → записанный» (/new → /:id) при этом не ломается:
   // id вкладки не меняется, меняется её path (updateTabPath), и поиск по path
   // возвращает ту же вкладку.
-  const resolvedId = useWorkspaceTabsStore(
-    (s) => tabId ?? s.tabs.find((t) => t.path === pathname)?.id ?? pathname
-  )
+  // SCRUM-360 v6 §6.3: у «Создать» и «Создать группу» path совпадает — при
+  // неоднозначности предпочитаем АКТИВНУЮ вкладку, чтобы заголовок не уехал
+  // в соседнюю create-вкладку того же типа.
+  const resolvedId = useWorkspaceTabsStore((s) => {
+    if (tabId) return tabId
+    const active = s.tabs.find((t) => t.id === s.activeTabId)
+    if (active?.path === pathname) return active.id
+    return s.tabs.find((t) => t.path === pathname)?.id ?? pathname
+  })
 
   useEffect(() => {
     if (resolvedId && title) {

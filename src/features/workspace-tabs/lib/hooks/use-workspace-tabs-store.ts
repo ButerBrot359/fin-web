@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
+import { groupCreateRoute } from '@/shared/lib/router/group-create-route'
+
 import { MAX_TABS } from '../consts/workspace-tabs-config'
 import { tabEntityKey } from '../utils/tab-entity-key'
 import type { WorkspaceTab, TabPageType } from '../../types/workspace-tab'
@@ -84,12 +86,17 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
 
         // SCRUM-386 фикс 2: сущность может быть открыта под другим семейством
         // URL (модульный vs плоский) — вкладку с тем же сущностным ключом не
-        // дублируем, а активируем. Вызывающая сторона по несовпадению id и
-        // path редиректит URL на путь существующей вкладки.
-        const key = tabEntityKey(path)
+        // дублируем, а активируем. Вызывающая сторона по несовпадению path
+        // редиректит URL на путь существующей вкладки.
+        // SCRUM-360 v6 §6.3: id вкладки — маршрутный ключ с маркером isGroup,
+        // «Создать» и «Создать группу» одного типа живут в разных вкладках.
+        const id = groupCreateRoute(path, search)
+        const key = tabEntityKey(path, search)
         const existing =
-          tabs.find((t) => t.path === path) ??
-          (key ? tabs.find((t) => tabEntityKey(t.path) === key) : undefined)
+          tabs.find((t) => t.id === id) ??
+          (key
+            ? tabs.find((t) => tabEntityKey(t.path, t.search) === key)
+            : undefined)
         if (existing) {
           set({
             activeTabId: existing.id,
@@ -100,8 +107,6 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
           })
           return existing.id
         }
-
-        const id = path
 
         const tab: WorkspaceTab = {
           id,
@@ -221,23 +226,25 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
       },
 
       updateTabPath: (tabId, path, search) => {
+        const newId = groupCreateRoute(path, search)
         set((state) => ({
           tabs: updateTab(state.tabs, tabId, (t) => ({
             ...t,
-            id: path,
+            id: newId,
             path,
             search,
           })),
-          activeTabId: state.activeTabId === tabId ? path : state.activeTabId,
-          // Идентификатор вкладки — это её путь, и он здесь меняется: журнал активаций и
-          // ссылки-опенеры обязаны переехать на новый id, иначе закрытие уводит в никуда.
+          activeTabId: state.activeTabId === tabId ? newId : state.activeTabId,
+          // Идентификатор вкладки — это её маршрутный ключ, и он здесь меняется: журнал
+          // активаций и ссылки-опенеры обязаны переехать на новый id, иначе закрытие
+          // уводит в никуда.
           activationOrder: state.activationOrder.map((id) =>
-            id === tabId ? path : id
+            id === tabId ? newId : id
           ),
         }))
         set((state) => ({
           tabs: state.tabs.map((t) =>
-            t.openerTabId === tabId ? { ...t, openerTabId: path } : t
+            t.openerTabId === tabId ? { ...t, openerTabId: newId } : t
           ),
         }))
       },

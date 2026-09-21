@@ -27,6 +27,10 @@ import { readListActions } from '../../../lib/utils/read-list-actions'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { useListInfiniteRows } from '../../../lib/hooks/use-list-infinite-rows'
 import { useListTrail } from '../../../lib/hooks/use-list-trail'
+import {
+  buildToggleExpand,
+  isTreeDisplayMode,
+} from '../../../lib/utils/list-tree-mode'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useSelectionStore } from '../../../lib/stores/selection-store'
 
@@ -41,6 +45,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
 
   const source = node.props?.source as ListSource | undefined
   const searchable = (node.props?.searchable as boolean | undefined) ?? false
+  const isTree = isTreeDisplayMode(node)
   // SCRUM-368: размер страницы задаёт бэк (props.pagination.pageSize);
   // старый фронтовый хардкод 25 — фолбэк для ответов без контракта
   const pageSize = readPagination(node)?.pageSize ?? PAGE_SIZE
@@ -59,6 +64,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     clearAllFiltersCommand,
     periodCommand,
     exportCommand,
+    expandAction,
   } = readListActions(node)
 
   const sortState = node.props?.sortState as ListSortState | undefined
@@ -145,18 +151,29 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     })
   }
 
+  const onToggleExpand = buildToggleExpand(
+    isTree,
+    expandAction,
+    dispatch,
+    node.id
+  )
+
   const columns = useMemo<ColumnDef<ListRow>[]>(
     () =>
       buildListColumns({
         columnNodes,
-        sortState,
-        sortCommand,
+        // §8.1: в дереве нет сортировки кликом по заголовку — состояние и
+        // команду сортировки не пробрасываем (стрелка и клик не рендерятся).
+        sortState: isTree ? undefined : sortState,
+        sortCommand: isTree ? undefined : sortCommand,
         filterCommand,
         filterOpLabels,
         dispatch,
         nodeId: node.id,
         sortInFlightRef,
+        onToggleExpand,
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       columnNodes,
       sortState,
@@ -165,6 +182,8 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
       dispatch,
       node.id,
       filterOpLabels,
+      isTree,
+      expandAction,
     ]
   )
 
@@ -236,10 +255,14 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
         />
       )}
 
-      <ListBreadcrumbs
-        trail={isSearchMode ? [] : trail}
-        onNavigate={navigateToDepth}
-      />
+      {/* §8.7 п.2: в дереве панель крошек не рендерим — TOOLBAR крошек с
+          бэка и не придёт, а клиентский trail принадлежит drill-down. */}
+      {!isTree && (
+        <ListBreadcrumbs
+          trail={isSearchMode ? [] : trail}
+          onNavigate={navigateToDepth}
+        />
+      )}
 
       <ListTable
         table={table}

@@ -4,6 +4,7 @@ import i18n from 'i18next'
 
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { subscribeViewSettingsChanged } from '@/shared/lib/design-settings/design-settings-events'
+import { groupCreateRoute } from '@/shared/lib/router/group-create-route'
 
 import {
   clearDiscardDraftClose,
@@ -70,6 +71,12 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   onTab,
 }) => {
   const location = useLocation()
+  // SCRUM-360 v6 §6.3: ключ экрана/сессии — pathname + маркер isGroup.
+  // «Создать» и «Создать группу» делят pathname, но это разные формы: смена
+  // маркера обязана переоткрыть сессию (CLOSE → OPEN), а кэши вкладок и
+  // dirty-колбэки — различать их. Прочие query-параметры (в т.ч. ?ls= дерева,
+  // который сервер меняет REPLACE_URL-эффектом) в ключ не входят.
+  const screenRoute = groupCreateRoute(location.pathname, location.search)
   const tree = useTreeStore((s) => s.root)
   const reset = useTreeStore((s) => s.reset)
   const dispatch = useSduiDispatch()
@@ -87,11 +94,11 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   }, [title, onTitleChange])
 
   useEffect(() => {
-    onDirtyChange?.(location.pathname, dirty)
-  }, [location.pathname, dirty, onDirtyChange])
+    onDirtyChange?.(screenRoute, dirty)
+  }, [screenRoute, dirty, onDirtyChange])
 
   useEffect(() => {
-    const route = location.pathname
+    const route = screenRoute
     // Стейл-интент discardDraft (например, от закрытия одноимённой легаси-
     // вкладки) не должен дожить до нашего CLOSE — снимаем на монтировании.
     clearDiscardDraftClose(route)
@@ -164,7 +171,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       useValidationReportStore.getState().clear(route)
       reset()
     }
-  }, [location.pathname])
+  }, [screenRoute])
 
   useEffect(() => {
     const handler = () => {
@@ -185,14 +192,14 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     const handler = () => {
       void reopenFormForLanguageChange({
         dispatch,
-        route: location.pathname,
+        route: screenRoute,
       })
     }
     i18n.on('languageChanged', handler)
     return () => {
       i18n.off('languageChanged', handler)
     }
-  }, [location.pathname, dispatch])
+  }, [screenRoute, dispatch])
 
   // Настройки вида изменились (ИИ-помощник или диалог «Изменить форму»,
   // конструктор дизайна Ф2): патч накладывает бэк, поэтому нужен re-OPEN —
@@ -204,13 +211,13 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       if (useViewStateStore.getState().dirty) return
       void reopenFormForLanguageChange({
         dispatch,
-        route: location.pathname,
+        route: screenRoute,
       })
     })
-  }, [location.pathname, dispatch])
+  }, [screenRoute, dispatch])
 
   useEffect(() => {
-    const route = location.pathname
+    const route = screenRoute
     const pending = consumePendingAction?.(route)
     if (pending === 'save-and-close') {
       // Имя команды и её поведение — из серверного дескриптора, не хардкод (§4.5)
@@ -224,7 +231,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
         onSavedAndClosed?.(route)
       })
     }
-  }, [location.pathname, dispatch, consumePendingAction, onSavedAndClosed])
+  }, [screenRoute, dispatch, consumePendingAction, onSavedAndClosed])
 
   // Стабильность контекста — суть фикса M1: пересоздание только при смене tree/dirty,
   // не при каждом вводе символа.
@@ -255,12 +262,12 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       setScreenKey: useTreeStore.getState().setScreenKey,
       // closeAfter=true в root-сессии закрывает рабочую вкладку (без навигации)
       closeAfter: (didNavigate?: boolean) =>
-        onCloseAfter?.(location.pathname, didNavigate),
+        onCloseAfter?.(screenRoute, didNavigate),
       setOnDirtyClose: useTreeStore.getState().setOnDirtyClose,
       applyTreePatches: useTreeStore.getState().applyPatches,
       clearAllErrors: useTreeStore.getState().clearAllErrors,
     }),
-    [tree, dirty, onCloseAfter, location.pathname]
+    [tree, dirty, onCloseAfter, screenRoute]
   )
 
   if (!tree) return <PageSkeleton />

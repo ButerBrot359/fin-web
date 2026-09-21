@@ -119,6 +119,85 @@ describe('TableToolbar: построчные команды требуют вы�
   })
 })
 
+describe('TableToolbar: команды одной группы едут кнопкой-подменю (эталон «Заполнить»)', () => {
+  const zapolnitParametry: TableCommandDescriptor = {
+    command: 'table.zapolnitParametryTekushchikh:OsnovnyeSredstva',
+    label: 'Заполнить данные текущих ОС',
+    enabled: true,
+    disabledReason: null,
+    behavior: {
+      flushPendingTables: true,
+      resetsDirty: false,
+      closeAfter: false,
+    },
+    group: 'zapolnit',
+    groupLabel: 'Заполнить',
+  }
+  const raspredelit: TableCommandDescriptor = {
+    command: 'table.raspredelitStoimost:OsnovnyeSredstva',
+    label: 'Распределить сумму модернизации',
+    enabled: true,
+    disabledReason: null,
+    behavior: {
+      flushPendingTables: true,
+      resetsDirty: false,
+      closeAfter: false,
+    },
+    group: 'zapolnit',
+    groupLabel: 'Заполнить',
+  }
+
+  beforeEach(() => {
+    cleanup()
+    mockDispatch.mockClear()
+  })
+
+  it('вместо двух кнопок показывает одну «Заполнить»', () => {
+    render(
+      <TableToolbar
+        {...baseProps}
+        commands={[zapolnitParametry, raspredelit]}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Заполнить' })).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: 'Распределить сумму модернизации' })
+    ).toBeNull()
+  })
+
+  it('пункты подменю видны после клика и отправляют свою команду', () => {
+    render(
+      <TableToolbar
+        {...baseProps}
+        commands={[zapolnitParametry, raspredelit]}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Заполнить' }))
+    fireEvent.click(
+      screen.getByRole('menuitem', { name: 'Распределить сумму модернизации' })
+    )
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'COMMAND',
+        command: 'table.raspredelitStoimost:OsnovnyeSredstva',
+      }),
+      raspredelit.behavior
+    )
+  })
+
+  it('команда без группы остаётся отдельной кнопкой', () => {
+    render(
+      <TableToolbar {...baseProps} commands={[zapolnitParametry, podbor]} />
+    )
+
+    expect(screen.getByRole('button', { name: 'Подбор' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Заполнить' })).toBeTruthy()
+  })
+})
+
 describe('TableToolbar: доменные кнопки из tableCommands (SCRUM-302)', () => {
   beforeEach(() => {
     cleanup()

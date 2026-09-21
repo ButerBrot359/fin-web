@@ -859,7 +859,7 @@ describe('ListNode — 2c-a: воронка колоночного фильтр�
     fireEvent.click(
       within(statusHeader).getByRole('button', { name: 'table.filter' })
     )
-    fireEvent.change(screen.getByTestId('filter-enum-select'), {
+    fireEvent.change(screen.getByTestId('ref-select'), {
       target: { value: 'B' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'table.filterApply' }))

@@ -141,6 +141,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     dispatch,
     nodeId: node.id,
     sortInFlightRef,
+    search: debouncedSearch,
   })
 
   const sizing = useSduiColumnSizing(node)

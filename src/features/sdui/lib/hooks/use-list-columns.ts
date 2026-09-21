@@ -21,6 +21,8 @@ interface UseListColumnsArgs {
   dispatch: ReturnType<typeof useSduiDispatch>
   nodeId: string
   sortInFlightRef: RefObject<boolean>
+  /** Строка поиска — подсвечивается в ячейках (обращение 21.09.2026). */
+  search?: string
 }
 
 /**
@@ -39,6 +41,7 @@ export function useListColumns({
   dispatch,
   nodeId,
   sortInFlightRef,
+  search,
 }: UseListColumnsArgs): ColumnDef<ListRow>[] {
   return useMemo<ColumnDef<ListRow>[]>(
     () =>
@@ -51,6 +54,7 @@ export function useListColumns({
         dispatch,
         nodeId,
         sortInFlightRef,
+        search,
         onToggleExpand: buildToggleExpand(
           isTree,
           expandAction,
@@ -69,6 +73,7 @@ export function useListColumns({
       filterOpLabels,
       isTree,
       expandAction,
+      search,
     ]
   )
 }

@@ -108,3 +108,56 @@ describe('activateOrCreate — дедуп по сущностному ключу
     expect(useWorkspaceTabsStore.getState().tabs).toHaveLength(2)
   })
 })
+
+// SCRUM-360 v6 §6.3: «Создать» и «Создать группу» делят pathname
+// (/dictionaries/X/new), различаясь только ?isGroup — это разные вкладки.
+describe('activateOrCreate — «Создать» vs «Создать группу» (SCRUM-360 v6 §6.3)', () => {
+  it('создание группы НЕ переиспользует вкладку создания элемента', () => {
+    const s = useWorkspaceTabsStore.getState()
+    s.activateOrCreate('/dictionaries/Banki/new', '', 'dictionary-entry')
+    const groupTabId = useWorkspaceTabsStore
+      .getState()
+      .activateOrCreate(
+        '/dictionaries/Banki/new',
+        '?isGroup=true&parentId=9',
+        'dictionary-entry'
+      )
+
+    const state = useWorkspaceTabsStore.getState()
+    expect(state.tabs).toHaveLength(2)
+    expect(groupTabId).toBe('/dictionaries/Banki/new?isGroup=true')
+    // Навигация по клику идёт path + search — у групповой вкладки параметры целы
+    const groupTab = state.tabs.find((t) => t.id === groupTabId)
+    expect(groupTab).toMatchObject({
+      path: '/dictionaries/Banki/new',
+      search: '?isGroup=true&parentId=9',
+    })
+  })
+
+  it('повторное «Создать группу» активирует существующую групповую вкладку', () => {
+    const s = useWorkspaceTabsStore.getState()
+    s.activateOrCreate(
+      '/dictionaries/Banki/new',
+      '?isGroup=true&parentId=9',
+      'dictionary-entry'
+    )
+    useWorkspaceTabsStore
+      .getState()
+      .activateOrCreate('/dictionaries/Banki/new', '', 'dictionary-entry')
+    const again = useWorkspaceTabsStore
+      .getState()
+      .activateOrCreate(
+        '/dictionaries/Banki/new',
+        '?isGroup=true&parentId=12',
+        'dictionary-entry'
+      )
+
+    const state = useWorkspaceTabsStore.getState()
+    expect(state.tabs).toHaveLength(2)
+    expect(again).toBe('/dictionaries/Banki/new?isGroup=true')
+    // Родитель мог смениться — search групповой вкладки обновляется
+    expect(state.tabs.find((t) => t.id === again)?.search).toBe(
+      '?isGroup=true&parentId=12'
+    )
+  })
+})

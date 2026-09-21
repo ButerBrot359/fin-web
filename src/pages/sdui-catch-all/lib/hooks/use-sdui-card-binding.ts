@@ -19,6 +19,7 @@ import {
 } from '@/features/workspace-tabs'
 
 import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
+import { groupCreateRoute } from '@/shared/lib/router/group-create-route'
 
 import { useUnsavedChangesDialog } from '@/pages/documents/documents-entry/lib/hooks/use-unsaved-changes-dialog'
 
@@ -48,6 +49,10 @@ export function useSduiCardBinding() {
   const navigate = useNavigate()
   const dispatch = useSduiDispatch()
   const queryClient = useQueryClient()
+  // SCRUM-360 v6 §6.3: маршрутный ключ экрана с маркером isGroup — тот же,
+  // что у id вкладки и route-колбэков SduiScreen («Создать»/«Создать группу»
+  // делят pathname, но живут в разных вкладках).
+  const screenRoute = groupCreateRoute(location.pathname, location.search)
 
   useEffect(() => {
     return () => {
@@ -78,11 +83,11 @@ export function useSduiCardBinding() {
   // до эффектов, поэтому чужое имя в стор вкладок не уходит. Пустой заголовок
   // useTabMeta не пишет, так что имя уже названной вкладки этим не теряется.
   const [titleState, setTitleState] = useState({
-    route: location.pathname,
+    route: screenRoute,
     title: '',
   })
-  if (titleState.route !== location.pathname) {
-    setTitleState({ route: location.pathname, title: '' })
+  if (titleState.route !== screenRoute) {
+    setTitleState({ route: screenRoute, title: '' })
   }
   const setTabTitle = useCallback((title: string) => {
     setTitleState((prev) => ({ route: prev.route, title }))
@@ -90,8 +95,8 @@ export function useSduiCardBinding() {
   useTabMeta(titleState.title)
 
   const closeCurrentTab = () => {
-    useFormCacheStore.getState().removeTab(location.pathname)
-    useWorkspaceTabsStore.getState().closeTab(location.pathname)
+    useFormCacheStore.getState().removeTab(screenRoute)
+    useWorkspaceTabsStore.getState().closeTab(screenRoute)
   }
 
   const unsavedDialog = useUnsavedChangesDialog({
@@ -105,7 +110,7 @@ export function useSduiCardBinding() {
     },
     onDiscard: () => {
       // «Не сохранять» → ближайший CLOSE уйдёт с discardDraft=true (SCRUM-276)
-      markDiscardDraftClose(location.pathname)
+      markDiscardDraftClose(screenRoute)
       closeCurrentTab()
       navigateToNeighborTab(navigate)
     },

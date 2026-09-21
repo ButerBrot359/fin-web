@@ -586,7 +586,10 @@
     "clear": "Очистить",
     "refresh": "Обновить",
     "exportXml": "Выгрузить в XML",
-    "exportXmlUnavailable": "Выгрузка в XML для этой формы недоступна"
+    "exportXmlUnavailable": "Выгрузка в XML для этой формы недоступна",
+    "save": "Сохранить",
+    "saved": "Отчёт сохранён",
+    "saveError": "Не удалось сохранить отчёт"
   },
   "accountPlan": {
     "title": "План счетов",

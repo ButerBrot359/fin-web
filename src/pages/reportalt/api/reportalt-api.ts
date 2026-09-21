@@ -1,4 +1,5 @@
 import { apiService } from '@/shared/api/api'
+import type { ReportSpreadsheetDto } from '@/pages/reports/report-list/types/report'
 import type { ApiResponse } from '@/shared/types/api.types'
 
 import type {
@@ -44,6 +45,51 @@ export const fetchReportAltMeta = (code: string, signal?: AbortSignal) =>
       signal,
     })
     .then((res) => unwrap(res.data))
+
+/**
+ * Незаполненный бланк: GET /api/reportalt/{code}/blank.
+ *
+ * В 1С форма отчёта открывается пустым утверждённым бланком, и только «Заполнить» наполняет
+ * его данными. Отчёты без бланка отвечают пустым телом — тогда форма ведёт себя как раньше.
+ */
+export const fetchReportAltBlank = (code: string, signal?: AbortSignal) =>
+  apiService
+    .get<
+      ReportSpreadsheetDto | ApiResponse<ReportSpreadsheetDto | null> | null
+    >({
+      url: `/api/reportalt/${code}/blank`,
+      signal,
+    })
+    .then((res) => unwrap(res.data) ?? null)
+
+/** Что уходит в POST /api/reportalt/{code}/save — реквизиты сохраняемого экземпляра отчёта. */
+export interface SaveReportAltBody {
+  kodOtcheta: string
+  naimenovanie: string
+  organizatsiyaId?: number | null
+  periodOt?: string | null
+  periodDo?: string | null
+  kommentariy?: string | null
+  kazakhskiy: boolean
+  znacheniyaBlanka: Record<string, string>
+}
+
+/**
+ * Сохранение сформированного отчёта: POST /api/reportalt/{code}/save.
+ *
+ * Пишет документ «Регламентированный отчет» — из таких документов строится список сохранённой
+ * отчётности, как в 1С.
+ */
+export const saveReportAlt = (
+  code: string,
+  body: SaveReportAltBody,
+  signal?: AbortSignal
+) =>
+  apiService.post({
+    url: `/api/reportalt/${code}/save`,
+    data: body,
+    signal,
+  })
 
 export const fetchReportAltParamState = (
   code: string,

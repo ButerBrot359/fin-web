@@ -20,7 +20,7 @@ import {
   dayAriaLabel,
   monthLabel,
 } from '../../../../lib/calendar/calendar-format'
-import { collapseWeekendKinds } from '../../../../lib/calendar/collapse-weekend-kinds'
+import { filterLegendKinds } from '../../../../lib/calendar/legend-kinds'
 import { MonthGrid } from '../month-grid'
 import { YearSelector } from '../year-selector'
 import { DayKindLegend } from '../day-kind-legend'
@@ -174,12 +174,11 @@ export const ProductionCalendarNode: FC<NodeProps> = ({ node }) => {
             if (nextYear !== year) void yearChange.requestYearChange(nextYear)
           }}
         />
-        <DayKindLegend
-          dayKinds={collapseWeekendKinds(
-            dayKinds,
-            t('sdui.productionCalendar.weekendKind')
-          )}
-        />
+        {/* v13/v15 §3: легенда — фильтрованная проекция (Суббота/Воскресенье
+            только при наличии в году); меню «Изменить день» ниже получает
+            полный dayKinds. Пересчёт на каждый рендер — days приезжают патчем
+            узла после каждой команды, отдельного server state нет. */}
+        <DayKindLegend dayKinds={filterLegendKinds(dayKinds, p.days)} />
       </div>
       <ProductionCalendarToolbar
         hasSelection={selectedDate != null}

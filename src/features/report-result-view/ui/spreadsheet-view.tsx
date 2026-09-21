@@ -186,6 +186,115 @@ const SheetView = ({
   )
 }
 
+/**
+ * Дерево страниц бланка — как список страниц формы отчёта в 1С.
+ *
+ * <p>Страницы самой формы идут верхним уровнем, страницы приложений сворачиваются в узел своего
+ * приложения: у формы 200.00 это «200.01» (три страницы), «200.02» (девять), «200.03» (две) и
+ * «200.05» (семь). Плоский ряд из двух десятков кнопок читать невозможно, а в эталоне это именно
+ * дерево слева от бланка.
+ */
+const SpisokStranits = ({
+  sheets,
+  aktivnyy,
+  onVybor,
+}: {
+  sheets: ReportSpreadsheetSheetDto[]
+  aktivnyy: number
+  onVybor: (indeks: number) => void
+}) => {
+  const [svernutye, setSvernutye] = useState<Record<string, boolean>>({})
+
+  // Имя листа приложения — «200.01 стр.1»; до пробела стоит номер приложения, он и даёт узел.
+  const uzly: {
+    prilozhenie: string | null
+    stranitsy: { title: string; indeks: number }[]
+  }[] = []
+  sheets.forEach((s, indeks) => {
+    const prilozhenie = /^\d/.test(s.title) ? s.title.split(' ')[0] : null
+    const posledniy = uzly.at(-1)
+    if (prilozhenie != null && posledniy?.prilozhenie === prilozhenie) {
+      posledniy.stranitsy.push({ title: s.title, indeks })
+      return
+    }
+    uzly.push({ prilozhenie, stranitsy: [{ title: s.title, indeks }] })
+  })
+
+  const knopka = (title: string, indeks: number, vlozhennaya: boolean) => (
+    <button
+      key={indeks}
+      type="button"
+      onClick={() => {
+        onVybor(indeks)
+      }}
+      className={`w-full rounded px-2 py-1 text-left text-sm ${
+        vlozhennaya ? 'pl-6' : ''
+      } ${
+        indeks === aktivnyy
+          ? 'bg-blue-50 font-medium text-blue-700'
+          : 'text-ui-05 hover:bg-pending-gray-7'
+      }`}
+    >
+      {title}
+    </button>
+  )
+
+  return (
+    <div className="max-h-full w-56 shrink-0 overflow-auto border-r border-pending-gray-6 pr-2">
+      {uzly.map((uzel) =>
+        uzel.prilozhenie == null ? (
+          uzel.stranitsy.map((s) => knopka(s.title, s.indeks, false))
+        ) : (
+          <Prilozhenie
+            key={uzel.prilozhenie}
+            nomer={uzel.prilozhenie}
+            stranitsy={uzel.stranitsy}
+            svernuto={svernutye[uzel.prilozhenie] ?? false}
+            onPereklyuchit={() => {
+              const nomer = uzel.prilozhenie!
+              setSvernutye((prev) => ({ ...prev, [nomer]: !prev[nomer] }))
+            }}
+            knopka={knopka}
+          />
+        )
+      )}
+    </div>
+  )
+}
+
+/** Узел приложения в дереве страниц: заголовок со стрелкой и вложенные страницы. */
+const Prilozhenie = ({
+  nomer,
+  stranitsy,
+  svernuto,
+  onPereklyuchit,
+  knopka,
+}: {
+  nomer: string
+  stranitsy: { title: string; indeks: number }[]
+  svernuto: boolean
+  onPereklyuchit: () => void
+  knopka: (
+    title: string,
+    indeks: number,
+    vlozhennaya: boolean
+  ) => React.ReactNode
+}) => (
+  <div>
+    <button
+      type="button"
+      onClick={onPereklyuchit}
+      className="w-full rounded px-2 py-1 text-left text-sm font-medium text-ui-05 hover:bg-pending-gray-7"
+    >
+      {svernuto ? '▸' : '▾'} Приложение {nomer}
+    </button>
+    {!svernuto &&
+      stranitsy.map((s) =>
+        knopka(s.title.replace(`${nomer} `, ''), s.indeks, true)
+      )}
+  </div>
+)
+
 export const SpreadsheetView = ({
   spreadsheet,
   blankValues,
@@ -196,32 +305,21 @@ export const SpreadsheetView = ({
   if (sheets.length === 0) return null
   const sheet = sheets[Math.min(aktivnyy, sheets.length - 1)]
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex min-h-0 gap-3">
       {sheets.length > 1 && (
-        <div className="flex flex-wrap gap-1">
-          {sheets.map((s, i) => (
-            <button
-              key={s.code}
-              type="button"
-              onClick={() => {
-                setAktivnyy(i)
-              }}
-              className={`rounded border px-3 py-1 text-sm ${
-                i === aktivnyy
-                  ? 'border-blue-600 bg-blue-50 text-blue-700'
-                  : 'border-pending-gray-6 bg-white'
-              }`}
-            >
-              {s.title}
-            </button>
-          ))}
-        </div>
+        <SpisokStranits
+          sheets={sheets}
+          aktivnyy={aktivnyy}
+          onVybor={setAktivnyy}
+        />
       )}
-      <SheetView
-        sheet={sheet}
-        blankValues={blankValues}
-        onBlankValueChange={onBlankValueChange}
-      />
+      <div className="min-w-0 flex-1 overflow-auto">
+        <SheetView
+          sheet={sheet}
+          blankValues={blankValues}
+          onBlankValueChange={onBlankValueChange}
+        />
+      </div>
     </div>
   )
 }

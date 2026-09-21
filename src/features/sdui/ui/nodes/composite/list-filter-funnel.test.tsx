@@ -372,7 +372,7 @@ describe('ListFilterFunnel', () => {
       />
     )
     openPopover()
-    expect(screen.getByTestId('filter-op-select').value).toBe('contains')
+    expect(screen.getByTestId('filter-op-select')).toHaveValue('contains')
   })
 
   it('без filterDefaultOp (старый бэк) — прежний фолбэк на filterOps[0]', () => {
@@ -387,7 +387,7 @@ describe('ListFilterFunnel', () => {
       />
     )
     openPopover()
-    expect(screen.getByTestId('filter-op-select').value).toBe('eq')
+    expect(screen.getByTestId('filter-op-select')).toHaveValue('eq')
   })
 
   it('переоткрытие поповера сбрасывает оператор к предвыбранному и очищает значение (§2.3 п.3)', () => {
@@ -415,7 +415,7 @@ describe('ListFilterFunnel', () => {
       key: 'Escape',
     })
     openPopover()
-    expect(screen.getByTestId('filter-op-select').value).toBe('contains')
-    expect(screen.getByTestId('scalar-text').value).toBe('')
+    expect(screen.getByTestId('filter-op-select')).toHaveValue('contains')
+    expect(screen.getByTestId('scalar-text')).toHaveValue('')
   })
 })

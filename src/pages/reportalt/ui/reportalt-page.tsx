@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   useLocation,
   useNavigate,
@@ -155,6 +155,13 @@ export const ReportAltPage = () => {
   } = useReportAltUserSettings(moduleCode, meta, searchParams)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
+  // Клетки бланка, которые заполняет пользователь: в 1С ручная правка табличного документа
+  // приоритетнее автозаполнения, поэтому значения уходят в тело /run и возвращаются в бланке.
+  const [blankValues, setBlankValues] = useState<Record<string, string>>({})
+  const izmenitKletku = useCallback((field: string, value: string) => {
+    setBlankValues((prev) => ({ ...prev, [field]: value }))
+  }, [])
+
   // Applied-параметры — производные от URL: запрос уходит, когда в URL есть
   // хотя бы один параметр и заполнены все обязательные. userSettings попадает
   // в тело (и через JSON.stringify(body) — в query-key TanStack: другой хэш
@@ -178,8 +185,9 @@ export const ReportAltPage = () => {
       ...(appliedUserSettings != null
         ? { userSettings: appliedUserSettings }
         : {}),
+      ...(Object.keys(blankValues).length > 0 ? { blankValues } : {}),
     }
-  }, [meta, searchParams, appliedUserSettings])
+  }, [meta, searchParams, appliedUserSettings, blankValues])
 
   const isLedger = meta?.definition.layout === 'LEDGER'
 
@@ -604,6 +612,8 @@ export const ReportAltPage = () => {
             <div className="min-h-0 overflow-auto pb-4">
               <ReportResultView
                 result={result}
+                blankValues={blankValues}
+                onBlankValueChange={izmenitKletku}
                 onDrilldown={(row) => {
                   if (!row.rowRef || row.rowRef.domain === 'ACCOUNT_PLAN')
                     return

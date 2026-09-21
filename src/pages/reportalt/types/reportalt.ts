@@ -165,6 +165,10 @@ export interface ReportAltSpreadsheetCellDto {
   rowSpan?: number
   colSpan?: number
   text?: string
+  /** Имя области макета 1С — ключ, по которому значение уходит на сервер. */
+  field?: string
+  /** Клетку заполняет пользователь (в макете 1С — containsValue). */
+  editable?: boolean
   style?: ReportAltSpreadsheetCellStyleDto
 }
 
@@ -441,4 +445,9 @@ export interface RunReportAltBody {
   pageSize?: number
   /** Пользовательская дельта настроек (inline, сервер не персистит — F-S1). */
   userSettings?: ReportAltUserSettingsDto
+  /**
+   * Значения клеток бланка, вписанные пользователем: имя области макета → текст.
+   * В 1С ручная правка табличного документа приоритетнее автозаполнения.
+   */
+  blankValues?: Record<string, string>
 }

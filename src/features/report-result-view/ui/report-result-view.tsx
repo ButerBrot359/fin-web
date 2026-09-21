@@ -44,6 +44,10 @@ interface ReportResultViewProps {
     ancestors: ReportRowDto[],
     event: ReactMouseEvent
   ) => void
+  /** Значения клеток бланка, вписанные пользователем (layout=FORM с табличным документом). */
+  blankValues?: Record<string, string>
+  /** Изменение клетки бланка; отсутствие ⇒ бланк только для чтения. */
+  onBlankValueChange?: (field: string, value: string) => void
   /** Правый клик по строке дерева — те же действия, что по двойному клику. */
   onRowContextMenu?: (
     row: ReportRowDto,
@@ -67,6 +71,8 @@ export const ReportResultView = ({
   onDrilldown,
   onRowDoubleClick,
   onRowContextMenu,
+  blankValues,
+  onBlankValueChange,
 }: ReportResultViewProps) => {
   // Скрываем колонки, выключенные настройками (показатели/группировка), и —
   // когда «Выделять отрицательные» выключено — гасим negativeRed на колонках
@@ -94,7 +100,13 @@ export const ReportResultView = ({
   // Утверждённый бланк, снятый с макета 1С, рисуется как табличный документ —
   // ровно тот же, что уходит в печать.
   if (result.spreadsheet && result.spreadsheet.sheets.length > 0) {
-    return <SpreadsheetView spreadsheet={result.spreadsheet} />
+    return (
+      <SpreadsheetView
+        spreadsheet={result.spreadsheet}
+        blankValues={blankValues}
+        onBlankValueChange={onBlankValueChange}
+      />
+    )
   }
 
   // Официальный бланк (мемориальный ордер) — своя шапка, заголовок не нужен.

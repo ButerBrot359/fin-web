@@ -16,6 +16,14 @@ import type {
  */
 interface SpreadsheetViewProps {
   spreadsheet: ReportSpreadsheetDto
+  /** Значения клеток, вписанные пользователем: имя области макета → текст. */
+  blankValues?: Record<string, string>
+  /**
+   * Изменение клетки бланка. В 1С бланк редактируемый: отметку «X» в виде декларации,
+   * номер уведомления и разрезы, которых нет в учёте, вписывает бухгалтер, и автозаполнение
+   * их не перетирает. Отсутствие обработчика ⇒ бланк только для чтения.
+   */
+  onBlankValueChange?: (field: string, value: string) => void
 }
 
 const GRAN: Record<string, string> = {
@@ -109,7 +117,17 @@ const razmetka = (sheet: ReportSpreadsheetSheetDto): Kletka[][] => {
   return setka
 }
 
-const SheetView = ({ sheet }: { sheet: ReportSpreadsheetSheetDto }) => {
+interface SheetViewProps {
+  sheet: ReportSpreadsheetSheetDto
+  blankValues?: Record<string, string>
+  onBlankValueChange?: (field: string, value: string) => void
+}
+
+const SheetView = ({
+  sheet,
+  blankValues,
+  onBlankValueChange,
+}: SheetViewProps) => {
   const stroki = useMemo(() => razmetka(sheet), [sheet])
   return (
     <div className="overflow-x-auto">
@@ -133,7 +151,23 @@ const SheetView = ({ sheet }: { sheet: ReportSpreadsheetSheetDto }) => {
                     colSpan={kletka.colSpan ?? 1}
                     style={{ padding: '0 2px', ...stilYacheyki(kletka.style) }}
                   >
-                    {kletka.text ?? ''}
+                    {kletka.editable && kletka.field && onBlankValueChange ? (
+                      <input
+                        type="text"
+                        className="w-full bg-transparent outline-none"
+                        style={{
+                          font: 'inherit',
+                          color: 'inherit',
+                          textAlign: 'inherit',
+                        }}
+                        value={blankValues?.[kletka.field] ?? kletka.text ?? ''}
+                        onChange={(event) => {
+                          onBlankValueChange(kletka.field!, event.target.value)
+                        }}
+                      />
+                    ) : (
+                      (kletka.text ?? '')
+                    )}
                   </td>
                 ) : (
                   <td key={`empty:${klyuch(r, kletka.column)}`} />
@@ -147,7 +181,11 @@ const SheetView = ({ sheet }: { sheet: ReportSpreadsheetSheetDto }) => {
   )
 }
 
-export const SpreadsheetView = ({ spreadsheet }: SpreadsheetViewProps) => {
+export const SpreadsheetView = ({
+  spreadsheet,
+  blankValues,
+  onBlankValueChange,
+}: SpreadsheetViewProps) => {
   const sheets = spreadsheet.sheets
   const [aktivnyy, setAktivnyy] = useState(0)
   if (sheets.length === 0) return null
@@ -174,7 +212,11 @@ export const SpreadsheetView = ({ spreadsheet }: SpreadsheetViewProps) => {
           ))}
         </div>
       )}
-      <SheetView sheet={sheet} />
+      <SheetView
+        sheet={sheet}
+        blankValues={blankValues}
+        onBlankValueChange={onBlankValueChange}
+      />
     </div>
   )
 }

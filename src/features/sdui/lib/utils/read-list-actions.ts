@@ -9,6 +9,9 @@ export interface ListActions {
   clearAllFiltersCommand: string | undefined
   periodCommand: string | undefined
   exportCommand: string | undefined
+  // SCRUM-360 v6 §8: раскрытие узла дерева (displayMode=TREE) — действие
+  // целиком: команде list.toggleExpand нужен и behavior (flush:false и т.д.).
+  expandAction: ViewNodeAction | undefined
 }
 
 /**
@@ -36,5 +39,6 @@ export const readListActions = (node: ViewNode): ListActions => {
     clearAllFiltersCommand: find('clearAllFilters')?.command,
     periodCommand: find('period')?.command,
     exportCommand: find('export')?.command,
+    expandAction: find('expand'),
   }
 }

@@ -12,6 +12,7 @@ import {
 } from '../../../lib/utils/column-sizing'
 import { getCellIcon } from './cell-icon-registry'
 import { ListDocumentLinkCell } from './list-document-link-cell'
+import { ListHierarchyCell } from './list-hierarchy-cell'
 import { ListSortHeader } from './list-sort-header'
 import {
   ListFilterFunnel,
@@ -61,6 +62,10 @@ export interface BuildListColumnsArgs {
   dispatch: ReturnType<typeof useSduiDispatch>
   nodeId: string
   sortInFlightRef: RefObject<boolean>
+  // SCRUM-360 v6 §8.7 п.4: раскрытие узла дерева — готовый колбэк из list-node
+  // (диспатч list.toggleExpand с behavior действия expand). Нет действия с
+  // бэка → undefined, раскрыватель в ячейке HIERARCHY не рендерится.
+  onToggleExpand?: (rowId: number, expanded: boolean) => void
 }
 
 export const buildListColumns = (
@@ -91,6 +96,9 @@ export const buildListColumns = (
     const filterColumn: ListFilterFunnelColumn = {
       filterField: filterField ?? '',
       filterOps,
+      // SCRUM-360 v6 §2: приведение типа, как у остальных SDUI-полей меты —
+      // аугментацию ColumnMeta от TanStack не заводим (ломала сборку).
+      filterDefaultOp: col.props?.filterDefaultOp as string | undefined,
       dataType: col.props?.dataType as string | undefined,
       filterValueSource: col.props?.filterValueSource as
         | FilterValueSource
@@ -185,33 +193,38 @@ export const buildListColumns = (
       // маппится через props.iconMap на имя иконки и рендерится глифом;
       // неизвестное/отсутствующее имя → пустая ячейка, не текст "true"/"false".
       cell:
-        // SCRUM-360 блок H: колонка иерархии — глиф группа/элемент (iconMap,
-        // ключ String(_isGroup) — тот же словарь, что у ICON) + отступ по
-        // уровню вложенности _level. Контракт строки — Q-2 к бэку; фолбэки:
-        // нет _level → 0 (плоско), нет глифа → только текст.
+        // SCRUM-360 блок H → v6 §8 (дерево, фаза B): колонка иерархии — глиф
+        // группа/элемент (iconMap, ключ String(_isGroup) — тот же словарь, что
+        // у ICON), отступ _level * indentPerLevel и раскрыватель при
+        // _hasChildren (направление по _expanded). Фолбэки: нет _level → 0
+        // (плоско), нет глифа → только текст, нет команды expand → без
+        // раскрывателя (прежний вид).
         col.props?.cellKind === 'HIERARCHY'
           ? (info: { getValue: () => unknown; row: { original: ListRow } }) => {
               const iconMap = col.props?.iconMap as
                 | Record<string, string>
                 | undefined
-              const { _level, _isGroup } = info.row.original
-              const level =
-                typeof _level === 'number' && _level > 0 ? _level : 0
-              // eslint-disable-next-line @typescript-eslint/no-base-to-string
-              const Icon = getCellIcon(iconMap?.[String(_isGroup ?? '')])
+              const { _level, _isGroup, _hasChildren, _expanded } =
+                info.row.original
+              const rowId = info.row.original.id
               return (
-                <span
-                  className="flex items-center gap-1.5"
-                  style={{ paddingLeft: level * 16 }}
-                >
-                  {Icon ? (
-                    <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
-                  ) : null}
-                  <Typography variant="body2" noWrap className="text-ui-06">
-                    {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
-                    {String(info.getValue() ?? '')}
-                  </Typography>
-                </span>
+                <ListHierarchyCell
+                  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                  text={String(info.getValue() ?? '')}
+                  level={typeof _level === 'number' && _level > 0 ? _level : 0}
+                  indentPerLevel={
+                    toColumnWidth(col.props?.indentPerLevel) ?? 16
+                  }
+                  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                  icon={getCellIcon(iconMap?.[String(_isGroup ?? '')])}
+                  hasChildren={_hasChildren === true}
+                  expanded={_expanded === true}
+                  onToggle={
+                    args.onToggleExpand
+                      ? (expanded) => args.onToggleExpand?.(rowId, expanded)
+                      : undefined
+                  }
+                />
               )
             }
           : col.props?.cellKind === 'DOCUMENT_LINK'

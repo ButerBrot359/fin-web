@@ -13,6 +13,7 @@ import {
   resolveRowLabel,
   supportsHierarchy,
 } from '../../ui/nodes/composite/list-hierarchy'
+import { isTreeDisplayMode } from '../utils/list-tree-mode'
 
 interface UseListTrailArgs {
   node: ViewNode
@@ -44,7 +45,10 @@ export const useListTrail = ({
   const [trail, setTrail] = useState<ListTrailEntry[]>(() =>
     parseSelectedPath(node.props?.selectedPath)
   )
-  const isHierarchical = supportsHierarchy(source)
+  // SCRUM-360 v6 §8: в древовидном режиме клиентский drill-down выключен —
+  // раскрытием владеет сервер (list.toggleExpand), крошки не рендерятся.
+  // Drill-down не удалён: он остаётся режимом пикера и не-древовидных типов.
+  const isHierarchical = !isTreeDisplayMode(node) && supportsHierarchy(source)
   // Режим поиска считается по ОТЛОЖЕННОЙ строке — вместе с ней меняется и уровень папки
   // (parent уходит из запроса), иначе на первом же символе улетал бы лишний запрос по всему
   // дереву, ещё без самого поиска.

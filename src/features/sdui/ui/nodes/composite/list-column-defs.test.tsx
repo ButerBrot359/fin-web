@@ -19,7 +19,8 @@ import { buildListColumns, type ListRow } from './list-column-defs'
 const renderHierarchyCell = (
   colProps: Record<string, unknown>,
   row: ListRow,
-  value: unknown
+  value: unknown,
+  onToggleExpand?: (rowId: number, expanded: boolean) => void
 ) => {
   const [col] = buildListColumns({
     columnNodes: [
@@ -32,6 +33,7 @@ const renderHierarchyCell = (
     dispatch: vi.fn() as never,
     nodeId: 'list1',
     sortInFlightRef: { current: false } as RefObject<boolean>,
+    onToggleExpand,
   })
   const cell = col.cell as (info: unknown) => ReactNode
   return render(<>{cell({ getValue: () => value, row: { original: row } })}</>)
@@ -71,5 +73,87 @@ describe('cellKind=HIERARCHY (SCRUM-360 блок H)', () => {
     expect(
       container.querySelector('span[style]')?.getAttribute('style')
     ).toContain('padding-left: 0')
+  })
+})
+
+// SCRUM-360 v6 §8.7 п.3-4: дерево, фаза B — раскрыватель в ведущей колонке.
+describe('cellKind=HIERARCHY — раскрыватель дерева (SCRUM-360 v6 §8)', () => {
+  it('_hasChildren + свёрнут → треугольник «развернуть», клик шлёт expanded:true', () => {
+    const onToggle = vi.fn()
+    renderHierarchyCell(
+      HIER_PROPS,
+      {
+        id: 30712,
+        _level: 1,
+        _isGroup: true,
+        _hasChildren: true,
+        _expanded: false,
+      },
+      'Поставщики Астаны',
+      onToggle
+    )
+    const btn = screen.getByRole('button', { name: 'Развернуть группу' })
+    btn.click()
+    expect(onToggle).toHaveBeenCalledWith(30712, true)
+  })
+
+  it('_expanded → треугольник «свернуть», клик шлёт expanded:false (желаемое состояние, §8.5)', () => {
+    const onToggle = vi.fn()
+    renderHierarchyCell(
+      HIER_PROPS,
+      {
+        id: 30712,
+        _level: 0,
+        _isGroup: true,
+        _hasChildren: true,
+        _expanded: true,
+      },
+      'Поставщики',
+      onToggle
+    )
+    screen.getByRole('button', { name: 'Свернуть группу' }).click()
+    expect(onToggle).toHaveBeenCalledWith(30712, false)
+  })
+
+  it('пустая группа (_hasChildren:false) → раскрывателя нет («плюсика» быть не должно)', () => {
+    renderHierarchyCell(
+      HIER_PROPS,
+      {
+        id: 5,
+        _level: 0,
+        _isGroup: true,
+        _hasChildren: false,
+        _expanded: false,
+      },
+      'Пустая',
+      vi.fn()
+    )
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('без onToggleExpand (нет действия expand с бэка) → прежний вид без раскрывателя', () => {
+    renderHierarchyCell(
+      HIER_PROPS,
+      {
+        id: 6,
+        _level: 0,
+        _isGroup: true,
+        _hasChildren: true,
+        _expanded: false,
+      },
+      'Группа'
+    )
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('indentPerLevel из пропов колонки: уровень 2 × 24 → 48px', () => {
+    const { container } = renderHierarchyCell(
+      { ...HIER_PROPS, indentPerLevel: 24 },
+      { id: 7, _level: 2, _isGroup: false },
+      'Вложенный'
+    )
+    expect(
+      container.querySelector('span[style]')?.getAttribute('style')
+    ).toContain('padding-left: 48px')
   })
 })

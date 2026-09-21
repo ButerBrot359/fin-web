@@ -52,11 +52,17 @@ export const WorkspaceTabSync = () => {
       // SCRUM-386 фикс 2: сущность уже открыта во вкладке под другим URL
       // (модульный vs плоский) — activateOrCreate активировал её; доводим
       // адресную строку до пути этой вкладки, второй не появляется.
+      // Сравниваем path, а не id: id несёт маркер isGroup (SCRUM-360 v6 §6.3)
+      // и на «Создать группу» отличается от pathname без смены URL-семейства.
       if (tabId && tabId !== pathname) {
         const existing = useWorkspaceTabsStore
           .getState()
           .tabs.find((t) => t.id === tabId)
-        if (existing && existing.pageType !== 'sdui-panel') {
+        if (
+          existing &&
+          existing.pageType !== 'sdui-panel' &&
+          existing.path !== pathname
+        ) {
           void navigate(existing.path + existing.search, { replace: true })
         }
       }

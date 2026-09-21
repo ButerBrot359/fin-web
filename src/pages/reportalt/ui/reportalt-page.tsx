@@ -6,6 +6,7 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { Button, Typography } from '@mui/material'
 
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
@@ -15,6 +16,7 @@ import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { exportTableToXlsx } from '@/shared/lib/table-export'
 
+import { fetchReportAltBlank } from '../api/reportalt-api'
 import { useReportAltMeta } from '../lib/hooks/use-reportalt-meta'
 import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
@@ -191,6 +193,15 @@ export const ReportAltPage = () => {
 
   const isLedger = meta?.definition.layout === 'LEDGER'
 
+  // Незаполненный бланк: 1С открывает форму отчёта пустым утверждённым листом и наполняет его
+  // только по «Заполнить». Отчёты без бланка отвечают пустым телом — тогда показывать нечего.
+  const { data: pustoyBlank } = useQuery({
+    queryKey: ['reportalt-blank', moduleCode],
+    queryFn: ({ signal }) => fetchReportAltBlank(moduleCode, signal),
+    enabled: moduleCode.length > 0,
+    staleTime: Infinity,
+  })
+
   const {
     result,
     isLoading: isRunning,
@@ -234,6 +245,16 @@ export const ReportAltPage = () => {
         return merged
       })
     })
+  }
+
+  /** «Очистить» формы 1С: бланк возвращается к пустому, ручной ввод сбрасывается. */
+  const handleClear = () => {
+    setBlankValues({})
+    const next = new URLSearchParams(searchParams)
+    meta?.parameters.forEach((p) => {
+      next.delete(p.code)
+    })
+    setSearchParams(next, { replace: true })
   }
 
   const handleSubmit = () => {
@@ -564,8 +585,33 @@ export const ReportAltPage = () => {
           sx={{ height: 48, flexShrink: 0 }}
           onClick={handleSubmit}
         >
-          {t('reportalt.generate')}
+          {pustoyBlank ? t('reportalt.fill') : t('reportalt.generate')}
         </Button>
+        {/* «Очистить» и «Обновить» — соседи «Заполнить» на панели формы 1С: первая возвращает
+            пустой бланк, вторая перезапрашивает те же данные. */}
+        {pustoyBlank && (
+          <>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              onClick={handleClear}
+            >
+              {t('reportalt.clear')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              disabled={appliedBody == null}
+              onClick={() => {
+                void refetch()
+              }}
+            >
+              {t('reportalt.refresh')}
+            </Button>
+          </>
+        )}
         {/* Панель настроек — для отчётов с наполненным meta (F-S3) ИЛИ когда
             есть «Язык формы» (у ГСМ/МО прочих настроек нет, но язык нужен). */}
         {(supportsSettings || langParam != null) && !rezhimRasshifrovki && (
@@ -644,6 +690,16 @@ export const ReportAltPage = () => {
               )}
             </div>
           )}
+        </div>
+      ) : pustoyBlank ? (
+        /* Как в 1С: до «Заполнить» форма показывает пустой утверждённый бланк, и в его клетки
+           ручного ввода уже можно вписывать реквизиты, которых нет в учёте. */
+        <div className="min-h-0 overflow-auto pb-4">
+          <ReportResultView
+            result={{ rows: [], columns: [], spreadsheet: pustoyBlank }}
+            blankValues={blankValues}
+            onBlankValueChange={izmenitKletku}
+          />
         </div>
       ) : (
         appliedBody == null && (

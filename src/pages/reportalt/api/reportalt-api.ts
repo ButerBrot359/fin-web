@@ -1,4 +1,5 @@
 import { apiService } from '@/shared/api/api'
+import type { ReportSpreadsheetDto } from '@/pages/reports/report-list/types/report'
 import type { ApiResponse } from '@/shared/types/api.types'
 
 import type {
@@ -44,6 +45,22 @@ export const fetchReportAltMeta = (code: string, signal?: AbortSignal) =>
       signal,
     })
     .then((res) => unwrap(res.data))
+
+/**
+ * Незаполненный бланк: GET /api/reportalt/{code}/blank.
+ *
+ * В 1С форма отчёта открывается пустым утверждённым бланком, и только «Заполнить» наполняет
+ * его данными. Отчёты без бланка отвечают пустым телом — тогда форма ведёт себя как раньше.
+ */
+export const fetchReportAltBlank = (code: string, signal?: AbortSignal) =>
+  apiService
+    .get<
+      ReportSpreadsheetDto | ApiResponse<ReportSpreadsheetDto | null> | null
+    >({
+      url: `/api/reportalt/${code}/blank`,
+      signal,
+    })
+    .then((res) => unwrap(res.data) ?? null)
 
 export const fetchReportAltParamState = (
   code: string,

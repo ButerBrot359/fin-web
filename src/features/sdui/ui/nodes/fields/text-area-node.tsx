@@ -21,8 +21,8 @@ export const TextAreaNode: FC<NodeProps> = ({ node }) => {
       value={value}
       placeholder={placeholder}
       required={f.required}
+      // SCRUM-317 v4 §4.1: текст ошибки живёт в панели и тултипе — под полем только рамка
       error={!!f.error}
-      helperText={f.error}
       disabled={!f.enabled}
       multiline
       rows={rows}
@@ -33,7 +33,8 @@ export const TextAreaNode: FC<NodeProps> = ({ node }) => {
       onBlur={changeOnBlur.onBlur}
       slotProps={{
         input: { readOnly: f.readonly },
-        htmlInput: maxLength !== undefined && maxLength > 0 ? { maxLength } : undefined,
+        htmlInput:
+          maxLength !== undefined && maxLength > 0 ? { maxLength } : undefined,
       }}
     />
   )

@@ -1,5 +1,5 @@
 import type { FC, ReactElement } from 'react'
-import { Box, FormHelperText } from '@mui/material'
+import { Box } from '@mui/material'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { nodeToTableColumnDef } from '../../../lib/utils/build-column-defs'
@@ -112,8 +112,11 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
       ? node.props.error
       : null
   if (!content || !error) return content
+  // SCRUM-317 v4 §4.1: текст ошибки живёт в панели и тултипе — таблица в
+  // состоянии ошибки показывает только рамку, подписи под ней нет.
   return (
     <Box
+      data-testid="table-error-frame"
       sx={{
         border: 1,
         borderColor: 'error.main',
@@ -122,7 +125,6 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
       }}
     >
       {content}
-      <FormHelperText error>{error}</FormHelperText>
     </Box>
   )
 }

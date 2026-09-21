@@ -34,6 +34,11 @@ export const ListFilterChips: FC<ListFilterChipsProps> = ({
 
   if (chips.length === 0) return null
 
+  // «Сбросить все» имеет смысл, только если есть что сбрасывать. В списке
+  // регламентных операций единственный отбор — маршрутный вид операции, и кнопка
+  // предлагала снять то, что снять нельзя (обращение 20.09.2026).
+  const estSemnye = chips.some((chip) => chip.fixed !== true)
+
   return (
     <div
       className="flex flex-wrap items-center gap-2"
@@ -61,15 +66,17 @@ export const ListFilterChips: FC<ListFilterChipsProps> = ({
           }
         />
       ))}
-      <Button
-        size="small"
-        color="warning"
-        onClick={() => {
-          onClearAll()
-        }}
-      >
-        {t('table.filterClearAll')}
-      </Button>
+      {estSemnye && (
+        <Button
+          size="small"
+          color="warning"
+          onClick={() => {
+            onClearAll()
+          }}
+        >
+          {t('table.filterClearAll')}
+        </Button>
+      )}
     </div>
   )
 }

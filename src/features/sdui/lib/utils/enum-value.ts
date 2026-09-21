@@ -3,6 +3,10 @@ export interface EnumOption {
   label: string
   id?: number
   code?: string
+  // SCRUM-308 §3.5: недоступность ОДНОЙ опции (не узла). Ключи появляются
+  // только у погашенных вариантов — отсутствие ключа, а не false.
+  disabled?: boolean
+  disabledReason?: string
 }
 
 /** Текущее значение enum (строка-код или объект `{id, code, presentation}`) → строковый `value` опции. */

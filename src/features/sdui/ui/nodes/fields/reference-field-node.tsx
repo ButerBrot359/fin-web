@@ -129,8 +129,8 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
     required: f.required,
     readOnly: f.readonly,
     disabled: !f.enabled,
+    // SCRUM-317 v4 §4.1: текст ошибки живёт в панели и тултипе — под полем только рамка
     error: !!f.error,
-    helperText: f.error,
     loading,
     // 1С: ввёл часть наименования, нажал Enter — первое подходящее значение подставилось.
     // Включаем точечно у ссылочного поля SDUI, а не по умолчанию в общем компоненте:

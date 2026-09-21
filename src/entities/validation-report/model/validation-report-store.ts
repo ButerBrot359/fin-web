@@ -7,10 +7,16 @@ import type { ValidationReport } from '../types/validation-report'
 // перезапросить, он приходит побочным продуктом мутации. Ключ — маршрут
 // экрана (тот же, что у sdui-cache-store): отчёт принадлежит карточке, ошибки
 // разных открытых документов не смешиваются (v2 §5.3).
+//
+// SCRUM-317 v4 §4.4: «активное сообщение» (куда ведём) и «тултип открыт»
+// (окно) — два РАЗНЫХ состояния. Крестик тултипа закрывает окно, не сбрасывая
+// активную строку панели; правка поля вычёркивает строку (dismiss).
 interface ValidationReportStoreState {
   reports: Record<string, ValidationReport>
   /** id активного сообщения (питает тултип-навигатор) по ключу экрана. */
   activeIds: Record<string, string | null>
+  /** Открыт ли тултип-навигатор по ключу экрана (v4 §4.4, шаг 1). */
+  tooltipOpen: Record<string, boolean>
   /**
    * Ключ активного SDUI-экрана (root-экран один в момент времени).
    * Позволяет узлам дерева находить «свой» отчёт без чтения роутера.
@@ -21,15 +27,28 @@ interface ValidationReportStoreState {
   setReport: (key: string, report: ValidationReport) => void
   /** Крестик панели / размонтирование экрана / успешная операция. */
   clear: (key: string) => void
+  /** Одиночный клик по строке панели: ведём к цели, окно тултипа не трогаем. */
   setActive: (key: string, messageId: string | null) => void
+  /** Двойной клик по строке панели: вернуть окно тултипа (v4 §4.4). */
+  openTooltip: (key: string) => void
+  /** Крестик тултипа: закрыть окно, активная строка панели остаётся. */
+  closeTooltip: (key: string) => void
   /** Стрелки «‹ ›»: обход ТОЛЬКО навигируемых сообщений, по кругу. */
   stepActive: (key: string, direction: 1 | -1) => void
+  /**
+   * Правка поля пользователем вычёркивает строки из панели (v4 §4.4, шаг 2):
+   * снятие оптимистичное, правда о документе остаётся за сервером. Последняя
+   * убранная строка гасит панель целиком; ушедшая активная строка сбрасывает
+   * активность и закрывает тултип.
+   */
+  dismiss: (key: string, messageIds: string[]) => void
 }
 
 export const useValidationReportStore = create<ValidationReportStoreState>(
   (set) => ({
     reports: {},
     activeIds: {},
+    tooltipOpen: {},
     screenKey: null,
 
     setScreenKey: (key) => {
@@ -42,14 +61,17 @@ export const useValidationReportStore = create<ValidationReportStoreState>(
           return {
             reports: omit(s.reports, key),
             activeIds: omit(s.activeIds, key),
+            tooltipOpen: omit(s.tooltipOpen, key),
           }
         }
         // Активным сразу становится первое навигируемое сообщение — панель и
-        // тултип показываются одновременно, не по клику (v2 §1).
+        // тултип показываются одновременно, не по клику (v2 §1); новый отчёт
+        // открывает окно тултипа заново (v4 §4.4).
         const first = report.messages.find((m) => isTargetNavigable(m.target))
         return {
           reports: { ...s.reports, [key]: report },
           activeIds: { ...s.activeIds, [key]: first?.id ?? null },
+          tooltipOpen: { ...s.tooltipOpen, [key]: true },
         }
       })
     },
@@ -58,11 +80,20 @@ export const useValidationReportStore = create<ValidationReportStoreState>(
       set((s) => ({
         reports: omit(s.reports, key),
         activeIds: omit(s.activeIds, key),
+        tooltipOpen: omit(s.tooltipOpen, key),
       }))
     },
 
     setActive: (key, messageId) => {
       set((s) => ({ activeIds: { ...s.activeIds, [key]: messageId } }))
+    },
+
+    openTooltip: (key) => {
+      set((s) => ({ tooltipOpen: { ...s.tooltipOpen, [key]: true } }))
+    },
+
+    closeTooltip: (key) => {
+      set((s) => ({ tooltipOpen: { ...s.tooltipOpen, [key]: false } }))
     },
 
     stepActive: (key, direction) => {
@@ -78,7 +109,48 @@ export const useValidationReportStore = create<ValidationReportStoreState>(
           current < 0
             ? 0
             : (current + direction + navigable.length) % navigable.length
-        return { activeIds: { ...s.activeIds, [key]: navigable[next].id } }
+        return {
+          activeIds: { ...s.activeIds, [key]: navigable[next].id },
+          // Стрелки живут в самом окне — держат его открытым (v4 §4.4).
+          tooltipOpen: { ...s.tooltipOpen, [key]: true },
+        }
+      })
+    },
+
+    dismiss: (key, messageIds) => {
+      set((s) => {
+        if (!(key in s.reports) || messageIds.length === 0) return s
+        const report = s.reports[key]
+        const removed = new Set(messageIds)
+        const messages = report.messages.filter((m) => !removed.has(m.id))
+        if (messages.length === report.messages.length) return s
+        if (messages.length === 0) {
+          return {
+            reports: omit(s.reports, key),
+            activeIds: omit(s.activeIds, key),
+            tooltipOpen: omit(s.tooltipOpen, key),
+          }
+        }
+        const activeId = s.activeIds[key]
+        const activeRemoved = activeId != null && removed.has(activeId)
+        return {
+          reports: {
+            ...s.reports,
+            [key]: {
+              ...report,
+              messages,
+              // Единственное место пересчёта blockingCount — компоненты его
+              // не считают (v4 §6).
+              blockingCount: messages.filter((m) => m.blocking).length,
+            },
+          },
+          activeIds: activeRemoved
+            ? { ...s.activeIds, [key]: null }
+            : s.activeIds,
+          tooltipOpen: activeRemoved
+            ? { ...s.tooltipOpen, [key]: false }
+            : s.tooltipOpen,
+        }
       })
     },
   })

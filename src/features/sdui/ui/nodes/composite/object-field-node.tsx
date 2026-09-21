@@ -63,7 +63,10 @@ export const ObjectFieldNode: FC<NodeProps> = ({ node }) => {
   const staleValue =
     f.visible && allowedTypes.length > 0 && !isValueAllowed(allowedTypes, value)
   useEffect(() => {
-    if (staleValue) f.setValue(null)
+    // SCRUM-317 v4 §4.4: программная перезапись — НЕ правка пользователем,
+    // тихий сеттер не трогает шину field-edit-bus (иначе строка «не заполнено»
+    // вычеркнулась бы из панели ровно когда поле стало пустым).
+    if (staleValue) f.setValue(null, { silent: true })
     // f пересобирается каждый рендер — завязка на сам факт устаревания
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staleValue])
@@ -189,8 +192,8 @@ const ObjectValuePicker: FC<ObjectValuePickerProps> = ({
       required={field.required}
       readOnly={field.readonly}
       disabled={!field.enabled}
+      // SCRUM-317 v4 §4.1: текст ошибки живёт в панели и тултипе — под полем только рамка
       error={!!field.error}
-      helperText={field.error}
       loading={loading}
       fullWidth
       onInputChange={(_e, val, reason) => {

@@ -350,11 +350,72 @@ describe('ListFilterFunnel', () => {
     )
     openPopover()
 
-    fireEvent.change(screen.getByTestId('filter-enum-select'), {
+    fireEvent.change(screen.getByTestId('ref-select'), {
       target: { value: 'OUT' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'table.filterApply' }))
 
     expect(onApply).toHaveBeenCalledWith('VidOperatsii', 'eq', 'OUT')
+  })
+
+  // SCRUM-360 v6 §2.3 п.4 — зеркало легаси-кейса column-filter-popover.test.tsx
+  it('filterDefaultOp с бэка предвыбран вместо первого из filterOps', () => {
+    render(
+      <ListFilterFunnel
+        column={{
+          filterField: 'Gorod',
+          filterOps: ['eq', 'ne', 'contains'],
+          filterDefaultOp: 'contains',
+          dataType: 'STRING',
+        }}
+        onApply={vi.fn()}
+      />
+    )
+    openPopover()
+    expect(screen.getByTestId('filter-op-select')).toHaveValue('contains')
+  })
+
+  it('без filterDefaultOp (старый бэк) — прежний фолбэк на filterOps[0]', () => {
+    render(
+      <ListFilterFunnel
+        column={{
+          filterField: 'Gorod',
+          filterOps: ['eq', 'ne'],
+          dataType: 'STRING',
+        }}
+        onApply={vi.fn()}
+      />
+    )
+    openPopover()
+    expect(screen.getByTestId('filter-op-select')).toHaveValue('eq')
+  })
+
+  it('переоткрытие поповера сбрасывает оператор к предвыбранному и очищает значение (§2.3 п.3)', () => {
+    render(
+      <ListFilterFunnel
+        column={{
+          filterField: 'Gorod',
+          filterOps: ['eq', 'contains'],
+          filterDefaultOp: 'contains',
+          dataType: 'STRING',
+        }}
+        onApply={vi.fn()}
+      />
+    )
+    openPopover()
+    fireEvent.change(screen.getByTestId('filter-op-select'), {
+      target: { value: 'eq' },
+    })
+    fireEvent.change(screen.getByTestId('scalar-text'), {
+      target: { value: 'Алматы' },
+    })
+
+    // Пока поповер открыт, остальной документ под aria-hidden — закрываем Escape.
+    fireEvent.keyDown(screen.getByTestId('filter-op-select'), {
+      key: 'Escape',
+    })
+    openPopover()
+    expect(screen.getByTestId('filter-op-select')).toHaveValue('contains')
+    expect(screen.getByTestId('scalar-text')).toHaveValue('')
   })
 })

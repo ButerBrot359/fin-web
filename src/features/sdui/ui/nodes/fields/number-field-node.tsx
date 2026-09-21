@@ -25,8 +25,9 @@ export const NumberFieldNode: FC<NodeProps> = ({ node }) => {
   const stringValue =
     rawValue === null || rawValue === undefined ? '' : String(rawValue)
 
-  // SCRUM-278 v4: пояснение поля (14px, вторичный цвет) — только без ошибки
-  const helperText = f.error ?? (node.props?.helperText as string | undefined)
+  // SCRUM-278 v4 → SCRUM-317 v4 §4.1: helperText — всегда пояснение поля;
+  // текст ошибки живёт в панели и тултипе, под полем — только рамка.
+  const helperText = node.props?.helperText as string | undefined
 
   return (
     <NumberInput
@@ -39,19 +40,17 @@ export const NumberFieldNode: FC<NodeProps> = ({ node }) => {
       error={!!f.error}
       helperText={helperText}
       slotProps={{
-        formHelperText: f.error
-          ? undefined
-          : {
-              sx: {
-                // Тема абсолютит FormHelperText — comment-пояснение должно
-                // занимать место в потоке, иначе его перекроет соседнее поле
-                position: 'static',
-                fontSize: 14,
-                lineHeight: 1.35,
-                color: 'text.secondary',
-                ml: 0,
-              },
-            },
+        formHelperText: {
+          sx: {
+            // Тема абсолютит FormHelperText — comment-пояснение должно
+            // занимать место в потоке, иначе его перекроет соседнее поле
+            position: 'static',
+            fontSize: 14,
+            lineHeight: 1.35,
+            color: 'text.secondary',
+            ml: 0,
+          },
+        },
       }}
       decimal={allowDecimal}
       precision={precision}

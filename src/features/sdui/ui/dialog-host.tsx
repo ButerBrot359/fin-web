@@ -161,7 +161,15 @@ export const DialogHost = () => {
           // форме. Голый NodeRenderer наследует SduiSessionProvider экрана;
           // обёртка в read-only PanelStateProvider ломала бы и то и другое
           // (409 SESSION_NOT_FOUND + проглоченные патчи). SCRUM-265 v1.
-          <NodeRenderer node={panel.node} />
+          // SCRUM-308 §3.4: мост закрытия монтируется и здесь — диалоги,
+          // живущие в СЕССИИ РОДИТЕЛЬСКОГО списка («Выбор назначения
+          // профилей»), несут closeCommand на корне; крестик/Escape/клик по
+          // фону обязаны слать ту же команду, что кнопка «Отмена». dispatch
+          // наследуется от экрана — команда уходит в родительскую сессию.
+          <>
+            <PanelCloseCommand panelId={panel.panelId} node={panel.node} />
+            <NodeRenderer node={panel.node} />
+          </>
         )
 
         // Узел, который рисует СОБСТВЕННОЕ окно (props.selfChrome): хост не оборачивает

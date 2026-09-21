@@ -7,6 +7,7 @@
  * Модуль в ключ не входит намеренно: запись документа одна, из какого бы
  * раздела её ни открыли.
  */
+import { isGroupCreate } from '@/shared/lib/router/group-create-route'
 
 interface EntityPattern {
   regex: RegExp
@@ -62,10 +63,12 @@ const PATTERNS: EntityPattern[] = [
   },
 ]
 
-export function tabEntityKey(pathname: string): string | null {
+export function tabEntityKey(pathname: string, search = ''): string | null {
   for (const { regex, key } of PATTERNS) {
     const m = regex.exec(pathname)
-    if (m) return key(m)
+    // SCRUM-360 v6 §6.3: «Создать группу» (?isGroup=true) — другая сущность,
+    // чем «Создать» того же типа; ключи расходятся суффиксом.
+    if (m) return isGroupCreate(search) ? `${key(m)}:group` : key(m)
   }
   return null
 }

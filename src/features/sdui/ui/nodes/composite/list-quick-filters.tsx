@@ -37,11 +37,11 @@ export const ListQuickFilters: FC<ListQuickFiltersProps> = ({
   return (
     <div className="flex flex-wrap items-center gap-4">
       {filters.map((filter) => (
-        <div key={filter.field} className="flex items-center gap-2">
+        <div key={filter.field} className="flex shrink-0 items-center gap-2">
           <Typography variant="body2" className="whitespace-nowrap text-ui-05">
             {filter.label}
           </Typography>
-          <div className="w-56">
+          <div className="w-56 shrink-0">
             <ListFilterValueControl
               op={filter.op}
               column={filter.column}

@@ -217,6 +217,20 @@ describe('ListNode — транспорт', () => {
     dispatchMock.mockReset()
   })
 
+  it('поиск стоит правой группой ряда — последним элементом после периода и отборов', () => {
+    const node = {
+      ...searchNode,
+      props: { ...searchNode.props, searchable: true },
+    } as unknown as ViewNode
+    render(<ListNode node={node} />)
+
+    const input = screen.getByPlaceholderText('pageToolbar.search')
+    const ryad = input.closest('div.justify-between')
+    expect(ryad).not.toBeNull()
+    // Поле поиска — в ПОСЛЕДНЕЙ группе ряда: слева период и отборы, справа поиск.
+    expect(ryad?.lastElementChild?.contains(input)).toBe(true)
+  })
+
   it('queryKey содержит method и body из source', () => {
     render(<ListNode node={searchNode} />)
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -634,6 +648,39 @@ describe('ListNode — 2d: период (from/to)', () => {
     dispatchMock.mockReset()
   })
 
+  it('период и панель отбора стоят одной строкой, как шапка журнала 1С', () => {
+    const node = {
+      id: 'lst',
+      type: 'LIST',
+      props: {
+        source: { url: '/x/search', method: 'POST' },
+        period: { from: null, to: null },
+        quickFilterFields: ['Organizatsiya'],
+        quickFilterMeta: {
+          Organizatsiya: {
+            header: 'Организация',
+            dataType: 'STRING',
+            filterOps: ['eq'],
+          },
+        },
+      },
+      children: [],
+      actions: [
+        { trigger: 'activate', command: 'list.rowOpen:TypeX' },
+        { trigger: 'period', command: 'list.applyPeriod:TypeX' },
+        { trigger: 'filter', command: 'list.applyFilter:TypeX' },
+      ],
+    } as unknown as ViewNode
+
+    render(<ListNode node={node} />)
+
+    const ryad = screen
+      .getByTestId('date-input-table.periodFrom')
+      .closest('div.flex-wrap')
+    expect(ryad).not.toBeNull()
+    expect(ryad?.contains(screen.getByText('Организация'))).toBe(true)
+  })
+
   it('period-действие есть → рендерятся два инпута даты', () => {
     render(<ListNode node={periodNode({ from: null, to: null })} />)
     expect(screen.getByTestId('date-input-table.periodFrom')).toBeTruthy()
@@ -812,7 +859,7 @@ describe('ListNode — 2c-a: воронка колоночного фильтр�
     fireEvent.click(
       within(statusHeader).getByRole('button', { name: 'table.filter' })
     )
-    fireEvent.change(screen.getByTestId('filter-enum-select'), {
+    fireEvent.change(screen.getByTestId('ref-select'), {
       target: { value: 'B' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'table.filterApply' }))

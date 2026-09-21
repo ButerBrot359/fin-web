@@ -1,6 +1,8 @@
 import type { FC } from 'react'
 import { TextField } from '@mui/material'
 
+import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
+
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
 import { useChangeOnBlur } from '../../../lib/hooks/use-change-on-blur'
@@ -19,28 +21,37 @@ export const TextFieldNode: FC<NodeProps> = ({ node }) => {
   if (!f.visible) return null
 
   return (
-    <TextField
-      label={f.label}
-      size={node.props?.size as 'small' | undefined}
-      value={value}
-      placeholder={placeholder}
-      required={f.required}
-      error={!!f.error}
-      helperText={f.error}
-      disabled={!f.enabled}
-      onChange={(e) => {
-        f.setValue(e.target.value)
-      }}
-      onFocus={(e) => {
-        changeOnBlur.onFocus()
-        editConfirm.onFocus(e)
-      }}
-      onBlur={changeOnBlur.onBlur}
-      slotProps={{
-        input: { readOnly: f.readonly },
-        htmlInput:
-          maxLength !== undefined && maxLength > 0 ? { maxLength } : undefined,
-      }}
-    />
+    // SCRUM-308 §3.1: причина недоступности — props.tooltip (приезжает только
+    // вместе с гашением); блочная обёртка, чтобы не схлопнуть fullWidth.
+    <DisabledReasonTooltip
+      reason={node.props?.tooltip as string | undefined}
+      block
+    >
+      <TextField
+        label={f.label}
+        size={node.props?.size as 'small' | undefined}
+        value={value}
+        placeholder={placeholder}
+        required={f.required}
+        // SCRUM-317 v4 §4.1: текст ошибки живёт в панели и тултипе — под полем только рамка
+        error={!!f.error}
+        disabled={!f.enabled}
+        onChange={(e) => {
+          f.setValue(e.target.value)
+        }}
+        onFocus={(e) => {
+          changeOnBlur.onFocus()
+          editConfirm.onFocus(e)
+        }}
+        onBlur={changeOnBlur.onBlur}
+        slotProps={{
+          input: { readOnly: f.readonly },
+          htmlInput:
+            maxLength !== undefined && maxLength > 0
+              ? { maxLength }
+              : undefined,
+        }}
+      />
+    </DisabledReasonTooltip>
   )
 }

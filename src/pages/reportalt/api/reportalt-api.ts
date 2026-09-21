@@ -62,6 +62,35 @@ export const fetchReportAltBlank = (code: string, signal?: AbortSignal) =>
     })
     .then((res) => unwrap(res.data) ?? null)
 
+/** Что уходит в POST /api/reportalt/{code}/save — реквизиты сохраняемого экземпляра отчёта. */
+export interface SaveReportAltBody {
+  kodOtcheta: string
+  naimenovanie: string
+  organizatsiyaId?: number | null
+  periodOt?: string | null
+  periodDo?: string | null
+  kommentariy?: string | null
+  kazakhskiy: boolean
+  znacheniyaBlanka: Record<string, string>
+}
+
+/**
+ * Сохранение сформированного отчёта: POST /api/reportalt/{code}/save.
+ *
+ * Пишет документ «Регламентированный отчет» — из таких документов строится список сохранённой
+ * отчётности, как в 1С.
+ */
+export const saveReportAlt = (
+  code: string,
+  body: SaveReportAltBody,
+  signal?: AbortSignal
+) =>
+  apiService.post({
+    url: `/api/reportalt/${code}/save`,
+    data: body,
+    signal,
+  })
+
 export const fetchReportAltParamState = (
   code: string,
   body: ReportAltParamStateBody,

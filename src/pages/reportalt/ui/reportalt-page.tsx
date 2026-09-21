@@ -16,7 +16,7 @@ import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { exportTableToXlsx } from '@/shared/lib/table-export'
 
-import { fetchReportAltBlank } from '../api/reportalt-api'
+import { fetchReportAltBlank, saveReportAlt } from '../api/reportalt-api'
 import { useReportAltMeta } from '../lib/hooks/use-reportalt-meta'
 import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
@@ -245,6 +245,40 @@ export const ReportAltPage = () => {
         return merged
       })
     })
+  }
+
+  /**
+   * «Сохранить» формы 1С: пишет документ «Регламентированный отчет» — из таких документов
+   * строится список сохранённой отчётности. Сам бланк не сохраняется: он пересобирается по
+   * организации и периоду, а вот ручной ввод повторить неоткуда, поэтому уходит в документ.
+   */
+  const handleSave = () => {
+    if (!meta) return
+    const organizatsiya = meta.parameters.find((p) => p.valueType === 'DICTIONARY_REF')
+    const period = meta.parameters.find((p) => p.valueType === 'PERIOD')
+    const periodValue = period
+      ? (values[period.code] as PeriodValue | undefined)
+      : undefined
+    const organizatsiyaValue = organizatsiya
+      ? values[organizatsiya.code]
+      : undefined
+
+    void saveReportAlt(moduleCode, {
+      kodOtcheta: moduleCode,
+      naimenovanie: reportName,
+      organizatsiyaId:
+        typeof organizatsiyaValue === 'number' ? organizatsiyaValue : null,
+      periodOt: periodValue?.from ?? null,
+      periodDo: periodValue?.to ?? null,
+      kazakhskiy: values[LANG_PARAM_CODE] === 'Kz',
+      znacheniyaBlanka: blankValues,
+    })
+      .then(() => {
+        showToast('success', t('reportalt.saved'))
+      })
+      .catch((e: unknown) => {
+        showToast('error', t('reportalt.saveError'), errorMessage(e))
+      })
   }
 
   /** «Очистить» формы 1С: бланк возвращается к пустому, ручной ввод сбрасывается. */
@@ -609,6 +643,14 @@ export const ReportAltPage = () => {
               }}
             >
               {t('reportalt.refresh')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              onClick={handleSave}
+            >
+              {t('reportalt.save')}
             </Button>
           </>
         )}

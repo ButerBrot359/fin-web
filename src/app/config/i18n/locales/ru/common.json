@@ -1648,5 +1648,33 @@
     },
     "cancel": "Отмена",
     "save": "Сохранить"
+  },
+  "swiftExport": {
+    "title": "Выгрузка данных в форматах SWIFT",
+    "colN": "N",
+    "colDocument": "Документ",
+    "colAmount": "Сумма документа",
+    "colErrors": "Ошибки",
+    "colFileName": "Имя файла",
+    "export": "Выгрузить",
+    "cancel": "Отмена",
+    "format": "Формат выгрузки",
+    "encoding": "Кодировка",
+    "filesDownloadedByBrowser": "Файл будет скачан браузером",
+    "errorDetailsTitle": "Подробный текст ошибок проверки",
+    "noErrors": "Ошибок нет",
+    "hasErrorsToast": "Обнаружены ошибки — выгрузка не выполнена",
+    "loadFailed": "Не удалось проверить документ",
+    "formats": {
+      "FORMAT_10_2023": "Формат с 10.2023 года",
+      "FORMAT_01_2024": "Формат с 01.2024 года",
+      "FORMAT_01_2025": "Формат с 01.2025 года (Соц. отчисления)"
+    },
+    "encodings": {
+      "KZ_1048": "ANSI (Windows)",
+      "OEM": "OEM",
+      "UTF_8": "UTF-8",
+      "UTF_16": "UTF-16"
+    }
   }
 }

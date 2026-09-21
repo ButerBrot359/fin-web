@@ -2,6 +2,7 @@ import { renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../types/view'
+import { registerFieldEditHandler } from '../validation/field-edit-bus'
 import { useFieldNode } from './use-field-node'
 
 const mockDispatch = vi.fn(() => Promise.resolve(true))
@@ -92,6 +93,27 @@ describe('useFieldNode', () => {
       { op: 'setProp', nodeId: 'f1', key: 'error', value: null },
     ])
     expect(state.name).toBe('Пётр')
+  })
+
+  it('обычный setValue уведомляет field-edit-bus, тихий (silent) — нет (SCRUM-317 v4 §4.4)', () => {
+    const edited: string[] = []
+    const unregister = registerFieldEditHandler((binding) => {
+      edited.push(binding)
+    })
+    const node = {
+      id: 'f1',
+      type: 'TEXT_FIELD',
+      binding: 'name',
+      props: { visible: true, enabled: true },
+    } as ViewNode
+    const { result } = renderHook(() => useFieldNode(node))
+
+    result.current.setValue('Пётр')
+    expect(edited).toEqual(['name'])
+
+    result.current.setValue(null, { silent: true })
+    expect(edited).toEqual(['name'])
+    unregister()
   })
 
   it('поле без ошибки патч снятия не шлёт', () => {

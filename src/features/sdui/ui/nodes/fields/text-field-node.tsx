@@ -25,8 +25,8 @@ export const TextFieldNode: FC<NodeProps> = ({ node }) => {
       value={value}
       placeholder={placeholder}
       required={f.required}
+      // SCRUM-317 v4 §4.1: текст ошибки живёт в панели и тултипе — под полем только рамка
       error={!!f.error}
-      helperText={f.error}
       disabled={!f.enabled}
       onChange={(e) => {
         f.setValue(e.target.value)

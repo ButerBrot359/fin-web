@@ -29,6 +29,10 @@ export const CheckboxFieldNode: FC<NodeProps> = ({ node }) => {
           <Checkbox
             checked={value}
             disabled={!f.enabled || f.readonly}
+            // SCRUM-317 v4 §4.1: у флажка нет рамки — состояние ошибки
+            // показывает сам квадрат цветом error из палитры темы; текст
+            // ошибки живёт в панели и тултипе.
+            sx={f.error ? { color: 'error.main' } : undefined}
             onChange={(e) => {
               const newVal = e.target.checked
               f.setValue(newVal)
@@ -37,12 +41,12 @@ export const CheckboxFieldNode: FC<NodeProps> = ({ node }) => {
           />
         }
       />
-      {f.error && <FormHelperText>{f.error}</FormHelperText>}
       {/* SCRUM-278 v4: пояснение под лейблом чекбокса с видимым отступом,
-          не в line-box лейбла; показывается только без ошибки валидации.
+          не в line-box лейбла. SCRUM-317 v4 §4.1: текста ошибки здесь больше
+          нет, поэтому пояснение показывается всегда, не только без ошибки.
           position static ОБЯЗАТЕЛЕН: тема глобально абсолютит FormHelperText
           (bottom: -18), из-за чего следующий элемент формы его перекрывает */}
-      {!f.error && helperText && (
+      {helperText && (
         <FormHelperText
           sx={{
             position: 'static',

@@ -43,9 +43,11 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
   })
   useEffect(
     () =>
-      registerRevealHandler((binding) => {
+      registerRevealHandler((binding, kind) => {
+        // v4 §4.5: поиск сужен видом цели — поле шапки не находит вкладку по
+        // одноимённой колонке ТЧ.
         const idx = tabsRef.current.findIndex((tab) =>
-          subtreeHasBinding(tab, binding)
+          subtreeHasBinding(tab, binding, kind)
         )
         if (idx >= 0) setActiveIndex(idx)
       }),

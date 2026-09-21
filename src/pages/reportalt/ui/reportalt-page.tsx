@@ -254,8 +254,10 @@ export const ReportAltPage = () => {
    */
   const handleSave = () => {
     if (!meta) return
-    const organizatsiya = meta.parameters.find((p) => p.valueType === 'DICTIONARY_REF')
-    const period = meta.parameters.find((p) => p.valueType === 'PERIOD')
+    const organizatsiya = meta.parameters.find(
+      (p) => p.dataType === 'DICTIONARY_REF'
+    )
+    const period = meta.parameters.find((p) => p.dataType === 'PERIOD')
     const periodValue = period
       ? (values[period.code] as PeriodValue | undefined)
       : undefined
@@ -738,7 +740,15 @@ export const ReportAltPage = () => {
            ручного ввода уже можно вписывать реквизиты, которых нет в учёте. */
         <div className="min-h-0 overflow-auto pb-4">
           <ReportResultView
-            result={{ rows: [], columns: [], spreadsheet: pustoyBlank }}
+            result={{
+              reportCode: moduleCode,
+              reportNameRu: reportName,
+              appliedParameters: {},
+              columns: [],
+              rows: [],
+              total: {},
+              spreadsheet: pustoyBlank,
+            }}
             blankValues={blankValues}
             onBlankValueChange={izmenitKletku}
           />

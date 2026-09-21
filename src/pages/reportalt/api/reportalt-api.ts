@@ -52,12 +52,18 @@ export const fetchReportAltMeta = (code: string, signal?: AbortSignal) =>
  * В 1С форма отчёта открывается пустым утверждённым бланком, и только «Заполнить» наполняет
  * его данными. Отчёты без бланка отвечают пустым телом — тогда форма ведёт себя как раньше.
  */
-export const fetchReportAltBlank = (code: string, signal?: AbortSignal) =>
+export const fetchReportAltBlank = (
+  code: string,
+  strok = 1,
+  stranits = 1,
+  signal?: AbortSignal
+) =>
   apiService
     .get<
       ReportSpreadsheetDto | ApiResponse<ReportSpreadsheetDto | null> | null
     >({
       url: `/api/reportalt/${code}/blank`,
+      params: { strok, stranits },
       signal,
     })
     .then((res) => unwrap(res.data) ?? null)
@@ -88,6 +94,44 @@ export const saveReportAlt = (
   apiService.post({
     url: `/api/reportalt/${code}/save`,
     data: body,
+    signal,
+  })
+
+/**
+ * Файл ФНО: GET /api/otchetnost/fno/{kodFormy}.
+ *
+ * Кнопка «Выгрузить в XML» формы 1С. Квартал бэк определяет по переданной дате — декларация
+ * сдаётся за квартал целиком.
+ */
+/** Признаки шапки декларации, которые ставит пользователь: расчёт о них не знает. */
+export interface VygruzkaFnoPriznaki {
+  vidDeklaratsii?: string | null
+  nomerUvedomleniya?: string | null
+  dataUvedomleniya?: string | null
+}
+
+export const vygruzkaFno = (
+  kodFormy: string,
+  organizatsiyaId: number,
+  period: string,
+  priznaki: VygruzkaFnoPriznaki = {},
+  signal?: AbortSignal
+) =>
+  apiService.getFileBlob({
+    url: `/api/otchetnost/fno/${kodFormy}`,
+    params: {
+      organizatsiyaId,
+      period,
+      ...(priznaki.vidDeklaratsii
+        ? { vidDeklaratsii: priznaki.vidDeklaratsii }
+        : {}),
+      ...(priznaki.nomerUvedomleniya
+        ? { nomerUvedomleniya: priznaki.nomerUvedomleniya }
+        : {}),
+      ...(priznaki.dataUvedomleniya
+        ? { dataUvedomleniya: priznaki.dataUvedomleniya }
+        : {}),
+    },
     signal,
   })
 

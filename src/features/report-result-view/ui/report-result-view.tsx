@@ -48,6 +48,13 @@ interface ReportResultViewProps {
   blankValues?: Record<string, string>
   /** Изменение клетки бланка; отсутствие ⇒ бланк только для чтения. */
   onBlankValueChange?: (field: string, value: string) => void
+  /** Имя области выделенной клетки бланка — источник расшифровки. */
+  vybrannayaOblast?: string | null
+  /** Клик по клетке бланка. */
+  onVyborOblasti?: (oblast: string | null) => void
+  /** Активная страница бланка и её выбор — нужны командам очистки страницы. */
+  aktivnayaStranitsa?: number
+  onVyborStranitsy?: (indeks: number) => void
   /** Правый клик по строке дерева — те же действия, что по двойному клику. */
   onRowContextMenu?: (
     row: ReportRowDto,
@@ -73,6 +80,10 @@ export const ReportResultView = ({
   onRowContextMenu,
   blankValues,
   onBlankValueChange,
+  vybrannayaOblast,
+  onVyborOblasti,
+  aktivnayaStranitsa,
+  onVyborStranitsy,
 }: ReportResultViewProps) => {
   // Скрываем колонки, выключенные настройками (показатели/группировка), и —
   // когда «Выделять отрицательные» выключено — гасим negativeRed на колонках
@@ -105,6 +116,10 @@ export const ReportResultView = ({
         spreadsheet={result.spreadsheet}
         blankValues={blankValues}
         onBlankValueChange={onBlankValueChange}
+        vybrannayaOblast={vybrannayaOblast}
+        onVyborOblasti={onVyborOblasti}
+        aktivnayaStranitsa={aktivnayaStranitsa}
+        onVyborStranitsy={onVyborStranitsy}
       />
     )
   }

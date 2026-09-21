@@ -16,7 +16,16 @@ import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { exportTableToXlsx } from '@/shared/lib/table-export'
 
-import { fetchReportAltBlank, saveReportAlt } from '../api/reportalt-api'
+import {
+  fetchReportAltBlank,
+  saveReportAlt,
+  vygruzkaFno,
+} from '../api/reportalt-api'
+import { rasshifrovkaKletki } from '../lib/utils/blank-drilldown'
+import {
+  pustyeOblastiStranits,
+  stranitsaPrilozheniya,
+} from '../lib/utils/blank-ochistka'
 import { useReportAltMeta } from '../lib/hooks/use-reportalt-meta'
 import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
@@ -160,6 +169,9 @@ export const ReportAltPage = () => {
   // Клетки бланка, которые заполняет пользователь: в 1С ручная правка табличного документа
   // приоритетнее автозаполнения, поэтому значения уходят в тело /run и возвращаются в бланке.
   const [blankValues, setBlankValues] = useState<Record<string, string>>({})
+  // Выделенная клетка бланка: в 1С «Расшифровать» работает от имени области текущей области.
+  const [vybrannayaOblast, setVybrannayaOblast] = useState<string | null>(null)
+  const [aktivnayaStranitsa, setAktivnayaStranitsa] = useState(0)
   const izmenitKletku = useCallback((field: string, value: string) => {
     setBlankValues((prev) => ({ ...prev, [field]: value }))
   }, [])
@@ -195,9 +207,15 @@ export const ReportAltPage = () => {
 
   // Незаполненный бланк: 1С открывает форму отчёта пустым утверждённым листом и наполняет его
   // только по «Заполнить». Отчёты без бланка отвечают пустым телом — тогда показывать нечего.
+  // «Добавить строку» и «Удалить строку» формы 1С меняют число строк в таблицах приложений:
+  // в макете строка одна и размножается по этому числу.
+  const [strokBlanka, setStrokBlanka] = useState(1)
+  // «Добавить страницу»: экземпляры многостраничного раздела (у формы 200.00 — приложения 200.03).
+  const [stranitsBlanka, setStranitsBlanka] = useState(1)
   const { data: pustoyBlank } = useQuery({
-    queryKey: ['reportalt-blank', moduleCode],
-    queryFn: ({ signal }) => fetchReportAltBlank(moduleCode, signal),
+    queryKey: ['reportalt-blank', moduleCode, strokBlanka],
+    queryFn: ({ signal }) =>
+      fetchReportAltBlank(moduleCode, strokBlanka, stranitsBlanka, signal),
     enabled: moduleCode.length > 0,
     staleTime: Infinity,
   })
@@ -212,6 +230,32 @@ export const ReportAltPage = () => {
     isFetchingNextPage,
     refetch,
   } = useRunReportAlt(moduleCode, appliedBody, appliedBody != null, isLedger)
+
+  // Бланк на экране: заполненный после «Сформировать», иначе пустой утверждённый лист.
+  const blankDokument = result?.spreadsheet ?? pustoyBlank ?? undefined
+  // Пустой бланк показывается тем же рендерером результата — без строк, колонок и итогов.
+  const pustoyBlankResult = pustoyBlank
+    ? {
+        reportCode: moduleCode,
+        reportNameRu: reportName,
+        appliedParameters: {},
+        columns: [],
+        rows: [],
+        total: {},
+        spreadsheet: pustoyBlank,
+      }
+    : null
+
+  // «Добавить страницу» работает только на многостраничном разделе — приложении 200.03.
+  const estMnogostranichnyyRazdel =
+    blankDokument?.sheets.some((s) =>
+      stranitsaPrilozheniya(s.title, '200.03')
+    ) ?? false
+
+  const estPrilozhenie20005 =
+    blankDokument?.sheets.some((s) =>
+      stranitsaPrilozheniya(s.title, '200.05')
+    ) ?? false
 
   // Ошибка формирования (422 — невалидные параметры / слишком большой
   // результат; прочее) — тостом, с сообщением бэка при наличии.
@@ -254,16 +298,8 @@ export const ReportAltPage = () => {
    */
   const handleSave = () => {
     if (!meta) return
-    const organizatsiya = meta.parameters.find(
-      (p) => p.dataType === 'DICTIONARY_REF'
-    )
-    const period = meta.parameters.find((p) => p.dataType === 'PERIOD')
-    const periodValue = period
-      ? (values[period.code] as PeriodValue | undefined)
-      : undefined
-    const organizatsiyaValue = organizatsiya
-      ? values[organizatsiya.code]
-      : undefined
+    const periodValue = values.Period as PeriodValue | undefined
+    const organizatsiyaValue = values.Organizatsiya
 
     void saveReportAlt(moduleCode, {
       kodOtcheta: moduleCode,
@@ -291,6 +327,17 @@ export const ReportAltPage = () => {
       next.delete(p.code)
     })
     setSearchParams(next, { replace: true })
+  }
+
+  /**
+   * «Очистить текущую страницу» и «Очистить приложение 200.05» формы 1С: стираются области
+   * только выбранных страниц, остальной бланк остаётся заполненным.
+   */
+  const ochistitStranitsy = (
+    nuzhna: (title: string, indeks: number) => boolean
+  ) => {
+    const pustye = pustyeOblastiStranits(blankDokument, nuzhna)
+    setBlankValues((prev) => ({ ...prev, ...pustye }))
   }
 
   const handleSubmit = () => {
@@ -465,6 +512,65 @@ export const ReportAltPage = () => {
 
   // Печать в PDF: бэк может отвечать 501 (печать не реализована) — тост.
   const [isPrinting, setIsPrinting] = useState(false)
+  /**
+   * «Выгрузить в XML» формы 1С: файл ФНО по организации и кварталу отчёта.
+   *
+   * Коды форм налоговой отчётности бэк принимает в виде «200.00» — у нас он живёт в наименовании
+   * отчёта, поэтому берётся оттуда; отчёты, у которых такого кода нет, выгрузку не поддерживают.
+   */
+  const stroka = (znachenie: ReportAltParamValue): string | null =>
+    typeof znachenie === 'string' && znachenie.length > 0 ? znachenie : null
+
+  const handleExportXml = () => {
+    const kodFormy = /\d{3}\.\d{2}/.exec(reportName)?.[0]
+    const organizatsiyaId = values.Organizatsiya
+    const periodValue = values.Period as PeriodValue | undefined
+
+    if (
+      !kodFormy ||
+      typeof organizatsiyaId !== 'number' ||
+      !periodValue?.from
+    ) {
+      showToast('warning', t('reportalt.exportXmlUnavailable'))
+      return
+    }
+    void vygruzkaFno(kodFormy, organizatsiyaId, periodValue.from, {
+      vidDeklaratsii: stroka(values.VidDeklaratsii),
+      nomerUvedomleniya: stroka(values.NomerUvedomleniya),
+      dataUvedomleniya: stroka(values.DataUvedomleniya),
+    })
+      .then((res) => {
+        const ssylka = document.createElement('a')
+        ssylka.href = URL.createObjectURL(res.data)
+        ssylka.download = `${kodFormy}.xml`
+        ssylka.click()
+      })
+      .catch((e: unknown) => {
+        showToast('error', t('reportalt.exportXmlUnavailable'), errorMessage(e))
+      })
+  }
+
+  /**
+   * «Расшифровать» формы 1С: от имени области выделенной клетки бланка открывается регистр
+   * налогового учёта по ИПН и СН за месяц её графы (графа 4 — за весь квартал).
+   */
+  const handleDecipher = () => {
+    const organizatsiyaId = values.Organizatsiya
+    const period = values.Period as PeriodValue | undefined
+    const target = rasshifrovkaKletki(
+      vybrannayaOblast,
+      typeof organizatsiyaId === 'number' ? organizatsiyaId : null,
+      period
+    )
+    if (!target) {
+      showToast('warning', t('reportalt.decipherUnavailable'))
+      return
+    }
+    void navigate(
+      `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`
+    )
+  }
+
   const handlePrintPdf = () => {
     if (!appliedBody || isPrinting) return
     // Язык печати — выбранный «Язык формы» (YazykFormy): берём применённое
@@ -654,6 +760,93 @@ export const ReportAltPage = () => {
             >
               {t('reportalt.save')}
             </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              onClick={handleExportXml}
+            >
+              {t('reportalt.exportXml')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              onClick={handleDecipher}
+            >
+              {t('reportalt.decipher')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              disabled={blankDokument == null}
+              onClick={() => {
+                ochistitStranitsy((_, indeks) => indeks === aktivnayaStranitsa)
+              }}
+            >
+              {t('reportalt.clearPage')}
+            </Button>
+            {estPrilozhenie20005 && (
+              <Button
+                variant="outlined"
+                size="medium"
+                sx={{ height: 48, flexShrink: 0 }}
+                onClick={() => {
+                  ochistitStranitsy((title) =>
+                    stranitsaPrilozheniya(title, '200.05')
+                  )
+                }}
+              >
+                {t('reportalt.clearPrilozhenie20005')}
+              </Button>
+            )}
+            {estMnogostranichnyyRazdel && (
+              <>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 48, flexShrink: 0 }}
+                  onClick={() => {
+                    setStranitsBlanka((prev) => prev + 1)
+                  }}
+                >
+                  {t('reportalt.addPage')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 48, flexShrink: 0 }}
+                  disabled={stranitsBlanka <= 1}
+                  onClick={() => {
+                    setStranitsBlanka((prev) => Math.max(prev - 1, 1))
+                  }}
+                >
+                  {t('reportalt.removePage')}
+                </Button>
+              </>
+            )}
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              onClick={() => {
+                setStrokBlanka((prev) => prev + 1)
+              }}
+            >
+              {t('reportalt.addRow')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              disabled={strokBlanka <= 1}
+              onClick={() => {
+                setStrokBlanka((prev) => Math.max(prev - 1, 1))
+              }}
+            >
+              {t('reportalt.removeRow')}
+            </Button>
           </>
         )}
         {/* Панель настроек — для отчётов с наполненным meta (F-S3) ИЛИ когда
@@ -704,6 +897,10 @@ export const ReportAltPage = () => {
                 result={result}
                 blankValues={blankValues}
                 onBlankValueChange={izmenitKletku}
+                vybrannayaOblast={vybrannayaOblast}
+                onVyborOblasti={setVybrannayaOblast}
+                aktivnayaStranitsa={aktivnayaStranitsa}
+                onVyborStranitsy={setAktivnayaStranitsa}
                 onDrilldown={(row) => {
                   if (!row.rowRef || row.rowRef.domain === 'ACCOUNT_PLAN')
                     return
@@ -735,22 +932,18 @@ export const ReportAltPage = () => {
             </div>
           )}
         </div>
-      ) : pustoyBlank ? (
+      ) : pustoyBlankResult ? (
         /* Как в 1С: до «Заполнить» форма показывает пустой утверждённый бланк, и в его клетки
            ручного ввода уже можно вписывать реквизиты, которых нет в учёте. */
         <div className="min-h-0 overflow-auto pb-4">
           <ReportResultView
-            result={{
-              reportCode: moduleCode,
-              reportNameRu: reportName,
-              appliedParameters: {},
-              columns: [],
-              rows: [],
-              total: {},
-              spreadsheet: pustoyBlank,
-            }}
+            result={pustoyBlankResult}
             blankValues={blankValues}
             onBlankValueChange={izmenitKletku}
+            vybrannayaOblast={vybrannayaOblast}
+            onVyborOblasti={setVybrannayaOblast}
+            aktivnayaStranitsa={aktivnayaStranitsa}
+            onVyborStranitsy={setAktivnayaStranitsa}
           />
         </div>
       ) : (

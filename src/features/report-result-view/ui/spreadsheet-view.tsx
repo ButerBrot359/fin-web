@@ -26,6 +26,13 @@ interface SpreadsheetViewProps {
    * их не перетирает. Отсутствие обработчика ⇒ бланк только для чтения.
    */
   onBlankValueChange?: (field: string, value: string) => void
+  /** Имя области выделенной клетки — по нему строится расшифровка, как в 1С. */
+  vybrannayaOblast?: string | null
+  /** Клик по клетке бланка: в 1С расшифровка идёт от имени области текущей области. */
+  onVyborOblasti?: (oblast: string | null) => void
+  /** Активная страница бланка; без неё список страниц ведёт себя сам. */
+  aktivnayaStranitsa?: number
+  onVyborStranitsy?: (indeks: number) => void
 }
 
 const GRAN: Record<string, string> = {
@@ -126,12 +133,16 @@ interface SheetViewProps {
   sheet: ReportSpreadsheetSheetDto
   blankValues?: Record<string, string>
   onBlankValueChange?: (field: string, value: string) => void
+  vybrannayaOblast?: string | null
+  onVyborOblasti?: (oblast: string | null) => void
 }
 
 const SheetView = ({
   sheet,
   blankValues,
   onBlankValueChange,
+  vybrannayaOblast,
+  onVyborOblasti,
 }: SheetViewProps) => {
   const stroki = useMemo(() => razmetka(sheet), [sheet])
   return (
@@ -154,7 +165,24 @@ const SheetView = ({
                     key={klyuch(kletka.row, kletka.column)}
                     rowSpan={kletka.rowSpan ?? 1}
                     colSpan={kletka.colSpan ?? 1}
-                    style={{ padding: 0, ...stilYacheyki(kletka.style) }}
+                    style={{
+                      padding: 0,
+                      ...stilYacheyki(kletka.style),
+                      ...(kletka.field != null &&
+                      kletka.field === vybrannayaOblast
+                        ? {
+                            outline: `2px solid ${cssVar(semantic.primary)}`,
+                            outlineOffset: '-2px',
+                          }
+                        : {}),
+                    }}
+                    onClick={
+                      onVyborOblasti
+                        ? () => {
+                            onVyborOblasti(kletka.field ?? null)
+                          }
+                        : undefined
+                    }
                   >
                     {kletka.editable && kletka.field && onBlankValueChange ? (
                       <input
@@ -171,7 +199,11 @@ const SheetView = ({
                         }}
                       />
                     ) : (
-                      (kletka.text ?? '')
+                      ((kletka.field != null
+                        ? blankValues?.[kletka.field]
+                        : undefined) ??
+                      kletka.text ??
+                      '')
                     )}
                   </td>
                 ) : (
@@ -186,42 +218,144 @@ const SheetView = ({
   )
 }
 
+/**
+ * Дерево страниц бланка — как список страниц формы отчёта в 1С.
+ *
+ * <p>Страницы самой формы идут верхним уровнем, страницы приложений сворачиваются в узел своего
+ * приложения: у формы 200.00 это «200.01» (три страницы), «200.02» (девять), «200.03» (две) и
+ * «200.05» (семь). Плоский ряд из двух десятков кнопок читать невозможно, а в эталоне это именно
+ * дерево слева от бланка.
+ */
+const SpisokStranits = ({
+  sheets,
+  aktivnyy,
+  onVybor,
+}: {
+  sheets: ReportSpreadsheetSheetDto[]
+  aktivnyy: number
+  onVybor: (indeks: number) => void
+}) => {
+  const [svernutye, setSvernutye] = useState<Record<string, boolean>>({})
+
+  // Имя листа приложения — «200.01 стр.1»; до пробела стоит номер приложения, он и даёт узел.
+  const uzly: {
+    prilozhenie: string | null
+    stranitsy: { title: string; indeks: number }[]
+  }[] = []
+  sheets.forEach((s, indeks) => {
+    const prilozhenie = /^\d/.test(s.title) ? s.title.split(' ')[0] : null
+    const posledniy = uzly.at(-1)
+    if (prilozhenie != null && posledniy?.prilozhenie === prilozhenie) {
+      posledniy.stranitsy.push({ title: s.title, indeks })
+      return
+    }
+    uzly.push({ prilozhenie, stranitsy: [{ title: s.title, indeks }] })
+  })
+
+  const knopka = (title: string, indeks: number, vlozhennaya: boolean) => (
+    <button
+      key={indeks}
+      type="button"
+      onClick={() => {
+        onVybor(indeks)
+      }}
+      className={`w-full rounded px-2 py-1 text-left text-sm ${
+        vlozhennaya ? 'pl-6' : ''
+      } ${
+        indeks === aktivnyy
+          ? 'bg-blue-50 font-medium text-blue-700'
+          : 'text-ui-05 hover:bg-pending-gray-7'
+      }`}
+    >
+      {title}
+    </button>
+  )
+
+  return (
+    <div className="max-h-full w-56 shrink-0 overflow-auto border-r border-pending-gray-6 pr-2">
+      {uzly.map((uzel) =>
+        uzel.prilozhenie == null ? (
+          uzel.stranitsy.map((s) => knopka(s.title, s.indeks, false))
+        ) : (
+          <Prilozhenie
+            key={uzel.prilozhenie}
+            nomer={uzel.prilozhenie}
+            stranitsy={uzel.stranitsy}
+            svernuto={svernutye[uzel.prilozhenie] ?? false}
+            onPereklyuchit={() => {
+              const nomer = uzel.prilozhenie!
+              setSvernutye((prev) => ({ ...prev, [nomer]: !prev[nomer] }))
+            }}
+            knopka={knopka}
+          />
+        )
+      )}
+    </div>
+  )
+}
+
+/** Узел приложения в дереве страниц: заголовок со стрелкой и вложенные страницы. */
+const Prilozhenie = ({
+  nomer,
+  stranitsy,
+  svernuto,
+  onPereklyuchit,
+  knopka,
+}: {
+  nomer: string
+  stranitsy: { title: string; indeks: number }[]
+  svernuto: boolean
+  onPereklyuchit: () => void
+  knopka: (
+    title: string,
+    indeks: number,
+    vlozhennaya: boolean
+  ) => React.ReactNode
+}) => (
+  <div>
+    <button
+      type="button"
+      onClick={onPereklyuchit}
+      className="w-full rounded px-2 py-1 text-left text-sm font-medium text-ui-05 hover:bg-pending-gray-7"
+    >
+      {svernuto ? '▸' : '▾'} Приложение {nomer}
+    </button>
+    {!svernuto &&
+      stranitsy.map((s) =>
+        knopka(s.title.replace(`${nomer} `, ''), s.indeks, true)
+      )}
+  </div>
+)
+
 export const SpreadsheetView = ({
   spreadsheet,
   blankValues,
   onBlankValueChange,
+  vybrannayaOblast,
+  onVyborOblasti,
+  aktivnayaStranitsa,
+  onVyborStranitsy,
 }: SpreadsheetViewProps) => {
   const sheets = spreadsheet.sheets
-  const [aktivnyy, setAktivnyy] = useState(0)
+  const [svoyaStranitsa, setSvoyuStranitsu] = useState<number>(0)
+  const aktivnyy: number = aktivnayaStranitsa ?? svoyaStranitsa
+  const vybrat: (indeks: number) => void = onVyborStranitsy ?? setSvoyuStranitsu
   if (sheets.length === 0) return null
   const sheet = sheets[Math.min(aktivnyy, sheets.length - 1)]
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex min-h-0 gap-3">
       {sheets.length > 1 && (
-        <div className="flex flex-wrap gap-1">
-          {sheets.map((s, i) => (
-            <button
-              key={s.code}
-              type="button"
-              onClick={() => {
-                setAktivnyy(i)
-              }}
-              className={`rounded border px-3 py-1 text-sm ${
-                i === aktivnyy
-                  ? 'border-blue-600 bg-blue-50 text-blue-700'
-                  : 'border-pending-gray-6 bg-white'
-              }`}
-            >
-              {s.title}
-            </button>
-          ))}
-        </div>
+        <SpisokStranits sheets={sheets} aktivnyy={aktivnyy} onVybor={vybrat} />
       )}
-      <SheetView
-        sheet={sheet}
-        blankValues={blankValues}
-        onBlankValueChange={onBlankValueChange}
-      />
+      <div className="min-w-0 flex-1 overflow-auto">
+        <SheetView
+          sheet={sheet}
+          blankValues={blankValues}
+          onBlankValueChange={onBlankValueChange}
+          vybrannayaOblast={vybrannayaOblast}
+          onVyborOblasti={onVyborOblasti}
+        />
+      </div>
     </div>
   )
 }

@@ -17,6 +17,7 @@ import { useCellValueApplier } from '../../../lib/hooks/use-cell-value-applier'
 import { useTableSearch } from '../../../lib/hooks/use-table-search'
 import { useSearchScroll } from '../../../lib/hooks/use-search-scroll'
 import { useTableRowCommands } from '../../../lib/hooks/use-table-row-commands'
+import { useTableMultiSelection } from '../../../lib/hooks/use-table-multi-selection'
 import { useTableScrollContainer } from '../../../lib/hooks/use-table-scroll-container'
 import { windowedRows } from '../../../lib/utils/virtual-window'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
@@ -117,6 +118,13 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const selectedRowId =
     selectedIndex != null ? (visibleRows[selectedIndex]?.rowId ?? null) : null
 
+  // Выделение НЕСКОЛЬКИХ строк (Ctrl/Shift/Ctrl+A) поверх текущей строки — как в 1С.
+  const vybor = useTableMultiSelection(visibleRows)
+
+  // Выделение живёт только при текущей строке: её снимают и снаружи, и тогда «Удалить»
+  // обязана погаснуть вместе с ней.
+  const vydelennyeRowIds = selectedRowId === null ? [] : vybor.vydelennyeRowIds
+
   const search = useTableSearch(
     visibleRows,
     visibleColumns.map((c) => ({ id: c.id, binding: c.binding }))
@@ -179,18 +187,23 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     columns,
     visibleRows,
     selectedRowId,
+    selectedRowIds: vydelennyeRowIds,
     selectedVisibleIndex: selectedIndex ?? -1,
     onAdd: () => {
       sync.addRow(columns)
     },
     clearSelection: () => {
       setSelectedIndex(null)
+      vybor.tolkoOdna(null)
     },
     // Селекция здесь индексная, а хук оперирует rowId — переводим по видимому набору.
     selectRow: (rowId) => {
       const index = visibleRows.findIndex((row) => row.rowId === rowId)
       if (index >= 0) setSelectedIndex(index)
+      vybor.tolkoOdna(rowId)
     },
+    selectAll: vybor.vydelitVse,
+    extendSelection: vybor.rasshirit,
     globalIndexOf,
     // Индексная селекция: выделение сдвигается вслед за перемещённой строкой.
     onMoved: (toVisibleIndex) => {
@@ -221,6 +234,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           commands={tableCommands}
           search={search}
           selectedRowId={selectedRowId}
+          selectedRowIds={vydelennyeRowIds}
         />
       </div>
       <TableContainer
@@ -267,10 +281,17 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                     <TableBodyRow
                       key={row.id}
                       row={row}
-                      selected={selectedIndex === row.index}
+                      selected={
+                        selectedIndex === row.index ||
+                        vybor.vydelennye.has(row.original.rowId)
+                      }
                       rowError={rowErrors.has(row.index)}
-                      onRowClick={() => {
+                      onRowClick={(event) => {
                         setSelectedIndex(row.index)
+                        vybor.klik(row.original.rowId, row.index, {
+                          ctrl: event.ctrlKey || event.metaKey,
+                          shift: event.shiftKey,
+                        })
                         activateRow(row.id)
                       }}
                       onRowDoubleClick={(event) => {

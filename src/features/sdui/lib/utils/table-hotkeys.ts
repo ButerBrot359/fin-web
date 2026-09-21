@@ -15,6 +15,12 @@ export interface TableHotkeyHandlers {
   onMoveDown: () => void
   onFocusSearch: () => void
   onClearSearch: () => void
+  /** Ctrl+A — выделить все строки таблицы (в ячейке остаётся выделением текста). */
+  onSelectAll?: () => void
+  /** Shift + стрелка вверх — расширить выделение на строку выше. */
+  onExtendPrev?: () => void
+  /** Shift + стрелка вниз — расширить выделение на строку ниже. */
+  onExtendNext?: () => void
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -40,6 +46,14 @@ export function createTableHotkeysHandler(
     if (e.ctrlKey && e.key.toLowerCase() === 'q') {
       e.preventDefault()
       handlers.onClearSearch()
+      return
+    }
+    if (ctrl && e.key.toLowerCase() === 'a' && !e.shiftKey) {
+      // В ячейке Ctrl+A обязан остаться «выделить текст» — иначе правка значения
+      // превратилась бы в выделение всей таблицы.
+      if (isEditableTarget(e.target)) return
+      e.preventDefault()
+      handlers.onSelectAll?.()
       return
     }
     if (ctrl && e.shiftKey && e.key === 'ArrowUp') {
@@ -76,6 +90,16 @@ export function createTableHotkeysHandler(
     // реагировали» (обращение 20.09.2026 по доверенности). Модификаторы уже
     // разобраны выше (Ctrl+Shift+стрелки переставляют строку), а внутри ячейки
     // стрелки остаются за курсором — сюда мы не доходим (isEditableTarget).
+    if (e.shiftKey && e.key === 'ArrowUp') {
+      e.preventDefault()
+      handlers.onExtendPrev?.()
+      return
+    }
+    if (e.shiftKey && e.key === 'ArrowDown') {
+      e.preventDefault()
+      handlers.onExtendNext?.()
+      return
+    }
     if (e.key === 'ArrowUp') {
       e.preventDefault()
       handlers.onSelectPrev()

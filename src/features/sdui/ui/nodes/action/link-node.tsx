@@ -1,6 +1,8 @@
 import type { FC } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
-import { Link, Tooltip } from '@mui/material'
+import { Link } from '@mui/material'
+
+import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
 
 import type { NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -34,9 +36,9 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
     if (!tooltip) return disabledLink
 
     return (
-      <Tooltip title={tooltip}>
-        <span style={{ display: 'inline-flex' }}>{disabledLink}</span>
-      </Tooltip>
+      <DisabledReasonTooltip reason={tooltip}>
+        {disabledLink}
+      </DisabledReasonTooltip>
     )
   }
 

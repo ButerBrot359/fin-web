@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 
+import { cssVar, semantic } from '@/shared/design/tokens'
+
 import type {
   ReportSpreadsheetCellDto,
   ReportSpreadsheetCellStyleDto,
@@ -27,8 +29,11 @@ const GRAN: Record<string, string> = {
   dotted: '1px dotted',
 }
 
+// Дефолт границы без цвета от бэка — токен текста, не literal (страж no-hex-drift)
 const granitsa = (value?: string, color?: string): string | undefined =>
-  value ? `${GRAN[value] ?? GRAN.thin} ${color ?? '#000000'}` : undefined
+  value
+    ? `${GRAN[value] ?? GRAN.thin} ${color ?? cssVar(semantic.textPrimary)}`
+    : undefined
 
 const stilYacheyki = (
   style: ReportSpreadsheetCellStyleDto | undefined

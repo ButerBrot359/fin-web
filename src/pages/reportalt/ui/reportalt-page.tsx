@@ -210,10 +210,12 @@ export const ReportAltPage = () => {
   // «Добавить строку» и «Удалить строку» формы 1С меняют число строк в таблицах приложений:
   // в макете строка одна и размножается по этому числу.
   const [strokBlanka, setStrokBlanka] = useState(1)
+  // «Добавить страницу»: экземпляры многостраничного раздела (у формы 200.00 — приложения 200.03).
+  const [stranitsBlanka, setStranitsBlanka] = useState(1)
   const { data: pustoyBlank } = useQuery({
     queryKey: ['reportalt-blank', moduleCode, strokBlanka],
     queryFn: ({ signal }) =>
-      fetchReportAltBlank(moduleCode, strokBlanka, signal),
+      fetchReportAltBlank(moduleCode, strokBlanka, stranitsBlanka, signal),
     enabled: moduleCode.length > 0,
     staleTime: Infinity,
   })
@@ -230,7 +232,26 @@ export const ReportAltPage = () => {
   } = useRunReportAlt(moduleCode, appliedBody, appliedBody != null, isLedger)
 
   // Бланк на экране: заполненный после «Сформировать», иначе пустой утверждённый лист.
-  const blankDokument = result?.spreadsheet ?? pustoyBlank
+  const blankDokument = result?.spreadsheet ?? pustoyBlank ?? undefined
+  // Пустой бланк показывается тем же рендерером результата — без строк, колонок и итогов.
+  const pustoyBlankResult = pustoyBlank
+    ? {
+        reportCode: moduleCode,
+        reportNameRu: reportName,
+        appliedParameters: {},
+        columns: [],
+        rows: [],
+        total: {},
+        spreadsheet: pustoyBlank,
+      }
+    : null
+
+  // «Добавить страницу» работает только на многостраничном разделе — приложении 200.03.
+  const estMnogostranichnyyRazdel =
+    blankDokument?.sheets.some((s) =>
+      stranitsaPrilozheniya(s.title, '200.03')
+    ) ?? false
+
   const estPrilozhenie20005 =
     blankDokument?.sheets.some((s) =>
       stranitsaPrilozheniya(s.title, '200.05')
@@ -277,16 +298,8 @@ export const ReportAltPage = () => {
    */
   const handleSave = () => {
     if (!meta) return
-    const organizatsiya = meta.parameters.find(
-      (p) => p.valueType === 'DICTIONARY_REF'
-    )
-    const period = meta.parameters.find((p) => p.valueType === 'PERIOD')
-    const periodValue = period
-      ? (values[period.code] as PeriodValue | undefined)
-      : undefined
-    const organizatsiyaValue = organizatsiya
-      ? values[organizatsiya.code]
-      : undefined
+    const periodValue = values.Period as PeriodValue | undefined
+    const organizatsiyaValue = values.Organizatsiya
 
     void saveReportAlt(moduleCode, {
       kodOtcheta: moduleCode,
@@ -510,16 +523,8 @@ export const ReportAltPage = () => {
 
   const handleExportXml = () => {
     const kodFormy = /\d{3}\.\d{2}/.exec(reportName)?.[0]
-    const organizatsiya = meta?.parameters.find(
-      (p) => p.valueType === 'DICTIONARY_REF'
-    )
-    const period = meta?.parameters.find((p) => p.valueType === 'PERIOD')
-    const organizatsiyaId = organizatsiya
-      ? values[organizatsiya.code]
-      : undefined
-    const periodValue = period
-      ? (values[period.code] as PeriodValue | undefined)
-      : undefined
+    const organizatsiyaId = values.Organizatsiya
+    const periodValue = values.Period as PeriodValue | undefined
 
     if (
       !kodFormy ||
@@ -796,6 +801,31 @@ export const ReportAltPage = () => {
                 {t('reportalt.clearPrilozhenie20005')}
               </Button>
             )}
+            {estMnogostranichnyyRazdel && (
+              <>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 48, flexShrink: 0 }}
+                  onClick={() => {
+                    setStranitsBlanka((prev) => prev + 1)
+                  }}
+                >
+                  {t('reportalt.addPage')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 48, flexShrink: 0 }}
+                  disabled={stranitsBlanka <= 1}
+                  onClick={() => {
+                    setStranitsBlanka((prev) => Math.max(prev - 1, 1))
+                  }}
+                >
+                  {t('reportalt.removePage')}
+                </Button>
+              </>
+            )}
             <Button
               variant="outlined"
               size="medium"
@@ -902,12 +932,12 @@ export const ReportAltPage = () => {
             </div>
           )}
         </div>
-      ) : pustoyBlank ? (
+      ) : pustoyBlankResult ? (
         /* Как в 1С: до «Заполнить» форма показывает пустой утверждённый бланк, и в его клетки
            ручного ввода уже можно вписывать реквизиты, которых нет в учёте. */
         <div className="min-h-0 overflow-auto pb-4">
           <ReportResultView
-            result={{ rows: [], columns: [], spreadsheet: pustoyBlank }}
+            result={pustoyBlankResult}
             blankValues={blankValues}
             onBlankValueChange={izmenitKletku}
             vybrannayaOblast={vybrannayaOblast}

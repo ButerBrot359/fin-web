@@ -26,6 +26,13 @@ interface SpreadsheetViewProps {
    * их не перетирает. Отсутствие обработчика ⇒ бланк только для чтения.
    */
   onBlankValueChange?: (field: string, value: string) => void
+  /** Имя области выделенной клетки — по нему строится расшифровка, как в 1С. */
+  vybrannayaOblast?: string | null
+  /** Клик по клетке бланка: в 1С расшифровка идёт от имени области текущей области. */
+  onVyborOblasti?: (oblast: string | null) => void
+  /** Активная страница бланка; без неё список страниц ведёт себя сам. */
+  aktivnayaStranitsa?: number
+  onVyborStranitsy?: (indeks: number) => void
 }
 
 const GRAN: Record<string, string> = {

@@ -52,12 +52,18 @@ export const fetchReportAltMeta = (code: string, signal?: AbortSignal) =>
  * В 1С форма отчёта открывается пустым утверждённым бланком, и только «Заполнить» наполняет
  * его данными. Отчёты без бланка отвечают пустым телом — тогда форма ведёт себя как раньше.
  */
-export const fetchReportAltBlank = (code: string, signal?: AbortSignal) =>
+export const fetchReportAltBlank = (
+  code: string,
+  strok = 1,
+  stranits = 1,
+  signal?: AbortSignal
+) =>
   apiService
     .get<
       ReportSpreadsheetDto | ApiResponse<ReportSpreadsheetDto | null> | null
     >({
       url: `/api/reportalt/${code}/blank`,
+      params: { strok, stranits },
       signal,
     })
     .then((res) => unwrap(res.data) ?? null)

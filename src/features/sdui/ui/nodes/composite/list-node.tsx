@@ -168,31 +168,36 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-2">
       {/* Период, отборы и поиск — ОДНОЙ строкой, как шапка журнала 1С: там «Период»,
           «Организация» и прочие параметры стоят в ряд, а не двумя этажами над таблицей
-          (обращение 20.09.2026). Ряд переносится, когда параметров больше, чем ширины. */}
-      <div className="flex flex-wrap items-center gap-4">
-        {periodCommand && (
-          <ListPeriodControl
-            period={periodProp ?? { from: null, to: null }}
-            command={periodCommand}
-            nodeId={node.id}
-            dispatch={dispatch}
-          />
-        )}
+          (обращение 20.09.2026). Ряд переносится, когда параметров больше, чем ширины.
+          Поиск — отдельной группой справа (`justify-between`), как во всех прочих
+          тулбарах приложения: `ml-auto` на самом поле оставлял его прижатым к отборам,
+          а не к правому краю (обращение 21.09.2026). */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          {periodCommand && (
+            <ListPeriodControl
+              period={periodProp ?? { from: null, to: null }}
+              command={periodCommand}
+              nodeId={node.id}
+              dispatch={dispatch}
+            />
+          )}
 
-        {filterCommand && (
-          <ListQuickFilters
-            filters={quickFilters}
-            onApply={(field, op, value) => {
-              void dispatch({
-                type: 'COMMAND',
-                command: filterCommand,
-                value:
-                  value === undefined ? { field, op } : { field, op, value },
-                sourceNodeId: node.id,
-              })
-            }}
-          />
-        )}
+          {filterCommand && (
+            <ListQuickFilters
+              filters={quickFilters}
+              onApply={(field, op, value) => {
+                void dispatch({
+                  type: 'COMMAND',
+                  command: filterCommand,
+                  value:
+                    value === undefined ? { field, op } : { field, op, value },
+                  sourceNodeId: node.id,
+                })
+              }}
+            />
+          )}
+        </div>
 
         {searchable && (
           <SearchInput

@@ -25,10 +25,10 @@ vi.mock('./selection-list-table', () => ({ SelectionListTable: () => null }))
 const tableNode = (props: Record<string, unknown>): ViewNode =>
   ({ id: 't1', type: 'TABLE', binding: 'TMZ', props }) as ViewNode
 
-describe('TableNode: подсветка ТЧ по props.error', () => {
+describe('TableNode: подсветка ТЧ по props.error (SCRUM-317 v4 §4.1)', () => {
   afterEach(cleanup)
 
-  it('текст ошибки показан рядом с таблицей', () => {
+  it('ошибка → таблица обведена рамкой, ТЕКСТА ошибки под ней нет (живёт в панели)', () => {
     render(
       <TableNode
         node={tableNode({
@@ -38,17 +38,18 @@ describe('TableNode: подсветка ТЧ по props.error', () => {
       />
     )
     expect(screen.getByTestId('read-only-table')).toBeTruthy()
+    expect(screen.getByTestId('table-error-frame')).toBeTruthy()
     expect(
-      screen.getByText(
+      screen.queryByText(
         'Не заполнено движение ТМЗ для номенклатуры 000000004 (строка 1).'
       )
-    ).toBeTruthy()
+    ).toBeNull()
   })
 
-  it('без ошибки таблица рендерится как прежде', () => {
-    const { container } = render(<TableNode node={tableNode({})} />)
+  it('без ошибки таблица рендерится как прежде — без рамки', () => {
+    render(<TableNode node={tableNode({})} />)
     expect(screen.getByTestId('read-only-table')).toBeTruthy()
-    expect(container.querySelector('.MuiFormHelperText-root')).toBeNull()
+    expect(screen.queryByTestId('table-error-frame')).toBeNull()
   })
 
   it('скрытая таблица остаётся скрытой даже с ошибкой', () => {

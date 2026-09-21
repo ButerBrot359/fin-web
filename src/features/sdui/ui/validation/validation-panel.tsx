@@ -1,4 +1,4 @@
-import type { FC } from 'react'
+import { useEffect, useRef, type FC } from 'react'
 import { Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
@@ -12,10 +12,20 @@ import {
 
 import { targetBinding } from '../../lib/validation/target-binding'
 
+/**
+ * SCRUM-317 v4 §4.3: контракт с shared/ui/toast — стек тостов читает эту
+ * переменную и поднимается над панелью. Высота переменная (список
+ * прокручивается до 40vh), поэтому меряем ResizeObserver'ом, а не константой.
+ */
+const PANEL_HEIGHT_CSS_VAR = '--sdui-validation-panel-height'
+
 interface ValidationPanelProps {
   report: ValidationReport
   activeId: string | null
+  /** Одиночный клик: ведёт к цели, окно тултипа не трогает (v4 §4.4). */
   onSelect: (message: ValidationMessage) => void
+  /** Двойной клик: возвращает окно тултипа (v4 §4.4). */
+  onActivate: (message: ValidationMessage) => void
   onClose: () => void
 }
 
@@ -29,15 +39,37 @@ export const ValidationPanel: FC<ValidationPanelProps> = ({
   report,
   activeId,
   onSelect,
+  onActivate,
   onClose,
 }) => {
   const { t } = useTranslation()
+  const rootRef = useRef<HTMLDivElement>(null)
   const errorCount = report.messages.filter(
     (m) => m.severity !== 'WARNING'
   ).length
 
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el) return
+    const publish = () => {
+      document.documentElement.style.setProperty(
+        PANEL_HEIGHT_CSS_VAR,
+        `${String(el.offsetHeight)}px`
+      )
+    }
+    publish()
+    const observer = new ResizeObserver(publish)
+    observer.observe(el)
+    return () => {
+      observer.disconnect()
+      // Обязательно: иначе тосты останутся висеть над пустым местом.
+      document.documentElement.style.removeProperty(PANEL_HEIGHT_CSS_VAR)
+    }
+  }, [])
+
   return (
     <div
+      ref={rootRef}
       data-testid="validation-panel"
       className="fixed bottom-14 right-4 z-[1250] flex w-[420px] max-w-[calc(100vw-32px)] flex-col rounded-lg bg-ui-01"
       style={{ boxShadow: cssVar(shadows.popup) }}
@@ -66,6 +98,9 @@ export const ValidationPanel: FC<ValidationPanelProps> = ({
                 disabled={!navigable}
                 onClick={() => {
                   onSelect(m)
+                }}
+                onDoubleClick={() => {
+                  onActivate(m)
                 }}
                 className={[
                   'flex w-full items-start gap-2 px-4 py-2 text-left',

@@ -1,6 +1,7 @@
 import type { ViewNode } from '../../types/view'
 import { useSduiDispatch } from '../dispatch'
 import { useSduiSession, useBindingValue } from '../sdui-session-context'
+import { notifyFieldEdited } from '../validation/field-edit-bus'
 
 export interface FieldNodeCommon {
   label?: string
@@ -10,7 +11,14 @@ export interface FieldNodeCommon {
   enabled: boolean
   error?: string
   value: unknown
-  setValue: (v: unknown) => void
+  /**
+   * SCRUM-317 v4 §4.4: обычный вызов — правка пользователем, уведомляет шину
+   * field-edit-bus (панель вычёркивает строку поля). Эффекты, программно
+   * перезаписывающие значение, обязаны звать тихий вариант
+   * `setValue(v, { silent: true })` — иначе строка панели исчезнет без
+   * участия пользователя.
+   */
+  setValue: (v: unknown, options?: { silent?: boolean }) => void
   fireServerEvent: (trigger: string, newValue: unknown) => void
 }
 
@@ -36,11 +44,14 @@ export function useFieldNode(node: ViewNode): FieldNodeCommon {
     // ВЫСОТА — обёртка колоночная, и flex-basis в ней вертикальный. Строковый
     // basis вида "0 1 240px" давал полосу пустоты на 240px под контролом.
     value,
-    setValue: (v) => {
+    setValue: (v, options) => {
       if (node.props?.error != null) {
         applyTreePatches([
           { op: 'setProp', nodeId: node.id, key: 'error', value: null },
         ])
+      }
+      if (node.binding && options?.silent !== true) {
+        notifyFieldEdited(node.binding)
       }
       if (node.binding) setValue(node.binding, v)
     },

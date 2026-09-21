@@ -100,12 +100,23 @@ export const inputsComponents: Components<Omit<Theme, 'components'>> = {
         '&.MuiInputLabel-shrink': {
           color: cssVar(semantic.textSecondary),
         },
+        // SCRUM-317 v4 §4.2 (замечание приёмки 1): подпись поля в состоянии
+        // ошибки НЕ краснеет — про ошибку говорит рамка, текст — панель и
+        // тултип. Правило явное: MUI красит .Mui-error своим дефолтом, одного
+        // отсутствия переопределения недостаточно. Фокус объявлен ПОСЛЕ
+        // ошибки и перебивает её: пока пользователь в поле, синяя подпись
+        // говорит «вы здесь».
+        '&.Mui-error': {
+          color: cssVar(semantic.textSecondary),
+        },
         '&.Mui-focused': {
           color: cssVar(semantic.primary),
         },
-        '&.Mui-error': {
-          color: cssVar(semantic.error),
-        },
+      },
+      asterisk: {
+        // Звёздочка — часть подписи и живёт её цветом; без этого MUI красит
+        // её своим error.main, и она осталась бы единственным красным пятном.
+        '&.Mui-error': { color: 'inherit' },
       },
     },
   },

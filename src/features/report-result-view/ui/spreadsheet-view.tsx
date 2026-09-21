@@ -149,7 +149,7 @@ const SheetView = ({
                     key={klyuch(kletka.row, kletka.column)}
                     rowSpan={kletka.rowSpan ?? 1}
                     colSpan={kletka.colSpan ?? 1}
-                    style={{ padding: '0 2px', ...stilYacheyki(kletka.style) }}
+                    style={{ padding: 0, ...stilYacheyki(kletka.style) }}
                   >
                     {kletka.editable && kletka.field && onBlankValueChange ? (
                       <input

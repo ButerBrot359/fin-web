@@ -581,7 +581,12 @@
       "previousQuarter": "Предыдущий квартал",
       "currentYear": "Текущий год",
       "previousYear": "Предыдущий год"
-    }
+    },
+    "fill": "Заполнить",
+    "clear": "Очистить",
+    "refresh": "Обновить",
+    "exportXml": "Выгрузить в XML",
+    "exportXmlUnavailable": "Выгрузка в XML для этой формы недоступна"
   },
   "accountPlan": {
     "title": "План счетов",

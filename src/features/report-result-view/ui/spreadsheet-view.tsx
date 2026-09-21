@@ -126,12 +126,16 @@ interface SheetViewProps {
   sheet: ReportSpreadsheetSheetDto
   blankValues?: Record<string, string>
   onBlankValueChange?: (field: string, value: string) => void
+  vybrannayaOblast?: string | null
+  onVyborOblasti?: (oblast: string | null) => void
 }
 
 const SheetView = ({
   sheet,
   blankValues,
   onBlankValueChange,
+  vybrannayaOblast,
+  onVyborOblasti,
 }: SheetViewProps) => {
   const stroki = useMemo(() => razmetka(sheet), [sheet])
   return (
@@ -154,7 +158,24 @@ const SheetView = ({
                     key={klyuch(kletka.row, kletka.column)}
                     rowSpan={kletka.rowSpan ?? 1}
                     colSpan={kletka.colSpan ?? 1}
-                    style={{ padding: 0, ...stilYacheyki(kletka.style) }}
+                    style={{
+                      padding: 0,
+                      ...stilYacheyki(kletka.style),
+                      ...(kletka.field != null &&
+                      kletka.field === vybrannayaOblast
+                        ? {
+                            outline: `2px solid ${cssVar(semantic.primary)}`,
+                            outlineOffset: '-2px',
+                          }
+                        : {}),
+                    }}
+                    onClick={
+                      onVyborOblasti
+                        ? () => {
+                            onVyborOblasti(kletka.field ?? null)
+                          }
+                        : undefined
+                    }
                   >
                     {kletka.editable && kletka.field && onBlankValueChange ? (
                       <input
@@ -299,6 +320,8 @@ export const SpreadsheetView = ({
   spreadsheet,
   blankValues,
   onBlankValueChange,
+  vybrannayaOblast,
+  onVyborOblasti,
 }: SpreadsheetViewProps) => {
   const sheets = spreadsheet.sheets
   const [aktivnyy, setAktivnyy] = useState(0)
@@ -318,6 +341,8 @@ export const SpreadsheetView = ({
           sheet={sheet}
           blankValues={blankValues}
           onBlankValueChange={onBlankValueChange}
+          vybrannayaOblast={vybrannayaOblast}
+          onVyborOblasti={onVyborOblasti}
         />
       </div>
     </div>

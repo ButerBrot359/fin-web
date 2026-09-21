@@ -21,6 +21,7 @@ import {
   saveReportAlt,
   vygruzkaFno,
 } from '../api/reportalt-api'
+import { rasshifrovkaKletki } from '../lib/utils/blank-drilldown'
 import { useReportAltMeta } from '../lib/hooks/use-reportalt-meta'
 import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
@@ -164,6 +165,8 @@ export const ReportAltPage = () => {
   // Клетки бланка, которые заполняет пользователь: в 1С ручная правка табличного документа
   // приоритетнее автозаполнения, поэтому значения уходят в тело /run и возвращаются в бланке.
   const [blankValues, setBlankValues] = useState<Record<string, string>>({})
+  // Выделенная клетка бланка: в 1С «Расшифровать» работает от имени области текущей области.
+  const [vybrannayaOblast, setVybrannayaOblast] = useState<string | null>(null)
   const izmenitKletku = useCallback((field: string, value: string) => {
     setBlankValues((prev) => ({ ...prev, [field]: value }))
   }, [])
@@ -512,6 +515,27 @@ export const ReportAltPage = () => {
       })
   }
 
+  /**
+   * «Расшифровать» формы 1С: от имени области выделенной клетки бланка открывается регистр
+   * налогового учёта по ИПН и СН за месяц её графы (графа 4 — за весь квартал).
+   */
+  const handleDecipher = () => {
+    const organizatsiyaId = values.Organizatsiya
+    const period = values.Period as PeriodValue | undefined
+    const target = rasshifrovkaKletki(
+      vybrannayaOblast,
+      typeof organizatsiyaId === 'number' ? organizatsiyaId : null,
+      period
+    )
+    if (!target) {
+      showToast('warning', t('reportalt.decipherUnavailable'))
+      return
+    }
+    void navigate(
+      `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`
+    )
+  }
+
   const handlePrintPdf = () => {
     if (!appliedBody || isPrinting) return
     // Язык печати — выбранный «Язык формы» (YazykFormy): берём применённое
@@ -713,6 +737,14 @@ export const ReportAltPage = () => {
               variant="outlined"
               size="medium"
               sx={{ height: 48, flexShrink: 0 }}
+              onClick={handleDecipher}
+            >
+              {t('reportalt.decipher')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
               onClick={() => {
                 setStrokBlanka((prev) => prev + 1)
               }}
@@ -780,6 +812,8 @@ export const ReportAltPage = () => {
                 result={result}
                 blankValues={blankValues}
                 onBlankValueChange={izmenitKletku}
+                vybrannayaOblast={vybrannayaOblast}
+                onVyborOblasti={setVybrannayaOblast}
                 onDrilldown={(row) => {
                   if (!row.rowRef || row.rowRef.domain === 'ACCOUNT_PLAN')
                     return
@@ -819,6 +853,8 @@ export const ReportAltPage = () => {
             result={{ rows: [], columns: [], spreadsheet: pustoyBlank }}
             blankValues={blankValues}
             onBlankValueChange={izmenitKletku}
+            vybrannayaOblast={vybrannayaOblast}
+            onVyborOblasti={setVybrannayaOblast}
           />
         </div>
       ) : (

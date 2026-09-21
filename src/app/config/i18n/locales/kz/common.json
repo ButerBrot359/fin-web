@@ -591,7 +591,9 @@
     "saved": "Есеп сақталды",
     "saveError": "Есепті сақтау мүмкін болмады",
     "addRow": "Жол қосу",
-    "removeRow": "Жолды жою"
+    "removeRow": "Жолды жою",
+    "decipher": "Талдау",
+    "decipherUnavailable": "Талданатын бланк ұяшығын белгілеңіз"
   },
   "accountPlan": {
     "title": "Шоттар жоспары",

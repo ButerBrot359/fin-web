@@ -118,4 +118,35 @@ describe('SpreadsheetView — табличный документ бланка',
 
     expect(container.querySelector('input')).toBeNull()
   })
+
+  it('клик по клетке отдаёт имя её области — по нему строится расшифровка', () => {
+    const dokumentSOblastyu: ReportSpreadsheetDto = {
+      sheets: [
+        {
+          code: 'Страница 1',
+          title: 'Страница 1',
+          columnWidths: [80, 80],
+          rowHeights: [20],
+          cells: [
+            { row: 0, column: 0, text: '100', field: 's_200_00_001_1' },
+            { row: 0, column: 1, text: 'без области' },
+          ],
+        },
+      ],
+    }
+    const vybrano: (string | null)[] = []
+
+    render(
+      <SpreadsheetView
+        spreadsheet={dokumentSOblastyu}
+        onVyborOblasti={(oblast: string | null) => {
+          vybrano.push(oblast)
+        }}
+      />
+    )
+    fireEvent.click(screen.getByText('100'))
+    fireEvent.click(screen.getByText('без области'))
+
+    expect(vybrano).toEqual(['s_200_00_001_1', null])
+  })
 })

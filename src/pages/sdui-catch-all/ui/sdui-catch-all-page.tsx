@@ -39,9 +39,11 @@ const HEADER_ONLY_KINDS = new Set(['REPORT'])
 // равнозначны.
 function seedServerKind(
   pathname: string,
-  tabs: { id: string; pageType: string }[]
+  tabs: { path: string; pageType: string }[]
 ): string | null {
-  const tab = tabs.find((t) => t.id === pathname)
+  // По path, а не id: id может нести маркер isGroup (SCRUM-360 v6 §6.3);
+  // для сида важен только pageType, у обеих create-вкладок он совпадает.
+  const tab = tabs.find((t) => t.path === pathname)
   if (tab?.pageType === 'document-entry') return 'DOCUMENT'
   if (tab?.pageType === 'dictionary-entry') return 'DICTIONARY'
   if (tab?.pageType === 'information-register-entry') return 'REGISTER'
@@ -67,11 +69,16 @@ export const SduiCatchAllPage: FC = () => {
       .activateOrCreate(location.pathname, location.search, pageType)
     // SCRUM-386 фикс 2: та же сущность уже открыта под другим URL — вкладка
     // активирована, адресную строку доводим до её пути (дубль не появляется).
+    // Сравниваем path, а не id: id несёт маркер isGroup (SCRUM-360 v6 §6.3).
     if (tabId && tabId !== location.pathname) {
       const existing = useWorkspaceTabsStore
         .getState()
         .tabs.find((t) => t.id === tabId)
-      if (existing && existing.pageType !== 'sdui-panel') {
+      if (
+        existing &&
+        existing.pageType !== 'sdui-panel' &&
+        existing.path !== location.pathname
+      ) {
         void navigate(existing.path + existing.search, { replace: true })
       }
     }

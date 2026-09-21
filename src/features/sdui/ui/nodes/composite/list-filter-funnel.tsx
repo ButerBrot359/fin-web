@@ -18,6 +18,9 @@ const isEmptyValue = (v: unknown): boolean =>
 export interface ListFilterFunnelColumn extends ColumnFilterValueMeta {
   filterField: string
   filterOps: string[]
+  // SCRUM-360 v6 §2: предвыбранная операция с бэка; сервер гарантирует, что
+  // значение входит в filterOps. Нет ключа → прежний фолбэк на filterOps[0].
+  filterDefaultOp?: string
 }
 
 export interface ListFilterFunnelProps {
@@ -37,7 +40,8 @@ export const ListFilterFunnel: FC<ListFilterFunnelProps> = ({
 }) => {
   const { t } = useTranslation()
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
-  const [op, setOp] = useState(column.filterOps[0])
+  const defaultOp = column.filterDefaultOp ?? column.filterOps[0]
+  const [op, setOp] = useState(defaultOp)
   const [value, setValue] = useState<unknown>(undefined)
 
   if (column.filterOps.length === 0) return null
@@ -73,6 +77,11 @@ export const ListFilterFunnel: FC<ListFilterFunnelProps> = ({
         aria-label={t('table.filter')}
         onClick={(e) => {
           e.stopPropagation()
+          // SCRUM-360 v6 §2.3 п.3: каждое открытие поповера начинается с
+          // предвыбранной операции и пустого значения — иначе предвыбор виден
+          // только в первый раз (op/value жили между открытиями).
+          setOp(defaultOp)
+          setValue(undefined)
           setAnchorEl(e.currentTarget)
         }}
         onMouseDown={(e) => {

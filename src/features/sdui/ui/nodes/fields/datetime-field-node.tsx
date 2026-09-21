@@ -23,8 +23,8 @@ export const DatetimeFieldNode: FC<NodeProps> = ({ node }) => {
         required={f.required}
         readOnly={f.readonly}
         disabled={!f.enabled}
+        // SCRUM-317 v4 §4.1: текст ошибки живёт в панели и тултипе — под полем только рамка
         error={!!f.error}
-        helperText={f.error}
         onChange={(newValue) => {
           f.setValue(newValue)
           f.fireServerEvent('change', newValue)

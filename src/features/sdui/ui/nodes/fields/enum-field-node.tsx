@@ -1,11 +1,5 @@
 import type { FC } from 'react'
-import {
-  FormControl,
-  FormHelperText,
-  InputLabel,
-  MenuItem,
-  Select,
-} from '@mui/material'
+import { FormControl, InputLabel, MenuItem, Select } from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
@@ -70,7 +64,7 @@ export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
           </MenuItem>
         ))}
       </Select>
-      {f.error && <FormHelperText>{f.error}</FormHelperText>}
+      {/* SCRUM-317 v4 §4.1: текст ошибки живёт в панели и тултипе — под полем только рамка */}
     </FormControl>
   )
 }

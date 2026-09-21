@@ -3,7 +3,14 @@ import { useTranslation } from 'react-i18next'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import CloseIcon from '@mui/icons-material/Close'
-import { IconButton, InputAdornment, TextField, Tooltip } from '@mui/material'
+import {
+  IconButton,
+  InputAdornment,
+  Menu,
+  MenuItem,
+  TextField,
+  Tooltip,
+} from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons'
 import { figmaIcons } from '@/shared/ui/icons'
@@ -58,6 +65,12 @@ export const TableToolbar = ({
   const { t, i18n } = useTranslation()
   const dispatch = useSduiDispatch()
   const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null)
+  // Открытая кнопка-подменю панели ТЧ: код группы + её якорь. Групп на панели может быть
+  // несколько, поэтому храним какая именно раскрыта, а не просто «открыто/закрыто».
+  const [groupMenu, setGroupMenu] = useState<{
+    group: string
+    anchor: HTMLElement
+  } | null>(null)
 
   const commandLabel = (cmd: TableCommandDescriptor) =>
     i18n.language.startsWith('kz') ? (cmd.labelKz ?? cmd.label) : cmd.label
@@ -66,6 +79,19 @@ export const TableToolbar = ({
   // сервер отвечает «Выберите строку…», поэтому кнопка гасится заранее — как в 1С.
   const rowScoped = (cmd: TableCommandDescriptor) =>
     ROW_SCOPED_COMMANDS.some((prefix) => cmd.command.startsWith(prefix + ':'))
+
+  // Команды с непустым group собираются под одну кнопку-подменю; порядок групп и кнопок —
+  // тот же, в котором их прислал сервер, чтобы панель не «прыгала» между отдачами.
+  const plainCommands = commands.filter((cmd) => !cmd.group)
+  const groupedCommands = [
+    ...commands
+      .filter((cmd) => Boolean(cmd.group))
+      .reduce<Map<string, TableCommandDescriptor[]>>((acc, cmd) => {
+        const key = cmd.group!
+        acc.set(key, [...(acc.get(key) ?? []), cmd])
+        return acc
+      }, new Map()),
+  ]
 
   const runCommand = (cmd: TableCommandDescriptor) => {
     // Выделено несколько строк — «Удалить» уходит списком rowIds: сервер снимает их одной
@@ -119,7 +145,51 @@ export const TableToolbar = ({
           />
         </>
       )}
-      {commands.map((cmd) => {
+      {groupedCommands.map(([group, groupCmds]) => {
+        // Кнопка-подменю: бэк пометил команды общим group (props.zapolnitGroup у ТЧ) —
+        // в эталоне 1С это «Заполнить» с пунктами внутри, а не кнопки в ряд.
+        const label =
+          (i18n.language.startsWith('kz')
+            ? groupCmds[0].groupLabelKz
+            : groupCmds[0].groupLabel) ?? group
+        return (
+          <span key={`group:${group}`} style={{ display: 'inline-flex' }}>
+            <Button
+              variant="secondary"
+              onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                setGroupMenu({ group, anchor: e.currentTarget })
+              }}
+              endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 20 }} />}
+            >
+              {label}
+            </Button>
+            <Menu
+              anchorEl={groupMenu?.group === group ? groupMenu.anchor : null}
+              open={groupMenu?.group === group}
+              onClose={() => {
+                setGroupMenu(null)
+              }}
+            >
+              {groupCmds.map((cmd) => {
+                const needsRow = rowScoped(cmd) && !selectedRowId
+                return (
+                  <MenuItem
+                    key={cmd.command}
+                    disabled={!cmd.enabled || needsRow}
+                    onClick={() => {
+                      setGroupMenu(null)
+                      runCommand(cmd)
+                    }}
+                  >
+                    {commandLabel(cmd)}
+                  </MenuItem>
+                )
+              })}
+            </Menu>
+          </span>
+        )
+      })}
+      {plainCommands.map((cmd) => {
         const needsRow = rowScoped(cmd) && !selectedRowId
         const disabled = !cmd.enabled || needsRow
         const reason = !cmd.enabled

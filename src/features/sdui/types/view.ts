@@ -69,6 +69,11 @@ export interface TableCommandDescriptor {
   behavior: ActionBehavior
   column?: string | null // служебное поле бэка, фронт не использует
   inMoreMenu?: boolean // true ⇒ продублировать пункт в меню «Ещё»
+  // Команды с одинаковым group бэк просит показать ОДНОЙ кнопкой-подменю с подписью
+  // groupLabel: так в 1С выглядит «Заполнить» у ТЧ «Модернизации ОС». null ⇒ отдельная кнопка.
+  group?: string | null
+  groupLabel?: string | null
+  groupLabelKz?: string | null
 }
 
 export interface ViewAction {

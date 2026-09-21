@@ -76,4 +76,46 @@ describe('SpreadsheetView — табличный документ бланка',
 
     expect(container.querySelector('table')).toBeNull()
   })
+
+  it('клетка ввода бланка редактируется, изменение уходит наружу', () => {
+    const dokumentSVvodom: ReportSpreadsheetDto = {
+      sheets: [
+        {
+          code: 'Страница 1',
+          title: 'Страница 1',
+          columnWidths: [80],
+          rowHeights: [20],
+          cells: [
+            {
+              row: 0,
+              column: 0,
+              text: '',
+              field: 'НомерУведомления',
+              editable: true,
+            },
+          ],
+        },
+      ],
+    }
+    const izmeneniya: [string, string][] = []
+
+    render(
+      <SpreadsheetView
+        spreadsheet={dokumentSVvodom}
+        blankValues={{}}
+        onBlankValueChange={(field, value) => {
+          izmeneniya.push([field, value])
+        }}
+      />
+    )
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '42' } })
+
+    expect(izmeneniya).toEqual([['НомерУведомления', '42']])
+  })
+
+  it('без обработчика бланк только для чтения — полей ввода нет', () => {
+    const { container } = render(<SpreadsheetView spreadsheet={dokument} />)
+
+    expect(container.querySelector('input')).toBeNull()
+  })
 })

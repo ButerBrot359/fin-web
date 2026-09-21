@@ -158,6 +158,10 @@ export interface ReportSpreadsheetCellDto {
   rowSpan?: number
   colSpan?: number
   text?: string
+  /** Имя области макета 1С — ключ, по которому значение уходит на сервер. */
+  field?: string
+  /** Клетку заполняет пользователь (в макете 1С — containsValue). */
+  editable?: boolean
   style?: ReportSpreadsheetCellStyleDto
 }
 

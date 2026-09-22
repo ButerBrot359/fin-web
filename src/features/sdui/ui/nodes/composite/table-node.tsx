@@ -1,5 +1,5 @@
 import type { FC, ReactElement } from 'react'
-import { Box } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { nodeToTableColumnDef } from '../../../lib/utils/build-column-defs'
@@ -106,7 +106,22 @@ const renderTable = (node: ViewNode): ReactElement | null => {
 }
 
 export const TableNode: FC<NodeProps> = ({ node }) => {
-  const content = renderTable(node)
+  const rendered = renderTable(node)
+  const title =
+    typeof node.props?.title === 'string' && node.props.title !== ''
+      ? node.props.title
+      : null
+  const content =
+    rendered && title ? (
+      <Box className="flex min-h-0 flex-1 flex-col">
+        <Typography variant="body2" fontWeight={600} className="mb-1">
+          {title}
+        </Typography>
+        {rendered}
+      </Box>
+    ) : (
+      rendered
+    )
   const error =
     typeof node.props?.error === 'string' && node.props.error !== ''
       ? node.props.error

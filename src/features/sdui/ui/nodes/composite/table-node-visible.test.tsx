@@ -77,3 +77,30 @@ describe('TableNode props.autoAdvance (SCRUM-363)', () => {
     expect(screen.getByTestId('editable-table')).toBeTruthy()
   })
 })
+
+describe('TableNode props.title — подпись таблицы', () => {
+  it('title задан — подпись выводится над таблицей', () => {
+    render(
+      <TableNode
+        node={node({ editable: true, title: 'Счета по развёрнутому сальдо' })}
+      />
+    )
+    expect(screen.getByText('Счета по развёрнутому сальдо')).toBeTruthy()
+    expect(screen.getByTestId('editable-table')).toBeTruthy()
+  })
+
+  it('title пустой или отсутствует — подписи нет, разметка как раньше', () => {
+    const { container } = render(
+      <TableNode node={node({ editable: true, title: '' })} />
+    )
+    expect(container.querySelectorAll('p').length).toBe(0)
+    expect(screen.getByTestId('editable-table')).toBeTruthy()
+  })
+
+  it('невидимая таблица с title всё равно не рендерится', () => {
+    const { container } = render(
+      <TableNode node={node({ visible: false, title: 'Подпись' })} />
+    )
+    expect(container.innerHTML).toBe('')
+  })
+})

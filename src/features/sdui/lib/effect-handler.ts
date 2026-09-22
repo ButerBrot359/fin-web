@@ -6,7 +6,7 @@ import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { ViewEffect } from '../types/view'
 import { createActionRequestExecutor } from './action-request'
-import { parseContentDispositionFilename } from './parse-content-disposition'
+import { parseContentDispositionFilename } from '@/shared/lib/http/parse-content-disposition'
 
 type ToastLevel = 'success' | 'error' | 'info' | 'warning'
 

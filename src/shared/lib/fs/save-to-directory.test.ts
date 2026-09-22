@@ -42,14 +42,19 @@ describe('pickDirectory', () => {
 
 describe('writeBlobToDirectory', () => {
   it('создаёт файл и пишет blob под именем', async () => {
-    const writable = { write: vi.fn().mockResolvedValue(undefined), close: vi.fn().mockResolvedValue(undefined) }
+    const writable = {
+      write: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+    }
     const fileHandle = { createWritable: vi.fn().mockResolvedValue(writable) }
     const dir = { getFileHandle: vi.fn().mockResolvedValue(fileHandle) }
     const blob = new Blob(['<xml/>'], { type: 'application/xml' })
 
     await writeBlobToDirectory(dir as never, 'ЗаявкаГПС.xml', blob)
 
-    expect(dir.getFileHandle).toHaveBeenCalledWith('ЗаявкаГПС.xml', { create: true })
+    expect(dir.getFileHandle).toHaveBeenCalledWith('ЗаявкаГПС.xml', {
+      create: true,
+    })
     expect(writable.write).toHaveBeenCalledWith(blob)
     expect(writable.close).toHaveBeenCalled()
   })

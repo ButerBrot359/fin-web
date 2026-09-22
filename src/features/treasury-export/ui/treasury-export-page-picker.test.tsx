@@ -1,19 +1,27 @@
 import '@/app/config/i18n'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  cleanup,
+} from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 
 import { TreasuryExportPage } from './treasury-export-page'
 import * as api from '../api/treasury-export-api'
-import * as saveLib from '../lib/save-to-directory'
+import * as saveLib from '@/shared/lib/fs/save-to-directory'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 vi.mock('@/shared/ui/toast/show-toast', () => ({ showToast: vi.fn() }))
 
 const renderPage = () => {
-  const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+  const qc = new QueryClient({
+    defaultOptions: { mutations: { retry: false } },
+  })
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={['/treasury-export?typeCode=T&id=42']}>
@@ -29,7 +37,15 @@ const mockPreview = (hasErrors: boolean) =>
     data: {
       data: {
         rows: [
-          { n: 1, documentId: 42, typeCode: 'T', presentation: 'Док', amount: 1, errors: [], fileName: 'ЗаявкаГПС.xml' },
+          {
+            n: 1,
+            documentId: 42,
+            typeCode: 'T',
+            presentation: 'Док',
+            amount: 1,
+            errors: [],
+            fileName: 'ЗаявкаГПС.xml',
+          },
         ],
         hasErrors,
       },
@@ -46,9 +62,13 @@ describe('TreasuryExportPage — сохранение в папку (Chromium)',
     vi.spyOn(saveLib, 'supportsDirectoryPicker').mockReturnValue(true)
     const dir = {} as saveLib.FsDirectoryHandle
     vi.spyOn(saveLib, 'pickDirectory').mockResolvedValue(dir)
-    const writeSpy = vi.spyOn(saveLib, 'writeBlobToDirectory').mockResolvedValue()
+    const writeSpy = vi
+      .spyOn(saveLib, 'writeBlobToDirectory')
+      .mockResolvedValue()
     const blob = new Blob(['x'])
-    vi.spyOn(api, 'fetchTreasuryExportBlob').mockResolvedValue({ data: blob } as never)
+    vi.spyOn(api, 'fetchTreasuryExportBlob').mockResolvedValue({
+      data: blob,
+    } as never)
 
     renderPage()
     await screen.findByText('Док') // авто-preview отрисован
@@ -57,7 +77,10 @@ describe('TreasuryExportPage — сохранение в папку (Chromium)',
     await waitFor(() => {
       expect(writeSpy).toHaveBeenCalledWith(dir, 'ЗаявкаГПС.xml', blob)
     })
-    expect(showToast).toHaveBeenCalledWith('success', 'Файл сохранён в выбранную папку')
+    expect(showToast).toHaveBeenCalledWith(
+      'success',
+      'Файл сохранён в выбранную папку'
+    )
   })
 
   it('отмена диалога (null) → нет fetch, нет тоста ошибки', async () => {
@@ -77,20 +100,22 @@ describe('TreasuryExportPage — сохранение в папку (Chromium)',
     expect(showToast).not.toHaveBeenCalledWith('error', expect.anything())
   })
 
-  it('нет API → фолбэк на location.assign', async () => {
+  it('нет API → фолбэк на авторизованное скачивание, а не навигацию браузера', async () => {
     mockPreview(false)
     vi.spyOn(saveLib, 'supportsDirectoryPicker').mockReturnValue(false)
     const assignSpy = vi.fn()
     vi.stubGlobal('location', { assign: assignSpy } as unknown as Location)
+    const blobSpy = vi
+      .spyOn(api, 'fetchTreasuryExportBlob')
+      .mockResolvedValue({ data: new Blob(['<xml/>']), headers: {} } as never)
 
     renderPage()
     await screen.findByText('Док')
     fireEvent.click(screen.getByRole('button', { name: 'Выгрузить' }))
 
     await waitFor(() => {
-      expect(assignSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/document-entries/T/42/treasury-export')
-      )
+      expect(blobSpy).toHaveBeenCalledWith('T', 42)
     })
+    expect(assignSpy).not.toHaveBeenCalled()
   })
 })

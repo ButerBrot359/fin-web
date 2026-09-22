@@ -22,7 +22,10 @@ const state: Record<string, unknown> = {
       dolzhnost: 'ГЛАВНЫЙ ЭКОНОМИСТ ОТДЕЛА ПЛАНИРОВАНИЯ И БЮДЖЕТА',
       normaDney: '21',
       otrabotano: '21',
-      fkr: 'Функциональная классификация расходов 009 001 015',
+      fkr: '360/001/045 (За счет субвенций из республиканского бюджета на образование)',
+      kodPlatnykhUslug:
+        'Услуги по подготовке специалистов сверх государственного заказа',
+      summa: '100',
     },
   ],
 }
@@ -105,7 +108,14 @@ const node = (): ViewNode =>
             },
           ],
         }),
+        col('col.kodPlatnykhUslug', 'kodPlatnykhUslug', 'Код платных услуг'),
+      ]),
+      // «ФКР» — в списке исключений: значение эталона «360/001/045 (За счет
+      // субвенций из республиканского бюджета на образование)» переносом
+      // раздувало каждую строку ТЧ на две (обращение 22.09.2026).
+      group('grp.fkr', [
         col('col.fkr', 'fkr', 'ФКР'),
+        col('col.summa', 'summa', 'Сумма'),
       ]),
     ],
   }) as ViewNode
@@ -123,8 +133,8 @@ describe('под-строки вертикальной группы колоно
     const subRows = container.querySelectorAll<HTMLElement>(
       'tbody td > div > div'
     )
-    // четыре группы × две под-строки
-    expect(subRows).toHaveLength(8)
+    // пять групп × две под-строки
+    expect(subRows).toHaveLength(10)
     for (const row of subRows) {
       expect(row.style.minHeight).toBe(`${String(VERTICAL_SUB_ROW_HEIGHT)}px`)
       expect(row.style.height).toBe('')
@@ -135,7 +145,7 @@ describe('под-строки вертикальной группы колоно
     const { container } = renderTable(<TableNode node={node()} />)
     const longText = Array.from(
       container.querySelectorAll<HTMLElement>('tbody span')
-    ).find((el) => el.textContent.startsWith('Функциональная классификация'))
+    ).find((el) => el.textContent.startsWith('Услуги по подготовке'))
     expect(longText).toBeTruthy()
     expect(longText?.style.whiteSpace).toBe('normal')
     expect(longText?.style.overflowWrap).toBe('anywhere')
@@ -152,6 +162,16 @@ describe('под-строки вертикальной группы колоно
     expect(dolzhnost).toBeTruthy()
     expect(dolzhnost?.style.whiteSpace).toBe('nowrap')
     expect(dolzhnost?.style.textOverflow).toBe('ellipsis')
+  })
+
+  it('«ФКР» держит значение в одну строку — перенос его раздувал', () => {
+    const { container } = renderTable(<TableNode node={node()} />)
+    const fkr = Array.from(
+      container.querySelectorAll<HTMLElement>('tbody span')
+    ).find((el) => el.textContent.startsWith('360/001/045'))
+    expect(fkr).toBeTruthy()
+    expect(fkr?.style.whiteSpace).toBe('nowrap')
+    expect(fkr?.style.textOverflow).toBe('ellipsis')
   })
 })
 

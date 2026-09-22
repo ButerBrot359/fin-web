@@ -185,9 +185,9 @@ describe('SpreadsheetView — табличный документ бланка',
     const dokument: ReportSpreadsheetDto = {
       sheets: [
         list('Страница 1'),
-        list('Приложение 2.Страница 1'),
-        list('Приложение 3.Страница 1', true),
-        list('Приложение 3.Страница 1 (2)', true),
+        list('200.02 стр.1'),
+        list('200.03 стр.1', true),
+        list('200.03 стр.1 (2)', true),
       ],
     }
 
@@ -197,15 +197,11 @@ describe('SpreadsheetView — табличный документ бланка',
     expect(screen.getAllByRole('button', { name: 'Страница 1' })).toHaveLength(
       2
     )
-    expect(
-      screen.getByRole('button', { name: 'Приложение 2.Страница 1' })
-    ).toBeTruthy()
-    expect(
-      screen.getByRole('button', { name: '▾ Приложение 3.Страница 1' })
-    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: '200.02 стр.1' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '▾ 200.03 стр.1' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Страница 2' })).toBeTruthy()
     expect(
-      screen.queryByRole('button', { name: 'Приложение 3.Страница 1 (2)' })
+      screen.queryByRole('button', { name: '200.03 стр.1 (2)' })
     ).toBeNull()
   })
 })

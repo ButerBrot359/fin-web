@@ -249,12 +249,14 @@ export const ReportAltPage = () => {
 
   // «Добавить страницу» работает только на многостраничном разделе — приложении 200.03.
   const estMnogostranichnyyRazdel =
-    blankDokument?.sheets.some((s) => stranitsaPrilozheniya(s.title, '3')) ??
-    false
+    blankDokument?.sheets.some((s) =>
+      stranitsaPrilozheniya(s.title, '200.03')
+    ) ?? false
 
   const estPrilozhenie20005 =
-    blankDokument?.sheets.some((s) => stranitsaPrilozheniya(s.title, '5')) ??
-    false
+    blankDokument?.sheets.some((s) =>
+      stranitsaPrilozheniya(s.title, '200.05')
+    ) ?? false
 
   // Ошибка формирования (422 — невалидные параметры / слишком большой
   // результат; прочее) — тостом, с сообщением бэка при наличии.
@@ -832,7 +834,7 @@ export const ReportAltPage = () => {
                 sx={{ height: 48, flexShrink: 0 }}
                 onClick={() => {
                   ochistitStranitsy((title) =>
-                    stranitsaPrilozheniya(title, '5')
+                    stranitsaPrilozheniya(title, '200.05')
                   )
                 }}
               >

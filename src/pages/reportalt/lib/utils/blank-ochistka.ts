@@ -22,6 +22,6 @@ export const pustyeOblastiStranits = (
   return pustye
 }
 
-/** Страница приложения: в бланке она называется так же, как в 1С — «Приложение 5.Страница 1». */
+/** Страница приложения: в бланке её заголовок начинается с номера приложения — «200.05 стр.1». */
 export const stranitsaPrilozheniya = (title: string, nomer: string): boolean =>
-  title.startsWith(`Приложение ${nomer}.`)
+  title.startsWith(`${nomer} `)

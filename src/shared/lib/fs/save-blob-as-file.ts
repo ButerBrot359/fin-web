@@ -1,6 +1,6 @@
 import { parseContentDispositionFilename } from '@/shared/lib/http/parse-content-disposition'
 
-export function saveSwiftFile(
+export function saveBlobAsFile(
   blob: Blob,
   contentDisposition: string | undefined,
   fallbackName: string

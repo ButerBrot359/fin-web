@@ -5,9 +5,15 @@ import { Button, MenuItem, TextField, Typography } from '@mui/material'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
+import { saveBlobAsFile } from '@/shared/lib/fs/save-blob-as-file'
+import {
+  pickDirectory,
+  supportsDirectoryPicker,
+  writeBlobToDirectory,
+} from '@/shared/lib/fs/save-to-directory'
+
 import { fetchSwiftExportBlob } from '../api/swift-export-api'
 import { useSwiftExportPreview } from '../lib/hooks/use-swift-export-preview'
-import { saveSwiftFile } from '../lib/save-swift-file'
 import { SwiftExportTable } from './swift-export-table'
 import type {
   SwiftEncoding,
@@ -47,38 +53,62 @@ export const SwiftExportPage = () => {
     previewMutate({ documentIds: [id], format, encoding })
   }, [typeCode, id, format, encoding, previewMutate])
 
+  const fileNameOf = (data: SwiftExportPreview | undefined) =>
+    data?.rows[0]?.fileName ?? `SWIFT_${typeCode}_${String(id)}.txt`
+
   const downloadFile = async (data: SwiftExportPreview) => {
     try {
       const res = await fetchSwiftExportBlob(typeCode, id, format, encoding)
-      const fallbackName =
-        data.rows[0]?.fileName ?? `SWIFT_${typeCode}_${String(id)}.txt`
-      saveSwiftFile(
+      saveBlobAsFile(
         res.data,
         res.headers['content-disposition'] as string | undefined,
-        fallbackName
+        fileNameOf(data)
       )
     } catch {
-      showToast('error', t('swiftExport.loadFailed'))
+      showToast('error', t('swiftExport.saveFailed'))
+    }
+  }
+
+  const exportToPickedFolder = async () => {
+    if (preview.data?.hasErrors) {
+      showToast('error', t('swiftExport.hasErrorsToast'))
+      return
+    }
+    try {
+      const dir = await pickDirectory()
+      if (!dir) return
+      const res = await fetchSwiftExportBlob(typeCode, id, format, encoding)
+      await writeBlobToDirectory(dir, fileNameOf(preview.data), res.data)
+      showToast('success', t('swiftExport.savedToFolder'))
+    } catch (e) {
+      console.error('[swift-export] сохранение в папку не удалось', e)
+      showToast('error', t('swiftExport.saveFailed'))
     }
   }
 
   const handleExport = () => {
     if (!typeCode || Number.isNaN(id)) return
-    preview.mutate(
-      { documentIds: [id], format, encoding },
-      {
-        onSuccess: (data: SwiftExportPreview) => {
-          if (data.hasErrors) {
-            showToast('error', t('swiftExport.hasErrorsToast'))
-            return
-          }
-          void downloadFile(data)
-        },
-        onError: () => {
-          showToast('error', t('swiftExport.loadFailed'))
-        },
-      }
-    )
+
+    if (!supportsDirectoryPicker()) {
+      preview.mutate(
+        { documentIds: [id], format, encoding },
+        {
+          onSuccess: (data: SwiftExportPreview) => {
+            if (data.hasErrors) {
+              showToast('error', t('swiftExport.hasErrorsToast'))
+              return
+            }
+            void downloadFile(data)
+          },
+          onError: () => {
+            showToast('error', t('swiftExport.loadFailed'))
+          },
+        }
+      )
+      return
+    }
+
+    void exportToPickedFolder()
   }
 
   const rows = preview.data?.rows ?? []

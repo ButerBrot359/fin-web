@@ -11,6 +11,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import i18n from '@/app/config/i18n'
 
+import * as saveLib from '@/shared/lib/fs/save-to-directory'
+
 import { SwiftExportPage } from './swift-export-page'
 import * as api from '../api/swift-export-api'
 
@@ -44,6 +46,76 @@ const previewResponse = (hasErrors: boolean, errors: string[] = []) => ({
 })
 
 let clickMock: ReturnType<typeof vi.fn>
+
+describe('SwiftExportPage — сохранение в выбранную папку (Chromium)', () => {
+  beforeEach(async () => {
+    vi.restoreAllMocks()
+    await i18n.changeLanguage('ru')
+  })
+
+  afterEach(cleanup)
+
+  it('picker → запрос файла → запись blob в папку', async () => {
+    vi.spyOn(api, 'previewSwiftExport').mockResolvedValue(
+      previewResponse(false) as never
+    )
+    vi.spyOn(saveLib, 'supportsDirectoryPicker').mockReturnValue(true)
+    const dir = {} as saveLib.FsDirectoryHandle
+    vi.spyOn(saveLib, 'pickDirectory').mockResolvedValue(dir)
+    const writeSpy = vi
+      .spyOn(saveLib, 'writeBlobToDirectory')
+      .mockResolvedValue()
+    const blob = new Blob(['{1:F01}'])
+    vi.spyOn(api, 'fetchSwiftExportBlob').mockResolvedValue({
+      data: blob,
+      headers: {},
+    } as never)
+
+    renderPage()
+    await screen.findByText('AAH00-00167')
+    fireEvent.click(screen.getByText('Выгрузить'))
+
+    await waitFor(() => {
+      expect(writeSpy).toHaveBeenCalledWith(dir, 'SWIFT_AAH00-00167.txt', blob)
+    })
+  })
+
+  it('отмена диалога выбора папки — файл не запрашивается', async () => {
+    vi.spyOn(api, 'previewSwiftExport').mockResolvedValue(
+      previewResponse(false) as never
+    )
+    vi.spyOn(saveLib, 'supportsDirectoryPicker').mockReturnValue(true)
+    vi.spyOn(saveLib, 'pickDirectory').mockResolvedValue(null)
+    const blobSpy = vi.spyOn(api, 'fetchSwiftExportBlob')
+
+    renderPage()
+    await screen.findByText('AAH00-00167')
+    fireEvent.click(screen.getByText('Выгрузить'))
+
+    await waitFor(() => {
+      expect(saveLib.pickDirectory).toHaveBeenCalled()
+    })
+    expect(blobSpy).not.toHaveBeenCalled()
+  })
+
+  it('ошибки проверки — папка не спрашивается', async () => {
+    vi.spyOn(api, 'previewSwiftExport').mockResolvedValue(
+      previewResponse(true, [
+        'Нет действующего карт-счёта: Сидорова Мария',
+      ]) as never
+    )
+    vi.spyOn(saveLib, 'supportsDirectoryPicker').mockReturnValue(true)
+    const pickSpy = vi.spyOn(saveLib, 'pickDirectory')
+
+    renderPage()
+    await screen.findAllByText('Нет действующего карт-счёта: Сидорова Мария')
+    fireEvent.click(screen.getByText('Выгрузить'))
+
+    await waitFor(() => {
+      expect(pickSpy).not.toHaveBeenCalled()
+    })
+  })
+})
 
 describe('SwiftExportPage', () => {
   beforeEach(async () => {

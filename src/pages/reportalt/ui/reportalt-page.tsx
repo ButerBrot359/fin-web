@@ -248,14 +248,12 @@ export const ReportAltPage = () => {
 
   // «Добавить страницу» работает только на многостраничном разделе — приложении 200.03.
   const estMnogostranichnyyRazdel =
-    blankDokument?.sheets.some((s) =>
-      stranitsaPrilozheniya(s.title, '200.03')
-    ) ?? false
+    blankDokument?.sheets.some((s) => stranitsaPrilozheniya(s.title, '3')) ??
+    false
 
   const estPrilozhenie20005 =
-    blankDokument?.sheets.some((s) =>
-      stranitsaPrilozheniya(s.title, '200.05')
-    ) ?? false
+    blankDokument?.sheets.some((s) => stranitsaPrilozheniya(s.title, '5')) ??
+    false
 
   // Ошибка формирования (422 — невалидные параметры / слишком большой
   // результат; прочее) — тостом, с сообщением бэка при наличии.
@@ -794,38 +792,46 @@ export const ReportAltPage = () => {
                 sx={{ height: 48, flexShrink: 0 }}
                 onClick={() => {
                   ochistitStranitsy((title) =>
-                    stranitsaPrilozheniya(title, '200.05')
+                    stranitsaPrilozheniya(title, '5')
                   )
                 }}
               >
                 {t('reportalt.clearPrilozhenie20005')}
               </Button>
             )}
-            {estMnogostranichnyyRazdel && (
-              <>
-                <Button
-                  variant="outlined"
-                  size="medium"
-                  sx={{ height: 48, flexShrink: 0 }}
-                  onClick={() => {
-                    setStranitsBlanka((prev) => prev + 1)
-                  }}
-                >
-                  {t('reportalt.addPage')}
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="medium"
-                  sx={{ height: 48, flexShrink: 0 }}
-                  disabled={stranitsBlanka <= 1}
-                  onClick={() => {
-                    setStranitsBlanka((prev) => Math.max(prev - 1, 1))
-                  }}
-                >
-                  {t('reportalt.removePage')}
-                </Button>
-              </>
-            )}
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              disabled={!estMnogostranichnyyRazdel}
+              onClick={() => {
+                setStranitsBlanka((prev) => prev + 1)
+              }}
+            >
+              {t('reportalt.addPage')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              disabled={!estMnogostranichnyyRazdel || stranitsBlanka <= 1}
+              onClick={() => {
+                setStranitsBlanka((prev) => Math.max(prev - 1, 1))
+              }}
+            >
+              {t('reportalt.removePage')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              disabled={!estMnogostranichnyyRazdel || stranitsBlanka <= 1}
+              onClick={() => {
+                setStranitsBlanka(1)
+              }}
+            >
+              {t('reportalt.removeAllPages')}
+            </Button>
             <Button
               variant="outlined"
               size="medium"

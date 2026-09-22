@@ -169,6 +169,8 @@ export interface ReportSpreadsheetCellDto {
 export interface ReportSpreadsheetSheetDto {
   code: string
   title: string
+  /** Страница многостраничного раздела: её экземпляры добавляет «Добавить страницу». */
+  mnogostranichnyy?: boolean
   columnWidths: number[]
   rowHeights: number[]
   cells: ReportSpreadsheetCellDto[]

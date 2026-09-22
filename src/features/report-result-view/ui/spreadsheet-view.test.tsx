@@ -172,4 +172,40 @@ describe('SpreadsheetView — табличный документ бланка',
 
     expect(screen.queryByText('100')).toBeNull()
   })
+
+  it('список страниц плоский, сворачиваются только экземпляры многостраничного раздела', () => {
+    const list = (title: string, mnogostranichnyy = false) => ({
+      code: title,
+      title,
+      mnogostranichnyy,
+      columnWidths: [40],
+      rowHeights: [20],
+      cells: [{ row: 0, column: 0, text: title }],
+    })
+    const dokument: ReportSpreadsheetDto = {
+      sheets: [
+        list('Страница 1'),
+        list('Приложение 2.Страница 1'),
+        list('Приложение 3.Страница 1', true),
+        list('Приложение 3.Страница 1 (2)', true),
+      ],
+    }
+
+    render(<SpreadsheetView spreadsheet={dokument} />)
+
+    // «Страница 1» в списке две: страница самой формы и первый экземпляр приложения 3.
+    expect(screen.getAllByRole('button', { name: 'Страница 1' })).toHaveLength(
+      2
+    )
+    expect(
+      screen.getByRole('button', { name: 'Приложение 2.Страница 1' })
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: '▾ Приложение 3.Страница 1' })
+    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Страница 2' })).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: 'Приложение 3.Страница 1 (2)' })
+    ).toBeNull()
+  })
 })

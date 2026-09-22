@@ -219,12 +219,12 @@ const SheetView = ({
 }
 
 /**
- * Дерево страниц бланка — как список страниц формы отчёта в 1С.
+ * Список страниц бланка — как в форме отчёта 1С.
  *
- * <p>Страницы самой формы идут верхним уровнем, страницы приложений сворачиваются в узел своего
- * приложения: у формы 200.00 это «200.01» (три страницы), «200.02» (девять), «200.03» (две) и
- * «200.05» (семь). Плоский ряд из двух десятков кнопок читать невозможно, а в эталоне это именно
- * дерево слева от бланка.
+ * <p>Список плоский: «Страница 1», «Приложение 1.Страница 1», … Сворачиваются только страницы
+ * многостраничного раздела — у формы 200.00 это приложение 3 по структурным подразделениям.
+ * Каждая такая страница раскрывается в свои экземпляры, которые добавляет «Добавить страницу»:
+ * первый — сама страница, копии приходят с бэка как «<имя> (2)».
  */
 const SpisokStranits = ({
   sheets,
@@ -237,19 +237,22 @@ const SpisokStranits = ({
 }) => {
   const [svernutye, setSvernutye] = useState<Record<string, boolean>>({})
 
-  // Имя листа приложения — «200.01 стр.1»; до пробела стоит номер приложения, он и даёт узел.
-  const uzly: {
-    prilozhenie: string | null
-    stranitsy: { title: string; indeks: number }[]
-  }[] = []
+  // Копия экземпляра приходит с бэка как «Приложение 3.Страница 1 (2)» — суффикс и даёт узел.
+  const uzly: { title: string; indeks: number; ekzemplyary: number[] }[] = []
   sheets.forEach((s, indeks) => {
-    const prilozhenie = /^\d/.test(s.title) ? s.title.split(' ')[0] : null
-    const posledniy = uzly.at(-1)
-    if (prilozhenie != null && posledniy?.prilozhenie === prilozhenie) {
-      posledniy.stranitsy.push({ title: s.title, indeks })
-      return
+    const kopiya = /^(.*) \(\d+\)$/.exec(s.title)
+    if (kopiya) {
+      const bazovyy = uzly.find((u) => u.title === kopiya[1])
+      if (bazovyy) {
+        bazovyy.ekzemplyary.push(indeks)
+        return
+      }
     }
-    uzly.push({ prilozhenie, stranitsy: [{ title: s.title, indeks }] })
+    uzly.push({
+      title: s.title,
+      indeks,
+      ekzemplyary: s.mnogostranichnyy ? [indeks] : [],
+    })
   })
 
   const knopka = (title: string, indeks: number, vlozhennaya: boolean) => (
@@ -274,17 +277,19 @@ const SpisokStranits = ({
   return (
     <div className="max-h-full w-56 shrink-0 overflow-auto border-r border-pending-gray-6 pr-2">
       {uzly.map((uzel) =>
-        uzel.prilozhenie == null ? (
-          uzel.stranitsy.map((s) => knopka(s.title, s.indeks, false))
+        uzel.ekzemplyary.length === 0 ? (
+          knopka(uzel.title, uzel.indeks, false)
         ) : (
-          <Prilozhenie
-            key={uzel.prilozhenie}
-            nomer={uzel.prilozhenie}
-            stranitsy={uzel.stranitsy}
-            svernuto={svernutye[uzel.prilozhenie] ?? false}
+          <Stranitsa
+            key={uzel.title}
+            title={uzel.title}
+            ekzemplyary={uzel.ekzemplyary}
+            svernuto={svernutye[uzel.title] ?? false}
             onPereklyuchit={() => {
-              const nomer = uzel.prilozhenie!
-              setSvernutye((prev) => ({ ...prev, [nomer]: !prev[nomer] }))
+              setSvernutye((prev) => ({
+                ...prev,
+                [uzel.title]: !prev[uzel.title],
+              }))
             }}
             knopka={knopka}
           />
@@ -294,16 +299,16 @@ const SpisokStranits = ({
   )
 }
 
-/** Узел приложения в дереве страниц: заголовок со стрелкой и вложенные страницы. */
-const Prilozhenie = ({
-  nomer,
-  stranitsy,
+/** Страница многостраничного раздела: заголовок со стрелкой и экземпляры внутри. */
+const Stranitsa = ({
+  title,
+  ekzemplyary,
   svernuto,
   onPereklyuchit,
   knopka,
 }: {
-  nomer: string
-  stranitsy: { title: string; indeks: number }[]
+  title: string
+  ekzemplyary: number[]
   svernuto: boolean
   onPereklyuchit: () => void
   knopka: (
@@ -318,11 +323,11 @@ const Prilozhenie = ({
       onClick={onPereklyuchit}
       className="w-full rounded px-2 py-1 text-left text-sm font-medium text-ui-05 hover:bg-pending-gray-7"
     >
-      {svernuto ? '▸' : '▾'} Приложение {nomer}
+      {svernuto ? '▸' : '▾'} {title}
     </button>
     {!svernuto &&
-      stranitsy.map((s) =>
-        knopka(s.title.replace(`${nomer} `, ''), s.indeks, true)
+      ekzemplyary.map((indeks, nomer) =>
+        knopka(`Страница ${String(nomer + 1)}`, indeks, true)
       )}
   </div>
 )

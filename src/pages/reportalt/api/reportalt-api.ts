@@ -68,6 +68,35 @@ export const fetchReportAltBlank = (
     })
     .then((res) => unwrap(res.data) ?? null)
 
+/** Сохранённый регламентированный отчёт: реквизиты и значения клеток ручного ввода. */
+export interface SokhranennyyOtchetDto {
+  kodOtcheta?: string | null
+  organizatsiyaId?: number | null
+  periodOt?: string | null
+  periodDo?: string | null
+  kazakhskiy?: boolean
+  znacheniyaBlanka?: Record<string, string>
+  izmenenVruchnuyu?: boolean
+  versiyaFormy?: number | null
+}
+
+/**
+ * Сохранённый отчёт по id документа — им экран восстанавливает ручной ввод бланка.
+ *
+ * <p>Организация и период приходят в маршруте, как в 1С; значения клеток в параметры формы не
+ * идут и поднимаются отдельно из «Данных отчёта».
+ */
+export const fetchSokhranennyyOtchet = (
+  entryId: number,
+  signal?: AbortSignal
+) =>
+  apiService
+    .get<SokhranennyyOtchetDto | ApiResponse<SokhranennyyOtchetDto>>({
+      url: `/api/reportalt/sokhranennyy/${String(entryId)}`,
+      signal,
+    })
+    .then((res) => unwrap(res.data))
+
 /**
  * «Выгрузить в XML 200.03»: приложение бланка отдельным файлом ФНО.
  *

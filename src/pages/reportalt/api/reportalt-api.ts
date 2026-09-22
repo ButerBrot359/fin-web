@@ -68,6 +68,27 @@ export const fetchReportAltBlank = (
     })
     .then((res) => unwrap(res.data) ?? null)
 
+/**
+ * «Выгрузить в XML 200.03»: приложение бланка отдельным файлом ФНО.
+ *
+ * <p>В 1С приложение по структурным подразделениям сдаётся своим файлом со своими кодом и
+ * версией формы, поэтому это отдельная команда, а не часть общей выгрузки.
+ *
+ * @param ekzemplyar номер экземпляра многостраничного раздела; 1 — сам раздел
+ */
+export const vygruzkaPrilozheniya = (
+  code: string,
+  body: RunReportAltBody,
+  ekzemplyar = 1,
+  signal?: AbortSignal
+) =>
+  apiService.postFileBlob({
+    url: `/api/reportalt/${code}/vygruzka-prilozheniya`,
+    data: body,
+    params: { ekzemplyar },
+    signal,
+  })
+
 /** Что уходит в POST /api/reportalt/{code}/save — реквизиты сохраняемого экземпляра отчёта. */
 export interface SaveReportAltBody {
   kodOtcheta: string

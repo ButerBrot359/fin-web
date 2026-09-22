@@ -20,6 +20,7 @@ import {
   fetchReportAltBlank,
   saveReportAlt,
   vygruzkaFno,
+  vygruzkaPrilozheniya,
 } from '../api/reportalt-api'
 import { rasshifrovkaKletki } from '../lib/utils/blank-drilldown'
 import {
@@ -569,6 +570,35 @@ export const ReportAltPage = () => {
     )
   }
 
+  /**
+   * «Выгрузить в XML 200.03» формы 1С: приложение по структурным подразделениям отдельным файлом.
+   *
+   * <p>Выгружается активный экземпляр раздела — тот, который открыт в списке страниц.
+   */
+  const handleExportPrilozhenie = () => {
+    if (!appliedBody) {
+      showToast('warning', t('reportalt.exportXmlUnavailable'))
+      return
+    }
+    const nomerEkzemplyara = /\((\d+)\)$/.exec(
+      blankDokument?.sheets[aktivnayaStranitsa]?.title ?? ''
+    )
+    void vygruzkaPrilozheniya(
+      moduleCode,
+      appliedBody,
+      nomerEkzemplyara ? Number(nomerEkzemplyara[1]) : 1
+    )
+      .then((res) => {
+        const ssylka = document.createElement('a')
+        ssylka.href = URL.createObjectURL(res.data)
+        ssylka.download = '200.03.xml'
+        ssylka.click()
+      })
+      .catch((e: unknown) => {
+        showToast('error', t('reportalt.exportXmlUnavailable'), errorMessage(e))
+      })
+  }
+
   const handlePrintPdf = () => {
     if (!appliedBody || isPrinting) return
     // Язык печати — выбранный «Язык формы» (YazykFormy): берём применённое
@@ -766,6 +796,16 @@ export const ReportAltPage = () => {
             >
               {t('reportalt.exportXml')}
             </Button>
+            {estMnogostranichnyyRazdel && (
+              <Button
+                variant="outlined"
+                size="medium"
+                sx={{ height: 48, flexShrink: 0 }}
+                onClick={handleExportPrilozhenie}
+              >
+                {t('reportalt.exportXmlPrilozhenie')}
+              </Button>
+            )}
             <Button
               variant="outlined"
               size="medium"

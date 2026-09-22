@@ -121,3 +121,11 @@ export const indicatorSubLabels = (
   const v = cells.Pokazatel
   return Array.isArray(v) ? v.map((x) => String(x)) : undefined
 }
+
+/**
+ * Правило оформления СТРОКИ пришло с бэка. Правила уровня строки лежат в
+ * `ReportRowDto.appearance`, а не на колонке: условие берётся из данных (эталон 1С выделяет
+ * жирным счёт-группу, у которого нет родителя), поэтому колонка о нём знать не может.
+ */
+export const hasAppearance = (row: ReportRowDto, rule: string): boolean =>
+  row.appearance?.includes(rule) === true

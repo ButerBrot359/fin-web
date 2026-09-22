@@ -108,9 +108,7 @@ describe('TreeTable — переходы по строке', () => {
   it('без onRowContextMenu правый клик ничего не делает', () => {
     render(<TreeTable result={result} columns={columns} />)
 
-    expect(() =>
-      fireEvent.contextMenu(screen.getByText('1316'))
-    ).not.toThrow()
+    expect(() => fireEvent.contextMenu(screen.getByText('1316'))).not.toThrow()
   })
 })
 describe('TreeTable — дерево с этажами', () => {
@@ -144,8 +142,7 @@ describe('TreeTable — дерево с этажами', () => {
     rows: [{ ...accountRow, children: [listovayaStroka] }],
   } as unknown as ReportResultDto
 
-  const strokaNomenklatury = () =>
-    screen.getByText('Бумага А4').closest('tr') as HTMLTableRowElement
+  const strokaNomenklatury = () => screen.getByText('Бумага А4').closest('tr')!
 
   it('двойной клик по строке работает и когда шапка построена этажами', () => {
     const calls: ReportRowDto[] = []
@@ -187,5 +184,62 @@ describe('TreeTable — дерево с этажами', () => {
     render(<TreeTable result={floorResult} columns={floorColumns} />)
 
     expect(strokaNomenklatury().className).not.toContain('cursor-pointer')
+  })
+})
+
+describe('TreeTable — условное оформление строки (эталон 1С)', () => {
+  const stroka = (
+    groupValue: string,
+    extra: Partial<ReportRowDto>
+  ): ReportRowDto =>
+    ({
+      level: 1,
+      groupCode: 'Schet',
+      groupValue,
+      // rowKind=DATA, иначе строку верхнего уровня рендерер и так считает выделенной —
+      // проверять было бы нечего.
+      rowKind: 'DATA',
+      cells: { OstatokKonechnyyDt: 150 },
+      children: [],
+      ...extra,
+    }) as unknown as ReportRowDto
+
+  const derevo = (rows: ReportRowDto[]) =>
+    ({ ...result, rows }) as unknown as ReportResultDto
+
+  it('appearance BOLD_GROUP выделяет строку счёта-группы', () => {
+    render(
+      <TreeTable
+        result={derevo([
+          stroka('1000', { appearance: ['BOLD_GROUP'] }),
+          stroka('1010', {}),
+        ])}
+        columns={columns}
+      />
+    )
+
+    // Жирность идёт через sx (emotion-класс), поэтому сверяем вычисленный стиль.
+    const podpis = (text: string) =>
+      window.getComputedStyle(screen.getByText(text)).fontWeight
+    expect(podpis('1000')).toBe('700')
+    expect(podpis('1010')).not.toBe('700')
+  })
+
+  it('blankColumns гасит графу в этой строке, но не в соседней', () => {
+    render(
+      <TreeTable
+        result={derevo([
+          stroka('1000', { blankColumns: ['OstatokKonechnyyDt'] }),
+          stroka('1010', {}),
+        ])}
+        columns={columns}
+      />
+    )
+
+    const pogashennaya = screen.getByText('1000').closest('tr')!
+    const obychnaya = screen.getByText('1010').closest('tr')!
+    // Значение одно и то же (150), гашение идёт по строке, а не по значению.
+    expect(pogashennaya.textContent).not.toContain('150')
+    expect(obychnaya.textContent).toContain('150')
   })
 })

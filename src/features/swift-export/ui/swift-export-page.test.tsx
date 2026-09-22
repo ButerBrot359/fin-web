@@ -45,7 +45,7 @@ const previewResponse = (hasErrors: boolean, errors: string[] = []) => ({
   },
 })
 
-let clickMock: ReturnType<typeof vi.fn>
+let clickMock: ReturnType<typeof vi.fn<() => void>>
 
 describe('SwiftExportPage — сохранение в выбранную папку (Chromium)', () => {
   beforeEach(async () => {
@@ -120,7 +120,7 @@ describe('SwiftExportPage — сохранение в выбранную пап�
 describe('SwiftExportPage', () => {
   beforeEach(async () => {
     vi.restoreAllMocks()
-    clickMock = vi.fn()
+    clickMock = vi.fn<() => void>()
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(clickMock)
     vi.stubGlobal('URL', {
       ...URL,

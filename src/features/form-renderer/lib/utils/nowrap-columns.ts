@@ -28,6 +28,7 @@ import type { DocumentAttribute } from '@/entities/document-type'
  */
 const NOWRAP_NAMES_1C = [
   'ИсточникФинансирования',
+  'ФКР',
   'Сотрудник',
   'ПериодРегистрации',
   'Подразделение',
@@ -48,6 +49,7 @@ const NOWRAP_NAMES_1C = [
 /** Те же имена в транслитерации бэка — на типах, приезжающих без `code1C`. */
 const NOWRAP_CODES = [
   'istochnikfinansirovaniya',
+  'fkr',
   'sotrudnik',
   'periodregistratsii',
   'podrazdelenie',

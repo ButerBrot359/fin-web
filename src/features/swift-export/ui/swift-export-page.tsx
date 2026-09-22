@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import {
-  Button,
-  MenuItem,
-  TextField,
-  Typography,
-} from '@mui/material'
+import { Button, MenuItem, TextField, Typography } from '@mui/material'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
+import { fetchSwiftExportBlob } from '../api/swift-export-api'
 import { useSwiftExportPreview } from '../lib/hooks/use-swift-export-preview'
-import { swiftExportDownloadUrl } from '../lib/download-url'
+import { saveSwiftFile } from '../lib/save-swift-file'
 import { SwiftExportTable } from './swift-export-table'
 import type {
   SwiftEncoding,
@@ -51,6 +47,21 @@ export const SwiftExportPage = () => {
     previewMutate({ documentIds: [id], format, encoding })
   }, [typeCode, id, format, encoding, previewMutate])
 
+  const downloadFile = async (data: SwiftExportPreview) => {
+    try {
+      const res = await fetchSwiftExportBlob(typeCode, id, format, encoding)
+      const fallbackName =
+        data.rows[0]?.fileName ?? `SWIFT_${typeCode}_${String(id)}.txt`
+      saveSwiftFile(
+        res.data,
+        res.headers['content-disposition'] as string | undefined,
+        fallbackName
+      )
+    } catch {
+      showToast('error', t('swiftExport.loadFailed'))
+    }
+  }
+
   const handleExport = () => {
     if (!typeCode || Number.isNaN(id)) return
     preview.mutate(
@@ -61,9 +72,7 @@ export const SwiftExportPage = () => {
             showToast('error', t('swiftExport.hasErrorsToast'))
             return
           }
-          window.location.assign(
-            swiftExportDownloadUrl(typeCode, id, format, encoding)
-          )
+          void downloadFile(data)
         },
         onError: () => {
           showToast('error', t('swiftExport.loadFailed'))

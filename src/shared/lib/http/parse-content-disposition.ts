@@ -4,7 +4,7 @@
  * Кривой percent-encoding в filename* — фолбэк на plain filename.
  */
 export function parseContentDispositionFilename(
-  header: string | undefined,
+  header: string | undefined
 ): string {
   if (!header) return ''
 

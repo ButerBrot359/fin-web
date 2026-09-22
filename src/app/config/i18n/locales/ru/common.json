@@ -586,6 +586,7 @@
     "clear": "Очистить",
     "refresh": "Обновить",
     "exportXml": "Выгрузить в XML",
+    "exportXmlPrilozhenie": "Выгрузить в XML 200.03",
     "exportXmlUnavailable": "Выгрузка в XML для этой формы недоступна",
     "save": "Сохранить",
     "saved": "Отчёт сохранён",

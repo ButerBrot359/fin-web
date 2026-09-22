@@ -586,6 +586,7 @@
     "clear": "Тазарту",
     "refresh": "Жаңарту",
     "exportXml": "XML-ге жүктеу",
+    "exportXmlPrilozhenie": "200.03 XML-ге жүктеу",
     "exportXmlUnavailable": "Бұл форма үшін XML-ге жүктеу қолжетімсіз",
     "save": "Сақтау",
     "saved": "Есеп сақталды",

@@ -15,8 +15,8 @@ const list = (title: string, polya: string[]) => ({
 const blank: ReportSpreadsheetDto = {
   sheets: [
     list('Страница 1', ['s_200_00_001_1']),
-    list('Приложение 5.Страница 1', ['Ф20005A101_1', 'Ф20005A102_1']),
-    list('Приложение 5.Страница 2', ['Ф20005A201_1']),
+    list('200.05 стр.1', ['Ф20005A101_1', 'Ф20005A102_1']),
+    list('200.05 стр.2', ['Ф20005A201_1']),
   ],
 }
 
@@ -29,7 +29,9 @@ describe('Очистка страниц бланка', () => {
 
   it('очистка приложения 200.05 берёт все его страницы', () => {
     expect(
-      pustyeOblastiStranits(blank, (title) => stranitsaPrilozheniya(title, '5'))
+      pustyeOblastiStranits(blank, (title) =>
+        stranitsaPrilozheniya(title, '200.05')
+      )
     ).toEqual({
       Ф20005A101_1: '',
       Ф20005A102_1: '',
@@ -42,7 +44,7 @@ describe('Очистка страниц бланка', () => {
   })
 
   it('страница основной формы не считается страницей приложения', () => {
-    expect(stranitsaPrilozheniya('Страница 1', '5')).toBe(false)
-    expect(stranitsaPrilozheniya('Приложение 5.Страница 1', '5')).toBe(true)
+    expect(stranitsaPrilozheniya('Страница 1', '200.05')).toBe(false)
+    expect(stranitsaPrilozheniya('200.05 стр.1', '200.05')).toBe(true)
   })
 })

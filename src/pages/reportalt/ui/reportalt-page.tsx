@@ -18,6 +18,7 @@ import { exportTableToXlsx } from '@/shared/lib/table-export'
 
 import {
   fetchReportAltBlank,
+  fetchSokhranennyyOtchet,
   saveReportAlt,
   vygruzkaFno,
   vygruzkaPrilozheniya,
@@ -173,6 +174,22 @@ export const ReportAltPage = () => {
   // Выделенная клетка бланка: в 1С «Расшифровать» работает от имени области текущей области.
   const [vybrannayaOblast, setVybrannayaOblast] = useState<string | null>(null)
   const [aktivnayaStranitsa, setAktivnayaStranitsa] = useState(0)
+
+  // Открытие сохранённого отчёта из журнала: организация и период приходят в URL, как в 1С, а
+  // ручной ввод лежит в «Данных отчёта» документа и поднимается по его id.
+  const sokhranennyyId = Number(searchParams.get('sokhranennyy') ?? '')
+  const { data: sokhranennyy } = useQuery({
+    queryKey: ['reportalt-sokhranennyy', sokhranennyyId],
+    queryFn: ({ signal }) => fetchSokhranennyyOtchet(sokhranennyyId, signal),
+    enabled: Number.isFinite(sokhranennyyId) && sokhranennyyId > 0,
+    staleTime: Infinity,
+  })
+  // Сохранённые значения — основа, правки пользователя ложатся поверх. Слияние выводится, а не
+  // кладётся в состояние: иначе первый же рендер после загрузки документа перетирал бы ввод.
+  const blankValuesEffektivnye = useMemo(
+    () => ({ ...(sokhranennyy?.znacheniyaBlanka ?? {}), ...blankValues }),
+    [sokhranennyy, blankValues]
+  )
   const izmenitKletku = useCallback((field: string, value: string) => {
     setBlankValues((prev) => ({ ...prev, [field]: value }))
   }, [])
@@ -200,9 +217,11 @@ export const ReportAltPage = () => {
       ...(appliedUserSettings != null
         ? { userSettings: appliedUserSettings }
         : {}),
-      ...(Object.keys(blankValues).length > 0 ? { blankValues } : {}),
+      ...(Object.keys(blankValuesEffektivnye).length > 0
+        ? { blankValues: blankValuesEffektivnye }
+        : {}),
     }
-  }, [meta, searchParams, appliedUserSettings, blankValues])
+  }, [meta, searchParams, appliedUserSettings, blankValuesEffektivnye])
 
   const isLedger = meta?.definition.layout === 'LEDGER'
 
@@ -249,12 +268,14 @@ export const ReportAltPage = () => {
 
   // «Добавить страницу» работает только на многостраничном разделе — приложении 200.03.
   const estMnogostranichnyyRazdel =
-    blankDokument?.sheets.some((s) => stranitsaPrilozheniya(s.title, '3')) ??
-    false
+    blankDokument?.sheets.some((s) =>
+      stranitsaPrilozheniya(s.title, '200.03')
+    ) ?? false
 
   const estPrilozhenie20005 =
-    blankDokument?.sheets.some((s) => stranitsaPrilozheniya(s.title, '5')) ??
-    false
+    blankDokument?.sheets.some((s) =>
+      stranitsaPrilozheniya(s.title, '200.05')
+    ) ?? false
 
   // Ошибка формирования (422 — невалидные параметры / слишком большой
   // результат; прочее) — тостом, с сообщением бэка при наличии.
@@ -308,7 +329,7 @@ export const ReportAltPage = () => {
       periodOt: periodValue?.from ?? null,
       periodDo: periodValue?.to ?? null,
       kazakhskiy: values[LANG_PARAM_CODE] === 'Kz',
-      znacheniyaBlanka: blankValues,
+      znacheniyaBlanka: blankValuesEffektivnye,
     })
       .then(() => {
         showToast('success', t('reportalt.saved'))
@@ -832,7 +853,7 @@ export const ReportAltPage = () => {
                 sx={{ height: 48, flexShrink: 0 }}
                 onClick={() => {
                   ochistitStranitsy((title) =>
-                    stranitsaPrilozheniya(title, '5')
+                    stranitsaPrilozheniya(title, '200.05')
                   )
                 }}
               >
@@ -941,7 +962,7 @@ export const ReportAltPage = () => {
             <div className="min-h-0 overflow-auto pb-4">
               <ReportResultView
                 result={result}
-                blankValues={blankValues}
+                blankValues={blankValuesEffektivnye}
                 onBlankValueChange={izmenitKletku}
                 vybrannayaOblast={vybrannayaOblast}
                 onVyborOblasti={setVybrannayaOblast}
@@ -984,7 +1005,7 @@ export const ReportAltPage = () => {
         <div className="min-h-0 overflow-auto pb-4">
           <ReportResultView
             result={pustoyBlankResult}
-            blankValues={blankValues}
+            blankValues={blankValuesEffektivnye}
             onBlankValueChange={izmenitKletku}
             vybrannayaOblast={vybrannayaOblast}
             onVyborOblasti={setVybrannayaOblast}

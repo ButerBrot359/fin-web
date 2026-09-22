@@ -77,7 +77,7 @@ export interface SokhranennyyOtchetDto {
   kazakhskiy?: boolean
   znacheniyaBlanka?: Record<string, string>
   izmenenVruchnuyu?: boolean
-  versiyaFormy?: number | null
+  versiyaSkhemy?: number | null
 }
 
 /**

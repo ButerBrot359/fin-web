@@ -115,3 +115,43 @@ describe('document history provenance', () => {
     expect(screen.queryByText('Выполнено')).toBeNull()
   })
 })
+
+describe('document history origin (SCRUM-371)', () => {
+  it('shows the short IP chain from local computer to external router', () => {
+    cell(
+      {
+        networkChain: [
+          { ip: '192.168.1.15', role: 'LOCAL', source: 'CLIENT' },
+          {
+            ip: '10.20.0.3',
+            role: 'PROXY',
+            source: 'X_ORIGINAL_FORWARDED_FOR',
+          },
+          { ip: '95.56.1.2', role: 'PUBLIC', source: 'X_FORWARDED_FOR' },
+        ],
+      },
+      'networkChain'
+    )
+    expect(screen.getByText('192.168.1.15 → 95.56.1.2')).toBeTruthy()
+  })
+  it('falls back to separate address fields, a ready string or a dash', () => {
+    cell(
+      { clientLocalIp: '10.8.0.2', clientPublicIp: '95.56.1.2' },
+      'networkChain'
+    )
+    expect(screen.getByText('10.8.0.2 → 95.56.1.2')).toBeTruthy()
+    cleanup()
+    cell({ networkChain: '1.2.3.4 → 5.6.7.8' }, 'networkChain')
+    expect(screen.getByText('1.2.3.4 → 5.6.7.8')).toBeTruthy()
+    cleanup()
+    cell({}, 'networkChain')
+    expect(screen.getByText('—')).toBeTruthy()
+  })
+  it('renders computer and working server, dash when the server has none', () => {
+    cell({ computer: 'Бухгалтерия-1' }, 'computer')
+    expect(screen.getByText('Бухгалтерия-1')).toBeTruthy()
+    cleanup()
+    cell({ serverNode: null }, 'serverNode')
+    expect(screen.getByText('—')).toBeTruthy()
+  })
+})

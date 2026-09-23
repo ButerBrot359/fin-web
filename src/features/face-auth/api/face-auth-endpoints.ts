@@ -1,6 +1,7 @@
 import type { AxiosError } from 'axios'
 import axios from 'axios'
 
+import { attachClientContextHeaders } from '@/shared/api/attach-client-context-headers'
 import type { TokenPair } from '@/shared/types/auth.types'
 
 import type {
@@ -28,6 +29,9 @@ const faceAuthInstance = axios.create({
    */
   timeout: 45_000,
 })
+
+// Вход по лицу — тоже событие LOGIN: журналу нужен компьютер и адреса (SCRUM-371).
+attachClientContextHeaders(faceAuthInstance)
 
 export const FACE_AUTH_PATHS = {
   challenge: '/api/auth/face/challenge',

@@ -28,7 +28,9 @@ afterEach(cleanup)
 const mount = () =>
   render(
     <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
     >
       <MemoryRouter>
         <Routes>
@@ -63,5 +65,16 @@ describe('User menu Face ID entries', () => {
     )
     expect(screen.getByTestId('legacy-photo-dialog')).toBeTruthy()
     expect(screen.queryByTestId('self-face-id-page')).toBeNull()
+  })
+
+  it('opens the computer name dialog for the audit log (SCRUM-371)', async () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: 'Меню пользователя' }))
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Имя компьютера' })
+    )
+    expect(
+      await screen.findByRole('textbox', { name: 'Имя компьютера' })
+    ).toBeTruthy()
   })
 })

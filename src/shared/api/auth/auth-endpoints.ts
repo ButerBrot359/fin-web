@@ -6,6 +6,8 @@ import type {
   TokenPair,
 } from '@/shared/types/auth.types'
 
+import { attachClientContextHeaders } from '../attach-client-context-headers'
+
 /**
  * HTTP-вызовы контура входа.
  *
@@ -22,6 +24,11 @@ const authInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000,
 })
+
+// Метка рабочего места и локальные адреса нужны журналу прежде всего на входе (SCRUM-371):
+// событие LOGIN без компьютера — главный пробел журнала. Это не учётные данные, поэтому
+// голому инстансу они не мешают.
+attachClientContextHeaders(authInstance)
 
 /**
  * Путь смены своего пароля.

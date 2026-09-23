@@ -8,42 +8,30 @@ import {
 } from './drilldown'
 
 const accountRow: DrilldownRow = {
-  level: 0,
   groupCode: 'Schet',
   groupRefId: 99,
   groupValue: '1316',
   rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 99 },
-  cells: {},
-  children: [],
 }
 
 const dimensionRow: DrilldownRow = {
-  level: 1,
   groupCode: 'Organizatsiya',
   groupRefId: 7,
   groupValue: 'Аппарат акима',
-  cells: {},
-  children: [],
 }
 
 const subkontoRow: DrilldownRow = {
-  level: 2,
   groupCode: 'Subkonto1',
   groupRefId: 700,
   groupValue: 'Бумага А4',
   rowRef: { domain: 'DICTIONARY', typeCode: 'Nomenklatura', id: 700 },
-  cells: {},
-  children: [],
 }
 
 const corrAccountRow: DrilldownRow = {
-  level: 1,
   groupCode: 'KorrSchet',
   groupRefId: 3310,
   groupValue: '3310',
   rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 3310 },
-  cells: {},
-  children: [],
 }
 
 const period = { from: '2026-09-01', to: '2026-09-12' }
@@ -184,12 +172,9 @@ describe('buildDrilldownTargets — параметры целевых отчёт
 
   it('Карточка субконто получает значение субконто и измерения строки', () => {
     const fkrRow: DrilldownRow = {
-      level: 1,
       groupCode: 'FKR',
       groupRefId: 12,
       groupValue: '124/008/032',
-      cells: {},
-      children: [],
     }
     const targets = buildDrilldownTargets({
       reportCode: 'AnalizSubkonto',

@@ -211,6 +211,12 @@ export interface ViewEffect {
   applyToParentTargetNodeId?: string
   applyToParentCommand?: string
   applyToParentValue?: unknown
+  // uploadFile: фильтр диалога выбора файла (значение атрибута accept),
+  // предел размера в байтах и команда, которую фронт шлёт в ТУ ЖЕ сессию после
+  // успешной отправки (форма перечитывает изменённый на сервере документ).
+  accept?: string
+  maxSizeBytes?: number | null
+  successCommand?: string
 }
 
 export interface NodeProps {

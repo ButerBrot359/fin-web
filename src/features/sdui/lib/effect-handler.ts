@@ -74,6 +74,11 @@ export interface EffectHandlerDeps {
   // форм-сессионного пути; без него — фолбэк на warning-тост, чтобы текст
   // не потерялся вовсе.
   alert?: (effect: ViewEffect) => void
+  // uploadFile: выбрать файл и отправить его POST-запросом на effect.url, а по
+  // успеху диспатчить effect.successCommand в ту же сессию. Реализация в
+  // dispatch (нужен redispatch); session-less путь деп не даёт — эффект туда
+  // прийти не должен.
+  uploadFile?: (effect: ViewEffect) => void
 }
 
 /**
@@ -192,6 +197,14 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
           deps.taskStarted(effect)
         } else {
           console.warn('[sdui] эффект taskStarted вне форм-сессии', effect)
+        }
+        break
+
+      case 'uploadFile':
+        if (deps.uploadFile) {
+          deps.uploadFile(effect)
+        } else {
+          console.warn('[sdui] эффект uploadFile вне форм-сессии', effect)
         }
         break
 

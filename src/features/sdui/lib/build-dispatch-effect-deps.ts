@@ -2,6 +2,7 @@ import type { NavigateFunction } from 'react-router-dom'
 import type { QueryClient } from '@tanstack/react-query'
 
 import type { ActionBehavior, ViewAction } from '../types/view'
+import { uploadFileByEffect } from './upload-file-effect'
 import {
   buildCommonEffectDeps,
   buildDialogEffectDeps,
@@ -102,6 +103,14 @@ export function buildDispatchEffectHandler(ctx: DispatchEffectHandlerCtx) {
         if (effect.task && sid) {
           useAsyncTaskStore.getState().track(effect.task, sid)
         }
+      },
+      uploadFile: (effect) => {
+        // Файл по SDUI-каналу не ходит: адрес приёмника, фильтр типов и предел
+        // размера присылает сервер, фронт лишь открывает диалог и отправляет
+        // multipart. После успеха — серверная команда в ТУ ЖЕ сессию
+        // (обычно reread): документ уже изменён в БД, и форма обязана его
+        // перечитать, иначе на экране осталась бы прежняя табличная часть.
+        void uploadFileByEffect(effect, redispatch)
       },
       unsavedChanges: (effect) => {
         // Три ответа — три исхода: «Да» и «Нет» уходят серверными командами в

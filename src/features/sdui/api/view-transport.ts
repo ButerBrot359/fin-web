@@ -2,6 +2,7 @@ import axios from 'axios'
 import i18n from 'i18next'
 
 import { attachAuthInterceptors } from '@/shared/api/auth/attach-auth-interceptors'
+import { attachClientContextHeaders } from '@/shared/api/attach-client-context-headers'
 
 import type {
   ViewRequest,
@@ -23,6 +24,8 @@ const instance = axios.create({
 // Инстанс отдельный по историческим причинам — забыть его значит получить экраны SDUI,
 // молча отваливающиеся в 401, когда бэкенд включит проверку доступа.
 attachAuthInterceptors(instance)
+// Рабочее место для журнала регистрации (SCRUM-371) — проведение и запись идут именно здесь.
+attachClientContextHeaders(instance)
 
 export class ViewConflictError extends Error {
   constructor(public data: ConflictError) {

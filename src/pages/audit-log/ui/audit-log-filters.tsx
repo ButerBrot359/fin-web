@@ -4,13 +4,13 @@ import { MenuItem, TextField } from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons/button'
 
-export interface AuditLogFilterValues {
-  from: string
-  to: string
-  userLogin: string
-  action: string
-  outcome: string
-}
+import type { AuditActionOption } from '../api/audit-log-api'
+import {
+  countExtraFilters,
+  type AuditLogFilterValues,
+} from '../lib/audit-log-filters'
+import { AuditEventsSelect } from './audit-events-select'
+import { AuditLogExtraFilters } from './audit-log-extra-filters'
 
 interface AuditLogFiltersProps {
   value: AuditLogFilterValues
@@ -18,16 +18,19 @@ interface AuditLogFiltersProps {
   onApply: () => void
   onReset: () => void
   disabled: boolean
+  actions: AuditActionOption[]
+  applicationOptions: Record<string, string>
+  extraOpen: boolean
+  onToggleExtra: () => void
 }
 
 /**
- * Отборы журнала: период, пользователь, действие, исход.
+ * Отбор журнала, как в 1С: первый ряд — период, пользователь, события, статус и строка поиска;
+ * «Ещё отборы» — метаданные, объект, IP, сеанс, компьютер, рабочий сервер, приложение.
  *
- * <b>Список действий и исходов захардкожен, а подписи берутся с сервера.</b> Коды перечислений
- * (`LOGIN`, `POST`, …) — часть контракта и меняются вместе с ним, а вот переводить их на клиенте
- * нельзя: сервер отдаёт готовые `actionPresentation`/`outcomePresentation`, и второй перевод
- * рядом однажды разойдётся с первым. Здесь подписи нужны ДО загрузки данных, поэтому взяты из
- * i18n — единственное место, где дублирование неизбежно; список сверен с handoff §3.
+ * <b>Подписи событий и статусов — с сервера</b> (`/api/audit/actions`, `outcomePresentation` в
+ * строках); коды статусов (`SUCCESS`/`DENIED`/`FAILED`) — часть контракта, их подписи здесь
+ * нужны до загрузки данных, поэтому взяты из i18n.
  */
 export const AuditLogFilters = ({
   value,
@@ -35,25 +38,13 @@ export const AuditLogFilters = ({
   onApply,
   onReset,
   disabled,
+  actions,
+  applicationOptions,
+  extraOpen,
+  onToggleExtra,
 }: AuditLogFiltersProps) => {
   const { t } = useTranslation()
 
-  // Пары «код перечисления → ключ перевода» ЛИТЕРАЛАМИ, а не шаблонной строкой: ключи i18n в
-  // проекте типизированы, и `auditLog.actions.${code}` компилятор проверить не может — забытый
-  // перевод всплыл бы только на экране.
-  const actions = [
-    ['CREATE', 'auditLog.actions.CREATE'],
-    ['UPDATE', 'auditLog.actions.UPDATE'],
-    ['POST', 'auditLog.actions.POST'],
-    ['UNPOST', 'auditLog.actions.UNPOST'],
-    ['DELETION_MARK', 'auditLog.actions.DELETION_MARK'],
-    ['DELETE', 'auditLog.actions.DELETE'],
-    ['LOGIN', 'auditLog.actions.LOGIN'],
-    ['LOGOUT', 'auditLog.actions.LOGOUT'],
-    ['SESSION_REFRESH', 'auditLog.actions.SESSION_REFRESH'],
-    ['PASSWORD_CHANGED', 'auditLog.actions.PASSWORD_CHANGED'],
-    ['LOGIN_SETTINGS_CHANGED', 'auditLog.actions.LOGIN_SETTINGS_CHANGED'],
-  ] as const
   const outcomes = [
     ['SUCCESS', 'auditLog.outcomes.SUCCESS'],
     ['DENIED', 'auditLog.outcomes.DENIED'],
@@ -63,90 +54,123 @@ export const AuditLogFilters = ({
   const set = (patch: Partial<AuditLogFilterValues>) => {
     onChange({ ...value, ...patch })
   }
+  const extraCount = countExtraFilters(value)
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <TextField
-        label={t('auditLog.from')}
-        type="datetime-local"
-        size="small"
-        value={value.from}
-        onChange={(event) => {
-          set({ from: event.target.value })
-        }}
-        disabled={disabled}
-        slotProps={{ inputLabel: { shrink: true } }}
-      />
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(event) => {
+        // Enter в любом поле — «Применить», как в форме отбора 1С.
+        event.preventDefault()
+        onApply()
+      }}
+    >
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] items-end gap-4">
+        <TextField
+          label={t('auditLog.from')}
+          type="datetime-local"
+          size="small"
+          value={value.from}
+          onChange={(event) => {
+            set({ from: event.target.value })
+          }}
+          disabled={disabled}
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
 
-      <TextField
-        label={t('auditLog.to')}
-        type="datetime-local"
-        size="small"
-        value={value.to}
-        onChange={(event) => {
-          set({ to: event.target.value })
-        }}
-        disabled={disabled}
-        slotProps={{ inputLabel: { shrink: true } }}
-      />
+        <TextField
+          label={t('auditLog.to')}
+          type="datetime-local"
+          size="small"
+          value={value.to}
+          onChange={(event) => {
+            set({ to: event.target.value })
+          }}
+          disabled={disabled}
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
 
-      <TextField
-        label={t('auditLog.userLogin')}
-        size="small"
-        // Сервер сравнивает логин ТОЧНО, поэтому подсказываем формат: «Фамилия Имя», как в 1С.
-        placeholder={t('auth.loginPlaceholder')}
-        value={value.userLogin}
-        onChange={(event) => {
-          set({ userLogin: event.target.value })
-        }}
-        disabled={disabled}
-      />
+        <TextField
+          label={t('auditLog.userLogin')}
+          size="small"
+          // Сервер сравнивает логин ТОЧНО, поэтому подсказываем формат: «Фамилия Имя», как в 1С.
+          placeholder={t('auth.loginPlaceholder')}
+          value={value.userLogin}
+          onChange={(event) => {
+            set({ userLogin: event.target.value })
+          }}
+          disabled={disabled}
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
 
-      <TextField
-        select
-        label={t('auditLog.action')}
-        size="small"
-        className="min-w-52"
-        value={value.action}
-        onChange={(event) => {
-          set({ action: event.target.value })
-        }}
-        disabled={disabled}
-      >
-        <MenuItem value="">{t('auditLog.anyValue')}</MenuItem>
-        {actions.map(([code, labelKey]) => (
-          <MenuItem key={code} value={code}>
-            {t(labelKey)}
-          </MenuItem>
-        ))}
-      </TextField>
+        <AuditEventsSelect
+          value={value.actions}
+          options={actions}
+          onChange={(next) => {
+            set({ actions: next })
+          }}
+          disabled={disabled}
+        />
 
-      <TextField
-        select
-        label={t('auditLog.outcome')}
-        size="small"
-        className="min-w-40"
-        value={value.outcome}
-        onChange={(event) => {
-          set({ outcome: event.target.value })
-        }}
-        disabled={disabled}
-      >
-        <MenuItem value="">{t('auditLog.anyValue')}</MenuItem>
-        {outcomes.map(([code, labelKey]) => (
-          <MenuItem key={code} value={code}>
-            {t(labelKey)}
-          </MenuItem>
-        ))}
-      </TextField>
+        <TextField
+          select
+          label={t('auditLog.status')}
+          size="small"
+          value={value.outcome}
+          onChange={(event) => {
+            set({ outcome: event.target.value })
+          }}
+          disabled={disabled}
+          slotProps={{
+            select: { displayEmpty: true },
+            inputLabel: { shrink: true },
+          }}
+        >
+          <MenuItem value="">{t('auditLog.anyValue')}</MenuItem>
+          {outcomes.map(([code, labelKey]) => (
+            <MenuItem key={code} value={code}>
+              {t(labelKey)}
+            </MenuItem>
+          ))}
+        </TextField>
 
-      <Button variant="primary" onClick={onApply} disabled={disabled}>
-        {t('auditLog.apply')}
-      </Button>
+        <TextField
+          label={t('auditLog.search')}
+          size="small"
+          placeholder={t('auditLog.searchPlaceholder')}
+          value={value.search}
+          onChange={(event) => {
+            set({ search: event.target.value })
+          }}
+          disabled={disabled}
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+      </div>
 
-      <Button variant="secondary" onClick={onReset} disabled={disabled}>
-        {t('auditLog.reset')}
-      </Button>
-    </div>
+      {extraOpen && (
+        <AuditLogExtraFilters
+          value={value}
+          onChange={set}
+          disabled={disabled}
+          applicationOptions={applicationOptions}
+        />
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="primary" type="submit" disabled={disabled}>
+          {t('auditLog.apply')}
+        </Button>
+        <Button variant="secondary" onClick={onReset} disabled={disabled}>
+          {t('auditLog.reset')}
+        </Button>
+        <Button variant="tertiary" onClick={onToggleExtra}>
+          {extraOpen
+            ? t('auditLog.hideFilters')
+            : extraCount > 0
+              ? `${t('auditLog.moreFilters')} (${String(extraCount)})`
+              : t('auditLog.moreFilters')}
+        </Button>
+      </div>
+    </form>
   )
 }

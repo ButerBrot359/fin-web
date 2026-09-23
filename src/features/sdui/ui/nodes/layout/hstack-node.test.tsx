@@ -41,6 +41,46 @@ describe('HStackNode', () => {
     expect(wrapper.style.flexGrow).toBe('2')
   })
 
+  // Цепочка высоты растянутой карточки («Начисление зарплаты»): без сжимаемости
+  // строка вырастает на всю высоту ТЧ, таблица теряет собственную прокрутку, и
+  // её горизонтальная полоса оказывается ниже кромки экрана.
+  it('растянутая строка сжимается ниже содержимого (minHeight: 0)', () => {
+    const node = {
+      id: 'h4',
+      type: 'HSTACK',
+      props: { flex: 1 },
+      children: [child('t7')],
+    } as ViewNode
+    const { container } = render(<HStackNode node={node} />)
+    const row = container.firstElementChild as HTMLElement
+    expect(row.style.flex).toBe('1 1 0%')
+    expect(row.style.minHeight).toBe('0px')
+  })
+
+  it('строка без flex остаётся высотой по содержимому', () => {
+    const node = {
+      id: 'h5',
+      type: 'HSTACK',
+      props: {},
+      children: [child('t8')],
+    } as ViewNode
+    const { container } = render(<HStackNode node={node} />)
+    expect((container.firstElementChild as HTMLElement).style.minHeight).toBe(
+      ''
+    )
+  })
+
+  it('колонка тоже сжимаема по высоте — иначе таблица распирает строку', () => {
+    const node = {
+      id: 'h6',
+      type: 'HSTACK',
+      props: { flex: 1 },
+      children: [child('t9')],
+    } as ViewNode
+    const { getByTestId } = render(<HStackNode node={node} />)
+    expect(getByTestId('t9').parentElement!.style.minHeight).toBe('0px')
+  })
+
   it('скрытый ребёнок не оставляет пустую flex-колонку', () => {
     const hidden = {
       id: 't6',

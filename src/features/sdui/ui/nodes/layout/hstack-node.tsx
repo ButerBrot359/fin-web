@@ -11,14 +11,28 @@ import {
   FILL_METHOD_SETTINGS_NODE_ID,
   KalendariFillMethodSettings,
 } from '../composite/kalendari-fill-method-settings'
+import { useGroupColumns } from './group-columns-context'
 
 export const HStackNode: FC<NodeProps> = ({ node }) => {
   // Узкий node-id-диспатч (SCRUM-278 v4): способ заполнения Kalendari —
   // one-off композиция (радио + длина цикла + дата отсчёта в строку).
-  // Остальные HSTACK рендерятся генериком.
+  // Остальные HSTACK рендерятся генериком (ветвление ДО хуков генерика).
   if (node.id === FILL_METHOD_SETTINGS_NODE_ID) {
     return <KalendariFillMethodSettings node={node} />
   }
+  return <GenericHStack node={node} />
+}
+
+const GenericHStack: FC<NodeProps> = ({ node }) => {
+  // SCRUM-355 §8.7: горизонтальная подгруппа БЕЗ заголовка внутри группы,
+  // объявившей columnsCount, раскладывает детей по внешним колонкам — сеткой
+  // той же размерности вместо строки. Без объявленных колонок (обычный
+  // экран, MovementsComposer, таблицы метаданных) поведение прежнее.
+  const groupColumns = useGroupColumns()
+  const spreadByColumns =
+    groupColumns !== undefined &&
+    groupColumns > 1 &&
+    node.props?.title === undefined
 
   const gap = resolveStackGap(node.props?.gap as number | undefined)
   // Layout-проп dividers (спека конструктора дизайна, v2): вертикальная
@@ -30,14 +44,23 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
 
   return (
     <div
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        gap,
-        justifyContent: justify,
-        alignItems: align,
-        flex: flex !== undefined ? flex : undefined,
-      }}
+      style={
+        spreadByColumns
+          ? {
+              display: 'grid',
+              gridTemplateColumns: `repeat(${String(groupColumns)}, minmax(0, 1fr))`,
+              gap,
+              flex: flex !== undefined ? flex : undefined,
+            }
+          : {
+              display: 'flex',
+              flexDirection: 'row',
+              gap,
+              justifyContent: justify,
+              alignItems: align,
+              flex: flex !== undefined ? flex : undefined,
+            }
+      }
     >
       {/* Скрытых детей отсеиваем здесь, а не только в NodeRenderer: обёртка
           ниже — собственный DOM-узел с flex:1, и от невидимого ребёнка

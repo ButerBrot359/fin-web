@@ -1,14 +1,18 @@
 import { apiService } from '@/shared/api/api'
 
-/** Учётная запись, которую правило бездействия сейчас не пускает (ТЗ §А4). */
+/**
+ * Учётная запись, которую правило бездействия сейчас не пускает (ТЗ §А4).
+ * SCRUM-355 §2.3: дни КАЛЕНДАРНЫЕ (было `*WorkingDays` — сервер старые имена
+ * больше не отдаёт, оставленные в типе они выглядели бы работающими).
+ */
 export interface InactivityLock {
   appUserId: number
   login: string
   displayName: string | null
   lastLoginAt: string | null
   countFrom: string | null
-  inactiveWorkingDays: number
-  thresholdWorkingDays: number
+  inactiveDays: number
+  thresholdDays: number
 }
 
 interface ApiData<T> {

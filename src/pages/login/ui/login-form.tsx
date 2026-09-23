@@ -1,13 +1,19 @@
 import { useState, type SyntheticEvent } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import {
+  Link as RouterLink,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 
-import { Typography } from '@mui/material'
+import { Link, Typography } from '@mui/material'
 
 import { REDIRECT_PARAM, extractAuthError, useAuthStore } from '@/features/auth'
 import { FaceLoginButton } from '@/features/face-auth'
 import { FaceIdLoginButton } from '@/features/face-id-service'
 import { getLastLogin } from '@/shared/api/auth/token-storage'
+import { requestLoginOptions } from '@/shared/api/auth/password-recovery-endpoints'
 import { Button } from '@/shared/ui/buttons/button'
 
 import { LoginNameField } from './login-name-field'
@@ -37,6 +43,16 @@ export const LoginForm = () => {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setSubmitting] = useState(false)
+
+  // SCRUM-355 §2.1: что показывать на экране входа. Настройка меняется редко,
+  // а запрос идёт на каждый показ экрана — большой staleTime. Пока (или если)
+  // ответа нет — ссылок нет: экран остаётся рабочим.
+  const { data: loginOptions } = useQuery({
+    queryKey: ['auth', 'login-options'],
+    queryFn: requestLoginOptions,
+    staleTime: 10 * 60_000,
+    retry: false,
+  })
 
   const handleSubmit = async (event: SyntheticEvent) => {
     event.preventDefault()
@@ -125,6 +141,35 @@ export const LoginForm = () => {
       >
         {isSubmitting ? t('auth.submitting') : t('auth.submit')}
       </Button>
+
+      {/* SCRUM-355 §2.1: обе ссылки управляются администратором. helpUrl может
+          быть null при включённой ссылке (адрес не задан) — тогда не рисуем. */}
+      {(loginOptions?.showForgotPasswordLink === true ||
+        (loginOptions?.showHelpLink === true && loginOptions.helpUrl)) && (
+        <div className="mt-2 flex items-center gap-6">
+          {loginOptions.showForgotPasswordLink && (
+            <Link
+              component={RouterLink}
+              to="/password-recovery"
+              underline="hover"
+              fontSize={14}
+            >
+              {t('auth.recovery.forgotPassword')}
+            </Link>
+          )}
+          {loginOptions.showHelpLink && loginOptions.helpUrl && (
+            <Link
+              href={loginOptions.helpUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              underline="hover"
+              fontSize={14}
+            >
+              {t('auth.recovery.helpLink')}
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Вход по лицу — ДОПОЛНИТЕЛЬНЫЙ способ, а не замена паролю (ADR-0069 §D0). Он стоит
           ниже пароля намеренно: при недоступном движке распознавания, отказе камеры или

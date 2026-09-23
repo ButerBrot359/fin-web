@@ -82,3 +82,24 @@ export interface ApiErrorBody {
   message: string
   path: string
 }
+
+/**
+ * Настройки экрана входа (`GET /api/auth/login-options`, SCRUM-355 §2.1).
+ * Экран входа анонимен: ничего, кроме этих трёх флагов, сервер не отдаёт.
+ */
+export interface LoginOptions {
+  showHelpLink: boolean
+  /** null = администратор включил ссылку, но адрес не задал — ссылку не рисуем. */
+  helpUrl: string | null
+  showForgotPasswordLink: boolean
+}
+
+/** Ответ `POST /api/auth/password-recovery/request` — текст показываем как есть. */
+export interface PasswordRecoveryAck {
+  message: string
+}
+
+/** Тикет между проверкой кода/ссылки и установкой пароля. Живёт в state экрана. */
+export interface PasswordRecoveryTicket {
+  ticket: string
+}

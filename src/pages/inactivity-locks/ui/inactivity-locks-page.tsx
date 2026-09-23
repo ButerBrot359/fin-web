@@ -138,7 +138,7 @@ export const InactivityLocksPage = () => {
                     : t('inactivityLocks.neverLoggedIn')}
                 </TableCell>
                 <TableCell align="right">
-                  {lock.inactiveWorkingDays} / {lock.thresholdWorkingDays}
+                  {lock.inactiveDays} / {lock.thresholdDays}
                 </TableCell>
                 <TableCell>
                   <TextField

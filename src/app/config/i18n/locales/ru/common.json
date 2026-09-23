@@ -1092,7 +1092,23 @@
     "newPasswordLabel": "Новый пароль",
     "repeatPasswordLabel": "Повторите новый пароль",
     "passwordsDoNotMatch": "Новый пароль и повтор не совпадают",
-    "passwordChangeSignOutHint": "После смены пароля нужно войти заново — открытые сессии закрываются"
+    "passwordChangeSignOutHint": "После смены пароля нужно войти заново — открытые сессии закрываются",
+    "recovery": {
+      "forgotPassword": "Забыли пароль?",
+      "helpLink": "Помощь при входе",
+      "title": "Восстановление пароля",
+      "emailLabel": "Электронная почта",
+      "sendCode": "Получить код",
+      "sending": "Отправляем…",
+      "codeLabel": "Код из письма",
+      "verify": "Подтвердить",
+      "resend": "Отправить письмо ещё раз",
+      "submitPassword": "Установить пароль",
+      "backToLogin": "Вернуться ко входу",
+      "linkInvalid": "Ссылка недействительна или устарела",
+      "requestNew": "Запросить новое письмо",
+      "checkingLink": "Проверяем ссылку…"
+    }
   },
   "support": {
     "fabCall": "Позвонить в поддержку",

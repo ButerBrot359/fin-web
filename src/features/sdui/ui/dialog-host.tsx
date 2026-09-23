@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import { useTranslation } from 'react-i18next'
 
 import { usePanelStore, type PanelEntry } from '../lib/stores/panel-store'
 import {
@@ -137,6 +138,7 @@ const closePanel = (panelId: string): void => {
 
 export const DialogHost = () => {
   const stack = usePanelStore((s) => s.panels)
+  const { t } = useTranslation()
 
   return (
     <>
@@ -286,9 +288,26 @@ export const DialogHost = () => {
             fullWidth
             style={{ zIndex: panelZIndex(index) }}
           >
-            {typeof panel.node.props?.title === 'string' && (
-              <DialogTitle>{panel.node.props.title}</DialogTitle>
-            )}
+            {/* SCRUM-355 §8.8: «✕» и у modal-ветки — раньше окно закрывалось
+                только Esc и кликом по подложке. «⋮» и «развернуть» НЕ
+                добавляются (решение владельца 21.09: это хром оболочки
+                тонкого клиента 1С, в Form.xml эталона их нет). */}
+            <div className="flex items-start justify-between">
+              {typeof panel.node.props?.title === 'string' ? (
+                <DialogTitle>{panel.node.props.title}</DialogTitle>
+              ) : (
+                <span />
+              )}
+              <IconButton
+                aria-label={t('actions.close')}
+                sx={{ m: 1 }}
+                onClick={() => {
+                  closePanel(panel.panelId)
+                }}
+              >
+                <CloseIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            </div>
             <DialogContent>{content}</DialogContent>
           </Dialog>
         )

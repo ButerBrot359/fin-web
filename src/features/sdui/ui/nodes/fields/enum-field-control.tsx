@@ -12,7 +12,7 @@ import {
 
 import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
 
-import type { NodeProps } from '../../../types/view'
+import type { NodeProps, ViewNode } from '../../../types/view'
 import {
   useFieldNode,
   type FieldNodeCommon,
@@ -21,6 +21,7 @@ import {
   resolveEnumValue,
   type EnumOption,
 } from '../../../lib/utils/enum-value'
+import { NodeRenderer } from '../../node-renderer'
 
 // SCRUM-308 v3 §4: props.control у ENUM_FIELD — "radio" (радиогруппа) и
 // "segmented" (сегментированный переключатель). Контракт options тот же, что у
@@ -56,6 +57,8 @@ export const EnumFieldControl: FC<NodeProps> = ({ node }) => {
   const options = (node.props?.options as EnumOption[] | undefined) ?? []
   const value = resolveEnumValue(f.value, options)
   const reason = node.props?.tooltip as string | undefined
+  // SCRUM-355 §8.7: раскладка вариантов по колонкам
+  const columnsCount = node.props?.columnsCount as number | undefined
 
   if (!f.visible) return null
 
@@ -83,19 +86,56 @@ export const EnumFieldControl: FC<NodeProps> = ({ node }) => {
         ))}
       </ToggleButtonGroup>
     ) : (
-      <RadioGroup value={value}>
-        {options.map((opt) => (
-          <FormControlLabel
-            key={opt.value}
-            value={opt.value}
-            control={<Radio size="small" />}
-            label={optionLabel(opt)}
-            disabled={!f.enabled || f.readonly || opt.disabled === true}
-            onChange={() => {
-              if (value !== opt.value) selectOption(f, opt)
-            }}
-          />
-        ))}
+      // SCRUM-355 §8.7: columnsCount раскладывает варианты по колонкам (в
+      // эталоне одна радиогруппа столбцом, другая в две колонки).
+      <RadioGroup
+        value={value}
+        sx={
+          columnsCount !== undefined && columnsCount > 1
+            ? {
+                display: 'grid',
+                gridTemplateColumns: `repeat(${String(columnsCount)}, minmax(0, 1fr))`,
+              }
+            : undefined
+        }
+      >
+        {options.map((opt) => {
+          const radio = (
+            <FormControlLabel
+              key={opt.value}
+              value={opt.value}
+              control={<Radio size="small" />}
+              label={optionLabel(opt)}
+              disabled={!f.enabled || f.readonly || opt.disabled === true}
+              onChange={() => {
+                if (value !== opt.value) selectOption(f, opt)
+              }}
+            />
+          )
+          // §8.7: adornmentNodeId — узел-сосед из children перечисления,
+          // рисуется в строке своей опции (поле выбора учётной записи рядом
+          // с радиокнопкой «Настройки почты:»).
+          const adornment = opt.adornmentNodeId
+            ? node.children?.find((c: ViewNode) => c.id === opt.adornmentNodeId)
+            : undefined
+          if (!adornment) return radio
+          return (
+            <div
+              key={opt.value}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                flexWrap: 'wrap',
+              }}
+            >
+              {radio}
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <NodeRenderer node={adornment} />
+              </div>
+            </div>
+          )
+        })}
       </RadioGroup>
     )
 

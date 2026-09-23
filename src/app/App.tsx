@@ -2,6 +2,10 @@ import { Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 import { LoginPage } from '@/pages/login'
+import {
+  PasswordRecoveryLinkPage,
+  PasswordRecoveryPage,
+} from '@/pages/password-recovery'
 import { ChangePasswordPage } from '@/pages/change-password'
 import { FaceIdCallbackPage } from '@/pages/face-id-callback'
 
@@ -50,6 +54,14 @@ function App() {
           AppRoutes матчится относительно «/», то есть дерево маршрутов не меняется.
         */}
         <Route path={LOGIN_ROUTE} element={<LoginPage />} />
+        {/* SCRUM-355 §3: восстановление пароля — анонимный контур, вне Layout
+            и AuthGuard. Путь /password-recovery/link и параметр token — точный
+            контракт: этот адрес бэк кладёт в письма. */}
+        <Route path="/password-recovery" element={<PasswordRecoveryPage />} />
+        <Route
+          path="/password-recovery/link"
+          element={<PasswordRecoveryLinkPage />}
+        />
         <Route path="/auth/face-id/callback" element={<FaceIdCallbackPage />} />
         {/*
           Смена пароля — тоже вне Layout и вне AuthGuard: сюда приводит требование сменить

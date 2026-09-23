@@ -26,7 +26,11 @@ const CARD_KINDS = new Set([
   'REGISTER',
 ])
 
-const HEADER_ONLY_KINDS = new Set(['REPORT'])
+// SCRUM-355 §6 стр.3: экраны настроек приходят с TabKind.PANEL и были
+// единственными поверхностями без PageHeader. HEADER_ONLY, а не CARD_KINDS —
+// сознательно: карточная обвязка (dirty-«*», диалог несохранённых) настройкам
+// не нужна, они сохраняются своей кнопкой.
+const HEADER_ONLY_KINDS = new Set(['REPORT', 'PANEL'])
 
 // Восстановление dirty-сессии из sdui-кэша (SduiScreen restore-ветка,
 // src/features/sdui/ui/sdui-screen.tsx) не шлёт OPEN и не зовёт onTab — без

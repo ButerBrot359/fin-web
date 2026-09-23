@@ -7,6 +7,7 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import '@/app/config/i18n'
 
@@ -17,6 +18,21 @@ import { LoginForm } from './login-form'
 const signIn = vi.fn()
 
 vi.mock('@/features/face-id-service', () => ({ FaceIdLoginButton: () => null }))
+
+// SCRUM-355 §2.1: настройки экрана входа. По умолчанию всё выключено, тесты
+// ссылок подменяют ответ через loginOptionsMock.
+const loginOptionsMock = vi.hoisted(() =>
+  vi.fn(() =>
+    Promise.resolve({
+      showHelpLink: false,
+      helpUrl: null,
+      showForgotPasswordLink: false,
+    })
+  )
+)
+vi.mock('@/shared/api/auth/password-recovery-endpoints', () => ({
+  requestLoginOptions: loginOptionsMock,
+}))
 
 vi.mock('@/features/auth', async () => {
   const actual = await vi.importActual<typeof AuthModule>('@/features/auth')
@@ -29,9 +45,15 @@ vi.mock('@/features/auth', async () => {
 
 const renderForm = () =>
   render(
-    <MemoryRouter>
-      <LoginForm />
-    </MemoryRouter>
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <MemoryRouter>
+        <LoginForm />
+      </MemoryRouter>
+    </QueryClientProvider>
   )
 
 const fields = () => {

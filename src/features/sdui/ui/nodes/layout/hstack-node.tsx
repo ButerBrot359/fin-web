@@ -37,6 +37,14 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
         justifyContent: justify,
         alignItems: align,
         flex: flex !== undefined ? flex : undefined,
+        // Растянутая строка обязана СЖИМАТЬСЯ ниже своего содержимого, иначе
+        // `flex: 1` не ограничивает её ничем: у flex-элемента min-height по
+        // умолчанию `auto`, то есть не меньше контента. В «Начислении зарплаты»
+        // (PAGE → VSTACK flex → HSTACK flex → TABS flex) строка вырастала на всю
+        // высоту ТЧ, таблица теряла собственную прокрутку, и её горизонтальная
+        // полоса уезжала под нижнюю кромку экрана — чтобы прокрутить ТЧ вбок,
+        // приходилось сначала прокручивать страницу вниз (обращение 23.09.2026).
+        minHeight: flex !== undefined ? 0 : undefined,
       }}
     >
       {/* Скрытых детей отсеиваем здесь, а не только в NodeRenderer: обёртка
@@ -60,6 +68,10 @@ export const HStackNode: FC<NodeProps> = ({ node }) => {
                 ? `0 0 ${String(fieldWidth(c))}px`
                 : ((c.props?.flex as number | string | undefined) ?? '1 1 0%'),
             minWidth: 0,
+            // Та же причина, что и у строки выше, но по вертикали: колонка —
+            // flex-контейнер, и без этого её содержимое (таблица) не даёт ей
+            // сжаться до высоты строки.
+            minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
             ...(dividers && i > 0

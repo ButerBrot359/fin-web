@@ -458,3 +458,134 @@ describe('useTableSync', () => {
     })
   })
 })
+
+describe('useTableSync — отмена последнего действия (Ctrl+Z)', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  beforeEach(() => {
+    delete sessionState.rows
+    mockDispatch.mockReset()
+    mockDispatch.mockResolvedValue(true)
+  })
+
+  const columns = [
+    {
+      id: 'c1',
+      label: 'A',
+      binding: 'a',
+      cellWidget: 'TEXT',
+      dataType: 'INTEGER',
+      props: {},
+    },
+  ]
+
+  it('отменять нечего — undo возвращает false и на сервер ничего не шлёт', () => {
+    sessionState.rows = [{ rowId: '1', a: 1 }]
+    const { result } = renderHook(() => useTableSync(node, columns))
+    let otmeneno = true
+    act(() => {
+      otmeneno = result.current.undo()
+    })
+    expect(otmeneno).toBe(false)
+    expect(mockDispatch).not.toHaveBeenCalled()
+  })
+
+  it('удаление строки отменяется, снимок уезжает на сервер', async () => {
+    sessionState.rows = [
+      { rowId: '1', a: 1 },
+      { rowId: '2', a: 2 },
+    ]
+    const { result } = renderHook(() => useTableSync(node, columns))
+    await act(async () => {
+      result.current.deleteRow(0)
+      await Promise.resolve()
+    })
+    expect(result.current.rows).toEqual([{ rowId: '2', a: 2 }])
+
+    await act(async () => {
+      expect(result.current.undo()).toBe(true)
+      await Promise.resolve()
+    })
+    expect(result.current.rows).toEqual([
+      { rowId: '1', a: 1 },
+      { rowId: '2', a: 2 },
+    ])
+    expect(lastAction()?.value).toEqual([
+      { rowId: '1', a: 1 },
+      { rowId: '2', a: 2 },
+    ])
+  })
+
+  it('ввод в ячейку отменяется целиком, а не по символу', async () => {
+    sessionState.rows = [{ rowId: '1', a: 1 }]
+    const { result } = renderHook(() => useTableSync(node, columns))
+    act(() => {
+      result.current.updateCell('1', 'a', 12)
+      result.current.updateCell('1', 'a', 123)
+    })
+    await act(async () => {
+      result.current.undo()
+      await Promise.resolve()
+    })
+    expect(result.current.rows).toEqual([{ rowId: '1', a: 1 }])
+  })
+
+  it('правки разных ячеек отменяются по одной', async () => {
+    sessionState.rows = [{ rowId: '1', a: 1, b: 2 }]
+    const { result } = renderHook(() => useTableSync(node, columns))
+    act(() => {
+      result.current.updateCell('1', 'a', 10)
+      result.current.updateCell('1', 'b', 20)
+    })
+    await act(async () => {
+      result.current.undo()
+      await Promise.resolve()
+    })
+    expect(result.current.rows).toEqual([{ rowId: '1', a: 10, b: 2 }])
+    await act(async () => {
+      result.current.undo()
+      await Promise.resolve()
+    })
+    expect(result.current.rows).toEqual([{ rowId: '1', a: 1, b: 2 }])
+  })
+
+  it('коммит закрывает действие: повторный ввод в ту же ячейку отменяется отдельно', async () => {
+    sessionState.rows = [{ rowId: '1', a: 1 }]
+    const { result } = renderHook(() => useTableSync(node, columns))
+    act(() => {
+      result.current.updateCell('1', 'a', 2)
+    })
+    await act(async () => {
+      result.current.commitCell()
+      await Promise.resolve()
+    })
+    act(() => {
+      result.current.updateCell('1', 'a', 3)
+    })
+    await act(async () => {
+      result.current.undo()
+      await Promise.resolve()
+    })
+    expect(result.current.rows).toEqual([{ rowId: '1', a: 2 }])
+  })
+
+  it('вставка из буфера (replaceRows) отменяется одним действием', async () => {
+    sessionState.rows = [{ rowId: '1', a: 1 }]
+    const { result } = renderHook(() => useTableSync(node, columns))
+    await act(async () => {
+      result.current.replaceRows([
+        { rowId: '1', a: 1 },
+        { rowId: 'tmp-2', a: 2 },
+        { rowId: 'tmp-3', a: 3 },
+      ])
+      await Promise.resolve()
+    })
+    await act(async () => {
+      result.current.undo()
+      await Promise.resolve()
+    })
+    expect(result.current.rows).toEqual([{ rowId: '1', a: 1 }])
+  })
+})

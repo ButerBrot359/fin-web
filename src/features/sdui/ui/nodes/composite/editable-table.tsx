@@ -17,6 +17,8 @@ import { useCellValueApplier } from '../../../lib/hooks/use-cell-value-applier'
 import { useTableSearch } from '../../../lib/hooks/use-table-search'
 import { useSearchScroll } from '../../../lib/hooks/use-search-scroll'
 import { useTableRowCommands } from '../../../lib/hooks/use-table-row-commands'
+import { useFormSaveCommand } from '../../../lib/hooks/use-form-save-command'
+import { navestiFokusNaTablitsu } from '../../../lib/utils/table-keyboard-focus'
 import { useTableMultiSelection } from '../../../lib/hooks/use-table-multi-selection'
 import { useTableScrollContainer } from '../../../lib/hooks/use-table-scroll-container'
 import { windowedRows } from '../../../lib/utils/virtual-window'
@@ -182,6 +184,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     table.getTotalSize() + (showRowNumbers ? ROW_NUMBER_WIDTH : 0)
   )
 
+  // Ctrl+S из ТЧ — та же команда записи, что у кнопки «Записать» формы.
+  const saveForm = useFormSaveCommand()
+
   const commands = useTableRowCommands({
     sync,
     columns,
@@ -210,6 +215,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
       setSelectedIndex(toVisibleIndex)
     },
     search,
+    onSave: saveForm,
   })
 
   return (
@@ -224,6 +230,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
         minHeight: 0,
       }}
       onKeyDown={commands.handleKeyDown}
+      onPaste={commands.handlePasteEvent}
     >
       <div style={{ marginBottom: 8 }}>
         <TableToolbar
@@ -241,6 +248,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
         component={Paper}
         ref={setContainerRef}
         data-own-scroll="true"
+        onMouseDown={navestiFokusNaTablitsu}
         sx={{
           flex: '1 1 auto',
           overflowY: 'auto',

@@ -12,6 +12,7 @@ import { palette, cssVar } from '@/shared/design/tokens'
 
 import { resolveRowBackground } from '../../../lib/utils/row-appearance'
 import { ROW_ERROR_BACKGROUND } from '../../../lib/validation/table-row-errors'
+import { KONTEYNER_KLAVIATURY } from '../../../lib/utils/table-keyboard-focus'
 import { SearchHitCell } from './table-search-cell'
 
 interface TableBodyRowProps {
@@ -58,9 +59,6 @@ const REDAKTIRUEMOE =
  */
 const VYDELENNAYA_STROKA_FON = cssVar(palette.ui08)
 const VYDELENNAYA_STROKA_MARKER = cssVar(palette.accent02)
-
-/** Контейнер таблицы, который слушает хоткеи (стрелки, Insert, Delete, F9). */
-const KONTEYNER_KLAVIATURY = '[data-sdui-table-keyboard="true"]'
 
 export const TableBodyRow: FC<TableBodyRowProps> = ({
   row,

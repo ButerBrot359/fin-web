@@ -21,9 +21,20 @@ export interface TableHotkeyHandlers {
   onExtendPrev?: () => void
   /** Shift + стрелка вниз — расширить выделение на строку ниже. */
   onExtendNext?: () => void
+  /** Ctrl+C — скопировать выделенные строки в буфер обмена. */
+  onCopyToClipboard?: () => void
+  /** Ctrl+Z — отменить последнее действие над строками. */
+  onUndo?: () => void
+  /** Ctrl+S — записать документ (в ячейке тоже: правка уже в снимке ТЧ). */
+  onSave?: () => void
 }
 
-function isEditableTarget(target: EventTarget | null): boolean {
+/**
+ * Цель события — редактируемое поле ячейки. Экспортируется: те же клавиши, что
+ * разбираются здесь, приходят и событием `paste`, и там правило «в инпуте
+ * работает инпут» обязано быть тем же.
+ */
+export function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
   return (
     target.tagName === 'INPUT' ||
@@ -38,6 +49,15 @@ export function createTableHotkeysHandler(
   return (e) => {
     const ctrl = e.ctrlKey || e.metaKey
 
+    // Ctrl+S разбирается ДО проверки ячейки: запись документа нужна и из
+    // недопечатанной ячейки (её значение уже в снимке ТЧ, а поведение команды
+    // записи дошлёт его перед сохранением). preventDefault безусловный — диалог
+    // «Сохранить страницу» браузера в форме документа не нужен никогда.
+    if (ctrl && e.key.toLowerCase() === 's') {
+      e.preventDefault()
+      handlers.onSave?.()
+      return
+    }
     if (ctrl && e.key.toLowerCase() === 'f') {
       e.preventDefault()
       handlers.onFocusSearch()
@@ -56,6 +76,25 @@ export function createTableHotkeysHandler(
       handlers.onSelectAll?.()
       return
     }
+    if (ctrl && e.key.toLowerCase() === 'c' && !e.shiftKey) {
+      // В ячейке Ctrl+C обязан остаться «скопировать текст» — как и Ctrl+A.
+      if (isEditableTarget(e.target)) return
+      e.preventDefault()
+      handlers.onCopyToClipboard?.()
+      return
+    }
+    if (ctrl && e.key.toLowerCase() === 'z') {
+      // В ячейке Ctrl+Z — отмена ввода символов средствами инпута.
+      if (isEditableTarget(e.target)) return
+      e.preventDefault()
+      handlers.onUndo?.()
+      return
+    }
+    // Ctrl+V здесь НЕ перехватывается намеренно: вставку принимает событие
+    // `paste` контейнера таблицы (см. handlePasteEvent). Через событие данные
+    // приходят синхронно из `clipboardData`, без разрешения на чтение буфера,
+    // которое требуется `navigator.clipboard.readText` и которого в Firefox
+    // не получить вовсе.
     if (ctrl && e.shiftKey && e.key === 'ArrowUp') {
       e.preventDefault()
       handlers.onMoveUp()

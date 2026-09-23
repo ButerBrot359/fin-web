@@ -7,6 +7,8 @@ import { useTableSync } from '../../../lib/hooks/use-table-sync'
 import { useTableSearch } from '../../../lib/hooks/use-table-search'
 import { useSearchScroll } from '../../../lib/hooks/use-search-scroll'
 import { useTableRowCommands } from '../../../lib/hooks/use-table-row-commands'
+import { useFormSaveCommand } from '../../../lib/hooks/use-form-save-command'
+import { navestiFokusNaTablitsu } from '../../../lib/utils/table-keyboard-focus'
 import { useTableMultiSelection } from '../../../lib/hooks/use-table-multi-selection'
 import { useRowSelectionIdentity } from '../../../lib/hooks/use-row-selection-identity'
 import { useMasterDetailRows } from '../../../lib/hooks/use-master-detail-rows'
@@ -221,6 +223,9 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
 
   useSearchScroll(search, visibleRows, virt, containerRef)
 
+  // Ctrl+S из ТЧ — та же команда записи, что у кнопки «Записать» формы.
+  const saveForm = useFormSaveCommand()
+
   const commands = useTableRowCommands({
     sync,
     columns: flatColumns,
@@ -244,6 +249,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     // совпадает с глобальным и move корректен.
     globalIndexOf: (visibleIndex) => visibleIndex,
     search,
+    onSave: saveForm,
   })
 
   // Колонок в разметке — столько, сколько РИСУЕТСЯ. flatColumns.length
@@ -264,6 +270,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
       tabIndex={-1}
       data-sdui-table-keyboard="true"
       onKeyDown={commands.handleKeyDown}
+      onPaste={commands.handlePasteEvent}
       style={{
         outline: 'none',
         display: 'flex',
@@ -293,6 +300,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
         component={Paper}
         ref={setContainerRef}
         data-own-scroll="true"
+        onMouseDown={navestiFokusNaTablitsu}
         sx={{
           flex: '1 1 auto',
           // Высоту даёт либо замер по вьюпорту, либо растянутый предок — в обоих

@@ -40,8 +40,8 @@ const lock = {
   displayName: 'Иванов Иван Иванович',
   lastLoginAt: '2026-08-01T09:00:00',
   countFrom: '2026-08-01T09:00:00',
-  inactiveWorkingDays: 27,
-  thresholdWorkingDays: 3,
+  inactiveDays: 27,
+  thresholdDays: 3,
 }
 
 /**

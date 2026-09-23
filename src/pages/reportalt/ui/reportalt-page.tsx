@@ -37,7 +37,7 @@ import {
   DRILLDOWN_URL_KEY,
   buildDrilldownTarget,
   resolveDrilldownKinds,
-} from '../lib/utils/report-drilldown'
+} from '@/entities/report-drilldown'
 import { buildReportAltExport } from '../lib/utils/build-reportalt-export'
 import {
   SETTINGS_URL_KEY,

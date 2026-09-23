@@ -1,4 +1,4 @@
-import { DRILLDOWN_URL_KEY } from './report-drilldown'
+import { DRILLDOWN_URL_KEY } from '@/entities/report-drilldown'
 
 /**
  * Расшифровка клетки утверждённого бланка.

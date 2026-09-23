@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ReportAltRowDto } from '../../types/reportalt'
-
 import {
   DRILLDOWN_URL_KEY,
   buildDrilldownTargets,
   resolveDrilldownKinds,
-} from './report-drilldown'
+  type DrilldownRow,
+} from './drilldown'
 
-const accountRow: ReportAltRowDto = {
+const accountRow: DrilldownRow = {
   level: 0,
   groupCode: 'Schet',
   groupRefId: 99,
@@ -18,7 +17,7 @@ const accountRow: ReportAltRowDto = {
   children: [],
 }
 
-const dimensionRow: ReportAltRowDto = {
+const dimensionRow: DrilldownRow = {
   level: 1,
   groupCode: 'Organizatsiya',
   groupRefId: 7,
@@ -27,7 +26,7 @@ const dimensionRow: ReportAltRowDto = {
   children: [],
 }
 
-const subkontoRow: ReportAltRowDto = {
+const subkontoRow: DrilldownRow = {
   level: 2,
   groupCode: 'Subkonto1',
   groupRefId: 700,
@@ -37,7 +36,7 @@ const subkontoRow: ReportAltRowDto = {
   children: [],
 }
 
-const corrAccountRow: ReportAltRowDto = {
+const corrAccountRow: DrilldownRow = {
   level: 1,
   groupCode: 'KorrSchet',
   groupRefId: 3310,
@@ -184,7 +183,7 @@ describe('buildDrilldownTargets — параметры целевых отчёт
   })
 
   it('Карточка субконто получает значение субконто и измерения строки', () => {
-    const fkrRow: ReportAltRowDto = {
+    const fkrRow: DrilldownRow = {
       level: 1,
       groupCode: 'FKR',
       groupRefId: 12,

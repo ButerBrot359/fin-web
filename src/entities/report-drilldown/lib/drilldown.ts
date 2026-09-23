@@ -1,4 +1,14 @@
-import type { ReportAltRowDto } from '../../types/reportalt'
+/**
+ * Строка результата отчёта в том минимуме, который нужен расшифровке. Локальный
+ * структурный тип, а не DTO страницы: SDUI-нода держит строки непрозрачными
+ * (§19.6), а у легаси-страницы свой `DrilldownRow` — оба ему соответствуют.
+ */
+export interface DrilldownRow {
+  groupCode?: string
+  groupRefId?: number | null
+  groupValue?: string
+  rowRef?: { domain?: string; typeCode?: string; id: number } | null
+}
 
 export type DrilldownTargetKind =
   | 'accountCard'
@@ -17,9 +27,9 @@ export interface DrilldownTarget {
 
 export interface DrilldownOptions {
   reportCode: string
-  chain: ReportAltRowDto[]
-  accountRow?: ReportAltRowDto
-  valueRow?: ReportAltRowDto
+  chain: DrilldownRow[]
+  accountRow?: DrilldownRow
+  valueRow?: DrilldownRow
   from?: string
   to?: string
 }
@@ -60,7 +70,7 @@ const SUBKONTO_CARD_DIMENSIONS = [
   'KodPlatnykhUslug',
 ]
 
-export const isSubkontoRow = (row: ReportAltRowDto): boolean =>
+export const isSubkontoRow = (row: DrilldownRow): boolean =>
   row.groupCode != null &&
   SUBKONTO_GROUP_CODES.includes(row.groupCode) &&
   row.rowRef != null &&
@@ -78,7 +88,7 @@ const withPeriod = (
 
 const withDimensions = (
   params: URLSearchParams,
-  chain: ReportAltRowDto[],
+  chain: DrilldownRow[],
   allowed: string[]
 ): URLSearchParams => {
   for (const row of chain) {
@@ -89,7 +99,7 @@ const withDimensions = (
   return params
 }
 
-const isCorrAccountRow = (row?: ReportAltRowDto): boolean =>
+const isCorrAccountRow = (row?: DrilldownRow): boolean =>
   row?.groupCode === CORR_ACCOUNT_GROUP_CODE
 
 export const resolveDrilldownKinds = ({

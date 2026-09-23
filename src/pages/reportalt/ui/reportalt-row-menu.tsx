@@ -9,6 +9,8 @@ export interface ReportAltMenuItem {
   key: string
   label: string
   onClick: () => void
+  /** Пункт виден, но недоступен — как серая команда меню 1С. */
+  disabled?: boolean
 }
 
 interface ReportAltRowMenuProps {

@@ -62,6 +62,7 @@ import {
 } from '../lib/utils/param-draft'
 import { PeriodQuickSelect } from './period-quick-select'
 import { ReportAltParamField } from './reportalt-param-field'
+import { ReportAltKnopkaMenyu } from './reportalt-knopka-menyu'
 import {
   ReportAltRowMenu,
   type ReportAltMenuItem,
@@ -149,7 +150,7 @@ export const ReportAltPage = () => {
         raw != null ? deserializeParam(raw, param) : defaultParamValue(param)
     }
     // Сознательная синхронизация черновика формы из URL+meta при их смене.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setValues(next)
     if (meta.parameters.some((p) => p.refreshesForm)) {
       void refreshParamState(normalizeBodyDates(next, meta.parameters), null)
@@ -620,6 +621,42 @@ export const ReportAltPage = () => {
       })
   }
 
+  /**
+   * «Выгрузить все приложения» формы 1С: каждый экземпляр раздела уходит своим файлом.
+   *
+   * <p>Эталон нумерует файлы «Приложение 200.03 №1», «…№2» — здесь так же. Экземпляры считаются
+   * по страницам бланка: копия приходит с бэка как «200.03 стр.1 (2)».
+   */
+  const handleExportVsePrilozheniya = () => {
+    if (!appliedBody) {
+      showToast('warning', t('reportalt.exportXmlUnavailable'))
+      return
+    }
+    const ekzemplyarov = Math.max(
+      ...(blankDokument?.sheets ?? []).map((s) => {
+        const nomer = /\((\d+)\)$/.exec(s.title)
+        return nomer ? Number(nomer[1]) : 1
+      }),
+      1
+    )
+    for (let nomer = 1; nomer <= ekzemplyarov; nomer++) {
+      void vygruzkaPrilozheniya(moduleCode, appliedBody, nomer)
+        .then((res) => {
+          const ssylka = document.createElement('a')
+          ssylka.href = URL.createObjectURL(res.data)
+          ssylka.download = `200.03 №${String(nomer)}.xml`
+          ssylka.click()
+        })
+        .catch((e: unknown) => {
+          showToast(
+            'error',
+            t('reportalt.exportXmlUnavailable'),
+            errorMessage(e)
+          )
+        })
+    }
+  }
+
   const handlePrintPdf = () => {
     if (!appliedBody || isPrinting) return
     // Язык печати — выбранный «Язык формы» (YazykFormy): берём применённое
@@ -778,18 +815,10 @@ export const ReportAltPage = () => {
         >
           {pustoyBlank ? t('reportalt.fill') : t('reportalt.generate')}
         </Button>
-        {/* «Очистить» и «Обновить» — соседи «Заполнить» на панели формы 1С: первая возвращает
-            пустой бланк, вторая перезапрашивает те же данные. */}
+        {/* «Обновить» — сосед «Заполнить» на панели формы 1С: перезапрашивает те же данные.
+            «Очистить» там всплывающее меню, оно ниже. */}
         {pustoyBlank && (
           <>
-            <Button
-              variant="outlined"
-              size="medium"
-              sx={{ height: 48, flexShrink: 0 }}
-              onClick={handleClear}
-            >
-              {t('reportalt.clear')}
-            </Button>
             <Button
               variant="outlined"
               size="medium"
@@ -809,24 +838,68 @@ export const ReportAltPage = () => {
             >
               {t('reportalt.save')}
             </Button>
-            <Button
-              variant="outlined"
-              size="medium"
-              sx={{ height: 48, flexShrink: 0 }}
-              onClick={handleExportXml}
-            >
-              {t('reportalt.exportXml')}
-            </Button>
+            {/* Команды собраны в выпадающие меню, как на панели формы 1С: «Выгрузить»,
+                «Выгрузить в XML 200.03» и «Очистить» там всплывающие, а не отдельные кнопки. */}
+            <ReportAltKnopkaMenyu
+              label={t('reportalt.exportMenu')}
+              items={[
+                {
+                  key: 'xml',
+                  label: t('reportalt.exportXml'),
+                  onClick: handleExportXml,
+                },
+              ]}
+            />
             {estMnogostranichnyyRazdel && (
-              <Button
-                variant="outlined"
-                size="medium"
-                sx={{ height: 48, flexShrink: 0 }}
-                onClick={handleExportPrilozhenie}
-              >
-                {t('reportalt.exportXmlPrilozhenie')}
-              </Button>
+              <ReportAltKnopkaMenyu
+                label={t('reportalt.exportXmlPrilozhenie')}
+                items={[
+                  {
+                    key: 'tekushchee',
+                    label: t('reportalt.exportPrilozhenieTekushchee'),
+                    onClick: handleExportPrilozhenie,
+                  },
+                  {
+                    key: 'vse',
+                    label: t('reportalt.exportPrilozhenieVse'),
+                    onClick: handleExportVsePrilozheniya,
+                  },
+                ]}
+              />
             )}
+            <ReportAltKnopkaMenyu
+              label={t('reportalt.clearMenu')}
+              items={[
+                {
+                  key: 'otchet',
+                  label: t('reportalt.clearReport'),
+                  onClick: handleClear,
+                },
+                {
+                  key: 'stranitsa',
+                  label: t('reportalt.clearPage'),
+                  disabled: blankDokument == null,
+                  onClick: () => {
+                    ochistitStranitsy(
+                      (_, indeks) => indeks === aktivnayaStranitsa
+                    )
+                  },
+                },
+                ...(estPrilozhenie20005
+                  ? [
+                      {
+                        key: 'pril20005',
+                        label: t('reportalt.clearPrilozhenie20005'),
+                        onClick: () => {
+                          ochistitStranitsy((title) =>
+                            stranitsaPrilozheniya(title, '200.05')
+                          )
+                        },
+                      },
+                    ]
+                  : []),
+              ]}
+            />
             <Button
               variant="outlined"
               size="medium"
@@ -834,85 +907,6 @@ export const ReportAltPage = () => {
               onClick={handleDecipher}
             >
               {t('reportalt.decipher')}
-            </Button>
-            <Button
-              variant="outlined"
-              size="medium"
-              sx={{ height: 48, flexShrink: 0 }}
-              disabled={blankDokument == null}
-              onClick={() => {
-                ochistitStranitsy((_, indeks) => indeks === aktivnayaStranitsa)
-              }}
-            >
-              {t('reportalt.clearPage')}
-            </Button>
-            {estPrilozhenie20005 && (
-              <Button
-                variant="outlined"
-                size="medium"
-                sx={{ height: 48, flexShrink: 0 }}
-                onClick={() => {
-                  ochistitStranitsy((title) =>
-                    stranitsaPrilozheniya(title, '200.05')
-                  )
-                }}
-              >
-                {t('reportalt.clearPrilozhenie20005')}
-              </Button>
-            )}
-            <Button
-              variant="outlined"
-              size="medium"
-              sx={{ height: 48, flexShrink: 0 }}
-              disabled={!estMnogostranichnyyRazdel}
-              onClick={() => {
-                setStranitsBlanka((prev) => prev + 1)
-              }}
-            >
-              {t('reportalt.addPage')}
-            </Button>
-            <Button
-              variant="outlined"
-              size="medium"
-              sx={{ height: 48, flexShrink: 0 }}
-              disabled={!estMnogostranichnyyRazdel || stranitsBlanka <= 1}
-              onClick={() => {
-                setStranitsBlanka((prev) => Math.max(prev - 1, 1))
-              }}
-            >
-              {t('reportalt.removePage')}
-            </Button>
-            <Button
-              variant="outlined"
-              size="medium"
-              sx={{ height: 48, flexShrink: 0 }}
-              disabled={!estMnogostranichnyyRazdel || stranitsBlanka <= 1}
-              onClick={() => {
-                setStranitsBlanka(1)
-              }}
-            >
-              {t('reportalt.removeAllPages')}
-            </Button>
-            <Button
-              variant="outlined"
-              size="medium"
-              sx={{ height: 48, flexShrink: 0 }}
-              onClick={() => {
-                setStrokBlanka((prev) => prev + 1)
-              }}
-            >
-              {t('reportalt.addRow')}
-            </Button>
-            <Button
-              variant="outlined"
-              size="medium"
-              sx={{ height: 48, flexShrink: 0 }}
-              disabled={strokBlanka <= 1}
-              onClick={() => {
-                setStrokBlanka((prev) => Math.max(prev - 1, 1))
-              }}
-            >
-              {t('reportalt.removeRow')}
             </Button>
           </>
         )}
@@ -1017,6 +1011,67 @@ export const ReportAltPage = () => {
         appliedBody == null && (
           <Typography variant="body2" className="text-ui-05">
             {t('reportalt.notGenerated')}
+
+            {/* Нижняя панель бланка — как в форме 1С: работа со страницами и строками стоит ПОД
+          табличным документом, отдельным рядом, а не в общем ряду команд отчёта. */}
+            {pustoyBlank && (
+              <div className="flex flex-wrap items-center gap-2 pb-2">
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 40, flexShrink: 0 }}
+                  disabled={!estMnogostranichnyyRazdel}
+                  onClick={() => {
+                    setStranitsBlanka((prev) => prev + 1)
+                  }}
+                >
+                  {t('reportalt.addPage')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 40, flexShrink: 0 }}
+                  disabled={!estMnogostranichnyyRazdel || stranitsBlanka <= 1}
+                  onClick={() => {
+                    setStranitsBlanka((prev) => Math.max(prev - 1, 1))
+                  }}
+                >
+                  {t('reportalt.removePage')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 40, flexShrink: 0 }}
+                  disabled={!estMnogostranichnyyRazdel || stranitsBlanka <= 1}
+                  onClick={() => {
+                    setStranitsBlanka(1)
+                  }}
+                >
+                  {t('reportalt.removeAllPages')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 40, flexShrink: 0 }}
+                  onClick={() => {
+                    setStrokBlanka((prev) => prev + 1)
+                  }}
+                >
+                  {t('reportalt.addRow')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 40, flexShrink: 0 }}
+                  disabled={strokBlanka <= 1}
+                  onClick={() => {
+                    setStrokBlanka((prev) => Math.max(prev - 1, 1))
+                  }}
+                >
+                  {t('reportalt.removeRow')}
+                </Button>
+              </div>
+            )}
           </Typography>
         )
       )}

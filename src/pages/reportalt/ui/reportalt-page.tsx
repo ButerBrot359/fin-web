@@ -44,6 +44,7 @@ import {
   clearStoredSettings,
 } from '../lib/utils/user-settings'
 import {
+  GRUPPA_NASTROEK,
   LANG_PARAM_CODE,
   defaultParamValue,
   deserializeParam,
@@ -121,8 +122,15 @@ export const ReportAltPage = () => {
     () => meta?.parameters.find((p) => p.code === LANG_PARAM_CODE) ?? null,
     [meta]
   )
+  const settingsParams = useMemo(
+    () => meta?.parameters.filter((p) => p.group === GRUPPA_NASTROEK) ?? [],
+    [meta]
+  )
   const visibleParams = useMemo(
-    () => meta?.parameters.filter((p) => p.code !== LANG_PARAM_CODE) ?? [],
+    () =>
+      meta?.parameters.filter(
+        (p) => p.code !== LANG_PARAM_CODE && p.group !== GRUPPA_NASTROEK
+      ) ?? [],
     [meta]
   )
 
@@ -1091,6 +1099,9 @@ export const ReportAltPage = () => {
           }}
           onReset={handleResetSettings}
           langParam={langParam}
+          settingsParams={settingsParams}
+          paramValues={values}
+          onParamChange={setParamValue}
           langValue={
             typeof values[LANG_PARAM_CODE] === 'string'
               ? values[LANG_PARAM_CODE]

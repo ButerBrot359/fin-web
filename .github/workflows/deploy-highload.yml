@@ -1,0 +1,127 @@
+# HIGHLOAD (SCRUM-423): эталонная база ВКО — полная загрузка 1С (demo_web) через OData, проверка
+# процессов и производительности. Бэкенд — webbuh, namespace highload (k8s/highload/ в webbuh).
+# Копия deploy-demo.yml с адресами highload; запуск только вручную (Actions → Run workflow).
+name: Deploy HIGHLOAD (any commit)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Коммит / тег / ветка для деплоя в HIGHLOAD (напр. main, abc1234)"
+        required: true
+        default: "main"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  NAMESPACE: highload
+  HIGHLOAD_API_URL: https://highload-api.qazyna.ai
+  HIGHLOAD_FORM_CONFIGS_URL: https://highload.qazyna.ai
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.resolve.outputs.image_tag }}
+      full_image: ${{ steps.resolve.outputs.full_image }}
+    steps:
+      - name: Checkout requested ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Resolve commit SHA
+        id: resolve
+        run: |
+          SHA=$(git rev-parse HEAD)
+          REPO_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          echo "image_tag=highload-sha-${SHA}" >> $GITHUB_OUTPUT
+          echo "full_image=${REGISTRY}/${REPO_LOWER}:highload-sha-${SHA}" >> $GITHUB_OUTPUT
+          echo "Deploying commit: ${SHA}"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image (with HIGHLOAD build args)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.resolve.outputs.full_image }}
+          build-args: |
+            VITE_API_BASE_URL=${{ env.HIGHLOAD_API_URL }}
+            VITE_FORM_CONFIGS_URL=${{ env.HIGHLOAD_FORM_CONFIGS_URL }}
+            DOCUMENT_TYPES_API_BASE_URL=${{ env.HIGHLOAD_API_URL }}
+            # Выключено, пока переменная репозитория не поднята: включение до выдачи
+            # паролей закрывает приложение целиком. Поднимать одновременно с серверным
+            # WEBBUH_AUTH_ENABLED — по отдельности любой из флагов бесполезен.
+            VITE_AUTH_ENABLED=${{ vars.VITE_AUTH_ENABLED || 'false' }}
+            VITE_FACE_FLASH_DISABLED=${{ vars.VITE_FACE_FLASH_DISABLED || 'false' }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout requested ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Ensure namespace
+        run: kubectl apply -f k8s/highload/namespace.yaml
+
+      - name: Create/update fin-web secret (ANTHROPIC_API_KEY)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::secret ANTHROPIC_API_KEY is empty"
+            exit 1
+          fi
+          kubectl -n highload create secret generic fin-web-secret \
+            --from-literal=ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply service and ingress
+        run: |
+          kubectl apply -f k8s/highload/service.yaml
+          kubectl apply -f k8s/highload/ingress.yaml
+
+      - name: Deploy fin-web to HIGHLOAD
+        env:
+          IMAGE_NAME: ${{ needs.build.outputs.full_image }}
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+        run: |
+          envsubst < k8s/highload/deployment.yaml | kubectl apply -f -
+          kubectl -n highload rollout restart deployment/fin-web
+          kubectl -n highload rollout status deployment/fin-web --timeout=600s
+          kubectl -n highload get deploy fin-web \
+            -o jsonpath='{.metadata.annotations.fin-web\.io/deployed-commit}'
+          echo ""
+
+      - name: Summary
+        run: |
+          echo "## HIGHLOAD frontend deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- ref: \`${{ inputs.ref }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- image: \`${{ needs.build.outputs.full_image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- URL: https://highload.qazyna.ai" >> $GITHUB_STEP_SUMMARY
+          echo "- API: \`${{ env.HIGHLOAD_API_URL }}\`" >> $GITHUB_STEP_SUMMARY

@@ -1,6 +1,6 @@
-import type { FC } from 'react'
+import type { FC, ReactNode } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
-import { Link } from '@mui/material'
+import { Link, Typography } from '@mui/material'
 
 import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
 
@@ -14,8 +14,23 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
   const variant = node.props?.variant as string | undefined
   const disabled = node.props?.disabled === true
   const tooltip = node.props?.tooltip as string | undefined
+  // SCRUM-308 v3 §3: серый поясняющий текст в 1–2 строки под ссылкой страницы
+  // раздела. Ключа может не быть вовсе — тогда рисуется только ссылка.
+  const description = node.props?.description as string | undefined
 
   const dispatch = useSduiDispatch()
+
+  const withDescription = (link: ReactNode): ReactNode =>
+    description ? (
+      <div className="flex flex-col">
+        {link}
+        <Typography variant="body2" color="text.secondary">
+          {description}
+        </Typography>
+      </div>
+    ) : (
+      link
+    )
 
   // SCRUM-181 v3: disabled-пункт — известная команда 1С без опубликованного
   // приёмника. route у него намеренно отсутствует; геометрия строки та же, что
@@ -33,9 +48,9 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
       </Link>
     )
 
-    if (!tooltip) return disabledLink
+    if (!tooltip) return withDescription(disabledLink)
 
-    return (
+    return withDescription(
       <DisabledReasonTooltip reason={tooltip}>
         {disabledLink}
       </DisabledReasonTooltip>
@@ -52,7 +67,7 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
   }
 
   if (external) {
-    return (
+    return withDescription(
       <Link
         href={route}
         target="_blank"
@@ -65,7 +80,7 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
   }
 
   if (hasServerNavigate) {
-    return (
+    return withDescription(
       <Link
         component="a"
         href={route ?? '#'}
@@ -79,7 +94,7 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
 
   // SCRUM-181: module-link — навигационная ссылка страницы модуля: без
   // подчёркивания, в цвете текста; акцент только на hover.
-  return (
+  return withDescription(
     <Link
       component={RouterLink}
       to={route ?? '/'}

@@ -32,6 +32,18 @@ import {
 } from './form-instance'
 import { useCommandInflightStore } from './stores/command-inflight-store'
 import { clearFormSession, readFormSession } from './form-session-storage'
+import { acquireFormTurn } from './form-dispatch-queue'
+import {
+  captureResponseOwner,
+  classifyResponse,
+  type ResponseOwner,
+} from './response-ownership'
+import {
+  deferResponse,
+  deferrableEffects,
+  dropDeferredResponses,
+  replayDeferredResponses,
+} from './deferred-responses'
 
 export function useSduiDispatch() {
   const location = useLocation()
@@ -76,7 +88,7 @@ export function useSduiDispatch() {
         return true
       }
 
-      const { formSessionId, revision } = session.getSession()
+      const { formSessionId } = session.getSession()
 
       // SCRUM-330 Работа 1: in-flight-гард от двойного клика. Повторный COMMAND,
       // пока предыдущий той же сессии не отвечен, дропается молча: раньше он ждал
@@ -126,6 +138,12 @@ export function useSduiDispatch() {
         }
       }
 
+      // SCRUM-308 §5: владелец запроса и ход FIFO-очереди — снимаются до
+      // отправки, освобождаются/классифицируются после применения ответа.
+      const route = location.pathname + location.search
+      let owner: ResponseOwner | null = null
+      let releaseTurn: (() => void) | null = null
+
       try {
         if (action.type === 'COMMAND' && shouldFlush) {
           try {
@@ -136,13 +154,20 @@ export function useSduiDispatch() {
           }
         }
 
+        // SCRUM-308 §5: FIFO на formSessionId — скалярная правка и следующая
+        // команда не идут вразнобой. Ход берётся ПОСЛЕ flush ТЧ (flush сам
+        // диспатчит события — иначе дедлок) и держится до применения патчей
+        // (finally): следующий запрос обязан читать подтверждённую revision.
+        if (action.type === 'EVENT' || action.type === 'COMMAND') {
+          releaseTurn = await acquireFormTurn(formSessionId)
+        }
+
         // SCRUM-329: на write-команде (save/post) подсветить пустые обязательные
         // ячейки ТЧ — клиентский дублёр серверной 422-валидации. Сабмит не блокируем.
         if (shouldRevealTableErrors(action, behavior)) {
           revealAllTableErrors()
         }
 
-        const route = location.pathname + location.search
         // Экземпляр формы этой вкладки — на КАЖДОМ OPEN (бэк: DocumentFormDraftStore).
         // Он же остаётся прежним при реопене после 409 и при переходе новый → записанный:
         // вкладка та же, значит и её черновик тот же.
@@ -158,6 +183,7 @@ export function useSduiDispatch() {
                   freshInstance?.id ?? currentFormInstanceId(location.pathname),
               }
             : action
+        owner = captureResponseOwner(session, route)
         const res = await viewTransport.post({
           // SCRUM-330 Работа 2: на OPEN шлём formSessionId, переживший F5 в
           // sessionStorage. Сейчас бэк его игнорирует (резюм отложен — v2 §2);
@@ -168,7 +194,10 @@ export function useSduiDispatch() {
                 ? null
                 : readFormSession(route)
               : formSessionId,
-          revision: action.type === 'OPEN' ? null : revision,
+          // Ревизия читается ЗДЕСЬ, после взятия хода очереди (§5): предыдущий
+          // запрос сессии уже применил свои патчи и подтвердил revision.
+          revision:
+            action.type === 'OPEN' ? null : session.getSession().revision,
           ...(action.type === 'OPEN' && action.layoutCode
             ? { layoutCode: action.layoutCode }
             : {}),
@@ -197,11 +226,32 @@ export function useSduiDispatch() {
             onOpenTab: opts?.onOpenTab,
             playEffects,
           })
+          // SCRUM-308 §5: дерево и значения восстановлены — теперь можно
+          // проиграть исходы, отложенные, пока вкладка была скрыта.
+          replayDeferredResponses(route)
         } else if (action.type === 'CLOSE') {
           // reset is done by SduiScreen on unmount
           // Сессия закрыта штатно — резюмить после F5 больше нечего (SCRUM-330)
           clearFormSession(route)
+          dropDeferredResponses(route)
         } else {
+          // SCRUM-308 §5: владение ответом. Пока запрос летел, пользователь мог
+          // уйти с экрана — исход маршрутизируется по владельцу: active —
+          // применяем; deferred — вкладка жива, эффекты проиграются при
+          // возврате (патчи не переносятся: свежий OPEN авторитетнее);
+          // orphaned — вкладка закрыта, ответ выбрасывается и её не воскрешает.
+          const fate = classifyResponse(owner, session)
+          if (fate !== 'active') {
+            if (fate === 'deferred') {
+              const effects = deferrableEffects(res.effects)
+              if (effects.length > 0) {
+                deferResponse(owner.route, () => {
+                  playEffects(effects)
+                })
+              }
+            }
+            return res.commandFailed !== true
+          }
           // EVENT или COMMAND — единый порядок применения ответа (включая
           // авторитетный серверный dirty) — в applyServerPatches.
           applyServerPatches(session, res, {
@@ -244,6 +294,24 @@ export function useSduiDispatch() {
         ) {
           return false
         }
+        // SCRUM-308 §5: ошибка запроса ушедшей вкладки. Отложенным ошибкам
+        // запрещены авто-retry и reopen — живой вкладке текст покажется при
+        // возврате, ответ закрытой выбрасывается молча.
+        if (owner && (action.type === 'EVENT' || action.type === 'COMMAND')) {
+          const fate = classifyResponse(owner, session)
+          if (fate !== 'active') {
+            if (fate === 'deferred') {
+              const message =
+                error instanceof Error && error.message
+                  ? error.message
+                  : i18n.t('sdui.requestError')
+              deferResponse(owner.route, () => {
+                showToast('error', message)
+              })
+            }
+            return false
+          }
+        }
         handleDispatchError(error, {
           action,
           isRetry,
@@ -255,6 +323,9 @@ export function useSduiDispatch() {
         })
         return false
       } finally {
+        // §5: ход отпускается ПОСЛЕ применения патчей (или ошибки) — следующий
+        // запрос очереди читает уже подтверждённую revision.
+        releaseTurn?.()
         if (inflightKey) useCommandInflightStore.getState().end(inflightKey)
       }
     },

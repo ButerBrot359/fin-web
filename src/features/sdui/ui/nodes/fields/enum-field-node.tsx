@@ -15,8 +15,20 @@ import {
   resolveEnumValue,
   type EnumOption,
 } from '../../../lib/utils/enum-value'
+import { EnumFieldControl } from './enum-field-control'
 
 export const EnumFieldNode: FC<NodeProps> = ({ node }) => {
+  // SCRUM-308 v3 §4: control="radio"/"segmented" — альтернативные контролы
+  // перечисления; без ключа — обычный select. Ветвление ДО хуков селекта:
+  // EnumFieldControl зовёт useFieldNode сам.
+  const control = node.props?.control as string | undefined
+  if (control === 'radio' || control === 'segmented') {
+    return <EnumFieldControl node={node} />
+  }
+  return <EnumFieldSelect node={node} />
+}
+
+const EnumFieldSelect: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
   const options = (node.props?.options as EnumOption[] | undefined) ?? []
   const value = resolveEnumValue(f.value, options)

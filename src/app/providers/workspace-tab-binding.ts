@@ -28,6 +28,12 @@ export function useWorkspaceTabGatewayBinding(): void {
       armNewTab: () => {
         useWorkspaceTabsStore.getState().armNewTab()
       },
+      // SCRUM-308 §5: судьба ответа для ушедшей с экрана вкладки — жива ли она
+      // в баре (deferred) или закрыта (orphaned). route = path + search.
+      isRouteOpen: (route) =>
+        useWorkspaceTabsStore
+          .getState()
+          .tabs.some((tab) => tab.path + tab.search === route),
     })
     const unsubscribe = onPanelTabClose((panelId) => {
       usePanelStore.getState().remove(panelId)

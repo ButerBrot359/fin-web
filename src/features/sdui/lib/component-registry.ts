@@ -34,6 +34,7 @@ import { DatetimeFieldNode } from '../ui/nodes/fields/datetime-field-node'
 import { CheckboxFieldNode } from '../ui/nodes/fields/checkbox-field-node'
 import { EnumFieldNode } from '../ui/nodes/fields/enum-field-node'
 import { ReferenceFieldNode } from '../ui/nodes/fields/reference-field-node'
+import { ImageFieldNode } from '../ui/nodes/fields/image-field-node'
 // Composite
 import { TableNode } from '../ui/nodes/composite/table-node'
 import { TableColumnNode } from '../ui/nodes/composite/table-column-node'
@@ -75,6 +76,7 @@ const registry: Record<string, FC<NodeProps>> = {
   CHECKBOX_FIELD: CheckboxFieldNode,
   ENUM_FIELD: EnumFieldNode,
   REFERENCE_FIELD: ReferenceFieldNode,
+  IMAGE_FIELD: ImageFieldNode,
   TABLE: TableNode,
   TABLE_COLUMN: TableColumnNode,
   COLUMN_GROUP: ColumnGroupNode,

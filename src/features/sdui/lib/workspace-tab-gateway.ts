@@ -10,13 +10,19 @@ export interface WorkspaceTabGatewayImpl {
   // с openInNewTab). Сам переход делает вызывающая сторона своим router-navigate:
   // SDUI не знает ни про стор вкладок, ни про промежуточные редиректы маршрута.
   armNewTab: () => void
+  // SCRUM-308 §5 (владение ответом): жива ли скрытая вкладка этого маршрута.
+  // По ответу маршрутизируется исход запроса: живая → deferred, закрытая →
+  // orphaned. Метод опционален для обратной совместимости регистраций.
+  isRouteOpen?: (route: string) => boolean
 }
 
 let gateway: WorkspaceTabGatewayImpl | null = null
 
 // SDUI не знает про реализацию workspace-вкладок (features/workspace-tabs).
 // Хост-приложение регистрирует реализацию на своём уровне (app/).
-export function setWorkspaceTabGateway(g: WorkspaceTabGatewayImpl | null): void {
+export function setWorkspaceTabGateway(
+  g: WorkspaceTabGatewayImpl | null
+): void {
   gateway = g
 }
 
@@ -24,18 +30,28 @@ export function setWorkspaceTabGateway(g: WorkspaceTabGatewayImpl | null): void 
 // откатывается на прежний fullScreen Dialog, функциональность не теряется.
 export function openPanelTab(params: OpenPanelTabParams): boolean {
   if (!gateway) {
-    console.warn('[sdui] workspace-tab gateway is not bound, falling back to dialog')
+    console.warn(
+      '[sdui] workspace-tab gateway is not bound, falling back to dialog'
+    )
     return false
   }
   gateway.openPanelTab(params)
   return true
 }
 
+// false — impl не зарегистрирован или маршрут среди вкладок не найден:
+// вызывающая сторона (классификация ответа §5) считает вкладку закрытой.
+export function isRouteOpenAsTab(route: string): boolean {
+  return gateway?.isRouteOpen?.(route) ?? false
+}
+
 // false — impl не зарегистрирован: переход всё равно состоится, но в текущей
 // вкладке (прежнее поведение), функциональность не теряется.
 export function armNewTab(): boolean {
   if (!gateway) {
-    console.warn('[sdui] workspace-tab gateway is not bound, navigating in current tab')
+    console.warn(
+      '[sdui] workspace-tab gateway is not bound, navigating in current tab'
+    )
     return false
   }
   gateway.armNewTab()

@@ -12,6 +12,10 @@ export const TextFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
   const placeholder = node.props?.placeholder as string | undefined
   const maxLength = node.props?.maxLength as number | undefined
+  // SCRUM-308 v1 §4.2 / SCRUM-355 §5.5: поле секрета — скрытый ввод.
+  // autoComplete="new-password" обязателен: без него менеджер паролей
+  // подставляет в настройку SMTP пароль пользователя от самого приложения.
+  const secret = node.props?.secret === true
   const value = (f.value as string | undefined) ?? ''
   const changeOnBlur = useChangeOnBlur(f, value)
   const editConfirm = useEditConfirm(
@@ -30,6 +34,8 @@ export const TextFieldNode: FC<NodeProps> = ({ node }) => {
       <TextField
         label={f.label}
         size={node.props?.size as 'small' | undefined}
+        type={secret ? 'password' : undefined}
+        autoComplete={secret ? 'new-password' : undefined}
         value={value}
         placeholder={placeholder}
         required={f.required}

@@ -204,3 +204,74 @@ describe('AssistantAnswerCard', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(0)
   })
 })
+
+// SCRUM-330 (ADR-0079): уведомление о пересчёте — текстом в ответе чата,
+// кликабельно при наличии документа-адресата; без адресата — обычная строка.
+describe('AssistantAnswerCard: recalculationNotices (SCRUM-330)', () => {
+  afterEach(cleanup)
+
+  const notice = {
+    kind: 'STALE' as const,
+    operation: 'POST' as const,
+    dependencyCode: 'raschet-amortizatsii',
+    level: 'warning',
+    message: 'Пересчитайте амортизацию за сентябрь.',
+    route: '/documents/ReglamentnayaOperatsiya/5',
+    documentId: 5,
+    documentTypeCode: 'ReglamentnayaOperatsiya',
+    totalCount: 1,
+    periodsToRecalculate: ['2026-09-01'],
+    affectedDocumentIds: [5],
+  }
+
+  const created = {
+    entryId: 101,
+    typeCode: 'KorrektirovkaParametrovUchetaOS',
+    presentation: 'Корректировка №7',
+    posted: true,
+    warnings: [],
+  }
+
+  it('уведомление с адресатом — кликабельно, ведёт на документ-адресат', () => {
+    const onOpenDocument = vi.fn()
+    render(
+      <AssistantAnswerCard
+        answer={answer({
+          created: [{ ...created, recalculationNotices: [notice] }],
+        })}
+        onAction={vi.fn()}
+        onOpenDocument={onOpenDocument}
+      />
+    )
+    fireEvent.click(screen.getByText('Пересчитайте амортизацию за сентябрь.'))
+    expect(onOpenDocument).toHaveBeenCalledWith('ReglamentnayaOperatsiya', 5)
+  })
+
+  it('CHECK_SKIPPED без адресата — обычная строка, не кнопка', () => {
+    render(
+      <AssistantAnswerCard
+        answer={answer({
+          created: [
+            {
+              ...created,
+              recalculationNotices: [
+                {
+                  ...notice,
+                  kind: 'CHECK_SKIPPED' as const,
+                  route: null,
+                  documentId: null,
+                  documentTypeCode: null,
+                  message: 'Не удалось проверить, нужен ли пересчёт',
+                },
+              ],
+            },
+          ],
+        })}
+        onAction={vi.fn()}
+        onOpenDocument={vi.fn()}
+      />
+    )
+    const text = screen.getByText('Не удалось проверить, нужен ли пересчёт')
+    expect(text.closest('button')).toBeNull()
+  })
+})

@@ -4,6 +4,8 @@ import type { AiAssistantExecution, AiExecutionStatus } from './execution'
 
 import type { AsyncTaskStatus } from '@/entities/async-task'
 
+import type { RecalculationNotice } from '@/entities/recalculation-notice'
+
 import type { LlmProvider } from '@/entities/analytics'
 
 /**
@@ -110,6 +112,12 @@ export interface AiAssistantCreatedDocument {
   taskStatus?: AsyncTaskStatus | null
   taskError?: string | null
   warnings: string[]
+  // SCRUM-330 (ADR-0079 §2.6, «AI — поле DTO»): уведомления о пересчёте после
+  // проведения/отмены документа-триггера через чат. Решение владельца
+  // 21.09.2026 — показываются ТЕКСТОМ в ответе, без отдельного виджета; до
+  // модели поле не доходит (исключено из предпросмотра на бэке). У ACCEPTED
+  // пусто — появится после реконсиляции завершённой фоновой задачи.
+  recalculationNotices?: RecalculationNotice[]
 }
 
 /** Ответ в формате концепции: вывод, расшифровка, источник, действия. */

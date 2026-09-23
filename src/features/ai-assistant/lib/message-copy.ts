@@ -15,6 +15,8 @@ export function assistantMessageCopyText(
     ...answer.created.flatMap((document) => [
       document.presentation,
       ...document.warnings,
+      // SCRUM-330: уведомления о пересчёте — часть текста ответа
+      ...(document.recalculationNotices ?? []).map((notice) => notice.message),
     ]),
     ...answer.actions.map(
       (action) =>

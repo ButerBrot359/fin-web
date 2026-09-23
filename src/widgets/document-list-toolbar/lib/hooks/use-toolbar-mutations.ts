@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { useTaskCompletionWatcher } from '@/entities/async-task'
@@ -6,6 +7,7 @@ import {
   postDocumentEntry,
   unpostDocumentEntry,
 } from '@/entities/document-entry'
+import { showRecalculationNotices } from '@/entities/recalculation-notice'
 import { openMovementsForEntry } from '@/features/sdui'
 import { isApiConflictError } from '@/shared/api/api-error'
 import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
@@ -22,6 +24,11 @@ import { showToast } from '@/shared/ui/toast/show-toast'
 export function useToolbarMutations() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  // SCRUM-330 (ADR-0079): переход по клику в кликабельном warning-тосте
+  const goTo = (route: string) => {
+    void navigate(route)
+  }
 
   // Итог фонового проведения (202 → задача): список инвалидируем только по
   // ЗАВЕРШЕНИИ задачи — раньше него isPosted в строке всё равно не изменится.
@@ -29,6 +36,9 @@ export function useToolbarMutations() {
     if (task.status === 'SUCCEEDED') {
       invalidateDocumentQueries(queryClient)
       showToast('success', t('documentListToolbar.postSuccess'))
+      // SCRUM-330 (ADR-0079): уведомления о пересчёте фоновой задачи — ПОСЛЕ
+      // штатного успеха («успех → предупреждение», handoff §3.6)
+      showRecalculationNotices(task.recalculationNotices, goTo)
     } else if (task.status === 'FAILED') {
       // errorMessage доменный (в т.ч. готовый текст про блокировку) —
       // показываем пользователю как есть
@@ -59,6 +69,9 @@ export function useToolbarMutations() {
       }
       invalidateDocumentQueries(queryClient)
       showToast('success', t('documentListToolbar.postSuccess'))
+      // SCRUM-330 (ADR-0079): синхронное проведение (200) может привезти
+      // уведомления о пересчёте — кликабельные warning-тосты после успеха
+      showRecalculationNotices(result.document?.recalculationNotices, goTo)
     },
     onError: (error) => {
       if (isApiConflictError(error)) {
@@ -75,9 +88,11 @@ export function useToolbarMutations() {
 
   const unpost = useMutation({
     mutationFn: (id: number) => unpostDocumentEntry(id),
-    onSuccess: () => {
+    onSuccess: (response) => {
       invalidateDocumentQueries(queryClient)
       showToast('success', t('documentListToolbar.unpostSuccess'))
+      // Отмена проведения всегда синхронна (ApiDataResponse<DocumentEntryDto>)
+      showRecalculationNotices(response.data.data.recalculationNotices, goTo)
     },
     onError: (error) => {
       if (isApiConflictError(error)) {

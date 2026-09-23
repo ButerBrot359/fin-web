@@ -167,7 +167,8 @@ export interface ToastEvent {
 
 type ToastListener = (event: ToastEvent) => void
 
-// SCRUM-317 канал №8: центр оповещений копит всё, что показано всплывашкой.
+// SCRUM-317 канал №8: сюда приходит всё, что показано всплывашкой, а какие
+// уровни копить — решает подписчик (connectToastHistory).
 // Подписка вместо прямого импорта — shared не знает про entities-стор.
 const listeners = new Set<ToastListener>()
 

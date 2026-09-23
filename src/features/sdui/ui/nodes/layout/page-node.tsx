@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { Fragment, useEffect } from 'react'
 import type { FC } from 'react'
+import { Typography } from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
 import { cn } from '@/shared/lib/utils/cn'
@@ -16,6 +17,10 @@ const KIND_VID_OPERATSII_CHOICE_DIALOG = 'VID_OPERATSII_CHOICE_DIALOG'
 
 export const PageNode: FC<NodeProps> = ({ node }) => {
   const title = node.props?.title as string | undefined
+  // SCRUM-308 v3 §3: строка под заголовком страницы раздела. Сам заголовок на
+  // /modules/* рисует узел тулбара (module-workspace-toolbar), поэтому
+  // подзаголовок вставляется ПОСЛЕ первого TOOLBAR-ребёнка; без тулбара — верхом.
+  const subtitle = node.props?.subtitle as string | undefined
   const kind = node.props?.kind as string | undefined
   // Экран СПИСКА тянется на всю доступную высоту, и прокручивается САМА таблица —
   // тогда счётчик загруженных строк и «Выгрузить в Excel» стоят ПОД таблицей и видны
@@ -64,8 +69,20 @@ export const PageNode: FC<NodeProps> = ({ node }) => {
         isStretchedCard && 'overflow-y-auto'
       )}
     >
-      {node.children?.map((c) => (
-        <NodeRenderer key={c.id} node={c} />
+      {subtitle && node.children?.[0]?.type !== 'TOOLBAR' && (
+        <Typography variant="body2" color="text.secondary">
+          {subtitle}
+        </Typography>
+      )}
+      {node.children?.map((c, i) => (
+        <Fragment key={c.id}>
+          <NodeRenderer node={c} />
+          {subtitle && i === 0 && c.type === 'TOOLBAR' && (
+            <Typography variant="body2" color="text.secondary">
+              {subtitle}
+            </Typography>
+          )}
+        </Fragment>
       ))}
     </div>
   )

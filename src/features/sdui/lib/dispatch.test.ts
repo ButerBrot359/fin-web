@@ -863,7 +863,10 @@ describe('useSduiDispatch: in-flight-гард COMMAND (SCRUM-330)', () => {
     const second = await result.current({ type: 'COMMAND', command: 'save' })
 
     expect(second).toBe(false)
-    expect(post).toHaveBeenCalledTimes(1)
+    // Первый доходит до post после await flush и хода FIFO-очереди (SCRUM-308 §5)
+    await vi.waitFor(() => {
+      expect(post).toHaveBeenCalledTimes(1)
+    })
 
     resolvePost?.(commandResponse)
     await expect(first).resolves.toBe(true)
@@ -874,17 +877,30 @@ describe('useSduiDispatch: in-flight-гард COMMAND (SCRUM-330)', () => {
     expect(post).toHaveBeenCalledTimes(2)
   })
 
-  it('EVENT не гардится: уходит, пока COMMAND в полёте', async () => {
+  it('EVENT не дропается гардом, но встаёт в FIFO-очередь сессии и уходит после ответа COMMAND (SCRUM-308 §5)', async () => {
     sessionMock.getSession = () => ({ formSessionId: 'fs-guard2', revision: 1 })
-    const post = vi
-      .spyOn(viewTransport, 'post')
-      .mockImplementation(() => new Promise<ViewResponse>(() => undefined))
+    let resolvePost: ((v: ViewResponse) => void) | undefined
+    const post = vi.spyOn(viewTransport, 'post').mockImplementation(
+      () =>
+        new Promise<ViewResponse>((res) => {
+          resolvePost = res
+        })
+    )
 
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     void result.current({ type: 'COMMAND', command: 'save' })
     void result.current({ type: 'EVENT', sourceNodeId: 'n1', trigger: 'blur' })
 
-    // COMMAND доходит до post после await flush — ждём микротаски
+    await vi.waitFor(() => {
+      expect(post).toHaveBeenCalledTimes(1)
+    })
+    // Ход держится до применения патчей команды — EVENT ещё не ушёл
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(post).toHaveBeenCalledTimes(1)
+
+    resolvePost?.(commandResponse)
     await vi.waitFor(() => {
       expect(post).toHaveBeenCalledTimes(2)
     })

@@ -29,6 +29,9 @@ export type NodeType =
   | 'CHECKBOX_FIELD'
   | 'ENUM_FIELD'
   | 'REFERENCE_FIELD'
+  // SCRUM-308 v3 §2: фото пользователя — редактируемое в карточке
+  // (uploadUrl/clearCommand) и read-only миниатюра в панели списка.
+  | 'IMAGE_FIELD'
   // Composite (8)
   | 'TABLE'
   | 'TABLE_COLUMN'

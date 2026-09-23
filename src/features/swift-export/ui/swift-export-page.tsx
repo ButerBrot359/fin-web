@@ -167,9 +167,11 @@ export const SwiftExportPage = () => {
         </TextField>
       </div>
 
-      <Typography variant="caption" color="text.secondary">
-        {t('swiftExport.filesDownloadedByBrowser')}
-      </Typography>
+      {!supportsDirectoryPicker() && (
+        <Typography variant="caption" color="text.secondary">
+          {t('swiftExport.filesDownloadedByBrowser')}
+        </Typography>
+      )}
 
       <SwiftExportTable rows={rows} />
 

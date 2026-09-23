@@ -34,6 +34,8 @@ export type ParamValues = Record<string, ReportAltParamValue>
  */
 export const LANG_PARAM_CODE = 'YazykFormy'
 
+export const GRUPPA_NASTROEK = 'settings'
+
 export const isPeriod = (p: ReportAltParameterDto) => p.dataType === 'PERIOD'
 
 const currentMonth = (): PeriodValue => {

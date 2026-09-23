@@ -157,6 +157,36 @@ export const AssistantAnswerCard = ({
                   {warning}
                 </Typography>
               ))}
+              {/* SCRUM-330 (ADR-0079): уведомление о пересчёте — текстом в
+                  ответе (решение владельца 21.09), кликабельно при адресате.
+                  route null ⟺ documentId null (CHECK_FAILED/SKIPPED) —
+                  тогда обычная строка. */}
+              {(document.recalculationNotices ?? []).map((notice, index) =>
+                notice.documentTypeCode && notice.documentId != null ? (
+                  <Button
+                    key={`recalc-${String(index)}`}
+                    size="small"
+                    variant="tertiary"
+                    className="min-w-0 justify-start px-0 text-left whitespace-normal text-support-01"
+                    onClick={() => {
+                      onOpenDocument(
+                        notice.documentTypeCode!,
+                        notice.documentId!
+                      )
+                    }}
+                  >
+                    {notice.message}
+                  </Button>
+                ) : (
+                  <Typography
+                    key={`recalc-${String(index)}`}
+                    variant="caption"
+                    className="break-words text-support-01"
+                  >
+                    {notice.message}
+                  </Typography>
+                )
+              )}
             </div>
           ))}
         </div>

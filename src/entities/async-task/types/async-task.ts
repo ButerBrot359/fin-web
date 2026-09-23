@@ -1,3 +1,5 @@
+import type { RecalculationNotice } from '@/entities/recalculation-notice'
+
 // Фоновая задача бэка (SCRUM-330, handoff §3.2): приезжает целиком в эффекте
 // taskStarted и в REST /api/tasks*. Статусы: QUEUED → RUNNING → SUCCEEDED |
 // FAILED | CANCELLED; последние три окончательные — опрос прекращается.
@@ -29,4 +31,8 @@ export interface AsyncTask {
   createdAt?: string | null
   startedAt?: string | null
   finishedAt?: string | null
+  // SCRUM-330 (ADR-0079): уведомления о пересчёте. Заполняются ТОЛЬКО у
+  // SUCCEEDED-задач проведения/отмены документа-триггера; у FAILED/CANCELLED
+  // пусто — операция не состоялась, проверка не запускалась.
+  recalculationNotices?: RecalculationNotice[]
 }

@@ -1,4 +1,5 @@
 import type { AsyncTask } from '@/entities/async-task'
+import type { RecalculationNotice } from '@/entities/recalculation-notice'
 import type { ApiResponse, PagedResponse } from '@/shared/types/api.types'
 
 export interface DocumentEntry {
@@ -20,6 +21,10 @@ export interface DocumentEntry {
   deletedAt: string | null
   createdBy: string
   updatedBy: string
+  // SCRUM-330 (ADR-0079): уведомления о пересчёте после синхронного
+  // проведения/отмены документа-триггера. Сервер шлёт [] (не null), когда
+  // устаревших расчётов нет; опционально — старые ответы поля не несут.
+  recalculationNotices?: RecalculationNotice[]
 }
 
 export interface CreateDocumentEntryPayload {

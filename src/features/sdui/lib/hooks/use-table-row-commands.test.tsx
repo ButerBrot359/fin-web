@@ -1,5 +1,7 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { sbrositKopiyu, stroitTsv } from '../utils/table-clipboard'
 
 import type { TableColumnDef, TableRow } from './use-table-sync'
 import {
@@ -26,6 +28,8 @@ const makeSync = (fullRows: TableRow[]) => ({
   addRow: vi.fn(() => ({ rowId: 'tmp-new' })),
   deleteRow: vi.fn(),
   moveRow: vi.fn(),
+  replaceRows: vi.fn(),
+  undo: vi.fn(() => true),
 })
 
 const identity = (i: number) => i
@@ -300,5 +304,143 @@ describe('useTableRowCommands', () => {
       expect(bottom.result.current.canMoveUp).toBe(true)
       expect(bottom.result.current.canMoveDown).toBe(false)
     })
+  })
+})
+
+describe('useTableRowCommands — буфер обмена и отмена', () => {
+  const writeText = vi.fn<(text: string) => Promise<void>>()
+
+  beforeEach(() => {
+    sbrositKopiyu()
+    writeText.mockReset()
+    writeText.mockResolvedValue(undefined)
+    Object.defineProperty(globalThis.navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+  })
+
+  const tovarKolonki: TableColumnDef[] = [
+    {
+      id: 'col.tovar',
+      label: 'Товар',
+      binding: 'tovar',
+      cellWidget: 'REFERENCE_FIELD',
+      dataType: 'DICTIONARY',
+      props: {},
+    },
+    {
+      id: 'col.summa',
+      label: 'Сумма',
+      binding: 'summa',
+      cellWidget: 'NUMBER_FIELD',
+      dataType: 'DECIMAL',
+      props: {},
+    },
+    {
+      id: 'col.klyuch',
+      label: 'Ключ связи',
+      binding: 'klyuch',
+      cellWidget: 'TEXT_FIELD',
+      dataType: 'STRING',
+      props: { visible: false },
+    },
+  ]
+
+  const tovarStroki = (): TableRow[] => [
+    {
+      rowId: 'r1',
+      tovar: { id: 7, presentation: 'Стол' },
+      summa: 100,
+      klyuch: 'k-1',
+    },
+    {
+      rowId: 'r2',
+      tovar: { id: 8, presentation: 'Стул' },
+      summa: 200,
+      klyuch: 'k-1',
+    },
+  ]
+
+  const setupTovary = (overrides: Partial<UseTableRowCommandsParams> = {}) => {
+    const full = tovarStroki()
+    const params: UseTableRowCommandsParams = {
+      sync: makeSync(full),
+      columns: tovarKolonki,
+      visibleRows: full,
+      selectedRowId: 'r1',
+      selectedVisibleIndex: 0,
+      onAdd: vi.fn(),
+      clearSelection: vi.fn(),
+      globalIndexOf: identity,
+      search: { focusInput: vi.fn(), clear: vi.fn() },
+      ...overrides,
+    }
+    const { result } = renderHook(() => useTableRowCommands(params))
+    return { result, sync: params.sync as ReturnType<typeof makeSync>, full }
+  }
+
+  const pasteEvent = (text: string, targetTag = 'div') => {
+    const target = document.createElement(targetTag)
+    return {
+      target,
+      clipboardData: { getData: () => text },
+      preventDefault: vi.fn(),
+    } as unknown as React.ClipboardEvent<HTMLElement>
+  }
+
+  it('Ctrl+C: в системный буфер уходит TSV по видимым колонкам', () => {
+    const { result } = setupTovary({
+      selectedRowIds: ['r1', 'r2'],
+    })
+    result.current.handleCopyToClipboard()
+    expect(writeText).toHaveBeenCalledWith('Стол\t100\nСтул\t200')
+  })
+
+  it('без выделения копировать нечего', () => {
+    const { result } = setupTovary({ selectedRowId: null })
+    result.current.handleCopyToClipboard()
+    expect(writeText).not.toHaveBeenCalled()
+  })
+
+  it('копия-вставка внутри приложения доносит ссылку и скрытую колонку', () => {
+    const { result, sync, full } = setupTovary({ selectedRowIds: ['r1'] })
+    result.current.handleCopyToClipboard()
+    result.current.handlePasteEvent(
+      pasteEvent(stroitTsv([full[0]], tovarKolonki.slice(0, 2)))
+    )
+    const next = sync.replaceRows.mock.calls[0][0] as TableRow[]
+    expect(next).toHaveLength(3)
+    expect(next[2]).toMatchObject({
+      tovar: { id: 7, presentation: 'Стол' },
+      summa: 100,
+      klyuch: 'k-1',
+    })
+    // Новая строка — своя: rowId источника не копируется
+    expect(next[2].rowId).not.toBe('r1')
+  })
+
+  it('чужой текст из Excel разбирается по видимым колонкам; ссылка остаётся пустой', () => {
+    const { result, sync } = setupTovary()
+    result.current.handlePasteEvent(pasteEvent('Шкаф\t300\nПолка\t50'))
+    const next = sync.replaceRows.mock.calls[0][0] as TableRow[]
+    expect(next).toHaveLength(4)
+    expect(next[2]).toMatchObject({ summa: 300, tovar: null })
+    expect(next[3]).toMatchObject({ summa: 50 })
+  })
+
+  it('вставка в ячейку остаётся вставкой текста в инпут', () => {
+    const { result, sync } = setupTovary()
+    const e = pasteEvent('Шкаф\t300', 'input')
+    result.current.handlePasteEvent(e)
+    expect(sync.replaceRows).not.toHaveBeenCalled()
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).not.toHaveBeenCalled()
+  })
+
+  it('пустой буфер строк не добавляет', () => {
+    const { result, sync } = setupTovary()
+    result.current.handlePasteEvent(pasteEvent('   \n'))
+    expect(sync.replaceRows).not.toHaveBeenCalled()
   })
 })

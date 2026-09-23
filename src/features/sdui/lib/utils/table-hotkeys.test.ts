@@ -19,6 +19,9 @@ function makeHandlers(): TableHotkeyHandlers {
     onSelectAll: vi.fn(),
     onExtendPrev: vi.fn(),
     onExtendNext: vi.fn(),
+    onCopyToClipboard: vi.fn(),
+    onUndo: vi.fn(),
+    onSave: vi.fn(),
   }
 }
 
@@ -193,5 +196,57 @@ describe('выделение нескольких строк (порт табл�
     expect(handlers.onExtendPrev).toHaveBeenCalledTimes(1)
     expect(handlers.onSelectNext).not.toHaveBeenCalled()
     expect(handlers.onSelectPrev).not.toHaveBeenCalled()
+  })
+})
+
+describe('буфер обмена, отмена и запись (порт хоткеев таблицы 1С)', () => {
+  it('Ctrl+C копирует выделенные строки, Cmd+C — тоже', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+    const e = keyEvent({ key: 'c', ctrlKey: true })
+    onKeyDown(e)
+    onKeyDown(keyEvent({ key: 'C', metaKey: true }))
+    expect(h.onCopyToClipboard).toHaveBeenCalledTimes(2)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).toHaveBeenCalled()
+  })
+
+  it('Ctrl+C внутри ячейки остаётся копированием текста', () => {
+    const h = makeHandlers()
+    const e = keyEvent({ key: 'c', ctrlKey: true, targetTag: 'input' })
+    createTableHotkeysHandler(h)(e)
+    expect(h.onCopyToClipboard).not.toHaveBeenCalled()
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).not.toHaveBeenCalled()
+  })
+
+  it('Ctrl+Z отменяет последнее действие, а в ячейке — ввод символов', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+    const e = keyEvent({ key: 'z', ctrlKey: true })
+    onKeyDown(e)
+    onKeyDown(keyEvent({ key: 'z', ctrlKey: true, targetTag: 'input' }))
+    expect(h.onUndo).toHaveBeenCalledTimes(1)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).toHaveBeenCalled()
+  })
+
+  it('Ctrl+S записывает документ И из ячейки: значение уже в снимке ТЧ', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+    const e = keyEvent({ key: 's', ctrlKey: true, targetTag: 'input' })
+    onKeyDown(e)
+    expect(h.onSave).toHaveBeenCalledTimes(1)
+    // Диалог «Сохранить страницу» браузера в форме документа не нужен никогда
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).toHaveBeenCalled()
+  })
+
+  it('Ctrl+V не перехватывается хоткеем — вставку принимает событие paste', () => {
+    const h = makeHandlers()
+    const e = keyEvent({ key: 'v', ctrlKey: true })
+    createTableHotkeysHandler(h)(e)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).not.toHaveBeenCalled()
   })
 })

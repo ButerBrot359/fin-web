@@ -1,7 +1,19 @@
-import type { KeyboardEvent } from 'react'
+import type { ClipboardEvent, KeyboardEvent } from 'react'
 
-import { createTableHotkeysHandler } from '../utils/table-hotkeys'
+import {
+  createTableHotkeysHandler,
+  isEditableTarget,
+} from '../utils/table-hotkeys'
 import { omitServiceRowKeys } from '../utils/service-row-keys'
+import { isColumnVisible } from '../utils/column-visibility'
+import {
+  razobratTsv,
+  stroitTsv,
+  vzyatKopiyu,
+  zapomnitKopiyu,
+  type ClipboardRowValues,
+} from '../utils/table-clipboard'
+import { buildEmptyRow } from './table-sync-model'
 import type {
   TableColumnDef,
   TableRow,
@@ -15,7 +27,10 @@ import type { TableSearchApi } from './use-table-search'
  * EditableTable и ComplexEditableTable; различия селекции параметризованы явно.
  */
 export interface UseTableRowCommandsParams {
-  sync: Pick<UseTableSyncResult, 'rows' | 'addRow' | 'deleteRow' | 'moveRow'>
+  sync: Pick<
+    UseTableSyncResult,
+    'rows' | 'addRow' | 'deleteRow' | 'moveRow' | 'replaceRows' | 'undo'
+  >
   /**
    * Колонки СИНХРОНИЗАЦИИ — все, включая скрытые: на них держатся ключи
    * master-detail и служебные значения, они обязаны попадать в новую строку.
@@ -59,6 +74,11 @@ export interface UseTableRowCommandsParams {
    */
   onMoved?: (toVisibleIndex: number) => void
   search: Pick<TableSearchApi, 'focusInput' | 'clear'>
+  /**
+   * Ctrl+S — записать форму (`useFormSaveCommand`). Передают таблицы; в тестах
+   * хука не нужен, поэтому опционален.
+   */
+  onSave?: () => void
 }
 
 export interface UseTableRowCommandsResult {
@@ -71,7 +91,16 @@ export interface UseTableRowCommandsResult {
   canMoveDown: boolean
   canRemove: boolean
   canCopy: boolean
+  /** Ctrl+C — выделенные строки в буфер обмена (TSV + свой буфер значений). */
+  handleCopyToClipboard: () => void
+  /** Ctrl+Z — отмена последнего действия над строками. */
+  handleUndo: () => void
   handleKeyDown: (e: KeyboardEvent<HTMLElement>) => void
+  /**
+   * Ctrl+V — обработчик события `paste` контейнера таблицы. Событие, а не
+   * хоткей: `clipboardData` доступен синхронно и без разрешения на чтение буфера.
+   */
+  handlePasteEvent: (e: ClipboardEvent<HTMLElement>) => void
   /** Готовый проброс команд в TableToolbar (спред; частные флаги — поверх). */
   toolbarProps: {
     onAdd: () => void
@@ -101,6 +130,7 @@ export function useTableRowCommands({
   globalIndexOf,
   onMoved,
   search,
+  onSave,
 }: UseTableRowCommandsParams): UseTableRowCommandsResult {
   const handleAdd = onAdd
 
@@ -212,6 +242,61 @@ export function useTableRowCommands({
     if (rasshirit) extendSelection?.(sleduyushchiy)
   }
 
+  /** Строки под операцию буфера: выделенный набор, а без него — текущая. */
+  const kopiruemyeStroki = (): TableRow[] => {
+    const rowIds = udalyaemyeRowIds()
+    return rowIds
+      .map((rowId) => sync.rows.find((r) => r.rowId === rowId))
+      .filter((row): row is TableRow => row !== undefined)
+  }
+
+  /**
+   * Ctrl+C: в системный буфер уходит TSV по ВИДИМЫМ колонкам (его читает Excel),
+   * а рядом остаётся свой буфер с полными значениями строк — по нему вставка
+   * внутри приложения восстанавливает ссылки и скрытые колонки, которых в
+   * тексте нет. Текст пишем через navigator.clipboard: событие `copy` браузер
+   * при пустом текстовом выделении не гарантирует.
+   */
+  const handleCopyToClipboard = () => {
+    const stroki = kopiruemyeStroki()
+    if (stroki.length === 0) return
+    const tekst = stroitTsv(stroki, columns.filter(isColumnVisible))
+    zapomnitKopiyu(tekst, stroki)
+    // Системного буфера может не быть вовсе (не https, старый браузер) — тип
+    // обещает его безусловно, поэтому отказ ловим, а не проверяем. Вставка
+    // внутри приложения работает и без него: она идёт из своего буфера.
+    try {
+      void navigator.clipboard.writeText(tekst).catch(() => undefined)
+    } catch {
+      // Буфер недоступен — ограничиваемся своим.
+    }
+  }
+
+  /** Ctrl+V: строки из буфера дописываются в конец ТЧ — как «Вставить» в 1С. */
+  const vstavit = (znacheniya: ClipboardRowValues[]) => {
+    if (znacheniya.length === 0) return
+    const novye = znacheniya.map((values) => ({
+      ...buildEmptyRow(columns),
+      ...values,
+    }))
+    sync.replaceRows([...sync.rows, ...novye])
+  }
+
+  const handlePasteEvent = (e: ClipboardEvent<HTMLElement>) => {
+    // В ячейке Ctrl+V обязан остаться вставкой текста в инпут.
+    if (isEditableTarget(e.target)) return
+    const tekst = e.clipboardData.getData('text/plain')
+    if (tekst.trim() === '') return
+    e.preventDefault()
+    vstavit(
+      vzyatKopiyu(tekst) ?? razobratTsv(tekst, columns.filter(isColumnVisible))
+    )
+  }
+
+  const handleUndo = () => {
+    sync.undo()
+  }
+
   const handleKeyDown = createTableHotkeysHandler({
     onAdd: handleAdd,
     onSelectPrev: () => {
@@ -233,6 +318,9 @@ export function useTableRowCommands({
     onExtendNext: () => {
       perehod(1, true)
     },
+    onCopyToClipboard: handleCopyToClipboard,
+    onUndo: handleUndo,
+    onSave: onSave,
   })
 
   const canMoveUp = selectedVisibleIndex > 0
@@ -251,7 +339,10 @@ export function useTableRowCommands({
     canMoveDown,
     canRemove,
     canCopy,
+    handleCopyToClipboard,
+    handleUndo,
     handleKeyDown,
+    handlePasteEvent,
     toolbarProps: {
       onAdd: handleAdd,
       onCopy: handleCopy,

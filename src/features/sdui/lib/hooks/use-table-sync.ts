@@ -41,6 +41,9 @@ export interface TableRow {
 
 const EMPTY_ROWS: TableRow[] = []
 
+/** Сколько действий над строками можно отменить подряд (Ctrl+Z). */
+const GLUBINA_ISTORII = 50
+
 export interface UseTableSyncResult {
   rows: TableRow[]
   updateCell: (rowId: string, binding: string, value: unknown) => void
@@ -56,6 +59,12 @@ export interface UseTableSyncResult {
   deleteRow: (index: number) => void
   moveRow: (from: number, to: number) => void
   replaceRows: (next: TableRow[]) => void
+  /**
+   * Отмена последнего действия над строками (Ctrl+Z): возвращает снимок,
+   * бывший до правки ячейки, добавления, копирования, удаления, перемещения или
+   * вставки из буфера. `false` — отменять нечего.
+   */
+  undo: () => boolean
   /**
    * SCRUM-363: разрешается, когда очередь table EVENT дослана и серверные
    * патчи применены к локальному состоянию (инвариант flush-before-save).
@@ -251,9 +260,53 @@ export function useTableSync(
     // привязанный к завершению запроса, а не к приходу канона.
   }, [canonRows])
 
+  // ── История для Ctrl+Z ──
+  //
+  // Снимки строк ДО действия. Живут в ref: отмена — обработчик события, рендер
+  // от истории не зависит, а в состоянии она давала бы лишний ре-рендер таблицы
+  // на каждый символ. Глубина ограничена: ТЧ бывает на тысячи строк, и без
+  // предела история держала бы их копии всю жизнь формы.
+  const istoriyaRef = useRef<TableRow[][]>([])
+  // Ключ текущей правки ячейки: отмена в 1С возвращает значение целиком, а не
+  // по символу, поэтому снимок кладётся один раз на вход в ячейку, а не на
+  // каждый onChange. Сбрасывается коммитом и любым структурным действием.
+  const pravkaRef = useRef<string | null>(null)
+
+  const zapomnitDlyaOtmeny = (
+    snimok: TableRow[],
+    klyuchPravki: string | null = null
+  ) => {
+    istoriyaRef.current.push(snimok)
+    if (istoriyaRef.current.length > GLUBINA_ISTORII)
+      istoriyaRef.current.shift()
+    pravkaRef.current = klyuchPravki
+  }
+
+  /**
+   * Применение снимка строк: локальное состояние, canon и отправка. Общее тело
+   * `replaceRows` и `undo` — разница только в том, пишется ли история.
+   */
+  const primenitSnimok = (next: TableRow[]) => {
+    setLocalRows(next)
+    localRowsRef.current = next
+    if (node.binding) setValue(node.binding, next)
+    if (inFlightRef.current) {
+      dirtyRef.current = new Map()
+      needsCoalescedCommitRef.current = true
+    } else {
+      sendEvent(next)
+    }
+  }
+
   // ── Public API ──
 
   const updateCell = (rowId: string, binding: string, value: unknown) => {
+    // Первая правка этой ячейки — снимок для Ctrl+Z (дальнейшие символы того же
+    // ввода отменяются одним действием, как в таблице 1С).
+    const klyuchPravki = `${rowId}|${binding}`
+    if (pravkaRef.current !== klyuchPravki) {
+      zapomnitDlyaOtmeny(localRowsRef.current, klyuchPravki)
+    }
     // Снимок считается СИНХРОННО от localRowsRef, а не внутри updater'а
     // setLocalRows: updater React вызывает при следующем рендере, поэтому ref
     // обновлялся ПОСЛЕ возврата из updateCell. Виджеты, которые коммитят сразу
@@ -283,6 +336,8 @@ export function useTableSync(
   }
 
   const commitCell = () => {
+    // Ввод в ячейку закончен: следующая правка — отдельное действие для Ctrl+Z.
+    pravkaRef.current = null
     if (inFlightRef.current) {
       // Правка уже в localRows и dirtyRef — её дошлёт drain(), когда завершится
       // текущий запрос. Именно этот ранний выход и терял данные, пока промис
@@ -299,6 +354,7 @@ export function useTableSync(
     // presetValues — например, ключ связи master-detail (SCRUM-282 #4):
     // скрытая readonly-колонка иначе остаётся пустой и строка не матчится фильтром
     const newRow = { ...buildEmptyRow(cols), ...presetValues }
+    zapomnitDlyaOtmeny(localRowsRef.current)
     const next = [...localRowsRef.current, newRow]
     setLocalRows(next)
     localRowsRef.current = next
@@ -316,6 +372,7 @@ export function useTableSync(
 
   const deleteRow = (index: number) => {
     const prev = localRowsRef.current
+    zapomnitDlyaOtmeny(prev)
     const next = prev.filter((_, i) => i !== index)
     setLocalRows(next)
     localRowsRef.current = next
@@ -334,6 +391,7 @@ export function useTableSync(
 
   const moveRow = (from: number, to: number) => {
     const prev = localRowsRef.current
+    zapomnitDlyaOtmeny(prev)
     const next = [...prev]
     const [moved] = next.splice(from, 1)
     next.splice(to, 0, moved)
@@ -354,15 +412,21 @@ export function useTableSync(
    * поэтому при in-flight откладываем через needsCoalescedCommit, иначе шлём сразу.
    */
   const replaceRows = (next: TableRow[]) => {
-    setLocalRows(next)
-    localRowsRef.current = next
-    if (node.binding) setValue(node.binding, next)
-    if (inFlightRef.current) {
-      dirtyRef.current = new Map()
-      needsCoalescedCommitRef.current = true
-    } else {
-      sendEvent(next)
-    }
+    zapomnitDlyaOtmeny(localRowsRef.current)
+    primenitSnimok(next)
+  }
+
+  /**
+   * Ctrl+Z: последний снимок из истории становится текущим состоянием и уезжает
+   * на сервер тем же порядком, что обычная структурная правка — иначе «Записать»
+   * сохранило бы то, что пользователь только что отменил.
+   */
+  const undo = (): boolean => {
+    const snimok = istoriyaRef.current.pop()
+    if (snimok === undefined) return false
+    pravkaRef.current = null
+    primenitSnimok(snimok)
+    return true
   }
 
   const flushPending = (): Promise<void> => {
@@ -413,6 +477,7 @@ export function useTableSync(
     deleteRow,
     moveRow,
     replaceRows,
+    undo,
     // Через ref: потребитель может захватить результат хука в замыкании
     // произвольного рендера (автопереход зовёт flush из колбэка commit).
     flushPending: () => flushPendingRef.current(),

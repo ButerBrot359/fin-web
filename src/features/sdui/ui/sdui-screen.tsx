@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type FC } from 'react'
+import { useEffect, useMemo, useRef, type FC } from 'react'
 import { useLocation } from 'react-router-dom'
 import i18n from 'i18next'
 
@@ -20,6 +20,7 @@ import { useSessionHeartbeat } from '../lib/hooks/use-session-heartbeat'
 import { useTaskWatcher } from '../lib/hooks/use-task-watcher'
 import { useExternalViewRefresh } from '../lib/hooks/use-external-view-refresh'
 import { useExternalPanelRefresh } from '../lib/hooks/use-external-panel-refresh'
+import { useFormSaveHotkey } from '../lib/hooks/use-form-save-hotkey'
 import {
   SduiSessionProvider,
   type SduiSessionValue,
@@ -88,6 +89,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   useTaskWatcher(formSessionId)
   useExternalViewRefresh(location.pathname + location.search, dispatch, onTab)
   useExternalPanelRefresh()
+  const screenRootRef = useRef<HTMLDivElement>(null)
+  useFormSaveHotkey(screenRootRef)
 
   const title = (tree?.props?.title as string | undefined) ?? ''
   useEffect(() => {
@@ -283,6 +286,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
           целиком (панели-порталы рендерят те же узлы). display:contents не
           участвует в раскладке. */}
       <div
+        ref={screenRootRef}
         className={
           rastyanutyyKoren
             ? 'flex min-h-0 flex-1 flex-col overflow-y-auto'

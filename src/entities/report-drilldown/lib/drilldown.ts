@@ -19,6 +19,11 @@ export type DrilldownTargetKind =
   | 'turnoverByDays'
   | 'turnoverByMonths'
 
+export interface DrilldownSubkonto {
+  groupCode: string
+  rowRef: NonNullable<DrilldownRow['rowRef']>
+}
+
 export interface DrilldownTarget {
   kind: DrilldownTargetKind
   reportCode: string
@@ -81,6 +86,13 @@ export const isSubkontoRow = (row: DrilldownRow): boolean =>
   SUBKONTO_GROUP_CODES.includes(row.groupCode) &&
   row.rowRef != null &&
   row.rowRef.domain !== 'ACCOUNT_PLAN'
+
+export const subkontoChainOf = (chain: DrilldownRow[]): DrilldownSubkonto[] =>
+  chain.flatMap((row) =>
+    row.groupCode != null && row.rowRef != null && isSubkontoRow(row)
+      ? [{ groupCode: row.groupCode, rowRef: row.rowRef }]
+      : []
+  )
 
 const withPeriod = (
   params: URLSearchParams,

@@ -3,8 +3,8 @@ import type { FC } from 'react'
 import type { NodeProps } from '../../../types/view'
 import { useFieldNode } from '../../../lib/hooks/use-field-node'
 import { DateTimeInput } from '@/shared/ui/inputs'
-import { readPeriodChoice } from '../../../lib/utils/period-choice'
-import { PeriodChoiceButton } from './period-choice/period-choice-button'
+import { readPeriodChoice } from '../../../lib/utils/period-choice-props'
+import { PeriodChoiceNodeButton } from './period-choice/period-choice-button'
 
 export const DateFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
@@ -38,7 +38,7 @@ export const DateFieldNode: FC<NodeProps> = ({ node }) => {
   return (
     <div className="flex items-start gap-2">
       <div className="min-w-0 flex-1">{input}</div>
-      <PeriodChoiceButton
+      <PeriodChoiceNodeButton
         choice={periodChoice}
         disabled={f.readonly === true || !f.enabled}
       />

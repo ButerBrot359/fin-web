@@ -29,8 +29,8 @@ vi.mock('../../../../lib/sdui-session-context', () => ({
   useBindingValue: (b?: string) => (b ? state[b] : undefined),
 }))
 
-import { readPeriodChoice } from '../../../../lib/utils/period-choice'
-import { PeriodChoiceButton } from './period-choice-button'
+import { readPeriodChoice } from '../../../../lib/utils/period-choice-props'
+import { PeriodChoiceNodeButton } from './period-choice-button'
 
 const choice = {
   fromNodeId: 'report.OSV.param.Period.from',
@@ -39,11 +39,11 @@ const choice = {
 }
 
 const openDialog = () => {
-  render(<PeriodChoiceButton choice={choice} />)
-  fireEvent.click(screen.getByLabelText('sdui.periodChoice.title'))
+  render(<PeriodChoiceNodeButton choice={choice} />)
+  fireEvent.click(screen.getByLabelText('periodChoice.title'))
 }
 
-describe('PeriodChoiceButton', () => {
+describe('PeriodChoiceNodeButton', () => {
   beforeEach(() => {
     dispatchMock.mockClear()
     setValueMock.mockClear()
@@ -53,12 +53,10 @@ describe('PeriodChoiceButton', () => {
 
   it('выбранный в сетке месяц заполняет обе даты и уходит одним EVENT', () => {
     openDialog()
-    expect(screen.getByLabelText('sdui.periodChoice.from')).toHaveValue(
-      '2026-01-01'
-    )
+    expect(screen.getByLabelText('periodChoice.from')).toHaveValue('2026-01-01')
 
     fireEvent.click(screen.getAllByText('M6')[1])
-    fireEvent.click(screen.getByText('sdui.periodChoice.select'))
+    fireEvent.click(screen.getByText('periodChoice.select'))
 
     expect(setValueMock).toHaveBeenCalledWith(choice.fromNodeId, '2026-07-01')
     expect(setValueMock).toHaveBeenCalledWith(choice.toNodeId, '2026-07-31')
@@ -68,14 +66,14 @@ describe('PeriodChoiceButton', () => {
       trigger: 'change',
       value: { from: '2026-07-01', to: '2026-07-31' },
     })
-    expect(screen.queryByText('sdui.periodChoice.select')).toBeNull()
+    expect(screen.queryByText('periodChoice.select')).toBeNull()
   })
 
   it('Shift+клик по месяцу расширяет период до квартала', () => {
     openDialog()
     fireEvent.click(screen.getAllByText('M3')[1])
     fireEvent.click(screen.getAllByText('M5')[1], { shiftKey: true })
-    fireEvent.click(screen.getByText('sdui.periodChoice.select'))
+    fireEvent.click(screen.getByText('periodChoice.select'))
 
     expect(dispatchMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -87,7 +85,7 @@ describe('PeriodChoiceButton', () => {
   it('клик по году выбирает весь год', () => {
     openDialog()
     fireEvent.click(screen.getByText('2027'))
-    fireEvent.click(screen.getByText('sdui.periodChoice.select'))
+    fireEvent.click(screen.getByText('periodChoice.select'))
 
     expect(dispatchMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -98,8 +96,8 @@ describe('PeriodChoiceButton', () => {
 
   it('«Очистить период» отправляет пустые границы', () => {
     openDialog()
-    fireEvent.click(screen.getByText('sdui.periodChoice.clear'))
-    fireEvent.click(screen.getByText('sdui.periodChoice.select'))
+    fireEvent.click(screen.getByText('periodChoice.clear'))
+    fireEvent.click(screen.getByText('periodChoice.select'))
 
     expect(setValueMock).toHaveBeenCalledWith(choice.fromNodeId, '')
     expect(dispatchMock).toHaveBeenCalledWith(
@@ -109,10 +107,8 @@ describe('PeriodChoiceButton', () => {
 
   it('стандартный период выбирается из списка', () => {
     openDialog()
-    fireEvent.click(screen.getByText('sdui.periodChoice.showStandard'))
-    fireEvent.doubleClick(
-      screen.getByText('sdui.periodChoice.standard.thisYear')
-    )
+    fireEvent.click(screen.getByText('periodChoice.showStandard'))
+    fireEvent.doubleClick(screen.getByText('periodChoice.standard.thisYear'))
 
     const year = new Date().getFullYear()
     expect(dispatchMock).toHaveBeenCalledWith(
@@ -125,7 +121,7 @@ describe('PeriodChoiceButton', () => {
   it('«Отмена» закрывает окно без изменений', () => {
     openDialog()
     fireEvent.click(screen.getAllByText('M6')[1])
-    fireEvent.click(screen.getByText('sdui.periodChoice.cancel'))
+    fireEvent.click(screen.getByText('periodChoice.cancel'))
 
     expect(setValueMock).not.toHaveBeenCalled()
     expect(dispatchMock).not.toHaveBeenCalled()

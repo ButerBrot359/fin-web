@@ -12,7 +12,7 @@ import {
   initialStartYear,
   unionPeriod,
   type PeriodRange,
-} from '../../../../lib/utils/period-choice'
+} from '@/shared/lib/utils/period-choice'
 import { PeriodChoiceMonthGrid } from './period-choice-month-grid'
 import { PeriodChoiceStandardList } from './period-choice-standard-list'
 
@@ -59,11 +59,11 @@ export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
             component="h2"
             className="flex-1 text-xl font-bold text-ui-06"
           >
-            {t('sdui.periodChoice.title')}
+            {t('periodChoice.title')}
           </Typography>
           <button
             type="button"
-            aria-label={t('sdui.periodChoice.cancel')}
+            aria-label={t('periodChoice.cancel')}
             onClick={onClose}
             className="shrink-0 cursor-pointer"
           >
@@ -76,7 +76,7 @@ export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
             <DateTimeInput
               dateOnly
               value={draft.from}
-              label={t('sdui.periodChoice.from')}
+              label={t('periodChoice.from')}
               onChange={(from) => {
                 setDraft({ ...draft, from })
               }}
@@ -87,7 +87,7 @@ export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
             <DateTimeInput
               dateOnly
               value={draft.to}
-              label={t('sdui.periodChoice.to')}
+              label={t('periodChoice.to')}
               onChange={(to) => {
                 setDraft({ ...draft, to })
               }}
@@ -100,7 +100,7 @@ export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
               setDraft(EMPTY_PERIOD)
             }}
           >
-            {t('sdui.periodChoice.clear')}
+            {t('periodChoice.clear')}
           </Button>
         </div>
 
@@ -128,8 +128,8 @@ export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
             }}
           >
             {standardMode
-              ? t('sdui.periodChoice.showCalendar')
-              : t('sdui.periodChoice.showStandard')}
+              ? t('periodChoice.showCalendar')
+              : t('periodChoice.showStandard')}
           </Button>
           <div className="flex-1" />
           <Button
@@ -138,10 +138,10 @@ export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
               onSelect(draft)
             }}
           >
-            {t('sdui.periodChoice.select')}
+            {t('periodChoice.select')}
           </Button>
           <Button variant="secondary" onClick={onClose}>
-            {t('sdui.periodChoice.cancel')}
+            {t('periodChoice.cancel')}
           </Button>
         </div>
       </div>

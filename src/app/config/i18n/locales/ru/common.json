@@ -573,15 +573,6 @@
       "turnoverByDays": "Обороты счёта {{code}} по дням",
       "turnoverByMonths": "Обороты счёта {{code}} по месяцам"
     },
-    "period": {
-      "quickLabel": "Быстрый период",
-      "currentMonth": "Текущий месяц",
-      "previousMonth": "Предыдущий месяц",
-      "currentQuarter": "Текущий квартал",
-      "previousQuarter": "Предыдущий квартал",
-      "currentYear": "Текущий год",
-      "previousYear": "Предыдущий год"
-    },
     "fill": "Заполнить",
     "clear": "Очистить",
     "refresh": "Обновить",
@@ -755,49 +746,49 @@
   "universalDomain": {
     "cardUnavailable": "Карточка записи пока недоступна — тип ещё не переведён на новую форму"
   },
+  "periodChoice": {
+    "title": "Выберите период",
+    "button": "…",
+    "from": "С",
+    "to": "По",
+    "clear": "Очистить период",
+    "showStandard": "Показать стандартные периоды",
+    "showCalendar": "Показать календарь",
+    "select": "Выбрать",
+    "cancel": "Отмена",
+    "previousYears": "Предыдущий год",
+    "nextYears": "Следующий год",
+    "quarter": "{{quarter}} квартал",
+    "months": [
+      "Янв",
+      "Фев",
+      "Мар",
+      "Апр",
+      "Май",
+      "Июн",
+      "Июл",
+      "Авг",
+      "Сен",
+      "Окт",
+      "Ноя",
+      "Дек"
+    ],
+    "standard": {
+      "today": "Сегодня",
+      "thisWeek": "Эта неделя",
+      "lastWeek": "Прошлая неделя",
+      "thisMonth": "Этот месяц",
+      "lastMonth": "Прошлый месяц",
+      "thisQuarter": "Этот квартал",
+      "lastQuarter": "Прошлый квартал",
+      "thisHalfYear": "Это полугодие",
+      "lastHalfYear": "Прошлое полугодие",
+      "thisYear": "Этот год",
+      "lastYear": "Прошлый год",
+      "sinceYearStart": "С начала года"
+    }
+  },
   "sdui": {
-    "periodChoice": {
-      "title": "Выберите период",
-      "button": "…",
-      "from": "С",
-      "to": "По",
-      "clear": "Очистить период",
-      "showStandard": "Показать стандартные периоды",
-      "showCalendar": "Показать календарь",
-      "select": "Выбрать",
-      "cancel": "Отмена",
-      "previousYears": "Предыдущий год",
-      "nextYears": "Следующий год",
-      "quarter": "{{quarter}} квартал",
-      "months": [
-        "Янв",
-        "Фев",
-        "Мар",
-        "Апр",
-        "Май",
-        "Июн",
-        "Июл",
-        "Авг",
-        "Сен",
-        "Окт",
-        "Ноя",
-        "Дек"
-      ],
-      "standard": {
-        "today": "Сегодня",
-        "thisWeek": "Эта неделя",
-        "lastWeek": "Прошлая неделя",
-        "thisMonth": "Этот месяц",
-        "lastMonth": "Прошлый месяц",
-        "thisQuarter": "Этот квартал",
-        "lastQuarter": "Прошлый квартал",
-        "thisHalfYear": "Это полугодие",
-        "lastHalfYear": "Прошлое полугодие",
-        "thisYear": "Этот год",
-        "lastYear": "Прошлый год",
-        "sinceYearStart": "С начала года"
-      }
-    },
     "conflict": {
       "staleRevision": "Синхронизирую...",
       "sessionNotFound": "Сессия истекла, переоткрываю...",

@@ -1,39 +1,30 @@
-import { useState, type FC } from 'react'
-import { useTranslation } from 'react-i18next'
+import type { FC } from 'react'
 
-import { Button } from '@/shared/ui/buttons'
+import { PeriodChoiceButton } from '@/shared/ui/period-choice'
+import type { PeriodRange } from '@/shared/lib/utils/period-choice'
 
 import { useSduiDispatch } from '../../../../lib/dispatch'
 import {
   useBindingValue,
   useSduiSession,
 } from '../../../../lib/sdui-session-context'
-import {
-  normalizePeriod,
-  type PeriodChoiceProps,
-  type PeriodRange,
-} from '../../../../lib/utils/period-choice'
-import { PeriodChoiceDialog } from './period-choice-dialog'
+import type { PeriodChoiceProps } from '../../../../lib/utils/period-choice-props'
 
-interface PeriodChoiceButtonProps {
+interface PeriodChoiceNodeButtonProps {
   choice: PeriodChoiceProps
   disabled?: boolean
 }
 
-export const PeriodChoiceButton: FC<PeriodChoiceButtonProps> = ({
+export const PeriodChoiceNodeButton: FC<PeriodChoiceNodeButtonProps> = ({
   choice,
   disabled,
 }) => {
-  const { t } = useTranslation()
   const { setValue } = useSduiSession()
   const dispatch = useSduiDispatch()
   const from = useBindingValue(choice.fromNodeId) as string | undefined
   const to = useBindingValue(choice.toNodeId) as string | undefined
-  const [open, setOpen] = useState(false)
 
-  const apply = (period: PeriodRange) => {
-    const next = normalizePeriod(period)
-    setOpen(false)
+  const apply = (next: PeriodRange) => {
     setValue(choice.fromNodeId, next.from)
     setValue(choice.toNodeId, next.to)
     void dispatch({
@@ -45,28 +36,10 @@ export const PeriodChoiceButton: FC<PeriodChoiceButtonProps> = ({
   }
 
   return (
-    <>
-      <Button
-        variant="secondary"
-        className="h-12"
-        disabled={disabled}
-        title={t('sdui.periodChoice.title')}
-        aria-label={t('sdui.periodChoice.title')}
-        onClick={() => {
-          setOpen(true)
-        }}
-      >
-        {t('sdui.periodChoice.button')}
-      </Button>
-      {open && (
-        <PeriodChoiceDialog
-          initial={normalizePeriod({ from: from ?? '', to: to ?? '' })}
-          onSelect={apply}
-          onClose={() => {
-            setOpen(false)
-          }}
-        />
-      )}
-    </>
+    <PeriodChoiceButton
+      period={{ from: from ?? '', to: to ?? '' }}
+      onChange={apply}
+      disabled={disabled}
+    />
   )
 }

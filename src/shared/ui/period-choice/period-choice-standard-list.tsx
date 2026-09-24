@@ -7,7 +7,7 @@ import {
   STANDARD_PERIODS,
   standardPeriod,
   type PeriodRange,
-} from '../../../../lib/utils/period-choice'
+} from '@/shared/lib/utils/period-choice'
 
 interface PeriodChoiceStandardListProps {
   period: PeriodRange
@@ -43,7 +43,7 @@ export const PeriodChoiceStandardList: FC<PeriodChoiceStandardListProps> = ({
               onApply(range)
             }}
           >
-            {t(`sdui.periodChoice.standard.${code}`)}
+            {t(`periodChoice.standard.${code}`)}
           </button>
         )
       })}

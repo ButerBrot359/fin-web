@@ -12,7 +12,7 @@ import {
   quarterPeriod,
   yearPeriod,
   type PeriodRange,
-} from '../../../../lib/utils/period-choice'
+} from '@/shared/lib/utils/period-choice'
 
 const YEARS_SHOWN = 3
 const QUARTERS = [0, 1, 2, 3]
@@ -32,7 +32,7 @@ export const PeriodChoiceMonthGrid: FC<PeriodChoiceMonthGridProps> = ({
   onPick,
 }) => {
   const { t } = useTranslation()
-  const months: string[] = t('sdui.periodChoice.months', {
+  const months: string[] = t('periodChoice.months', {
     returnObjects: true,
   })
   const years = Array.from({ length: YEARS_SHOWN }, (_, i) => startYear + i)
@@ -46,7 +46,7 @@ export const PeriodChoiceMonthGrid: FC<PeriodChoiceMonthGridProps> = ({
       <Button
         variant="tertiary"
         size="small"
-        aria-label={t('sdui.periodChoice.previousYears')}
+        aria-label={t('periodChoice.previousYears')}
         startIcon={figmaIcons['arrow-left-small']}
         onClick={() => {
           onStartYearChange(startYear - 1)
@@ -70,7 +70,7 @@ export const PeriodChoiceMonthGrid: FC<PeriodChoiceMonthGridProps> = ({
               <div key={quarter} className="flex items-center gap-1">
                 <button
                   type="button"
-                  title={t('sdui.periodChoice.quarter', {
+                  title={t('periodChoice.quarter', {
                     quarter: QUARTER_LABELS[quarter],
                   })}
                   className="w-8 cursor-pointer rounded-sm py-1 text-caption text-ui-05 hover:bg-ui-04"
@@ -110,7 +110,7 @@ export const PeriodChoiceMonthGrid: FC<PeriodChoiceMonthGridProps> = ({
       <Button
         variant="tertiary"
         size="small"
-        aria-label={t('sdui.periodChoice.nextYears')}
+        aria-label={t('periodChoice.nextYears')}
         startIcon={figmaIcons['arrow-right-small']}
         onClick={() => {
           onStartYearChange(startYear + 1)

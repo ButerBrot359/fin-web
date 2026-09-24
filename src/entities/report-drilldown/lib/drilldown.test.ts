@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   DRILLDOWN_URL_KEY,
+  accountCodeOf,
   buildDrilldownTargets,
   resolveDrilldownKinds,
   type DrilldownRow,
@@ -216,5 +217,15 @@ describe('buildDrilldownTargets — параметры целевых отчёт
     expect(targets).toHaveLength(1)
     expect(targets[0].reportCode).toBe('OtchetPoProvodkam')
     expect(targets[0].params.get('Schet')).toBe('99')
+  })
+})
+
+describe('accountCodeOf', () => {
+  it('берёт код счёта из представления «код, наименование», как подписи меню 1С', () => {
+    expect(accountCodeOf({ groupValue: '5200, Финансовый результат' })).toBe(
+      '5200'
+    )
+    expect(accountCodeOf({ groupValue: '1316' })).toBe('1316')
+    expect(accountCodeOf(undefined)).toBe('')
   })
 })

@@ -7,6 +7,7 @@ import { CircularProgress, Typography } from '@mui/material'
 import { apiService } from '@/shared/api/api'
 import { Button } from '@/shared/ui/buttons'
 import {
+  accountCodeOf,
   resolveDrilldownKinds,
   type DrilldownRow,
   type DrilldownTargetKind,
@@ -208,12 +209,13 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
       }
     : null
 
+  const accountCode = accountCodeOf(accountRow)
   const targetLabel = (kind: DrilldownTargetKind): string =>
     kind === 'osvPoSchetu' ||
     kind === 'analizScheta' ||
     kind === 'turnoverByDays' ||
     kind === 'turnoverByMonths'
-      ? `${t(`reportalt.drilldown.${kind}`)} ${accountRow?.groupValue ?? ''}`.trim()
+      ? t(`reportalt.drilldown.${kind}`, { code: accountCode }).trim()
       : t(`reportalt.drilldown.${kind}`)
 
   const etalonKinds = drilldownOptions
@@ -238,7 +240,7 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
       key: kind,
       label:
         kind === 'accountCard'
-          ? `${t('osv.accountCard')} ${accountRow?.groupValue ?? ''}`.trim()
+          ? `${t('osv.accountCard')} ${accountCode}`.trim()
           : targetLabel(kind),
       onSelect: () => {
         handleDrilldown(targetRow, kind)
@@ -246,9 +248,15 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
     })
   }
 
+  const openValue =
+    menuRowRef != null && menuRowRef === accountRowRef
+      ? accountCode
+      : typeof menuRowLabel === 'string'
+        ? menuRowLabel
+        : ''
   const openLabel =
-    typeof menuRowLabel === 'string' && menuRowLabel !== ''
-      ? `${t('osv.openElement')} «${menuRowLabel}»`
+    openValue !== ''
+      ? `${t('osv.openElement')} «${openValue}»`
       : t('osv.openElement')
 
   const rowMenuActions: ReportRowMenuAction[] = !drilldownCommand

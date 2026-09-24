@@ -568,10 +568,10 @@
       "accountCard": "Шот карточкасы",
       "subkontoCard": "Субконто карточкасы",
       "postingsReport": "Жазбалар бойынша есеп",
-      "osvPoSchetu": "Шот бойынша айналым-сальдо",
-      "analizScheta": "Шот талдауы",
-      "turnoverByDays": "Шот айналымдары күндер бойынша",
-      "turnoverByMonths": "Шот айналымдары айлар бойынша"
+      "osvPoSchetu": "{{code}} шоты бойынша айналым-сальдо",
+      "analizScheta": "{{code}} шотының талдауы",
+      "turnoverByDays": "{{code}} шотының айналымдары күндер бойынша",
+      "turnoverByMonths": "{{code}} шотының айналымдары айлар бойынша"
     },
     "period": {
       "quickLabel": "Жылдам кезең",

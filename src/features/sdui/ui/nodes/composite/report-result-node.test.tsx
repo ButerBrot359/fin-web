@@ -57,7 +57,8 @@ interface GatewayImplStub {
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (k: string) => k,
+    t: (k: string, o?: { code?: string }) =>
+      o?.code != null ? `${k} ${o.code}` : k,
     i18n: { language: 'ru' },
   }),
 }))
@@ -357,7 +358,7 @@ describe('ReportResultNode', () => {
   it('ОСВ: у строки-счёта меню эталона — ОСВ по счёту, карточка, анализ, обороты по месяцам и по дням', () => {
     const accountRow = {
       groupCode: 'Schet',
-      groupValue: '3100',
+      groupValue: '3100, Краткосрочная кредиторская задолженность',
       rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 99 },
     }
     useInfiniteQuery.mockReturnValue({

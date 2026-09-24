@@ -17,6 +17,7 @@ import { LedgerTable } from './ledger-table'
 import { TreeTable } from './tree-table'
 import { ReportHeaderBlocks } from './report-header-blocks'
 import { ReportSignatures } from './report-signatures'
+import { ReportNoteLines } from './report-note-lines'
 
 /** Настройки вкладки «Оформление» (проброс из панели настроек отчёта). */
 export interface ReportResultAppearance {
@@ -207,6 +208,7 @@ export const ReportResultView = ({
               : []
         }
       />
+      <ReportNoteLines lines={result.noteLines} />
     </div>
   )
 }

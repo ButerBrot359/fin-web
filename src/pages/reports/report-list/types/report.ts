@@ -426,6 +426,7 @@ export interface ReportResultDto {
   footerBlock?: ReportFormSignatureDto
   /** Подписи бланка, когда их несколько (приказные формы 4-09 и 4-20 подписывают двое). */
   footerBlocks?: ReportFormSignatureDto[]
+  noteLines?: string[]
   /**
    * Коды измерений-группировок, рисуемых «этажами» (1С-«Ведомость»): их подписи
    * идут стопкой в шапке, а значения — полосами-бэндами по телу (colspan по

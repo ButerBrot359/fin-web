@@ -84,5 +84,6 @@ export const rasshifrovkaKletki = (
   if (organizatsiyaId != null) {
     params.set('Organizatsiya', String(organizatsiyaId))
   }
+  params.set('TolkoGrazhdaneRK', 'true')
   return { reportCode: REGISTR_IPN_SN, params }
 }

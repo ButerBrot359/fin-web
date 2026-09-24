@@ -55,6 +55,15 @@ export interface MenuSettingsOption {
   name: string
 }
 
+/** Пресет «поделиться конфигурацией меню» (решение владельца 25.09). */
+export interface MenuPreset {
+  id: number
+  name: string
+  authorName: string | null
+  mine: boolean
+  updatedAt: string
+}
+
 interface MenuSettingsResponse {
   patch: MenuSettingsPatch
 }
@@ -137,4 +146,38 @@ export const menuSettingsApi = {
         ApiResponse<MenuSettingsOption[]>
       >({ url: '/api/menu-settings/users', signal })
       .then(unwrap),
+
+  // Пресеты: публикация — от своего имени, каталог — по пересечению ролей,
+  // применение = обычный PUT патча пресета в личный слой применившего.
+  publishPreset: (
+    name: string,
+    patch: MenuSettingsPatch
+  ): Promise<MenuPreset> =>
+    apiService
+      .post<ApiResponse<MenuPreset>>({
+        url: '/api/menu-settings/presets',
+        data: { name, patch },
+      })
+      .then(unwrap),
+
+  presets: (signal?: AbortSignal): Promise<MenuPreset[]> =>
+    apiService
+      .get<
+        ApiResponse<MenuPreset[]>
+      >({ url: '/api/menu-settings/presets', signal })
+      .then(unwrap),
+
+  presetPatch: (id: number): Promise<MenuSettingsPatch> =>
+    apiService
+      .get<ApiResponse<MenuSettingsResponse>>({
+        url: `/api/menu-settings/presets/${String(id)}`,
+      })
+      .then(unwrap)
+      .then((data) => data.patch),
+
+  deletePreset: async (id: number): Promise<void> => {
+    await apiService.delete({
+      url: `/api/menu-settings/presets/${String(id)}`,
+    })
+  },
 }

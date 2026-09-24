@@ -13,6 +13,7 @@ import { Button } from '@/shared/ui/buttons'
 
 import { menuSettingsApi, type MenuScope } from '../../api/menu-settings-api'
 import { useMenuSettingsEditor } from '../../lib/menu-settings/use-menu-settings-editor'
+import { PresetsDialog, SharePresetDialog } from './menu-preset-dialogs'
 import { MenuScopeSelect } from './menu-scope-select'
 import { MenuStructureTree } from './menu-structure-tree'
 
@@ -34,6 +35,8 @@ export const MenuSettingsEditor: FC<MenuSettingsEditorProps> = ({
   const { t } = useTranslation()
   const [scope, setScope] = useState<MenuScope>(initialScope ?? { kind: 'my' })
   const [confirmReset, setConfirmReset] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [presetsOpen, setPresetsOpen] = useState(false)
 
   const { data: me } = useQuery({
     queryKey: ['menu-settings-me'],
@@ -68,6 +71,26 @@ export const MenuSettingsEditor: FC<MenuSettingsEditorProps> = ({
         )}
       </div>
       <div className="flex items-center justify-end gap-2">
+        {/* Пресеты (решение владельца 25.09): доступны каждому — обмен личными
+            конфигурациями меню; применение пишет только в личный слой. */}
+        <Button
+          variant="secondary"
+          disabled={editor.structure == null}
+          onClick={() => {
+            setPresetsOpen(true)
+          }}
+        >
+          {t('sdui.menuSettings.presetsTitle')}
+        </Button>
+        <Button
+          variant="secondary"
+          disabled={editor.structure == null}
+          onClick={() => {
+            setShareOpen(true)
+          }}
+        >
+          {t('sdui.menuSettings.shareTitle')}
+        </Button>
         <Button
           variant="secondary"
           disabled={editor.busy || editor.structure == null}
@@ -86,6 +109,21 @@ export const MenuSettingsEditor: FC<MenuSettingsEditorProps> = ({
           {t('sdui.menuSettings.save')}
         </Button>
       </div>
+      <SharePresetDialog
+        open={shareOpen}
+        onClose={() => {
+          setShareOpen(false)
+        }}
+        patch={editor.draftPatch()}
+      />
+      <PresetsDialog
+        open={presetsOpen}
+        onClose={() => {
+          setPresetsOpen(false)
+        }}
+        busy={editor.busy}
+        onApply={editor.applyPreset}
+      />
       <Dialog
         open={confirmReset}
         onClose={() => {

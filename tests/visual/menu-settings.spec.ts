@@ -127,6 +127,33 @@ test('настройка модулей: вкладка, раскрытие, т�
       success: true,
     },
     'PUT /api/menu-settings/global': { data: { patch: {} }, success: true },
+    'PUT /api/menu-settings/my': { data: { patch: {} }, success: true },
+    'GET /api/menu-settings/presets': {
+      data: [
+        {
+          id: 5,
+          name: 'Меню кассира',
+          authorName: 'Коллега',
+          mine: false,
+          updatedAt: '2026-09-25T10:00:00',
+        },
+      ],
+      success: true,
+    },
+    'GET /api/menu-settings/presets/5': {
+      data: { patch: { 'module:BankiIKassy': { hidden: true } } },
+      success: true,
+    },
+    'POST /api/menu-settings/presets': {
+      data: {
+        id: 6,
+        name: 'Мой набор',
+        authorName: 'Тест',
+        mine: true,
+        updatedAt: '2026-09-25T10:00:00',
+      },
+      success: true,
+    },
   })
   page.on('request', (req) => {
     if (req.method() === 'PUT' && req.url().includes('/api/menu-settings/')) {
@@ -194,6 +221,29 @@ test('настройка модулей: вкладка, раскрытие, т�
       // Дубль кода схлопывается в одну запись с последней позицией.
       'element:BankiIKassy/kassa/ESF': { order: 3 },
     },
+  })
+
+  // Пресеты: публикация текущего черновика под именем.
+  await page.getByRole('button', { name: 'Поделиться' }).click()
+  await page.getByLabel('Название пресета').fill('Мой набор')
+  const publish = page.waitForRequest(
+    (r) =>
+      r.method() === 'POST' && r.url().includes('/api/menu-settings/presets')
+  )
+  await page.getByRole('button', { name: 'Опубликовать' }).click()
+  const publishReq = await publish
+  expect(publishReq.postDataJSON()).toMatchObject({ name: 'Мой набор' })
+
+  // Каталог: применение чужого пресета уходит PUT'ом в ЛИЧНЫЙ слой.
+  await page.getByRole('button', { name: 'Пресеты' }).click()
+  await expect(page.getByText('Меню кассира')).toBeVisible()
+  const applyPut = page.waitForRequest(
+    (r) => r.method() === 'PUT' && r.url().includes('/api/menu-settings/my')
+  )
+  await page.getByRole('button', { name: 'Применить' }).click()
+  const applied = await applyPut
+  expect(applied.postDataJSON()).toEqual({
+    patch: { 'module:BankiIKassy': { hidden: true } },
   })
 
   expect(pageErrors, `pageerror: ${pageErrors.join('\n')}`).toEqual([])

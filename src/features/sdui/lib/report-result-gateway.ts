@@ -19,7 +19,8 @@ export interface ReportResultGatewayImpl {
       row: unknown,
       ancestors: unknown[],
       position: { top: number; left: number },
-      zone: 'label' | 'value'
+      zone: 'label' | 'value',
+      trigger: 'dblclick' | 'contextmenu'
     ) => void
   }>
   // Панель настроек отчёта (опц., §19.1): полностью реализуется на app-слое

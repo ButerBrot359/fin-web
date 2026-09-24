@@ -145,11 +145,12 @@ const SheetView = ({
   onVyborOblasti,
 }: SheetViewProps) => {
   const stroki = useMemo(() => razmetka(sheet), [sheet])
+  const shirinaLista = sheet.columnWidths.reduce((sum, w) => sum + w, 0)
   return (
     <div className="overflow-x-auto">
       <table
         className="border-collapse bg-white"
-        style={{ tableLayout: 'fixed', width: 'max-content' }}
+        style={{ tableLayout: 'fixed', width: `${String(shirinaLista)}px` }}
       >
         <colgroup>
           {sheet.columnWidths.map((width, i) => (

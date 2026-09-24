@@ -41,6 +41,10 @@ const DesignConstructorPage = lazyNamed(
   () => import('@/pages/admin/design-constructor'),
   'DesignConstructorPage'
 )
+const MenuSettingsPage = lazyNamed(
+  () => import('@/pages/admin/menu-settings'),
+  'MenuSettingsPage'
+)
 const InactivityLocksPage = lazyNamed(
   () => import('@/pages/inactivity-locks'),
   'InactivityLocksPage'
@@ -102,6 +106,8 @@ export const AppRoutes = () => {
             path="/admin/design-constructor"
             element={<DesignConstructorPage />}
           />
+          {/* Конструктор меню (SCRUM-426): слои настройки сайдбара и разделов модулей. */}
+          <Route path="/admin/menu-settings" element={<MenuSettingsPage />} />
           {/*
             Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект
             navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.

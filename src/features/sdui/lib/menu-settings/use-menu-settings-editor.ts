@@ -88,7 +88,20 @@ export function useMenuSettingsEditor(scope: MenuScope) {
     onSuccess: invalidateMenus,
   })
 
-  const busy = saveMutation.isPending || resetMutation.isPending
+  // Применение пресета: его патч целиком замещает ЛИЧНЫЙ слой применившего —
+  // чужие настройки и админские уровни не трогаются (решение владельца 25.09).
+  const applyPresetMutation = useMutation({
+    mutationFn: async (presetId: number) => {
+      const patch = await menuSettingsApi.presetPatch(presetId)
+      await menuSettingsApi.putPatch({ kind: 'my' }, patch)
+    },
+    onSuccess: invalidateMenus,
+  })
+
+  const busy =
+    saveMutation.isPending ||
+    resetMutation.isPending ||
+    applyPresetMutation.isPending
 
   return {
     structure,
@@ -105,6 +118,10 @@ export function useMenuSettingsEditor(scope: MenuScope) {
     },
     save: saveMutation.mutate,
     reset: resetMutation.mutate,
+    applyPreset: applyPresetMutation.mutate,
+    /** Текущий черновик как патч — для публикации пресета. */
+    draftPatch: () =>
+      structure == null || draft == null ? {} : buildPatch(structure, draft),
   }
 }
 

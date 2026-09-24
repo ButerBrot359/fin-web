@@ -756,6 +756,48 @@
     "cardUnavailable": "Карточка записи пока недоступна — тип ещё не переведён на новую форму"
   },
   "sdui": {
+    "periodChoice": {
+      "title": "Выберите период",
+      "button": "…",
+      "from": "С",
+      "to": "По",
+      "clear": "Очистить период",
+      "showStandard": "Показать стандартные периоды",
+      "showCalendar": "Показать календарь",
+      "select": "Выбрать",
+      "cancel": "Отмена",
+      "previousYears": "Предыдущий год",
+      "nextYears": "Следующий год",
+      "quarter": "{{quarter}} квартал",
+      "months": [
+        "Янв",
+        "Фев",
+        "Мар",
+        "Апр",
+        "Май",
+        "Июн",
+        "Июл",
+        "Авг",
+        "Сен",
+        "Окт",
+        "Ноя",
+        "Дек"
+      ],
+      "standard": {
+        "today": "Сегодня",
+        "thisWeek": "Эта неделя",
+        "lastWeek": "Прошлая неделя",
+        "thisMonth": "Этот месяц",
+        "lastMonth": "Прошлый месяц",
+        "thisQuarter": "Этот квартал",
+        "lastQuarter": "Прошлый квартал",
+        "thisHalfYear": "Это полугодие",
+        "lastHalfYear": "Прошлое полугодие",
+        "thisYear": "Этот год",
+        "lastYear": "Прошлый год",
+        "sinceYearStart": "С начала года"
+      }
+    },
     "conflict": {
       "staleRevision": "Синхронизирую...",
       "sessionNotFound": "Сессия истекла, переоткрываю...",

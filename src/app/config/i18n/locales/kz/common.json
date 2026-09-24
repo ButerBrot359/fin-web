@@ -756,6 +756,48 @@
     "cardUnavailable": "Жазба карточкасы әзірше қолжетімсіз — түр жаңа пішінге әлі көшірілмеген"
   },
   "sdui": {
+    "periodChoice": {
+      "title": "Кезеңді таңдаңыз",
+      "button": "…",
+      "from": "Бастап",
+      "to": "Дейін",
+      "clear": "Кезеңді тазалау",
+      "showStandard": "Стандартты кезеңдерді көрсету",
+      "showCalendar": "Күнтізбені көрсету",
+      "select": "Таңдау",
+      "cancel": "Болдырмау",
+      "previousYears": "Алдыңғы жыл",
+      "nextYears": "Келесі жыл",
+      "quarter": "{{quarter}} тоқсан",
+      "months": [
+        "Қаң",
+        "Ақп",
+        "Нау",
+        "Сәу",
+        "Мам",
+        "Мау",
+        "Шіл",
+        "Там",
+        "Қыр",
+        "Қаз",
+        "Қар",
+        "Жел"
+      ],
+      "standard": {
+        "today": "Бүгін",
+        "thisWeek": "Осы апта",
+        "lastWeek": "Өткен апта",
+        "thisMonth": "Осы ай",
+        "lastMonth": "Өткен ай",
+        "thisQuarter": "Осы тоқсан",
+        "lastQuarter": "Өткен тоқсан",
+        "thisHalfYear": "Осы жарты жыл",
+        "lastHalfYear": "Өткен жарты жыл",
+        "thisYear": "Осы жыл",
+        "lastYear": "Өткен жыл",
+        "sinceYearStart": "Жыл басынан"
+      }
+    },
     "conflict": {
       "staleRevision": "Синхрондау...",
       "sessionNotFound": "Сессия мерзімі аяқталды, қайта ашу...",

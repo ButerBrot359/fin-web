@@ -105,6 +105,13 @@ const mergeReportPages = (
   return { ...pages[0], rows: pages.flatMap((p) => p.rows ?? []) }
 }
 
+interface RowMenuState {
+  position: ReportRowMenuPosition
+  row: unknown
+  ancestors: unknown[]
+  zone: 'label' | 'value'
+}
+
 /**
  * SCRUM-291 K2 — REPORT_RESULT: результат отчёта reportalt рисует легаси
  * `features/report-result-view` через gateway (SDUI не импортирует легаси
@@ -185,134 +192,138 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
 
   // Меню действий по строке (1С открывает его и двойным кликом, и правой
   // кнопкой) — состав пунктов знает нода: расшифровка живёт в её пропсах.
-  const [rowMenu, setRowMenu] = useState<{
-    position: ReportRowMenuPosition
-    row: unknown
-    ancestors: unknown[]
-    zone: 'label' | 'value'
-  } | null>(null)
+  const [rowMenu, setRowMenu] = useState<RowMenuState | null>(null)
 
-  const menuRow = rowMenu?.row ?? null
-  const menuRowRef = (menuRow as { rowRef?: unknown } | null)?.rowRef
-  const menuRowLabel = (menuRow as { groupValue?: unknown } | null)?.groupValue
-  const menuOnLabel = rowMenu?.zone === 'label'
-  // Корень ветки — строка-счёт: её ссылка ведёт в «Карточку счёта», как в 1С.
-  // Клик по самой строке-счёту даёт пустых предков, поэтому цепочка включает саму строку.
-  const menuChain = (
-    rowMenu ? [...rowMenu.ancestors, rowMenu.row] : []
-  ) as DrilldownRow[]
-  // Корень ветки — строка-счёт: её ссылка ведёт в «Карточку счёта», как в 1С.
-  const accountRow = menuChain.find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
-  const accountRowRef = accountRow?.rowRef ?? null
+  const rowMenuActionsFor = (
+    menu: RowMenuState | null
+  ): ReportRowMenuAction[] => {
+    const menuRow = menu?.row ?? null
+    const menuRowRef = (menuRow as { rowRef?: unknown } | null)?.rowRef
+    const menuRowLabel = (menuRow as { groupValue?: unknown } | null)
+      ?.groupValue
+    const menuOnLabel = menu?.zone === 'label'
+    // Корень ветки — строка-счёт: её ссылка ведёт в «Карточку счёта», как в 1С.
+    // Клик по самой строке-счёту даёт пустых предков, поэтому цепочка включает саму строку.
+    const menuChain = (
+      menu ? [...menu.ancestors, menu.row] : []
+    ) as DrilldownRow[]
+    // Корень ветки — строка-счёт: её ссылка ведёт в «Карточку счёта», как в 1С.
+    const accountRow = menuChain.find(
+      (r) => r.rowRef?.domain === 'ACCOUNT_PLAN'
+    )
+    const accountRowRef = accountRow?.rowRef ?? null
 
-  // Эталон 1С (БухгалтерскиеОтчетыВызовСервера.ПолучитьПараметрыРасшифровкиОтчета):
-  // у строки ОСВ меню из пяти переходов в другие отчёты по тому же счёту, а не один
-  // «Открыть». Состав переходов по отчётам знает общий модуль расшифровки — он же
-  // обслуживает легаси-экран, чтобы правило жило в одном месте.
-  const appliedPeriod = drilldownPeriod(source?.body)
-  const drilldownOptions = rowMenu
-    ? {
-        reportCode: reportCode ?? '',
-        chain: menuChain,
-        accountRow,
-        valueRow: menuChain[menuChain.length - 1],
-        from: appliedPeriod?.from,
-        to: appliedPeriod?.to,
-      }
-    : null
+    // Эталон 1С (БухгалтерскиеОтчетыВызовСервера.ПолучитьПараметрыРасшифровкиОтчета):
+    // у строки ОСВ меню из пяти переходов в другие отчёты по тому же счёту, а не один
+    // «Открыть». Состав переходов по отчётам знает общий модуль расшифровки — он же
+    // обслуживает легаси-экран, чтобы правило жило в одном месте.
+    const appliedPeriod = drilldownPeriod(source?.body)
+    const drilldownOptions = menu
+      ? {
+          reportCode: reportCode ?? '',
+          chain: menuChain,
+          accountRow,
+          valueRow: menuChain[menuChain.length - 1],
+          from: appliedPeriod?.from,
+          to: appliedPeriod?.to,
+        }
+      : null
 
-  const accountCode = accountCodeOf(accountRow)
-  const targetLabel = (kind: DrilldownTargetKind): string =>
-    kind === 'osvPoSchetu' ||
-    kind === 'analizScheta' ||
-    kind === 'turnoverByDays' ||
-    kind === 'turnoverByMonths'
-      ? t(`reportalt.drilldown.${kind}`, { code: accountCode }).trim()
-      : t(`reportalt.drilldown.${kind}`)
+    const accountCode = accountCodeOf(accountRow)
+    const targetLabel = (kind: DrilldownTargetKind): string =>
+      kind === 'osvPoSchetu' ||
+      kind === 'analizScheta' ||
+      kind === 'turnoverByDays' ||
+      kind === 'turnoverByMonths'
+        ? t(`reportalt.drilldown.${kind}`, { code: accountCode }).trim()
+        : t(`reportalt.drilldown.${kind}`)
 
-  const etalonKinds = drilldownOptions
-    ? resolveDrilldownKinds(drilldownOptions)
-    : []
-  // Отчёт, для которого состав меню в эталоне не задан, сохраняет прежний
-  // единственный переход «Карточка счёта» по корню ветки — иначе правка ОСВ
-  // отобрала бы работающий переход у отчётов вне этого разбора.
-  const kinds: DrilldownTargetKind[] =
-    etalonKinds.length > 0 || accountRowRef == null
-      ? etalonKinds
-      : ['accountCard']
+    const etalonKinds = drilldownOptions
+      ? resolveDrilldownKinds(drilldownOptions)
+      : []
+    // Отчёт, для которого состав меню в эталоне не задан, сохраняет прежний
+    // единственный переход «Карточка счёта» по корню ветки — иначе правка ОСВ
+    // отобрала бы работающий переход у отчётов вне этого разбора.
+    const kinds: DrilldownTargetKind[] =
+      etalonKinds.length > 0 || accountRowRef == null
+        ? etalonKinds
+        : ['accountCard']
 
-  const reportTargets: ReportRowMenuAction[] = []
-  for (const kind of kinds) {
-    // Переход по субконто адресует значение кликнутой строки, остальные — счёт
-    // корня ветки; строка без нужной ссылки пункта не даёт.
-    const targetRow = kind === 'subkontoCard' ? menuRow : accountRow
-    const targetRef = (targetRow as DrilldownRow | null)?.rowRef
-    if (targetRef == null) continue
-    reportTargets.push({
-      key: kind,
-      label:
-        kind === 'accountCard'
-          ? `${t('osv.accountCard')} ${accountCode}`.trim()
-          : targetLabel(kind),
-      onSelect: () => {
-        handleDrilldown(
-          targetRow,
-          kind,
-          kind === 'accountCard' ? subkontoChainOf(menuChain) : []
-        )
-      },
-    })
+    const reportTargets: ReportRowMenuAction[] = []
+    for (const kind of kinds) {
+      // Переход по субконто адресует значение кликнутой строки, остальные — счёт
+      // корня ветки; строка без нужной ссылки пункта не даёт.
+      const targetRow = kind === 'subkontoCard' ? menuRow : accountRow
+      const targetRef = (targetRow as DrilldownRow | null)?.rowRef
+      if (targetRef == null) continue
+      reportTargets.push({
+        key: kind,
+        label:
+          kind === 'accountCard'
+            ? `${t('osv.accountCard')} ${accountCode}`.trim()
+            : targetLabel(kind),
+        onSelect: () => {
+          handleDrilldown(
+            targetRow,
+            kind,
+            kind === 'accountCard' ? subkontoChainOf(menuChain) : []
+          )
+        },
+      })
+    }
+
+    const openValue =
+      menuRowRef != null && menuRowRef === accountRowRef
+        ? accountCode
+        : typeof menuRowLabel === 'string'
+          ? menuRowLabel
+          : ''
+    const openLabel =
+      openValue !== ''
+        ? `${t('osv.openElement')} «${openValue}»`
+        : t('osv.openElement')
+
+    return !drilldownCommand
+      ? []
+      : [
+          // Первый пункт эталона — «Открыть "<значение строки>"». Для субконто и
+          // документов объект открывает серверная команда (она же проверяет, что
+          // объект существует), для счёта карточки в SDUI нет вовсе
+          // (ScreenDispatchKind.ACCOUNT_PLAN → unsupported), поэтому счёт
+          // открывается легаси-страницей записи плана счетов.
+          ...(menuOnLabel && menuRowRef != null && menuRowRef !== accountRowRef
+            ? [
+                {
+                  key: 'open',
+                  label: openLabel,
+                  onSelect: () => {
+                    handleDrilldown(menuRow)
+                  },
+                },
+              ]
+            : []),
+          ...(menuOnLabel && menuRowRef != null && menuRowRef === accountRowRef
+            ? [
+                {
+                  key: 'open-account',
+                  label: openLabel,
+                  onSelect: () => {
+                    void navigate(
+                      kartochkaZapisiPlanaSchetov(
+                        location.pathname,
+                        accountRowRef.typeCode ?? '',
+                        accountRowRef.id
+                      )
+                    )
+                  },
+                },
+              ]
+            : []),
+          ...reportTargets,
+        ]
   }
 
-  const openValue =
-    menuRowRef != null && menuRowRef === accountRowRef
-      ? accountCode
-      : typeof menuRowLabel === 'string'
-        ? menuRowLabel
-        : ''
-  const openLabel =
-    openValue !== ''
-      ? `${t('osv.openElement')} «${openValue}»`
-      : t('osv.openElement')
-
-  const rowMenuActions: ReportRowMenuAction[] = !drilldownCommand
-    ? []
-    : [
-        // Первый пункт эталона — «Открыть "<значение строки>"». Для субконто и
-        // документов объект открывает серверная команда (она же проверяет, что
-        // объект существует), для счёта карточки в SDUI нет вовсе
-        // (ScreenDispatchKind.ACCOUNT_PLAN → unsupported), поэтому счёт
-        // открывается легаси-страницей записи плана счетов.
-        ...(menuOnLabel && menuRowRef != null && menuRowRef !== accountRowRef
-          ? [
-              {
-                key: 'open',
-                label: openLabel,
-                onSelect: () => {
-                  handleDrilldown(menuRow)
-                },
-              },
-            ]
-          : []),
-        ...(menuOnLabel && menuRowRef != null && menuRowRef === accountRowRef
-          ? [
-              {
-                key: 'open-account',
-                label: openLabel,
-                onSelect: () => {
-                  void navigate(
-                    kartochkaZapisiPlanaSchetov(
-                      location.pathname,
-                      accountRowRef.typeCode ?? '',
-                      accountRowRef.id
-                    )
-                  )
-                },
-              },
-            ]
-          : []),
-        ...reportTargets,
-      ]
+  const rowMenuActions = rowMenuActionsFor(rowMenu)
 
   const { data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteQuery({
@@ -432,9 +443,16 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
           onDrilldown={drilldownCommand ? handleDrilldown : undefined}
           onRowMenu={
             drilldownCommand
-              ? (row, ancestors, position, zone) => {
+              ? (row, ancestors, position, zone, trigger) => {
                   window.getSelection()?.removeAllRanges()
-                  setRowMenu({ row, ancestors, position, zone })
+                  const menu = { row, ancestors, position, zone }
+                  const actions = rowMenuActionsFor(menu)
+                  if (trigger === 'dblclick' && actions.length === 1) {
+                    setRowMenu(null)
+                    actions[0].onSelect()
+                    return
+                  }
+                  setRowMenu(menu)
                 }
               : undefined
           }

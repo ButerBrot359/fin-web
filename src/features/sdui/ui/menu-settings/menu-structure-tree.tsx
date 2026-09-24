@@ -30,6 +30,9 @@ export const MenuStructureTree: FC<MenuStructureTreeProps> = ({
   editor,
 }) => {
   const [expanded, setExpanded] = useState<string | null>(null)
+  // Секции — тоже аккордеон: «Администрирование» несёт 700+ ссылок, рендер
+  // всех разом замораживает вкладку (найдено на живом стенде 25.09).
+  const [expandedSection, setExpandedSection] = useState<string | null>(null)
   const [drag, setDrag] = useState<DragState | null>(null)
   const [dropKey, setDropKey] = useState<string | null>(null)
   const draft = editor.draft
@@ -136,20 +139,28 @@ export const MenuStructureTree: FC<MenuStructureTreeProps> = ({
             localized(section.nameRu, section.nameKz),
             section.effectiveHidden,
             {
-              children: (
-                <div className="ml-10 flex flex-col gap-1 py-1">
-                  {orderItems(section.key, section.elements).map(
-                    (element, elementIdx) =>
-                      row(
-                        `${element.key}#${String(elementIdx)}`,
-                        element.key,
-                        section.key,
-                        localized(element.nameRu, element.nameKz),
-                        element.effectiveHidden
-                      )
-                  )}
-                </div>
-              ),
+              expandable: section.elements.length > 0,
+              expanded: expandedSection === section.key,
+              onExpand: () => {
+                setExpandedSection(
+                  expandedSection === section.key ? null : section.key
+                )
+              },
+              children:
+                expandedSection === section.key ? (
+                  <div className="ml-10 flex flex-col gap-1 py-1">
+                    {orderItems(section.key, section.elements).map(
+                      (element, elementIdx) =>
+                        row(
+                          `${element.key}#${String(elementIdx)}`,
+                          element.key,
+                          section.key,
+                          localized(element.nameRu, element.nameKz),
+                          element.effectiveHidden
+                        )
+                    )}
+                  </div>
+                ) : null,
             }
           )
         )}

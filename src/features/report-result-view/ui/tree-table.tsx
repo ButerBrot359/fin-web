@@ -31,6 +31,7 @@ import {
   isRightAligned,
   resolveReportLang,
   indicatorSubLabels,
+  showsGrandTotal,
 } from '../lib/cell-helpers'
 import { buildHeadModel } from '../lib/head-model'
 import { ReportCell } from './report-cell'
@@ -158,11 +159,18 @@ const HEAD_OPTS = { parseLevelSep: true } as const
  * тёмно-зелёные без заливок; двухуровневая шапка через `groupTitleRu`.
  */
 /**
- * Роутер рендера дерева: при наличии `result.groupFloorCodes` — 1С-«Ведомость»
- * (группировки этажами + полосы-бэнды), иначе — обычное дерево-с-отступами (ОСВ).
+ * Роутер рендера дерева: при наличии `result.groupFloorCodes` и колонок деталей —
+ * 1С-«Ведомость» (группировки этажами + полосы-бэнды), иначе — обычное
+ * дерево-с-отступами (ОСВ).
  */
 export const TreeTable = (props: TreeTableProps) => {
-  if (props.result.groupFloorCodes && props.result.groupFloorCodes.length > 0) {
+  const hasFloors =
+    props.result.groupFloorCodes != null &&
+    props.result.groupFloorCodes.length > 0
+  const hasLeafColumns = props.columns.some(
+    (c) => c.role !== 'DIMENSION' && !isMeasure(c)
+  )
+  if (hasFloors && hasLeafColumns) {
     return <FloorTreeTable {...props} />
   }
   return <PlainTreeTable {...props} />
@@ -458,7 +466,7 @@ const PlainTreeTable = ({
             )
           })}
         </tbody>
-        {Object.keys(result.total).length > 0 && (
+        {showsGrandTotal(result.total, result.rows) && (
           <tfoot>
             <tr>
               <td className={tdBase}>
@@ -527,16 +535,13 @@ const FloorTreeTable = ({
     [columns]
   )
 
-  const hasLeafColumns = leafColumns.length > 0
-  const labelColSpan = Math.max(leafColumns.length, 1)
-
   // Двухэтажный заголовок детальных колонок (напр. «Дополнительные поля» над
   // «Единица измерения»): верхний ряд групп + нижний ряд титулов колонок группы.
   const leafHead = useMemo(() => {
     const model = buildHeadModel(leafColumns, { isKz, levels: 2, ...HEAD_OPTS })
     return {
       hasGroups: model.hasGroups,
-      leafRows: leafColumns.length === 0 ? 0 : model.hasGroups ? 2 : 1,
+      leafRows: model.hasGroups ? 2 : 1,
       topRow: model.topRow,
       subRow: model.leafRow,
     }
@@ -600,10 +605,10 @@ const FloorTreeTable = ({
 
   // Полоса-бэнд группировки: строка-узел дерева (есть дети) либо явный GROUP_HEADER.
   const isBandRow = (row: Row<ReportRowDto>): boolean =>
-    !hasLeafColumns ||
     row.getCanExpand() ||
     row.original.children.length > 0 ||
-    row.original.rowKind === 'GROUP_HEADER'
+    row.original.rowKind === 'GROUP_HEADER' ||
+    row.original.labelText != null
 
   // Ячейка бэнда (colspan по детальным колонкам): стрелка + отступ уровня + подпись.
   const renderBandCell = (row: Row<ReportRowDto>) => {
@@ -649,7 +654,6 @@ const FloorTreeTable = ({
     <div className="overflow-auto rounded-md border border-pending-gray-1">
       <table className="table-fixed border-collapse bg-white">
         <colgroup>
-          {!hasLeafColumns && <col style={{ width: TREE_COL_DEFAULT_PX }} />}
           {leafColumns.map((col) => (
             <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
           ))}
@@ -663,7 +667,10 @@ const FloorTreeTable = ({
             const title = col ? columnTitle(col, isKz) : code
             return (
               <tr key={`floor-${code}`}>
-                <th colSpan={labelColSpan} className={`${thBase} align-bottom`}>
+                <th
+                  colSpan={leafColumns.length}
+                  className={`${thBase} align-bottom`}
+                >
                   <Typography variant="body2" sx={thTextSx}>
                     {title}
                   </Typography>
@@ -701,7 +708,7 @@ const FloorTreeTable = ({
               </tr>
             )
           })}
-          {!hasLeafColumns ? null : leafHead.hasGroups ? (
+          {leafHead.hasGroups ? (
             <>
               <tr>
                 {leafHead.topRow.map((cell) => (
@@ -756,7 +763,10 @@ const FloorTreeTable = ({
                   key={row.id}
                   {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
                 >
-                  <td colSpan={labelColSpan} className={`${tdBase} align-top`}>
+                  <td
+                    colSpan={leafColumns.length}
+                    className={`${tdBase} align-top`}
+                  >
                     {renderBandCell(row)}
                   </td>
                   {measureColumns.map((m) => (
@@ -812,10 +822,10 @@ const FloorTreeTable = ({
             )
           })}
         </tbody>
-        {Object.keys(result.total).length > 0 && (
+        {showsGrandTotal(result.total, result.rows) && (
           <tfoot>
             <tr>
-              <td colSpan={labelColSpan} className={tdBase}>
+              <td colSpan={leafColumns.length} className={tdBase}>
                 <Typography
                   variant="body2"
                   sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}

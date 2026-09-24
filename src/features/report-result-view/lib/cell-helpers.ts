@@ -69,6 +69,12 @@ const HIGHLIGHT_ROW_KINDS = new Set<RowKind>([
 export const isHighlightRow = (rowKind?: RowKind): boolean =>
   rowKind != null && HIGHLIGHT_ROW_KINDS.has(rowKind)
 
+export const showsGrandTotal = (
+  total: Record<string, unknown>,
+  rows: readonly { rowKind?: RowKind }[]
+): boolean =>
+  Object.keys(total).length > 0 && !rows.some((r) => r.rowKind === 'TOTAL')
+
 /**
  * Является ли строка span-строкой (подпись labelText на первые колонки,
  * дальше значения). Строки-итоги БЕЗ labelText (напр. «Начальное сальдо»

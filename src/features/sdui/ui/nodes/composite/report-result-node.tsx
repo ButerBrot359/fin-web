@@ -8,6 +8,7 @@ import { apiService } from '@/shared/api/api'
 import { Button } from '@/shared/ui/buttons'
 import {
   accountCodeOf,
+  dimensionChainOf,
   resolveDrilldownKinds,
   subkontoChainOf,
   type DrilldownRow,
@@ -172,7 +173,8 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
   const handleDrilldown = (
     row: unknown,
     target?: DrilldownTargetKind,
-    subkonto: DrilldownSubkonto[] = []
+    subkonto: DrilldownSubkonto[] = [],
+    dimensions: DrilldownSubkonto[] = []
   ) => {
     if (!drilldownCommand) return
     const rowRef = (row as { rowRef?: unknown } | null)?.rowRef
@@ -183,9 +185,12 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
       // target — ключ перехода из меню эталона; маршрут и параметры целевого
       // отчёта собирает сервер (токен ?rp= умеет выпускать только он).
       value: target
-        ? subkonto.length > 0
-          ? { rowRef, target, subkonto }
-          : { rowRef, target }
+        ? {
+            rowRef,
+            target,
+            ...(subkonto.length > 0 ? { subkonto } : {}),
+            ...(dimensions.length > 0 ? { dimensions } : {}),
+          }
         : { rowRef },
     })
   }
@@ -266,7 +271,8 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
           handleDrilldown(
             targetRow,
             kind,
-            kind === 'accountCard' ? subkontoChainOf(menuChain) : []
+            kind === 'accountCard' ? subkontoChainOf(menuChain) : [],
+            dimensionChainOf(menuChain)
           )
         },
       })

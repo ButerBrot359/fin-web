@@ -4,6 +4,7 @@ import {
   DRILLDOWN_URL_KEY,
   accountCodeOf,
   buildDrilldownTargets,
+  dimensionChainOf,
   resolveDrilldownKinds,
   subkontoChainOf,
   type DrilldownRow,
@@ -249,5 +250,50 @@ describe('subkontoChainOf — субконто ветки для отбора к
 
   it('строка-счёт и корр. счёт субконто не дают', () => {
     expect(subkontoChainOf([accountRow, corrAccountRow])).toEqual([])
+  })
+})
+
+describe('dimensionChainOf — измерения ветки для отбора целевого отчёта', () => {
+  it('берёт строки измерений со ссылкой на справочник, без счёта и субконто', () => {
+    const orgRow: DrilldownRow = {
+      groupCode: 'Organizatsiya',
+      groupValue: 'Аппарат акима',
+      rowRef: { domain: 'DICTIONARY', typeCode: 'Organizatsii', id: 7 },
+    }
+
+    expect(
+      dimensionChainOf([accountRow, orgRow, dimensionRow, subkontoRow])
+    ).toEqual([{ groupCode: 'Organizatsiya', rowRef: orgRow.rowRef }])
+  })
+})
+
+describe('buildDrilldownTargets — параметры отчёта-источника', () => {
+  it('организация из параметров источника уходит в отбор, строка ветки её перекрывает', () => {
+    const fromParams = buildDrilldownTargets({
+      reportCode: 'OSVPoSchetu',
+      chain: [accountRow],
+      accountRow,
+      valueRow: accountRow,
+      parameters: { Organizatsiya: 30267 },
+    })
+    expect(fromParams).toEqual([])
+
+    const [osv] = buildDrilldownTargets({
+      reportCode: 'OborotnoSaldovayaVedomost',
+      chain: [accountRow],
+      accountRow,
+      valueRow: accountRow,
+      parameters: { Organizatsiya: 30267 },
+    })
+    expect(osv.params.get('Organizatsiya')).toBe('30267')
+
+    const [osvIzVetki] = buildDrilldownTargets({
+      reportCode: 'OborotnoSaldovayaVedomost',
+      chain: [accountRow, dimensionRow],
+      accountRow,
+      valueRow: dimensionRow,
+      parameters: { Organizatsiya: 30267 },
+    })
+    expect(osvIzVetki.params.get('Organizatsiya')).toBe('7')
   })
 })

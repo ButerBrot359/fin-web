@@ -514,6 +514,7 @@ export const ReportAltPage = () => {
           accountCode: accountRow.groupValue ?? '',
           from: appliedPeriod.from,
           to: appliedPeriod.to,
+          parameters: appliedBody?.parameters,
         }
       )
       void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
@@ -527,6 +528,7 @@ export const ReportAltPage = () => {
           valueRow: menu.row,
           from: appliedPeriod.from,
           to: appliedPeriod.to,
+          parameters: appliedBody?.parameters,
         }
       : null
 

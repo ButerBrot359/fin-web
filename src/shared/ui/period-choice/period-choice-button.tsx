@@ -2,6 +2,7 @@ import { useState, type FC } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/shared/ui/buttons'
+import { figmaIcons } from '@/shared/ui/icons'
 import {
   normalizePeriod,
   type PeriodRange,
@@ -29,16 +30,15 @@ export const PeriodChoiceButton: FC<PeriodChoiceButtonProps> = ({
     <>
       <Button
         variant="secondary"
-        className="h-12"
+        className="h-11 w-11 shrink-0 border border-ui-03"
         disabled={disabled}
         title={t('periodChoice.title')}
         aria-label={t('periodChoice.title')}
+        startIcon={figmaIcons['set-period']}
         onClick={() => {
           setOpen(true)
         }}
-      >
-        {t('periodChoice.button')}
-      </Button>
+      />
       {open && (
         <PeriodChoiceDialog
           initial={normalizePeriod(period)}

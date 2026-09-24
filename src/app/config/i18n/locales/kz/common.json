@@ -710,7 +710,11 @@
     "tryAgain": "Қайталап көру"
   },
   "workspaceTabs": {
-    "newTab": "Жаңа қойынды"
+    "newTab": "Жаңа қойынды",
+    "closeAll": "Барлығын жабу",
+    "closeAllDirtyTitle": "Барлық қойындыларды жабу керек пе?",
+    "closeAllDirtyMessage": "Кейбір қойындыларда сақталмаған өзгерістер бар ({{count}}). Жапқанда олар жоғалады.",
+    "closeAllDirtyConfirm": "Сақтамай жабу"
   },
   "aiConfig": {
     "title": "UI конфигурациясы",

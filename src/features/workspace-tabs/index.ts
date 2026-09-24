@@ -6,6 +6,10 @@ export { resolvePageType } from './lib/utils/resolve-page-type'
 export { decideTabSync } from './lib/utils/decide-tab-sync'
 export type { TabSyncAction, TabSyncInput } from './lib/utils/decide-tab-sync'
 export { performTabClose } from './lib/utils/perform-tab-close'
+export {
+  performCloseAllTabs,
+  findDirtyTabIds,
+} from './lib/utils/perform-close-all-tabs'
 export { performTabBack } from './lib/utils/perform-tab-back'
 export {
   onPanelTabClose,

@@ -44,6 +44,9 @@ export { useCustomizeFormStore } from './lib/customize-form/customize-form-store
 export { viewSettingsAdminApi } from './api/view-settings-admin-api'
 export type { ViewSettingsScreen } from './api/view-settings-admin-api'
 export { menuSettingsApi } from './api/menu-settings-api'
+export { MenuSettingsDialog } from './ui/menu-settings/menu-settings-dialog'
+export { MenuSettingsEditor } from './ui/menu-settings/menu-settings-editor'
+export { MenuSettingsEntryButton } from './ui/menu-settings/menu-settings-entry-button'
 export type {
   MenuPatchEntry,
   MenuScope,

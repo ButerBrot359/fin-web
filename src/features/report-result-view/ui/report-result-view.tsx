@@ -17,6 +17,7 @@ import { LedgerTable } from './ledger-table'
 import { TreeTable, type ReportRowClickZone } from './tree-table'
 import { ReportHeaderBlocks } from './report-header-blocks'
 import { ReportSignatures } from './report-signatures'
+import { ReportNoteLines } from './report-note-lines'
 
 /** Настройки вкладки «Оформление» (проброс из панели настроек отчёта). */
 export interface ReportResultAppearance {
@@ -200,6 +201,10 @@ export const ReportResultView = ({
       {/* Подписей у приказного бланка может быть несколько (казначейство и учреждение):
           список главнее одиночной подписи, как и в печати. Сторона `side` раскладывает их
           в две колонки — слева казначейство, справа учреждение (макет формы 4-20). */}
+      <ReportNoteLines
+        lines={result.footerLines}
+        testId="report-footer-lines"
+      />
       <ReportSignatures
         signatures={
           result.footerBlocks?.length
@@ -209,6 +214,7 @@ export const ReportResultView = ({
               : []
         }
       />
+      <ReportNoteLines lines={result.noteLines} />
     </div>
   )
 }

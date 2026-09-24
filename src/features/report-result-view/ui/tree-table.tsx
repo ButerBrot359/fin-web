@@ -527,13 +527,16 @@ const FloorTreeTable = ({
     [columns]
   )
 
+  const hasLeafColumns = leafColumns.length > 0
+  const labelColSpan = Math.max(leafColumns.length, 1)
+
   // Двухэтажный заголовок детальных колонок (напр. «Дополнительные поля» над
   // «Единица измерения»): верхний ряд групп + нижний ряд титулов колонок группы.
   const leafHead = useMemo(() => {
     const model = buildHeadModel(leafColumns, { isKz, levels: 2, ...HEAD_OPTS })
     return {
       hasGroups: model.hasGroups,
-      leafRows: model.hasGroups ? 2 : 1,
+      leafRows: leafColumns.length === 0 ? 0 : model.hasGroups ? 2 : 1,
       topRow: model.topRow,
       subRow: model.leafRow,
     }
@@ -597,6 +600,7 @@ const FloorTreeTable = ({
 
   // Полоса-бэнд группировки: строка-узел дерева (есть дети) либо явный GROUP_HEADER.
   const isBandRow = (row: Row<ReportRowDto>): boolean =>
+    !hasLeafColumns ||
     row.getCanExpand() ||
     row.original.children.length > 0 ||
     row.original.rowKind === 'GROUP_HEADER'
@@ -645,6 +649,7 @@ const FloorTreeTable = ({
     <div className="overflow-auto rounded-md border border-pending-gray-1">
       <table className="table-fixed border-collapse bg-white">
         <colgroup>
+          {!hasLeafColumns && <col style={{ width: TREE_COL_DEFAULT_PX }} />}
           {leafColumns.map((col) => (
             <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
           ))}
@@ -658,10 +663,7 @@ const FloorTreeTable = ({
             const title = col ? columnTitle(col, isKz) : code
             return (
               <tr key={`floor-${code}`}>
-                <th
-                  colSpan={leafColumns.length}
-                  className={`${thBase} align-bottom`}
-                >
+                <th colSpan={labelColSpan} className={`${thBase} align-bottom`}>
                   <Typography variant="body2" sx={thTextSx}>
                     {title}
                   </Typography>
@@ -699,7 +701,7 @@ const FloorTreeTable = ({
               </tr>
             )
           })}
-          {leafHead.hasGroups ? (
+          {!hasLeafColumns ? null : leafHead.hasGroups ? (
             <>
               <tr>
                 {leafHead.topRow.map((cell) => (
@@ -754,10 +756,7 @@ const FloorTreeTable = ({
                   key={row.id}
                   {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
                 >
-                  <td
-                    colSpan={leafColumns.length}
-                    className={`${tdBase} align-top`}
-                  >
+                  <td colSpan={labelColSpan} className={`${tdBase} align-top`}>
                     {renderBandCell(row)}
                   </td>
                   {measureColumns.map((m) => (
@@ -816,7 +815,7 @@ const FloorTreeTable = ({
         {Object.keys(result.total).length > 0 && (
           <tfoot>
             <tr>
-              <td colSpan={leafColumns.length} className={tdBase}>
+              <td colSpan={labelColSpan} className={tdBase}>
                 <Typography
                   variant="body2"
                   sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}

@@ -34,6 +34,7 @@ describe('Расшифровка клетки бланка', () => {
       JSON.stringify({ from: '2026-08-01', to: '2026-08-31' })
     )
     expect(target?.params.get('rr')).toBe('1')
+    expect(target?.params.get('TolkoGrazhdaneRK')).toBe('true')
   })
 
   it('клетки приложения 200.01 расшифровываются так же, как основной формы', () => {

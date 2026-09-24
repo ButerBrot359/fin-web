@@ -12,6 +12,7 @@ import {
 } from '@/shared/lib/utils/local-storage'
 
 import type { NodeProps } from '../../../types/view'
+import { MenuSettingsEntryButton } from '../../menu-settings/menu-settings-entry-button'
 import { SidebarLinkItem } from './sidebar-link-item'
 
 const STORAGE_KEY = 'sidebar-settings'
@@ -65,23 +66,27 @@ export const SidebarNode: FC<NodeProps> = ({ node }) => {
           ))}
         </ul>
       </nav>
-      <div
-        className={cn(
-          'mt-auto flex',
-          collapsed ? 'justify-center' : 'justify-end pr-2'
-        )}
-      >
-        <IconButton
-          onClick={toggle}
-          size="small"
-          aria-label={t('sidebar.toggleCollapse')}
-        >
-          {collapsed ? (
-            <ChevronRight className="text-ui-01" />
-          ) : (
-            <ChevronLeft className="text-ui-01" />
+      <div className="mt-auto flex flex-col gap-2">
+        {/* Вход «Настроить меню» — над сворачивалкой, для всех (SCRUM-426, 25.09). */}
+        <MenuSettingsEntryButton collapsed={collapsed} />
+        <div
+          className={cn(
+            'flex',
+            collapsed ? 'justify-center' : 'justify-end pr-2'
           )}
-        </IconButton>
+        >
+          <IconButton
+            onClick={toggle}
+            size="small"
+            aria-label={t('sidebar.toggleCollapse')}
+          >
+            {collapsed ? (
+              <ChevronRight className="text-ui-01" />
+            ) : (
+              <ChevronLeft className="text-ui-01" />
+            )}
+          </IconButton>
+        </div>
       </div>
     </aside>
   )

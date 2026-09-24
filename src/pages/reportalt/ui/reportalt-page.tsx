@@ -51,6 +51,7 @@ import {
   isFilled,
   isPeriod,
   normalizeBodyDates,
+  primenimyePriOtkrytii,
   serializeParams,
   type ParamValues,
   type PeriodValue,
@@ -152,8 +153,10 @@ export const ReportAltPage = () => {
     // сессии (см. param-draft.ts). URL главнее: он описывает таблицу на экране.
     const draft = readParamDraft(moduleCode)
     const next: ParamValues = {}
+    const poUmolchaniyu = new Set<string>()
     for (const param of meta.parameters) {
       const raw = initialParamRaw(param, searchParams.get(param.code), draft)
+      if (raw == null) poUmolchaniyu.add(param.code)
       next[param.code] =
         raw != null ? deserializeParam(raw, param) : defaultParamValue(param)
     }
@@ -161,7 +164,17 @@ export const ReportAltPage = () => {
 
     setValues(next)
     if (meta.parameters.some((p) => p.refreshesForm)) {
-      void refreshParamState(normalizeBodyDates(next, meta.parameters), null)
+      void refreshParamState(
+        normalizeBodyDates(next, meta.parameters),
+        null
+      ).then((state) => {
+        const vychislennye = primenimyePriOtkrytii(
+          state?.values ?? {},
+          poUmolchaniyu
+        )
+        if (Object.keys(vychislennye).length === 0) return
+        setValues((prev) => ({ ...prev, ...vychislennye }))
+      })
     }
   }, [meta, moduleCode, searchParams, refreshParamState])
 

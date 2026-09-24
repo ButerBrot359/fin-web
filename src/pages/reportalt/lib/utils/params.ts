@@ -163,3 +163,14 @@ export const isFilled = (
   if (typeof v === 'boolean') return true
   return v != null && v !== ''
 }
+
+export const primenimyePriOtkrytii = (
+  vychislennye: Record<string, unknown>,
+  poUmolchaniyu: ReadonlySet<string>
+): ParamValues => {
+  const out: ParamValues = {}
+  for (const [code, value] of Object.entries(vychislennye)) {
+    if (poUmolchaniyu.has(code)) out[code] = value as ReportAltParamValue
+  }
+  return out
+}

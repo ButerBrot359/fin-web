@@ -38,6 +38,19 @@ export const GRUPPA_NASTROEK = 'settings'
 
 export const isPeriod = (p: ReportAltParameterDto) => p.dataType === 'PERIOD'
 
+export const PERIODICHNOST_KVARTAL = 'QUARTER'
+
+export const kvartalnyyPeriod = (p: ReportAltParameterDto) =>
+  isPeriod(p) && p.periodicity === PERIODICHNOST_KVARTAL
+
+const currentQuarter = (): PeriodValue => {
+  const now = new Date()
+  const first = Math.floor(now.getMonth() / 3) * 3
+  const from = new Date(now.getFullYear(), first, 1)
+  const to = new Date(now.getFullYear(), first + 3, 0)
+  return { from: format(from, 'yyyy-MM-dd'), to: format(to, 'yyyy-MM-dd') }
+}
+
 const currentMonth = (): PeriodValue => {
   const now = new Date()
   const from = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -132,7 +145,7 @@ export const defaultParamValue = (
     case 'BOOLEAN':
       return false
     case 'PERIOD':
-      return currentMonth()
+      return kvartalnyyPeriod(param) ? currentQuarter() : currentMonth()
     default:
       // «Язык формы» (YazykFormy) должен всегда показывать выбранный язык
       // (в 1С по умолчанию «Русский»), а не стартовать пустым и молча

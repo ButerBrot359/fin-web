@@ -270,6 +270,7 @@ export interface ReportAltParameterDto {
   allowedValues?: ReportAltAllowedValue[]
   dependsOnParam?: { param: string; resolver: string }
   refreshesForm?: boolean
+  periodicity?: string
 }
 
 export interface ReportAltOptionsSource {

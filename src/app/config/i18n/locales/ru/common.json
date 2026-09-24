@@ -710,7 +710,11 @@
     "tryAgain": "Попробовать снова"
   },
   "workspaceTabs": {
-    "newTab": "Новая вкладка"
+    "newTab": "Новая вкладка",
+    "closeAll": "Закрыть все",
+    "closeAllDirtyTitle": "Закрыть все вкладки?",
+    "closeAllDirtyMessage": "В некоторых вкладках есть несохранённые изменения ({{count}}). При закрытии они будут потеряны.",
+    "closeAllDirtyConfirm": "Закрыть без сохранения"
   },
   "aiConfig": {
     "title": "UI конфигурация",

@@ -35,6 +35,18 @@ import {
 import { buildHeadModel } from '../lib/head-model'
 import { ReportCell } from './report-cell'
 
+export type ReportRowClickZone = 'label' | 'value'
+
+const VALUE_CELL_ATTR = 'data-report-cell'
+
+const clickZoneOf = (e: ReactMouseEvent): ReportRowClickZone =>
+  e.target instanceof Element &&
+  e.target.closest('td')?.getAttribute(VALUE_CELL_ATTR) === 'value'
+    ? 'value'
+    : 'label'
+
+const valueCellProps = { [VALUE_CELL_ATTR]: 'value' }
+
 interface TreeTableProps {
   result: ReportResultDto
   columns: ReportColumnDto[]
@@ -43,7 +55,8 @@ interface TreeTableProps {
   onRowDoubleClick?: (
     row: ReportRowDto,
     ancestors: ReportRowDto[],
-    event: ReactMouseEvent
+    event: ReactMouseEvent,
+    zone: ReportRowClickZone
   ) => void
   /**
    * Правый клик по строке — тот же набор действий, что и по двойному клику
@@ -53,7 +66,8 @@ interface TreeTableProps {
   onRowContextMenu?: (
     row: ReportRowDto,
     ancestors: ReportRowDto[],
-    event: ReactMouseEvent
+    event: ReactMouseEvent,
+    zone: ReportRowClickZone
   ) => void
 }
 
@@ -77,7 +91,8 @@ const rowInteraction = (
         onRowDoubleClick(
           row.original,
           row.getParentRows().map((p) => p.original),
-          e
+          e,
+          clickZoneOf(e)
         )
       }
     : undefined,
@@ -87,7 +102,8 @@ const rowInteraction = (
         onRowContextMenu(
           row.original,
           row.getParentRows().map((p) => p.original),
-          e
+          e,
+          clickZoneOf(e)
         )
       }
     : undefined,
@@ -421,6 +437,7 @@ const PlainTreeTable = ({
                 {bodyColumns.map((col) => (
                   <td
                     key={col.code}
+                    {...(isMeasure(col) ? valueCellProps : {})}
                     className={`${tdBase} align-top ${
                       isMeasure(col) || isRightAligned(col)
                         ? 'text-right tabular-nums'
@@ -746,6 +763,7 @@ const FloorTreeTable = ({
                   {measureColumns.map((m) => (
                     <td
                       key={m.code}
+                      {...valueCellProps}
                       className={`${tdBase} align-top text-right tabular-nums`}
                     >
                       <ReportCell
@@ -781,6 +799,7 @@ const FloorTreeTable = ({
                 {measureColumns.map((m) => (
                   <td
                     key={m.code}
+                    {...valueCellProps}
                     className={`${tdBase} align-top text-right tabular-nums`}
                   >
                     <ReportCell

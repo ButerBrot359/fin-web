@@ -14,7 +14,7 @@ import { formatReportTitle } from '../lib/format-title'
 import { FormView } from './form-view'
 import { SpreadsheetView } from './spreadsheet-view'
 import { LedgerTable } from './ledger-table'
-import { TreeTable } from './tree-table'
+import { TreeTable, type ReportRowClickZone } from './tree-table'
 import { ReportHeaderBlocks } from './report-header-blocks'
 import { ReportSignatures } from './report-signatures'
 import { ReportNoteLines } from './report-note-lines'
@@ -43,7 +43,8 @@ interface ReportResultViewProps {
   onRowDoubleClick?: (
     row: ReportRowDto,
     ancestors: ReportRowDto[],
-    event: ReactMouseEvent
+    event: ReactMouseEvent,
+    zone: ReportRowClickZone
   ) => void
   /** Значения клеток бланка, вписанные пользователем (layout=FORM с табличным документом). */
   blankValues?: Record<string, string>
@@ -60,7 +61,8 @@ interface ReportResultViewProps {
   onRowContextMenu?: (
     row: ReportRowDto,
     ancestors: ReportRowDto[],
-    event: ReactMouseEvent
+    event: ReactMouseEvent,
+    zone: ReportRowClickZone
   ) => void
 }
 

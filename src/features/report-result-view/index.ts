@@ -1,4 +1,5 @@
 export { ReportResultView } from './ui/report-result-view'
+export type { ReportRowClickZone } from './ui/tree-table'
 export { DocumentMovementsReportView } from './ui/document-movements-report-view'
 export {
   isDocumentMovementsReportResult,

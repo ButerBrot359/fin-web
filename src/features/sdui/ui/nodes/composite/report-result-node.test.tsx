@@ -47,7 +47,8 @@ interface GatewayImplStub {
     onRowMenu?: (
       row: unknown,
       ancestors: unknown[],
-      position: { top: number; left: number }
+      position: { top: number; left: number },
+      zone: 'label' | 'value'
     ) => void
   }>
   print?: (url: string, body: unknown) => Promise<void>
@@ -240,14 +241,20 @@ describe('ReportResultNode', () => {
       data: { pages: [{ reportCode: 'OSV', rows: [row] }] },
     })
     let openMenu:
-      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
       | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
         onRowMenu?: (
           r: unknown,
           a: unknown[],
-          p: { top: number; left: number }
+          p: { top: number; left: number },
+          z: 'label' | 'value'
         ) => void
       }) => {
         openMenu = props.onRowMenu
@@ -262,7 +269,7 @@ describe('ReportResultNode', () => {
     )
     expect(openMenu).toBeTypeOf('function')
     act(() => {
-      openMenu?.(row, [], { top: 10, left: 20 })
+      openMenu?.(row, [], { top: 10, left: 20 }, 'label')
     })
 
     fireEvent.click(screen.getByText('osv.openElement «ручка»'))
@@ -281,14 +288,20 @@ describe('ReportResultNode', () => {
       data: { pages: [{ reportCode: 'OSV', rows: [row] }] },
     })
     let openMenu:
-      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
       | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
         onRowMenu?: (
           r: unknown,
           a: unknown[],
-          p: { top: number; left: number }
+          p: { top: number; left: number },
+          z: 'label' | 'value'
         ) => void
       }) => {
         openMenu = props.onRowMenu
@@ -302,7 +315,7 @@ describe('ReportResultNode', () => {
       />
     )
     act(() => {
-      openMenu?.(row, [], { top: 10, left: 20 })
+      openMenu?.(row, [], { top: 10, left: 20 }, 'label')
     })
 
     expect(screen.queryByText(/osv.openElement/)).toBeNull()
@@ -322,14 +335,20 @@ describe('ReportResultNode', () => {
       data: { pages: [{ reportCode: 'OSV', rows: [accountRow] }] },
     })
     let openMenu:
-      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
       | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
         onRowMenu?: (
           r: unknown,
           a: unknown[],
-          p: { top: number; left: number }
+          p: { top: number; left: number },
+          z: 'label' | 'value'
         ) => void
       }) => {
         openMenu = props.onRowMenu
@@ -343,7 +362,7 @@ describe('ReportResultNode', () => {
       />
     )
     act(() => {
-      openMenu?.(subkontoRow, [accountRow], { top: 10, left: 20 })
+      openMenu?.(subkontoRow, [accountRow], { top: 10, left: 20 }, 'label')
     })
 
     fireEvent.click(screen.getByText('osv.accountCard 1316'))
@@ -372,14 +391,20 @@ describe('ReportResultNode', () => {
       data: { pages: [{ reportCode: 'OSVPoSchetu', rows: [accountRow] }] },
     })
     let openMenu:
-      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
       | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
         onRowMenu?: (
           r: unknown,
           a: unknown[],
-          p: { top: number; left: number }
+          p: { top: number; left: number },
+          z: 'label' | 'value'
         ) => void
       }) => {
         openMenu = props.onRowMenu
@@ -396,7 +421,7 @@ describe('ReportResultNode', () => {
       />
     )
     act(() => {
-      openMenu?.(fizlitsoRow, [accountRow], { top: 10, left: 20 })
+      openMenu?.(fizlitsoRow, [accountRow], { top: 10, left: 20 }, 'label')
     })
 
     fireEvent.click(screen.getByText('osv.accountCard 3241'))
@@ -412,6 +437,68 @@ describe('ReportResultNode', () => {
     })
   })
 
+  it('ОСВ по счёту: клик по сумме строки физлица даёт расшифровку, но не «Открыть» физлицо', () => {
+    const accountRow = {
+      groupCode: 'Schet',
+      groupValue:
+        '3241, Краткосрочная кредиторская задолженность работникам по оплате труда',
+      rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 99 },
+    }
+    const fizlitsoRow = {
+      groupCode: 'Subkonto1',
+      groupValue: 'Касымов Алмас Ержанович',
+      rowRef: { domain: 'DICTIONARY', typeCode: 'FizicheskieLitsa', id: 501 },
+    }
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSVPoSchetu', rows: [accountRow] }] },
+    })
+    let openMenu:
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
+      | undefined
+    getReportResultGateway.mockReturnValue({
+      Renderer: (props: {
+        onRowMenu?: (
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void
+      }) => {
+        openMenu = props.onRowMenu
+        return <div data-testid="renderer" />
+      },
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({
+          drilldownCommand: 'report.drilldown',
+          reportCode: 'OSVPoSchetu',
+        })}
+      />
+    )
+    act(() => {
+      openMenu?.(fizlitsoRow, [accountRow], { top: 10, left: 20 }, 'value')
+    })
+
+    expect(screen.queryByText(/osv.openElement/)).toBeNull()
+    expect(screen.getByText('osv.accountCard 3241')).toBeTruthy()
+
+    act(() => {
+      openMenu?.(fizlitsoRow, [accountRow], { top: 10, left: 20 }, 'label')
+    })
+
+    expect(
+      screen.getByText('osv.openElement «Касымов Алмас Ержанович»')
+    ).toBeTruthy()
+  })
+
   it('ОСВ: у строки-счёта меню эталона — ОСВ по счёту, карточка, анализ, обороты по месяцам и по дням', () => {
     const accountRow = {
       groupCode: 'Schet',
@@ -423,14 +510,20 @@ describe('ReportResultNode', () => {
       data: { pages: [{ rows: [accountRow] }] },
     })
     let openMenu:
-      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
       | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
         onRowMenu?: (
           r: unknown,
           a: unknown[],
-          p: { top: number; left: number }
+          p: { top: number; left: number },
+          z: 'label' | 'value'
         ) => void
       }) => {
         openMenu = props.onRowMenu
@@ -454,7 +547,7 @@ describe('ReportResultNode', () => {
       />
     )
     act(() => {
-      openMenu?.(accountRow, [], { top: 10, left: 20 })
+      openMenu?.(accountRow, [], { top: 10, left: 20 }, 'label')
     })
 
     expect(screen.getByText('osv.openElement «3100»')).toBeTruthy()
@@ -491,14 +584,20 @@ describe('ReportResultNode', () => {
       data: { pages: [{ reportCode: 'OSV', rows: [accountRow] }] },
     })
     let openMenu:
-      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
       | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
         onRowMenu?: (
           r: unknown,
           a: unknown[],
-          p: { top: number; left: number }
+          p: { top: number; left: number },
+          z: 'label' | 'value'
         ) => void
       }) => {
         openMenu = props.onRowMenu
@@ -512,7 +611,7 @@ describe('ReportResultNode', () => {
       />
     )
     act(() => {
-      openMenu?.(accountRow, [], { top: 10, left: 20 })
+      openMenu?.(accountRow, [], { top: 10, left: 20 }, 'label')
     })
 
     // Эталон первым пунктом даёт «Открыть "<счёт>"» — у нас это карточка записи

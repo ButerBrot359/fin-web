@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 
 import { MainPage } from '@/pages/main'
 
@@ -40,10 +40,6 @@ const AuditLogPage = lazyNamed(
 const DesignConstructorPage = lazyNamed(
   () => import('@/pages/admin/design-constructor'),
   'DesignConstructorPage'
-)
-const MenuSettingsPage = lazyNamed(
-  () => import('@/pages/admin/menu-settings'),
-  'MenuSettingsPage'
 )
 const InactivityLocksPage = lazyNamed(
   () => import('@/pages/inactivity-locks'),
@@ -106,8 +102,14 @@ export const AppRoutes = () => {
             path="/admin/design-constructor"
             element={<DesignConstructorPage />}
           />
-          {/* Конструктор меню (SCRUM-426): слои настройки сайдбара и разделов модулей. */}
-          <Route path="/admin/menu-settings" element={<MenuSettingsPage />} />
+          {/* Конструктор меню (SCRUM-426) живёт вкладкой в конструкторе дизайна;
+              старый адрес (и пункт меню «Настройка меню» из сида бэка) ведёт туда. */}
+          <Route
+            path="/admin/menu-settings"
+            element={
+              <Navigate to="/admin/design-constructor?tab=menu" replace />
+            }
+          />
           {/*
             Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект
             navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.

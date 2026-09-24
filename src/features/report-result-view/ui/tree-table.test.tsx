@@ -254,6 +254,53 @@ describe('TreeTable — этажи без колонок деталей (ОСВ)
   })
 })
 
+describe('TreeTable — строка «Итого» одна', () => {
+  const itogo: ReportRowDto = {
+    level: 0,
+    rowKind: 'TOTAL',
+    labelText: 'Итого',
+    cells: { OstatokKonechnyyDt: 150 },
+    children: [],
+  } as unknown as ReportRowDto
+
+  const sItogom = (extra: Partial<ReportResultDto>) =>
+    ({
+      ...result,
+      rows: [accountRow, itogo],
+      total: { OstatokKonechnyyDt: 150 },
+      ...extra,
+    }) as unknown as ReportResultDto
+
+  it('обычное дерево не дублирует итог, пришедший строкой', () => {
+    const { container } = render(
+      <TreeTable result={sItogom({})} columns={columns} />
+    )
+
+    expect(screen.getAllByText('Итого')).toHaveLength(1)
+    expect(container.querySelector('tfoot')).toBeNull()
+  })
+
+  it('этажное дерево не дублирует итог, пришедший строкой', () => {
+    const { container } = render(
+      <TreeTable
+        result={sItogom({ groupFloorCodes: ['Schet'] })}
+        columns={columns}
+      />
+    )
+
+    expect(screen.getAllByText('Итого')).toHaveLength(1)
+    expect(container.querySelector('tfoot')).toBeNull()
+  })
+
+  it('без итоговой строки общий итог выводится внизу', () => {
+    const { container } = render(
+      <TreeTable result={sItogom({ rows: [accountRow] })} columns={columns} />
+    )
+
+    expect(container.querySelector('tfoot')).not.toBeNull()
+  })
+})
+
 describe('TreeTable — условное оформление строки (эталон 1С)', () => {
   const stroka = (
     groupValue: string,

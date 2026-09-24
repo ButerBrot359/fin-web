@@ -31,6 +31,7 @@ import {
   isRightAligned,
   resolveReportLang,
   indicatorSubLabels,
+  showsGrandTotal,
 } from '../lib/cell-helpers'
 import { buildHeadModel } from '../lib/head-model'
 import { ReportCell } from './report-cell'
@@ -458,7 +459,7 @@ const PlainTreeTable = ({
             )
           })}
         </tbody>
-        {Object.keys(result.total).length > 0 && (
+        {showsGrandTotal(result.total, result.rows) && (
           <tfoot>
             <tr>
               <td className={tdBase}>
@@ -812,7 +813,7 @@ const FloorTreeTable = ({
             )
           })}
         </tbody>
-        {Object.keys(result.total).length > 0 && (
+        {showsGrandTotal(result.total, result.rows) && (
           <tfoot>
             <tr>
               <td colSpan={labelColSpan} className={tdBase}>

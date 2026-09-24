@@ -1,6 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react'
 
-import { isEditableTarget } from '../utils/table-hotkeys'
+import { isEditableTarget, isLetterKey } from '../utils/table-hotkeys'
 import { useFormSaveCommand } from './use-form-save-command'
 
 const ekranViden = (root: HTMLElement): boolean => {
@@ -21,7 +21,7 @@ export function useFormSaveHotkey(rootRef: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return
-      if (e.key.toLowerCase() !== 's' || e.defaultPrevented) return
+      if (!isLetterKey(e, 's') || e.defaultPrevented) return
       const root = rootRef.current
       if (root === null || !(e.target instanceof Element)) return
       const naFone =

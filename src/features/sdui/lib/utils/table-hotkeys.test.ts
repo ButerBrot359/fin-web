@@ -28,6 +28,7 @@ function makeHandlers(): TableHotkeyHandlers {
 function keyEvent(
   init: Partial<{
     key: string
+    code: string
     ctrlKey: boolean
     metaKey: boolean
     shiftKey: boolean
@@ -38,6 +39,7 @@ function keyEvent(
   const target = document.createElement(init.targetTag ?? 'div')
   return {
     key: init.key ?? '',
+    code: init.code ?? '',
     ctrlKey: init.ctrlKey ?? false,
     metaKey: init.metaKey ?? false,
     shiftKey: init.shiftKey ?? false,
@@ -48,6 +50,37 @@ function keyEvent(
 }
 
 describe('createTableHotkeysHandler (SCRUM-302)', () => {
+  it('русская раскладка: Ctrl+A/C/Z/S/F узнаются по физической клавише', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+    const nazhat = (key: string, code: string) => {
+      const e = keyEvent({ key, code, ctrlKey: true })
+      onKeyDown(e)
+      return e
+    }
+    const { preventDefault } = nazhat('ф', 'KeyA') as unknown as {
+      preventDefault: ReturnType<typeof vi.fn>
+    }
+    expect(preventDefault).toHaveBeenCalled()
+    nazhat('с', 'KeyC')
+    nazhat('я', 'KeyZ')
+    nazhat('ы', 'KeyS')
+    nazhat('а', 'KeyF')
+    expect(h.onSelectAll).toHaveBeenCalledTimes(1)
+    expect(h.onCopyToClipboard).toHaveBeenCalledTimes(1)
+    expect(h.onUndo).toHaveBeenCalledTimes(1)
+    expect(h.onSave).toHaveBeenCalledTimes(1)
+    expect(h.onFocusSearch).toHaveBeenCalledTimes(1)
+  })
+
+  it('латинская буква берётся как есть, даже если физическая клавиша другая', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+    onKeyDown(keyEvent({ key: 'a', code: 'KeyQ', ctrlKey: true }))
+    expect(h.onSelectAll).toHaveBeenCalledTimes(1)
+    expect(h.onClearSearch).not.toHaveBeenCalled()
+  })
+
   it('Insert/F9/Delete зовут add/copy/remove вне инпута', () => {
     const h = makeHandlers()
     const onKeyDown = createTableHotkeysHandler(h)

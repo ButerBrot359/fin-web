@@ -43,6 +43,14 @@ export function isEditableTarget(target: EventTarget | null): boolean {
   )
 }
 
+export function isLetterKey(
+  e: { key: string; code: string },
+  letter: string
+): boolean {
+  if (/^[a-z]$/i.test(e.key)) return e.key.toLowerCase() === letter
+  return e.code === `Key${letter.toUpperCase()}`
+}
+
 export function createTableHotkeysHandler(
   handlers: TableHotkeyHandlers
 ): (e: React.KeyboardEvent<HTMLElement>) => void {
@@ -53,22 +61,22 @@ export function createTableHotkeysHandler(
     // недопечатанной ячейки (её значение уже в снимке ТЧ, а поведение команды
     // записи дошлёт его перед сохранением). preventDefault безусловный — диалог
     // «Сохранить страницу» браузера в форме документа не нужен никогда.
-    if (ctrl && e.key.toLowerCase() === 's') {
+    if (ctrl && isLetterKey(e, 's')) {
       e.preventDefault()
       handlers.onSave?.()
       return
     }
-    if (ctrl && e.key.toLowerCase() === 'f') {
+    if (ctrl && isLetterKey(e, 'f')) {
       e.preventDefault()
       handlers.onFocusSearch()
       return
     }
-    if (e.ctrlKey && e.key.toLowerCase() === 'q') {
+    if (e.ctrlKey && isLetterKey(e, 'q')) {
       e.preventDefault()
       handlers.onClearSearch()
       return
     }
-    if (ctrl && e.key.toLowerCase() === 'a' && !e.shiftKey) {
+    if (ctrl && isLetterKey(e, 'a') && !e.shiftKey) {
       // В ячейке Ctrl+A обязан остаться «выделить текст» — иначе правка значения
       // превратилась бы в выделение всей таблицы.
       if (isEditableTarget(e.target)) return
@@ -76,14 +84,14 @@ export function createTableHotkeysHandler(
       handlers.onSelectAll?.()
       return
     }
-    if (ctrl && e.key.toLowerCase() === 'c' && !e.shiftKey) {
+    if (ctrl && isLetterKey(e, 'c') && !e.shiftKey) {
       // В ячейке Ctrl+C обязан остаться «скопировать текст» — как и Ctrl+A.
       if (isEditableTarget(e.target)) return
       e.preventDefault()
       handlers.onCopyToClipboard?.()
       return
     }
-    if (ctrl && e.key.toLowerCase() === 'z') {
+    if (ctrl && isLetterKey(e, 'z')) {
       // В ячейке Ctrl+Z — отмена ввода символов средствами инпута.
       if (isEditableTarget(e.target)) return
       e.preventDefault()

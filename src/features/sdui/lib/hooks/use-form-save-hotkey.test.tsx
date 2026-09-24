@@ -58,6 +58,11 @@ describe('useFormSaveHotkey (Ctrl+S из любого места формы)', (
     mockSave.mockReset()
   })
 
+  it('русская раскладка: Ctrl+Ы — та же клавиша S', () => {
+    ctrlS(pole, { key: 'ы', code: 'KeyS' })
+    expect(mockSave).toHaveBeenCalledTimes(1)
+  })
+
   it('Cmd+S на mac — то же', () => {
     ctrlS(pole, { ctrlKey: false, metaKey: true })
     expect(mockSave).toHaveBeenCalledTimes(1)

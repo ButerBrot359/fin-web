@@ -38,6 +38,7 @@ export const PeriodChoiceNodeButton: FC<PeriodChoiceNodeButtonProps> = ({
   return (
     <PeriodChoiceButton
       period={{ from: from ?? '', to: to ?? '' }}
+      quarterOnly={choice.quarterOnly}
       onChange={apply}
       disabled={disabled}
     />

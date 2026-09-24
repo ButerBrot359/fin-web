@@ -828,11 +828,9 @@ export const ReportAltPage = () => {
                 </div>
                 <PeriodChoiceButton
                   period={period}
+                  quarterOnly={kvartalnyy}
                   onChange={(next) => {
-                    setParamValue(
-                      param.code,
-                      kvartalnyy ? (kvartalDaty(next.from) ?? next) : next
-                    )
+                    setParamValue(param.code, next)
                   }}
                 />
               </div>

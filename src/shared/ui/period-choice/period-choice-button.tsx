@@ -11,12 +11,14 @@ import { PeriodChoiceDialog } from './period-choice-dialog'
 
 interface PeriodChoiceButtonProps {
   period: PeriodRange
+  quarterOnly?: boolean
   onChange: (period: PeriodRange) => void
   disabled?: boolean
 }
 
 export const PeriodChoiceButton: FC<PeriodChoiceButtonProps> = ({
   period,
+  quarterOnly,
   onChange,
   disabled,
 }) => {
@@ -40,6 +42,7 @@ export const PeriodChoiceButton: FC<PeriodChoiceButtonProps> = ({
       {open && (
         <PeriodChoiceDialog
           initial={normalizePeriod(period)}
+          quarterOnly={quarterOnly}
           onSelect={(next) => {
             setOpen(false)
             onChange(normalizePeriod(next))

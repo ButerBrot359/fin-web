@@ -49,6 +49,13 @@ export const STANDARD_PERIODS: StandardPeriodCode[] = [
   'sinceYearStart',
 ]
 
+export const QUARTER_STANDARD_PERIODS: StandardPeriodCode[] = [
+  'thisQuarter',
+  'lastQuarter',
+]
+
+export const QUARTER_LABELS = ['I', 'II', 'III', 'IV']
+
 export const EMPTY_PERIOD: PeriodRange = { from: '', to: '' }
 
 const day = (d: Date): string => format(d, 'yyyy-MM-dd')
@@ -152,4 +159,20 @@ export function initialStartYear(
   const anchor = period.to || period.from
   const year = anchor ? parseISO(anchor).getFullYear() : today.getFullYear()
   return year - 1
+}
+
+export function quarterOf(raw: string): PeriodRange | undefined {
+  const d = parseISO(raw)
+  if (!isValid(d)) return undefined
+  return quarterPeriod(d.getFullYear(), Math.floor(d.getMonth() / 3))
+}
+
+export function isQuarterInPeriod(
+  period: PeriodRange,
+  year: number,
+  quarter: number
+): boolean {
+  if (!period.from || !period.to) return false
+  const q = quarterPeriod(year, quarter)
+  return period.from <= q.from && q.to <= period.to
 }

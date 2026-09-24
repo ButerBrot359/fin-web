@@ -4,18 +4,20 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/shared/lib/utils/cn'
 
 import {
-  STANDARD_PERIODS,
   standardPeriod,
   type PeriodRange,
+  type StandardPeriodCode,
 } from '@/shared/lib/utils/period-choice'
 
 interface PeriodChoiceStandardListProps {
+  codes: StandardPeriodCode[]
   period: PeriodRange
   onPick: (picked: PeriodRange) => void
   onApply: (picked: PeriodRange) => void
 }
 
 export const PeriodChoiceStandardList: FC<PeriodChoiceStandardListProps> = ({
+  codes,
   period,
   onPick,
   onApply,
@@ -24,7 +26,7 @@ export const PeriodChoiceStandardList: FC<PeriodChoiceStandardListProps> = ({
 
   return (
     <div className="grid grid-cols-3 gap-1">
-      {STANDARD_PERIODS.map((code) => {
+      {codes.map((code) => {
         const range = standardPeriod(code)
         const selected = range.from === period.from && range.to === period.to
         return (

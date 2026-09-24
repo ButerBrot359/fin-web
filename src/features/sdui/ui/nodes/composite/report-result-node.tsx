@@ -443,11 +443,11 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
           onDrilldown={drilldownCommand ? handleDrilldown : undefined}
           onRowMenu={
             drilldownCommand
-              ? (row, ancestors, position, zone, trigger) => {
+              ? (row, ancestors, position, zone) => {
                   window.getSelection()?.removeAllRanges()
                   const menu = { row, ancestors, position, zone }
                   const actions = rowMenuActionsFor(menu)
-                  if (trigger === 'dblclick' && actions.length === 1) {
+                  if (actions.length === 1) {
                     setRowMenu(null)
                     actions[0].onSelect()
                     return

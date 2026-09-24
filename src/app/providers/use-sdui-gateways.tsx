@@ -67,8 +67,7 @@ export function useSduiGateways(): void {
                       top: event.clientY,
                       left: event.clientX,
                     },
-                    zone,
-                    'dblclick'
+                    zone
                   )
                 }
               : undefined
@@ -83,8 +82,7 @@ export function useSduiGateways(): void {
                       top: event.clientY,
                       left: event.clientX,
                     },
-                    zone,
-                    'contextmenu'
+                    zone
                   )
                 }
               : undefined

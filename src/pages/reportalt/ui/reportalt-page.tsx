@@ -23,7 +23,10 @@ import {
   vygruzkaFno,
   vygruzkaPrilozheniya,
 } from '../api/reportalt-api'
-import { rasshifrovkaKletki } from '../lib/utils/blank-drilldown'
+import {
+  otkazRasshifrovki,
+  rasshifrovkaKletki,
+} from '../lib/utils/blank-drilldown'
 import {
   pustyeOblastiStranits,
   stranitsaPrilozheniya,
@@ -597,6 +600,11 @@ export const ReportAltPage = () => {
    * налогового учёта по ИПН и СН за месяц её графы (графа 4 — за весь квартал).
    */
   const handleDecipher = () => {
+    const otkaz = otkazRasshifrovki(vybrannayaOblast)
+    if (otkaz) {
+      showToast('warning', t(`reportalt.decipherOtkaz.${otkaz}`))
+      return
+    }
     const organizatsiyaId = values.Organizatsiya
     const period = values.Period as PeriodValue | undefined
     const target = rasshifrovkaKletki(

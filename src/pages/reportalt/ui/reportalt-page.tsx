@@ -15,6 +15,7 @@ import {
   type ReportRowClickZone,
 } from '@/features/report-result-view'
 import { PageHeader } from '@/widgets/page-header'
+import { PeriodChoiceButton } from '@/shared/ui/period-choice'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { exportTableToXlsx } from '@/shared/lib/table-export'
@@ -70,8 +71,7 @@ import {
   readParamDraft,
   saveParamDraft,
 } from '../lib/utils/param-draft'
-import { KVARTALNYE_PRESETS, kvartalDaty } from '../lib/utils/period-presets'
-import { PeriodQuickSelect } from './period-quick-select'
+import { kvartalDaty } from '../lib/utils/kvartalnyy-period'
 import { ReportAltParamField } from './reportalt-param-field'
 import { ReportAltKnopkaMenyu } from './reportalt-knopka-menyu'
 import {
@@ -826,17 +826,15 @@ export const ReportAltPage = () => {
                     helperText={!period.to ? requiredHint : undefined}
                   />
                 </div>
-                {/* Быстрый период: месяц/квартал/год одним действием. Поля дат
-                    остаются рабочими — список только проставляет в них границы. */}
-                <div className="w-48">
-                  <PeriodQuickSelect
-                    period={period}
-                    presets={kvartalnyy ? KVARTALNYE_PRESETS : undefined}
-                    onChange={(next) => {
-                      setParamValue(param.code, next)
-                    }}
-                  />
-                </div>
+                <PeriodChoiceButton
+                  period={period}
+                  onChange={(next) => {
+                    setParamValue(
+                      param.code,
+                      kvartalnyy ? (kvartalDaty(next.from) ?? next) : next
+                    )
+                  }}
+                />
               </div>
             )
           }

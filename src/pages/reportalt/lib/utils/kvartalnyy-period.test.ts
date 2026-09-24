@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { kvartalDaty } from './period-presets'
+import { kvartalDaty } from './kvartalnyy-period'
 import { defaultParamValue, kvartalnyyPeriod, type PeriodValue } from './params'
 import type { ReportAltParameterDto } from '../../types/reportalt'
 

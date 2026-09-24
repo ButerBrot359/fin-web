@@ -573,15 +573,6 @@
       "turnoverByDays": "{{code}} шотының айналымдары күндер бойынша",
       "turnoverByMonths": "{{code}} шотының айналымдары айлар бойынша"
     },
-    "period": {
-      "quickLabel": "Жылдам кезең",
-      "currentMonth": "Ағымдағы ай",
-      "previousMonth": "Өткен ай",
-      "currentQuarter": "Ағымдағы тоқсан",
-      "previousQuarter": "Өткен тоқсан",
-      "currentYear": "Ағымдағы жыл",
-      "previousYear": "Өткен жыл"
-    },
     "fill": "Толтыру",
     "clear": "Тазарту",
     "refresh": "Жаңарту",
@@ -758,6 +749,48 @@
   },
   "universalDomain": {
     "cardUnavailable": "Жазба карточкасы әзірше қолжетімсіз — түр жаңа пішінге әлі көшірілмеген"
+  },
+  "periodChoice": {
+    "title": "Кезеңді таңдаңыз",
+    "button": "…",
+    "from": "Бастап",
+    "to": "Дейін",
+    "clear": "Кезеңді тазалау",
+    "showStandard": "Стандартты кезеңдерді көрсету",
+    "showCalendar": "Күнтізбені көрсету",
+    "select": "Таңдау",
+    "cancel": "Болдырмау",
+    "previousYears": "Алдыңғы жыл",
+    "nextYears": "Келесі жыл",
+    "quarter": "{{quarter}} тоқсан",
+    "months": [
+      "Қаң",
+      "Ақп",
+      "Нау",
+      "Сәу",
+      "Мам",
+      "Мау",
+      "Шіл",
+      "Там",
+      "Қыр",
+      "Қаз",
+      "Қар",
+      "Жел"
+    ],
+    "standard": {
+      "today": "Бүгін",
+      "thisWeek": "Осы апта",
+      "lastWeek": "Өткен апта",
+      "thisMonth": "Осы ай",
+      "lastMonth": "Өткен ай",
+      "thisQuarter": "Осы тоқсан",
+      "lastQuarter": "Өткен тоқсан",
+      "thisHalfYear": "Осы жарты жыл",
+      "lastHalfYear": "Өткен жарты жыл",
+      "thisYear": "Осы жыл",
+      "lastYear": "Өткен жыл",
+      "sinceYearStart": "Жыл басынан"
+    }
   },
   "sdui": {
     "conflict": {

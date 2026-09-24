@@ -89,7 +89,7 @@ import type {
 } from '../types/reportalt'
 
 /** Сообщение из тела ошибки бэка (api.ts бросает `error.response.data`). */
-const FORMY_VYGRUZKI_PO_BLANKU = ['200.00']
+const FORMY_VYGRUZKI_PO_BLANKU = ['200.00', '870.00']
 
 const errorMessage = (error: unknown): string | undefined => {
   if (typeof error === 'string') return error

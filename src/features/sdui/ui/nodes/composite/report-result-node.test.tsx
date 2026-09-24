@@ -355,6 +355,63 @@ describe('ReportResultNode', () => {
     })
   })
 
+  it('ОСВ по счёту: «Карточка счёта» со строки физлица уносит субконто ветки для отбора', () => {
+    const accountRow = {
+      groupCode: 'Schet',
+      groupValue:
+        '3241, Краткосрочная кредиторская задолженность работникам по оплате труда',
+      rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 99 },
+    }
+    const fizlitsoRow = {
+      groupCode: 'Subkonto1',
+      groupValue: 'Касымов Алмас Ержанович',
+      rowRef: { domain: 'DICTIONARY', typeCode: 'FizicheskieLitsa', id: 501 },
+    }
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSVPoSchetu', rows: [accountRow] }] },
+    })
+    let openMenu:
+      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | undefined
+    getReportResultGateway.mockReturnValue({
+      Renderer: (props: {
+        onRowMenu?: (
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number }
+        ) => void
+      }) => {
+        openMenu = props.onRowMenu
+        return <div data-testid="renderer" />
+      },
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({
+          drilldownCommand: 'report.drilldown',
+          reportCode: 'OSVPoSchetu',
+        })}
+      />
+    )
+    act(() => {
+      openMenu?.(fizlitsoRow, [accountRow], { top: 10, left: 20 })
+    })
+
+    fireEvent.click(screen.getByText('osv.accountCard 3241'))
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'report.drilldown',
+      value: {
+        rowRef: accountRow.rowRef,
+        target: 'accountCard',
+        subkonto: [{ groupCode: 'Subkonto1', rowRef: fizlitsoRow.rowRef }],
+      },
+    })
+  })
+
   it('ОСВ: у строки-счёта меню эталона — ОСВ по счёту, карточка, анализ, обороты по месяцам и по дням', () => {
     const accountRow = {
       groupCode: 'Schet',

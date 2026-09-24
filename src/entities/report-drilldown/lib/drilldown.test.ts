@@ -5,6 +5,7 @@ import {
   accountCodeOf,
   buildDrilldownTargets,
   resolveDrilldownKinds,
+  subkontoChainOf,
   type DrilldownRow,
 } from './drilldown'
 
@@ -227,5 +228,26 @@ describe('accountCodeOf', () => {
     )
     expect(accountCodeOf({ groupValue: '1316' })).toBe('1316')
     expect(accountCodeOf(undefined)).toBe('')
+  })
+})
+
+describe('subkontoChainOf — субконто ветки для отбора карточки счёта', () => {
+  it('берёт только строки субконто в порядке ветки, без счёта и измерений', () => {
+    const fizlitsoRow: DrilldownRow = {
+      groupCode: 'Subkonto2',
+      groupValue: 'Касымов Алмас Ержанович',
+      rowRef: { domain: 'DICTIONARY', typeCode: 'FizicheskieLitsa', id: 501 },
+    }
+
+    expect(
+      subkontoChainOf([accountRow, dimensionRow, subkontoRow, fizlitsoRow])
+    ).toEqual([
+      { groupCode: 'Subkonto1', rowRef: subkontoRow.rowRef },
+      { groupCode: 'Subkonto2', rowRef: fizlitsoRow.rowRef },
+    ])
+  })
+
+  it('строка-счёт и корр. счёт субконто не дают', () => {
+    expect(subkontoChainOf([accountRow, corrAccountRow])).toEqual([])
   })
 })

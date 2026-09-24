@@ -9,7 +9,9 @@ import { Button } from '@/shared/ui/buttons'
 import {
   accountCodeOf,
   resolveDrilldownKinds,
+  subkontoChainOf,
   type DrilldownRow,
+  type DrilldownSubkonto,
   type DrilldownTargetKind,
 } from '@/entities/report-drilldown'
 
@@ -160,7 +162,11 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
 
   // rowRef уходит эхом, как есть (§3.4) — не пересобирать, не дополнять.
   // Строка без rowRef не шлётся вовсе — проверка до dispatch.
-  const handleDrilldown = (row: unknown, target?: DrilldownTargetKind) => {
+  const handleDrilldown = (
+    row: unknown,
+    target?: DrilldownTargetKind,
+    subkonto: DrilldownSubkonto[] = []
+  ) => {
     if (!drilldownCommand) return
     const rowRef = (row as { rowRef?: unknown } | null)?.rowRef
     if (rowRef == null) return
@@ -169,7 +175,11 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
       command: drilldownCommand,
       // target — ключ перехода из меню эталона; маршрут и параметры целевого
       // отчёта собирает сервер (токен ?rp= умеет выпускать только он).
-      value: target ? { rowRef, target } : { rowRef },
+      value: target
+        ? subkonto.length > 0
+          ? { rowRef, target, subkonto }
+          : { rowRef, target }
+        : { rowRef },
     })
   }
 
@@ -243,7 +253,11 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
           ? `${t('osv.accountCard')} ${accountCode}`.trim()
           : targetLabel(kind),
       onSelect: () => {
-        handleDrilldown(targetRow, kind)
+        handleDrilldown(
+          targetRow,
+          kind,
+          kind === 'accountCard' ? subkontoChainOf(menuChain) : []
+        )
       },
     })
   }

@@ -59,21 +59,31 @@ export function useSduiGateways(): void {
           onDrilldown={onDrilldown}
           onRowDoubleClick={
             onRowMenu
-              ? (row, ancestors, event) => {
-                  onRowMenu(row, ancestors, {
-                    top: event.clientY,
-                    left: event.clientX,
-                  })
+              ? (row, ancestors, event, zone) => {
+                  onRowMenu(
+                    row,
+                    ancestors,
+                    {
+                      top: event.clientY,
+                      left: event.clientX,
+                    },
+                    zone
+                  )
                 }
               : undefined
           }
           onRowContextMenu={
             onRowMenu
-              ? (row, ancestors, event) => {
-                  onRowMenu(row, ancestors, {
-                    top: event.clientY,
-                    left: event.clientX,
-                  })
+              ? (row, ancestors, event, zone) => {
+                  onRowMenu(
+                    row,
+                    ancestors,
+                    {
+                      top: event.clientY,
+                      left: event.clientX,
+                    },
+                    zone
+                  )
                 }
               : undefined
           }

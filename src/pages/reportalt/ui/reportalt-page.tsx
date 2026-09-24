@@ -10,7 +10,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Button, Typography } from '@mui/material'
 
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
-import { ReportResultView } from '@/features/report-result-view'
+import {
+  ReportResultView,
+  type ReportRowClickZone,
+} from '@/features/report-result-view'
 import { PageHeader } from '@/widgets/page-header'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -445,11 +448,14 @@ export const ReportAltPage = () => {
     position: ReportAltMenuPosition
     row: ReportAltRowDto
     ancestors: ReportAltRowDto[]
+    zone: ReportRowClickZone
   } | null>(null)
 
   const menuRow = rowMenu?.row ?? null
   const openRef =
-    menuRow?.rowRef && menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
+    rowMenu?.zone === 'label' &&
+    menuRow?.rowRef &&
+    menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
       ? menuRow.rowRef
       : null
   const openLabel = openRef
@@ -991,11 +997,12 @@ export const ReportAltPage = () => {
                     return
                   openRowRef(row.rowRef)
                 }}
-                onRowDoubleClick={(row, ancestors, event) => {
+                onRowDoubleClick={(row, ancestors, event, zone) => {
                   setRowMenu({
                     position: { top: event.clientY, left: event.clientX },
                     row,
                     ancestors,
+                    zone,
                   })
                 }}
               />

@@ -25,6 +25,7 @@ import {
   saveReportAlt,
   vygruzkaFno,
   vygruzkaPrilozheniya,
+  vygruzkaXml,
 } from '../api/reportalt-api'
 import {
   otkazRasshifrovki,
@@ -88,6 +89,8 @@ import type {
 } from '../types/reportalt'
 
 /** Сообщение из тела ошибки бэка (api.ts бросает `error.response.data`). */
+const FORMY_VYGRUZKI_PO_BLANKU = ['200.00']
+
 const errorMessage = (error: unknown): string | undefined => {
   if (typeof error === 'string') return error
   if (error != null && typeof error === 'object') {
@@ -601,6 +604,27 @@ export const ReportAltPage = () => {
       !periodValue?.from
     ) {
       showToast('warning', t('reportalt.exportXmlUnavailable'))
+      return
+    }
+    if (FORMY_VYGRUZKI_PO_BLANKU.includes(kodFormy)) {
+      if (!appliedBody) {
+        showToast('warning', t('reportalt.exportXmlUnavailable'))
+        return
+      }
+      void vygruzkaXml(moduleCode, appliedBody)
+        .then((res) => {
+          const ssylka = document.createElement('a')
+          ssylka.href = URL.createObjectURL(res.data)
+          ssylka.download = `${kodFormy}.xml`
+          ssylka.click()
+        })
+        .catch((e: unknown) => {
+          showToast(
+            'error',
+            t('reportalt.exportXmlUnavailable'),
+            errorMessage(e)
+          )
+        })
       return
     }
     void vygruzkaFno(kodFormy, organizatsiyaId, periodValue.from, {

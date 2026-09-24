@@ -3,7 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { notifyViewSettingsChanged } from '@/shared/lib/design-settings/design-settings-events'
 
-import { menuSettingsApi, type MenuScope } from '../../api/menu-settings-api'
+import {
+  menuSettingsApi,
+  type MenuScope,
+  type MenuStructure,
+} from '../../api/menu-settings-api'
 import {
   buildPatch,
   seedDraft,

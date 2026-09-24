@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 
 import { buildCommonEffectDeps, type EffectDepsCtx } from './build-effect-deps'
+import { consumeFreshFormInstance } from './fresh-form-instance'
 
 vi.mock('@/shared/api/api', () => ({
   apiService: { get: vi.fn(), post: vi.fn() },
@@ -42,5 +43,29 @@ describe('invalidateLists', () => {
     ]) {
       expect(keys).toContain(key)
     }
+  })
+})
+
+describe('openRouteInNewTab', () => {
+  it('переход в отчёт начинает новый экземпляр формы: открытая вкладка отчёта не отдаёт старые параметры', () => {
+    const { ctx } = makeCtx()
+    const route =
+      '/modules/Otchety/reportalt/KartochkaScheta?rp=r1.eyJwYXJhbWV0ZXJzIjp7fX0'
+
+    buildCommonEffectDeps(ctx).openRouteInNewTab(route)
+
+    expect(ctx.navigate).toHaveBeenCalledWith(route)
+    expect(
+      consumeFreshFormInstance('/modules/Otchety/reportalt/KartochkaScheta')
+    ).toBe(true)
+  })
+
+  it('переход на карточку существующего документа черновик вкладки не сбрасывает', () => {
+    const { ctx } = makeCtx()
+    const route = '/modules/Buhgalteriya/document/SchetKOplate/42'
+
+    buildCommonEffectDeps(ctx).openRouteInNewTab(route)
+
+    expect(consumeFreshFormInstance(route)).toBe(false)
   })
 })

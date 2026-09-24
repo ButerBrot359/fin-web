@@ -142,11 +142,14 @@ test('настройка модулей: вкладка, раскрытие, т�
   // Дерево загрузилось.
   await expect(page.getByText('Банк и касса')).toBeVisible({ timeout: 10000 })
 
-  // Раскрытие модуля кликом по строке.
+  // Раскрытие модуля кликом по строке; элементы — за вторым аккордеоном секции
+  // (Администрирование несёт 700+ ссылок — всё разом не рендерим).
   await page.getByRole('button', { name: 'Раскрыть: Банк и касса' }).click()
   await expect(page.getByText('Касса', { exact: true })).toBeVisible({
     timeout: 5000,
   })
+  await expect(page.getByText('Приходный кассовый ордер')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Раскрыть: Касса' }).click()
   await expect(page.getByText('Приходный кассовый ордер')).toBeVisible()
 
   // Дубли кода из сида рендерятся по одному разу каждый — ровно 2 строки.

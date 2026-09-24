@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { periodRasshifrovki, rasshifrovkaKletki } from './blank-drilldown'
+import {
+  otkazRasshifrovki,
+  periodRasshifrovki,
+  rasshifrovkaKletki,
+} from './blank-drilldown'
 
 const KVARTAL = { from: '2026-07-01', to: '2026-09-30' }
 
@@ -30,6 +34,7 @@ describe('Расшифровка клетки бланка', () => {
       JSON.stringify({ from: '2026-08-01', to: '2026-08-31' })
     )
     expect(target?.params.get('rr')).toBe('1')
+    expect(target?.params.get('TolkoGrazhdaneRK')).toBe('true')
   })
 
   it('клетки приложения 200.01 расшифровываются так же, как основной формы', () => {
@@ -46,5 +51,26 @@ describe('Расшифровка клетки бланка', () => {
 
   it('без периода расшифровка недоступна — не из чего строить отбор', () => {
     expect(rasshifrovkaKletki('s_200_00_001_1', 1, null)).toBeNull()
+  })
+
+  it('строки только для индивидуального предпринимателя у юрлица не расшифровываются', () => {
+    for (const oblast of [
+      's_200_00_004_1',
+      's_200_00_007_4',
+      's_200_00_009_2',
+      's_200_01_009_3',
+      's_200_01_015_1',
+    ]) {
+      expect(otkazRasshifrovki(oblast)).toBe('tolkoIP')
+      expect(rasshifrovkaKletki(oblast, 1, KVARTAL)).toBeNull()
+    }
+    expect(otkazRasshifrovki('s_200_00_005_1')).toBeNull()
+    expect(otkazRasshifrovki('s_200_01_013_1')).toBeNull()
+  })
+
+  it('клетка вне расшифровываемых строк получает отказ «не поддерживается»', () => {
+    expect(otkazRasshifrovki('Руководитель')).toBe('nePodderzhivaetsya')
+    expect(otkazRasshifrovki('s_200_02_001_1')).toBe('nePodderzhivaetsya')
+    expect(otkazRasshifrovki(null)).toBeNull()
   })
 })

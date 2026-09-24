@@ -13,6 +13,7 @@ interface PeriodQuickSelectProps {
   period: PeriodValue
   onChange: (period: PeriodValue) => void
   disabled?: boolean
+  presets?: PeriodPresetCode[]
 }
 
 /**
@@ -27,9 +28,11 @@ export const PeriodQuickSelect = ({
   period,
   onChange,
   disabled,
+  presets = PERIOD_PRESETS,
 }: PeriodQuickSelectProps) => {
   const { t } = useTranslation()
-  const selected = matchPeriodPreset(period) ?? ''
+  const match = matchPeriodPreset(period)
+  const selected = match && presets.includes(match) ? match : ''
 
   return (
     <TextField
@@ -45,7 +48,7 @@ export const PeriodQuickSelect = ({
         onChange(periodPresetRange(code))
       }}
     >
-      {PERIOD_PRESETS.map((code) => (
+      {presets.map((code) => (
         <MenuItem key={code} value={code}>
           {t(`reportalt.period.${code}`)}
         </MenuItem>

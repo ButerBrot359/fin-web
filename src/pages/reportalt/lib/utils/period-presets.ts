@@ -21,6 +21,11 @@ export const PERIOD_PRESETS: PeriodPresetCode[] = [
   'previousYear',
 ]
 
+export const KVARTALNYE_PRESETS: PeriodPresetCode[] = [
+  'currentQuarter',
+  'previousQuarter',
+]
+
 const day = (d: Date): string => format(d, 'yyyy-MM-dd')
 
 /** Границы месяца, в который попадает `year`/`month` (month — 0-based, как в Date). */
@@ -71,6 +76,12 @@ export function periodPresetRange(
     case 'previousYear':
       return yearRange(year - 1)
   }
+}
+
+export const kvartalDaty = (raw: string): PeriodValue | undefined => {
+  const d = parseISO(raw)
+  if (!isValid(d)) return undefined
+  return quarterRange(d.getFullYear(), d.getMonth())
 }
 
 /**

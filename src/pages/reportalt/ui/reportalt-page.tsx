@@ -26,7 +26,10 @@ import {
   vygruzkaFno,
   vygruzkaPrilozheniya,
 } from '../api/reportalt-api'
-import { rasshifrovkaKletki } from '../lib/utils/blank-drilldown'
+import {
+  otkazRasshifrovki,
+  rasshifrovkaKletki,
+} from '../lib/utils/blank-drilldown'
 import {
   pustyeOblastiStranits,
   stranitsaPrilozheniya,
@@ -54,6 +57,7 @@ import {
   deserializeParam,
   isFilled,
   isPeriod,
+  kvartalnyyPeriod,
   normalizeBodyDates,
   primenimyePriOtkrytii,
   serializeParams,
@@ -66,6 +70,7 @@ import {
   readParamDraft,
   saveParamDraft,
 } from '../lib/utils/param-draft'
+import { KVARTALNYE_PRESETS, kvartalDaty } from '../lib/utils/period-presets'
 import { PeriodQuickSelect } from './period-quick-select'
 import { ReportAltParamField } from './reportalt-param-field'
 import { ReportAltKnopkaMenyu } from './reportalt-knopka-menyu'
@@ -163,6 +168,10 @@ export const ReportAltPage = () => {
       if (raw == null) poUmolchaniyu.add(param.code)
       next[param.code] =
         raw != null ? deserializeParam(raw, param) : defaultParamValue(param)
+      const period = next[param.code] as PeriodValue | undefined
+      if (kvartalnyyPeriod(param) && period?.from) {
+        next[param.code] = kvartalDaty(period.from) ?? period
+      }
     }
     // Сознательная синхронизация черновика формы из URL+meta при их смене.
 
@@ -606,6 +615,11 @@ export const ReportAltPage = () => {
    * налогового учёта по ИПН и СН за месяц её графы (графа 4 — за весь квартал).
    */
   const handleDecipher = () => {
+    const otkaz = otkazRasshifrovki(vybrannayaOblast)
+    if (otkaz) {
+      showToast('warning', t(`reportalt.decipherOtkaz.${otkaz}`))
+      return
+    }
     const organizatsiyaId = values.Organizatsiya
     const period = values.Period as PeriodValue | undefined
     const target = rasshifrovkaKletki(
@@ -761,8 +775,13 @@ export const ReportAltPage = () => {
             }
             const title =
               (isKz ? param.titleKz : param.titleRu) || param.titleRu
+            const kvartalnyy = kvartalnyyPeriod(param)
             const setPeriod = (patch: Partial<PeriodValue>) => {
-              setParamValue(param.code, { ...period, ...patch })
+              const next = { ...period, ...patch }
+              const kvartal = kvartalnyy
+                ? kvartalDaty(patch.from ?? patch.to ?? '')
+                : undefined
+              setParamValue(param.code, kvartal ?? next)
             }
             return (
               <div key={param.code} className="flex flex-wrap gap-4">
@@ -803,6 +822,7 @@ export const ReportAltPage = () => {
                 <div className="w-48">
                   <PeriodQuickSelect
                     period={period}
+                    presets={kvartalnyy ? KVARTALNYE_PRESETS : undefined}
                     onChange={(next) => {
                       setParamValue(param.code, next)
                     }}

@@ -60,7 +60,7 @@ describe('useTableRowCommands', () => {
   })
 
   describe('remove', () => {
-    it('выделено несколько строк — удаляются все, индексами по убыванию', () => {
+    it('выделено несколько строк — удаляются все одним снимком, чтобы Ctrl+Z вернул их разом', () => {
       const full = rows('a', 'b', 'c', 'd')
       const { result, sync, params } = setup({
         sync: makeSync(full),
@@ -72,9 +72,9 @@ describe('useTableRowCommands', () => {
 
       result.current.handleRemove()
 
-      expect(sync.deleteRow.mock.calls.map((c) => c[0] as number)).toEqual([
-        3, 1,
-      ])
+      expect(sync.deleteRow).not.toHaveBeenCalled()
+      expect(sync.replaceRows).toHaveBeenCalledTimes(1)
+      expect(sync.replaceRows).toHaveBeenCalledWith([full[0], full[2]])
       expect(params.clearSelection).toHaveBeenCalled()
     })
 
@@ -261,6 +261,63 @@ describe('useTableRowCommands', () => {
       result.current.handleMoveUp()
       result.current.handleMoveDown()
       expect(sync.moveRow).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Shift и стрелки', () => {
+    const shiftKey = (key: string) =>
+      ({
+        key,
+        shiftKey: true,
+        ctrlKey: false,
+        metaKey: false,
+        target: document.createElement('div'),
+        preventDefault: vi.fn(),
+      }) as unknown as React.KeyboardEvent<HTMLElement>
+
+    it('Shift+↓ переносит текущую строку, не сбрасывая выделение, и расширяет диапазон', () => {
+      const full = rows('a', 'b', 'c', 'd')
+      const selectRow = vi.fn()
+      const moveCurrentRow = vi.fn()
+      const extendSelection = vi.fn()
+      const { result } = setup({
+        sync: makeSync(full),
+        visibleRows: full,
+        selectedRowId: 'c',
+        selectedRowIds: ['a', 'b', 'c'],
+        selectedVisibleIndex: 2,
+        selectRow,
+        moveCurrentRow,
+        extendSelection,
+      })
+
+      result.current.handleKeyDown(shiftKey('ArrowDown'))
+
+      expect(selectRow).not.toHaveBeenCalled()
+      expect(moveCurrentRow).toHaveBeenCalledWith('d')
+      expect(extendSelection).toHaveBeenCalledWith(3)
+    })
+
+    it('Shift+↑ — то же вверх', () => {
+      const full = rows('a', 'b', 'c')
+      const selectRow = vi.fn()
+      const moveCurrentRow = vi.fn()
+      const extendSelection = vi.fn()
+      const { result } = setup({
+        sync: makeSync(full),
+        visibleRows: full,
+        selectedRowId: 'b',
+        selectedVisibleIndex: 1,
+        selectRow,
+        moveCurrentRow,
+        extendSelection,
+      })
+
+      result.current.handleKeyDown(shiftKey('ArrowUp'))
+
+      expect(selectRow).not.toHaveBeenCalled()
+      expect(moveCurrentRow).toHaveBeenCalledWith('a')
+      expect(extendSelection).toHaveBeenCalledWith(0)
     })
   })
 

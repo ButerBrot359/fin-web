@@ -209,6 +209,10 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     },
     selectAll: vybor.vydelitVse,
     extendSelection: vybor.rasshirit,
+    moveCurrentRow: (rowId) => {
+      const index = visibleRows.findIndex((row) => row.rowId === rowId)
+      if (index >= 0) setSelectedIndex(index)
+    },
     globalIndexOf,
     // Индексная селекция: выделение сдвигается вслед за перемещённой строкой.
     onMoved: (toVisibleIndex) => {

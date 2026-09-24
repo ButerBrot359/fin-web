@@ -69,7 +69,7 @@ export const MenuSettingsEditor: FC<MenuSettingsEditorProps> = ({
       </div>
       <div className="flex items-center justify-end gap-2">
         <Button
-          variant="outlined"
+          variant="secondary"
           disabled={editor.busy || editor.structure == null}
           onClick={() => {
             setConfirmReset(true)
@@ -100,7 +100,7 @@ export const MenuSettingsEditor: FC<MenuSettingsEditorProps> = ({
         </DialogContent>
         <DialogActions>
           <Button
-            variant="outlined"
+            variant="secondary"
             onClick={() => {
               setConfirmReset(false)
             }}

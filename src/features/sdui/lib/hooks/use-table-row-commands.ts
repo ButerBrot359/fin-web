@@ -60,6 +60,7 @@ export interface UseTableRowCommandsParams {
   selectAll?: () => void
   /** Расширить выделение до строки с данным видимым индексом (Shift и стрелки). */
   extendSelection?: (visibleIndex: number) => void
+  moveCurrentRow?: (rowId: string) => void
   /**
    * Перевод ВИДИМОГО индекса в индекс полного массива для moveRow
    * (SCRUM-282 C1): editable считает его по rowId (отбор строк разрежает
@@ -127,6 +128,7 @@ export function useTableRowCommands({
   selectRow,
   selectAll,
   extendSelection,
+  moveCurrentRow,
   globalIndexOf,
   onMoved,
   search,
@@ -140,21 +142,18 @@ export function useTableRowCommands({
   const handleRemove = () => {
     const udalyaemye = udalyaemyeRowIds()
     if (udalyaemye.length === 0) return
-    // По убыванию индекса: sync.deleteRow принимает позицию в полном массиве, и удаление
-    // сверху вниз сдвигало бы позиции ещё не удалённых строк.
-    const indeksy = udalyaemye
-      .map((rowId) => sync.rows.findIndex((r) => r.rowId === rowId))
-      .filter((index) => index >= 0)
-      .sort((a, b) => b - a)
-    indeksy.forEach((index) => {
-      sync.deleteRow(index)
-    })
-    if (indeksy.length > 1) {
+    const nabor = new Set(udalyaemye)
+    const ostayutsya = sync.rows.filter((r) => !nabor.has(r.rowId))
+    const skolkoUdalyaem = sync.rows.length - ostayutsya.length
+    if (skolkoUdalyaem === 0) return
+    if (skolkoUdalyaem > 1) {
+      sync.replaceRows(ostayutsya)
       // Выделенного диапазона больше нет — текущей строки в 1С после такого удаления тоже
       // нет, пока пользователь не выберет её сам.
       clearSelection()
       return
     }
+    sync.deleteRow(sync.rows.findIndex((r) => nabor.has(r.rowId)))
     vydelitPosleUdaleniya()
   }
 
@@ -238,8 +237,13 @@ export function useTableRowCommands({
           ? 0
           : visibleRows.length - 1
         : Math.min(Math.max(tekushchiy + shag, 0), visibleRows.length - 1)
-    selectRow(visibleRows[sleduyushchiy].rowId)
-    if (rasshirit) extendSelection?.(sleduyushchiy)
+    const rowId = visibleRows[sleduyushchiy].rowId
+    if (rasshirit) {
+      moveCurrentRow?.(rowId)
+      extendSelection?.(sleduyushchiy)
+      return
+    }
+    selectRow(rowId)
   }
 
   /** Строки под операцию буфера: выделенный набор, а без него — текущая. */

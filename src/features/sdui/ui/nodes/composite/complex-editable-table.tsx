@@ -244,6 +244,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     },
     selectAll: vybor.vydelitVse,
     extendSelection: vybor.rasshirit,
+    moveCurrentRow: selection.selectRow,
     // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail
     // в тулбаре) — там visibleRows === sync.rows, поэтому видимый индекс
     // совпадает с глобальным и move корректен.

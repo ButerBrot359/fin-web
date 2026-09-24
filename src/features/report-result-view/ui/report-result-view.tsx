@@ -201,6 +201,10 @@ export const ReportResultView = ({
       {/* Подписей у приказного бланка может быть несколько (казначейство и учреждение):
           список главнее одиночной подписи, как и в печати. Сторона `side` раскладывает их
           в две колонки — слева казначейство, справа учреждение (макет формы 4-20). */}
+      <ReportNoteLines
+        lines={result.footerLines}
+        testId="report-footer-lines"
+      />
       <ReportSignatures
         signatures={
           result.footerBlocks?.length

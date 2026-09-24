@@ -54,4 +54,37 @@ describe('примечание под таблицей отчёта', () => {
 
     expect(screen.queryByTestId('report-note-lines')).toBeNull()
   })
+
+  it('строки подвала — между таблицей и подписями, примечание — после подписей', () => {
+    render(
+      <ReportResultView
+        result={
+          {
+            ...base,
+            footerLines: ['Всего: Сто тенге 00 тиын', 'Основание:'],
+            footerBlocks: [
+              {
+                role: 'Руководитель:',
+                name: 'Иванов И.И.',
+                captions: ['(подпись)', '(ФИО)'],
+              },
+            ],
+            noteLines: ['Примечание:'],
+          } as unknown as ReportResultDto
+        }
+      />
+    )
+
+    const podval = screen.getByTestId('report-footer-lines')
+    const podpis = screen.getByText('Руководитель:')
+    const primechanie = screen.getByTestId('report-note-lines')
+    expect(podval).toHaveTextContent('Всего: Сто тенге 00 тиын')
+    expect(
+      podval.compareDocumentPosition(podpis) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(
+      podpis.compareDocumentPosition(primechanie) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
 })

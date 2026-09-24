@@ -33,7 +33,9 @@ export const SwiftExportTable = ({ rows }: Props) => {
           <TableRow key={row.documentId}>
             <TableCell>{row.number}</TableCell>
             <TableCell>
-              <Typography variant="body2">{row.documentNumber ?? ''}</Typography>
+              <Typography variant="body2">
+                {row.documentNumber ?? ''}
+              </Typography>
             </TableCell>
             <TableCell align="right">
               <Typography variant="body2">{row.amount ?? ''}</Typography>
@@ -42,6 +44,11 @@ export const SwiftExportTable = ({ rows }: Props) => {
               {row.errors.length > 0 && (
                 <Typography variant="body2" color="error">
                   {row.errors.join('; ')}
+                </Typography>
+              )}
+              {(row.warnings ?? []).length > 0 && (
+                <Typography variant="body2" color="warning.main">
+                  {(row.warnings ?? []).join('; ')}
                 </Typography>
               )}
             </TableCell>

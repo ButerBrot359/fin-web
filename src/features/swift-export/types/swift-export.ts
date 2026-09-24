@@ -15,6 +15,7 @@ export interface SwiftExportPreviewRow {
   amount: number | null
   fileName: string | null
   errors: string[]
+  warnings?: string[]
 }
 
 export interface SwiftExportPreview {

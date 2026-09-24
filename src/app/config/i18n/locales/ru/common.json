@@ -1717,6 +1717,7 @@
     "filesDownloadedByBrowser": "Файл будет скачан браузером",
     "errorDetailsTitle": "Подробный текст ошибок проверки",
     "noErrors": "Ошибок нет",
+    "warningDetailsTitle": "Предупреждения (выгрузку не останавливают)",
     "hasErrorsToast": "Обнаружены ошибки — выгрузка не выполнена",
     "loadFailed": "Не удалось проверить документ",
     "formats": {

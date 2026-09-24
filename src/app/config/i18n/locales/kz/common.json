@@ -1717,6 +1717,7 @@
     "filesDownloadedByBrowser": "Файлды браузер жүктеп алады",
     "errorDetailsTitle": "Тексеру қателерінің толық мәтіні",
     "noErrors": "Қателер жоқ",
+    "warningDetailsTitle": "Ескертулер (жүктеуді тоқтатпайды)",
     "hasErrorsToast": "Қателер табылды — жүктеу орындалмады",
     "loadFailed": "Құжатты тексеру мүмкін болмады",
     "formats": {

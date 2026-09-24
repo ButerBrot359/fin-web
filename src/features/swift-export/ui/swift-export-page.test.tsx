@@ -29,7 +29,11 @@ const renderPage = (search = '?typeCode=SchetKOplate&id=42') =>
     </QueryClientProvider>
   )
 
-const previewResponse = (hasErrors: boolean, errors: string[] = []) => ({
+const previewResponse = (
+  hasErrors: boolean,
+  errors: string[] = [],
+  warnings: string[] = []
+) => ({
   data: {
     rows: [
       {
@@ -39,6 +43,7 @@ const previewResponse = (hasErrors: boolean, errors: string[] = []) => ({
         amount: 2790197,
         fileName: 'SWIFT_AAH00-00167.txt',
         errors,
+        warnings,
       },
     ],
     hasErrors,
@@ -222,6 +227,55 @@ describe('SwiftExportPage', () => {
     })
     await waitFor(() => {
       expect(clickMock).toHaveBeenCalled()
+    })
+  })
+
+  it('перепроверяет документ при смене кодировки', async () => {
+    const preview = vi
+      .spyOn(api, 'previewSwiftExport')
+      .mockResolvedValue(previewResponse(false) as never)
+
+    renderPage()
+    await waitFor(() => {
+      expect(preview).toHaveBeenCalledTimes(1)
+    })
+
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[1])
+    fireEvent.click(await screen.findByText('OEM'))
+
+    await waitFor(() => {
+      expect(preview).toHaveBeenLastCalledWith({
+        documentIds: [42],
+        format: 'FORMAT_01_2024',
+        encoding: 'OEM',
+      })
+    })
+  })
+
+  it('показывает предупреждение и не мешает выгрузке', async () => {
+    const warning =
+      'Символов нет в выбранной кодировке, в файле они будут заменены на «?»: «, »'
+    vi.spyOn(api, 'previewSwiftExport').mockResolvedValue(
+      previewResponse(false, [], [warning]) as never
+    )
+    const blobSpy = vi.spyOn(api, 'fetchSwiftExportBlob').mockResolvedValue({
+      data: new Blob(['{1:F01}']),
+      headers: {
+        'content-disposition': 'attachment; filename="SWIFT_AAH00-00167.txt"',
+      },
+    } as never)
+
+    renderPage()
+    expect((await screen.findAllByText(warning)).length).toBe(2)
+    expect(
+      screen.getByText('Предупреждения (выгрузку не останавливают)')
+    ).toBeTruthy()
+    expect(screen.getByText('Ошибок нет')).toBeTruthy()
+
+    fireEvent.click(screen.getByText('Выгрузить'))
+
+    await waitFor(() => {
+      expect(blobSpy).toHaveBeenCalled()
     })
   })
 })

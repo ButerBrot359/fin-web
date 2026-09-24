@@ -61,6 +61,14 @@ describe('SpreadsheetView — табличный документ бланка',
     expect(vtoraya[2].textContent).toBe('ИИН')
   })
 
+  it('ширина листа равна сумме колонок — длинная подпись не раздвигает сетку', () => {
+    const { container } = render(<SpreadsheetView spreadsheet={dokument} />)
+
+    const tablitsa = container.querySelector('table')!
+    expect(tablitsa.style.tableLayout).toBe('fixed')
+    expect(tablitsa.style.width).toBe('180px')
+  })
+
   it('страницы переключаются, как в списке страниц 1С', () => {
     render(<SpreadsheetView spreadsheet={dokument} />)
 

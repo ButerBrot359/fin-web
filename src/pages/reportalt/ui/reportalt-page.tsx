@@ -10,7 +10,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Button, Typography } from '@mui/material'
 
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
-import { ReportResultView } from '@/features/report-result-view'
+import {
+  ReportResultView,
+  type ReportRowClickZone,
+} from '@/features/report-result-view'
 import { PageHeader } from '@/widgets/page-header'
 import { PeriodChoiceButton } from '@/shared/ui/period-choice'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
@@ -24,7 +27,10 @@ import {
   vygruzkaFno,
   vygruzkaPrilozheniya,
 } from '../api/reportalt-api'
-import { rasshifrovkaKletki } from '../lib/utils/blank-drilldown'
+import {
+  otkazRasshifrovki,
+  rasshifrovkaKletki,
+} from '../lib/utils/blank-drilldown'
 import {
   pustyeOblastiStranits,
   stranitsaPrilozheniya,
@@ -52,6 +58,7 @@ import {
   deserializeParam,
   isFilled,
   isPeriod,
+  kvartalnyyPeriod,
   normalizeBodyDates,
   primenimyePriOtkrytii,
   serializeParams,
@@ -64,6 +71,7 @@ import {
   readParamDraft,
   saveParamDraft,
 } from '../lib/utils/param-draft'
+import { kvartalDaty } from '../lib/utils/kvartalnyy-period'
 import { ReportAltParamField } from './reportalt-param-field'
 import { ReportAltKnopkaMenyu } from './reportalt-knopka-menyu'
 import {
@@ -88,6 +96,13 @@ const errorMessage = (error: unknown): string | undefined => {
     if (typeof o.data?.message === 'string') return o.data.message
   }
   return undefined
+}
+
+interface ReportAltRowMenuState {
+  position: ReportAltMenuPosition
+  row: ReportAltRowDto
+  ancestors: ReportAltRowDto[]
+  zone: ReportRowClickZone
 }
 
 /**
@@ -160,6 +175,10 @@ export const ReportAltPage = () => {
       if (raw == null) poUmolchaniyu.add(param.code)
       next[param.code] =
         raw != null ? deserializeParam(raw, param) : defaultParamValue(param)
+      const period = next[param.code] as PeriodValue | undefined
+      if (kvartalnyyPeriod(param) && period?.from) {
+        next[param.code] = kvartalDaty(period.from) ?? period
+      }
     }
     // Сознательная синхронизация черновика формы из URL+meta при их смене.
 
@@ -441,41 +460,13 @@ export const ReportAltPage = () => {
     exportTableToXlsx(reportName, data)
   }
 
-  const [rowMenu, setRowMenu] = useState<{
-    position: ReportAltMenuPosition
-    row: ReportAltRowDto
-    ancestors: ReportAltRowDto[]
-  } | null>(null)
-
-  const menuRow = rowMenu?.row ?? null
-  const openRef =
-    menuRow?.rowRef && menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
-      ? menuRow.rowRef
-      : null
-  const openLabel = openRef
-    ? menuRow?.groupValue
-      ? `${t('osv.openElement')} «${menuRow.groupValue}»`
-      : t('osv.openElement')
-    : null
-  const accountRow = rowMenu
-    ? [...rowMenu.ancestors, rowMenu.row]
-        .reverse()
-        .find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
-    : undefined
-  const accountCardLabel = accountRow
-    ? `${t('osv.accountCard')} ${accountCodeOf(accountRow)}`.trim()
-    : null
+  const [rowMenu, setRowMenu] = useState<ReportAltRowMenuState | null>(null)
 
   const openRowRef = (ref: ReportAltRowRefDto) => {
     const segment = ref.domain === 'DICTIONARY' ? 'dictionary' : 'document'
     void navigate(
       `/modules/${pageCode}/${segment}/${ref.typeCode}/${String(ref.id)}`
     )
-  }
-
-  const handleOpenElement = () => {
-    if (!openRef) return
-    openRowRef(openRef)
   }
 
   const appliedPeriod = appliedBody?.parameters
@@ -485,75 +476,108 @@ export const ReportAltPage = () => {
       ) ?? {})
     : {}
 
-  const handleOpenAccountCard = () => {
-    if (!accountRow?.rowRef) return
-    const params = buildAccountCardParams(
-      rowMenu ? [...rowMenu.ancestors, rowMenu.row] : [],
-      {
-        accountId: accountRow.rowRef.id,
-        accountCode: accountRow.groupValue ?? '',
-        from: appliedPeriod.from,
-        to: appliedPeriod.to,
-      }
-    )
-    void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
-  }
-
-  const drilldownOptions = rowMenu
-    ? {
-        reportCode: moduleCode,
-        chain: [...rowMenu.ancestors, rowMenu.row],
-        accountRow,
-        valueRow: rowMenu.row,
-        from: appliedPeriod.from,
-        to: appliedPeriod.to,
-      }
-    : null
-
-  const rowMenuItems: ReportAltMenuItem[] = []
-  if (openLabel != null) {
-    rowMenuItems.push({
-      key: 'open',
-      label: openLabel,
-      onClick: handleOpenElement,
-    })
-  }
-  for (const kind of drilldownOptions
-    ? resolveDrilldownKinds(drilldownOptions)
-    : []) {
-    if (kind === 'accountCard') {
-      if (accountCardLabel != null) {
-        rowMenuItems.push({
-          key: kind,
-          label: accountCardLabel,
-          onClick: handleOpenAccountCard,
-        })
-      }
-      continue
-    }
-    const target = drilldownOptions
-      ? buildDrilldownTarget(kind, drilldownOptions)
+  const rowMenuItemsFor = (
+    menu: ReportAltRowMenuState | null
+  ): ReportAltMenuItem[] => {
+    const menuRow = menu?.row ?? null
+    const openRef =
+      menu?.zone === 'label' &&
+      menuRow?.rowRef &&
+      menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
+        ? menuRow.rowRef
+        : null
+    const openLabel = openRef
+      ? menuRow?.groupValue
+        ? `${t('osv.openElement')} «${menuRow.groupValue}»`
+        : t('osv.openElement')
       : null
-    if (target == null) continue
-    const label =
-      kind === 'osvPoSchetu' ||
-      kind === 'analizScheta' ||
-      kind === 'turnoverByDays' ||
-      kind === 'turnoverByMonths'
-        ? t(`reportalt.drilldown.${kind}`, {
-            code: accountCodeOf(accountRow),
-          }).trim()
-        : t(`reportalt.drilldown.${kind}`)
-    rowMenuItems.push({
-      key: kind,
-      label,
-      onClick: () => {
-        void navigate(
-          `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`
-        )
-      },
-    })
+    const accountRow = menu
+      ? [...menu.ancestors, menu.row]
+          .reverse()
+          .find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
+      : undefined
+    const accountCardLabel = accountRow
+      ? `${t('osv.accountCard')} ${accountCodeOf(accountRow)}`.trim()
+      : null
+
+    const handleOpenElement = () => {
+      if (!openRef) return
+      openRowRef(openRef)
+    }
+
+    const handleOpenAccountCard = () => {
+      if (!accountRow?.rowRef) return
+      const params = buildAccountCardParams(
+        menu ? [...menu.ancestors, menu.row] : [],
+        {
+          accountId: accountRow.rowRef.id,
+          accountCode: accountRow.groupValue ?? '',
+          from: appliedPeriod.from,
+          to: appliedPeriod.to,
+        }
+      )
+      void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
+    }
+
+    const drilldownOptions = menu
+      ? {
+          reportCode: moduleCode,
+          chain: [...menu.ancestors, menu.row],
+          accountRow,
+          valueRow: menu.row,
+          from: appliedPeriod.from,
+          to: appliedPeriod.to,
+        }
+      : null
+
+    const rowMenuItems: ReportAltMenuItem[] = []
+    if (openLabel != null) {
+      rowMenuItems.push({
+        key: 'open',
+        label: openLabel,
+        onClick: handleOpenElement,
+      })
+    }
+    for (const kind of drilldownOptions
+      ? resolveDrilldownKinds(drilldownOptions)
+      : []) {
+      if (kind === 'accountCard') {
+        if (accountCardLabel != null) {
+          rowMenuItems.push({
+            key: kind,
+            label: accountCardLabel,
+            onClick: handleOpenAccountCard,
+          })
+        }
+        continue
+      }
+      const target = drilldownOptions
+        ? buildDrilldownTarget(kind, drilldownOptions)
+        : null
+      if (target == null) continue
+      const label =
+        kind === 'osvPoSchetu' ||
+        kind === 'analizScheta' ||
+        kind === 'turnoverByDays' ||
+        kind === 'turnoverByMonths'
+          ? t(`reportalt.drilldown.${kind}`, {
+              code: accountCodeOf(accountRow),
+            }).trim()
+          : t(`reportalt.drilldown.${kind}`)
+      rowMenuItems.push({
+        key: kind,
+        label,
+        onClick: () => {
+          void navigate(
+            `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`
+          )
+        },
+      })
+    }
+    return rowMenuItems
   }
+
+  const rowMenuItems = rowMenuItemsFor(rowMenu)
 
   // Печать в PDF: бэк может отвечать 501 (печать не реализована) — тост.
   const [isPrinting, setIsPrinting] = useState(false)
@@ -600,6 +624,11 @@ export const ReportAltPage = () => {
    * налогового учёта по ИПН и СН за месяц её графы (графа 4 — за весь квартал).
    */
   const handleDecipher = () => {
+    const otkaz = otkazRasshifrovki(vybrannayaOblast)
+    if (otkaz) {
+      showToast('warning', t(`reportalt.decipherOtkaz.${otkaz}`))
+      return
+    }
     const organizatsiyaId = values.Organizatsiya
     const period = values.Period as PeriodValue | undefined
     const target = rasshifrovkaKletki(
@@ -755,8 +784,13 @@ export const ReportAltPage = () => {
             }
             const title =
               (isKz ? param.titleKz : param.titleRu) || param.titleRu
+            const kvartalnyy = kvartalnyyPeriod(param)
             const setPeriod = (patch: Partial<PeriodValue>) => {
-              setParamValue(param.code, { ...period, ...patch })
+              const next = { ...period, ...patch }
+              const kvartal = kvartalnyy
+                ? kvartalDaty(patch.from ?? patch.to ?? '')
+                : undefined
+              setParamValue(param.code, kvartal ?? next)
             }
             return (
               <div key={param.code} className="flex flex-wrap gap-4">
@@ -795,7 +829,10 @@ export const ReportAltPage = () => {
                 <PeriodChoiceButton
                   period={period}
                   onChange={(next) => {
-                    setParamValue(param.code, next)
+                    setParamValue(
+                      param.code,
+                      kvartalnyy ? (kvartalDaty(next.from) ?? next) : next
+                    )
                   }}
                 />
               </div>
@@ -987,12 +1024,20 @@ export const ReportAltPage = () => {
                     return
                   openRowRef(row.rowRef)
                 }}
-                onRowDoubleClick={(row, ancestors, event) => {
-                  setRowMenu({
+                onRowDoubleClick={(row, ancestors, event, zone) => {
+                  const menu = {
                     position: { top: event.clientY, left: event.clientX },
                     row,
                     ancestors,
-                  })
+                    zone,
+                  }
+                  const items = rowMenuItemsFor(menu)
+                  if (items.length === 1 && !items[0].disabled) {
+                    setRowMenu(null)
+                    items[0].onClick()
+                    return
+                  }
+                  setRowMenu(menu)
                 }}
               />
               {/* LEDGER: постраничная подгрузка (F4 — hasMore/nextOffset). */}

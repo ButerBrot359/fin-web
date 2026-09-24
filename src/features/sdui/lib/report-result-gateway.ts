@@ -18,7 +18,8 @@ export interface ReportResultGatewayImpl {
     onRowMenu?: (
       row: unknown,
       ancestors: unknown[],
-      position: { top: number; left: number }
+      position: { top: number; left: number },
+      zone: 'label' | 'value'
     ) => void
   }>
   // Панель настроек отчёта (опц., §19.1): полностью реализуется на app-слое

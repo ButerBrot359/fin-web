@@ -189,11 +189,13 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
     position: ReportRowMenuPosition
     row: unknown
     ancestors: unknown[]
+    zone: 'label' | 'value'
   } | null>(null)
 
   const menuRow = rowMenu?.row ?? null
   const menuRowRef = (menuRow as { rowRef?: unknown } | null)?.rowRef
   const menuRowLabel = (menuRow as { groupValue?: unknown } | null)?.groupValue
+  const menuOnLabel = rowMenu?.zone === 'label'
   // Корень ветки — строка-счёт: её ссылка ведёт в «Карточку счёта», как в 1С.
   // Клик по самой строке-счёту даёт пустых предков, поэтому цепочка включает саму строку.
   const menuChain = (
@@ -281,7 +283,7 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
         // объект существует), для счёта карточки в SDUI нет вовсе
         // (ScreenDispatchKind.ACCOUNT_PLAN → unsupported), поэтому счёт
         // открывается легаси-страницей записи плана счетов.
-        ...(menuRowRef != null && menuRowRef !== accountRowRef
+        ...(menuOnLabel && menuRowRef != null && menuRowRef !== accountRowRef
           ? [
               {
                 key: 'open',
@@ -292,7 +294,7 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
               },
             ]
           : []),
-        ...(menuRowRef != null && menuRowRef === accountRowRef
+        ...(menuOnLabel && menuRowRef != null && menuRowRef === accountRowRef
           ? [
               {
                 key: 'open-account',
@@ -430,9 +432,9 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
           onDrilldown={drilldownCommand ? handleDrilldown : undefined}
           onRowMenu={
             drilldownCommand
-              ? (row, ancestors, position) => {
+              ? (row, ancestors, position, zone) => {
                   window.getSelection()?.removeAllRanges()
-                  setRowMenu({ row, ancestors, position })
+                  setRowMenu({ row, ancestors, position, zone })
                 }
               : undefined
           }

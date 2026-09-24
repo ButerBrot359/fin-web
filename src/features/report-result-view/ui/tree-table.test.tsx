@@ -76,6 +76,27 @@ describe('TreeTable — переходы по строке', () => {
     expect(calls[1]?.row.groupValue).toBe('1316')
   })
 
+  it('двойной клик сообщает зону: подпись строки — label, сумма — value', () => {
+    const zones: { value: string | undefined; zone: string }[] = []
+    render(
+      <TreeTable
+        result={result}
+        columns={columns}
+        onRowDoubleClick={(row, _ancestors, _event, zone) => {
+          zones.push({ value: row.groupValue, zone })
+        }}
+      />
+    )
+
+    fireEvent.doubleClick(screen.getByText('Бумага А4'))
+    fireEvent.doubleClick(screen.getAllByText(/150/)[1])
+
+    expect(zones).toEqual([
+      { value: 'Бумага А4', zone: 'label' },
+      { value: 'Бумага А4', zone: 'value' },
+    ])
+  })
+
   it('без обработчика строки не кликабельны', () => {
     render(<TreeTable result={result} columns={columns} />)
 
@@ -178,6 +199,23 @@ describe('TreeTable — дерево с этажами', () => {
 
     expect(calls).toHaveLength(1)
     expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('в этажном дереве реквизит строки — label, показатель — value', () => {
+    const zones: string[] = []
+    render(
+      <TreeTable
+        result={floorResult}
+        columns={floorColumns}
+        onRowDoubleClick={(_row, _ancestors, _event, zone) => zones.push(zone)}
+      />
+    )
+
+    const cells = strokaNomenklatury().querySelectorAll('td')
+    fireEvent.doubleClick(cells[0])
+    fireEvent.doubleClick(cells[cells.length - 1])
+
+    expect(zones).toEqual(['label', 'value'])
   })
 
   it('без обработчиков строки этажного дерева не кликабельны', () => {

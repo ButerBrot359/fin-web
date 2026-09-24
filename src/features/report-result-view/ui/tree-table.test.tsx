@@ -225,6 +225,35 @@ describe('TreeTable — дерево с этажами', () => {
   })
 })
 
+describe('TreeTable — этажи без колонок деталей (ОСВ)', () => {
+  const osvResult = {
+    ...result,
+    reportCode: 'OborotnoSaldovayaVedomost',
+    groupFloorCodes: ['Schet'],
+  } as unknown as ReportResultDto
+
+  it('счёт и субконто выводятся под этажом «Счёт», пустых колонок нет', () => {
+    const { container } = render(
+      <TreeTable result={osvResult} columns={columns} />
+    )
+
+    const shapka = [...container.querySelectorAll('thead th')].map(
+      (th) => th.textContent
+    )
+    expect(shapka).toEqual(['Счёт', 'Сальдо Дт'])
+    expect(container.querySelectorAll('thead tr')).toHaveLength(1)
+    expect(container.querySelectorAll('colgroup col')).toHaveLength(2)
+
+    const schet = screen.getByText('1316').closest('tr')!
+    const subkonto = screen.getByText('Бумага А4').closest('tr')!
+    for (const stroka of [schet, subkonto]) {
+      const cells = stroka.querySelectorAll('td')
+      expect(cells).toHaveLength(2)
+      expect(cells[0].getAttribute('colspan')).toBe('1')
+    }
+  })
+})
+
 describe('TreeTable — условное оформление строки (эталон 1С)', () => {
   const stroka = (
     groupValue: string,

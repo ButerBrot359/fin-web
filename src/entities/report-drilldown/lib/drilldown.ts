@@ -38,6 +38,12 @@ const CORR_ACCOUNT_GROUP_CODE = 'KorrSchet'
 
 export const DRILLDOWN_URL_KEY = 'rr'
 
+export const accountCodeOf = (row?: DrilldownRow | null): string => {
+  const value = row?.groupValue?.trim() ?? ''
+  const separator = value.indexOf(', ')
+  return separator > 0 ? value.slice(0, separator) : value
+}
+
 const ETALON_TARGETS: Record<string, DrilldownTargetKind[] | undefined> = {
   OborotnoSaldovayaVedomost: [
     'osvPoSchetu',

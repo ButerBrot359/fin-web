@@ -1,5 +1,6 @@
 export {
   DRILLDOWN_URL_KEY,
+  accountCodeOf,
   buildDrilldownTarget,
   buildDrilldownTargets,
   isSubkontoRow,

@@ -568,10 +568,10 @@
       "accountCard": "Карточка счёта",
       "subkontoCard": "Карточка субконто",
       "postingsReport": "Отчёт по проводкам",
-      "osvPoSchetu": "ОСВ по счёту",
-      "analizScheta": "Анализ счёта",
-      "turnoverByDays": "Обороты счёта по дням",
-      "turnoverByMonths": "Обороты счёта по месяцам"
+      "osvPoSchetu": "ОСВ по счёту {{code}}",
+      "analizScheta": "Анализ счёта {{code}}",
+      "turnoverByDays": "Обороты счёта {{code}} по дням",
+      "turnoverByMonths": "Обороты счёта {{code}} по месяцам"
     },
     "period": {
       "quickLabel": "Быстрый период",

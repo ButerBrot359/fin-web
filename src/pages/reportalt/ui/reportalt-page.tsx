@@ -35,6 +35,7 @@ import { useReportAltParamState } from '../lib/hooks/use-reportalt-param-state'
 import { buildAccountCardParams } from '../lib/utils/account-card-link'
 import {
   DRILLDOWN_URL_KEY,
+  accountCodeOf,
   buildDrilldownTarget,
   resolveDrilldownKinds,
 } from '@/entities/report-drilldown'
@@ -449,7 +450,7 @@ export const ReportAltPage = () => {
         .find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
     : undefined
   const accountCardLabel = accountRow
-    ? `${t('osv.accountCard')} ${accountRow.groupValue ?? ''}`.trim()
+    ? `${t('osv.accountCard')} ${accountCodeOf(accountRow)}`.trim()
     : null
 
   const openRowRef = (ref: ReportAltRowRefDto) => {
@@ -526,7 +527,9 @@ export const ReportAltPage = () => {
       kind === 'analizScheta' ||
       kind === 'turnoverByDays' ||
       kind === 'turnoverByMonths'
-        ? `${t(`reportalt.drilldown.${kind}`)} ${accountRow?.groupValue ?? ''}`.trim()
+        ? t(`reportalt.drilldown.${kind}`, {
+            code: accountCodeOf(accountRow),
+          }).trim()
         : t(`reportalt.drilldown.${kind}`)
     rowMenuItems.push({
       key: kind,

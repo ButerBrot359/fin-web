@@ -18,7 +18,26 @@ const REGISTR_IPN_SN = 'RegistrNalogovogoUchetaPoIPNiSN'
 /** Формы, у которых расшифровка клетки ведёт в регистр налогового учёта. */
 const FORMY_REGISTRA = ['200_00', '200_01']
 
-const OBLAST_KLETKI = /^s_(\d{3}_\d{2})_\d{3}_([1-4])$/
+const OBLAST_KLETKI = /^s_(\d{3}_\d{2})_(\d{3})_([1-4])$/
+
+const STROKI_TOLKO_IP: Partial<Record<string, string[]>> = {
+  '200_00': ['004', '007', '009'],
+  '200_01': ['009', '015'],
+}
+
+export type OtkazRasshifrovki = 'tolkoIP' | 'nePodderzhivaetsya'
+
+export const otkazRasshifrovki = (
+  oblast: string | null | undefined
+): OtkazRasshifrovki | null => {
+  if (!oblast) return null
+  const razobrano = OBLAST_KLETKI.exec(oblast)
+  if (!razobrano || !FORMY_REGISTRA.includes(razobrano[1])) {
+    return 'nePodderzhivaetsya'
+  }
+  if (STROKI_TOLKO_IP[razobrano[1]]?.includes(razobrano[2])) return 'tolkoIP'
+  return null
+}
 
 const dobavitMesyatsy = (iso: string, mesyatsev: number): Date => {
   const [god, mesyats, den] = iso.split('-').map(Number)
@@ -52,14 +71,15 @@ export const rasshifrovkaKletki = (
   period: { from: string; to: string } | null | undefined
 ): BlankDrilldownTarget | null => {
   if (!oblast || !period?.from || !period.to) return null
+  if (otkazRasshifrovki(oblast) != null) return null
   const razobrano = OBLAST_KLETKI.exec(oblast)
-  if (!razobrano || !FORMY_REGISTRA.includes(razobrano[1])) return null
+  if (!razobrano) return null
 
   const params = new URLSearchParams()
   params.set(DRILLDOWN_URL_KEY, '1')
   params.set(
     'Period',
-    JSON.stringify(periodRasshifrovki(razobrano[2], period.from, period.to))
+    JSON.stringify(periodRasshifrovki(razobrano[3], period.from, period.to))
   )
   if (organizatsiyaId != null) {
     params.set('Organizatsiya', String(organizatsiyaId))

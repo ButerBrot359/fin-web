@@ -5,6 +5,7 @@ import type { MenuStructure } from '../../api/menu-settings-api'
 import {
   buildPatch,
   moveItem,
+  moveItemTo,
   seedDraft,
   toggleHidden,
 } from './menu-editor-state'
@@ -94,6 +95,20 @@ describe('menu-editor-state', () => {
       'element:A/s1/e2': { order: 0 },
       'element:A/s1/e1': { order: 1 },
     })
+  })
+
+  it('drag-n-drop: перенос на позицию соседа переставляет и пишет order', () => {
+    const draft = moveItemTo(seedDraft(structure), '', 'module:B', 'module:A')
+    expect(buildPatch(structure, draft)).toEqual({
+      'module:B': { order: 0 },
+      'module:A': { order: 1 },
+    })
+  })
+
+  it('drag-n-drop: бросок на самого себя или чужой ключ — без изменений', () => {
+    const draft = seedDraft(structure)
+    expect(moveItemTo(draft, '', 'module:B', 'module:B')).toBe(draft)
+    expect(moveItemTo(draft, '', 'module:B', 'element:A/s1/e1')).toBe(draft)
   })
 
   it('движение за край списка ничего не меняет', () => {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { notifyViewSettingsChanged } from '@/shared/lib/design-settings/design-settings-events'
 
@@ -10,9 +11,9 @@ import {
 } from '../../api/menu-settings-api'
 import {
   buildPatch,
+  moveItemTo,
   seedDraft,
   toggleHidden,
-  moveItem,
   type MenuDraft,
 } from './menu-editor-state'
 
@@ -35,6 +36,7 @@ const scopeKey = (scope: MenuScope): string => {
  */
 export function useMenuSettingsEditor(scope: MenuScope) {
   const queryClient = useQueryClient()
+  const { i18n } = useTranslation()
 
   const structureQuery = useQuery({
     queryKey: ['menu-structure', scopeKey(scope)],
@@ -94,11 +96,12 @@ export function useMenuSettingsEditor(scope: MenuScope) {
     isLoading: structureQuery.isPending,
     isError: structureQuery.isError,
     busy,
+    language: i18n.language,
     toggle: (key: string, effectiveHiddenBelow: boolean) => {
       updateDraft((d) => toggleHidden(d, key, effectiveHiddenBelow))
     },
-    move: (parentKey: string, key: string, dir: -1 | 1) => {
-      updateDraft((d) => moveItem(d, parentKey, key, dir))
+    moveTo: (parentKey: string, key: string, targetKey: string) => {
+      updateDraft((d) => moveItemTo(d, parentKey, key, targetKey))
     },
     save: saveMutation.mutate,
     reset: resetMutation.mutate,

@@ -1,6 +1,6 @@
 import { useEffect, type FC } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { TextField, Typography } from '@mui/material'
+import { Tab, Tabs, TextField, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
@@ -11,6 +11,7 @@ import {
   type ViewSettingsScreen,
 } from '@/features/sdui'
 
+import { MenuModulesTab } from './menu-modules-tab'
 import { ScreenCard } from './screen-card'
 
 /**
@@ -27,6 +28,8 @@ export const DesignConstructorPage: FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const search = searchParams.get('q') ?? ''
   const selectedCode = searchParams.get('screen')
+  // Вкладки раздела (решение владельца 24.09): конструктор дизайна | настройка модулей.
+  const tab = searchParams.get('tab') === 'menu' ? 'menu' : 'design'
 
   const setParam = (key: string, value: string) => {
     setSearchParams(
@@ -71,9 +74,38 @@ export const DesignConstructorPage: FC = () => {
     queryFn: ({ signal }) => viewSettingsProfileDefaultsApi.profiles(signal),
   })
 
+  const tabsHeader = (
+    <div>
+      <Typography variant="h5">{t('sdui.designAdmin.title')}</Typography>
+      <Tabs
+        value={tab}
+        onChange={(_e, value: string) => {
+          setParam('tab', value === 'menu' ? 'menu' : '')
+        }}
+        className="mt-2"
+      >
+        <Tab value="design" label={t('sdui.designAdmin.tabDesign')} />
+        <Tab value="menu" label={t('sdui.menuSettings.tabTitle')} />
+      </Tabs>
+    </div>
+  )
+
+  if (tab === 'menu') {
+    return (
+      <div className="flex h-full flex-col gap-4 p-8">
+        {tabsHeader}
+        <Typography variant="body2" className="text-ui-05">
+          {t('sdui.menuSettings.subtitle')}
+        </Typography>
+        <MenuModulesTab />
+      </div>
+    )
+  }
+
   if (error != null) {
     return (
-      <div className="p-8">
+      <div className="flex h-full flex-col gap-4 p-8">
+        {tabsHeader}
         <Typography variant="body1">
           {t('sdui.designAdmin.forbidden')}
         </Typography>
@@ -92,12 +124,10 @@ export const DesignConstructorPage: FC = () => {
 
   return (
     <div className="flex h-full flex-col gap-4 p-8">
-      <div>
-        <Typography variant="h5">{t('sdui.designAdmin.title')}</Typography>
-        <Typography variant="body2" className="text-ui-05">
-          {t('sdui.designAdmin.subtitle')}
-        </Typography>
-      </div>
+      {tabsHeader}
+      <Typography variant="body2" className="text-ui-05">
+        {t('sdui.designAdmin.subtitle')}
+      </Typography>
       <div className="flex min-h-0 flex-1 gap-8">
         <div className="flex w-96 shrink-0 flex-col gap-3">
           <TextField

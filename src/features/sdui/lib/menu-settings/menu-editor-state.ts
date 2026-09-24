@@ -123,6 +123,27 @@ export function moveItem(
   return { hidden: draft.hidden, revealed: draft.revealed, orderByParent }
 }
 
+/** Перенос пункта на позицию соседа (drag-n-drop): встать на место targetKey. */
+export function moveItemTo(
+  draft: MenuDraft,
+  parentKey: string,
+  key: string,
+  targetKey: string
+): MenuDraft {
+  if (key === targetKey) return draft
+  const siblings = draft.orderByParent.get(parentKey)
+  if (!siblings) return draft
+  const from = siblings.indexOf(key)
+  const to = siblings.indexOf(targetKey)
+  if (from < 0 || to < 0) return draft
+  const next = [...siblings]
+  next.splice(from, 1)
+  next.splice(to, 0, key)
+  const orderByParent = new Map(draft.orderByParent)
+  orderByParent.set(parentKey, next)
+  return { hidden: draft.hidden, revealed: draft.revealed, orderByParent }
+}
+
 /**
  * Обратная сборка патча слоя: hidden из тумблеров; order — полной перестановкой детей
  * родителя, если их порядок отличается от базового, иначе существующие order слоя

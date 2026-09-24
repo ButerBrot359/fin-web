@@ -2,11 +2,12 @@ export interface PeriodChoiceProps {
   fromNodeId: string
   toNodeId: string
   sourceNodeId: string
+  quarterOnly: boolean
 }
 
 export function readPeriodChoice(value: unknown): PeriodChoiceProps | null {
   if (value == null || typeof value !== 'object') return null
-  const { fromNodeId, toNodeId, sourceNodeId } = value as Record<
+  const { fromNodeId, toNodeId, sourceNodeId, quarterOnly } = value as Record<
     string,
     unknown
   >
@@ -17,5 +18,10 @@ export function readPeriodChoice(value: unknown): PeriodChoiceProps | null {
   ) {
     return null
   }
-  return { fromNodeId, toNodeId, sourceNodeId }
+  return {
+    fromNodeId,
+    toNodeId,
+    sourceNodeId,
+    quarterOnly: quarterOnly === true,
+  }
 }

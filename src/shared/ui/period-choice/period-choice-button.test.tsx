@@ -50,4 +50,34 @@ describe('PeriodChoiceButton', () => {
     fireEvent.click(screen.getByLabelText('periodChoice.title'))
     expect(screen.queryByText('periodChoice.select')).toBeNull()
   })
+
+  it('в квартальном режиме нет месяцев, дата и стандартный период дают квартал', () => {
+    const onChange = vi.fn()
+    render(
+      <PeriodChoiceButton
+        period={{ from: '2026-04-01', to: '2026-06-30' }}
+        quarterOnly
+        onChange={onChange}
+      />
+    )
+    fireEvent.click(screen.getByLabelText('periodChoice.title'))
+
+    expect(screen.queryByText('M0')).toBeNull()
+    expect(screen.getAllByText('periodChoice.quarter')).toHaveLength(12)
+
+    fireEvent.click(screen.getByText('periodChoice.showStandard'))
+    expect(screen.queryByText('periodChoice.standard.thisMonth')).toBeNull()
+    expect(
+      screen.getByText('periodChoice.standard.thisQuarter')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('periodChoice.standard.lastQuarter')
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('periodChoice.select'))
+    expect(onChange).toHaveBeenCalledWith({
+      from: '2026-04-01',
+      to: '2026-06-30',
+    })
+  })
 })

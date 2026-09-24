@@ -36,6 +36,7 @@ const choice = {
   fromNodeId: 'report.OSV.param.Period.from',
   toNodeId: 'report.OSV.param.Period.to',
   sourceNodeId: 'report.OSV.param.Period',
+  quarterOnly: false,
 }
 
 const openDialog = () => {
@@ -118,6 +119,21 @@ describe('PeriodChoiceNodeButton', () => {
     )
   })
 
+  it('квартальный отчёт предлагает только кварталы', () => {
+    render(<PeriodChoiceNodeButton choice={{ ...choice, quarterOnly: true }} />)
+    fireEvent.click(screen.getByLabelText('periodChoice.title'))
+
+    expect(screen.queryByText('M6')).toBeNull()
+    fireEvent.click(screen.getAllByText('periodChoice.quarter')[6])
+    fireEvent.click(screen.getByText('periodChoice.select'))
+
+    expect(dispatchMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        value: { from: '2026-07-01', to: '2026-09-30' },
+      })
+    )
+  })
+
   it('«Отмена» закрывает окно без изменений', () => {
     openDialog()
     fireEvent.click(screen.getAllByText('M6')[1])
@@ -129,6 +145,14 @@ describe('PeriodChoiceNodeButton', () => {
 
   it('проп periodChoice без обязательных ключей игнорируется', () => {
     expect(readPeriodChoice(choice)).toEqual(choice)
+    expect(
+      readPeriodChoice({
+        fromNodeId: 'a',
+        toNodeId: 'b',
+        sourceNodeId: 'c',
+        quarterOnly: true,
+      })?.quarterOnly
+    ).toBe(true)
     expect(readPeriodChoice({ fromNodeId: 'a' })).toBeNull()
     expect(readPeriodChoice(undefined)).toBeNull()
   })

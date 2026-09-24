@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   initialStartYear,
+  isQuarterInPeriod,
   isMonthInPeriod,
   monthPeriod,
   normalizePeriod,
+  quarterOf,
   quarterPeriod,
   standardPeriod,
   unionPeriod,
@@ -84,5 +86,18 @@ describe('period-choice', () => {
       2025
     )
     expect(initialStartYear({ from: '', to: '' }, today)).toBe(2025)
+  })
+
+  it('любая дата дотягивается до границ своего квартала', () => {
+    expect(quarterOf('2026-08-15')).toEqual({
+      from: '2026-07-01',
+      to: '2026-09-30',
+    })
+    expect(quarterOf('')).toBeUndefined()
+  })
+
+  it('квартал подсвечивается, только если целиком внутри периода', () => {
+    expect(isQuarterInPeriod(quarterPeriod(2026, 2), 2026, 2)).toBe(true)
+    expect(isQuarterInPeriod(monthPeriod(2026, 6), 2026, 2)).toBe(false)
   })
 })

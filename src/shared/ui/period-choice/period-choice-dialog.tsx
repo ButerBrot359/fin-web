@@ -10,20 +10,26 @@ import { cssVar, shadows } from '@/shared/design/tokens'
 import {
   EMPTY_PERIOD,
   initialStartYear,
+  QUARTER_STANDARD_PERIODS,
+  quarterOf,
+  STANDARD_PERIODS,
   unionPeriod,
   type PeriodRange,
 } from '@/shared/lib/utils/period-choice'
 import { PeriodChoiceMonthGrid } from './period-choice-month-grid'
+import { PeriodChoiceQuarterGrid } from './period-choice-quarter-grid'
 import { PeriodChoiceStandardList } from './period-choice-standard-list'
 
 interface PeriodChoiceDialogProps {
   initial: PeriodRange
+  quarterOnly?: boolean
   onSelect: (period: PeriodRange) => void
   onClose: () => void
 }
 
 export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
   initial,
+  quarterOnly = false,
   onSelect,
   onClose,
 }) => {
@@ -35,6 +41,9 @@ export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
   const pickFromGrid = (picked: PeriodRange, extend: boolean) => {
     setDraft(extend ? unionPeriod(draft, picked) : picked)
   }
+
+  const snap = (period: PeriodRange): PeriodRange =>
+    quarterOnly ? (quarterOf(period.from || period.to) ?? period) : period
 
   return (
     <Dialog
@@ -78,7 +87,7 @@ export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
               value={draft.from}
               label={t('periodChoice.from')}
               onChange={(from) => {
-                setDraft({ ...draft, from })
+                setDraft(snap({ ...draft, from }))
               }}
             />
           </div>
@@ -89,7 +98,9 @@ export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
               value={draft.to}
               label={t('periodChoice.to')}
               onChange={(to) => {
-                setDraft({ ...draft, to })
+                setDraft(
+                  quarterOnly ? snap({ from: to, to }) : { ...draft, to }
+                )
               }}
             />
           </div>
@@ -106,7 +117,16 @@ export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
 
         {standardMode ? (
           <PeriodChoiceStandardList
+            codes={quarterOnly ? QUARTER_STANDARD_PERIODS : STANDARD_PERIODS}
             period={draft}
+            onPick={setDraft}
+            onApply={onSelect}
+          />
+        ) : quarterOnly ? (
+          <PeriodChoiceQuarterGrid
+            startYear={startYear}
+            period={draft}
+            onStartYearChange={setStartYear}
             onPick={setDraft}
             onApply={onSelect}
           />
@@ -135,7 +155,7 @@ export const PeriodChoiceDialog: FC<PeriodChoiceDialogProps> = ({
           <Button
             variant="primary"
             onClick={() => {
-              onSelect(draft)
+              onSelect(snap(draft))
             }}
           >
             {t('periodChoice.select')}

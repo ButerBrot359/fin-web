@@ -159,6 +159,8 @@ check:lint:
 test:unit:
   extends: .node_job
   stage: test
+  # Не ждёт check:lint (allow_failure, ни на что не влияет) — стартует сразу (25.09.2026).
+  needs: []
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH'
@@ -228,6 +230,9 @@ build:dist:
 # (imagePullPolicy: Always, деплой держится на rollout restart, не на смене тега).
 image:prod:
   stage: image
+  # Стартует сразу, параллельно с test:unit: kaniko сам делает npm ci + vite build, ждать
+  # check:lint и build:dist незачем. Гейт по тестам — в deploy:prod (needs test:unit).
+  needs: []
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
@@ -389,8 +394,10 @@ image:smoke:
 
 deploy:prod:
   extends: .deploy
+  # Прод выкатывается, когда собран образ И прошли юнит-тесты — линт и build:dist не на пути.
   needs:
     - image:prod
+    - test:unit
   environment:
     name: prod
     # host из k8s/ingress.yaml — тот же адрес, что деплоился job'ом deploy в GitHub

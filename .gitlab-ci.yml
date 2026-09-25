@@ -109,6 +109,22 @@ workflow:
     - .npm
   policy: pull-push
 
+# Пайплайн main, который уже НАЧАЛСЯ, не отменяется новым коммитом (как в qazyna/webbuh, MR!55).
+# default.interruptible=true + автоотмена проекта (on_new_commit: conservative) отменяли бы каждый
+# пайплайн main следующим мержем — при частых мержах до deploy:prod не дошёл бы ни один.
+# Conservative не трогает пайплайн, где уже стартовал job с interruptible: false — это main:guard.
+# Ещё НЕ начавшиеся пайплайны main схлопываются в самый свежий, MR-пайплайны отменяются как раньше.
+main:guard:
+  stage: .pre
+  image: ubuntu:22.04
+  interruptible: false
+  variables:
+    GIT_STRATEGY: none
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+  script:
+    - echo "пайплайн main $CI_COMMIT_SHORT_SHA начат — новый коммит его уже не отменит"
+
 .node_job:
   # node:20-alpine — та же версия и тот же вариант образа, что в Dockerfile (`FROM
   # node:20-alpine`). Нет .nvmrc/engines в package.json, поэтому версия пинуется явно
@@ -382,15 +398,24 @@ deploy:prod:
     url: https://dev.qazyna.ai
   variables:
     K8S_NAMESPACE: "default"
-  # ТОЛЬКО ВРУЧНУЮ (решение владельца 24.09.2026): фронт пока живёт на GitHub
-  # (ButerBrot359/fin-web, deploy.yml выкатывает прод на push в main), а main здесь отстаёт от
-  # GitHub. Автодеплой отсюда 23.09.2026 перезаписал прод сборкой без SCRUM-330/355/308.
-  # Вернуть автодеплой — когда фронт окончательно переедет в GitLab и GitHub-деплой отключат.
+  # АВТОМАТИЧЕСКИ на push в main (решение владельца 25.09.2026: фронт переехал в qazyna/fin-web).
+  # До этого было вручную: GitHub ButerBrot359/fin-web тоже выкатывает прод на push в main, и
+  # 23.09.2026 автодеплой отсюда перезаписал прод отстающей сборкой. GitHub-деплой — решение
+  # команды фронта; пока он включён, прод получает последнюю из двух выкатывших сборок.
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: true
+  # Два пайплайна main могут дожить до деплоя (см. main:guard) — kubectl apply не параллелим.
+  resource_group: prod
   script:
+    # Выкатываем только HEAD main: если за время пайплайна в main приехал новый коммит, его
+    # пайплайн выкатит свежее, а этот не должен откатить прод на старую версию.
+    - |
+      for i in 1 2 3 4 5; do apt-get install -y -qq --no-install-recommends git >/dev/null && break; [ "$i" = 5 ] && exit 1; apt-get update -qq; sleep 20; done
+      HEAD_MAIN=$(git ls-remote origin "refs/heads/$CI_DEFAULT_BRANCH" | cut -f1)
+      if [ -n "$HEAD_MAIN" ] && [ "$HEAD_MAIN" != "$CI_COMMIT_SHA" ]; then
+        echo "В $CI_DEFAULT_BRANCH уже ${HEAD_MAIN} — прод выкатит его пайплайн, $CI_COMMIT_SHORT_SHA не деплою."
+        exit 0
+      fi
     - |
       set -euo pipefail
       IMAGE_TAG="${CI_REGISTRY_IMAGE}:sha-${CI_COMMIT_SHA}"
@@ -402,7 +427,7 @@ deploy:prod:
         echo "ANTHROPIC_API_KEY (scope=prod) пуст" >&2; exit 1
       fi
       # Pull-secret для registry.qazyna.ai из CI_DEPLOY_USER/CI_DEPLOY_PASSWORD (deploy token
-      # gitlab-deploy-token группы webbuh, read_registry) — без него ImagePullBackOff.
+      # gitlab-deploy-token группы qazyna, read_registry) — без него ImagePullBackOff.
       if [ -z "${CI_DEPLOY_USER:-}" ] || [ -z "${CI_DEPLOY_PASSWORD:-}" ]; then
         echo "CI_DEPLOY_USER/CI_DEPLOY_PASSWORD пусты — нет deploy token gitlab-deploy-token в группе" >&2; exit 1
       fi
@@ -450,7 +475,7 @@ deploy:demo:
         echo "ANTHROPIC_API_KEY пуст" >&2; exit 1
       fi
       # Pull-secret для registry.qazyna.ai из CI_DEPLOY_USER/CI_DEPLOY_PASSWORD (deploy token
-      # gitlab-deploy-token группы webbuh, read_registry) — без него ImagePullBackOff.
+      # gitlab-deploy-token группы qazyna, read_registry) — без него ImagePullBackOff.
       if [ -z "${CI_DEPLOY_USER:-}" ] || [ -z "${CI_DEPLOY_PASSWORD:-}" ]; then
         echo "CI_DEPLOY_USER/CI_DEPLOY_PASSWORD пусты — нет deploy token gitlab-deploy-token в группе" >&2; exit 1
       fi
@@ -526,7 +551,7 @@ deploy:highload:
         echo "ANTHROPIC_API_KEY пуст" >&2; exit 1
       fi
       # Pull-secret для registry.qazyna.ai из CI_DEPLOY_USER/CI_DEPLOY_PASSWORD (deploy token
-      # gitlab-deploy-token группы webbuh, read_registry) — без него ImagePullBackOff.
+      # gitlab-deploy-token группы qazyna, read_registry) — без него ImagePullBackOff.
       if [ -z "${CI_DEPLOY_USER:-}" ] || [ -z "${CI_DEPLOY_PASSWORD:-}" ]; then
         echo "CI_DEPLOY_USER/CI_DEPLOY_PASSWORD пусты — нет deploy token gitlab-deploy-token в группе" >&2; exit 1
       fi

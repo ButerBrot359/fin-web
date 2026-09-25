@@ -12,7 +12,7 @@ import type { SduiSessionValue } from './sdui-session-context'
 import { usePanelStore } from './stores/panel-store'
 import { armNewTab } from './workspace-tab-gateway'
 import { markFreshFormInstance } from '@/features/workspace-tabs/lib/fresh-form-instance-registry'
-import { isCreateRoute } from './fresh-form-instance'
+import { isCreateRoute, isReportRoute } from './fresh-form-instance'
 
 export interface EffectDepsCtx {
   navigate: NavigateFunction
@@ -63,7 +63,9 @@ export function buildCommonEffectDeps(
     openRouteInNewTab: (route) => {
       // armNewTab взводится ДО navigate — см. dispatch (редирект между OPEN и целью)
       armNewTab()
-      if (isCreateRoute(route)) markFreshFormInstance(route)
+      if (isCreateRoute(route) || isReportRoute(route)) {
+        markFreshFormInstance(route)
+      }
       void ctx.navigate(route)
     },
     replaceUrl: (route) => {

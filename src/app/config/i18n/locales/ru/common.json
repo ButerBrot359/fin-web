@@ -573,15 +573,6 @@
       "turnoverByDays": "Обороты счёта {{code}} по дням",
       "turnoverByMonths": "Обороты счёта {{code}} по месяцам"
     },
-    "period": {
-      "quickLabel": "Быстрый период",
-      "currentMonth": "Текущий месяц",
-      "previousMonth": "Предыдущий месяц",
-      "currentQuarter": "Текущий квартал",
-      "previousQuarter": "Предыдущий квартал",
-      "currentYear": "Текущий год",
-      "previousYear": "Предыдущий год"
-    },
     "fill": "Заполнить",
     "clear": "Очистить",
     "refresh": "Обновить",
@@ -719,7 +710,11 @@
     "tryAgain": "Попробовать снова"
   },
   "workspaceTabs": {
-    "newTab": "Новая вкладка"
+    "newTab": "Новая вкладка",
+    "closeAll": "Закрыть все",
+    "closeAllDirtyTitle": "Закрыть все вкладки?",
+    "closeAllDirtyMessage": "В некоторых вкладках есть несохранённые изменения ({{count}}). При закрытии они будут потеряны.",
+    "closeAllDirtyConfirm": "Закрыть без сохранения"
   },
   "aiConfig": {
     "title": "UI конфигурация",
@@ -758,6 +753,47 @@
   },
   "universalDomain": {
     "cardUnavailable": "Карточка записи пока недоступна — тип ещё не переведён на новую форму"
+  },
+  "periodChoice": {
+    "title": "Выберите период",
+    "from": "С",
+    "to": "По",
+    "clear": "Очистить период",
+    "showStandard": "Показать стандартные периоды",
+    "showCalendar": "Показать календарь",
+    "select": "Выбрать",
+    "cancel": "Отмена",
+    "previousYears": "Предыдущий год",
+    "nextYears": "Следующий год",
+    "quarter": "{{quarter}} квартал",
+    "months": [
+      "Янв",
+      "Фев",
+      "Мар",
+      "Апр",
+      "Май",
+      "Июн",
+      "Июл",
+      "Авг",
+      "Сен",
+      "Окт",
+      "Ноя",
+      "Дек"
+    ],
+    "standard": {
+      "today": "Сегодня",
+      "thisWeek": "Эта неделя",
+      "lastWeek": "Прошлая неделя",
+      "thisMonth": "Этот месяц",
+      "lastMonth": "Прошлый месяц",
+      "thisQuarter": "Этот квартал",
+      "lastQuarter": "Прошлый квартал",
+      "thisHalfYear": "Это полугодие",
+      "lastHalfYear": "Прошлое полугодие",
+      "thisYear": "Этот год",
+      "lastYear": "Прошлый год",
+      "sinceYearStart": "С начала года"
+    }
   },
   "sdui": {
     "conflict": {
@@ -1272,7 +1308,7 @@
     "object": "Объект",
     "message": "Пояснение",
     "clientAddress": "Адрес клиента",
-    "occurredAt": "Дата и время",
+    "occurredAt": "Дата",
     "user": "Пользователь",
     "anyValue": "Любое",
     "apply": "Применить",
@@ -1300,6 +1336,75 @@
       "SUCCESS": "Выполнено",
       "DENIED": "Отклонено",
       "FAILED": "Ошибка"
+    },
+    "computer": "Компьютер",
+    "application": "Приложение",
+    "event": "Событие",
+    "status": "Статус",
+    "metadata": "Метаданные",
+    "data": "Данные",
+    "session": "Сеанс",
+    "serverNode": "Рабочий сервер",
+    "ip": "IP-адреса",
+    "comment": "Комментарий",
+    "events": "События",
+    "eventsSelected": "Выбрано: {{count}}",
+    "domainKind": "Вид метаданных",
+    "typeCode": "Метаданные (код типа)",
+    "entryId": "Объект (ID)",
+    "ipFilter": "IP-адрес",
+    "sessionId": "Сеанс",
+    "deviceId": "Компьютер (ID устройства)",
+    "search": "Поиск",
+    "searchPlaceholder": "Комментарий, объект, пользователь…",
+    "moreFilters": "Ещё отборы",
+    "hideFilters": "Скрыть отборы",
+    "export": "Выгрузить в Excel",
+    "exportFailed": "Не удалось выгрузить журнал. Повторите попытку",
+    "exportTruncated": "В файл попали первые {{count}} записей — уточните отбор",
+    "exportFileName": "Журнал регистрации",
+    "domainKinds": {
+      "DICTIONARY": "Справочник",
+      "DOCUMENT": "Документ",
+      "ACCOUNT_PLAN": "План счетов",
+      "CHARACTERISTICS_PLAN": "План видов характеристик",
+      "CALCULATION_PLAN": "План видов расчета",
+      "EXCHANGE_PLAN": "План обмена",
+      "ACCUMULATION_REGISTER": "Регистр накопления",
+      "INFORMATION_REGISTER": "Регистр сведений",
+      "ACCOUNTING_REGISTER": "Регистр бухгалтерии"
+    },
+    "card": {
+      "title": "Событие журнала регистрации",
+      "who": "Кто и когда",
+      "where": "Откуда",
+      "what": "Что",
+      "changes": "Изменения реквизитов",
+      "noChanges": "Изменений реквизитов нет",
+      "attribute": "Реквизит",
+      "before": "Было",
+      "after": "Стало",
+      "close": "Закрыть",
+      "recordId": "Номер записи",
+      "userLogin": "Логин",
+      "userIin": "ИИН",
+      "userAgent": "Браузер",
+      "deviceId": "ID устройства",
+      "clientPublicIp": "Внешний адрес",
+      "clientLocalIp": "Адрес в локальной сети",
+      "clientAddress": "Адрес, который видит сервер",
+      "networkChain": "Цепочка адресов",
+      "taskId": "Фоновая операция",
+      "typeCode": "Код типа",
+      "entryId": "ID объекта",
+      "openObject": "Открыть объект",
+      "quickFilters": "Отобрать в журнале",
+      "sameSession": "Все события этого сеанса",
+      "sameComputer": "Все события этого компьютера",
+      "sameIp": "Все события с этого IP",
+      "sameUser": "Все события этого пользователя",
+      "sameObject": "Все события этого объекта",
+      "loadFailed": "Не удалось получить подробности события — показаны данные из списка"
     }
   },
   "analytics": {
@@ -1752,6 +1857,7 @@
     "filesDownloadedByBrowser": "Файл будет скачан браузером",
     "errorDetailsTitle": "Подробный текст ошибок проверки",
     "noErrors": "Ошибок нет",
+    "warningDetailsTitle": "Предупреждения (выгрузку не останавливают)",
     "hasErrorsToast": "Обнаружены ошибки — выгрузка не выполнена",
     "loadFailed": "Не удалось проверить документ",
     "formats": {
@@ -1767,5 +1873,31 @@
     },
     "savedToFolder": "Файл сохранён в выбранную папку",
     "saveFailed": "Не удалось сохранить файл"
+  },
+  "networkChain": {
+    "roles": {
+      "LOCAL": "Компьютер пользователя (локальная сеть)",
+      "PROXY": "Промежуточный прокси",
+      "PUBLIC": "Внешний адрес (роутер)",
+      "EDGE": "Шлюз перед сервером"
+    },
+    "sources": {
+      "CLIENT": "сообщил браузер",
+      "X_ORIGINAL_FORWARDED_FOR": "заголовок X-Original-Forwarded-For",
+      "X_FORWARDED_FOR": "заголовок X-Forwarded-For",
+      "X_REAL_IP": "заголовок X-Real-IP",
+      "REMOTE_ADDR": "адрес соединения"
+    },
+    "empty": "Адреса не зафиксированы"
+  },
+  "deviceName": {
+    "menuItem": "Имя компьютера",
+    "title": "Имя компьютера",
+    "description": "Под этим именем компьютер будет виден в журнале регистрации. Имя хранится только в этом браузере.",
+    "label": "Имя компьютера",
+    "placeholder": "Например, Бухгалтерия-1",
+    "hint": "Оставьте пустым, чтобы не задавать",
+    "save": "Сохранить",
+    "cancel": "Отмена"
   }
 }

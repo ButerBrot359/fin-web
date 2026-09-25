@@ -9,6 +9,7 @@ import type {
 
 import { rethrowApiError } from './api-error'
 import { attachAuthInterceptors } from './auth/attach-auth-interceptors'
+import { attachClientContextHeaders } from './attach-client-context-headers'
 
 /**
  * Таймаут обычного запроса. Без него axios ждёт БЕСКОНЕЧНО: если соединение
@@ -52,6 +53,9 @@ instance.interceptors.request.use((config) => {
 // ПОСЛЕ Accept-Language: интерсепторы запроса выполняются в порядке регистрации, и токен
 // подставляется последним — на уже сформированный конфиг.
 attachAuthInterceptors(instance)
+
+// Рабочее место для журнала регистрации (SCRUM-371): device id, локальные адреса, имя компьютера.
+attachClientContextHeaders(instance)
 
 // Все сбои запроса летят наверх типизированными ошибками (`ApiTransportError` /
 // `ApiConflictError` / `ApiHttpError` — W-6): маппинг общий с form-configs-api,

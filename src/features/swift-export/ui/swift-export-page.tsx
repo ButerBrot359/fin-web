@@ -47,7 +47,7 @@ export const SwiftExportPage = () => {
   const lastPreviewKey = useRef<string>('')
   useEffect(() => {
     if (!typeCode || Number.isNaN(id)) return
-    const key = `${String(id)}:${format}`
+    const key = `${String(id)}:${format}:${encoding}`
     if (lastPreviewKey.current === key) return
     lastPreviewKey.current = key
     previewMutate({ documentIds: [id], format, encoding })
@@ -113,6 +113,7 @@ export const SwiftExportPage = () => {
 
   const rows = preview.data?.rows ?? []
   const allErrors = rows.flatMap((row) => row.errors)
+  const allWarnings = rows.flatMap((row) => row.warnings ?? [])
 
   return (
     <div className="flex h-full flex-col gap-4 p-5">
@@ -195,6 +196,23 @@ export const SwiftExportPage = () => {
           </ul>
         )}
       </div>
+
+      {allWarnings.length > 0 && (
+        <div>
+          <Typography variant="subtitle2">
+            {t('swiftExport.warningDetailsTitle')}
+          </Typography>
+          <ul className="mt-1 list-disc pl-5">
+            {allWarnings.map((warning, index) => (
+              <li key={index}>
+                <Typography variant="body2" color="warning.main">
+                  {warning}
+                </Typography>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }

@@ -37,7 +37,11 @@ interface OsvReportTableProps {
    * счёта»), как в 1С. Передаём `Row` (для цепочки родителей — наследование
    * фильтров аналитики) и событие (для позиции меню у курсора).
    */
-  onRowDoubleClick?: (row: Row<OsvReportEntry>, e: ReactMouseEvent) => void
+  onRowDoubleClick?: (
+    row: Row<OsvReportEntry>,
+    e: ReactMouseEvent,
+    zone: OsvClickZone
+  ) => void
   /** Показывать строки «Кол.» (показатель «Количество»). */
   showQuantity?: boolean
   isLoading?: boolean
@@ -104,6 +108,18 @@ const ValueCell = ({
 }
 
 const tdValue = 'overflow-hidden whitespace-nowrap px-3 py-1.5'
+
+export type OsvClickZone = 'label' | 'value'
+
+const VALUE_CELL_ATTR = 'data-osv-cell'
+
+const valueCellProps = { [VALUE_CELL_ATTR]: 'value' }
+
+const clickZoneOf = (e: ReactMouseEvent): OsvClickZone =>
+  e.target instanceof Element &&
+  e.target.closest('td')?.getAttribute(VALUE_CELL_ATTR) === 'value'
+    ? 'value'
+    : 'label'
 const thBase =
   'whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase text-ui-06'
 
@@ -408,7 +424,9 @@ export const OsvReportTable = ({
               <tbody
                 key={row.id}
                 className={`group ${onRowDoubleClick ? 'cursor-pointer' : ''}`}
-                onDoubleClick={(e) => onRowDoubleClick?.(row, e)}
+                onDoubleClick={(e) =>
+                  onRowDoubleClick?.(row, e, clickZoneOf(e))
+                }
               >
                 {/* Строка показателя «Сумма» */}
                 <tr
@@ -447,7 +465,11 @@ export const OsvReportTable = ({
                     </Typography>
                   </td>
                   {SUM_FIELDS.map((f, i) => (
-                    <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
+                    <td
+                      key={f}
+                      {...valueCellProps}
+                      className={`${tdValue} ${groupBorder(i)}`}
+                    >
                       <ValueCell v={row.original[f]} bold={bold} />
                     </td>
                   ))}
@@ -461,7 +483,11 @@ export const OsvReportTable = ({
                       </Typography>
                     </td>
                     {QTY_FIELDS.map((f, i) => (
-                      <td key={f} className={`${tdValue} ${groupBorder(i)}`}>
+                      <td
+                        key={f}
+                        {...valueCellProps}
+                        className={`${tdValue} ${groupBorder(i)}`}
+                      >
                         <ValueCell v={row.original[f]} bold={bold} qty />
                       </td>
                     ))}

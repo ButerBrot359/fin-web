@@ -31,6 +31,7 @@ import {
   isRightAligned,
   resolveReportLang,
   indicatorSubLabels,
+  showsGrandTotal,
 } from '../lib/cell-helpers'
 import { buildHeadModel } from '../lib/head-model'
 import { ReportCell } from './report-cell'
@@ -158,11 +159,18 @@ const HEAD_OPTS = { parseLevelSep: true } as const
  * тёмно-зелёные без заливок; двухуровневая шапка через `groupTitleRu`.
  */
 /**
- * Роутер рендера дерева: при наличии `result.groupFloorCodes` — 1С-«Ведомость»
- * (группировки этажами + полосы-бэнды), иначе — обычное дерево-с-отступами (ОСВ).
+ * Роутер рендера дерева: при наличии `result.groupFloorCodes` и колонок деталей —
+ * 1С-«Ведомость» (группировки этажами + полосы-бэнды), иначе — обычное
+ * дерево-с-отступами (ОСВ).
  */
 export const TreeTable = (props: TreeTableProps) => {
-  if (props.result.groupFloorCodes && props.result.groupFloorCodes.length > 0) {
+  const hasFloors =
+    props.result.groupFloorCodes != null &&
+    props.result.groupFloorCodes.length > 0
+  const hasLeafColumns = props.columns.some(
+    (c) => c.role !== 'DIMENSION' && !isMeasure(c)
+  )
+  if (hasFloors && hasLeafColumns) {
     return <FloorTreeTable {...props} />
   }
   return <PlainTreeTable {...props} />
@@ -458,7 +466,7 @@ const PlainTreeTable = ({
             )
           })}
         </tbody>
-        {Object.keys(result.total).length > 0 && (
+        {showsGrandTotal(result.total, result.rows) && (
           <tfoot>
             <tr>
               <td className={tdBase}>
@@ -599,7 +607,8 @@ const FloorTreeTable = ({
   const isBandRow = (row: Row<ReportRowDto>): boolean =>
     row.getCanExpand() ||
     row.original.children.length > 0 ||
-    row.original.rowKind === 'GROUP_HEADER'
+    row.original.rowKind === 'GROUP_HEADER' ||
+    row.original.labelText != null
 
   // Ячейка бэнда (colspan по детальным колонкам): стрелка + отступ уровня + подпись.
   const renderBandCell = (row: Row<ReportRowDto>) => {
@@ -813,7 +822,7 @@ const FloorTreeTable = ({
             )
           })}
         </tbody>
-        {Object.keys(result.total).length > 0 && (
+        {showsGrandTotal(result.total, result.rows) && (
           <tfoot>
             <tr>
               <td colSpan={leafColumns.length} className={tdBase}>

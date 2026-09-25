@@ -37,6 +37,7 @@ export interface DrilldownOptions {
   valueRow?: DrilldownRow
   from?: string
   to?: string
+  parameters?: Record<string, unknown>
 }
 
 const CORR_ACCOUNT_GROUP_CODE = 'KorrSchet'
@@ -94,6 +95,15 @@ export const subkontoChainOf = (chain: DrilldownRow[]): DrilldownSubkonto[] =>
       : []
   )
 
+export const dimensionChainOf = (chain: DrilldownRow[]): DrilldownSubkonto[] =>
+  chain.flatMap((row) =>
+    row.groupCode != null &&
+    DIMENSION_TO_PARAM[row.groupCode] != null &&
+    row.rowRef?.domain === 'DICTIONARY'
+      ? [{ groupCode: row.groupCode, rowRef: row.rowRef }]
+      : []
+  )
+
 const withPeriod = (
   params: URLSearchParams,
   from?: string,
@@ -107,8 +117,13 @@ const withPeriod = (
 const withDimensions = (
   params: URLSearchParams,
   chain: DrilldownRow[],
-  allowed: string[]
+  allowed: string[],
+  parameters?: Record<string, unknown>
 ): URLSearchParams => {
+  for (const code of allowed) {
+    const value = parameters?.[code]
+    if (typeof value === 'number') params.set(code, String(value))
+  }
   for (const row of chain) {
     const code = row.groupCode ? DIMENSION_TO_PARAM[row.groupCode] : undefined
     if (!code || !allowed.includes(code)) continue
@@ -144,7 +159,7 @@ export const resolveDrilldownKinds = ({
 
 export const buildDrilldownTarget = (
   kind: DrilldownTargetKind,
-  { chain, accountRow, valueRow, from, to }: DrilldownOptions
+  { chain, accountRow, valueRow, from, to, parameters }: DrilldownOptions
 ): DrilldownTarget | null => {
   if (kind === 'accountCard') {
     return null
@@ -158,7 +173,12 @@ export const buildDrilldownTarget = (
     return {
       kind,
       reportCode: 'KartochkaSubkonto',
-      params: withDimensions(params, chain, SUBKONTO_CARD_DIMENSIONS),
+      params: withDimensions(
+        params,
+        chain,
+        SUBKONTO_CARD_DIMENSIONS,
+        parameters
+      ),
     }
   }
   if (accountRow?.rowRef == null) {
@@ -172,7 +192,7 @@ export const buildDrilldownTarget = (
     return {
       kind,
       reportCode: 'OborotyScheta',
-      params: withDimensions(params, chain, ['Organizatsiya']),
+      params: withDimensions(params, chain, ['Organizatsiya'], parameters),
     }
   }
   const reportCode =
@@ -184,7 +204,7 @@ export const buildDrilldownTarget = (
   return {
     kind,
     reportCode,
-    params: withDimensions(params, chain, ['Organizatsiya']),
+    params: withDimensions(params, chain, ['Organizatsiya'], parameters),
   }
 }
 

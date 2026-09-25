@@ -15,6 +15,7 @@ import {
   type ReportRowClickZone,
 } from '@/features/report-result-view'
 import { PageHeader } from '@/widgets/page-header'
+import { PeriodChoiceButton } from '@/shared/ui/period-choice'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { exportTableToXlsx } from '@/shared/lib/table-export'
@@ -70,8 +71,7 @@ import {
   readParamDraft,
   saveParamDraft,
 } from '../lib/utils/param-draft'
-import { KVARTALNYE_PRESETS, kvartalDaty } from '../lib/utils/period-presets'
-import { PeriodQuickSelect } from './period-quick-select'
+import { kvartalDaty } from '../lib/utils/kvartalnyy-period'
 import { ReportAltParamField } from './reportalt-param-field'
 import { ReportAltKnopkaMenyu } from './reportalt-knopka-menyu'
 import {
@@ -96,6 +96,13 @@ const errorMessage = (error: unknown): string | undefined => {
     if (typeof o.data?.message === 'string') return o.data.message
   }
   return undefined
+}
+
+interface ReportAltRowMenuState {
+  position: ReportAltMenuPosition
+  row: ReportAltRowDto
+  ancestors: ReportAltRowDto[]
+  zone: ReportRowClickZone
 }
 
 /**
@@ -453,44 +460,13 @@ export const ReportAltPage = () => {
     exportTableToXlsx(reportName, data)
   }
 
-  const [rowMenu, setRowMenu] = useState<{
-    position: ReportAltMenuPosition
-    row: ReportAltRowDto
-    ancestors: ReportAltRowDto[]
-    zone: ReportRowClickZone
-  } | null>(null)
-
-  const menuRow = rowMenu?.row ?? null
-  const openRef =
-    rowMenu?.zone === 'label' &&
-    menuRow?.rowRef &&
-    menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
-      ? menuRow.rowRef
-      : null
-  const openLabel = openRef
-    ? menuRow?.groupValue
-      ? `${t('osv.openElement')} «${menuRow.groupValue}»`
-      : t('osv.openElement')
-    : null
-  const accountRow = rowMenu
-    ? [...rowMenu.ancestors, rowMenu.row]
-        .reverse()
-        .find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
-    : undefined
-  const accountCardLabel = accountRow
-    ? `${t('osv.accountCard')} ${accountCodeOf(accountRow)}`.trim()
-    : null
+  const [rowMenu, setRowMenu] = useState<ReportAltRowMenuState | null>(null)
 
   const openRowRef = (ref: ReportAltRowRefDto) => {
     const segment = ref.domain === 'DICTIONARY' ? 'dictionary' : 'document'
     void navigate(
       `/modules/${pageCode}/${segment}/${ref.typeCode}/${String(ref.id)}`
     )
-  }
-
-  const handleOpenElement = () => {
-    if (!openRef) return
-    openRowRef(openRef)
   }
 
   const appliedPeriod = appliedBody?.parameters
@@ -500,75 +476,110 @@ export const ReportAltPage = () => {
       ) ?? {})
     : {}
 
-  const handleOpenAccountCard = () => {
-    if (!accountRow?.rowRef) return
-    const params = buildAccountCardParams(
-      rowMenu ? [...rowMenu.ancestors, rowMenu.row] : [],
-      {
-        accountId: accountRow.rowRef.id,
-        accountCode: accountRow.groupValue ?? '',
-        from: appliedPeriod.from,
-        to: appliedPeriod.to,
-      }
-    )
-    void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
-  }
-
-  const drilldownOptions = rowMenu
-    ? {
-        reportCode: moduleCode,
-        chain: [...rowMenu.ancestors, rowMenu.row],
-        accountRow,
-        valueRow: rowMenu.row,
-        from: appliedPeriod.from,
-        to: appliedPeriod.to,
-      }
-    : null
-
-  const rowMenuItems: ReportAltMenuItem[] = []
-  if (openLabel != null) {
-    rowMenuItems.push({
-      key: 'open',
-      label: openLabel,
-      onClick: handleOpenElement,
-    })
-  }
-  for (const kind of drilldownOptions
-    ? resolveDrilldownKinds(drilldownOptions)
-    : []) {
-    if (kind === 'accountCard') {
-      if (accountCardLabel != null) {
-        rowMenuItems.push({
-          key: kind,
-          label: accountCardLabel,
-          onClick: handleOpenAccountCard,
-        })
-      }
-      continue
-    }
-    const target = drilldownOptions
-      ? buildDrilldownTarget(kind, drilldownOptions)
+  const rowMenuItemsFor = (
+    menu: ReportAltRowMenuState | null
+  ): ReportAltMenuItem[] => {
+    const menuRow = menu?.row ?? null
+    const openRef =
+      menu?.zone === 'label' &&
+      menuRow?.rowRef &&
+      menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
+        ? menuRow.rowRef
+        : null
+    const openLabel = openRef
+      ? menuRow?.groupValue
+        ? `${t('osv.openElement')} «${menuRow.groupValue}»`
+        : t('osv.openElement')
       : null
-    if (target == null) continue
-    const label =
-      kind === 'osvPoSchetu' ||
-      kind === 'analizScheta' ||
-      kind === 'turnoverByDays' ||
-      kind === 'turnoverByMonths'
-        ? t(`reportalt.drilldown.${kind}`, {
-            code: accountCodeOf(accountRow),
-          }).trim()
-        : t(`reportalt.drilldown.${kind}`)
-    rowMenuItems.push({
-      key: kind,
-      label,
-      onClick: () => {
-        void navigate(
-          `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`
-        )
-      },
-    })
+    const accountRow = menu
+      ? [...menu.ancestors, menu.row]
+          .reverse()
+          .find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
+      : undefined
+    const accountCardLabel = accountRow
+      ? `${t('osv.accountCard')} ${accountCodeOf(accountRow)}`.trim()
+      : null
+
+    const handleOpenElement = () => {
+      if (!openRef) return
+      openRowRef(openRef)
+    }
+
+    const handleOpenAccountCard = () => {
+      if (!accountRow?.rowRef) return
+      const params = buildAccountCardParams(
+        menu ? [...menu.ancestors, menu.row] : [],
+        {
+          accountId: accountRow.rowRef.id,
+          accountCode: accountRow.groupValue ?? '',
+          from: appliedPeriod.from,
+          to: appliedPeriod.to,
+          parameters: appliedBody?.parameters,
+        }
+      )
+      void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
+    }
+
+    const drilldownOptions = menu
+      ? {
+          reportCode: moduleCode,
+          chain: [...menu.ancestors, menu.row],
+          accountRow,
+          valueRow: menu.row,
+          from: appliedPeriod.from,
+          to: appliedPeriod.to,
+          parameters: appliedBody?.parameters,
+        }
+      : null
+
+    const rowMenuItems: ReportAltMenuItem[] = []
+    if (openLabel != null) {
+      rowMenuItems.push({
+        key: 'open',
+        label: openLabel,
+        onClick: handleOpenElement,
+      })
+    }
+    for (const kind of drilldownOptions
+      ? resolveDrilldownKinds(drilldownOptions)
+      : []) {
+      if (kind === 'accountCard') {
+        if (accountCardLabel != null) {
+          rowMenuItems.push({
+            key: kind,
+            label: accountCardLabel,
+            onClick: handleOpenAccountCard,
+          })
+        }
+        continue
+      }
+      const target = drilldownOptions
+        ? buildDrilldownTarget(kind, drilldownOptions)
+        : null
+      if (target == null) continue
+      const label =
+        kind === 'osvPoSchetu' ||
+        kind === 'analizScheta' ||
+        kind === 'turnoverByDays' ||
+        kind === 'turnoverByMonths'
+          ? t(`reportalt.drilldown.${kind}`, {
+              code: accountCodeOf(accountRow),
+            }).trim()
+          : t(`reportalt.drilldown.${kind}`)
+      rowMenuItems.push({
+        key: kind,
+        label,
+        onClick: () => {
+          void navigate(
+            `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`
+          )
+        },
+      })
+    }
+    return rowMenuItems
   }
+
+  const rowMenuItems = rowMenuItemsFor(rowMenu)
 
   // Печать в PDF: бэк может отвечать 501 (печать не реализована) — тост.
   const [isPrinting, setIsPrinting] = useState(false)
@@ -817,17 +828,13 @@ export const ReportAltPage = () => {
                     helperText={!period.to ? requiredHint : undefined}
                   />
                 </div>
-                {/* Быстрый период: месяц/квартал/год одним действием. Поля дат
-                    остаются рабочими — список только проставляет в них границы. */}
-                <div className="w-48">
-                  <PeriodQuickSelect
-                    period={period}
-                    presets={kvartalnyy ? KVARTALNYE_PRESETS : undefined}
-                    onChange={(next) => {
-                      setParamValue(param.code, next)
-                    }}
-                  />
-                </div>
+                <PeriodChoiceButton
+                  period={period}
+                  quarterOnly={kvartalnyy}
+                  onChange={(next) => {
+                    setParamValue(param.code, next)
+                  }}
+                />
               </div>
             )
           }
@@ -1018,12 +1025,19 @@ export const ReportAltPage = () => {
                   openRowRef(row.rowRef)
                 }}
                 onRowDoubleClick={(row, ancestors, event, zone) => {
-                  setRowMenu({
+                  const menu = {
                     position: { top: event.clientY, left: event.clientX },
                     row,
                     ancestors,
                     zone,
-                  })
+                  }
+                  const items = rowMenuItemsFor(menu)
+                  if (items.length === 1 && !items[0].disabled) {
+                    setRowMenu(null)
+                    items[0].onClick()
+                    return
+                  }
+                  setRowMenu(menu)
                 }}
               />
               {/* LEDGER: постраничная подгрузка (F4 — hasMore/nextOffset). */}

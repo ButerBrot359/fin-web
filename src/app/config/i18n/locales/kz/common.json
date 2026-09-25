@@ -573,15 +573,6 @@
       "turnoverByDays": "{{code}} шотының айналымдары күндер бойынша",
       "turnoverByMonths": "{{code}} шотының айналымдары айлар бойынша"
     },
-    "period": {
-      "quickLabel": "Жылдам кезең",
-      "currentMonth": "Ағымдағы ай",
-      "previousMonth": "Өткен ай",
-      "currentQuarter": "Ағымдағы тоқсан",
-      "previousQuarter": "Өткен тоқсан",
-      "currentYear": "Ағымдағы жыл",
-      "previousYear": "Өткен жыл"
-    },
     "fill": "Толтыру",
     "clear": "Тазарту",
     "refresh": "Жаңарту",
@@ -719,7 +710,11 @@
     "tryAgain": "Қайталап көру"
   },
   "workspaceTabs": {
-    "newTab": "Жаңа қойынды"
+    "newTab": "Жаңа қойынды",
+    "closeAll": "Барлығын жабу",
+    "closeAllDirtyTitle": "Барлық қойындыларды жабу керек пе?",
+    "closeAllDirtyMessage": "Кейбір қойындыларда сақталмаған өзгерістер бар ({{count}}). Жапқанда олар жоғалады.",
+    "closeAllDirtyConfirm": "Сақтамай жабу"
   },
   "aiConfig": {
     "title": "UI конфигурациясы",
@@ -758,6 +753,47 @@
   },
   "universalDomain": {
     "cardUnavailable": "Жазба карточкасы әзірше қолжетімсіз — түр жаңа пішінге әлі көшірілмеген"
+  },
+  "periodChoice": {
+    "title": "Кезеңді таңдаңыз",
+    "from": "Бастап",
+    "to": "Дейін",
+    "clear": "Кезеңді тазалау",
+    "showStandard": "Стандартты кезеңдерді көрсету",
+    "showCalendar": "Күнтізбені көрсету",
+    "select": "Таңдау",
+    "cancel": "Болдырмау",
+    "previousYears": "Алдыңғы жыл",
+    "nextYears": "Келесі жыл",
+    "quarter": "{{quarter}} тоқсан",
+    "months": [
+      "Қаң",
+      "Ақп",
+      "Нау",
+      "Сәу",
+      "Мам",
+      "Мау",
+      "Шіл",
+      "Там",
+      "Қыр",
+      "Қаз",
+      "Қар",
+      "Жел"
+    ],
+    "standard": {
+      "today": "Бүгін",
+      "thisWeek": "Осы апта",
+      "lastWeek": "Өткен апта",
+      "thisMonth": "Осы ай",
+      "lastMonth": "Өткен ай",
+      "thisQuarter": "Осы тоқсан",
+      "lastQuarter": "Өткен тоқсан",
+      "thisHalfYear": "Осы жарты жыл",
+      "lastHalfYear": "Өткен жарты жыл",
+      "thisYear": "Осы жыл",
+      "lastYear": "Өткен жыл",
+      "sinceYearStart": "Жыл басынан"
+    }
   },
   "sdui": {
     "conflict": {
@@ -1272,7 +1308,7 @@
     "object": "Нысан",
     "message": "Түсіндірме",
     "clientAddress": "Клиент мекенжайы",
-    "occurredAt": "Күні және уақыты",
+    "occurredAt": "Күні",
     "user": "Пайдаланушы",
     "anyValue": "Кез келген",
     "apply": "Қолдану",
@@ -1300,6 +1336,75 @@
       "SUCCESS": "Орындалды",
       "DENIED": "Қабылданбады",
       "FAILED": "Қате"
+    },
+    "computer": "Компьютер",
+    "application": "Қолданба",
+    "event": "Оқиға",
+    "status": "Мәртебе",
+    "metadata": "Метадеректер",
+    "data": "Деректер",
+    "session": "Сеанс",
+    "serverNode": "Жұмыс сервері",
+    "ip": "IP-мекенжайлар",
+    "comment": "Түсініктеме",
+    "events": "Оқиғалар",
+    "eventsSelected": "Таңдалды: {{count}}",
+    "domainKind": "Метадеректер түрі",
+    "typeCode": "Метадеректер (түр коды)",
+    "entryId": "Нысан (ID)",
+    "ipFilter": "IP-мекенжай",
+    "sessionId": "Сеанс",
+    "deviceId": "Компьютер (құрылғы ID)",
+    "search": "Іздеу",
+    "searchPlaceholder": "Түсініктеме, нысан, пайдаланушы…",
+    "moreFilters": "Қосымша сүзгілер",
+    "hideFilters": "Сүзгілерді жасыру",
+    "export": "Excel-ге түсіру",
+    "exportFailed": "Журналды түсіру мүмкін болмады. Қайталап көріңіз",
+    "exportTruncated": "Файлға алғашқы {{count}} жазба түсті — сүзгіні нақтылаңыз",
+    "exportFileName": "Тіркеу журналы",
+    "domainKinds": {
+      "DICTIONARY": "Анықтамалық",
+      "DOCUMENT": "Құжат",
+      "ACCOUNT_PLAN": "Шоттар жоспары",
+      "CHARACTERISTICS_PLAN": "Сипаттамалар түрлерінің жоспары",
+      "CALCULATION_PLAN": "Есептеу түрлерінің жоспары",
+      "EXCHANGE_PLAN": "Алмасу жоспары",
+      "ACCUMULATION_REGISTER": "Жинақтау регистрі",
+      "INFORMATION_REGISTER": "Мәліметтер регистрі",
+      "ACCOUNTING_REGISTER": "Бухгалтерия регистрі"
+    },
+    "card": {
+      "title": "Тіркеу журналының оқиғасы",
+      "who": "Кім және қашан",
+      "where": "Қайдан",
+      "what": "Не",
+      "changes": "Деректемелердің өзгерістері",
+      "noChanges": "Деректемелер өзгермеген",
+      "attribute": "Деректеме",
+      "before": "Бұрын",
+      "after": "Кейін",
+      "close": "Жабу",
+      "recordId": "Жазба нөмірі",
+      "userLogin": "Логин",
+      "userIin": "ЖСН",
+      "userAgent": "Браузер",
+      "deviceId": "Құрылғы ID",
+      "clientPublicIp": "Сыртқы мекенжай",
+      "clientLocalIp": "Жергілікті желідегі мекенжай",
+      "clientAddress": "Сервер көретін мекенжай",
+      "networkChain": "Мекенжайлар тізбегі",
+      "taskId": "Фондық операция",
+      "typeCode": "Түр коды",
+      "entryId": "Нысан ID",
+      "openObject": "Нысанды ашу",
+      "quickFilters": "Журналда іріктеу",
+      "sameSession": "Осы сеанстың барлық оқиғалары",
+      "sameComputer": "Осы компьютердің барлық оқиғалары",
+      "sameIp": "Осы IP-ден барлық оқиғалар",
+      "sameUser": "Осы пайдаланушының барлық оқиғалары",
+      "sameObject": "Осы нысанның барлық оқиғалары",
+      "loadFailed": "Оқиға мәліметтерін алу мүмкін болмады — тізімдегі деректер көрсетілген"
     }
   },
   "analytics": {
@@ -1752,6 +1857,7 @@
     "filesDownloadedByBrowser": "Файлды браузер жүктеп алады",
     "errorDetailsTitle": "Тексеру қателерінің толық мәтіні",
     "noErrors": "Қателер жоқ",
+    "warningDetailsTitle": "Ескертулер (жүктеуді тоқтатпайды)",
     "hasErrorsToast": "Қателер табылды — жүктеу орындалмады",
     "loadFailed": "Құжатты тексеру мүмкін болмады",
     "formats": {
@@ -1767,5 +1873,31 @@
     },
     "savedToFolder": "Файл таңдалған қалтаға сақталды",
     "saveFailed": "Файлды сақтау мүмкін болмады"
+  },
+  "networkChain": {
+    "roles": {
+      "LOCAL": "Пайдаланушы компьютері (жергілікті желі)",
+      "PROXY": "Аралық прокси",
+      "PUBLIC": "Сыртқы мекенжай (роутер)",
+      "EDGE": "Сервер алдындағы шлюз"
+    },
+    "sources": {
+      "CLIENT": "браузер хабарлады",
+      "X_ORIGINAL_FORWARDED_FOR": "X-Original-Forwarded-For тақырыбы",
+      "X_FORWARDED_FOR": "X-Forwarded-For тақырыбы",
+      "X_REAL_IP": "X-Real-IP тақырыбы",
+      "REMOTE_ADDR": "қосылым мекенжайы"
+    },
+    "empty": "Мекенжайлар тіркелмеген"
+  },
+  "deviceName": {
+    "menuItem": "Компьютер атауы",
+    "title": "Компьютер атауы",
+    "description": "Компьютер тіркеу журналында осы атаумен көрінеді. Атау тек осы браузерде сақталады.",
+    "label": "Компьютер атауы",
+    "placeholder": "Мысалы, Бухгалтерия-1",
+    "hint": "Атау бермеу үшін бос қалдырыңыз",
+    "save": "Сақтау",
+    "cancel": "Болдырмау"
   }
 }

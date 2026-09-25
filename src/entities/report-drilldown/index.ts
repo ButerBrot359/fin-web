@@ -3,6 +3,7 @@ export {
   accountCodeOf,
   buildDrilldownTarget,
   buildDrilldownTargets,
+  dimensionChainOf,
   isSubkontoRow,
   resolveDrilldownKinds,
   subkontoChainOf,

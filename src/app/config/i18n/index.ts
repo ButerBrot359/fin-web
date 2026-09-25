@@ -8,6 +8,8 @@ import kz from './locales/kz/common.json'
 export const supportedLanguages = ['ru', 'kz'] as const
 export type SupportedLanguage = (typeof supportedLanguages)[number]
 
+export const LANGUAGE_STORAGE_KEY = 'i18nextLng'
+
 void i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -17,14 +19,14 @@ void i18n
       kz: { common: kz },
     },
     defaultNS: 'common',
-    lng: 'ru',
     fallbackLng: 'ru',
     supportedLngs: supportedLanguages,
     interpolation: {
       escapeValue: false,
     },
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['localStorage'],
+      lookupLocalStorage: LANGUAGE_STORAGE_KEY,
       caches: ['localStorage'],
     },
   })

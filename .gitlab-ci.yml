@@ -1,0 +1,549 @@
+# =============================================================================
+# GitLab CI — fin-web (self-hosted GitLab CE 19.4, gitlab.qazyna.ai/qazyna/fin-web)
+# =============================================================================
+#
+# ПРОИСХОЖДЕНИЕ. Замена .github/workflows/deploy.yml + deploy-demo.yml для self-hosted
+# GitLab. GitHub-workflow'ы НЕ удалены и не правились — GitHub пока живёт параллельно
+# (решение владельца 22.09.2026, то же самое уже сделано для backend — webbuh/.gitlab-ci.yml,
+# это его прямой аналог для фронта). Источники по job'ам:
+#   check/test/build        ← НОВОЕ: в GitHub у fin-web не было отдельного CI (lint/test/tsc
+#                              гонялись только локально через husky/lint-staged) — добавлено
+#                              по прямому запросу владельца, не перенос откуда-либо.
+#   image:prod, deploy:prod ← .github/workflows/deploy.yml (jobs build-and-push, deploy)
+#   image:demo, deploy:demo ← .github/workflows/deploy-demo.yml (jobs build, deploy)
+#
+# РАННЕР. Тот же shared docker-executor, что у backend (qazyna/webbuh) — concurrent=3 на
+# ВЕСЬ инстанс (общий на оба репозитория), на job ≤ 5 CPU / 6 ГБ, privileged=false →
+# docker-in-docker недоступен. Образы — kaniko, не `docker build`.
+#
+# КЛЮЧЕВОЕ АРХИТЕКТУРНОЕ РЕШЕНИЕ (зафиксировано при переносе, 22.09.2026): в отличие от
+# backend, где ОДИН образ конфигурируется в рантайме (env в k8s manifest), у fin-web
+# VITE_* переменные ЗАПЕКАЮТСЯ В БАНДЛ на этапе `vite build` внутри Dockerfile — сменить
+# их на работающем поде нельзя, нужен новый образ. Поэтому prod/demo/highload собираются
+# ОТДЕЛЬНЫМИ job'ами (image:prod / image:demo / image:highload) с разными build-args, а не
+# одним общим — так же, как это было устроено в GitHub (deploy.yml и deploy-demo.yml собирали
+# образ каждый сам, с разными build-args). dev образа пока нет вовсе — нет манифестов k8s/dev/
+# (SCRUM-423, 23.09.2026: k8s/highload/ и image:highload/deploy:highload появились —
+# нагрузочный контур backend'а, см. webbuh/docs/project/tickets/2026-09-23-highload-okruzhenie-scrum-423.md
+# и webbuh/docs/project/runbooks/highload-clone-prod-metadata.md).
+#
+# ПЕРЕМЕННЫЕ. GitLab CI/CD Variables (Settings → CI/CD → Variables), НЕ в этом файле.
+# Имена — БЕЗ префиксов PROD_/DEMO_ (то же решение владельца 22.09.2026, что для backend):
+# одно имя переменной заводится несколько раз с разным Environment scope (prod/demo),
+# либо один раз со scope "*" для общих значений. ВАЖНО для этого файла: job'ы image:prod
+# и image:demo НЕ являются deploy-job'ами, но им ОБЯЗАТЕЛЬНО нужно объявление
+# `environment:.name`, иначе GitLab не подставит нужное scope-значение build-arg'а
+# (VITE_API_BASE_URL и т.п.) — это единственный способ переиспользовать соглашение
+# "одно имя переменной, разный scope" без вводить префиксы. Из-за этого image:prod/
+# image:demo будут видны на вкладке Environments/Deployments как деплойные события —
+# это побочный эффект, не ошибка. Полный список переменных — docs/gitlab-ci.md.
+#
+# КАК НАЗНАЧИТЬ ВЕТКУ СРЕДЕ demo/dev (highload — ветка `highload`, 24.09.2026). Job'ы
+# image:demo/deploy:demo, image:highload/deploy:highload, deploy:dev сейчас `when: manual`.
+# Когда ветка определится — замени `rules:` соответствующего job'а, например:
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "demo"'
+# (image:prod — авто на push в main; deploy:prod — ВРУЧНУЮ с 24.09.2026, пока фронт живёт на GitHub.)
+#
+# HIGHLOAD (SCRUM-423) — единственное отличие от demo: `VITE_API_BASE_URL`/
+# `VITE_FORM_CONFIGS_URL`/`DOCUMENT_TYPES_API_BASE_URL` со scope=highload в GitLab CI/CD
+# Variables ПОКА НЕ ЗАВЕДЕНЫ (то же самое верно для backend-переменных со scope=highload,
+# см. webbuh/docs/project/runbooks/gitlab-ci.md §«HIGHLOAD») — чтобы `image:highload` не падал
+# на этом вслепую и не требовал переменных для первого запуска, build-args в `image:highload`
+# ЖЁСТКО ФОЛБЭЧАТ на `https://highload-api.qazyna.ai`/`https://highload.qazyna.ai`, если
+# переменная пуста (`${VITE_API_BASE_URL:-https://highload-api.qazyna.ai}`) — в отличие от
+# `image:prod`/`image:demo`, где такой переменной ОБЯЗАНА существовать (без дефолта, пустое
+# значение — осознанный сигнал «переменную забыли завести»). Когда владелец заведёт
+# scope=highload переменные — дефолты не мешают, просто перестанут использоваться.
+#
+# ЧТО НЕ ПЕРЕНЕСЕНО: у fin-web в GitHub не было ops workflow_dispatch-сценариев
+# (в отличие от backend) — переносить нечего.
+
+stages:
+  - check
+  - test
+  - build
+  - image
+  - deploy
+
+default:
+  interruptible: true
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - api_failure
+      - scheduler_failure
+
+variables:
+  # eslint (typescript-eslint по 1500+ файлам) упирается в дефолтный heap Node ~2 ГБ — первый прогон
+  # упал «JavaScript heap out of memory». Лимит job — 8 ГБ, отдаём Node 4 ГБ.
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  # npm ci всегда пересоздаёт node_modules с нуля (в отличие от install) — кэшировать
+  # node_modules бессмысленно, кэшируем npm-кэш тарболов, чтобы не ходить в registry
+  # за уже скачанными версиями.
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+  # husky ставит git hooks через `prepare` (npm lifecycle) при каждом `npm ci` — в CI
+  # ни .git worktree в привычном виде, ни смысла в hooks нет; HUSKY=0 — официальный
+  # флаг husky для тихого пропуска установки хуков.
+  HUSKY: "0"
+  # У фронта нет гейтов на полную git-историю (в отличие от backend'овского
+  # MigrationImmutabilityAfterPushGateTest) — GIT_DEPTH не трогаем, берём умолчание проекта.
+
+# Предотвращение дублей пайплайна на MR + push — тот же рецепт, что у backend.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+
+.node_cache: &node_cache
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - .npm
+  policy: pull-push
+
+.node_job:
+  # node:20-alpine — та же версия и тот же вариант образа, что в Dockerfile (`FROM
+  # node:20-alpine`). Нет .nvmrc/engines в package.json, поэтому версия пинуется явно
+  # здесь и держится в синхроне с Dockerfile вручную.
+  image: node:20-alpine
+  cache:
+    <<: *node_cache
+  before_script:
+    - npm ci --prefer-offline
+
+# -----------------------------------------------------------------------------------------
+# STAGE: check — lint, на КАЖДЫЙ пуш (фича-ветки без MR тоже).
+# -----------------------------------------------------------------------------------------
+check:lint:
+  extends: .node_job
+  stage: check
+  # ИНФОРМАЦИОННЫЙ до чистки lint-долга: на GitHub «npm run lint» не запускался, и main
+  # накопил 141 ошибку eslint (react-compiler, FSD-границы) — первый прогон в GitLab, 22.09.2026.
+  # Job показывает проблемы (жёлтый), но пайплайн не блокирует. Снять allow_failure, когда
+  # «npm run lint» на main станет чистым.
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+  script:
+    - npm run lint
+
+# -----------------------------------------------------------------------------------------
+# STAGE: test — vitest, на КАЖДЫЙ пуш.
+# -----------------------------------------------------------------------------------------
+test:unit:
+  extends: .node_job
+  stage: test
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+  script:
+    # Таймауты выше дефолтных 5 с: раннер общий с backend-сьютом (concurrent=2 на одном хосте),
+    # интерактивные тесты (календарь, попапы, виртуальные таблицы) под нагрузкой шли 5–9 с и
+    # падали «Test timed out in 5000ms» (pipeline #13, 22.09.2026) — не по логике, по CPU.
+    - npm run test -- --testTimeout=30000 --hookTimeout=30000
+
+# Визуальные снимки (Playwright, tests/visual/) — полноценный прогон поднимает свой
+# preview-сервер (`npm run build && vite preview`) и требует браузерных бинарников
+# Playwright (сотни МБ, нет в node:20-alpine) — тяжело для раннера concurrent=2, общего
+# с backend. Оставлено ручным опциональным job'ом, НЕ в обязательном наборе, по аналогии
+# с backend'овским test:bdd (tabel-bdd, dind недоступен).
+test:visual:
+  stage: test
+  image: mcr.microsoft.com/playwright:v1.62.1-noble
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: manual
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
+  allow_failure: true
+  cache:
+    <<: *node_cache
+  script:
+    - npm ci --prefer-offline
+    - npm run test:visual
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths:
+      - playwright-report/
+      - test-results/
+
+# -----------------------------------------------------------------------------------------
+# STAGE: build — tsc + vite build → dist/ артефактом. Валидирует, что сборка вообще
+# проходит; в image-стадию этот dist НЕ передаётся — Dockerfile у fin-web многостадийный
+# и сам делает `npm ci && npm run build` внутри kaniko-контекста (в отличие от backend,
+# где Dockerfile берёт уже готовый jar артефактом из package-стадии). Реальные VITE_*
+# значения здесь не нужны — это чисто компиляционный гейт (tsc -b ловит ошибки типов),
+# конкретные URL подставляются только в image:prod/image:demo.
+# -----------------------------------------------------------------------------------------
+build:dist:
+  extends: .node_job
+  stage: build
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+  script:
+    - npm run build
+  artifacts:
+    expire_in: 3 days
+    paths:
+      - dist/
+
+# -----------------------------------------------------------------------------------------
+# STAGE: image — kaniko (dind недоступен, privileged=false). Пушит в
+# $CI_REGISTRY_IMAGE (registry.qazyna.ai/qazyna/fin-web, встроенный GitLab Container
+# Registry — $CI_REGISTRY* уже есть, заводить ничего не надо).
+# -----------------------------------------------------------------------------------------
+
+# image:prod — авто на main (было .github/workflows/deploy.yml, job build-and-push).
+# Тег ":latest" сохранён ради обратной совместимости с существующим k8s/deployment.yaml
+# (imagePullPolicy: Always, деплой держится на rollout restart, не на смене тега).
+image:prod:
+  stage: image
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  environment:
+    name: prod
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+    - when: manual
+      allow_failure: true
+  script:
+    - mkdir -p /kaniko/.docker
+    - >-
+      echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf '%s:%s' "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}"
+      > /kaniko/.docker/config.json
+    - >-
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}:sha-${CI_COMMIT_SHA}"
+      --destination "${CI_REGISTRY_IMAGE}:latest"
+      --cache=true
+      --cache-repo="${CI_REGISTRY_IMAGE}/cache"
+      --build-arg "VITE_API_BASE_URL=${VITE_API_BASE_URL}"
+      --build-arg "VITE_FORM_CONFIGS_URL=${VITE_FORM_CONFIGS_URL}"
+      --build-arg "DOCUMENT_TYPES_API_BASE_URL=${DOCUMENT_TYPES_API_BASE_URL}"
+      --build-arg "VITE_AUTH_ENABLED=${VITE_AUTH_ENABLED:-false}"
+      --build-arg "VITE_FACE_FLASH_DISABLED=${VITE_FACE_FLASH_DISABLED:-false}"
+      --label "org.opencontainers.image.source=${CI_PROJECT_URL}"
+      --label "org.opencontainers.image.revision=${CI_COMMIT_SHA}"
+
+# image:demo — ручной (было .github/workflows/deploy-demo.yml, workflow_dispatch,
+# job build). Тег БЕЗ ":latest" — так же, как в GitHub (только demo-sha-<sha>), чтобы
+# demo-сборка никогда не перекрывала прод-тег ":latest" в общем registry.
+image:demo:
+  stage: image
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  environment:
+    name: demo
+  rules:
+    - when: manual
+      allow_failure: true
+  script:
+    - mkdir -p /kaniko/.docker
+    - >-
+      echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf '%s:%s' "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}"
+      > /kaniko/.docker/config.json
+    - >-
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}:demo-sha-${CI_COMMIT_SHA}"
+      --cache=true
+      --cache-repo="${CI_REGISTRY_IMAGE}/cache"
+      --build-arg "VITE_API_BASE_URL=${VITE_API_BASE_URL}"
+      --build-arg "VITE_FORM_CONFIGS_URL=${VITE_FORM_CONFIGS_URL}"
+      --build-arg "DOCUMENT_TYPES_API_BASE_URL=${DOCUMENT_TYPES_API_BASE_URL}"
+      --build-arg "VITE_AUTH_ENABLED=${VITE_AUTH_ENABLED:-false}"
+      --build-arg "VITE_FACE_FLASH_DISABLED=${VITE_FACE_FLASH_DISABLED:-false}"
+      --label "org.opencontainers.image.source=${CI_PROJECT_URL}"
+      --label "org.opencontainers.image.revision=${CI_COMMIT_SHA}"
+
+# image:highload — ручной, нагрузочный контур backend'а (SCRUM-423). Тег БЕЗ ":latest",
+# по образцу image:demo (highload-sha-<sha>). Build-args со SCOPE-ФОЛБЭКОМ (см. пояснение в
+# шапке файла) — переменные со scope=highload в GitLab CI/CD пока не заведены, но job не
+# должен падать вслепую на пустых значениях: без дефолта пустой VITE_API_BASE_URL запёкся бы
+# в бандл как пустая строка, и фронт стучался бы на свой же origin вместо API.
+image:highload:
+  stage: image
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  environment:
+    name: highload
+  # Ветка highload назначена среде highload (24.09.2026): пуш в неё собирает образ сразу,
+  # не дожидаясь lint/test/build основной цепочки. На остальных ветках — вручную, как раньше.
+  needs: []
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "highload" && $CI_PIPELINE_SOURCE == "push"'
+    - when: manual
+      allow_failure: true
+  script:
+    - mkdir -p /kaniko/.docker
+    - >-
+      echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf '%s:%s' "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}"
+      > /kaniko/.docker/config.json
+    - >-
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}:highload-sha-${CI_COMMIT_SHA}"
+      --cache=true
+      --cache-repo="${CI_REGISTRY_IMAGE}/cache"
+      --build-arg "VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://highload-api.qazyna.ai}"
+      --build-arg "VITE_FORM_CONFIGS_URL=${VITE_FORM_CONFIGS_URL:-https://highload.qazyna.ai}"
+      --build-arg "DOCUMENT_TYPES_API_BASE_URL=${DOCUMENT_TYPES_API_BASE_URL:-https://highload-api.qazyna.ai}"
+      --build-arg "VITE_AUTH_ENABLED=${VITE_AUTH_ENABLED:-false}"
+      --build-arg "VITE_FACE_FLASH_DISABLED=${VITE_FACE_FLASH_DISABLED:-false}"
+      --label "org.opencontainers.image.source=${CI_PROJECT_URL}"
+      --label "org.opencontainers.image.revision=${CI_COMMIT_SHA}"
+
+# Docker smoke build — на MR, только если Dockerfile/.dockerignore менялись, --no-push.
+# Без build-args (кроме дефолтов из Dockerfile) — проверяем только то, что образ вообще
+# собирается, значения VITE_* здесь не важны.
+image:smoke:
+  stage: image
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - Dockerfile
+        - .dockerignore
+  script:
+    - >-
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --no-push
+
+# -----------------------------------------------------------------------------------------
+# STAGE: deploy — один шаблон .deploy + 4 тонких наследника (prod/demo/dev/highload),
+# по образцу webbuh/.gitlab-ci.yml.
+# -----------------------------------------------------------------------------------------
+.deploy:
+  stage: deploy
+  image: ubuntu:22.04
+  interruptible: false
+  before_script:
+    # До 5 попыток: зеркала Ubuntu временами отдают 404 на свежий пакет (24.09.2026 — expat,
+    # у backend так падал deploy:prod). Та же логика, что ci/apt-install.sh в qazyna/webbuh.
+    - |
+      for i in 1 2 3 4 5; do apt-get update -qq && apt-get install -y -qq --no-install-recommends curl ca-certificates >/dev/null && break; [ "$i" = 5 ] && exit 1; echo "apt: попытка $i не удалась, повтор через 20 с" >&2; sleep 20; done
+    - curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/v1.30.4/bin/linux/amd64/kubectl"
+    - chmod +x /usr/local/bin/kubectl
+    - mkdir -p ~/.kube
+    # KUBECONFIG_DATA — File-переменная (готовый kubeconfig YAML, без base64). Единое
+    # имя с backend (там в GitHub было secrets.KUBECONFIG_DATA, здесь у fin-web в GitHub
+    # был secrets.KUBE_CONFIG под другим именем — значение то же, в GitLab имя унифицировано).
+    - cp "$KUBECONFIG_DATA" ~/.kube/config
+    - chmod 600 ~/.kube/config
+    - kubectl version --client
+  after_script:
+    - |
+      if [ "$CI_JOB_STATUS" != "success" ]; then
+        NS_ARGS=""
+        [ -n "${K8S_NAMESPACE:-}" ] && [ "${K8S_NAMESPACE}" != "default" ] && NS_ARGS="-n ${K8S_NAMESPACE}"
+        echo "=== deployment ==="; kubectl $NS_ARGS describe deployment/fin-web || true
+        echo "=== pods ==="; kubectl $NS_ARGS get pods -l app=fin-web -o wide || true
+        kubectl $NS_ARGS describe pods -l app=fin-web || true
+        for pod in $(kubectl $NS_ARGS get pods -l app=fin-web --no-headers 2>/dev/null | awk '{print $1}'); do
+          echo "=== logs $pod ==="; kubectl $NS_ARGS logs "$pod" --all-containers --tail=300 || true
+          echo "=== previous logs $pod ==="; kubectl $NS_ARGS logs "$pod" --all-containers --previous --tail=300 || true
+        done
+        echo "=== events ==="; kubectl $NS_ARGS get events --sort-by=.lastTimestamp | tail -50 || true
+      fi
+
+deploy:prod:
+  extends: .deploy
+  needs:
+    - image:prod
+  environment:
+    name: prod
+    # host из k8s/ingress.yaml — тот же адрес, что деплоился job'ом deploy в GitHub
+    # deploy.yml на push в main; переименование хоста не входит в задачу переезда CI.
+    url: https://dev.qazyna.ai
+  variables:
+    K8S_NAMESPACE: "default"
+  # ТОЛЬКО ВРУЧНУЮ (решение владельца 24.09.2026): фронт пока живёт на GitHub
+  # (ButerBrot359/fin-web, deploy.yml выкатывает прод на push в main), а main здесь отстаёт от
+  # GitHub. Автодеплой отсюда 23.09.2026 перезаписал прод сборкой без SCRUM-330/355/308.
+  # Вернуть автодеплой — когда фронт окончательно переедет в GitLab и GitHub-деплой отключат.
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: true
+  script:
+    - |
+      set -euo pipefail
+      IMAGE_TAG="${CI_REGISTRY_IMAGE}:sha-${CI_COMMIT_SHA}"
+
+      # ANTHROPIC_API_KEY уходит на под рантайм-секретом, а не docker build-arg'ом:
+      # build-args сохраняются в истории слоёв образа в registry и читаются любым,
+      # кто вытянет образ (тот же принцип, что в GitHub deploy.yml).
+      if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+        echo "ANTHROPIC_API_KEY (scope=prod) пуст" >&2; exit 1
+      fi
+      # Pull-secret для registry.qazyna.ai из CI_DEPLOY_USER/CI_DEPLOY_PASSWORD (deploy token
+      # gitlab-deploy-token группы webbuh, read_registry) — без него ImagePullBackOff.
+      if [ -z "${CI_DEPLOY_USER:-}" ] || [ -z "${CI_DEPLOY_PASSWORD:-}" ]; then
+        echo "CI_DEPLOY_USER/CI_DEPLOY_PASSWORD пусты — нет deploy token gitlab-deploy-token в группе" >&2; exit 1
+      fi
+      kubectl create secret docker-registry gitlab-registry \
+        --docker-server="$CI_REGISTRY" --docker-username="$CI_DEPLOY_USER" --docker-password="$CI_DEPLOY_PASSWORD" \
+        --dry-run=client -o yaml | kubectl apply -f -
+      kubectl create secret generic fin-web-secret \
+        --from-literal=ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+        --dry-run=client -o yaml | kubectl apply -f -
+
+      sed -i "s|DOCKER_IMAGE_PLACEHOLDER|$IMAGE_TAG|g" k8s/deployment.yaml
+      kubectl apply -f k8s/deployment.yaml
+      kubectl apply -f k8s/service.yaml
+      kubectl apply -f k8s/ingress.yaml
+
+      # Тег фиксированный по content ("sha-<sha>"), но imagePullPolicy: Always и
+      # explicit rollout restart — так же, как в GitHub, где applied-манифест указывал
+      # на ":latest" и без restart под не подхватывал бы новый образ сам.
+      kubectl rollout restart deployment/fin-web
+      kubectl rollout status deployment/fin-web --timeout=600s
+
+deploy:demo:
+  extends: .deploy
+  needs:
+    - image:demo
+  environment:
+    name: demo
+    url: https://demo.qazyna.ai
+  variables:
+    K8S_NAMESPACE: "demo"
+  rules:
+    # Ветка ещё не выбрана владельцем (22.09.2026) — только ручной запуск, см. шапку файла.
+    # ДЕМО-namespace — живая среда: перед первым реальным запуском согласуй с PM.
+    - when: manual
+      allow_failure: true
+  script:
+    - |
+      set -euo pipefail
+      IMAGE_TAG="demo-sha-${CI_COMMIT_SHA}"
+      FULL_IMAGE_NAME="${CI_REGISTRY_IMAGE}:${IMAGE_TAG}"
+
+      kubectl apply -f k8s/demo/namespace.yaml
+
+      if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+        echo "ANTHROPIC_API_KEY пуст" >&2; exit 1
+      fi
+      # Pull-secret для registry.qazyna.ai из CI_DEPLOY_USER/CI_DEPLOY_PASSWORD (deploy token
+      # gitlab-deploy-token группы webbuh, read_registry) — без него ImagePullBackOff.
+      if [ -z "${CI_DEPLOY_USER:-}" ] || [ -z "${CI_DEPLOY_PASSWORD:-}" ]; then
+        echo "CI_DEPLOY_USER/CI_DEPLOY_PASSWORD пусты — нет deploy token gitlab-deploy-token в группе" >&2; exit 1
+      fi
+      kubectl -n demo create secret docker-registry gitlab-registry \
+        --docker-server="$CI_REGISTRY" --docker-username="$CI_DEPLOY_USER" --docker-password="$CI_DEPLOY_PASSWORD" \
+        --dry-run=client -o yaml | kubectl -n demo apply -f -
+      kubectl -n demo create secret generic fin-web-secret \
+        --from-literal=ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+        --dry-run=client -o yaml | kubectl -n demo apply -f -
+
+      kubectl -n demo apply -f k8s/demo/service.yaml
+      kubectl -n demo apply -f k8s/demo/ingress.yaml
+
+      export IMAGE_NAME="$FULL_IMAGE_NAME"
+      export IMAGE_TAG
+      envsubst < k8s/demo/deployment.yaml | kubectl -n demo apply -f -
+      kubectl -n demo rollout restart deployment/fin-web
+      kubectl -n demo rollout status deployment/fin-web --timeout=600s
+      kubectl -n demo get deploy fin-web \
+        -o jsonpath='{.metadata.annotations.fin-web\.io/deployed-commit}'
+
+# dev: k8s-манифестов нет (только prod — k8s/*.yaml, demo — k8s/demo/*.yaml и highload —
+# k8s/highload/*.yaml, см. deploy:highload ниже, существуют в репозитории), и своего
+# image-job'а для dev тоже нет (см. шапку файла про раздельные per-environment образы).
+# Job — плейсхолдер.
+deploy:dev:
+  extends: .deploy
+  environment:
+    name: dev
+    url: https://dev-placeholder.qazyna.ai # TODO: реальный host, когда появится k8s/dev/
+  rules:
+    - when: manual
+      allow_failure: true
+  before_script:
+    - echo "нет k8s/dev/ — before_script шаблона .deploy пропущен"
+  after_script:
+    - echo "нет k8s/dev/ — after_script шаблона .deploy пропущен"
+  script:
+    - echo "k8s/dev/ ещё не существует — деплой не выполняется. Когда манифесты появятся,"
+    - echo "завести image:dev по образцу image:demo (свой scope build-args) и скопировать"
+    - echo "секцию script у deploy:demo, заменив пути k8s/demo/ -> k8s/dev/, namespace -> dev."
+    - exit 1
+
+# deploy:highload (SCRUM-423) — нагрузочный контур backend'а, см.
+# webbuh/docs/project/tickets/2026-09-23-highload-okruzhenie-scrum-423.md и
+# webbuh/docs/project/runbooks/highload-clone-prod-metadata.md. По образцу deploy:demo 1:1,
+# только пути k8s/demo/ -> k8s/highload/, namespace -> highload, тег образа ->
+# highload-sha-<sha> (см. image:highload).
+deploy:highload:
+  extends: .deploy
+  needs:
+    - image:highload
+  environment:
+    name: highload
+    url: https://highload.qazyna.ai
+  variables:
+    K8S_NAMESPACE: "highload"
+  rules:
+    # Ветка highload назначена среде highload (24.09.2026) — деплой автоматически за image:highload.
+    - if: '$CI_COMMIT_BRANCH == "highload" && $CI_PIPELINE_SOURCE == "push"'
+    # Остальные ветки — только ручной запуск, см. шапку файла.
+    - when: manual
+      allow_failure: true
+  script:
+    - |
+      set -euo pipefail
+      IMAGE_TAG="highload-sha-${CI_COMMIT_SHA}"
+      FULL_IMAGE_NAME="${CI_REGISTRY_IMAGE}:${IMAGE_TAG}"
+
+      kubectl apply -f k8s/highload/namespace.yaml
+
+      if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+        echo "ANTHROPIC_API_KEY пуст" >&2; exit 1
+      fi
+      # Pull-secret для registry.qazyna.ai из CI_DEPLOY_USER/CI_DEPLOY_PASSWORD (deploy token
+      # gitlab-deploy-token группы webbuh, read_registry) — без него ImagePullBackOff.
+      if [ -z "${CI_DEPLOY_USER:-}" ] || [ -z "${CI_DEPLOY_PASSWORD:-}" ]; then
+        echo "CI_DEPLOY_USER/CI_DEPLOY_PASSWORD пусты — нет deploy token gitlab-deploy-token в группе" >&2; exit 1
+      fi
+      kubectl -n highload create secret docker-registry gitlab-registry \
+        --docker-server="$CI_REGISTRY" --docker-username="$CI_DEPLOY_USER" --docker-password="$CI_DEPLOY_PASSWORD" \
+        --dry-run=client -o yaml | kubectl -n highload apply -f -
+      kubectl -n highload create secret generic fin-web-secret \
+        --from-literal=ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+        --dry-run=client -o yaml | kubectl -n highload apply -f -
+
+      kubectl -n highload apply -f k8s/highload/service.yaml
+      kubectl -n highload apply -f k8s/highload/ingress.yaml
+
+      export IMAGE_NAME="$FULL_IMAGE_NAME"
+      export IMAGE_TAG
+      envsubst < k8s/highload/deployment.yaml | kubectl -n highload apply -f -
+      kubectl -n highload rollout restart deployment/fin-web
+      kubectl -n highload rollout status deployment/fin-web --timeout=600s
+      kubectl -n highload get deploy fin-web \
+        -o jsonpath='{.metadata.annotations.fin-web\.io/deployed-commit}'

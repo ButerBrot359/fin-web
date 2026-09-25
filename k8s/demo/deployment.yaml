@@ -21,6 +21,10 @@ spec:
       annotations:
         fin-web.io/deployed-commit: "${IMAGE_TAG}"
     spec:
+      # gitlab-registry — pull-secret для registry.qazyna.ai (создаёт deploy-job), ghcr-secret — GitHub-путь
+      imagePullSecrets:
+      - name: gitlab-registry
+      - name: ghcr-secret
       containers:
       - name: fin-web
         image: ${IMAGE_NAME}

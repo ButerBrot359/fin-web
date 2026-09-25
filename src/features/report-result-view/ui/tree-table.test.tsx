@@ -395,3 +395,79 @@ describe('TreeTable — условное оформление строки (эт
     expect(obychnaya.textContent).toContain('150')
   })
 })
+
+describe('TreeTable — этажи с подгруппой граф (оборотная ведомость ТМЗ)', () => {
+  const kolonki = [
+    { code: 'Mol', titleRu: 'МОЛ', role: 'DIMENSION', valueType: 'STRING' },
+    {
+      code: 'Nomenklatura',
+      titleRu: 'Номенклатура',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+    },
+    {
+      code: 'NomerPoPoryadku',
+      titleRu: '№ п/п',
+      role: 'ATTRIBUTE',
+      valueType: 'STRING',
+    },
+    {
+      code: 'OstatokNachalnyySumma',
+      titleRu: 'сумма',
+      groupTitleRu: 'Остаток на 01.02.2026',
+      valueType: 'NUMBER',
+    },
+    {
+      code: 'Prikhod|3210 / 4242|Summa',
+      titleRu: 'сумма',
+      groupTitleRu: 'Оборот с 01.02.2026 - 24.09.2026',
+      subGroupTitleRu: 'Итого приход · 3210 / "Амир и Д" ТОО',
+      valueType: 'NUMBER',
+    },
+    {
+      code: 'Raskhod|3210 / 4242|Summa',
+      titleRu: 'сумма',
+      groupTitleRu: 'Оборот с 01.02.2026 - 24.09.2026',
+      subGroupTitleRu: 'Итого расход · 3210 / "Амир и Д" ТОО',
+      valueType: 'NUMBER',
+    },
+  ] as unknown as ReportColumnDto[]
+
+  const stroka = {
+    level: 1,
+    cells: {
+      NomerPoPoryadku: 1,
+      OstatokNachalnyySumma: 0,
+      'Prikhod|3210 / 4242|Summa': 330000,
+      'Raskhod|3210 / 4242|Summa': 165000,
+    },
+    children: [],
+  } as unknown as ReportRowDto
+
+  const rezultat = {
+    ...result,
+    columns: kolonki,
+    groupFloorCodes: ['Mol', 'Nomenklatura'],
+    rows: [
+      {
+        level: 0,
+        groupCode: 'Mol',
+        groupValue: 'АБИТАЕВА',
+        cells: {},
+        children: [stroka],
+      },
+    ],
+  } as unknown as ReportResultDto
+
+  it('подгруппа с контрагентом выводится отдельным рядом шапки между периодом и мерой', () => {
+    render(<TreeTable result={rezultat} columns={kolonki} />)
+
+    expect(screen.getByText('Оборот с 01.02.2026 - 24.09.2026')).toBeTruthy()
+    const prikhod = screen.getByText('Итого приход · 3210 / "Амир и Д" ТОО')
+    const raskhod = screen.getByText('Итого расход · 3210 / "Амир и Д" ТОО')
+    expect(prikhod.closest('tr')).toBe(raskhod.closest('tr'))
+    expect(prikhod.closest('tr')).not.toBe(
+      screen.getByText('Оборот с 01.02.2026 - 24.09.2026').closest('tr')
+    )
+  })
+})

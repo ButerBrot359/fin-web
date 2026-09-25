@@ -62,19 +62,45 @@ const stilYacheyki = (
     textDecoration: style.underline ? 'underline' : undefined,
     color: style.color,
     backgroundColor: style.background,
-    textAlign: (style.align as React.CSSProperties['textAlign']) ?? undefined,
-    verticalAlign: style.verticalAlign ?? undefined,
-    whiteSpace: style.wrap ? 'pre-wrap' : 'nowrap',
     borderTop: granitsa(style.borderTop, style.borderColor),
     borderRight: granitsa(style.borderRight, style.borderColor),
     borderBottom: granitsa(style.borderBottom, style.borderColor),
     borderLeft: granitsa(style.borderLeft, style.borderColor),
-    writingMode:
-      style.rotation === 90 || style.rotation === -90
-        ? 'vertical-rl'
-        : undefined,
   }
 }
+
+const PO_GORIZONTALI: Record<string, React.CSSProperties['justifyContent']> = {
+  center: 'center',
+  right: 'flex-end',
+}
+
+const PO_VERTIKALI: Record<string, React.CSSProperties['alignItems']> = {
+  top: 'flex-start',
+  bottom: 'flex-end',
+}
+
+const sloyTeksta = (
+  style: ReportSpreadsheetCellStyleDto | undefined
+): React.CSSProperties => ({
+  position: 'absolute',
+  inset: 0,
+  display: 'flex',
+  justifyContent: PO_GORIZONTALI[style?.align ?? ''] ?? 'flex-start',
+  alignItems: PO_VERTIKALI[style?.verticalAlign ?? ''] ?? 'center',
+})
+
+const stilTeksta = (
+  style: ReportSpreadsheetCellStyleDto | undefined
+): React.CSSProperties => ({
+  flexShrink: 0,
+  width: style?.wrap ? '100%' : undefined,
+  textAlign: (style?.align as React.CSSProperties['textAlign']) ?? undefined,
+  whiteSpace: style?.wrap ? 'pre-wrap' : 'pre',
+  writingMode:
+    style?.rotation === 90 || style?.rotation === -90
+      ? 'vertical-rl'
+      : undefined,
+})
 
 /** Пустая клетка сетки — ячейка, которой нет в ответе бэка. */
 interface PustayaKletka {
@@ -168,6 +194,7 @@ const SheetView = ({
                     colSpan={kletka.colSpan ?? 1}
                     style={{
                       padding: 0,
+                      position: 'relative',
                       ...stilYacheyki(kletka.style),
                       ...(kletka.field != null &&
                       kletka.field === vybrannayaOblast
@@ -186,25 +213,44 @@ const SheetView = ({
                     }
                   >
                     {kletka.editable && kletka.field && onBlankValueChange ? (
-                      <input
-                        type="text"
-                        className="w-full bg-transparent outline-none"
-                        style={{
-                          font: 'inherit',
-                          color: 'inherit',
-                          textAlign: 'inherit',
-                        }}
-                        value={blankValues?.[kletka.field] ?? kletka.text ?? ''}
-                        onChange={(event) => {
-                          onBlankValueChange(kletka.field!, event.target.value)
-                        }}
-                      />
+                      <div style={sloyTeksta(kletka.style)}>
+                        <input
+                          type="text"
+                          className="h-full w-full bg-transparent outline-none"
+                          style={{
+                            font: 'inherit',
+                            color: 'inherit',
+                            textAlign:
+                              (kletka.style
+                                ?.align as React.CSSProperties['textAlign']) ??
+                              undefined,
+                          }}
+                          value={
+                            blankValues?.[kletka.field] ?? kletka.text ?? ''
+                          }
+                          onChange={(event) => {
+                            onBlankValueChange(
+                              kletka.field!,
+                              event.target.value
+                            )
+                          }}
+                        />
+                      </div>
                     ) : (
-                      ((kletka.field != null
-                        ? blankValues?.[kletka.field]
-                        : undefined) ??
-                      kletka.text ??
-                      '')
+                      <div
+                        style={{
+                          ...sloyTeksta(kletka.style),
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        <span style={stilTeksta(kletka.style)}>
+                          {(kletka.field != null
+                            ? blankValues?.[kletka.field]
+                            : undefined) ??
+                            kletka.text ??
+                            ''}
+                        </span>
+                      </div>
                     )}
                   </td>
                 ) : (

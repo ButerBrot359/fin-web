@@ -44,7 +44,7 @@ describe('SpreadsheetView — табличный документ бланка',
   it('первая страница рисуется с оформлением бланка', () => {
     render(<SpreadsheetView spreadsheet={dokument} />)
 
-    const yacheyka = screen.getByText('Форма 200.00')
+    const yacheyka = screen.getByText('Форма 200.00').closest('td')!
     expect(yacheyka.getAttribute('colspan')).toBe('2')
     expect(yacheyka.style.backgroundColor).toBe('rgb(255, 0, 0)')
     expect(yacheyka.style.color).toBe('rgb(255, 255, 255)')
@@ -59,6 +59,37 @@ describe('SpreadsheetView — табличный документ бланка',
     const vtoraya = stroki[1].querySelectorAll('td')
     expect(vtoraya).toHaveLength(3)
     expect(vtoraya[2].textContent).toBe('ИИН')
+  })
+
+  it('подпись без переноса выступает из клетки в сторону выравнивания, как в 1С', () => {
+    const dokumentSPodpisyu: ReportSpreadsheetDto = {
+      sheets: [
+        {
+          code: 'Страница 1',
+          title: 'Страница 1',
+          columnWidths: [20, 20],
+          rowHeights: [16],
+          cells: [
+            {
+              row: 0,
+              column: 1,
+              text: 'первоначальная  ',
+              style: { align: 'right' },
+            },
+          ],
+        },
+      ],
+    }
+
+    render(<SpreadsheetView spreadsheet={dokumentSPodpisyu} />)
+
+    const tekst = screen.getByText('первоначальная', { exact: false })
+    const sloy = tekst.parentElement!
+    expect(tekst.style.whiteSpace).toBe('pre')
+    expect(sloy.style.position).toBe('absolute')
+    expect(sloy.style.justifyContent).toBe('flex-end')
+    expect(sloy.style.pointerEvents).toBe('none')
+    expect(tekst.closest('td')!.style.position).toBe('relative')
   })
 
   it('ширина листа равна сумме колонок — длинная подпись не раздвигает сетку', () => {

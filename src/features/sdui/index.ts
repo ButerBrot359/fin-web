@@ -36,6 +36,8 @@ export {
   hasSduiUnsavedWork,
   closeAllSduiSessions,
 } from './lib/language-session-control'
+export { refreshTabTitles } from './lib/tab-title-refresh'
+export type { TabTitleTarget } from './lib/tab-title-refresh'
 export { openMovementsForEntry } from './lib/open-movements'
 export { fetchReferenceOptions } from './api/reference-options'
 export { useReferenceOptions } from './lib/hooks/use-reference-options'

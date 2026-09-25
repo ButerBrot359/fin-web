@@ -1,23 +1,27 @@
-import { cleanup, render } from '@testing-library/react'
+import { act, cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { useValidationReportStore } from '@/entities/validation-report'
 
 import type { ViewNode } from '../types/view'
 import { applyPatches } from '../lib/patch-applier'
 import { NodeRenderer } from './node-renderer'
 
+const { StubNode } = vi.hoisted(() => ({
+  StubNode: ({ node }: { node: ViewNode }) => (
+    // Дети рисуются через сам NodeRenderer — так тест видит, что скрытый
+    // контейнер не пускает рендер в поддерево.
+    <div data-testid={node.id}>
+      {node.children?.map((c) => (
+        <NodeRenderer key={c.id} node={c} />
+      ))}
+    </div>
+  ),
+}))
+
 vi.mock('../lib/component-registry', () => ({
   getComponent: (type: string) =>
-    type === 'UNREGISTERED'
-      ? undefined
-      : ({ node }: { node: ViewNode }) => (
-          // Дети рисуются через сам NodeRenderer — так тест видит, что скрытый
-          // контейнер не пускает рендер в поддерево.
-          <div data-testid={node.id}>
-            {node.children?.map((c) => (
-              <NodeRenderer key={c.id} node={c} />
-            ))}
-          </div>
-        ),
+    type === 'UNREGISTERED' ? undefined : StubNode,
 }))
 
 const node = (
@@ -80,5 +84,61 @@ describe('NodeRenderer / видимость узла', () => {
     const unknown = { id: 'x', type: 'UNREGISTERED', props: { visible: false } }
     const { container } = render(<NodeRenderer node={unknown as ViewNode} />)
     expect(container.textContent).toBe('')
+  })
+})
+
+describe('NodeRenderer / якорь ошибки', () => {
+  const KEY = '/documents/PutevoyList/1'
+  const pole = {
+    id: 'field.nomerPutevogoLista',
+    type: 'TEXT_FIELD',
+    binding: 'NomerPutevogoLista',
+    props: {},
+  } as unknown as ViewNode
+
+  afterEach(() => {
+    useValidationReportStore.setState({
+      reports: {},
+      activeIds: {},
+      tooltipOpen: {},
+      screenKey: null,
+    })
+  })
+
+  it('снятие ошибки с поля не пересоздаёт его — иначе правка без blur не уходит на сервер', () => {
+    useValidationReportStore.setState({ screenKey: KEY })
+    useValidationReportStore.getState().setReport(KEY, {
+      operation: 'post',
+      blockingCount: 1,
+      messages: [
+        {
+          id: 'm1',
+          severity: 'ERROR',
+          source: null,
+          blocking: true,
+          message: 'Не заполнено поле «№ путевого листа»',
+          target: { kind: 'FIELD', fieldCode: 'NomerPutevogoLista' },
+          attributeCode: null,
+        },
+      ],
+    })
+
+    const { getByTestId, container } = render(<NodeRenderer node={pole} />)
+    const doSnyatiya = getByTestId('field.nomerPutevogoLista')
+    expect(
+      container.querySelector('[data-sdui-anchor="NomerPutevogoLista"]')
+    ).not.toBeNull()
+
+    act(() => {
+      useValidationReportStore.getState().dismiss(KEY, ['m1'])
+    })
+
+    expect(getByTestId('field.nomerPutevogoLista')).toBe(doSnyatiya)
+    expect(container.querySelector('[data-sdui-anchor]')).toBeNull()
+  })
+
+  it('узел без binding рендерится без обёртки', () => {
+    const { container } = render(<NodeRenderer node={node('group.shapka')} />)
+    expect(container.firstElementChild?.tagName).toBe('DIV')
   })
 })

@@ -59,4 +59,18 @@ describe('reopenFormForLanguageChange', () => {
     await reopenFormForLanguageChange({ dispatch, route: '/doc/1' })
     expect(dispatch).toHaveBeenCalledTimes(2)
   })
+
+  it('передаёт onOpenTab в OPEN, чтобы заголовок вкладки пришёл на новом языке', async () => {
+    const onOpenTab = vi.fn()
+    const dispatch = vi.fn(() => Promise.resolve(true))
+
+    await reopenFormForLanguageChange({ dispatch, route: '/m', onOpenTab })
+
+    expect(dispatch).toHaveBeenLastCalledWith(
+      { type: 'OPEN', layoutCode: undefined },
+      null,
+      false,
+      { onOpenTab }
+    )
+  })
 })

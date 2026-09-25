@@ -91,6 +91,10 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   useExternalPanelRefresh()
   const screenRootRef = useRef<HTMLDivElement>(null)
   useFormSaveHotkey(screenRootRef)
+  const onTabRef = useRef(onTab)
+  useEffect(() => {
+    onTabRef.current = onTab
+  }, [onTab])
 
   const title = (tree?.props?.title as string | undefined) ?? ''
   useEffect(() => {
@@ -197,6 +201,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       void reopenFormForLanguageChange({
         dispatch,
         route: screenRoute,
+        onOpenTab: (tab) => onTabRef.current?.(tab),
       })
     }
     i18n.on('languageChanged', handler)

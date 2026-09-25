@@ -1,3 +1,4 @@
+import i18next from 'i18next'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -33,7 +34,7 @@ export function useLanguageSwitch() {
       onTitle: (tabId, title) => {
         useWorkspaceTabsStore.getState().setTabTitle(tabId, title)
       },
-      shouldContinue: () => i18n.language === lang,
+      shouldContinue: () => i18next.language === lang,
       shouldRefresh: (tabId) =>
         useWorkspaceTabsStore.getState().activeTabId !== tabId,
     })

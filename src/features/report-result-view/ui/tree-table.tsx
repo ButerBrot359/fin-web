@@ -148,6 +148,13 @@ const bodyColWidthPx = (col: ReportColumnDto): number => {
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
 
+const anyRowHasCell = (rows: ReportRowDto[], code: string): boolean =>
+  rows.some(
+    (r) =>
+      (r.cells[code] != null && r.cells[code] !== '') ||
+      anyRowHasCell(r.children, code)
+  )
+
 /** Опции сборки шапки tree-table: разбор склейки « — » включён (LEVEL_SEP). */
 const HEAD_OPTS = { parseLevelSep: true } as const
 
@@ -209,12 +216,32 @@ const PlainTreeTable = ({
     return usedAsGroup && !hasOwnCells ? first : null
   }, [result])
 
+  const groupOnlyCodes = useMemo(() => {
+    const codes = new Set<string>()
+    if (!treeColumn) return codes
+    codes.add(treeColumn.code)
+    for (const col of result.columns) {
+      if (col.role === 'DIMENSION' && !anyRowHasCell(result.rows, col.code)) {
+        codes.add(col.code)
+      }
+    }
+    return codes
+  }, [result, treeColumn])
+
   // Колонки тела: без колонки дерева (она рендерится первой, из groupValue).
   const bodyColumns = useMemo(
-    () =>
-      treeColumn ? columns.filter((c) => c.code !== treeColumn.code) : columns,
-    [columns, treeColumn]
+    () => columns.filter((c) => !groupOnlyCodes.has(c.code)),
+    [columns, groupOnlyCodes]
   )
+
+  const treeHeaderTitles = useMemo(() => {
+    if (!treeColumn) return []
+    const floorTitles = (result.groupFloorCodes ?? [])
+      .map((code) => result.columns.find((c) => c.code === code))
+      .filter((c): c is ReportColumnDto => c != null)
+      .map((c) => columnTitle(c, isKz))
+    return floorTitles.length > 1 ? floorTitles : []
+  }, [result, treeColumn, isKz])
 
   // Колонка-заглушка для модели дерева TanStack; рендер тела кастомный.
   const tableColumns = useMemo<ColumnDef<ReportRowDto>[]>(
@@ -279,6 +306,21 @@ const PlainTreeTable = ({
     ? columnTitle(treeColumn, isKz)
     : t('reports.group')
 
+  const treeHeader =
+    treeHeaderTitles.length > 0 ? (
+      <div className="flex flex-col">
+        {treeHeaderTitles.map((title, idx) => (
+          <Typography key={idx} variant="body2" sx={thTextSx}>
+            {title}
+          </Typography>
+        ))}
+      </div>
+    ) : (
+      <Typography variant="body2" sx={thTextSx}>
+        {treeHeaderTitle}
+      </Typography>
+    )
+
   // Ширина первой колонки (наименование группы): backend-width либо дефолт.
   const treeColWidthPx =
     treeColumn?.width != null ? treeColumn.width * CHAR_PX : TREE_COL_DEFAULT_PX
@@ -342,9 +384,7 @@ const PlainTreeTable = ({
             <>
               <tr>
                 <th rowSpan={3} className={thBase}>
-                  <Typography variant="body2" sx={thTextSx}>
-                    {treeHeaderTitle}
-                  </Typography>
+                  {treeHeader}
                 </th>
                 {headModel3.topRow.map((cell) => (
                   <th
@@ -387,9 +427,7 @@ const PlainTreeTable = ({
             <>
               <tr>
                 <th rowSpan={2} className={thBase}>
-                  <Typography variant="body2" sx={thTextSx}>
-                    {treeHeaderTitle}
-                  </Typography>
+                  {treeHeader}
                 </th>
                 {headModel.topRow.map((cell) => (
                   <th
@@ -416,11 +454,7 @@ const PlainTreeTable = ({
             </>
           ) : (
             <tr>
-              <th className={thBase}>
-                <Typography variant="body2" sx={thTextSx}>
-                  {treeHeaderTitle}
-                </Typography>
-              </th>
+              <th className={thBase}>{treeHeader}</th>
               {bodyColumns.map((col) => (
                 <th key={col.code} className={thBase}>
                   <Typography variant="body2" sx={thTextSx}>

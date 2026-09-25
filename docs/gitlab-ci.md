@@ -36,7 +36,7 @@ check → test → build → image → deploy
 | image  | `image:prod`                    | push в main (авто)                                                 | kaniko → `$CI_REGISTRY_IMAGE:sha-<sha>` и `:latest`, build-args из scope `prod`                                                                                                                        |
 | image  | `image:demo`                    | **`when: manual`** — ветка не назначена                            | kaniko → `$CI_REGISTRY_IMAGE:demo-sha-<sha>` (без `:latest`), build-args из scope `demo`                                                                                                               |
 | image  | `image:smoke`                   | MR, только если менялись `Dockerfile`/`.dockerignore`              | kaniko `--no-push` — проверка, что образ вообще собирается                                                                                                                                             |
-| deploy | `deploy:prod`                   | push в main, **вручную** (с 24.09.2026, пока фронт на GitHub)      | Секрет `fin-web-secret` + `k8s/*.yaml` (namespace `default`), `rollout restart`                                                                                                                        |
+| deploy | `deploy:prod`                   | push в main, **автоматически** (с 25.09.2026)                      | Секрет `fin-web-secret` + `k8s/*.yaml` (namespace `default`), `rollout restart`                                                                                                                        |
 | deploy | `deploy:demo`                   | **`when: manual`** — ветка не назначена                            | Секрет `fin-web-secret` + `k8s/demo/*.yaml` (namespace `demo`)                                                                                                                                         |
 | image  | `image:highload`                | **`when: manual`** — ветка не назначена (SCRUM-423)                | kaniko → `$CI_REGISTRY_IMAGE:highload-sha-<sha>` (без `:latest`); build-args со scope-фолбэком на `https://highload-api.qazyna.ai`/`https://highload.qazyna.ai`, если переменные ещё не заведены |
 | deploy | `deploy:highload`               | **`when: manual`** — ветка не назначена (SCRUM-423)                | Секрет `fin-web-secret` + `k8s/highload/*.yaml` (namespace `highload`) — фронт нагрузочного контура backend'а, см. `webbuh/docs/project/runbooks/highload-clone-prod-metadata.md` |
@@ -52,8 +52,15 @@ rules:
   - if: '$CI_COMMIT_BRANCH == "demo"'
 ```
 
-`image:prod` устроен так (`main → образ`, без `when: manual`), а `deploy:prod` с 24.09.2026 ручной — фронт пока живёт на GitHub (`ButerBrot359/fin-web`, `deploy.yml`), и автодеплой отсюда перезаписывал прод отстающей сборкой. Это и
-есть образец.
+`image:prod` и `deploy:prod` устроены так (`main → прод`, без `when: manual`) — это и есть образец.
+
+**Автодеплой main (с 25.09.2026).** Первым в пайплайне main стартует `main:guard`
+(`interruptible: false`): начавшийся пайплайн main не отменяется следующим мержем, ещё не
+начавшиеся схлопываются в самый свежий. `deploy:prod` сериализован (`resource_group: prod`) и
+выкатывает только коммит, который всё ещё HEAD main. С 24.09 по 25.09.2026 деплой был ручным:
+GitHub `ButerBrot359/fin-web` тоже выкатывает прод на push в main, и 23.09 автодеплой отсюда
+перезаписал прод отстающей сборкой. Отключение GitHub-деплоя — решение команды фронта; пока он
+включён, прод получает последнюю из выкатившихся сборок.
 
 ---
 

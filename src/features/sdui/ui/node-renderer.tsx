@@ -13,8 +13,8 @@ interface NodeProps {
 
 export const NodeRenderer = memo(({ node }: NodeProps) => {
   // SCRUM-317: якорь тултипа-навигатора ошибок. display:contents не участвует
-  // в раскладке; обёртка появляется ТОЛЬКО у целей текущего отчёта — в обычной
-  // жизни дерево рендерится без неё.
+  // в раскладке; обёртка стоит у каждого узла с binding, а атрибут якоря —
+  // только у целей текущего отчёта.
   const anchorBinding = useValidationAnchorBinding(node)
 
   // Единая точка гашения: props.visible === false скрывает узел любого типа
@@ -31,9 +31,12 @@ export const NodeRenderer = memo(({ node }: NodeProps) => {
     node.props?.deferred === true
       ? DeferredNode
       : (getComponent(node.type) ?? UnknownNode)
-  if (anchorBinding) {
+  if (node.binding) {
     return (
-      <span style={{ display: 'contents' }} data-sdui-anchor={anchorBinding}>
+      <span
+        style={{ display: 'contents' }}
+        data-sdui-anchor={anchorBinding ?? undefined}
+      >
         {/* eslint-disable-next-line react-hooks/static-components -- диспетчеризация из статического реестра, см. комментарий выше */}
         <Component node={node} />
       </span>

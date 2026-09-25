@@ -35,6 +35,8 @@ interface SpreadsheetViewProps {
   onVyborStranitsy?: (indeks: number) => void
 }
 
+const MASSHTAB_SHRIFTA_1S = 0.94
+
 const GRAN: Record<string, string> = {
   thin: '1px solid',
   medium: '2px solid',
@@ -56,7 +58,9 @@ const stilYacheyki = (
   if (!style) return {}
   return {
     fontFamily: style.fontName,
-    fontSize: style.fontSize ? `${String(style.fontSize)}pt` : undefined,
+    fontSize: style.fontSize
+      ? `${String(Number((style.fontSize * MASSHTAB_SHRIFTA_1S).toFixed(2)))}pt`
+      : undefined,
     fontWeight: style.bold ? 700 : undefined,
     fontStyle: style.italic ? 'italic' : undefined,
     textDecoration: style.underline ? 'underline' : undefined,

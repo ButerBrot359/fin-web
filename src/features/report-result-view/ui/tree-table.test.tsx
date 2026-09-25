@@ -250,6 +250,50 @@ describe('TreeTable — этажи без колонок деталей (ОСВ)
     }
   })
 
+  it('ОСВ по счёту: колонки субконто не выводятся, уровни подписаны в шапке колонки «Счёт»', () => {
+    const osvPoSchetuColumns = [
+      columns[0],
+      {
+        code: 'Subkonto1',
+        titleRu: 'Физические лица',
+        role: 'DIMENSION',
+        valueType: 'STRING',
+      },
+      {
+        code: 'Subkonto2',
+        titleRu: 'Субконто 2',
+        role: 'DIMENSION',
+        valueType: 'STRING',
+      },
+      {
+        code: 'Subkonto3',
+        titleRu: 'Субконто 3',
+        role: 'DIMENSION',
+        valueType: 'STRING',
+      },
+      columns[1],
+    ] as unknown as ReportColumnDto[]
+    const osvPoSchetu = {
+      ...result,
+      columns: osvPoSchetuColumns,
+      groupFloorCodes: ['Schet', 'Subkonto1'],
+    } as unknown as ReportResultDto
+
+    const { container } = render(
+      <TreeTable result={osvPoSchetu} columns={osvPoSchetuColumns} />
+    )
+
+    const shapka = [...container.querySelectorAll('thead th')].map((th) =>
+      [...th.querySelectorAll('p, span')].map((el) => el.textContent)
+    )
+    expect(shapka).toEqual([['Счёт', 'Физические лица'], ['Сальдо Дт']])
+    expect(container.querySelectorAll('colgroup col')).toHaveLength(2)
+    for (const text of ['1316', 'Бумага А4']) {
+      const stroka = screen.getByText(text).closest('tr')!
+      expect(stroka.querySelectorAll('td')).toHaveLength(2)
+    }
+  })
+
   it('шапка граф в две строки: группа периода над «Дебет»/«Кредит», как в 1С', () => {
     const grafy = [
       columns[0],

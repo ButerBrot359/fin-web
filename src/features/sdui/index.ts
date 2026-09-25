@@ -43,6 +43,18 @@ export { mapKindToPageType } from './lib/tab-kind'
 export { useCustomizeFormStore } from './lib/customize-form/customize-form-store'
 export { viewSettingsAdminApi } from './api/view-settings-admin-api'
 export type { ViewSettingsScreen } from './api/view-settings-admin-api'
+export { menuSettingsApi } from './api/menu-settings-api'
+export { MenuSettingsEditor } from './ui/menu-settings/menu-settings-editor'
+export type {
+  MenuPatchEntry,
+  MenuScope,
+  MenuSettingsOption,
+  MenuSettingsPatch,
+  MenuStructure,
+  MenuStructureElement,
+  MenuStructureModule,
+  MenuStructureSection,
+} from './api/menu-settings-api'
 export { viewSettingsProfileDefaultsApi } from './api/view-settings-profile-defaults-api'
 export type { ViewSettingsProfile } from './api/view-settings-profile-defaults-api'
 export { viewSettingsDefaultsApi } from './api/view-settings-api'

@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 
 import { MainPage } from '@/pages/main'
 
@@ -101,6 +101,14 @@ export const AppRoutes = () => {
           <Route
             path="/admin/design-constructor"
             element={<DesignConstructorPage />}
+          />
+          {/* Конструктор меню (SCRUM-426) живёт вкладкой в конструкторе дизайна;
+              старый адрес (и пункт меню «Настройка меню» из сида бэка) ведёт туда. */}
+          <Route
+            path="/admin/menu-settings"
+            element={
+              <Navigate to="/admin/design-constructor?tab=menu" replace />
+            }
           />
           {/*
             Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект

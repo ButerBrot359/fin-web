@@ -13,6 +13,7 @@ import {
   unmarkRestoring,
 } from '@/features/workspace-tabs/lib/hooks/use-form-cache-store'
 import { serializeDateInput } from '@/shared/ui/inputs/serialize-date-input'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 /**
  * «Сейчас» для реквизита «Дата» нового документа — той же воронкой, что и ввод
@@ -35,7 +36,8 @@ function hasChanges(
 
 export const useDocumentEntryForm = () => {
   const { moduleCode = '', entryId } = useParams()
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
+  const cacheKey = tabRouteKey(pathname, search)
   const [searchParams] = useSearchParams()
   const restoredRef = useRef(false)
 
@@ -114,10 +116,10 @@ export const useDocumentEntryForm = () => {
 
     if (!defaults) return
 
-    const cached = useFormCacheStore.getState().getCachedValues(pathname)
+    const cached = useFormCacheStore.getState().getCachedValues(cacheKey)
 
     if (cached) {
-      markRestoring(pathname)
+      markRestoring(cacheKey)
       const isDirty = hasChanges(cached, defaults)
       if (isDirty) {
         form.reset(defaults)
@@ -127,11 +129,11 @@ export const useDocumentEntryForm = () => {
       } else {
         form.reset({ ...defaults, ...cached })
       }
-      useFormCacheStore.getState().clearCache(pathname)
-      useFormCacheStore.getState().setDirty(pathname, isDirty)
+      useFormCacheStore.getState().clearCache(cacheKey)
+      useFormCacheStore.getState().setDirty(cacheKey, isDirty)
       restoredRef.current = isDirty
       queueMicrotask(() => {
-        unmarkRestoring(pathname)
+        unmarkRestoring(cacheKey)
       })
     } else if (!form.formState.isDirty && !restoredRef.current) {
       form.reset(defaults)
@@ -145,7 +147,7 @@ export const useDocumentEntryForm = () => {
     copyFrom,
     basisId,
     form,
-    pathname,
+    cacheKey,
   ])
 
   return {

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import CopyDocIcon from '@/shared/assets/icons/copy-doc.svg'
 import SearchIcon from '@/shared/assets/icons/search.svg'
+import { withNewFormInstance } from '@/shared/lib/router/form-instance-route'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
 
@@ -32,7 +33,9 @@ export const DictionaryListToolbar = ({
   const handleCreate = () => {
     if (!pageCode || !moduleCode) return
     void navigate(
-      `/modules/${pageCode}/dictionary/${moduleCode}/new?domain=${domain}`
+      withNewFormInstance(
+        `/modules/${pageCode}/dictionary/${moduleCode}/new?domain=${domain}`
+      )
     )
   }
 
@@ -57,7 +60,9 @@ export const DictionaryListToolbar = ({
           startIcon={<CopyDocIcon className="h-5 w-5" />}
           onClick={() =>
             void navigate(
-              `/modules/${pageCode}/dictionary/${moduleCode}/new?domain=${domain}&copyFrom=${String(selectedRowId)}`
+              withNewFormInstance(
+                `/modules/${pageCode}/dictionary/${moduleCode}/new?domain=${domain}&copyFrom=${String(selectedRowId)}`
+              )
             )
           }
         />

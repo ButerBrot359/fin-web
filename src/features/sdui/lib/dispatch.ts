@@ -180,7 +180,8 @@ export function useSduiDispatch() {
             ? {
                 ...action,
                 formInstanceId:
-                  freshInstance?.id ?? currentFormInstanceId(location.pathname),
+                  freshInstance?.id ??
+                  currentFormInstanceId(location.pathname, location.search),
               }
             : action
         owner = captureResponseOwner(session, route)

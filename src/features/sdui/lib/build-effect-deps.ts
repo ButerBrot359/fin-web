@@ -12,6 +12,7 @@ import type { SduiSessionValue } from './sdui-session-context'
 import { usePanelStore } from './stores/panel-store'
 import { armNewTab } from './workspace-tab-gateway'
 import { markFreshFormInstance } from '@/features/workspace-tabs/lib/fresh-form-instance-registry'
+import { withNewFormInstance } from '@/shared/lib/router/form-instance-route'
 import { isCreateRoute, isReportRoute } from './fresh-form-instance'
 
 export interface EffectDepsCtx {
@@ -33,8 +34,11 @@ export function buildCommonEffectDeps(
     // экземпляр формы: клиентский снимок вкладки снимается, а следующий OPEN уйдёт с новым
     // formInstanceId — иначе в новом документе всплыли бы значения прошлого черновика.
     navigate: ((to: Parameters<NavigateFunction>[0], opts?: unknown) => {
-      if (typeof to === 'string' && isCreateRoute(to)) markFreshFormInstance(to)
-      ;(ctx.navigate as (t: unknown, o?: unknown) => void)(to, opts)
+      const target =
+        typeof to === 'string' && isCreateRoute(to)
+          ? withNewFormInstance(to)
+          : to
+      ;(ctx.navigate as (t: unknown, o?: unknown) => void)(target, opts)
     }) as NavigateFunction,
     closeSession: async () => {
       const { formSessionId } = ctx.session.getSession()
@@ -63,10 +67,8 @@ export function buildCommonEffectDeps(
     openRouteInNewTab: (route) => {
       // armNewTab взводится ДО navigate — см. dispatch (редирект между OPEN и целью)
       armNewTab()
-      if (isCreateRoute(route) || isReportRoute(route)) {
-        markFreshFormInstance(route)
-      }
-      void ctx.navigate(route)
+      if (isReportRoute(route)) markFreshFormInstance(route)
+      void ctx.navigate(withNewFormInstance(route))
     },
     replaceUrl: (route) => {
       const i = route.indexOf('?')

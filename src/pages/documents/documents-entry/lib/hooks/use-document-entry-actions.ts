@@ -26,6 +26,7 @@ import {
   getDocumentListPath,
   getDocumentEntryPath,
 } from '../utils/get-document-paths'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 export const useDocumentEntryActions = ({
   isNew,
@@ -36,6 +37,7 @@ export const useDocumentEntryActions = ({
   const { moduleCode = '', pageCode = '' } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const tabKey = tabRouteKey(location.pathname, location.search)
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
@@ -113,7 +115,7 @@ export const useDocumentEntryActions = ({
             const entry = response.data.data as { id: number }
 
             if (shouldClose) {
-              useWorkspaceTabsStore.getState().closeTab(location.pathname)
+              useWorkspaceTabsStore.getState().closeTab(tabKey)
               void navigate(listPath)
             } else if (isNew) {
               void navigate(

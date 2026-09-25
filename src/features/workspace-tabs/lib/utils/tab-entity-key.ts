@@ -7,6 +7,7 @@
  * Модуль в ключ не входит намеренно: запись документа одна, из какого бы
  * раздела её ни открыли.
  */
+import { formInstanceOf } from '@/shared/lib/router/form-instance-route'
 import { isGroupCreate } from '@/shared/lib/router/group-create-route'
 
 interface EntityPattern {
@@ -68,7 +69,11 @@ export function tabEntityKey(pathname: string, search = ''): string | null {
     const m = regex.exec(pathname)
     // SCRUM-360 v6 §6.3: «Создать группу» (?isGroup=true) — другая сущность,
     // чем «Создать» того же типа; ключи расходятся суффиксом.
-    if (m) return isGroupCreate(search) ? `${key(m)}:group` : key(m)
+    if (m) {
+      const entity = isGroupCreate(search) ? `${key(m)}:group` : key(m)
+      const instance = formInstanceOf(pathname, search)
+      return instance ? `${entity}:${instance}` : entity
+    }
   }
   return null
 }

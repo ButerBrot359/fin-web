@@ -3,6 +3,8 @@ import {
   rotateFormInstanceId,
 } from '@/features/workspace-tabs/lib/utils/form-instance-id'
 
+import { formInstanceOf } from '@/shared/lib/router/form-instance-route'
+
 import { consumeFreshFormInstance } from './fresh-form-instance'
 
 export { prepareFreshFormInstanceId } from '@/features/workspace-tabs/lib/utils/form-instance-id'
@@ -19,7 +21,9 @@ export { prepareFreshFormInstanceId } from '@/features/workspace-tabs/lib/utils/
  * <p>Импорт по прямому пути, а не через бочку {@code @/features/workspace-tabs}: та тянет
  * React-хуки и утилиты, транспортному слою не нужные.
  */
-export function currentFormInstanceId(pathname: string): string {
+export function currentFormInstanceId(pathname: string, search = ''): string {
+  const fromRoute = formInstanceOf(pathname, search)
+  if (fromRoute) return fromRoute
   if (consumeFreshFormInstance(pathname)) {
     return rotateFormInstanceId(pathname)
   }

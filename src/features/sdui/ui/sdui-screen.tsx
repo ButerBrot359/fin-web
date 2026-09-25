@@ -4,7 +4,7 @@ import i18n from 'i18next'
 
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { subscribeViewSettingsChanged } from '@/shared/lib/design-settings/design-settings-events'
-import { groupCreateRoute } from '@/shared/lib/router/group-create-route'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 import {
   clearDiscardDraftClose,
@@ -78,7 +78,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   // маркера обязана переоткрыть сессию (CLOSE → OPEN), а кэши вкладок и
   // dirty-колбэки — различать их. Прочие query-параметры (в т.ч. ?ls= дерева,
   // который сервер меняет REPLACE_URL-эффектом) в ключ не входят.
-  const screenRoute = groupCreateRoute(location.pathname, location.search)
+  const screenRoute = tabRouteKey(location.pathname, location.search)
   const tree = useTreeStore((s) => s.root)
   const reset = useTreeStore((s) => s.reset)
   const dispatch = useSduiDispatch()

@@ -1,6 +1,10 @@
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useLocation, useParams } from 'react-router-dom'
 
 import { useResolveTypePageCode } from '@/entities/module'
+import {
+  FORM_INSTANCE_PARAM,
+  formInstanceOf,
+} from '@/shared/lib/router/form-instance-route'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 
 interface InformationRegisterRedirectProps {
@@ -18,6 +22,8 @@ export const InformationRegisterRedirect = ({
   mode,
 }: InformationRegisterRedirectProps) => {
   const { typeCode = '', entryId } = useParams()
+  const { pathname, search } = useLocation()
+  const instance = formInstanceOf(pathname, search)
   const { isResolving, pageCode } = useResolveTypePageCode(typeCode)
 
   if (isResolving) return <PageSkeleton />
@@ -30,7 +36,12 @@ export const InformationRegisterRedirect = ({
   }
 
   const base = `/modules/${pageCode}/informationregister/${typeCode}`
-  if (mode === 'new') return <Navigate to={`${base}/new`} replace />
+  if (mode === 'new') {
+    const query = instance
+      ? `?${FORM_INSTANCE_PARAM}=${encodeURIComponent(instance)}`
+      : ''
+    return <Navigate to={`${base}/new${query}`} replace />
+  }
   if (mode === 'entry' && entryId)
     return <Navigate to={`${base}/${entryId}`} replace />
   return <Navigate to={base} replace />

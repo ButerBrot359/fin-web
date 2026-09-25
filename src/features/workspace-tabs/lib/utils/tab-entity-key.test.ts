@@ -46,6 +46,22 @@ describe('tabEntityKey', () => {
     )
   })
 
+  it('новые документы с экземпляром формы — разные сущности', () => {
+    expect(tabEntityKey('/documents/RKO/new', '?fi=a1')).toBe(
+      'document-new:RKO:a1'
+    )
+    expect(tabEntityKey('/modules/M/document/RKO/new', '?fi=a1')).toBe(
+      'document-new:RKO:a1'
+    )
+    expect(tabEntityKey('/documents/RKO/new', '?fi=b2')).toBe(
+      'document-new:RKO:b2'
+    )
+    expect(
+      tabEntityKey('/dictionaries/Kalendari/new', '?isGroup=true&fi=c3')
+    ).toBe('dictionary-new:Kalendari:group:c3')
+    expect(tabEntityKey('/documents/RKO/15', '?fi=a1')).toBe('document:RKO:15')
+  })
+
   it('прочие маршруты — без ключа', () => {
     expect(tabEntityKey('/modules/Administrirovanie')).toBeNull()
     expect(tabEntityKey('/')).toBeNull()

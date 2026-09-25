@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 
 import { InformationRegisterRedirect } from './information-register-redirect'
@@ -13,6 +13,8 @@ vi.mock('@/entities/module', () => ({
 vi.mock('@/shared/ui/page-skeleton/page-skeleton', () => ({
   PageSkeleton: () => null,
 }))
+
+const SearchProbe = () => <div>{`search:${useLocation().search}`}</div>
 
 const renderAt = (path: string) =>
   render(
@@ -62,5 +64,27 @@ describe('InformationRegisterRedirect', () => {
   it('статический /new ранжируется выше и не перехватывается entry-роутом', () => {
     renderAt('/information-registers/KursyValyut/new')
     expect(screen.getByText('new-page')).toBeTruthy()
+  })
+
+  it('форма создания сохраняет только экземпляр формы из query', () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          '/information-registers/KursyValyut/new?fi=a1&domain=x',
+        ]}
+      >
+        <Routes>
+          <Route
+            path="/information-registers/:typeCode/new"
+            element={<InformationRegisterRedirect mode="new" />}
+          />
+          <Route
+            path="/modules/:pageCode/informationregister/:typeCode/new"
+            element={<SearchProbe />}
+          />
+        </Routes>
+      </MemoryRouter>
+    )
+    expect(screen.getByText('search:?fi=a1')).toBeTruthy()
   })
 })

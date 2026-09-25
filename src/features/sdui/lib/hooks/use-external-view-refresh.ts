@@ -11,6 +11,7 @@ import { useSduiCacheStore } from '../stores/sdui-cache-store'
 import { useTreeStore } from '../stores/tree-store'
 import { useViewStateStore } from '../stores/view-state-store'
 import type { ViewTabMeta } from '../../types/view'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 type Dispatch = ReturnType<typeof useSduiDispatch>
 
@@ -69,7 +70,11 @@ export function useExternalViewRefresh(
 
       // Hidden dirty tabs keep their snapshots. Clean tabs must reopen from DB.
       const cache = useSduiCacheStore.getState()
-      const cacheRoute = route.split('?')[0]
+      const queryStart = route.indexOf('?')
+      const cacheRoute =
+        queryStart >= 0
+          ? tabRouteKey(route.slice(0, queryStart), route.slice(queryStart))
+          : route
       for (const [cachedRoute, entry] of Object.entries(cache.cache)) {
         if (cachedRoute === cacheRoute) continue
         if (entry.dirty) {

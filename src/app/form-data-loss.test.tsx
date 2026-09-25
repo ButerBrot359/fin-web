@@ -21,10 +21,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ViewRequest, ViewResponse } from '@/features/sdui/types/view'
 import { useTreeStore, useViewStateStore } from '@/features/sdui'
 import { useSduiCacheStore } from '@/features/sdui/lib/stores/sdui-cache-store'
-import {
-  markFreshFormInstance,
-  useWorkspaceTabsStore,
-} from '@/features/workspace-tabs'
+import { useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { SduiCatchAllPage } from '@/pages/sdui-catch-all'
 import { WorkspaceTabSync } from '@/widgets/workspace-tab-bar'
 
@@ -43,8 +40,17 @@ const { server } = vi.hoisted(() => ({
     networkDown: false,
     sessions: new Map<string, FakeSession>(),
     saved: [] as Record<string, unknown>[],
+    opened: [] as {
+      id: string
+      route: string
+      formInstanceId: string | null
+    }[],
   },
 }))
+
+const DOC = '/documents/RKO/new'
+const LIST = '/documents/RKO'
+const DICT = '/dictionaries/Kontragenty'
 
 const BINDINGS: Record<string, string> = {
   'field.kommentariy': 'Kommentariy',
@@ -86,30 +92,57 @@ vi.mock('@/features/sdui/api/view-transport', () => {
           server.seq += 1
           const id = `S${String(server.seq)}`
           server.sessions.set(id, { alive: true, revision: 1, scratch: {} })
-          const isDoc = (req.route ?? '').includes('/documents/')
+          const path = (req.route ?? '').split('?')[0]
+          const isDoc = path.endsWith('/new')
+          const isList = path === LIST
+          server.opened.push({
+            id,
+            route: req.route ?? '',
+            formInstanceId:
+              (action as { formInstanceId?: string }).formInstanceId ?? null,
+          })
           return Promise.resolve({
             formSessionId: id,
             revision: 1,
             tree: {
               id: 'root',
               type: 'PAGE',
-              props: { title: isDoc ? 'РКО (создание)' : 'Контрагенты' },
-              children: isDoc
+              props: {
+                title: isDoc
+                  ? 'РКО (создание)'
+                  : isList
+                    ? 'Журнал РКО'
+                    : 'Контрагенты',
+              },
+              children: isList
                 ? [
-                    field('field.kommentariy', 'Комментарий'),
-                    field('field.osnovanie', 'Основание'),
                     {
-                      id: 'btn.save',
+                      id: 'btn.create',
                       type: 'BUTTON',
                       props: {
-                        label: 'Записать',
-                        command: 'save',
+                        label: 'Создать',
+                        command: 'list.create',
                         enabled: true,
                         visible: true,
                       },
                     },
                   ]
-                : [],
+                : isDoc
+                  ? [
+                      field('field.kommentariy', 'Комментарий'),
+                      field('field.osnovanie', 'Основание'),
+                      {
+                        id: 'btn.save',
+                        type: 'BUTTON',
+                        props: {
+                          label: 'Записать',
+                          command: 'save',
+                          enabled: true,
+                          visible: true,
+                        },
+                      },
+                    ]
+                  : [],
             },
             state: {},
             tab: { kind: isDoc ? 'DOCUMENT_NEW' : 'DICTIONARY' },
@@ -143,10 +176,14 @@ vi.mock('@/features/sdui/api/view-transport', () => {
           session.scratch = {}
         }
         if (action.type === 'CLOSE') session.alive = false
+        const create =
+          action.type === 'COMMAND' &&
+          (action as { command?: string }).command === 'list.create'
         return Promise.resolve({
           formSessionId: id,
           revision: session.revision,
           dirty: Object.keys(session.scratch).length > 0,
+          effects: create ? [{ type: 'navigate', route: DOC }] : undefined,
         } as ViewResponse)
       },
       heartbeat: () => Promise.resolve(true),
@@ -190,13 +227,10 @@ const Keyed = () => {
   )
 }
 
-const DOC = '/documents/RKO/new'
-const DICT = '/dictionaries/Kontragenty'
-
-const renderApp = () =>
+const renderApp = (start = DOC) =>
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter initialEntries={[DOC]}>
+      <MemoryRouter initialEntries={[start]}>
         <Binding />
         <NavProbe />
         <WorkspaceTabSync />
@@ -244,6 +278,7 @@ describe('сценарии потери незаписанных данных ф
     server.networkDown = false
     server.sessions.clear()
     server.saved = []
+    server.opened = []
   })
 
   afterEach(() => {
@@ -269,25 +304,49 @@ describe('сценарии потери незаписанных данных ф
     expect(server.sessions.get('S1')?.alive).toBe(true)
   })
 
-  it.fails(
-    '«Создать» того же типа не выбрасывает незаписанный новый документ',
-    async () => {
-      await typeAndLeave()
+  it('повторное «Создать» того же типа открывает новую вкладку, а незаписанный документ остаётся в своей', async () => {
+    renderApp(LIST)
+    fireEvent.click(await screen.findByRole('button', { name: 'Создать' }))
+    await typeInto('Комментарий', 'Оплата поставщику')
+    const first = useTreeStore.getState().formSessionId
+    await waitFor(() => {
+      expect(
+        first ? server.sessions.get(first)?.scratch.Kommentariy : null
+      ).toBe('Оплата поставщику')
+    })
 
-      act(() => {
-        markFreshFormInstance(DOC)
-        void router.navigate?.(DOC)
-      })
-      await waitFor(() => {
-        expect(useTreeStore.getState().formSessionId).toBe('S3')
-      })
+    go(LIST)
+    fireEvent.click(await screen.findByRole('button', { name: 'Создать' }))
+    expect((await input('Комментарий')).value).toBe('')
+    const second = useTreeStore.getState().formSessionId
 
-      const kept = Object.values(useSduiCacheStore.getState().cache).some(
-        (entry) => entry.viewState.Kommentariy === 'Оплата поставщику'
-      )
-      expect(kept).toBe(true)
-    }
-  )
+    const docTabs = useWorkspaceTabsStore
+      .getState()
+      .tabs.filter((t) => t.path === DOC)
+    expect(docTabs).toHaveLength(2)
+    expect(docTabs[0].id).not.toBe(docTabs[1].id)
+
+    const docOpens = server.opened.filter((o) => o.route.startsWith(DOC))
+    expect(docOpens).toHaveLength(2)
+    expect(docOpens[0].formInstanceId).not.toBe(docOpens[1].formInstanceId)
+    expect(docOpens[0].route).toContain(
+      `fi=${docOpens[0].formInstanceId ?? ''}`
+    )
+
+    go(docTabs[0].path + docTabs[0].search)
+    await waitFor(async () => {
+      expect((await input('Комментарий')).value).toBe('Оплата поставщику')
+    })
+    expect(useTreeStore.getState().formSessionId).toBe(first)
+    expect(first ? server.sessions.get(first)?.alive : false).toBe(true)
+    expect(server.opened.filter((o) => o.route.startsWith(DOC))).toHaveLength(2)
+
+    go(docTabs[1].path + docTabs[1].search)
+    await waitFor(() => {
+      expect(useTreeStore.getState().formSessionId).not.toBe(first)
+    })
+    expect(second).not.toBe(first)
+  })
 
   it.fails(
     'фоновая форма с истёкшей серверной сессией сохраняет введённое после переоткрытия',

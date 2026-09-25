@@ -14,7 +14,7 @@ import SearchIcon from '@/shared/assets/icons/search.svg'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
 import { SelectOperationDialog } from '@/shared/ui/select-operation-dialog'
-import { markFreshFormInstance } from '@/features/workspace-tabs'
+import { withNewFormInstance } from '@/shared/lib/router/form-instance-route'
 
 import { useDocumentEntryPrint } from '@/entities/document-entry'
 import { PrintDropdownButton } from '@/widgets/document-form-toolbar'
@@ -122,8 +122,7 @@ export const DocumentListToolbar = ({
   // маршрута (свой на сервере и снимок вкладки) снимается, иначе новый документ открылся бы
   // с чужими значениями. Владелец формы (SDUI) слушает реестр сам — прямой связи нет.
   const goToNewDocument = (route: string) => {
-    markFreshFormInstance(route)
-    void navigate(route)
+    void navigate(withNewFormInstance(route))
   }
 
   const handleSelectOperation = (operationCode: string) => {

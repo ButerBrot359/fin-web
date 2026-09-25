@@ -16,7 +16,10 @@ import {
 } from '@/features/workspace-tabs'
 
 import { PageHeader } from '@/widgets/page-header'
-import { DocumentFormToolbar, type CommandButton } from '@/widgets/document-form-toolbar'
+import {
+  DocumentFormToolbar,
+  type CommandButton,
+} from '@/widgets/document-form-toolbar'
 
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
 
@@ -31,12 +34,14 @@ import { useDocumentEntryForm } from '../lib/hooks/use-document-entry-form'
 import { useDocumentEntryPrint } from '../lib/hooks/use-document-entry-print'
 import { useDocumentEntryActions } from '../lib/hooks/use-document-entry-actions'
 import { useUnsavedChangesDialog } from '../lib/hooks/use-unsaved-changes-dialog'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 export const LegacyDocumentEntryPage = () => {
   const { moduleCode = '', pageCode = '' } = useParams()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  const tabKey = tabRouteKey(location.pathname, location.search)
 
   const { title, attributes } = useDocumentType(moduleCode)
 
@@ -52,12 +57,16 @@ export const LegacyDocumentEntryPage = () => {
     queryFn: async () => {
       const response = await getFormEvents(moduleCode)
       const data = response.data
-      return Array.isArray(data) ? data : ((data as { data?: string[] }).data ?? [])
+      return Array.isArray(data)
+        ? data
+        : ((data as { data?: string[] }).data ?? [])
     },
     staleTime: 10 * 60 * 1000,
   })
 
-  const EVENT_BUTTON_CONFIG: Record<string, { label: string; order: number }> = {
+  const EVENT_BUTTON_CONFIG: Partial<
+    Record<string, { label: string; order: number }>
+  > = {
     OnZapolnitPoVsemRabotnikamClick: {
       label: t('documentFormToolbar.fill'),
       order: 1,
@@ -69,12 +78,19 @@ export const LegacyDocumentEntryPage = () => {
   }
 
   const commandButtons: CommandButton[] = formEvents
-    .filter((name) => name.endsWith('Click') && EVENT_BUTTON_CONFIG[name])
-    .map((eventName) => ({
-      eventName,
-      label: EVENT_BUTTON_CONFIG[eventName].label,
-      onClick: () => formRendererRef.current?.triggerEvent(eventName),
-    }))
+    .filter((name) => name.endsWith('Click'))
+    .flatMap((eventName) => {
+      const config = EVENT_BUTTON_CONFIG[eventName]
+      return config
+        ? [
+            {
+              eventName,
+              label: config.label,
+              onClick: () => formRendererRef.current?.triggerEvent(eventName),
+            },
+          ]
+        : []
+    })
     .sort(
       (a, b) =>
         (EVENT_BUTTON_CONFIG[a.eventName]?.order ?? 99) -
@@ -89,7 +105,7 @@ export const LegacyDocumentEntryPage = () => {
       : undefined
 
   const { pendingAction, markClosing } = useFormCache({
-    tabId: location.pathname,
+    tabId: tabKey,
     form,
   })
 
@@ -127,8 +143,8 @@ export const LegacyDocumentEntryPage = () => {
 
   const closeCurrentTab = () => {
     markClosing()
-    useFormCacheStore.getState().removeTab(location.pathname)
-    useWorkspaceTabsStore.getState().closeTab(location.pathname)
+    useFormCacheStore.getState().removeTab(tabKey)
+    useWorkspaceTabsStore.getState().closeTab(tabKey)
   }
 
   const unsavedDialog = useUnsavedChangesDialog({
@@ -151,7 +167,7 @@ export const LegacyDocumentEntryPage = () => {
   // Handle pending save-and-close triggered from tab bar
   useEffect(() => {
     if (pendingAction && !isLoading) {
-      useFormCacheStore.getState().consumePendingAction(location.pathname)
+      useFormCacheStore.getState().consumePendingAction(tabKey)
       actions.handleSaveAndClose()
     }
   }, [pendingAction, isLoading]) // eslint-disable-line react-hooks/exhaustive-deps

@@ -538,11 +538,26 @@ const FloorTreeTable = ({
   // Двухэтажный заголовок детальных колонок (напр. «Дополнительные поля» над
   // «Единица измерения»): верхний ряд групп + нижний ряд титулов колонок группы.
   const leafHead = useMemo(() => {
+    const model3 = buildHeadModel(leafColumns, {
+      isKz,
+      levels: 3,
+      ...HEAD_OPTS,
+    })
+    if (model3.hasSub) {
+      return {
+        hasGroups: true,
+        leafRows: 3,
+        topRow: model3.topRow,
+        midRow: model3.midRow,
+        subRow: model3.leafRow,
+      }
+    }
     const model = buildHeadModel(leafColumns, { isKz, levels: 2, ...HEAD_OPTS })
     return {
       hasGroups: model.hasGroups,
       leafRows: model.hasGroups ? 2 : 1,
       topRow: model.topRow,
+      midRow: [] as typeof model.midRow,
       subRow: model.leafRow,
     }
   }, [leafColumns, isKz])
@@ -724,6 +739,22 @@ const FloorTreeTable = ({
                   </th>
                 ))}
               </tr>
+              {leafHead.midRow.length > 0 && (
+                <tr>
+                  {leafHead.midRow.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={thBase}
+                    >
+                      <Typography variant="body2" sx={thTextSx}>
+                        {cell.title}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+              )}
               <tr>
                 {leafHead.subRow.map(({ key, col }) => (
                   <th key={key} className={thBase}>

@@ -19,7 +19,7 @@ import {
 } from '@/features/workspace-tabs'
 
 import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
-import { groupCreateRoute } from '@/shared/lib/router/group-create-route'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 import { useUnsavedChangesDialog } from '@/pages/documents/documents-entry/lib/hooks/use-unsaved-changes-dialog'
 
@@ -52,7 +52,7 @@ export function useSduiCardBinding() {
   // SCRUM-360 v6 §6.3: маршрутный ключ экрана с маркером isGroup — тот же,
   // что у id вкладки и route-колбэков SduiScreen («Создать»/«Создать группу»
   // делят pathname, но живут в разных вкладках).
-  const screenRoute = groupCreateRoute(location.pathname, location.search)
+  const screenRoute = tabRouteKey(location.pathname, location.search)
 
   useEffect(() => {
     return () => {

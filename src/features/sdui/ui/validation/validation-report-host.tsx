@@ -1,7 +1,7 @@
 import { useEffect, useState, type FC } from 'react'
 import { useLocation } from 'react-router-dom'
 
-import { groupCreateRoute } from '@/shared/lib/router/group-create-route'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 import {
   isTargetNavigable,
   useValidationReportStore,
@@ -34,7 +34,7 @@ export const ValidationReportHost: FC = () => {
   const location = useLocation()
   // Тот же ключ экрана, что у sdui-screen (SCRUM-360 v6 §6.3: pathname +
   // маркер isGroup) — отчёт «Создать группу» не смешивается с «Создать».
-  const route = groupCreateRoute(location.pathname, location.search)
+  const route = tabRouteKey(location.pathname, location.search)
   const report = useValidationReportStore(
     (s): ValidationReport | undefined => s.reports[route]
   )

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 
 import { InformationRegisterRedirect } from './information-register-redirect'
@@ -13,6 +13,11 @@ vi.mock('@/entities/module', () => ({
 vi.mock('@/shared/ui/page-skeleton/page-skeleton', () => ({
   PageSkeleton: () => null,
 }))
+
+const NewPage = () => {
+  const { search } = useLocation()
+  return <div>new-page{search}</div>
+}
 
 const renderAt = (path: string) =>
   render(
@@ -36,7 +41,7 @@ const renderAt = (path: string) =>
         />
         <Route
           path="/modules/:pageCode/informationregister/:typeCode/new"
-          element={<div>new-page</div>}
+          element={<NewPage />}
         />
         <Route
           path="/modules/:pageCode/informationregister/:typeCode/:entryId"
@@ -62,5 +67,10 @@ describe('InformationRegisterRedirect', () => {
   it('статический /new ранжируется выше и не перехватывается entry-роутом', () => {
     renderAt('/information-registers/KursyValyut/new')
     expect(screen.getByText('new-page')).toBeTruthy()
+  })
+
+  it('при создании переносит в раздел только экземпляр формы fi', () => {
+    renderAt('/information-registers/KursyValyut/new?fi=abc&domain=x')
+    expect(screen.getByText('new-page?fi=abc')).toBeTruthy()
   })
 })

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
-import { groupCreateRoute } from '@/shared/lib/router/group-create-route'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 import { MAX_TABS } from '../consts/workspace-tabs-config'
 import { tabEntityKey } from '../utils/tab-entity-key'
@@ -90,7 +90,7 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
         // редиректит URL на путь существующей вкладки.
         // SCRUM-360 v6 §6.3: id вкладки — маршрутный ключ с маркером isGroup,
         // «Создать» и «Создать группу» одного типа живут в разных вкладках.
-        const id = groupCreateRoute(path, search)
+        const id = tabRouteKey(path, search)
         const key = tabEntityKey(path, search)
         const existing =
           tabs.find((t) => t.id === id) ??
@@ -226,7 +226,7 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
       },
 
       updateTabPath: (tabId, path, search) => {
-        const newId = groupCreateRoute(path, search)
+        const newId = tabRouteKey(path, search)
         set((state) => ({
           tabs: updateTab(state.tabs, tabId, (t) => ({
             ...t,

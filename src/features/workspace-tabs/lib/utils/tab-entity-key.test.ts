@@ -51,4 +51,19 @@ describe('tabEntityKey', () => {
     expect(tabEntityKey('/')).toBeNull()
     expect(tabEntityKey('/account-plan')).toBeNull()
   })
+
+  it('экземпляр формы создания (?fi=) — отдельная сущность', () => {
+    expect(tabEntityKey('/documents/RKO/new', '?fi=a1')).toBe(
+      'document-new:RKO:a1'
+    )
+    expect(tabEntityKey('/modules/M/document/RKO/new', '?fi=a1')).toBe(
+      'document-new:RKO:a1'
+    )
+    expect(
+      tabEntityKey('/dictionaries/Kalendari/new', '?isGroup=true&fi=b2')
+    ).toBe('dictionary-new:Kalendari:group:b2')
+    expect(tabEntityKey('/documents/RKO/123', '?fi=a1')).toBe(
+      'document:RKO:123'
+    )
+  })
 })

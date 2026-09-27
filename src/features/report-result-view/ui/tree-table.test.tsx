@@ -471,3 +471,51 @@ describe('TreeTable — этажи с подгруппой граф (оборо�
     )
   })
 })
+
+describe('TreeTable — суммы в строках групп и «Итого» этажного дерева', () => {
+  const kolonki = [
+    { code: 'Schet', titleRu: 'Счёт', role: 'DIMENSION', valueType: 'STRING' },
+    { code: 'NomerPoPoryadku', titleRu: '№ п/п', role: 'ATTRIBUTE' },
+    { code: 'Naimenovanie', titleRu: 'Наименование', role: 'ATTRIBUTE' },
+    { code: 'Kolichestvo', titleRu: 'Количество', valueType: 'DECIMAL' },
+    { code: 'Summa', titleRu: 'Сумма', valueType: 'DECIMAL' },
+  ] as unknown as ReportColumnDto[]
+
+  const rezultat = {
+    ...result,
+    columns: kolonki,
+    groupFloorCodes: ['Schet'],
+    total: { Kolichestvo: 951, Summa: 1991666.67 },
+    rows: [
+      {
+        level: 0,
+        groupCode: 'Schet',
+        groupValue: '1316',
+        cells: { Kolichestvo: 951, Summa: 1991666.67 },
+        children: [
+          {
+            level: 1,
+            cells: {
+              NomerPoPoryadku: 1,
+              Naimenovanie: 'обложка',
+              Kolichestvo: 951,
+              Summa: 1991666.67,
+            },
+            children: [],
+          },
+        ],
+      },
+    ],
+  } as unknown as ReportResultDto
+
+  it('строка группы и «Итого» показывают суммы в числовых колонках', () => {
+    render(<TreeTable result={rezultat} columns={kolonki} />)
+
+    const gruppa = screen.getByText('1316').closest('tr')!
+    expect(gruppa.textContent).toContain('951')
+    expect(gruppa.textContent).toContain('1 991 666,67')
+    const itogo = document.querySelector('tfoot tr')!
+    expect(itogo.textContent).toContain('951')
+    expect(itogo.textContent).toContain('1 991 666,67')
+  })
+})

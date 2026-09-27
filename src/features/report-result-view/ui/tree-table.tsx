@@ -534,6 +534,14 @@ const FloorTreeTable = ({
     () => columns.filter((c) => isMeasure(c)),
     [columns]
   )
+  const bandLabelSpan = useMemo(() => {
+    const firstNumeric = leafColumns.findIndex((c) => isNumericCell(c))
+    return firstNumeric < 0 ? leafColumns.length : Math.max(firstNumeric, 1)
+  }, [leafColumns])
+  const bandValueColumns = useMemo(
+    () => leafColumns.slice(bandLabelSpan),
+    [leafColumns, bandLabelSpan]
+  )
 
   // Двухэтажный заголовок детальных колонок (напр. «Дополнительные поля» над
   // «Единица измерения»): верхний ряд групп + нижний ряд титулов колонок группы.
@@ -794,12 +802,25 @@ const FloorTreeTable = ({
                   key={row.id}
                   {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
                 >
-                  <td
-                    colSpan={leafColumns.length}
-                    className={`${tdBase} align-top`}
-                  >
+                  <td colSpan={bandLabelSpan} className={`${tdBase} align-top`}>
                     {renderBandCell(row)}
                   </td>
+                  {bandValueColumns.map((col) => (
+                    <td
+                      key={col.code}
+                      {...valueCellProps}
+                      className={`${tdBase} align-top text-right tabular-nums`}
+                    >
+                      {isNumericCell(col) && (
+                        <ReportCell
+                          subLabels={indicatorSubLabels(row.original.cells)}
+                          value={row.original.cells[col.code]}
+                          col={col}
+                          bold
+                        />
+                      )}
+                    </td>
+                  ))}
                   {measureColumns.map((m) => (
                     <td
                       key={m.code}
@@ -856,7 +877,7 @@ const FloorTreeTable = ({
         {showsGrandTotal(result.total, result.rows) && (
           <tfoot>
             <tr>
-              <td colSpan={leafColumns.length} className={tdBase}>
+              <td colSpan={bandLabelSpan} className={tdBase}>
                 <Typography
                   variant="body2"
                   sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
@@ -864,6 +885,16 @@ const FloorTreeTable = ({
                   {t('reports.total', { lng: reportLang })}
                 </Typography>
               </td>
+              {bandValueColumns.map((col) => (
+                <td
+                  key={col.code}
+                  className={`${tdBase} text-right tabular-nums`}
+                >
+                  {isNumericCell(col) && (
+                    <ReportCell value={result.total[col.code]} col={col} bold />
+                  )}
+                </td>
+              ))}
               {measureColumns.map((m) => (
                 <td
                   key={m.code}

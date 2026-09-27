@@ -92,6 +92,33 @@ describe('SpreadsheetView — табличный документ бланка',
     expect(tekst.closest('td')!.style.position).toBe('relative')
   })
 
+  it('шрифт клетки ужат до ширины текста 1С — подписи переносятся там же, где в 1С', () => {
+    const dokumentSoShriftom: ReportSpreadsheetDto = {
+      sheets: [
+        {
+          code: 'Страница 1',
+          title: 'Страница 1',
+          columnWidths: [120],
+          rowHeights: [16],
+          cells: [
+            {
+              row: 0,
+              column: 0,
+              text: 'налогового агента/Ф.И.О.',
+              style: { fontSize: 10 },
+            },
+          ],
+        },
+      ],
+    }
+
+    render(<SpreadsheetView spreadsheet={dokumentSoShriftom} />)
+
+    expect(
+      screen.getByText('налогового агента/Ф.И.О.').closest('td')!.style.fontSize
+    ).toBe('9.4pt')
+  })
+
   it('ширина листа равна сумме колонок — длинная подпись не раздвигает сетку', () => {
     const { container } = render(<SpreadsheetView spreadsheet={dokument} />)
 

@@ -142,6 +142,14 @@ export const inputsComponents: Components<Omit<Theme, 'components'>> = {
       },
     },
   },
+  MuiFormControlLabel: {
+    styleOverrides: {
+      root: ({ ownerState }) =>
+        (ownerState.labelPlacement ?? 'end') === 'end'
+          ? { marginLeft: -9 }
+          : {},
+    },
+  },
   // Чекбокс по Figma (772:24370): 24×24, тёмная рамка, checked — салатовая
   // заливка с тёмной галкой. MUI-дефолт (синий квадрат, белая галка) в
   // макетах отсутствует. Цвет рамки/галки — через color (currentColor глифов).

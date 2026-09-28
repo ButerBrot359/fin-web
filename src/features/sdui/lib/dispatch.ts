@@ -5,7 +5,7 @@ import i18n from 'i18next'
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { invalidateDocumentListQueries } from '@/shared/lib/query/invalidate-entities'
-import { groupCreateRoute } from '@/shared/lib/router/group-create-route'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 import type {
   ActionBehavior,
@@ -120,7 +120,7 @@ export function useSduiDispatch() {
         // (с маркером isGroup), тот же, под которым читает
         // validation-report-host и чистит sdui-screen. Голый pathname терял
         // отчёт на «Создать группу» справочника.
-        pathname: groupCreateRoute(location.pathname, location.search),
+        pathname: tabRouteKey(location.pathname, location.search),
         redispatch: (a, b) => dispatchAction(a, b),
       })
       const playEffects = (effects: ViewEffect[]) => {
@@ -321,7 +321,7 @@ export function useSduiDispatch() {
         handleDispatchError(error, {
           action,
           isRetry,
-          pathname: groupCreateRoute(location.pathname, location.search),
+          pathname: tabRouteKey(location.pathname, location.search),
           session,
           opts,
           retry: () => dispatchAction(action, behavior, true),

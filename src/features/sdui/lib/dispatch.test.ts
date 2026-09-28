@@ -17,6 +17,8 @@ import { useAsyncTaskStore } from '@/entities/async-task'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { apiService } from '@/shared/api/api'
 import { formInstanceIdFor } from '@/features/workspace-tabs/lib/utils/form-instance-id'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
+import { useValidationReportStore } from '@/entities/validation-report'
 
 // Мутабельная локация: тесты подменяют search между рендерами
 const router = vi.hoisted(() => ({
@@ -1195,6 +1197,37 @@ describe('useSduiDispatch: 422 DOCUMENT_VALIDATION → подсветка по e
       'error',
       'Ошибки заполнения документа: …'
     )
+  })
+
+  it('отчёт 422 на новом документе ложится под ключ вкладки с fi — его читает панель ошибок', async () => {
+    router.search = '?fi=tab-1'
+    useValidationReportStore.setState({ reports: {} })
+    vi.spyOn(viewTransport, 'post').mockRejectedValue(
+      new ViewHttpError(
+        'Ошибки заполнения документа',
+        422,
+        'DOCUMENT_VALIDATION',
+        undefined,
+        [],
+        {
+          messages: [
+            {
+              message: 'Не заполнен реквизит "Период БЛ с"',
+              target: { kind: 'FIELD', fieldCode: 'PeriodS' },
+            },
+          ],
+        }
+      )
+    )
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+    await result.current({ type: 'COMMAND', command: 'write' })
+
+    const key = tabRouteKey(router.pathname, router.search)
+    expect(key).toBe('/documents/SchetKOplate/new?fi=tab-1')
+    expect(
+      useValidationReportStore.getState().reports[key].messages
+    ).toHaveLength(1)
+    expect(showToast).not.toHaveBeenCalled()
   })
 
   it('другой 422 (COMMAND_FAILED) подсветку не трогает — только тост', async () => {

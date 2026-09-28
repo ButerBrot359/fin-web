@@ -19,7 +19,7 @@ import {
 export interface DispatchErrorCtx {
   action: ViewAction
   isRetry: boolean
-  /** location.pathname — ключ стора отчёта о проверке (тот же, что на 200). */
+  /** Маршрутный ключ экрана (groupCreateRoute) — ключ стора отчёта (тот же, что на 200). */
   pathname: string
   session: SduiSessionValue
   opts?: {

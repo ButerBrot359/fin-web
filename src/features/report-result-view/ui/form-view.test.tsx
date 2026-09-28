@@ -22,7 +22,9 @@ describe('FormView — колонка без заголовка', () => {
           { code: 'F405Opisanie', titleRu } as never,
           { code: 'F405Summa', titleRu: 'Сумма, тенге' } as never,
         ],
-        rows: [{ level: 0, cells: { F405Opisanie: 'Начислено', F405Summa: 100 } }],
+        rows: [
+          { level: 0, cells: { F405Opisanie: 'Начислено', F405Summa: 100 } },
+        ],
       } as never,
     ],
   })
@@ -39,5 +41,38 @@ describe('FormView — колонка без заголовка', () => {
 
     expect(screen.getByText('Сумма, тенге')).toBeTruthy()
     expect(screen.getByText('100')).toBeTruthy()
+  })
+})
+
+describe('FormView — строка номеров граф', () => {
+  const form = (numbers: (string | undefined)[]): ReportFormDto => ({
+    title: 'Расчетная ведомость',
+    sections: [
+      {
+        numberGraphs: true,
+        graphNumberStart: 1,
+        columns: numbers.map((n, i) => ({
+          code: `C${String(i)}`,
+          titleRu: `Графа ${String(i)}`,
+          columnNumber: n,
+        })) as never,
+        rows: [],
+      } as never,
+    ],
+  })
+
+  it('без явных номеров графы нумеруются подряд с graphNumberStart', () => {
+    render(<FormView form={form([undefined, undefined, undefined])} />)
+
+    expect(screen.getByText('1')).toBeTruthy()
+    expect(screen.getByText('2')).toBeTruthy()
+    expect(screen.getByText('3')).toBeTruthy()
+  })
+
+  it('явный номер колонки печатается как есть', () => {
+    render(<FormView form={form(['1', '9=6-7'])} />)
+
+    expect(screen.getByText('9=6-7')).toBeTruthy()
+    expect(screen.queryByText('2')).toBeNull()
   })
 })

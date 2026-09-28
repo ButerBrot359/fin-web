@@ -71,6 +71,44 @@ describe('buildReportAltExport — строка номеров граф', () => 
     ])
   })
 
+  it('LEDGER: номера граф идут строкой под шапкой без служебной колонки', () => {
+    const data = buildReportAltExport(
+      {
+        ...treeResult([
+          {
+            code: 'Nomer',
+            titleRu: '№ доверенности',
+            role: 'ATTRIBUTE',
+            valueType: 'STRING',
+            columnNumber: '1',
+          },
+          {
+            code: 'Data',
+            titleRu: 'Дата выдачи',
+            role: 'ATTRIBUTE',
+            valueType: 'STRING',
+            columnNumber: '2',
+          },
+        ]),
+        layout: 'LEDGER',
+      },
+      false,
+      'Группировка',
+      'Итого'
+    )
+
+    expect(data.headerRows).toEqual([
+      [
+        { text: '№ доверенности', col: 0 },
+        { text: 'Дата выдачи', col: 1 },
+      ],
+      [
+        { text: '1', col: 0 },
+        { text: '2', col: 1 },
+      ],
+    ])
+  })
+
   it('без номеров у колонок шапка остаётся одноуровневой', () => {
     const data = buildReportAltExport(
       treeResult([

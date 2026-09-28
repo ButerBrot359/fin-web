@@ -56,6 +56,7 @@ export interface ReportAltColumnDto {
   subGroupTitleKz?: string
   width?: number
   dcIndicator?: boolean
+  columnNumber?: string
 }
 
 /**

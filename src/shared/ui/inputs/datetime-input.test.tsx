@@ -328,3 +328,73 @@ describe('DateTimeInput — очистка значения', () => {
     expect(fieldValue()).toBe('12.08.2026')
   })
 })
+
+describe('DateTimeInput — достроение неполной даты от текущей, как в 1С', () => {
+  afterEach(cleanup)
+
+  const renderEmpty = (onChange: (value: string) => void) =>
+    render(
+      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ru}>
+        <DateTimeInput dateOnly value="" onChange={onChange} />
+      </LocalizationProvider>
+    )
+
+  const sections = () =>
+    Array.from(document.querySelectorAll<HTMLElement>('[role="spinbutton"]'))
+
+  const typeDigits = (section: HTMLElement, digits: string) => {
+    act(() => {
+      section.focus()
+    })
+    for (const digitChar of digits) {
+      section.textContent = digitChar
+      fireEvent.input(section)
+    }
+  }
+
+  const today = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const currentYearMonth = `${String(today.getFullYear())}-${pad(today.getMonth() + 1)}`
+
+  it('«28» и Enter — 28-е число текущего месяца и года', async () => {
+    const onChange = vi.fn<(v: string) => void>()
+    renderEmpty(onChange)
+    const [day] = sections()
+
+    typeDigits(day, '28')
+    fireEvent.keyDown(document.activeElement ?? day, { key: 'Enter' })
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenLastCalledWith(`${currentYearMonth}-28`)
+    })
+  })
+
+  it('«28.09» и уход из поля — 28 сентября текущего года', async () => {
+    const onChange = vi.fn<(v: string) => void>()
+    renderEmpty(onChange)
+    const [day, month] = sections()
+
+    typeDigits(day, '28')
+    typeDigits(month, '09')
+    fireEvent.blur(document.activeElement ?? month)
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenLastCalledWith(
+        `${String(today.getFullYear())}-09-28`
+      )
+    })
+  })
+
+  it('пустое поле по Enter ничего не отдаёт', async () => {
+    const onChange = vi.fn<(v: string) => void>()
+    renderEmpty(onChange)
+    const [day] = sections()
+
+    act(() => {
+      day.focus()
+    })
+    fireEvent.keyDown(day, { key: 'Enter' })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(onChange).not.toHaveBeenCalled()
+  })
+})

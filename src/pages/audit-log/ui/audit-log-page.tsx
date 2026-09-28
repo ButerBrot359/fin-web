@@ -85,8 +85,8 @@ export const AuditLogPage = () => {
       <AuditLogFilters
         value={draft}
         onChange={setDraft}
-        onApply={() => {
-          applyFilters(draft)
+        onApply={(values) => {
+          applyFilters(values)
         }}
         onReset={() => {
           setDraft(EMPTY_FILTERS)

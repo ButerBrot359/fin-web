@@ -11,6 +11,7 @@ import { parseISO, isValid } from 'date-fns'
 import { CalendarSidebar, CalendarNavProvider } from './calendar-layout'
 import { serializeDateInput } from './serialize-date-input'
 import { resolveDateFormatSpec, snapToGranularity } from './date-format-spec'
+import { completePartialDate } from './complete-partial-date'
 
 export interface DateTimeInputProps {
   value?: string
@@ -116,7 +117,18 @@ export const DateTimeInput = ({
 
   // Пустое поле при уходе фокуса — это уже решение пользователя, а не транзиент:
   // очистка коммитится, как это делает 1С по факту выхода из поля.
+  const completeFromToday = (): boolean => {
+    const sections = fieldRef.current?.getSections()
+    if (!sections) return false
+    const completed = completePartialDate(sections, new Date())
+    if (!completed) return false
+    handleChange(completed)
+    return true
+  }
+
   const handleBlur = () => {
+    if (readOnly || disabled) return
+    if (completeFromToday()) return
     if (!value) return
     const sections = fieldRef.current?.getSections()
     if (sections?.every((section) => section.value === '')) onChange('')
@@ -141,7 +153,12 @@ export const DateTimeInput = ({
    * синхронно — значит подставить под удаление соседний разряд вместо текущего.
    */
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key !== 'Backspace' || readOnly || disabled) return
+    if (readOnly || disabled) return
+    if (event.key === 'Enter') {
+      completeFromToday()
+      return
+    }
+    if (event.key !== 'Backspace') return
     const activeIndex = fieldRef.current?.getActiveSectionIndex()
     // null — выделены все разряды (Ctrl+A), их пикер стирает разом сам;
     // 0 — левее уже некуда.

@@ -18,6 +18,7 @@ import {
 import RefreshRounded from '@mui/icons-material/RefreshRounded'
 import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded'
 import { useAiStatistics, type AiStatisticsFilters } from '@/entities/analytics'
+import { DateTimeInput } from '@/shared/ui/inputs'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 import { getStatisticsCopy, statisticsLocale } from '../lib/statistics-copy'
@@ -143,44 +144,30 @@ export function AnalyticsAiStatisticsPage() {
               </TextField>
             </Box>
             <Box sx={{ minWidth: 0 }}>
-              <Typography
-                component="label"
-                htmlFor="ai-statistics-from"
-                variant="caption"
-                display="block"
-                mb={0.75}
-              >
+              <Typography variant="caption" display="block" mb={0.75}>
                 {copy.from}
               </Typography>
-              <TextField
-                id="ai-statistics-from"
+              <DateTimeInput
+                dateOnly
                 fullWidth
-                type="date"
                 size="small"
                 value={draft.from}
-                onChange={(e) => {
-                  setDraft((before) => ({ ...before, from: e.target.value }))
+                onChange={(next) => {
+                  setDraft((before) => ({ ...before, from: next }))
                 }}
               />
             </Box>
             <Box sx={{ minWidth: 0 }}>
-              <Typography
-                component="label"
-                htmlFor="ai-statistics-to"
-                variant="caption"
-                display="block"
-                mb={0.75}
-              >
+              <Typography variant="caption" display="block" mb={0.75}>
                 {copy.to}
               </Typography>
-              <TextField
-                id="ai-statistics-to"
+              <DateTimeInput
+                dateOnly
                 fullWidth
-                type="date"
                 size="small"
                 value={draft.to}
-                onChange={(e) => {
-                  setDraft((before) => ({ ...before, to: e.target.value }))
+                onChange={(next) => {
+                  setDraft((before) => ({ ...before, to: next }))
                 }}
               />
             </Box>

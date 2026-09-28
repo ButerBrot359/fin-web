@@ -109,6 +109,48 @@ describe('buildReportAltExport — строка номеров граф', () => 
     ])
   })
 
+  it('колонка дерева задана графой — она ведущая, без «Группировки»', () => {
+    const data = buildReportAltExport(
+      {
+        ...treeResult([
+          {
+            code: 'Kod',
+            titleRu: 'Администратор / Программа',
+            role: 'DIMENSION',
+            valueType: 'STRING',
+            columnNumber: '1',
+            treeColumn: true,
+          },
+          {
+            code: 'Naim',
+            titleRu: 'Наименование',
+            role: 'DIMENSION',
+            valueType: 'STRING',
+            columnNumber: '2',
+          },
+        ]),
+        rows: [
+          {
+            level: 1,
+            groupValue: '001',
+            cells: { Kod: '001', Naim: 'Услуги' },
+            children: [],
+          },
+        ],
+      } as unknown as ReportAltResultDto,
+      false,
+      'Группировка',
+      'Итого'
+    )
+
+    expect(data.headers).toEqual(['Администратор / Программа', 'Наименование'])
+    expect(data.rows[0]).toEqual(['  001', 'Услуги'])
+    expect(data.headerRows?.[1]).toEqual([
+      { text: '1', col: 0 },
+      { text: '2', col: 1 },
+    ])
+  })
+
   it('без номеров у колонок шапка остаётся одноуровневой', () => {
     const data = buildReportAltExport(
       treeResult([

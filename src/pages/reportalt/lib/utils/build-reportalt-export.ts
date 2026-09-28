@@ -76,7 +76,8 @@ const buildColumnMeta = (
 const buildNumberedHeaderRows = (
   columns: ReportAltColumnDto[],
   isKz: boolean,
-  leadColumnTitle?: string
+  leadColumnTitle?: string,
+  leadColumnNumber = ''
 ): XlsxHeaderCell[][] | undefined => {
   if (!columns.some((c) => !!c.columnNumber)) return undefined
   const offset = leadColumnTitle != null ? 1 : 0
@@ -85,7 +86,8 @@ const buildNumberedHeaderRows = (
     text: c.columnNumber ?? '',
     col: i + offset,
   }))
-  if (leadColumnTitle != null) numbers.unshift({ text: '', col: 0 })
+  if (leadColumnTitle != null)
+    numbers.unshift({ text: leadColumnNumber, col: 0 })
 
   if (!model.hasGroups) {
     const titles: XlsxHeaderCell[] = columns.map((c, i) => ({
@@ -173,12 +175,21 @@ export const buildReportAltExport = (
   }
 
   // TREE: служебная первая колонка — наименование группы с отступом по уровню.
+  const tree = columns.find((c) => c.treeColumn)
+  const body = tree ? columns.filter((c) => c !== tree) : columns
+  const leadHeader = tree ? columnTitle(tree, isKz) : groupHeader
+  const leadLabel = (row: ReportAltRowDto): string => {
+    const own = tree ? row.cells[tree.code] : undefined
+    return typeof own === 'string' && own !== ''
+      ? own
+      : (row.labelText ?? row.groupValue ?? '')
+  }
   const walk = (rows: ReportAltRowDto[]) => {
     for (const row of rows) {
       rowKinds.push(rowKindOf(row))
       out.push([
-        `${'  '.repeat(row.level)}${row.labelText ?? row.groupValue ?? ''}`,
-        ...columns.map((c) => formatCell(row.cells[c.code], c)),
+        `${'  '.repeat(row.level)}${row.labelText ?? leadLabel(row)}`,
+        ...body.map((c) => formatCell(row.cells[c.code], c)),
       ])
       if (row.children.length > 0) walk(row.children)
     }
@@ -189,15 +200,20 @@ export const buildReportAltExport = (
     rowKinds.push('highlight')
     out.push([
       totalLabel,
-      ...columns.map((c) => formatCell(result.total[c.code], c)),
+      ...body.map((c) => formatCell(result.total[c.code], c)),
     ])
   }
 
   return {
     ...sheetChrome(result),
-    headers: [groupHeader, ...columns.map((c) => columnTitle(c, isKz))],
-    headerRows: buildNumberedHeaderRows(columns, isKz, groupHeader),
-    columns: buildColumnMeta(columns, true),
+    headers: [leadHeader, ...body.map((c) => columnTitle(c, isKz))],
+    headerRows: buildNumberedHeaderRows(
+      body,
+      isKz,
+      leadHeader,
+      tree?.columnNumber ?? ''
+    ),
+    columns: buildColumnMeta(body, true),
     rows: out,
     rowKinds,
   }

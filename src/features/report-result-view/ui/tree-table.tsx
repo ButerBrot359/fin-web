@@ -223,6 +223,8 @@ const PlainTreeTable = ({
   // Первая DIMENSION-колонка, чьи значения лежат в groupValue строк, — это
   // «колонка дерева»: её заголовок вешаем на первую колонку и не дублируем.
   const treeColumn = useMemo<ReportColumnDto | null>(() => {
+    const explicit = result.columns.find((c) => c.treeColumn)
+    if (explicit) return explicit
     const first = result.columns.find((c) => c.role === 'DIMENSION')
     if (!first) return null
     const usedAsGroup = result.rows.some((r) => r.groupCode === first.code)
@@ -375,7 +377,15 @@ const PlainTreeTable = ({
     const canExpand = row.getCanExpand()
     const isExpanded = row.getIsExpanded()
     const bold = isGroupRow(row)
-    const label = row.original.labelText ?? row.original.groupValue ?? ''
+    const treeCell = treeColumn?.treeColumn
+      ? row.original.cells[treeColumn.code]
+      : undefined
+    const label =
+      row.original.labelText ??
+      (typeof treeCell === 'string' && treeCell !== ''
+        ? treeCell
+        : row.original.groupValue) ??
+      ''
     return (
       <div
         className="flex items-center gap-1"

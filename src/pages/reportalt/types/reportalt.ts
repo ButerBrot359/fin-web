@@ -58,6 +58,7 @@ export interface ReportAltColumnDto {
   dcIndicator?: boolean
   columnNumber?: string
   wrap?: boolean
+  treeColumn?: boolean
   frozen?: boolean
 }
 

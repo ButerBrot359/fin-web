@@ -255,6 +255,7 @@ export interface ReportColumnDto {
   columnNumber?: string
   frozen?: boolean
   wrap?: boolean
+  treeColumn?: boolean
 }
 
 /** Одно допустимое значение параметра (для NUMBER с фиксированным списком). */

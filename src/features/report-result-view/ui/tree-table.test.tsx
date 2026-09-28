@@ -711,3 +711,62 @@ describe('TreeTable — ширины граф и перенос как в мак
     )
   })
 })
+
+describe('TreeTable — колонка дерева задана графой отчёта, как в 1С', () => {
+  const grafy: ReportColumnDto[] = [
+    {
+      code: 'Kod',
+      titleRu: 'Администратор / Программа / Подпрограмма / Специфика',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+      columnNumber: '1',
+      treeColumn: true,
+    },
+    {
+      code: 'Naim',
+      titleRu: 'Наименование',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+      columnNumber: '2',
+    },
+  ]
+  const derevo = {
+    ...result,
+    columns: grafy,
+    rows: [
+      {
+        level: 0,
+        groupCode: 'KodAbp',
+        groupValue: '124',
+        cells: { Kod: '124', Naim: 'Аппарат акима' },
+        children: [
+          {
+            level: 1,
+            groupCode: 'Programma',
+            groupValue: '001',
+            cells: { Kod: '001', Naim: 'Услуги акима' },
+            children: [],
+          },
+        ],
+      },
+    ],
+  } as unknown as ReportResultDto
+
+  it('нет отдельной «Группировки»: иерархия в графе 1, её заголовок и номер «1»', () => {
+    const { container } = render(<TreeTable result={derevo} columns={grafy} />)
+
+    const headers = Array.from(container.querySelectorAll('thead th')).map(
+      (th) => th.textContent
+    )
+    expect(headers).not.toContain('reports.group')
+    expect(headers[0]).toBe(
+      'Администратор / Программа / Подпрограмма / Специфика'
+    )
+    const numbers = Array.from(
+      screen.getByTestId('report-column-numbers').querySelectorAll('th')
+    ).map((th) => th.textContent)
+    expect(numbers).toEqual(['1', '2'])
+    expect(screen.getAllByText('124')).toHaveLength(1)
+    expect(screen.getByText('001')).toBeTruthy()
+  })
+})

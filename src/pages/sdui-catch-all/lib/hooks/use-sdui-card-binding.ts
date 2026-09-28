@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   useLocation,
   useNavigate,
@@ -44,7 +44,7 @@ function navigateToNeighborTab(navigate: NavigateFunction): void {
 // tabsApi, dirty-заголовок, диалог несохранённых изменений, синхронизация
 // заголовка вкладки. Хук вызывается всегда (и для списковых kind — колбэки для
 // них безвредны), чтобы SduiScreen не размонтировался при смене serverKind.
-export function useSduiCardBinding() {
+export function useSduiCardBinding(trackDirty = true) {
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useSduiDispatch()
@@ -70,7 +70,12 @@ export function useSduiCardBinding() {
     }
   }, [queryClient])
 
-  const dirty = useViewStateStore((s) => s.dirty)
+  const viewDirty = useViewStateStore((s) => s.dirty)
+  const dirty = trackDirty && viewDirty
+  const trackDirtyRef = useRef(trackDirty)
+  useEffect(() => {
+    trackDirtyRef.current = trackDirty
+  }, [trackDirty])
   const baseTitle =
     (useTreeStore((s) => s.root?.props?.title) as string | undefined) ?? ''
   const pageTitle = dirty ? `${baseTitle} *` : baseTitle
@@ -133,7 +138,9 @@ export function useSduiCardBinding() {
       shouldPersistSession: (route: string) =>
         useWorkspaceTabsStore.getState().tabs.some((tab) => tab.id === route),
       onDirtyChange: (route: string, dirty: boolean) => {
-        useFormCacheStore.getState().setDirty(route, dirty)
+        useFormCacheStore
+          .getState()
+          .setDirty(route, trackDirtyRef.current && dirty)
       },
       consumePendingAction: (route: string) =>
         useFormCacheStore.getState().consumePendingAction(route),

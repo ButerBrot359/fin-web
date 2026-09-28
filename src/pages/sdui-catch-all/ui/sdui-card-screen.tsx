@@ -29,7 +29,7 @@ export const SduiCardScreen: FC<SduiCardScreenProps> = ({
   onRouteUnknown,
 }) => {
   const { tabsApi, pageTitle, unsavedDialog, handleClose } =
-    useSduiCardBinding()
+    useSduiCardBinding(showCardChrome)
   // Экран списка опознаётся по САМОМУ дереву (PAGE с узлом LIST), а не по kind вкладки:
   // kind у списков регистров и плана счетов совпадает с их же карточками (TabKind.REGISTER /
   // ACCOUNT_PLAN), то есть различить по нему нельзя. Шапка со списком нужна ради заголовка,

@@ -515,3 +515,61 @@ describe('TreeTable — этажи с подгруппой граф (оборо�
     )
   })
 })
+
+describe('TreeTable — строка номеров граф', () => {
+  it('рисует номера граф отдельной строкой под шапкой, как в макете 1С', () => {
+    const numbered: ReportColumnDto[] = [
+      {
+        code: 'Kod',
+        titleRu: 'Администратор / Программа / Подпрограмма / Специфика',
+        role: 'DIMENSION',
+        valueType: 'STRING',
+        columnNumber: '1',
+      },
+      {
+        code: 'SummaPlana',
+        titleRu: 'по обязательствам',
+        groupTitleRu: 'План финансирования с начала года',
+        role: 'MEASURE',
+        valueType: 'NUMBER',
+        columnNumber: '4',
+      },
+      {
+        code: 'Ostatok',
+        titleRu: 'по обязательствам',
+        groupTitleRu: 'Остаток средств',
+        role: 'MEASURE',
+        valueType: 'NUMBER',
+        columnNumber: '11=4-6',
+      },
+    ]
+    const numberedResult = {
+      ...result,
+      columns: numbered,
+      rows: [
+        {
+          level: 0,
+          groupCode: 'Kod',
+          groupValue: '124',
+          cells: { Kod: '124', SummaPlana: 10, Ostatok: 5 },
+          children: [],
+        },
+      ],
+    } as unknown as ReportResultDto
+
+    render(<TreeTable result={numberedResult} columns={numbered} />)
+
+    const numbersRow = screen.getByTestId('report-column-numbers')
+    const cells = Array.from(numbersRow.querySelectorAll('th')).map(
+      (th) => th.textContent
+    )
+    expect(cells).toEqual(['', '1', '4', '11=4-6'])
+    expect(numbersRow.parentElement?.lastElementChild).toBe(numbersRow)
+  })
+
+  it('без номеров у колонок лишней строки в шапке нет', () => {
+    render(<TreeTable result={result} columns={columns} />)
+
+    expect(screen.queryByTestId('report-column-numbers')).toBeNull()
+  })
+})

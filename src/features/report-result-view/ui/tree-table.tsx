@@ -115,6 +115,8 @@ const tdBase =
   'overflow-hidden whitespace-nowrap border border-pending-gray-1 px-1.5 py-0.5'
 const thBase =
   'whitespace-nowrap border border-pending-gray-1 px-1.5 py-1 text-left'
+const thNumber =
+  'whitespace-nowrap border border-pending-gray-1 px-1.5 py-0.5 text-center'
 
 /** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, 13px, без капса. */
 const thTextSx = { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
@@ -280,6 +282,8 @@ const PlainTreeTable = ({
       ? { topRow: model.topRow, midRow: model.midRow, botRow: model.leafRow }
       : null
   }, [bodyColumns, isKz])
+
+  const hasColumnNumbers = bodyColumns.some((c) => !!c.columnNumber)
 
   if (result.rows.length === 0) {
     return (
@@ -459,6 +463,22 @@ const PlainTreeTable = ({
                 <th key={col.code} className={thBase}>
                   <Typography variant="body2" sx={thTextSx}>
                     {columnTitle(col, isKz)}
+                  </Typography>
+                </th>
+              ))}
+            </tr>
+          )}
+          {hasColumnNumbers && (
+            <tr data-testid="report-column-numbers">
+              <th className={thNumber}>
+                <Typography variant="body2" sx={thTextSx}>
+                  {treeColumn?.columnNumber ?? ''}
+                </Typography>
+              </th>
+              {bodyColumns.map((col) => (
+                <th key={col.code} className={thNumber}>
+                  <Typography variant="body2" sx={thTextSx}>
+                    {col.columnNumber ?? ''}
                   </Typography>
                 </th>
               ))}

@@ -2,10 +2,12 @@ import type { TableExportData } from '@/shared/lib/table-export'
 import type {
   XlsxCell,
   XlsxColumnMeta,
+  XlsxHeaderCell,
   XlsxRowKind,
 } from '@/shared/lib/xlsx/write-xlsx'
 import { formatDate } from '@/shared/lib/utils/date'
 import {
+  buildHeadModel,
   formatReportTitle,
   isHighlightRow,
 } from '@/features/report-result-view'
@@ -70,6 +72,48 @@ const buildColumnMeta = (
   return meta
 }
 
+const buildNumberedHeaderRows = (
+  columns: ReportAltColumnDto[],
+  isKz: boolean,
+  leadColumnTitle?: string
+): XlsxHeaderCell[][] | undefined => {
+  if (!columns.some((c) => !!c.columnNumber)) return undefined
+  const offset = leadColumnTitle != null ? 1 : 0
+  const model = buildHeadModel(columns, { isKz, levels: 2 })
+  const numbers: XlsxHeaderCell[] = columns.map((c, i) => ({
+    text: c.columnNumber ?? '',
+    col: i + offset,
+  }))
+  if (leadColumnTitle != null) numbers.unshift({ text: '', col: 0 })
+
+  if (!model.hasGroups) {
+    const titles: XlsxHeaderCell[] = columns.map((c, i) => ({
+      text: columnTitle(c, isKz),
+      col: i + offset,
+    }))
+    if (leadColumnTitle != null)
+      titles.unshift({ text: leadColumnTitle, col: 0 })
+    return [titles, numbers]
+  }
+
+  const top: XlsxHeaderCell[] = []
+  if (leadColumnTitle != null) {
+    top.push({ text: leadColumnTitle, col: 0, rowSpan: 2 })
+  }
+  for (const cell of model.topRow) {
+    top.push(
+      cell.col != null
+        ? { text: cell.title, col: cell.col0 + offset, rowSpan: 2 }
+        : { text: cell.title, col: cell.col0 + offset, colSpan: cell.colSpan }
+    )
+  }
+  const sub: XlsxHeaderCell[] = model.leafRow.map((leaf) => ({
+    text: columnTitle(leaf.col, isKz),
+    col: leaf.col0 + offset,
+  }))
+  return [top, sub, numbers]
+}
+
 /** Шапка листа: организация + период + подзаголовки. */
 const sheetChrome = (result: ReportAltResultDto) => {
   const subtitleLines: string[] = []
@@ -120,6 +164,7 @@ export const buildReportAltExport = (
     return {
       ...sheetChrome(result),
       headers: columns.map((c) => columnTitle(c, isKz)),
+      headerRows: buildNumberedHeaderRows(columns, isKz),
       columns: buildColumnMeta(columns, false),
       rows: out,
       rowKinds,
@@ -150,6 +195,7 @@ export const buildReportAltExport = (
   return {
     ...sheetChrome(result),
     headers: [groupHeader, ...columns.map((c) => columnTitle(c, isKz))],
+    headerRows: buildNumberedHeaderRows(columns, isKz, groupHeader),
     columns: buildColumnMeta(columns, true),
     rows: out,
     rowKinds,

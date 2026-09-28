@@ -1,4 +1,4 @@
-import { formatDate } from '@/shared/lib/utils/date'
+import { formatDateTimeSeconds } from '@/shared/lib/utils/date'
 
 import type { AuditLogRecord } from '../api/audit-log-api'
 
@@ -12,7 +12,7 @@ export const orDash = (value: string | number | null | undefined): string => {
 
 /** Секунды обязательны: журнал — доказательство, и порядок событий внутри минуты важен. */
 export const formatOccurredAt = (value: string): string =>
-  formatDate(value, 'dd.MM.yyyy HH:mm:ss') || value
+  formatDateTimeSeconds(value) || value
 
 /** Сеанс в колонке — первые 8 знаков UUID, полностью — в подсказке и карточке. */
 export const shortId = (value: string | null | undefined): string => {

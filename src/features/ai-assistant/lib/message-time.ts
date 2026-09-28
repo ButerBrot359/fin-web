@@ -1,3 +1,5 @@
+import { toIsoDate } from '@/shared/lib/utils/iso-date'
+
 export interface AssistantMessageTime {
   dateTime: string
   time: string
@@ -15,11 +17,7 @@ export function formatAssistantMessageTime(
   const date = new Date(createdAt)
   if (!Number.isFinite(date.getTime())) return null
   const locale = /^(?:kz|kk)(?:-|$)/i.test(language) ? 'kk-KZ' : 'ru-RU'
-  const dayKey = [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, '0'),
-    String(date.getDate()).padStart(2, '0'),
-  ].join('-')
+  const dayKey = toIsoDate(date) ?? ''
   return {
     dateTime: date.toISOString(),
     time: new Intl.DateTimeFormat(locale, {

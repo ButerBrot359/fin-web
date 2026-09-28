@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
+import { toIsoDate } from '@/shared/lib/utils/iso-date'
 import {
   Button,
   FormControlLabel,
@@ -48,7 +48,7 @@ import {
 
 // SCRUM-265 FE-6: локальная календарная дата; toISOString().slice до 05:00 в КЗ
 // возвращал вчерашний день.
-const todayIso = () => format(new Date(), 'yyyy-MM-dd')
+const todayIso = () => toIsoDate(new Date()) ?? ''
 
 /** Синтетический EnumsValue для диалога выбора операции. */
 const makeOperation = (

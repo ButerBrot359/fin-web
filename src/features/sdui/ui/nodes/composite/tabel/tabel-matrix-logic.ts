@@ -1,6 +1,7 @@
 import { addDays, format, getDay, parseISO } from 'date-fns'
 
 import { formatDate } from '@/shared/lib/utils/date'
+import { toIsoDate } from '@/shared/lib/utils/iso-date'
 
 import type {
   ReplaceEmployeeCommand,
@@ -22,7 +23,7 @@ export function listIntervalDays(interval: {
     d <= end && days.length < 40; // защита от битого интервала: месяц ≤ 31 дня
     d = addDays(d, 1)
   ) {
-    days.push(format(d, 'yyyy-MM-dd'))
+    days.push(toIsoDate(d) ?? '')
   }
   return days
 }

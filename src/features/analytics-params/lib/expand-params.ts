@@ -1,7 +1,9 @@
 import type { AnalyticsParameter } from '@/entities/analytics'
 
 import type { AnalyticsParamValues } from '../types/params'
-import { toDateRange, toIsoDate } from './resolve-default-params'
+import { toIsoDate } from '@/shared/lib/utils/iso-date'
+
+import { toDateRange } from './resolve-default-params'
 
 const toNumber = (value: unknown): number | null => {
   if (typeof value === 'number') return Number.isFinite(value) ? value : null

@@ -1,4 +1,7 @@
+import { addMonths, endOfMonth, parseISO } from 'date-fns'
+
 import { DRILLDOWN_URL_KEY } from '@/entities/report-drilldown'
+import { toIsoDate } from '@/shared/lib/utils/iso-date'
 
 /**
  * Расшифровка клетки утверждённого бланка.
@@ -39,15 +42,10 @@ export const otkazRasshifrovki = (
   return null
 }
 
-const dobavitMesyatsy = (iso: string, mesyatsev: number): Date => {
-  const [god, mesyats, den] = iso.split('-').map(Number)
-  return new Date(Date.UTC(god, mesyats - 1 + mesyatsev, den))
-}
+const dobavitMesyatsy = (iso: string, mesyatsev: number): Date =>
+  addMonths(parseISO(iso), mesyatsev)
 
-const konetsMesyatsa = (data: Date): Date =>
-  new Date(Date.UTC(data.getUTCFullYear(), data.getUTCMonth() + 1, 0))
-
-const iso = (data: Date): string => data.toISOString().slice(0, 10)
+const iso = (data: Date): string => toIsoDate(data) ?? ''
 
 /**
  * Период расшифровки по графе клетки: 1–3 — соответствующий месяц квартала, 4 — весь период.
@@ -59,7 +57,7 @@ export const periodRasshifrovki = (
 ): { from: string; to: string } => {
   if (grafa === '4') return { from, to }
   const nachalo = dobavitMesyatsy(from, Number(grafa) - 1)
-  return { from: iso(nachalo), to: iso(konetsMesyatsa(nachalo)) }
+  return { from: iso(nachalo), to: iso(endOfMonth(nachalo)) }
 }
 
 /**

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { DateTimeInput } from '@/shared/ui/inputs'
 import { MicroLabel } from '@/shared/ui/micro-label'
 
-import { toIsoDate } from '../lib/resolve-default-params'
+import { toIsoDate } from '@/shared/lib/utils/iso-date'
 import type { AnalyticsDateRangeValue } from '../types/params'
 
 interface ParamDateRangeFieldProps {

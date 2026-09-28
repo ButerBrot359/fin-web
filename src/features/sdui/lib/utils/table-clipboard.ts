@@ -1,3 +1,9 @@
+import {
+  parseDisplayDate,
+  toDate,
+  toIsoDate,
+} from '@/shared/lib/utils/iso-date'
+
 import type { TableColumnDef, TableRow } from '../hooks/use-table-sync'
 import { renderCellValue } from './cell-value'
 import { omitServiceRowKeys } from './service-row-keys'
@@ -102,14 +108,11 @@ function chislo(text: string): number | null {
   return Number.isFinite(value) ? value : null
 }
 
-const DATA_RU = /^(\d{2})\.(\d{2})\.(\d{4})/
 const DATA_ISO = /^\d{4}-\d{2}-\d{2}/
 
 function data(text: string): string | null {
-  if (DATA_ISO.test(text)) return text
-  const ru = DATA_RU.exec(text)
-  if (!ru) return null
-  return `${ru[3]}-${ru[2]}-${ru[1]}`
+  if (DATA_ISO.test(text)) return toDate(text) ? text : null
+  return toIsoDate(parseDisplayDate(text))
 }
 
 const ISTINA = new Set(['да', 'истина', 'true', '1', '✓', 'x', 'yes'])

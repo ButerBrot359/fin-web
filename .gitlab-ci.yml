@@ -366,8 +366,10 @@ image:smoke:
   before_script:
     # До 5 попыток: зеркала Ubuntu временами отдают 404 на свежий пакет (24.09.2026 — expat,
     # у backend так падал deploy:prod). Та же логика, что ci/apt-install.sh в qazyna/webbuh.
+    # gettext-base — ради envsubst: deploy:highload и deploy:demo подставляют образ в манифест
+    # через него, а в ubuntu:22.04 его нет (28.09.2026 deploy:highload падал «envsubst: command not found»).
     - |
-      for i in 1 2 3 4 5; do apt-get update -qq && apt-get install -y -qq --no-install-recommends curl ca-certificates >/dev/null && break; [ "$i" = 5 ] && exit 1; echo "apt: попытка $i не удалась, повтор через 20 с" >&2; sleep 20; done
+      for i in 1 2 3 4 5; do apt-get update -qq && apt-get install -y -qq --no-install-recommends curl ca-certificates gettext-base >/dev/null && break; [ "$i" = 5 ] && exit 1; echo "apt: попытка $i не удалась, повтор через 20 с" >&2; sleep 20; done
     - curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/v1.30.4/bin/linux/amd64/kubectl"
     - chmod +x /usr/local/bin/kubectl
     - mkdir -p ~/.kube

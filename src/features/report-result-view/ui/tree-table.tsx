@@ -1,4 +1,4 @@
-import type { MouseEvent as ReactMouseEvent } from 'react'
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
@@ -145,6 +145,16 @@ const bodyColWidthPx = (col: ReportColumnDto): number => {
       return 150
   }
 }
+
+const stickyCell = (left: number, lastFrozen: boolean): CSSProperties => ({
+  position: 'sticky',
+  left,
+  zIndex: 2,
+  background: cssVar(palette.ui01),
+  ...(lastFrozen
+    ? { boxShadow: `inset -2px 0 0 ${cssVar(palette.pendingGray1)}` }
+    : {}),
+})
 
 /** Локализованный заголовок колонки. */
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
@@ -329,6 +339,22 @@ const PlainTreeTable = ({
   const treeColWidthPx =
     treeColumn?.width != null ? treeColumn.width * CHAR_PX : TREE_COL_DEFAULT_PX
 
+  let frozenCount = 0
+  while (frozenCount < bodyColumns.length && bodyColumns[frozenCount].frozen) {
+    frozenCount++
+  }
+  const frozenLeft: number[] = []
+  bodyColumns.slice(0, frozenCount).reduce((acc, col) => {
+    frozenLeft.push(acc)
+    return acc + bodyColWidthPx(col)
+  }, treeColWidthPx)
+  const stickyTree: CSSProperties | undefined =
+    frozenCount > 0 ? stickyCell(0, false) : undefined
+  const stickyAt = (idx: number, span = 1): CSSProperties | undefined =>
+    span === 1 && idx < frozenCount
+      ? stickyCell(frozenLeft[idx], idx === frozenCount - 1)
+      : undefined
+
   // Первая колонка (наименование группы) со стрелкой разворота и отступом 1С (~13px).
   const renderGroupCell = (row: Row<ReportRowDto>) => {
     const canExpand = row.getCanExpand()
@@ -387,7 +413,7 @@ const PlainTreeTable = ({
           {headModel3 ? (
             <>
               <tr>
-                <th rowSpan={3} className={thBase}>
+                <th rowSpan={3} className={thBase} style={stickyTree}>
                   {treeHeader}
                 </th>
                 {headModel3.topRow.map((cell) => (
@@ -396,6 +422,7 @@ const PlainTreeTable = ({
                     colSpan={cell.colSpan}
                     rowSpan={cell.rowSpan}
                     className={thBase}
+                    style={stickyAt(cell.col0, cell.colSpan)}
                   >
                     <Typography variant="body2" sx={thTextSx}>
                       {cell.title}
@@ -410,6 +437,7 @@ const PlainTreeTable = ({
                     colSpan={cell.colSpan}
                     rowSpan={cell.rowSpan}
                     className={thBase}
+                    style={stickyAt(cell.col0, cell.colSpan)}
                   >
                     <Typography variant="body2" sx={thTextSx}>
                       {cell.title}
@@ -418,8 +446,8 @@ const PlainTreeTable = ({
                 ))}
               </tr>
               <tr>
-                {headModel3.botRow.map(({ key, col }) => (
-                  <th key={key} className={thBase}>
+                {headModel3.botRow.map(({ key, col, col0 }) => (
+                  <th key={key} className={thBase} style={stickyAt(col0)}>
                     <Typography variant="body2" sx={thTextSx}>
                       {columnTitle(col, isKz)}
                     </Typography>
@@ -430,7 +458,7 @@ const PlainTreeTable = ({
           ) : headModel ? (
             <>
               <tr>
-                <th rowSpan={2} className={thBase}>
+                <th rowSpan={2} className={thBase} style={stickyTree}>
                   {treeHeader}
                 </th>
                 {headModel.topRow.map((cell) => (
@@ -439,6 +467,7 @@ const PlainTreeTable = ({
                     colSpan={cell.colSpan}
                     rowSpan={cell.rowSpan}
                     className={thBase}
+                    style={stickyAt(cell.col0, cell.colSpan)}
                   >
                     <Typography variant="body2" sx={thTextSx}>
                       {cell.title}
@@ -447,8 +476,8 @@ const PlainTreeTable = ({
                 ))}
               </tr>
               <tr>
-                {headModel.subRow.map(({ key, col }) => (
-                  <th key={key} className={thBase}>
+                {headModel.subRow.map(({ key, col, col0 }) => (
+                  <th key={key} className={thBase} style={stickyAt(col0)}>
                     <Typography variant="body2" sx={thTextSx}>
                       {columnTitle(col, isKz)}
                     </Typography>
@@ -458,9 +487,11 @@ const PlainTreeTable = ({
             </>
           ) : (
             <tr>
-              <th className={thBase}>{treeHeader}</th>
-              {bodyColumns.map((col) => (
-                <th key={col.code} className={thBase}>
+              <th className={thBase} style={stickyTree}>
+                {treeHeader}
+              </th>
+              {bodyColumns.map((col, idx) => (
+                <th key={col.code} className={thBase} style={stickyAt(idx)}>
                   <Typography variant="body2" sx={thTextSx}>
                     {columnTitle(col, isKz)}
                   </Typography>
@@ -470,13 +501,13 @@ const PlainTreeTable = ({
           )}
           {hasColumnNumbers && (
             <tr data-testid="report-column-numbers">
-              <th className={thNumber}>
+              <th className={thNumber} style={stickyTree}>
                 <Typography variant="body2" sx={thTextSx}>
                   {treeColumn?.columnNumber ?? ''}
                 </Typography>
               </th>
-              {bodyColumns.map((col) => (
-                <th key={col.code} className={thNumber}>
+              {bodyColumns.map((col, idx) => (
+                <th key={col.code} className={thNumber} style={stickyAt(idx)}>
                   <Typography variant="body2" sx={thTextSx}>
                     {col.columnNumber ?? ''}
                   </Typography>
@@ -493,12 +524,13 @@ const PlainTreeTable = ({
                 key={row.id}
                 {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
               >
-                <td className={`${tdBase} align-top`}>
+                <td className={`${tdBase} align-top`} style={stickyTree}>
                   {renderGroupCell(row)}
                 </td>
-                {bodyColumns.map((col) => (
+                {bodyColumns.map((col, idx) => (
                   <td
                     key={col.code}
+                    style={stickyAt(idx)}
                     {...(isMeasure(col) ? valueCellProps : {})}
                     className={`${tdBase} align-top ${
                       isMeasure(col) || isRightAligned(col)
@@ -523,7 +555,7 @@ const PlainTreeTable = ({
         {showsGrandTotal(result.total, result.rows) && (
           <tfoot>
             <tr>
-              <td className={tdBase}>
+              <td className={tdBase} style={stickyTree}>
                 <Typography
                   variant="body2"
                   sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
@@ -531,9 +563,10 @@ const PlainTreeTable = ({
                   {t('reports.total', { lng: reportLang })}
                 </Typography>
               </td>
-              {bodyColumns.map((col) => (
+              {bodyColumns.map((col, idx) => (
                 <td
                   key={col.code}
+                  style={stickyAt(idx)}
                   className={`${tdBase} ${
                     isNumericCell(col) ? 'text-right tabular-nums' : ''
                   }`}

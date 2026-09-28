@@ -57,6 +57,7 @@ export interface ReportAltColumnDto {
   width?: number
   dcIndicator?: boolean
   columnNumber?: string
+  frozen?: boolean
 }
 
 /**

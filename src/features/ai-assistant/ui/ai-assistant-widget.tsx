@@ -1,6 +1,7 @@
 import {
   AI_WIDGET_NEW_CHAT_EVENT,
   AI_WIDGET_OPEN_EVENT,
+  consumePendingWidgetEvent,
 } from '@/shared/lib/widgets/widget-launchers'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -54,10 +55,15 @@ export const AiAssistantWidget = () => {
   const [helpOpen, setHelpOpen] = useState(false)
   useEffect(() => {
     const openWidget = () => {
+      // Живое событие тоже снимает метку — см. widget-launchers.ts.
+      consumePendingWidgetEvent(AI_WIDGET_OPEN_EVENT)
       setOpen(true)
       setMinimized(false)
       setHelpOpen(false)
     }
+    // Виджет ленивый: команда из шапки могла прозвучать до монтирования —
+    // доигрываем её, иначе клик уходит в пустоту.
+    if (consumePendingWidgetEvent(AI_WIDGET_OPEN_EVENT)) openWidget()
     window.addEventListener(AI_WIDGET_OPEN_EVENT, openWidget)
     return () => {
       window.removeEventListener(AI_WIDGET_OPEN_EVENT, openWidget)
@@ -118,6 +124,7 @@ export const AiAssistantWidget = () => {
     session.isPending || confirmAction.isPending || printDocument.isPending
   const startNewChat = session.startNewChat
   const handleNewChat = useCallback(() => {
+    consumePendingWidgetEvent(AI_WIDGET_NEW_CHAT_EVENT)
     setOpen(true)
     setMinimized(false)
     setHelpOpen(false)
@@ -129,6 +136,9 @@ export const AiAssistantWidget = () => {
   }, [newChatDisabled, setDraft, startNewChat])
 
   useEffect(() => {
+    // См. открытие выше: команда могла прозвучать до монтирования ленивого виджета.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- доигрывание повисшей команды однократно на монтировании, не синхронизация состояния
+    if (consumePendingWidgetEvent(AI_WIDGET_NEW_CHAT_EVENT)) handleNewChat()
     window.addEventListener(AI_WIDGET_NEW_CHAT_EVENT, handleNewChat)
     return () => {
       window.removeEventListener(AI_WIDGET_NEW_CHAT_EVENT, handleNewChat)

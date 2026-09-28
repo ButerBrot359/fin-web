@@ -77,10 +77,12 @@ export const deserializeParam = (
       }
     case 'BOOLEAN':
       return raw === 'true'
+    case 'ENUM_REF':
+      if (param.allowedValues && param.allowedValues.length > 0) return raw
+      return raw === '' ? '' : Number(raw)
     case 'NUMBER':
     case 'ACCOUNT_REF':
     case 'DICTIONARY_REF':
-    case 'ENUM_REF':
       return raw === '' ? '' : Number(raw)
     default:
       return raw

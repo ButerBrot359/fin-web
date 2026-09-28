@@ -1,3 +1,5 @@
+import { translateUi } from '@/shared/lib/i18n'
+
 /**
  * Модель одной строки таблицы «Отборы» (вкладка настроек отчёта, СКД 1С).
  * Хранится в URL как JSON-массив; активные строки уходят в тело `/run`.
@@ -54,20 +56,8 @@ const COMPARISON_LABELS_RU: Partial<Record<string, string>> = {
   NOT_FILLED: 'Не заполнено',
 }
 
-/** KZ-подписи видов сравнения. */
-const COMPARISON_LABELS_KZ: Partial<Record<string, string>> = {
-  EQUAL: 'Тең',
-  NOT_EQUAL: 'Тең емес',
-  IN_LIST: 'Тізімде',
-  NOT_IN_LIST: 'Тізімде емес',
-  IN_HIERARCHY: 'Иерархияда',
-  IN_GROUP: 'Топта',
-  FILLED: 'Толтырылған',
-  NOT_FILLED: 'Толтырылмаған',
-}
-
 /** Человекочитаемая подпись вида сравнения (RU/KZ), фолбэк — сам код. */
-export const comparisonLabel = (comparison: string, isKz: boolean): string =>
-  (isKz
-    ? COMPARISON_LABELS_KZ[comparison]
-    : COMPARISON_LABELS_RU[comparison]) ?? comparison
+export const comparisonLabel = (comparison: string, isKz: boolean): string => {
+  const label = COMPARISON_LABELS_RU[comparison]
+  return label ? translateUi(label, isKz ? 'kz' : 'ru') : comparison
+}

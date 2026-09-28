@@ -55,7 +55,7 @@ const formatMovementCell = (
 }
 
 const MovementTable = ({ group }: { group: MovementGroup }) => {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const sortedColumns = useMemo(
     () => [...group.columns].sort((a, b) => a.sortOrder - b.sortOrder),
@@ -66,7 +66,7 @@ const MovementTable = ({ group }: { group: MovementGroup }) => {
     const periodCol: ColumnDef<Record<string, unknown>> = {
       id: '_period',
       accessorKey: '_period',
-      header: () => <span>{i18n.language === 'kz' ? 'Кезең' : 'Период'}</span>,
+      header: () => <span>{t('accumulationRegister.period')}</span>,
       cell: (info) => {
         const val = info.getValue()
         // Период (1C: Period — DateTime) — дата со временем до секунд,
@@ -104,7 +104,7 @@ const MovementTable = ({ group }: { group: MovementGroup }) => {
     )
 
     return [periodCol, numberCol, ...dataCols]
-  }, [sortedColumns, i18n.language])
+  }, [sortedColumns, i18n.language, t])
 
   const table = useReactTable({
     data: group.entries,

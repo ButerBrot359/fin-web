@@ -1,8 +1,10 @@
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { MenuItem, TextField } from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons/button'
+import { DateTimeInput } from '@/shared/ui/inputs'
 
 import type { AuditActionOption } from '../api/audit-log-api'
 import {
@@ -15,7 +17,7 @@ import { AuditLogExtraFilters } from './audit-log-extra-filters'
 interface AuditLogFiltersProps {
   value: AuditLogFilterValues
   onChange: (next: AuditLogFilterValues) => void
-  onApply: () => void
+  onApply: (values: AuditLogFilterValues) => void
   onReset: () => void
   disabled: boolean
   actions: AuditActionOption[]
@@ -51,8 +53,15 @@ export const AuditLogFilters = ({
     ['FAILED', 'auditLog.outcomes.FAILED'],
   ] as const
 
+  const latestRef = useRef(value)
+  useEffect(() => {
+    latestRef.current = value
+  }, [value])
+
   const set = (patch: Partial<AuditLogFilterValues>) => {
-    onChange({ ...value, ...patch })
+    const next = { ...latestRef.current, ...patch }
+    latestRef.current = next
+    onChange(next)
   }
   const extraCount = countExtraFilters(value)
 
@@ -62,32 +71,28 @@ export const AuditLogFilters = ({
       onSubmit={(event) => {
         // Enter в любом поле — «Применить», как в форме отбора 1С.
         event.preventDefault()
-        onApply()
+        onApply(latestRef.current)
       }}
     >
       <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] items-end gap-4">
-        <TextField
+        <DateTimeInput
           label={t('auditLog.from')}
-          type="datetime-local"
           size="small"
           value={value.from}
-          onChange={(event) => {
-            set({ from: event.target.value })
+          onChange={(next) => {
+            set({ from: next })
           }}
           disabled={disabled}
-          slotProps={{ inputLabel: { shrink: true } }}
         />
 
-        <TextField
+        <DateTimeInput
           label={t('auditLog.to')}
-          type="datetime-local"
           size="small"
           value={value.to}
-          onChange={(event) => {
-            set({ to: event.target.value })
+          onChange={(next) => {
+            set({ to: next })
           }}
           disabled={disabled}
-          slotProps={{ inputLabel: { shrink: true } }}
         />
 
         <TextField

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -9,6 +10,9 @@ import {
 } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { LocalizationProvider } from '@mui/x-date-pickers'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+import { ru } from 'date-fns/locale'
 
 import '@/app/config/i18n'
 
@@ -24,9 +28,11 @@ const renderPage = (initialEntry = '/admin/audit') =>
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
       }
     >
-      <MemoryRouter initialEntries={[initialEntry]}>
-        <AuditLogPage />
-      </MemoryRouter>
+      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ru}>
+        <MemoryRouter initialEntries={[initialEntry]}>
+          <AuditLogPage />
+        </MemoryRouter>
+      </LocalizationProvider>
     </QueryClientProvider>
   )
 
@@ -171,6 +177,32 @@ describe('AuditLogPage', () => {
     expect(
       screen.getByRole('link', { name: 'Платежное поручение № 12' })
     ).toHaveAttribute('href', '/documents/PlatezhnoePoruchenie/555')
+  })
+
+  it('«28» в «С даты» и Enter — отбор с 28-го числа текущего месяца, как в 1С', async () => {
+    setup()
+    renderPage()
+    await screen.findByText('Дорожкина Таисия')
+
+    const [day] = Array.from(
+      document.querySelectorAll<HTMLElement>('[role="spinbutton"]')
+    )
+    act(() => {
+      day.focus()
+    })
+    for (const digitChar of '28') {
+      day.textContent = digitChar
+      fireEvent.input(day)
+    }
+    fireEvent.keyDown(document.activeElement ?? day, { key: 'Enter' })
+
+    const today = new Date()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    await waitFor(() => {
+      expect(lastQuery().from).toBe(
+        `${String(today.getFullYear())}-${month}-28T00:00:00`
+      )
+    })
   })
 
   it('отправляет выбранные события и отборы, сбрасывая страницу', async () => {

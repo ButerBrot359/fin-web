@@ -268,7 +268,7 @@ const SectionTable = ({
                   variant="caption"
                   sx={{ color: cssVar(palette.pendingText1) }}
                 >
-                  {start + i}
+                  {col.columnNumber ?? start + i}
                 </Typography>
               </th>
             ))}

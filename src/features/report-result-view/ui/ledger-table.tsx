@@ -55,6 +55,8 @@ const POKAZATEL_COL = 'Pokazatel'
 /** Сетка 1С: тонкие серые линии, плотные ячейки, вертикаль по верху. */
 const td = 'border border-pending-gray-1 px-1.5 py-0.5 align-top'
 const th = 'overflow-hidden border border-pending-gray-1 px-1.5 py-1 text-left'
+const thNumber =
+  'overflow-hidden border border-pending-gray-1 px-1.5 py-0.5 text-center'
 
 /** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, 13px, без капса. */
 const thTextSx = { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
@@ -179,6 +181,8 @@ export const LedgerTable = ({
       ? { topRow: model.topRow, subRow: model.leafRow }
       : null
   }, [columns, isKz])
+
+  const hasColumnNumbers = columns.some((c) => !!c.columnNumber)
 
   if (result.rows.length === 0) {
     return (
@@ -390,6 +394,17 @@ export const LedgerTable = ({
                   >
                     <Typography variant="body2" sx={thTextSx}>
                       {columnTitle(col, isKz)}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+            )}
+            {hasColumnNumbers && (
+              <tr data-testid="report-column-numbers">
+                {columns.map((col) => (
+                  <th key={col.code} className={thNumber}>
+                    <Typography variant="body2" sx={thTextSx}>
+                      {col.columnNumber ?? ''}
                     </Typography>
                   </th>
                 ))}

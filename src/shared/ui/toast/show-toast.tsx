@@ -95,7 +95,10 @@ const ToastContent = ({
         borderRadius: '8px',
         boxShadow: cssVar(shadows.popup),
         padding: '12px 16px',
-        width: '351px',
+        // Ширина этажа колонки угла — наследуется от <ol data-sonner-toaster>,
+        // где её объявляет toast.tsx. Не '100%': элемент списка у custom-тоста
+        // сжимается по содержимому, и тост получился бы уже панели.
+        width: 'var(--width)',
         display: 'flex',
         flexDirection: description ? 'column' : 'row',
         gap: '6px',

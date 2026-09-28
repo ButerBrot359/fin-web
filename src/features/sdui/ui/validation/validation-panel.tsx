@@ -1,9 +1,15 @@
-import { useEffect, useRef, type FC } from 'react'
+import { useEffect, useLayoutEffect, useRef, type FC } from 'react'
 import { Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 
 import CrossIcon from '@/shared/assets/icons/cross.svg'
 import { cssVar, shadows } from '@/shared/design/tokens'
+import {
+  CORNER_BOTTOM_PX,
+  CORNER_RIGHT_PX,
+  clearCornerStack,
+  publishCornerStack,
+} from '@/shared/lib/utils/corner-stack'
 import {
   isTargetNavigable,
   type ValidationMessage,
@@ -11,13 +17,6 @@ import {
 } from '@/entities/validation-report'
 
 import { targetBinding } from '../../lib/validation/target-binding'
-
-/**
- * SCRUM-317 v4 §4.3: контракт с shared/ui/toast — стек тостов читает эту
- * переменную и поднимается над панелью. Высота переменная (список
- * прокручивается до 40vh), поэтому меряем ResizeObserver'ом, а не константой.
- */
-const PANEL_HEIGHT_CSS_VAR = '--sdui-validation-panel-height'
 
 interface ValidationPanelProps {
   report: ValidationReport
@@ -48,22 +47,28 @@ export const ValidationPanel: FC<ValidationPanelProps> = ({
     (m) => m.severity !== 'WARNING'
   ).length
 
+  // SCRUM-317 v6 §4.2: замер на каждом рендере ДО отрисовки — отчёт и тост
+  // приходят одним ответом, и тост обязан встать по свежей высоте с первого
+  // кадра (ResizeObserver сработал бы уже после). Без массива зависимостей
+  // намеренно: перечислить всё, от чего зависит высота панели (сообщения,
+  // шрифт, переносы строк), надёжно нельзя, а замер offsetHeight дешёвый.
+  useLayoutEffect(() => {
+    const el = rootRef.current
+    if (el) publishCornerStack(el)
+  })
+
+  // ResizeObserver — для изменений размера без рендера панели (окно, 40vh).
   useEffect(() => {
     const el = rootRef.current
     if (!el) return
-    const publish = () => {
-      document.documentElement.style.setProperty(
-        PANEL_HEIGHT_CSS_VAR,
-        `${String(el.offsetHeight)}px`
-      )
-    }
-    publish()
-    const observer = new ResizeObserver(publish)
+    const observer = new ResizeObserver(() => {
+      publishCornerStack(el)
+    })
     observer.observe(el)
     return () => {
       observer.disconnect()
       // Обязательно: иначе тосты останутся висеть над пустым местом.
-      document.documentElement.style.removeProperty(PANEL_HEIGHT_CSS_VAR)
+      clearCornerStack()
     }
   }, [])
 
@@ -71,8 +76,13 @@ export const ValidationPanel: FC<ValidationPanelProps> = ({
     <div
       ref={rootRef}
       data-testid="validation-panel"
-      className="fixed bottom-14 right-4 z-[1250] flex w-[420px] max-w-[calc(100vw-32px)] flex-col rounded-lg bg-ui-01"
-      style={{ boxShadow: cssVar(shadows.popup) }}
+      className="fixed z-[1250] flex w-[420px] max-w-[calc(100vw-48px)] flex-col rounded-lg bg-ui-01"
+      // Позиция из модуля колонки угла: правый край общий с тостами.
+      style={{
+        right: CORNER_RIGHT_PX,
+        bottom: CORNER_BOTTOM_PX,
+        boxShadow: cssVar(shadows.popup),
+      }}
     >
       <div className="flex items-center gap-2 border-b border-ui-03 px-4 py-3">
         <span className="text-support-01">⚠</span>

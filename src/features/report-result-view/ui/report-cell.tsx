@@ -203,7 +203,7 @@ export const ReportCell = ({
   return (
     <Typography
       variant="body2"
-      noWrap={!bold}
+      noWrap={!bold && !col.wrap}
       className={isRightAligned(col) ? 'text-right' : ''}
       sx={textStyle(bold)}
     >

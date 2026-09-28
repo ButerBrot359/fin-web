@@ -1,4 +1,7 @@
 import { useTranslation } from 'react-i18next'
+
+import { formatUi, isKzLanguage, localizeDeep } from '@/shared/lib/i18n'
+
 const ru = {
   details: 'Что получит ИИ',
   shortPolicy: 'Только выбранные справочники',
@@ -9,8 +12,8 @@ const ru = {
     'Выберите, какие справочники помогают ИИ точнее понимать ваши вопросы.',
   policy:
     'Ассистент аналитики получает структуру данных и коды с названиями только выбранных справочников. Реквизиты документов, суммы и результаты SQL-запросов в модель не отправляются.',
-  limits: (values: number, length: number) =>
-    `До ${String(values)} значений из каждого разрешённого справочника; до ${String(length)} символов в коде или названии.`,
+  limits:
+    'До {{values}} значений из каждого разрешённого справочника; до {{length}} символов в коде или названии.',
   defaultOff:
     'Без разрешения значения справочника не передаются. Изменения применяются к следующим обращениям к ИИ.',
   allowed: 'Разрешено',
@@ -31,47 +34,19 @@ const ru = {
     'Коды и названия выбранных справочников помогут ассистенту правильно понимать ваши формулировки.',
   next: 'Следующая страница',
   previous: 'Предыдущая страница',
-  page: (page: number, count: number) =>
-    `Страница ${String(page)} из ${String(count)}`,
-}
-const kz: typeof ru = {
-  details: 'ЖИ қандай деректер алады',
-  shortPolicy: 'Тек таңдалған анықтамалықтар',
-  revocation:
-    'Белгіні алып тастау жаңа сұрауларға мәндердің қосылуын тоқтатады. Бұрын жіберілген деректер кері қайтарылмайды.',
-  title: 'Анықтамалықтарға қолжетімділік',
-  subtitle: 'ЖИ сұрақтарыңызды дәлірек түсінуі үшін анықтамалықтарды таңдаңыз.',
-  policy:
-    'Талдау ассистенті деректер құрылымын және тек таңдалған анықтамалықтардың кодтары мен атауларын алады. Құжат деректемелері, сомалар және SQL сұрауларының нәтижелері модельге жіберілмейді.',
-  limits: (values: number, length: number) =>
-    `Әрбір рұқсат етілген анықтамалықтан ${String(values)} мәнге дейін; кодта немесе атауда ${String(length)} таңбаға дейін.`,
-  defaultOff:
-    'Рұқсатсыз анықтамалық мәндері жіберілмейді. Өзгерістер ЖИ-ге келесі сұрауларға қолданылады.',
-  allowed: 'Рұқсат етілген',
-  total: 'Анықтамалықтар саны',
-  found: 'Табылды',
-  search: 'Атауы немесе коды бойынша іздеу',
-  empty: 'Анықтамалықтар табылмады',
-  emptyHint: 'Басқа атауды енгізіңіз немесе іздеуді тазалаңыз.',
-  clear: 'Іздеуді тазалау',
-  loadError: 'Анықтамалықтарды жүктеу мүмкін болмады.',
-  retry: 'Қайталау',
-  saved: 'Сақталды',
-  saveError: 'Сақтау мүмкін болмады. Қайта көріңіз.',
-  saving: 'Сақталуда…',
-  back: 'ЖИ баптаулары',
-  open: 'Қолжетімділікті баптау',
-  cardHint:
-    'Таңдалған анықтамалықтардың кодтары мен атаулары ассистентке сұрақтарыңызды дұрыс түсінуге көмектеседі.',
-  next: 'Келесі бет',
-  previous: 'Алдыңғы бет',
-  page: (page: number, count: number) =>
-    `${String(page)} / ${String(count)} бет`,
+  page: 'Страница {{page}} из {{count}}',
 }
 export function useDictionaryPermissionsCopy() {
   const { i18n } = useTranslation()
+  const language = i18n.language
   return {
-    copy: /^(kz|kk)/i.test(i18n.language) ? kz : ru,
-    isKz: /^(kz|kk)/i.test(i18n.language),
+    copy: {
+      ...localizeDeep(ru, language),
+      limits: (values: number, length: number) =>
+        formatUi(ru.limits, { values, length }, language),
+      page: (page: number, count: number) =>
+        formatUi(ru.page, { page, count }, language),
+    },
+    isKz: isKzLanguage(language),
   }
 }

@@ -3,7 +3,6 @@ import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 
 import ru from './locales/ru/common.json'
-import kz from './locales/kz/common.json'
 
 export const supportedLanguages = ['ru', 'kz'] as const
 export type SupportedLanguage = (typeof supportedLanguages)[number]
@@ -16,7 +15,7 @@ void i18n
   .init({
     resources: {
       ru: { common: ru },
-      kz: { common: kz },
+      kz: { common: ru },
     },
     defaultNS: 'common',
     fallbackLng: 'ru',

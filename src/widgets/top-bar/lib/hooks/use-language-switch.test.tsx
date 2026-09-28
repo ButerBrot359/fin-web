@@ -7,6 +7,7 @@ import {
   refreshTabTitles,
 } from '@/features/sdui'
 import { useWorkspaceTabsStore } from '@/features/workspace-tabs'
+import { ensureUiTranslations } from '@/shared/lib/i18n'
 
 import { useLanguageSwitch } from './use-language-switch'
 
@@ -14,6 +15,10 @@ vi.mock('@/features/sdui', () => ({
   hasSduiUnsavedWork: vi.fn(),
   closeAllSduiSessions: vi.fn().mockResolvedValue(undefined),
   refreshTabTitles: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/shared/lib/i18n', () => ({
+  ensureUiTranslations: vi.fn().mockResolvedValue(undefined),
 }))
 
 const setTabTitle = vi.fn()
@@ -36,6 +41,7 @@ describe('useLanguageSwitch', () => {
     vi.mocked(hasSduiUnsavedWork).mockReturnValue(false)
     vi.mocked(closeAllSduiSessions).mockClear()
     changeLanguage.mockClear()
+    vi.mocked(ensureUiTranslations).mockClear()
     setTabTitle.mockClear()
     vi.mocked(refreshTabTitles).mockClear()
     vi.mocked(useWorkspaceTabsStore.getState).mockReturnValue({
@@ -94,6 +100,21 @@ describe('useLanguageSwitch', () => {
       vi.mocked(closeAllSduiSessions).mock.invocationCallOrder[0]
     ).toBeLessThan(changeLanguage.mock.invocationCallOrder[0])
     expect(result.current.confirmOpen).toBe(false)
+  })
+
+  it('перед переходом на казахский загружает словарь переводов с бэкенда', async () => {
+    const { result } = renderHook(() => useLanguageSwitch())
+    act(() => {
+      result.current.requestToggle()
+    })
+
+    await waitFor(() => {
+      expect(changeLanguage).toHaveBeenCalledWith('kz')
+    })
+    expect(ensureUiTranslations).toHaveBeenCalledTimes(1)
+    expect(
+      vi.mocked(ensureUiTranslations).mock.invocationCallOrder[0]
+    ).toBeLessThan(changeLanguage.mock.invocationCallOrder[0])
   })
 
   it('с несохранёнными изменениями: открывает confirm, ничего не переключает', () => {

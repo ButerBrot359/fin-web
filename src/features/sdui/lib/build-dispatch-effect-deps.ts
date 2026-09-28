@@ -23,7 +23,7 @@ export interface DispatchEffectHandlerCtx {
   session: SduiSessionValue
   queryClient: QueryClient
   setSearchParams: (search: string, opts?: { replace?: boolean }) => void
-  /** Маршрутный ключ экрана (groupCreateRoute) — ключ стора отчёта о проверке. */
+  /** Ключ вкладки экрана (tabRouteKey) — ключ стора отчёта о проверке. */
   pathname: string
   /**
    * Рекурсивный вход обратно в dispatchAction: серверные ответы диалогов

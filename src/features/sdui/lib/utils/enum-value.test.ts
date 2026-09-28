@@ -38,4 +38,19 @@ describe('resolveEnumValue', () => {
   it('нет совпадения → пустая строка', () => {
     expect(resolveEnumValue({ code: 'Unknown' }, options)).toBe('')
   })
+  it('выбранный объект матчится по value у опций без id и code', () => {
+    const vidyNaloga = [
+      { value: 'IPN', label: 'Индивидуальный подоходный налог' },
+      { value: 'SN', label: 'Социальный налог' },
+    ]
+    expect(
+      resolveEnumValue(
+        { id: 'SN', code: 'SN', presentation: 'Социальный налог' },
+        vidyNaloga
+      )
+    ).toBe('SN')
+  })
+  it('объект не матчится по value, если у опций есть id и code', () => {
+    expect(resolveEnumValue({ code: 'week' }, options)).toBe('')
+  })
 })

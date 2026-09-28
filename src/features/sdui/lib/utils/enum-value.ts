@@ -22,10 +22,19 @@ export function resolveEnumValue(
   if (typeof value === 'string') return value
   if (typeof value === 'object') {
     const v = value as { id?: unknown; code?: unknown }
-    const match = options.find(
-      (o) =>
-        (v.id != null && o.id === v.id) || (v.code != null && o.code === v.code)
-    )
+    const match =
+      options.find(
+        (o) =>
+          (v.id != null && o.id === v.id) ||
+          (v.code != null && o.code === v.code)
+      ) ??
+      options.find(
+        (o) =>
+          o.id == null &&
+          o.code == null &&
+          ((typeof v.code === 'string' && o.value === v.code) ||
+            (typeof v.id === 'string' && o.value === v.id))
+      )
     return match?.value ?? ''
   }
   return ''

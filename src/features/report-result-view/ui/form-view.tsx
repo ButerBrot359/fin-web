@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { cssVar, palette } from '@/shared/design/tokens'
+import { translateUi } from '@/shared/lib/i18n'
 
 import type {
   ReportColumnDto,
@@ -554,14 +555,14 @@ export const FormView = ({
             sx={{ color: cssVar(palette.pendingText1) }}
             className="w-44 shrink-0"
           >
-            {isKz ? 'Қосымшасы' : 'Приложение'}
+            {translateUi('Приложение', isKz ? 'kz' : 'ru')}
           </Typography>
           <div className="w-40 self-end border-t border-pending-text-1" />
           <Typography
             variant="caption"
             sx={{ color: cssVar(palette.pendingText2), fontSize: 10 }}
           >
-            {isKz ? 'парақ' : 'лист'}
+            {translateUi('лист', isKz ? 'kz' : 'ru')}
           </Typography>
         </div>
       )}

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { I18nextProvider } from 'react-i18next'
 
 import i18n from '@/app/config/i18n'
+import { applyUiDictionary } from '@/shared/lib/i18n'
 import { AuditHistoryCell, type AuditHistoryRow } from './audit-history-cell'
 
 const aiRow: AuditHistoryRow = {
@@ -106,6 +107,7 @@ describe('document history provenance', () => {
     expect(screen.getByText('Не зафиксирован')).toBeTruthy()
   })
   it('supports Kazakh labels and does not label failed operations successful', async () => {
+    applyUiDictionary({ 'С помощью ИИ': 'ЖИ көмегімен' })
     await i18n.changeLanguage('kz')
     cell(aiRow, 'originLabel')
     expect(screen.getByText('ЖИ көмегімен')).toBeTruthy()

@@ -8,6 +8,7 @@ import {
   refreshTabTitles,
 } from '@/features/sdui'
 import { useWorkspaceTabsStore } from '@/features/workspace-tabs'
+import { ensureUiTranslations } from '@/shared/lib/i18n'
 
 // Оркестрация переключения РУС/ҚАЗ (SCRUM-268): язык SDUI-формы фиксируется
 // в form-session на OPEN, поэтому смена языка = CLOSE всех сессий + re-OPEN.
@@ -21,6 +22,7 @@ export function useLanguageSwitch() {
     // Порядок критичен: CLOSE сессий и очистка кэша ДО changeLanguage —
     // иначе restore-ветка sdui-screen воскресит сессию на старом языке
     await closeAllSduiSessions()
+    if (nextLang === 'kz') await ensureUiTranslations()
     await i18n.changeLanguage(nextLang)
     await refreshInactiveTabTitles(nextLang)
   }

@@ -253,6 +253,7 @@ export interface ReportColumnDto {
   /** Рендер значения с 1С-признаком сальдо: «Д <abs>» при ≥0, «К <abs>» при <0. */
   dcIndicator?: boolean
   columnNumber?: string
+  frozen?: boolean
 }
 
 /** Одно допустимое значение параметра (для NUMBER с фиксированным списком). */

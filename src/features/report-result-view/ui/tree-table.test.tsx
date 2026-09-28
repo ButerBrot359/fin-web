@@ -573,3 +573,77 @@ describe('TreeTable — строка номеров граф', () => {
     expect(screen.queryByTestId('report-column-numbers')).toBeNull()
   })
 })
+
+describe('TreeTable — закреплённые колонки', () => {
+  const frozenColumns: ReportColumnDto[] = [
+    {
+      code: 'Org',
+      titleRu: 'Организация',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+    },
+    {
+      code: 'NomerPP',
+      titleRu: '№ п/п',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+      width: 5,
+      frozen: true,
+    },
+    {
+      code: 'Nachisleno',
+      titleRu: 'Всего начислено',
+      role: 'ATTRIBUTE',
+      valueType: 'DECIMAL',
+      width: 15,
+      frozen: true,
+    },
+    {
+      code: 'Oklad',
+      titleRu: 'Оклад',
+      role: 'ATTRIBUTE',
+      valueType: 'DECIMAL',
+      width: 15,
+    },
+  ]
+  const frozenResult = {
+    reportCode: 'RaschetnayaVedomostOrganizatsii',
+    reportNameRu: 'Расчетная ведомость организации',
+    columns: frozenColumns,
+    rows: [
+      {
+        level: 0,
+        groupCode: 'Org',
+        groupValue: 'Демонстрационная организация',
+        cells: { NomerPP: 1, Nachisleno: 100, Oklad: 100 },
+        children: [],
+      },
+    ],
+    total: {},
+    layout: 'TREE',
+  } as unknown as ReportResultDto
+
+  it('колонка дерева и ведущие frozen-колонки закреплены слева, остальные прокручиваются', () => {
+    render(<TreeTable result={frozenResult} columns={frozenColumns} />)
+    const header = (title: string) =>
+      screen.getByText(title).closest('th') as HTMLElement
+
+    expect(header('Организация').style.position).toBe('sticky')
+    expect(header('Организация').style.left).toBe('0px')
+    expect(header('№ п/п').style.position).toBe('sticky')
+    expect(header('№ п/п').style.left).toBe('240px')
+    expect(header('Всего начислено').style.left).toBe('280px')
+    expect(header('Оклад').style.position).toBe('')
+  })
+
+  it('без frozen-колонок ничего не закрепляется', () => {
+    const plain = frozenColumns.map((c) => ({ ...c, frozen: undefined }))
+    render(
+      <TreeTable result={{ ...frozenResult, columns: plain }} columns={plain} />
+    )
+    expect(
+      (screen.getByText('Организация').closest('th') as HTMLElement).style
+        .position
+    ).toBe('')
+  })
+})

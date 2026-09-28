@@ -80,8 +80,23 @@ export const ReportAltParamField = ({
     ? param.referenceDomain!.slice(CHARACTERISTICS_PLAN_PREFIX.length)
     : null
 
+  const allowedOptions = useMemo<SelectOption[] | null>(
+    () =>
+      param.allowedValues && param.allowedValues.length > 0
+        ? param.allowedValues.map<SelectOption>((av) => ({
+            id: String(av.value),
+            code: String(av.value),
+            label: (isKz ? av.titleKz : av.titleRu) || av.titleRu,
+          }))
+        : null,
+    [param.allowedValues, isKz]
+  )
+  const isEnumByAllowedValues =
+    param.dataType === 'ENUM_REF' && allowedOptions !== null
+
   const isDictRef =
     !isCharacteristicsRef &&
+    !isEnumByAllowedValues &&
     (param.dataType === 'DICTIONARY_REF' ||
       param.dataType === 'ENUM_REF' ||
       param.dataType === 'REF_LIST')
@@ -173,6 +188,28 @@ export const ReportAltParamField = ({
   const [pickedLabels, setPickedLabels] = useState<
     Partial<Record<number, string>>
   >({})
+
+  const allowedValuesSelect = (options: SelectOption[]) => {
+    const selected =
+      typeof value === 'string' && value !== ''
+        ? (options.find((o) => o.id === value) ?? null)
+        : null
+    return (
+      <AutocompleteInput
+        value={selected}
+        options={options}
+        onChange={(o) => {
+          onChange(o ? String(o.id) : '')
+        }}
+        label={label}
+        required={param.required}
+        error={invalid}
+        disabled={disabled}
+        helperText={helperText}
+        fullWidth
+      />
+    )
+  }
 
   switch (param.dataType) {
     case 'DATE':
@@ -339,6 +376,9 @@ export const ReportAltParamField = ({
     case 'ACCOUNT_REF':
     case 'DICTIONARY_REF':
     case 'ENUM_REF': {
+      if (param.dataType === 'ENUM_REF' && allowedOptions) {
+        return allowedValuesSelect(allowedOptions)
+      }
       // Одиночный выбор; значение — id записи (number).
       const selected =
         value == null || value === '' || typeof value === 'object'

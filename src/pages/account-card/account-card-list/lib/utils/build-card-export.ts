@@ -1,5 +1,5 @@
 import type { TableExportData } from '@/shared/lib/table-export'
-import { formatDate } from '@/shared/lib/utils/date'
+import { formatDateTimeSeconds } from '@/shared/lib/utils/date'
 
 import type {
   AccountCardEntry,
@@ -52,7 +52,7 @@ export const buildCardExport = (
   for (const line of lines) {
     out.push([
       typeof line.entry.period === 'string'
-        ? formatDate(line.entry.period, 'dd.MM.yyyy HH:mm:ss')
+        ? formatDateTimeSeconds(line.entry.period)
         : '',
       line.entry.recorderDocumentName ?? '',
       line.entry.soderzhanie ?? '',

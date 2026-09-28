@@ -1,4 +1,4 @@
-import { format, isValid, parseISO } from 'date-fns'
+import { toIsoDate } from '@/shared/lib/utils/iso-date'
 
 import type { DataType } from '@/shared/lib/consts/data-types'
 
@@ -24,10 +24,8 @@ export const normalizeDateForBackend = (
   dataType: DataType,
   edge: DateEdge = 'start'
 ): string => {
-  if (!iso) return ''
-  const parsed = parseISO(iso)
-  if (!isValid(parsed)) return ''
-  const datePart = format(parsed, 'yyyy-MM-dd')
+  const datePart = toIsoDate(iso)
+  if (!datePart) return ''
   if (dataType === 'DATE') return datePart
   return datePart + (edge === 'end' ? 'T23:59:59' : 'T00:00:00')
 }

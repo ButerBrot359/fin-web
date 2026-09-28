@@ -6,6 +6,7 @@ import CrossIcon from '@/shared/assets/icons/cross.svg'
 import { Button } from '@/shared/ui/buttons'
 import { cssVar, shadows } from '@/shared/design/tokens'
 import type { NotificationRecord } from '@/entities/notification-history'
+import { formatDateTimeSeconds } from '@/shared/lib/utils/date'
 
 /**
  * Диалог деталей ошибки (SCRUM-317 канал №9): текст, время, копирование.
@@ -16,12 +17,12 @@ export const NotificationDetailsDialog: FC<{
   record: NotificationRecord | null
   onClose: () => void
 }> = ({ record, onClose }) => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
 
   const copy = () => {
     if (!record) return
     const text = [
-      new Date(record.at).toLocaleString(i18n.language === 'kz' ? 'kk' : 'ru'),
+      formatDateTimeSeconds(new Date(record.at)),
       record.title,
       record.description ?? '',
     ]
@@ -67,9 +68,7 @@ export const NotificationDetailsDialog: FC<{
         {record && (
           <div className="flex flex-col gap-2">
             <Typography variant="body2" className="text-ui-05">
-              {new Date(record.at).toLocaleString(
-                i18n.language === 'kz' ? 'kk' : 'ru'
-              )}
+              {formatDateTimeSeconds(new Date(record.at))}
             </Typography>
             <Typography className="text-base font-medium text-ui-06">
               {record.title}

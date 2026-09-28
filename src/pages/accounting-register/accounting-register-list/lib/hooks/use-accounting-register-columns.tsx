@@ -6,7 +6,11 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { ColumnMetaDto } from '@/shared/lib/eav'
 import { REFERENCE_DOMAIN_KINDS } from '@/shared/lib/consts/data-types'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
-import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
+import {
+  formatDate,
+  formatDateTime,
+  formatDateTimeSeconds,
+} from '@/shared/lib/utils/date'
 
 import type { AccountingRegisterEntry } from '../../types/accounting-register'
 import { DimensionCell } from '../../ui/dimension-cell'
@@ -72,7 +76,7 @@ export const useAccountingRegisterColumns = (
             // Период (1C: Period — DateTime) — дата со временем до секунд.
             cell: ({ getValue }) => {
               const v = getValue() as string | null | undefined
-              return cellText(v ? formatDate(v, 'dd.MM.yyyy HH:mm:ss') : '')
+              return cellText(v ? formatDateTimeSeconds(v) : '')
             },
           }
         // Колонка отображает читаемый код счёта (accountDtCode). Сортировка — по

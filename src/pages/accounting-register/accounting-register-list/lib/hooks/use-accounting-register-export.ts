@@ -12,7 +12,11 @@ import {
 } from '@/shared/lib/dictionary-entry'
 import { getDocumentEntry, type DocumentEntry } from '@/entities/document-entry'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
-import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
+import {
+  formatDate,
+  formatDateTime,
+  formatDateTimeSeconds,
+} from '@/shared/lib/utils/date'
 
 import type { AccountingRegisterEntry } from '../../types/accounting-register'
 import { getSubkontoRef, type SubkontoRef } from '../../utils/subkonto'
@@ -124,9 +128,7 @@ export const useAccountingRegisterExport = (
       ): XlsxCell => {
         switch (col.code) {
           case 'period':
-            return row.period
-              ? formatDate(row.period, 'dd.MM.yyyy HH:mm:ss')
-              : ''
+            return row.period ? formatDateTimeSeconds(row.period) : ''
           case 'accountDtId':
             return row.accountDtCode ?? ''
           case 'accountKtId':

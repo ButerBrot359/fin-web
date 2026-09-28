@@ -5,6 +5,7 @@ import type {
   XlsxRowKind,
 } from '@/shared/lib/xlsx/write-xlsx'
 import { formatDate } from '@/shared/lib/utils/date'
+import { displayPatternForFormat } from '@/shared/lib/utils/iso-date'
 import {
   formatReportTitle,
   isHighlightRow,
@@ -50,7 +51,7 @@ const formatCell = (value: unknown, col: ReportAltColumnDto): XlsxCell => {
     typeof value === 'string' &&
     /^\d{4}-\d{2}-\d{2}/.test(value)
   ) {
-    return formatDate(value, 'dd.MM.yyyy') || value
+    return formatDate(value, displayPatternForFormat(col.format)) || value
   }
   if (typeof value === 'string' || typeof value === 'number') return value
   return ''

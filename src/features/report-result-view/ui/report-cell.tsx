@@ -1,6 +1,7 @@
 import { Typography } from '@mui/material'
 
 import { formatDate } from '@/shared/lib/utils/date'
+import { displayPatternForFormat } from '@/shared/lib/utils/iso-date'
 import { cssVar, palette } from '@/shared/design/tokens'
 
 import type { ReportColumnDto } from '@/pages/reports/report-list/types/report'
@@ -25,10 +26,7 @@ const SUB_LABELS_KOLICHESTVO = new Set(['Кол.', 'Сан.'])
  * (`dd.MM.yyyy`, с временем — если формат содержит часы).
  */
 const formatPeriodValue = (raw: string, col: ReportColumnDto): string => {
-  const pattern = col.format?.includes('HH')
-    ? 'dd.MM.yyyy HH:mm:ss'
-    : 'dd.MM.yyyy'
-  return formatDate(raw, pattern) || raw
+  return formatDate(raw, displayPatternForFormat(col.format)) || raw
 }
 
 /** Стиль текста 1С: данные — #333/11px, выделенные строки — зелёный жирный/13px. */

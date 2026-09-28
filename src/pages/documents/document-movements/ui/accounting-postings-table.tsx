@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
-import { formatDate } from '@/shared/lib/utils/date'
+import { formatDateTimeSeconds } from '@/shared/lib/utils/date'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { cn } from '@/shared/lib/utils/cn'
 import { useVirtualBlocks } from '@/shared/lib/virtual-rows/use-virtual-blocks'
@@ -266,7 +266,7 @@ export const AccountingPostingsTable = ({
                             className="text-ui-06"
                           >
                             {typeof period === 'string'
-                              ? formatDate(period, 'dd.MM.yyyy HH:mm:ss')
+                              ? formatDateTimeSeconds(period)
                               : ''}
                           </Typography>
                         </td>

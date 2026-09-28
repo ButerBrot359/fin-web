@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { formatDate } from '@/shared/lib/utils/date'
+import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 import { buildXlsxBlob, downloadBlob } from '@/shared/lib/xlsx/write-xlsx'
 import { Button } from '@/shared/ui/buttons/button'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -34,7 +34,7 @@ export const AuditLogExportButton = ({
       const title = t('auditLog.exportFileName')
       const stamp = formatDate(new Date(), 'yyyy-MM-dd HH-mm')
       const sheet = buildAuditLogSheet(rows, (key) => t(key), title, [
-        formatDate(new Date(), 'dd.MM.yyyy HH:mm'),
+        formatDateTime(new Date()),
       ])
       downloadBlob(buildXlsxBlob(sheet), `${title} ${stamp}.xlsx`)
       if (truncated) {

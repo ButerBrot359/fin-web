@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 
 import { callSounds, startIncomingRing } from '../lib/call-sounds'
 import type { SupportCall } from '../model/types'
+import { formatTime } from '@/shared/lib/utils/date'
 
 interface IncomingCallCardProps {
   /** Обращение, которое показываем крупно, — самое давнее из ожидающих. */
@@ -38,16 +39,13 @@ export const IncomingCallCard = ({
   onOpenQueue,
   onCollapse,
 }: IncomingCallCardProps) => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
 
   // Трель звучит, пока карточка на экране, и смолкает вместе с ней: свернул — значит увидел,
   // ответил — значит взял. Звонок без способа его унять раздражает сильнее, чем помогает.
   useEffect(() => startIncomingRing(), [call.id])
 
-  const time = new Date(call.startedAt).toLocaleTimeString(
-    i18n.language === 'kz' ? 'kk-KZ' : 'ru-RU',
-    { hour: '2-digit', minute: '2-digit' }
-  )
+  const time = formatTime(call.startedAt)
 
   return (
     <Grow in appear>

@@ -1,4 +1,5 @@
-import { format, isValid, parseISO } from '@/shared/lib/utils/date'
+import { normalizeBodyDates } from '@/shared/lib/utils/normalize-body-dates'
+import { standardPeriod } from '@/shared/lib/utils/period-choice'
 
 import type { ReportAltParameterDto } from '../../types/reportalt'
 
@@ -43,52 +44,7 @@ export const PERIODICHNOST_KVARTAL = 'QUARTER'
 export const kvartalnyyPeriod = (p: ReportAltParameterDto) =>
   isPeriod(p) && p.periodicity === PERIODICHNOST_KVARTAL
 
-const currentQuarter = (): PeriodValue => {
-  const now = new Date()
-  const first = Math.floor(now.getMonth() / 3) * 3
-  const from = new Date(now.getFullYear(), first, 1)
-  const to = new Date(now.getFullYear(), first + 3, 0)
-  return { from: format(from, 'yyyy-MM-dd'), to: format(to, 'yyyy-MM-dd') }
-}
-
-const currentMonth = (): PeriodValue => {
-  const now = new Date()
-  const from = new Date(now.getFullYear(), now.getMonth(), 1)
-  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  return { from: format(from, 'yyyy-MM-dd'), to: format(to, 'yyyy-MM-dd') }
-}
-
-/**
- * Нормализация даты для тела `/run`: бэкенд ждёт локальную дату `yyyy-MM-dd`
- * (границы дня расставляет сам), а инпуты отдают ISO с `Z`.
- */
-const toLocalDate = (raw: string): string => {
-  if (!raw) return raw
-  const d = parseISO(raw)
-  if (!isValid(d)) return raw
-  return format(d, 'yyyy-MM-dd')
-}
-
-/** Нормализует DATE-строки и PERIOD-объекты `{from,to}` в теле запроса. */
-export const normalizeBodyDates = (
-  parameters: Record<string, unknown>,
-  metaParams: ReportAltParameterDto[]
-): Record<string, unknown> => {
-  const out: Record<string, unknown> = { ...parameters }
-  for (const p of metaParams) {
-    if (p.dataType === 'DATE') {
-      const v = out[p.code]
-      if (typeof v === 'string' && v) out[p.code] = toLocalDate(v)
-      continue
-    }
-    if (!isPeriod(p)) continue
-    const v = out[p.code] as PeriodValue | undefined
-    if (v && typeof v === 'object') {
-      out[p.code] = { ...v, from: toLocalDate(v.from), to: toLocalDate(v.to) }
-    }
-  }
-  return out
-}
+export { normalizeBodyDates }
 
 /**
  * Сериализация значений параметров в query-строку URL (одно поле на параметр,
@@ -145,7 +101,9 @@ export const defaultParamValue = (
     case 'BOOLEAN':
       return false
     case 'PERIOD':
-      return kvartalnyyPeriod(param) ? currentQuarter() : currentMonth()
+      return standardPeriod(
+        kvartalnyyPeriod(param) ? 'thisQuarter' : 'thisMonth'
+      )
     default:
       // «Язык формы» (YazykFormy) должен всегда показывать выбранный язык
       // (в 1С по умолчанию «Русский»), а не стартовать пустым и молча

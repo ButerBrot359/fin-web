@@ -6,6 +6,7 @@ import type {
   XlsxRowKind,
 } from '@/shared/lib/xlsx/write-xlsx'
 import { formatDate } from '@/shared/lib/utils/date'
+import { displayPatternForFormat } from '@/shared/lib/utils/iso-date'
 import {
   buildHeadModel,
   formatMoney1C,
@@ -141,10 +142,7 @@ const formatCell = (
     typeof value === 'string' &&
     /^\d{4}-\d{2}-\d{2}/.test(value)
   ) {
-    const pattern = col.format?.includes('HH')
-      ? 'dd.MM.yyyy HH:mm:ss'
-      : 'dd.MM.yyyy'
-    return formatDate(value, pattern) || value
+    return formatDate(value, displayPatternForFormat(col.format)) || value
   }
   if (typeof value === 'string' || typeof value === 'number') return value
   return ''

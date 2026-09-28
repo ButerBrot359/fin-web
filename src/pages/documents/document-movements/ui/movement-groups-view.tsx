@@ -9,7 +9,11 @@ import {
 } from '@tanstack/react-table'
 
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
-import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
+import {
+  formatDate,
+  formatDateTime,
+  formatDateTimeSeconds,
+} from '@/shared/lib/utils/date'
 import { cn } from '@/shared/lib/utils/cn'
 import { useVirtualBlocks } from '@/shared/lib/virtual-rows/use-virtual-blocks'
 
@@ -69,9 +73,7 @@ const MovementTable = ({ group }: { group: MovementGroup }) => {
         // как в журнале регистра: различает движения внутри одного дня.
         return (
           <Typography variant="body2" noWrap className="text-ui-06">
-            {typeof val === 'string'
-              ? formatDate(val, 'dd.MM.yyyy HH:mm:ss')
-              : ''}
+            {typeof val === 'string' ? formatDateTimeSeconds(val) : ''}
           </Typography>
         )
       },

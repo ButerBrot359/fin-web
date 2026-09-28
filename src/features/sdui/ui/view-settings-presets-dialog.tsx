@@ -8,7 +8,7 @@ import {
   Typography,
 } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { format } from 'date-fns'
+import { formatDate } from '@/shared/lib/utils/date'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/shared/ui/buttons'
@@ -100,7 +100,7 @@ export const ViewSettingsPresetsDialog: FC<ViewSettingsPresetsDialogProps> = ({
       preset.mine
         ? t('sdui.customizeForm.presetsMine')
         : (preset.authorName ?? ''),
-      preset.updatedAt ? format(new Date(preset.updatedAt), 'dd.MM.yyyy') : '',
+      preset.updatedAt ? formatDate(preset.updatedAt) : '',
     ]
     return parts.filter(Boolean).join(' · ')
   }

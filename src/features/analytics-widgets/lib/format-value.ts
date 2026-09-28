@@ -1,4 +1,7 @@
-import { format, isValid, parseISO } from 'date-fns'
+import { isValid } from 'date-fns'
+
+import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
+import { toDate } from '@/shared/lib/utils/iso-date'
 
 import type { AnalyticsValueFormat } from '@/entities/analytics'
 
@@ -49,15 +52,18 @@ export const parseDateValue = (value: unknown): Date | null => {
     return isValid(fromEpoch) ? fromEpoch : null
   }
   if (typeof value !== 'string' || value === '') return null
-  const iso = parseISO(value)
-  if (isValid(iso)) return iso
+  const iso = toDate(value)
+  if (iso) return iso
   const fallback = new Date(value)
   return isValid(fallback) ? fallback : null
 }
 
-const formatDatePart = (value: unknown, pattern: string): string => {
+const formatDatePart = (
+  value: unknown,
+  formatter: (date: Date) => string
+): string => {
   const parsed = parseDateValue(value)
-  return parsed ? format(parsed, pattern) : ''
+  return parsed ? formatter(parsed) : ''
 }
 
 const formatFixed = (value: unknown, fractionDigits: number): string => {
@@ -74,7 +80,7 @@ export const asText = (value: unknown): string => {
     return value.toString()
   }
   if (typeof value === 'boolean') return value ? TRUE_MARK : FALSE_MARK
-  if (value instanceof Date) return format(value, 'dd.MM.yyyy')
+  if (value instanceof Date) return formatDate(value)
   return ''
 }
 
@@ -99,9 +105,9 @@ export const formatValue = (
       return `${formatNumber(parsed, 2)}${NBSP}%`
     }
     case 'DATE':
-      return formatDatePart(value, 'dd.MM.yyyy')
+      return formatDatePart(value, formatDate)
     case 'DATETIME':
-      return formatDatePart(value, 'dd.MM.yyyy HH:mm')
+      return formatDatePart(value, formatDateTime)
     default:
       return asText(value)
   }

@@ -647,3 +647,67 @@ describe('TreeTable — закреплённые колонки', () => {
     ).toBe('')
   })
 })
+
+describe('TreeTable — ширины граф и перенос как в макете 1С', () => {
+  const sized: ReportColumnDto[] = [
+    {
+      code: 'Kod',
+      titleRu: 'Администратор / Программа / Подпрограмма / Специфика',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+      width: 23,
+    },
+    {
+      code: 'Naim',
+      titleRu: 'Наименование',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+      width: 41,
+      wrap: true,
+    },
+  ]
+  const sizedResult = {
+    ...result,
+    columns: sized,
+    rows: [
+      {
+        level: 0,
+        groupCode: 'Kod',
+        groupValue: '124',
+        cells: {
+          Kod: '124',
+          Naim: 'Аппарат акима города районного значения, села, поселка',
+        },
+        children: [],
+      },
+    ],
+  } as unknown as ReportResultDto
+
+  it('ширины заданы — таблица фиксированной ширины, шапка и отмеченная графа переносятся', () => {
+    const { container } = render(
+      <TreeTable result={sizedResult} columns={sized} />
+    )
+
+    const table = container.querySelector('table')
+    expect(table?.style.width).toBe(`${String(240 + 23 * 8 + 41 * 8)}px`)
+    const head = screen
+      .getByText('Администратор / Программа / Подпрограмма / Специфика')
+      .closest('th')
+    expect(head?.className).toContain('whitespace-normal')
+    const naim = screen
+      .getByText('Аппарат акима города районного значения, села, поселка')
+      .closest('td')
+    expect(naim?.className).toContain('whitespace-normal')
+  })
+
+  it('ширины не заданы — прежняя раскладка без переноса', () => {
+    const { container } = render(
+      <TreeTable result={result} columns={columns} />
+    )
+
+    expect(container.querySelector('table')?.style.width).toBe('')
+    expect(screen.getByText('Сальдо Дт').closest('th')?.className).toContain(
+      'whitespace-nowrap'
+    )
+  })
+})

@@ -324,4 +324,32 @@ describe('TableToolbar: доменные кнопки из tableCommands (SCRUM-
       { flushPendingTables: false, resetsDirty: false, closeAfter: false }
     )
   })
+
+  const izmenit: TableCommandDescriptor = {
+    ...podbor,
+    command: 'otchetnost.x.izmenit',
+    label: 'Изменить',
+    requiresSelectedRow: true,
+  }
+
+  it('requiresSelectedRow: без строки кнопка недоступна, со строкой — доступна', () => {
+    const { rerender } = render(
+      <TableToolbar {...baseProps} commands={[izmenit]} />
+    )
+    expect(screen.getByRole('button', { name: 'Изменить' })).toBeDisabled()
+
+    rerender(
+      <TableToolbar {...baseProps} commands={[izmenit]} selectedRowId="17" />
+    )
+    expect(screen.getByRole('button', { name: 'Изменить' })).toBeEnabled()
+  })
+
+  it('requiresSelectedRow: пункт меню «Ещё» без строки недоступен', () => {
+    render(<TableToolbar {...baseProps} commands={[izmenit]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'table.more' }))
+    expect(screen.getByRole('menuitem', { name: 'Изменить' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+  })
 })

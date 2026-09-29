@@ -72,6 +72,47 @@ describe('parseValidationReport', () => {
     })
   })
 
+  it('REPORT_CELL — адрес ячейки сетки отчёта {pokazatelId, indeks}', () => {
+    const report = parseValidationReport({
+      blockingCount: 0,
+      messages: [
+        {
+          id: 'flk1',
+          severity: 'ERROR',
+          message: 'Контрольное соотношение не выполнено',
+          target: { kind: 'REPORT_CELL', pokazatelId: 4501, indeks: 0 },
+        },
+        {
+          id: 'flk2',
+          severity: 'WARNING',
+          message: 'Раскрытие не сходится с итогом',
+          target: { kind: 'REPORT_CELL', pokazatelId: 4511, indeks: 2 },
+        },
+      ],
+    })
+    expect(report?.messages.map((m) => m.target)).toEqual([
+      { kind: 'REPORT_CELL', pokazatelId: 4501, indeks: 0 },
+      { kind: 'REPORT_CELL', pokazatelId: 4511, indeks: 2 },
+    ])
+  })
+
+  it('неполный REPORT_CELL → target null (ненавигируемый текст)', () => {
+    const report = parseValidationReport({
+      blockingCount: 0,
+      messages: [
+        {
+          message: 'без индекса',
+          target: { kind: 'REPORT_CELL', pokazatelId: 4501 },
+        },
+        {
+          message: 'строковый id',
+          target: { kind: 'REPORT_CELL', pokazatelId: '4501', indeks: 0 },
+        },
+      ],
+    })
+    expect(report?.messages.map((m) => m.target)).toEqual([null, null])
+  })
+
   it('неизвестный kind и мусор → target null, сообщение остаётся текстом', () => {
     const report = parseValidationReport({
       blockingCount: 0,

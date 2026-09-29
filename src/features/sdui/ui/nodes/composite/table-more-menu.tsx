@@ -43,6 +43,8 @@ export interface TableMoreMenuProps {
   commands: TableCommandDescriptor[]
   commandLabel: (cmd: TableCommandDescriptor) => string
   onCommand: (cmd: TableCommandDescriptor) => void
+  /** Недоступность пункта-команды; по умолчанию — только !enabled. */
+  isCommandDisabled?: (cmd: TableCommandDescriptor) => boolean
 }
 
 export const TableMoreMenu = ({
@@ -67,6 +69,7 @@ export const TableMoreMenu = ({
   commands,
   commandLabel,
   onCommand,
+  isCommandDisabled = (cmd) => !cmd.enabled,
 }: TableMoreMenuProps) => {
   const { t } = useTranslation()
   const menuCommands = commands.filter((cmd) => cmd.inMoreMenu === true)
@@ -136,9 +139,15 @@ export const TableMoreMenu = ({
       )}
       {menuCommands.length > 0 && <Divider />}
       {menuCommands.map((cmd) =>
-        item(cmd.command, commandLabel(cmd), null, !cmd.enabled, () => {
-          onCommand(cmd)
-        })
+        item(
+          cmd.command,
+          commandLabel(cmd),
+          null,
+          isCommandDisabled(cmd),
+          () => {
+            onCommand(cmd)
+          }
+        )
       )}
     </Menu>
   )

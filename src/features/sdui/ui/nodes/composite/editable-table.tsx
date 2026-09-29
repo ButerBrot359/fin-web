@@ -138,6 +138,18 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
 
   useSearchScroll(search, visibleRows, virt, containerRef)
 
+  const novayaStrokaRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const rowId = novayaStrokaRef.current
+    if (rowId === null) return
+    const index = visibleRows.findIndex((row) => row.rowId === rowId)
+    if (index < 0) return
+    novayaStrokaRef.current = null
+    setSelectedIndex(index)
+    virt.scrollToRow(index)
+  }, [visibleRows, virt])
+
   useEffect(() => {
     setSelectedIndex((prev) => {
       if (prev === null) return null
@@ -195,7 +207,9 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     selectedRowIds: vydelennyeRowIds,
     selectedVisibleIndex: selectedIndex ?? -1,
     onAdd: () => {
-      sync.addRow(columns)
+      const row = sync.addRow(columns)
+      novayaStrokaRef.current = row.rowId
+      vybor.tolkoOdna(row.rowId)
     },
     clearSelection: () => {
       setSelectedIndex(null)

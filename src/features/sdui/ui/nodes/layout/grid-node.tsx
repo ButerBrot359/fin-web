@@ -31,6 +31,13 @@ export const GridNode: FC<NodeProps> = ({ node }) => {
     return Math.min(columns, Math.round(raw))
   }
 
+  const cellStart = (colStart: unknown, newRow: unknown): string => {
+    if (typeof colStart === 'number' && colStart >= 1 && colStart <= columns) {
+      return `${String(Math.round(colStart))} / `
+    }
+    return newRow === true ? '1 / ' : ''
+  }
+
   return (
     <div
       style={{
@@ -44,7 +51,7 @@ export const GridNode: FC<NodeProps> = ({ node }) => {
         <div
           key={c.id}
           style={{
-            gridColumn: `${c.props?.newRow === true ? '1 / ' : ''}span ${String(cellSpan(c.props?.colSpan))}`,
+            gridColumn: `${cellStart(c.props?.colStart, c.props?.newRow)}span ${String(cellSpan(c.props?.colSpan))}`,
             minWidth: 0,
           }}
         >

@@ -248,6 +248,10 @@ export interface ReportColumnDto {
    */
   subGroupTitleRu?: string
   subGroupTitleKz?: string
+  headerPathRu?: string[]
+  headerPathKz?: string[]
+  headerPathVertical?: boolean[]
+  verticalTitle?: boolean
   /** Ширина колонки в символах (≈ width × 8px); null ⇒ авто. */
   width?: number
   /** Рендер значения с 1С-признаком сальдо: «Д <abs>» при ≥0, «К <abs>» при <0. */

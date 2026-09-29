@@ -58,3 +58,19 @@ describe('ReportCell — формат по объявленному типу з�
     expect(screen.getByText('1315')).toBeTruthy()
   })
 })
+
+describe('ReportCell — многострочные значения', () => {
+  it('строка с переводом строки рендерится с white-space: pre-line', () => {
+    render(<ReportCell value={'Иванов\nучитель'} col={column({})} />)
+
+    const el = screen.getByText(/Иванов/)
+    expect(el.style.whiteSpace).toBe('pre-line')
+    expect(el.textContent).toBe('Иванов\nучитель')
+  })
+
+  it('однострочная строка без pre-line', () => {
+    render(<ReportCell value="Иванов" col={column({})} />)
+
+    expect(screen.getByText('Иванов').style.whiteSpace).toBe('')
+  })
+})

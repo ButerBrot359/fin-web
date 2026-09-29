@@ -165,3 +165,100 @@ describe('buildReportAltExport — строка номеров граф', () => 
     expect(data.headers).toEqual(['Группировка', 'Код'])
   })
 })
+
+describe('buildReportAltExport — шапка по headerPath', () => {
+  it('TREE: многоуровневые merge, поворот и строка номеров', () => {
+    const columns: ReportAltColumnDto[] = [
+      {
+        code: 'Fio',
+        titleRu: 'ФИО',
+        role: 'DIMENSION',
+        valueType: 'STRING',
+        treeColumn: true,
+      },
+      {
+        code: 'Razryad',
+        titleRu: 'Разряд',
+        role: 'ATTRIBUTE',
+        valueType: 'STRING',
+        headerPathRu: ['Тарификация', 'Основные'],
+        headerPathVertical: [false, true],
+        verticalTitle: true,
+        columnNumber: '2',
+      },
+      {
+        code: 'Stavka',
+        titleRu: 'Ставка',
+        role: 'MEASURE',
+        valueType: 'NUMBER',
+        headerPathRu: ['Тарификация', 'Основные'],
+        columnNumber: '3',
+      },
+      {
+        code: 'Itogo',
+        titleRu: 'Итого',
+        role: 'MEASURE',
+        valueType: 'NUMBER',
+        headerPathRu: ['Тарификация'],
+        columnNumber: '4',
+      },
+    ]
+
+    const data = buildReportAltExport(
+      treeResult(columns),
+      false,
+      'Группировка',
+      'Итого'
+    )
+
+    expect(data.headerRows).toEqual([
+      [
+        { text: 'ФИО', col: 0, rowSpan: 3 },
+        { text: 'Тарификация', col: 1, colSpan: 3 },
+      ],
+      [
+        { text: 'Основные', col: 1, colSpan: 2, vertical: true },
+        { text: 'Итого', col: 3, rowSpan: 2 },
+      ],
+      [
+        { text: 'Разряд', col: 1, vertical: true },
+        { text: 'Ставка', col: 2 },
+      ],
+      [
+        { text: '', col: 0 },
+        { text: '2', col: 1 },
+        { text: '3', col: 2 },
+        { text: '4', col: 3 },
+      ],
+    ])
+  })
+
+  it('LEDGER: шапка по headerPath выгружается и без номеров граф', () => {
+    const data = buildReportAltExport(
+      {
+        ...treeResult([
+          { code: 'A', titleRu: 'A', role: 'ATTRIBUTE', valueType: 'STRING' },
+          {
+            code: 'B',
+            titleRu: 'B',
+            role: 'ATTRIBUTE',
+            valueType: 'STRING',
+            headerPathRu: ['G'],
+          },
+        ]),
+        layout: 'LEDGER',
+      },
+      false,
+      'Группировка',
+      'Итого'
+    )
+
+    expect(data.headerRows).toEqual([
+      [
+        { text: 'A', col: 0, rowSpan: 2 },
+        { text: 'G', col: 1 },
+      ],
+      [{ text: 'B', col: 1 }],
+    ])
+  })
+})

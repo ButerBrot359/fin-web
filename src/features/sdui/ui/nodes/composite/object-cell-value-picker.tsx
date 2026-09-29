@@ -19,6 +19,7 @@ interface ObjectCellValuePickerProps {
   onCommit: () => void
   /** Значение очистили — тип у ячейки снова не задан (см. handleValueCleared). */
   onCleared: () => void
+  extraParams?: Record<string, string>
 }
 
 /**
@@ -33,6 +34,7 @@ export const ObjectCellValuePicker: FC<ObjectCellValuePickerProps> = ({
   onChange,
   onCommit,
   onCleared,
+  extraParams,
 }) => {
   const optionsSource = member.optionsSource
 
@@ -44,11 +46,11 @@ export const ObjectCellValuePicker: FC<ObjectCellValuePickerProps> = ({
         optionsSource
           ? fetchReferenceOptions({
               url: optionsSource.url,
-              params: optionsSource.params,
+              params: { ...optionsSource.params, ...extraParams },
               search,
             })
           : Promise.resolve([]),
-      JSON.stringify(optionsSource ?? null)
+      JSON.stringify([optionsSource ?? null, extraParams ?? null])
     )
 
   // Член без optionsSource — примитив (STRING/DECIMAL/BOOLEAN/DATETIME) или ENUMS.

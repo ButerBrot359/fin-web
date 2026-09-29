@@ -285,6 +285,7 @@ export const TableCellEditor: FC<TableCellEditorProps> = ({
             value={value}
             onChange={onChange}
             onCommit={handleCommit}
+            extraParams={extraParams}
           />
         )
 

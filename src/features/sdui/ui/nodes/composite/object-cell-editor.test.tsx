@@ -185,3 +185,37 @@ describe('ObjectCellEditor: выбор типа и список', () => {
     expect(screen.queryByText('sdui.objectField.choosePlaceholder')).toBeNull()
   })
 })
+
+describe('ObjectCellEditor: отбор строки', () => {
+  it('список записей выбранного типа получает параметры члена и отбор строки', () => {
+    render(
+      <ObjectCellEditor
+        colProps={colProps([
+          {
+            position: 1,
+            domainKind: 'DICTIONARY',
+            targetTypeCode: 'DogovoryKontragentov',
+            presentation: 'Договоры',
+            optionsSource: {
+              url: '/api/dictionary-entries/DogovoryKontragentov/entries',
+              params: { Organizatsiya: '42' },
+            },
+          },
+          PKO,
+        ])}
+        value={null}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+        extraParams={{ Vladelets: '55' }}
+      />
+    )
+
+    fireEvent.click(screen.getByText('sdui.objectField.choosePlaceholder'))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Договоры' }))
+
+    expect(picker[0]).toMatchObject({
+      typeCode: 'DogovoryKontragentov',
+      searchParams: { Organizatsiya: '42', Vladelets: '55' },
+    })
+  })
+})

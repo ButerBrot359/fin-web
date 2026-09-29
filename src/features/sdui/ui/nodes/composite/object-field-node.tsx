@@ -19,6 +19,7 @@ import {
   membersSignature,
   isValueAllowed,
   buildObjectValue,
+  memberSelectOptions,
   type AllowedType,
   type ObjectValue,
 } from './object-field-logic'
@@ -162,6 +163,35 @@ const ObjectValuePicker: FC<ObjectValuePickerProps> = ({
         : Promise.resolve([]),
     JSON.stringify(optionsSource ?? null)
   )
+
+  const staticOptions = memberSelectOptions(member)
+
+  if (!optionsSource && staticOptions.length > 0) {
+    return (
+      <AutocompleteInput
+        value={
+          value && value.targetTypeCode === member.targetTypeCode
+            ? {
+                id: value.id,
+                code: String(value.id),
+                label: value.presentation,
+              }
+            : null
+        }
+        options={staticOptions}
+        label={field.label}
+        required={field.required}
+        readOnly={field.readonly}
+        disabled={!field.enabled}
+        error={!!field.error}
+        fullWidth
+        autoHighlight
+        onChange={(opt) => {
+          onEmit(opt ? buildObjectValue(member, opt) : null)
+        }}
+      />
+    )
+  }
 
   // Член без optionsSource (примитив/ENUMS) — пока не поддержан, не падаем
   if (!optionsSource) {

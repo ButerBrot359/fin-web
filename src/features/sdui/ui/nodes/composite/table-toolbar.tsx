@@ -18,9 +18,11 @@ import { figmaIcons } from '@/shared/ui/icons'
 import type { TableCommandDescriptor } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import type { TableSearchApi } from '../../../lib/hooks/use-table-search'
+import {
+  buildTableCommandAction,
+  isRowScopedCommand,
+} from '../../../lib/utils/table-command-action'
 import { TableMoreMenu } from './table-more-menu'
-
-const ROW_SCOPED_COMMANDS = ['table.deleteRow', 'table.copyRow']
 
 interface TableToolbarProps {
   onAdd: () => void
@@ -77,8 +79,7 @@ export const TableToolbar = ({
 
   // Команды панели ТЧ, которые сервер выполняет НАД ТЕКУЩЕЙ СТРОКОЙ: без выделения
   // сервер отвечает «Выберите строку…», поэтому кнопка гасится заранее — как в 1С.
-  const rowScoped = (cmd: TableCommandDescriptor) =>
-    ROW_SCOPED_COMMANDS.some((prefix) => cmd.command.startsWith(prefix + ':'))
+  const rowScoped = isRowScopedCommand
 
   // Команды с непустым group собираются под одну кнопку-подменю; порядок групп и кнопок —
   // тот же, в котором их прислал сервер, чтобы панель не «прыгала» между отдачами.
@@ -93,24 +94,11 @@ export const TableToolbar = ({
       }, new Map()),
   ]
 
+  // rowId нужен построчным командам (table.copyRow, requiresSelectedRow); сервер
+  // читает его только у них, прочие игнорируют (SCRUM-332 §1).
   const runCommand = (cmd: TableCommandDescriptor) => {
-    // Выделено несколько строк — «Удалить» уходит списком rowIds: сервер снимает их одной
-    // командой, а не N запросами с пересчётом итогов на каждый (порт поведения таблицы 1С).
-    const mnozhestvennoeUdalenie =
-      cmd.command.startsWith('table.deleteRow:') && selectedRowIds.length > 1
     void dispatch(
-      {
-        type: 'COMMAND',
-        command: cmd.command,
-        // rowId нужен построчным командам (table.copyRow); сервер читает его
-        // через extractRowId только у них, прочие игнорируют (SCRUM-332 §1).
-        // Спред, а не value:undefined — иначе ключ value ломает прежние тесты.
-        ...(mnozhestvennoeUdalenie
-          ? { value: { rowIds: selectedRowIds } }
-          : selectedRowId
-            ? { value: { rowId: selectedRowId } }
-            : {}),
-      },
+      buildTableCommandAction(cmd, selectedRowId, selectedRowIds),
       cmd.behavior
     )
   }
@@ -284,6 +272,9 @@ export const TableToolbar = ({
         commands={commands}
         commandLabel={commandLabel}
         onCommand={runCommand}
+        isCommandDisabled={(cmd) =>
+          !cmd.enabled || (rowScoped(cmd) && !selectedRowId)
+        }
       />
     </div>
   )

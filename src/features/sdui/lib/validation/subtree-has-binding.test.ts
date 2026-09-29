@@ -58,6 +58,20 @@ describe('subtreeHasBinding с видом цели (SCRUM-317 v4 §4.5)', () => 
     expect(subtreeHasBinding(tab, 'Sotrudniki', 'TABLE')).toBe(false)
   })
 
+  it('REPORT_CELL находит вкладку с узлом TABLE сетки отчёта', () => {
+    const tabSheet = {
+      id: 'tab3',
+      type: 'TAB',
+      children: [
+        { id: 'table.reportSheet', type: 'TABLE', binding: 'ReportSheet' },
+      ],
+    } as unknown as ViewNode
+    expect(subtreeHasBinding(tabSheet, 'ReportSheet', 'REPORT_CELL')).toBe(true)
+    expect(subtreeHasBinding(tabConditions, 'ReportSheet', 'REPORT_CELL')).toBe(
+      false
+    )
+  })
+
   it('неизвестный вид (null, легаси-канал) работает как раньше — по одному binding', () => {
     expect(subtreeHasBinding(tabEmployees, 'FizicheskoeLitso', null)).toBe(true)
     expect(subtreeHasBinding(tabEmployees, 'FizicheskoeLitso')).toBe(true)

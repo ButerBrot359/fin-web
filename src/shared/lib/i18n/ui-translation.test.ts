@@ -72,9 +72,11 @@ describe('словарь переводов интерфейса с бэкенд
   })
 
   it('загружает словарь с эндпоинта бэкенда', async () => {
-    const get = vi
-      .spyOn(axios, 'get')
-      .mockResolvedValue({ data: { data: { Создать: 'Жасау' } } })
+    const get = vi.spyOn(axios, 'get').mockResolvedValue({
+      status: 200,
+      headers: {},
+      data: { data: { Создать: 'Жасау' } },
+    })
 
     await ensureUiTranslations()
 

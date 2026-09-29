@@ -30,10 +30,8 @@ const render = () => {
   )
 }
 
-const uiTranslations = ensureUiTranslations()
-
 if (isKzLanguage(i18n.language)) {
-  void uiTranslations.finally(render)
+  void ensureUiTranslations().finally(render)
 } else {
   render()
 }

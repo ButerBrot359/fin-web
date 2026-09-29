@@ -36,6 +36,23 @@ export interface AllowedType {
   /** Тоже только у ссылочных членов — примитивам бэк подпись не резолвит. */
   presentation?: string
   optionsSource?: { url: string; params?: Record<string, string> }
+  options?: MemberOption[]
+}
+
+export interface MemberOption {
+  id: number
+  code?: string
+  label: string
+}
+
+export function memberSelectOptions(
+  member: AllowedType
+): { id: number; code: string; label: string }[] {
+  return (member.options ?? []).map((o) => ({
+    id: o.id,
+    code: o.code ?? String(o.id),
+    label: o.label,
+  }))
 }
 
 export function sortAllowedTypes(types: AllowedType[]): AllowedType[] {

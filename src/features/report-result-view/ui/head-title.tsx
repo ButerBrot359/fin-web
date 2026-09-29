@@ -10,7 +10,7 @@ const VERTICAL_HEAD_MAX_PX = 220
 const verticalTextStyle: CSSProperties = {
   writingMode: 'vertical-rl',
   transform: 'rotate(180deg)',
-  whiteSpace: 'normal',
+  whiteSpace: 'pre-line',
   maxHeight: VERTICAL_HEAD_MAX_PX,
   margin: '0 auto',
 }
@@ -33,7 +33,11 @@ export const HeadTitle = ({
       {title}
     </Typography>
   ) : (
-    <Typography variant="body2" sx={thTextSx}>
+    <Typography
+      variant="body2"
+      sx={thTextSx}
+      style={{ whiteSpace: 'pre-line' }}
+    >
       {title}
     </Typography>
   )

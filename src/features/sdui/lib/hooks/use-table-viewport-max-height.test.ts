@@ -16,25 +16,28 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-const withScroller = (footerHeight: number) => {
+const rect = (top: number, height: number) =>
+  ({ top, bottom: top + height, height }) as DOMRect
+
+const withScroller = (footerHeight: number, tableHeight = 500) => {
   const scroller = document.createElement('div')
   Object.defineProperty(scroller, 'clientHeight', {
     value: 800,
     configurable: true,
   })
   Object.defineProperty(scroller, 'scrollHeight', {
-    value: 600 + footerHeight,
+    value: Math.max(800, 100 + tableHeight + footerHeight),
     configurable: true,
   })
   scroller.style.overflowY = 'auto'
+  scroller.getBoundingClientRect = () => rect(0, 800)
+  const body = document.createElement('div')
   const container = document.createElement('div')
-  Object.defineProperty(container, 'offsetHeight', {
-    value: 500,
-    configurable: true,
-  })
-  container.getBoundingClientRect = () => ({ top: 100 }) as DOMRect
-  scroller.getBoundingClientRect = () => ({ top: 0 }) as DOMRect
-  scroller.appendChild(container)
+  container.getBoundingClientRect = () => rect(100, tableHeight)
+  const footer = document.createElement('div')
+  footer.getBoundingClientRect = () => rect(100 + tableHeight, footerHeight)
+  body.append(container, footer)
+  scroller.appendChild(body)
   document.body.appendChild(scroller)
   return container
 }
@@ -86,5 +89,9 @@ describe('высота контейнера ТЧ', () => {
 
   it('низкий подвал не поднимает таблицу выше прежнего запаса в 148px', () => {
     expect(measure(withScroller(10))).toBe(800 - 100 - 148)
+  })
+
+  it('пустое место под короткой формой не запирает таблицу на текущей высоте', () => {
+    expect(measure(withScroller(100, 80))).toBe(800 - 100 - 148)
   })
 })

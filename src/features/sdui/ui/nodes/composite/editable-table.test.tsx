@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
@@ -40,7 +40,11 @@ vi.mock('./table-cell-editor', () => ({
   ),
 }))
 vi.mock('./table-toolbar', () => ({
-  TableToolbar: () => null,
+  TableToolbar: ({ onAdd }: { onAdd?: () => void }) => (
+    <button type="button" onClick={onAdd}>
+      Добавить
+    </button>
+  ),
 }))
 
 const TABLE_ID = 'table.tmz'
@@ -184,5 +188,22 @@ describe('EditableTable — ресайз колонок', () => {
       '400px',
       '100px',
     ])
+  })
+})
+
+describe('EditableTable — добавление строки', () => {
+  it('новая строка становится текущей и прокручивается в видимую область', () => {
+    state.TMZ = [{ rowId: 'r1', Nomen: 'Гвозди' }]
+    const scrollIntoView = vi.fn()
+    HTMLTableRowElement.prototype.scrollIntoView = scrollIntoView
+    renderTable({ allowAdd: true })
+
+    fireEvent.click(screen.getByText('Добавить'))
+
+    const rows = document.querySelectorAll('tbody tr')
+    expect(rows).toHaveLength(2)
+    expect(rows[1].classList.contains('Mui-selected')).toBe(true)
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' })
+    expect(scrollIntoView.mock.contexts.at(-1)).toBe(rows[1])
   })
 })

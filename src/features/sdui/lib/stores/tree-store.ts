@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 import { applyPatches, clearErrors } from '../patch-applier'
 import type { ViewNode, ViewNodeAction, ViewPatch } from '../../types/view'
+import { usePanelStore } from './panel-store'
 
 interface TreeStoreState {
   root: ViewNode | null
@@ -61,6 +62,7 @@ export const useTreeStore = create<TreeStoreState>((set, get) => ({
     const { root } = get()
     if (!root) return
     set({ root: applyPatches(root, patches) })
+    usePanelStore.getState().applyScreenPatches(patches)
   },
 
   clearAllErrors: () => {

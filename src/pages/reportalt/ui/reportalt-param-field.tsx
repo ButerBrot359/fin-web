@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
@@ -19,6 +20,7 @@ import {
 } from '@/entities/account-plan'
 import { fetchReferenceOptions, useReferenceOptions } from '@/features/sdui'
 import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
+import { fetchDictionaryEntryById } from '@/shared/lib/dictionary-entry/dictionary-entry-api'
 import {
   resolveDictionaryEntryLabel,
   useDictionaryEntry,
@@ -143,10 +145,15 @@ export const ReportAltParamField = ({
     !isCharacteristicsRef &&
     param.dataType === 'DICTIONARY_REF' &&
     !!param.referenceDomain
+  const isServerDictList =
+    param.dataType === 'REF_LIST' &&
+    !!param.referenceDomain &&
+    !param.referenceDomain.includes(':')
   const isDictRef =
     !isCharacteristicsRef &&
     !isEnumByAllowedValues &&
-    (param.dataType === 'ENUM_REF' || param.dataType === 'REF_LIST')
+    (param.dataType === 'ENUM_REF' ||
+      (param.dataType === 'REF_LIST' && !isServerDictList))
 
   // Единственный поддержанный ПВХ-домен — «Виды субконто (БУ)»; при появлении других
   // обобщить на generic-хук по characteristicsTypeCode (тот же TODO, что в легаси).
@@ -216,7 +223,7 @@ export const ReportAltParamField = ({
 
   const optionsUrl =
     optionsSource?.url ??
-    (isServerDictRef
+    (isServerDictRef || isServerDictList
       ? `/api/dictionary-entries/${param.referenceDomain!}/entries`
       : null)
   const optionsParams = optionsSource?.params
@@ -253,6 +260,54 @@ export const ReportAltParamField = ({
       pickedLabels[selectedDictId] == null
       ? selectedDictId
       : null
+  )
+  const unresolvedListIds = useMemo(
+    () =>
+      param.dataType === 'REF_LIST' && isServerDictList && Array.isArray(value)
+        ? value.filter(
+            (id) =>
+              pickedLabels[id] == null &&
+              sourceOptions.every((o) => Number(o.id) !== id)
+          )
+        : [],
+    [param.dataType, isServerDictList, value, pickedLabels, sourceOptions]
+  )
+  const resolvedListLabels = useQueries({
+    queries: unresolvedListIds.map((id) => ({
+      queryKey: ['dictionary-entry-by-id', id],
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        fetchDictionaryEntryById(id, signal),
+      staleTime: Infinity,
+    })),
+    combine: (results) =>
+      Object.fromEntries(
+        results.flatMap((r, i) =>
+          r.data
+            ? [
+                [
+                  unresolvedListIds[i],
+                  resolveDictionaryEntryLabel(r.data, unresolvedListIds[i]),
+                ],
+              ]
+            : []
+        )
+      ) as Partial<Record<number, string>>,
+  })
+  const sourceListSignature = JSON.stringify(
+    (Array.isArray(value) ? value : []).map((id) => [
+      id,
+      sourceOptions.find((o) => Number(o.id) === id)?.label ??
+        pickedLabels[id] ??
+        resolvedListLabels[id] ??
+        `#${String(id)}`,
+    ])
+  )
+  const sourceListSelected = useMemo(
+    () =>
+      (JSON.parse(sourceListSignature) as [number, string][]).map<SelectOption>(
+        ([id, itemLabel]) => ({ id, code: String(id), label: itemLabel })
+      ),
+    [sourceListSignature]
   )
   const selectedDictLabel =
     selectedDictId == null
@@ -316,14 +371,7 @@ export const ReportAltParamField = ({
       const selectedIds = Array.isArray(value) ? value : []
       const listOptions = optionsUrl ? sourceOptions : refOptions
       const selected = optionsUrl
-        ? selectedIds.map<SelectOption>((id) => ({
-            id,
-            code: String(id),
-            label:
-              sourceOptions.find((o) => Number(o.id) === id)?.label ??
-              pickedLabels[id] ??
-              `#${String(id)}`,
-          }))
+        ? sourceListSelected
         : refOptions.filter((o) => selectedIds.includes(Number(o.id)))
       const multiSelectActions: MultiSelectActions = {
         onCheckAll: () => {

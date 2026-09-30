@@ -156,3 +156,93 @@ describe('ReportAltParamField — ссылка на большой справо�
     expect(input.value).toBe('101')
   })
 })
+
+describe('ReportAltParamField — множественный выбор из справочника', () => {
+  const spisokFkr: ReportAltParameterDto = {
+    code: 'SpisokFKR',
+    titleRu: 'Список ФКР',
+    dataType: 'REF_LIST',
+    required: false,
+    referenceDomain: 'FunktsionalnayaKlassifikatsiyaRaskhodov',
+  }
+
+  beforeEach(() => {
+    fetchOptionsMock.mockReset()
+    fetchActiveMock.mockReset()
+    fetchByIdMock.mockReset()
+  })
+
+  it('ищет записи на сервере, а не грузит справочник целиком', async () => {
+    fetchOptionsMock.mockResolvedValue([
+      { id: 7, code: '7', label: 'Программа 7' },
+    ])
+    const onChange = vi.fn()
+
+    renderField(
+      <ReportAltParamField param={spisokFkr} value={[]} onChange={onChange} />
+    )
+    const input = screen.getByRole('combobox')
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+
+    fireEvent.click(await screen.findByText('Программа 7'))
+    expect(onChange).toHaveBeenCalledWith([7])
+    expect(fetchActiveMock).not.toHaveBeenCalled()
+    expect(fetchOptionsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/api/dictionary-entries/FunktsionalnayaKlassifikatsiyaRaskhodov/entries',
+      })
+    )
+
+    fireEvent.change(input, { target: { value: '101' } })
+    await waitFor(() => {
+      expect(fetchOptionsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search: '101' })
+      )
+    })
+  })
+
+  it('подписи выбранных значений берёт по id, а набранный текст не стирается', async () => {
+    fetchByIdMock.mockImplementation((id: number) =>
+      Promise.resolve({ id, nameRu: `Программа ${String(id)}` })
+    )
+    fetchOptionsMock.mockResolvedValue([])
+
+    renderField(
+      <ReportAltParamField
+        param={spisokFkr}
+        value={[5, 6]}
+        onChange={vi.fn()}
+      />
+    )
+
+    expect(await screen.findByText('Программа 5')).toBeTruthy()
+    expect(screen.getByText('+1')).toBeTruthy()
+    expect(screen.queryByText('#5')).toBeNull()
+
+    const input = screen.getByRole<HTMLInputElement>('combobox')
+    fireEvent.focus(input)
+    fireEvent.change(input, { target: { value: '101' } })
+    await waitFor(() => {
+      expect(fetchOptionsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search: '101' })
+      )
+    })
+    expect(input.value).toBe('101')
+  })
+
+  it('домен с префиксом остаётся на прежнем источнике вариантов', () => {
+    fetchActiveMock.mockResolvedValue({ data: [] })
+
+    renderField(
+      <ReportAltParamField
+        param={{ ...spisokFkr, referenceDomain: 'DOCUMENT:SchetKOplate' }}
+        value={[]}
+        onChange={vi.fn()}
+      />
+    )
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' })
+
+    expect(fetchActiveMock).toHaveBeenCalled()
+    expect(fetchOptionsMock).not.toHaveBeenCalled()
+  })
+})

@@ -582,6 +582,8 @@
     "clearMenu": "Очистить",
     "clearReport": "Очистить отчет",
     "exportXml": "Выгрузить в XML",
+    "exportJson": "Выгрузить в JSON",
+    "exportJsonUnavailable": "Выгрузка в JSON для этой формы недоступна",
     "exportXmlPrilozhenie": "Выгрузить в XML 200.03",
     "exportXmlUnavailable": "Выгрузка в XML для этой формы недоступна",
     "save": "Сохранить",

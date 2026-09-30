@@ -10,7 +10,9 @@ import {
   DATA_FS,
   GREEN_1C,
   HEAD_FS,
+  decimalsOfFormat,
   formatMoney1C,
+  formatNumber1C,
   isDateCell,
   isNumericCell,
   isRightAligned,
@@ -54,6 +56,7 @@ export const MoneyCell = ({
   bold,
   dcIndicator,
   decimals = 2,
+  minDecimals,
 }: {
   value: number
   negativeRed?: boolean
@@ -61,6 +64,7 @@ export const MoneyCell = ({
   bold?: boolean
   dcIndicator?: boolean
   decimals?: number
+  minDecimals?: number
 }) => {
   if (value === 0 && blankOnZero) {
     return null
@@ -75,7 +79,7 @@ export const MoneyCell = ({
         ? formatMoney1C(0, decimals)
         : `${value < 0 ? 'К' : 'Д'} ${formatMoney1C(Math.abs(value), decimals)}`
   } else {
-    text = formatMoney1C(value, decimals)
+    text = formatNumber1C(value, minDecimals ?? decimals, decimals)
     isNeg = !!negativeRed && value < 0
   }
   return (
@@ -191,6 +195,8 @@ export const ReportCell = ({
         blankOnZero={col.blankOnZero}
         bold={bold}
         dcIndicator={col.dcIndicator}
+        decimals={decimalsOfFormat(col.format).max}
+        minDecimals={decimalsOfFormat(col.format).min}
       />
     )
   }

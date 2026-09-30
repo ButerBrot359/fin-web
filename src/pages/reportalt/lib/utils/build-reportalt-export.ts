@@ -10,6 +10,7 @@ import { displayPatternForFormat } from '@/shared/lib/utils/iso-date'
 import {
   buildHeadModel,
   buildPathHeadModel,
+  decimalsOfFormat,
   formatReportTitle,
   hasHeaderPath,
   isHighlightRow,
@@ -61,6 +62,14 @@ const formatCell = (value: unknown, col: ReportAltColumnDto): XlsxCell => {
   return ''
 }
 
+const measureNumFmt = (col: ReportAltColumnDto): XlsxColumnMeta['numFmt'] => {
+  if (!col.format) return 'money'
+  const { max } = decimalsOfFormat(col.format)
+  if (max === 0) return 'integer'
+  if (max === 3) return 'quantity'
+  return 'money'
+}
+
 /** Метаданные колонок листа: числовой формат и выравнивание. */
 const buildColumnMeta = (
   columns: ReportAltColumnDto[],
@@ -69,7 +78,8 @@ const buildColumnMeta = (
   const meta: XlsxColumnMeta[] = []
   if (hasLeadColumn) meta.push({ align: 'left', width: 45 })
   for (const col of columns) {
-    if (col.role === 'MEASURE') meta.push({ numFmt: 'money', align: 'right' })
+    if (col.role === 'MEASURE')
+      meta.push({ numFmt: measureNumFmt(col), align: 'right' })
     else meta.push({ align: col.align === 'RIGHT' ? 'right' : 'left' })
   }
   return meta

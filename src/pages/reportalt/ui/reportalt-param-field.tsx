@@ -1,12 +1,15 @@
-import { useMemo, useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
   Box,
+  Button,
   Checkbox,
   FormControlLabel,
+  Paper,
   TextField,
   Typography,
+  type PaperProps,
 } from '@mui/material'
 
 import {
@@ -33,6 +36,45 @@ import type { ReportAltParamValue } from '../lib/utils/params'
 
 /** Маркер домена «План видов характеристик» в `referenceDomain` параметра. */
 const CHARACTERISTICS_PLAN_PREFIX = 'CHARACTERISTICS_PLAN:'
+
+interface MultiSelectActions {
+  onCheckAll: () => void
+  onUncheckAll: () => void
+  checkAllLabel: string
+  uncheckAllLabel: string
+}
+
+const MultiSelectActionsContext = createContext<MultiSelectActions | null>(null)
+
+const MultiSelectPaper = ({ children, ...props }: PaperProps) => {
+  const actions = useContext(MultiSelectActionsContext)
+  return (
+    <Paper {...props}>
+      {actions && (
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 1,
+            px: 1,
+            py: 0.5,
+            borderBottom: `1px solid ${cssVar(palette.pendingGray1)}`,
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault()
+          }}
+        >
+          <Button size="small" onClick={actions.onCheckAll}>
+            {actions.checkAllLabel}
+          </Button>
+          <Button size="small" onClick={actions.onUncheckAll}>
+            {actions.uncheckAllLabel}
+          </Button>
+        </Box>
+      )}
+      {children}
+    </Paper>
+  )
+}
 
 interface ReportAltParamFieldProps {
   param: ReportAltParameterDto
@@ -241,133 +283,165 @@ export const ReportAltParamField = ({
               `#${String(id)}`,
           }))
         : refOptions.filter((o) => selectedIds.includes(Number(o.id)))
+      const multiSelectActions: MultiSelectActions = {
+        onCheckAll: () => {
+          if (optionsUrl) {
+            setPickedLabels((prev) => ({
+              ...prev,
+              ...Object.fromEntries(
+                listOptions.map((o) => [Number(o.id), o.label])
+              ),
+            }))
+          }
+          onChange([
+            ...new Set([
+              ...selectedIds,
+              ...listOptions.map((o) => Number(o.id)),
+            ]),
+          ])
+        },
+        onUncheckAll: () => {
+          onChange([])
+        },
+        checkAllLabel: t('inputs.checkAll'),
+        uncheckAllLabel: t('inputs.uncheckAll'),
+      }
       return (
-        <Autocomplete
-          multiple
-          disableCloseOnSelect
-          forcePopupIcon
-          disabled={disabled}
-          {...(optionsUrl
-            ? {
-                filterOptions: (opts: SelectOption[]) => opts,
-                loading: sourceLoading,
-                onOpen: () => {
-                  loadSourceOptions()
-                },
-                onInputChange: (_e: unknown, text: string, reason: string) => {
-                  if (reason === 'input') loadSourceOptionsDebounced(text)
-                },
-              }
-            : {})}
-          // Ширину задаёт контейнер строки параметров (w-72) — поле не шире
-          // соседей и не наезжает на них (прежний фикс sx={{width:300}} вылезал
-          // за контейнер). Высота — обычный tall-инпут темы (minHeight 44,
-          // paddingTop 22) — как у дат и одиночных выпадашек.
-          fullWidth
-          sx={{
-            // Длинная сводка обрезается внутри поля, а не «вылезает» за край
-            // (тема задаёт inputRoot flexWrap:nowrap).
-            '& .MuiFilledInput-root': { overflow: 'hidden' },
-            '& .MuiAutocomplete-input': { minWidth: 24 },
-            // При наборе (фокусе) прячем сводку — поле поиска на всю ширину.
-            '& .MuiFilledInput-root.Mui-focused .reportalt-ms-summary': {
-              display: 'none',
-            },
-          }}
-          // Значение — компактная сводка «Имя (+N)» с многоточием (как в легаси
-          // report-param-field): чипы при nowrap-теме вылезали за границу поля
-          // и наезжали на соседний селект.
-          renderValue={(tagValue) => {
-            if (!Array.isArray(tagValue) || tagValue.length === 0) return null
-            return (
-              <Box
-                component="span"
-                className="reportalt-ms-summary"
-                sx={{
-                  // 22/6 — паддинги значения filled-инпута из темы: сводка
-                  // садится на уровень значений соседних полей.
-                  alignSelf: 'flex-start',
-                  pt: '22px',
-                  pb: '6px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  minWidth: 0,
-                  flexShrink: 1,
-                  overflow: 'hidden',
-                }}
-              >
-                <Typography
+        <MultiSelectActionsContext.Provider value={multiSelectActions}>
+          <Autocomplete
+            multiple
+            disableCloseOnSelect
+            slots={{ paper: MultiSelectPaper }}
+            forcePopupIcon
+            disabled={disabled}
+            {...(optionsUrl
+              ? {
+                  filterOptions: (opts: SelectOption[]) => opts,
+                  loading: sourceLoading,
+                  onOpen: () => {
+                    loadSourceOptions()
+                  },
+                  onInputChange: (
+                    _e: unknown,
+                    text: string,
+                    reason: string
+                  ) => {
+                    if (reason === 'input') loadSourceOptionsDebounced(text)
+                  },
+                }
+              : {})}
+            // Ширину задаёт контейнер строки параметров (w-72) — поле не шире
+            // соседей и не наезжает на них (прежний фикс sx={{width:300}} вылезал
+            // за контейнер). Высота — обычный tall-инпут темы (minHeight 44,
+            // paddingTop 22) — как у дат и одиночных выпадашек.
+            fullWidth
+            sx={{
+              // Длинная сводка обрезается внутри поля, а не «вылезает» за край
+              // (тема задаёт inputRoot flexWrap:nowrap).
+              '& .MuiFilledInput-root': { overflow: 'hidden' },
+              '& .MuiAutocomplete-input': { minWidth: 24 },
+              // При наборе (фокусе) прячем сводку — поле поиска на всю ширину.
+              '& .MuiFilledInput-root.Mui-focused .reportalt-ms-summary': {
+                display: 'none',
+              },
+            }}
+            // Значение — компактная сводка «Имя (+N)» с многоточием (как в легаси
+            // report-param-field): чипы при nowrap-теме вылезали за границу поля
+            // и наезжали на соседний селект.
+            renderValue={(tagValue) => {
+              if (!Array.isArray(tagValue) || tagValue.length === 0) return null
+              return (
+                <Box
                   component="span"
+                  className="reportalt-ms-summary"
                   sx={{
-                    fontSize: 16,
-                    fontWeight: 500,
-                    lineHeight: 1.4,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    color: cssVar(semantic.textPrimary),
+                    // 22/6 — паддинги значения filled-инпута из темы: сводка
+                    // садится на уровень значений соседних полей.
+                    alignSelf: 'flex-start',
+                    pt: '22px',
+                    pb: '6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
                     minWidth: 0,
+                    flexShrink: 1,
+                    overflow: 'hidden',
                   }}
                 >
-                  {tagValue[0].label}
-                </Typography>
-                {/* «+N» (сколько ещё выбрано) — всегда видно, не обрезается. */}
-                {tagValue.length > 1 && (
                   <Typography
                     component="span"
                     sx={{
-                      ml: 0.5,
                       fontSize: 16,
                       fontWeight: 500,
                       lineHeight: 1.4,
-                      color: cssVar(palette.pendingText2),
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      flexShrink: 0,
+                      color: cssVar(semantic.textPrimary),
+                      minWidth: 0,
                     }}
                   >
-                    +{tagValue.length - 1}
+                    {tagValue[0].label}
                   </Typography>
-                )}
-              </Box>
-            )
-          }}
-          options={listOptions}
-          value={selected}
-          onChange={(_e, next) => {
-            if (optionsUrl) {
-              setPickedLabels((prev) => ({
-                ...prev,
-                ...Object.fromEntries(next.map((o) => [Number(o.id), o.label])),
-              }))
-            }
-            onChange(next.map((o) => Number(o.id)))
-          }}
-          getOptionLabel={(o) => o.label}
-          isOptionEqualToValue={(o, v) => o.id === v.id}
-          noOptionsText={t('inputs.noOptions')}
-          renderOption={(props, option, { selected: isSelected }) => {
-            const { key, ...optionProps } = props
-            return (
-              <li key={key} {...optionProps}>
-                <Checkbox
-                  size="small"
-                  checked={isSelected}
-                  sx={{ mr: 1, p: 0.5 }}
-                />
-                {option.label}
-              </li>
-            )
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label={label}
-              required={param.required}
-              error={invalid}
-              helperText={helperText}
-            />
-          )}
-        />
+                  {/* «+N» (сколько ещё выбрано) — всегда видно, не обрезается. */}
+                  {tagValue.length > 1 && (
+                    <Typography
+                      component="span"
+                      sx={{
+                        ml: 0.5,
+                        fontSize: 16,
+                        fontWeight: 500,
+                        lineHeight: 1.4,
+                        color: cssVar(palette.pendingText2),
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                      }}
+                    >
+                      +{tagValue.length - 1}
+                    </Typography>
+                  )}
+                </Box>
+              )
+            }}
+            options={listOptions}
+            value={selected}
+            onChange={(_e, next) => {
+              if (optionsUrl) {
+                setPickedLabels((prev) => ({
+                  ...prev,
+                  ...Object.fromEntries(
+                    next.map((o) => [Number(o.id), o.label])
+                  ),
+                }))
+              }
+              onChange(next.map((o) => Number(o.id)))
+            }}
+            getOptionLabel={(o) => o.label}
+            isOptionEqualToValue={(o, v) => o.id === v.id}
+            noOptionsText={t('inputs.noOptions')}
+            renderOption={(props, option, { selected: isSelected }) => {
+              const { key, ...optionProps } = props
+              return (
+                <li key={key} {...optionProps}>
+                  <Checkbox
+                    size="small"
+                    checked={isSelected}
+                    sx={{ mr: 1, p: 0.5 }}
+                  />
+                  {option.label}
+                </li>
+              )
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={label}
+                required={param.required}
+                error={invalid}
+                helperText={helperText}
+              />
+            )}
+          />
+        </MultiSelectActionsContext.Provider>
       )
     }
 

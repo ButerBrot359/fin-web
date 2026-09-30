@@ -110,6 +110,12 @@ export const ReportResultView = ({
   const isLedger = result.layout === 'LEDGER'
   // Гос-бланк (М-44): титул и период центрируются над таблицей, как в 1С.
   const isBlank = !!result.headerBlocks && result.headerBlocks.length > 0
+  const blocksBeforeTitle = (result.headerBlocks ?? []).filter(
+    (b) => b.placement !== 'AFTER_TITLE'
+  )
+  const blocksAfterTitle = (result.headerBlocks ?? []).filter(
+    (b) => b.placement === 'AFTER_TITLE'
+  )
 
   // Утверждённый бланк, снятый с макета 1С, рисуется как табличный документ —
   // ровно тот же, что уходит в печать.
@@ -134,8 +140,8 @@ export const ReportResultView = ({
 
   return (
     <div className="flex flex-col gap-1">
-      {result.headerBlocks && result.headerBlocks.length > 0 && (
-        <ReportHeaderBlocks blocks={result.headerBlocks} />
+      {blocksBeforeTitle.length > 0 && (
+        <ReportHeaderBlocks blocks={blocksBeforeTitle} />
       )}
       {result.organizationTitle && (
         <Typography
@@ -180,6 +186,9 @@ export const ReportResultView = ({
           {line}
         </Typography>
       ))}
+      {blocksAfterTitle.length > 0 && (
+        <ReportHeaderBlocks blocks={blocksAfterTitle} />
+      )}
       <div className="mt-2">
         {isLedger ? (
           <LedgerTable

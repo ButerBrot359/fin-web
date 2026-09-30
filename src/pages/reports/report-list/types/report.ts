@@ -103,6 +103,7 @@ export interface ReportHeaderBlockDto {
   lines: string[]
   underline: boolean
   caption: string | null
+  placement?: 'BEFORE_TITLE' | 'AFTER_TITLE' | null
 }
 
 /** Официальный бланк (мемориальный ордер): шапка, секции, остатки, подписи. */

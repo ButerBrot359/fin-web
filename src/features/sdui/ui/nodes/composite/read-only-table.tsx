@@ -12,7 +12,6 @@ import {
 } from '@mui/material'
 
 import { useVirtualTableRows } from '@/shared/lib/virtual-rows/use-virtual-table-rows'
-import { ShimmerBlock } from '@/shared/ui/page-skeleton/page-skeleton'
 
 import type { NodeProps } from '../../../types/view'
 import { usePagedTableRows } from '../../../lib/hooks/use-paged-table-rows'
@@ -33,7 +32,14 @@ import { TABLE_GRID_SX } from './table-grid-sx'
 import { tableTextColorSx } from '../../../lib/utils/table-text-color'
 import { useManualColumnResize } from '../../../lib/hooks/use-manual-column-resize'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
-import { ReadOnlyHeaderCell, ReadOnlyTableRow } from './read-only-table-row'
+import { useReadOnlyRowCommands } from '../../../lib/hooks/use-read-only-row-commands'
+import { readOnlyRowId } from '../../../lib/utils/read-only-row-id'
+import {
+  ReadOnlyEmptyBody,
+  ReadOnlyHeaderCell,
+  ReadOnlyTableRow,
+} from './read-only-table-row'
+import { ReadOnlyCommandFrame } from './read-only-command-frame'
 import { PagedTableFooter } from './paged-table-footer'
 
 interface SimpleTableRow {
@@ -144,7 +150,11 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
     setContainerRef,
     setBodyRef,
     measureRow,
+    scrollToRow,
   } = useVirtualTableRows(rows.length, readVirtualization(node))
+  // props.tableCommands: панель команд + выбор строки (push-модель экранов-
+  // обработок). Без команд таблица остаётся пассивной, как прежде.
+  const rowCommands = useReadOnlyRowCommands(node, rows, columns, scrollToRow)
   const renderedRows = virtualItems
     ? virtualItems.map((item) => ({
         row: rows[item.index],
@@ -153,7 +163,7 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
     : rows.map((row, index) => ({ row, index }))
   const spacerColSpan = columns.length + (showRowNumbers ? 1 : 0)
 
-  return (
+  const table = (
     <div>
       {label && (
         <div
@@ -221,29 +231,12 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
           </TableHead>
           <TableBody ref={setBodyRef}>
             {rows.length === 0 ? (
-              paged.isLoading ? (
-                // Первая страница PAGED-таблицы в полёте — шиммер-строки
-                Array.from({ length: 6 }).map((_, rowIdx) => (
-                  <TableRow key={rowIdx}>
-                    {showRowNumbers && <TableCell />}
-                    {columns.map((col) => (
-                      <TableCell key={col.id}>
-                        <ShimmerBlock className="h-4 w-full" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={spacerColSpan} align="center">
-                    <Typography variant="body2" color="text.secondary">
-                      {paged.isError
-                        ? t('sdui.requestError')
-                        : t('table.empty')}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )
+              <ReadOnlyEmptyBody
+                isLoading={paged.isLoading}
+                isError={paged.isError}
+                columns={columns}
+                showRowNumbers={showRowNumbers}
+              />
             ) : (
               <>
                 {paddingTop > 0 && (
@@ -256,8 +249,9 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
                 )}
                 {renderedRows.map(({ row, index }) => (
                   <ReadOnlyTableRow
-                    key={row.rowId}
+                    key={readOnlyRowId(row) ?? index}
                     row={row}
+                    selection={rowCommands.rowSelection(row)}
                     index={index}
                     columns={columns}
                     showRowNumbers={showRowNumbers}
@@ -283,5 +277,12 @@ export const ReadOnlyTable: FC<NodeProps> = ({ node }) => {
         </Table>
       </TableContainer>
     </div>
+  )
+  return rowCommands.enabled ? (
+    <ReadOnlyCommandFrame rowCommands={rowCommands}>
+      {table}
+    </ReadOnlyCommandFrame>
+  ) : (
+    table
   )
 }

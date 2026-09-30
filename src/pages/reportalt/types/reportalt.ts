@@ -54,6 +54,10 @@ export interface ReportAltColumnDto {
   groupTitleKz?: string
   subGroupTitleRu?: string
   subGroupTitleKz?: string
+  headerPathRu?: string[]
+  headerPathKz?: string[]
+  headerPathVertical?: boolean[]
+  verticalTitle?: boolean
   width?: number
   dcIndicator?: boolean
   columnNumber?: string

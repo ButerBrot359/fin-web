@@ -23,7 +23,12 @@ import {
   isSpanRow,
   resolveReportLang,
 } from '../lib/cell-helpers'
-import { buildHeadModel } from '../lib/head-model'
+import {
+  buildHeadModel,
+  buildPathHeadModel,
+  hasHeaderPath,
+} from '../lib/head-model'
+import { HeadTitle } from './head-title'
 import { ReportCell } from './report-cell'
 
 interface LedgerTableProps {
@@ -181,6 +186,12 @@ export const LedgerTable = ({
       ? { topRow: model.topRow, subRow: model.leafRow }
       : null
   }, [columns, isKz])
+
+  const pathModel = useMemo(
+    () =>
+      hasHeaderPath(columns) ? buildPathHeadModel(columns, { isKz }) : null,
+    [columns, isKz]
+  )
 
   const hasColumnNumbers = columns.some((c) => !!c.columnNumber)
 
@@ -359,7 +370,28 @@ export const LedgerTable = ({
             ))}
           </colgroup>
           <thead>
-            {headModel ? (
+            {pathModel ? (
+              pathModel.rows.map((cells, level) => (
+                <tr key={`path-row-${String(level)}`}>
+                  {cells.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={`${th} ${
+                        cell.vertical
+                          ? 'text-center align-bottom'
+                          : cell.colSpan > 1
+                            ? 'text-center'
+                            : ''
+                      }`}
+                    >
+                      <HeadTitle title={cell.title} vertical={cell.vertical} />
+                    </th>
+                  ))}
+                </tr>
+              ))
+            ) : headModel ? (
               <>
                 <tr>
                   {headModel.topRow.map((cell) => (

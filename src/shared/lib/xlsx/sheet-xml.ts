@@ -14,6 +14,7 @@ export interface XlsxHeaderCell {
   rowSpan?: number
   /** Индекс колонки (0-based), с которой начинается ячейка. */
   col: number
+  vertical?: boolean
 }
 
 /** Метаданные колонки для оформления и автоширины. */
@@ -145,7 +146,7 @@ export const computeColumnWidths = (s: NormalizedSheet): number[] => {
   for (const row of s.headerRows) {
     for (const cell of row) {
       const span = cell.colSpan ?? 1
-      if (span === 1) bump(cell.col, cell.text, 40)
+      if (span === 1 && !cell.vertical) bump(cell.col, cell.text, 40)
     }
   }
   for (const row of s.rows) {
@@ -202,6 +203,19 @@ const dataCellStyle = (
   return hl ? XF.HL_LEFT : XF.DATA_LEFT
 }
 
+const HEADER_ROW_HT = 22
+const VERTICAL_HEADER_MAX_HT = 200
+
+const headerRowHeight = (cells: XlsxHeaderCell[]): number =>
+  cells.reduce((ht, cell) => {
+    if (!cell.vertical) return ht
+    const longest = cell.text
+      .split('\n')
+      .reduce((m, line) => Math.max(m, textUnits(line)), 0)
+    const need = Math.min(VERTICAL_HEADER_MAX_HT, Math.ceil(longest * 6.5) + 10)
+    return Math.max(ht, Math.ceil(need / (cell.rowSpan ?? 1)))
+  }, HEADER_ROW_HT)
+
 export const buildSheetXml = (s: NormalizedSheet): string => {
   const widths = computeColumnWidths(s)
   const merges: string[] = []
@@ -255,7 +269,7 @@ export const buildSheetXml = (s: NormalizedSheet): string => {
             `${columnLetter(cell.col + colSpan - 1)}${String(rowRef + rowSpan - 1)}`
         )
       }
-      occupied.set(cell.col, XF.HEADER)
+      occupied.set(cell.col, cell.vertical ? XF.HEADER_VERTICAL : XF.HEADER)
     }
     const cells: string[] = []
     for (let col = 0; col < s.columnCount; col++) {
@@ -266,12 +280,12 @@ export const buildSheetXml = (s: NormalizedSheet): string => {
           isAnchor && anchor ? anchor.text : '',
           col,
           rowRef,
-          XF.HEADER
+          occupied.get(col) ?? XF.HEADER
         )
       )
     }
     rowsXml.push(
-      `<row r="${String(rowRef)}" ht="22" customHeight="1">${cells.join('')}</row>`
+      `<row r="${String(rowRef)}" ht="${String(headerRowHeight(s.headerRows[level]))}" customHeight="1">${cells.join('')}</row>`
     )
     rowRef++
   }

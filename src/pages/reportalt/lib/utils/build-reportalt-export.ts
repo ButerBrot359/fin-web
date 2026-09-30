@@ -9,7 +9,9 @@ import { formatDate } from '@/shared/lib/utils/date'
 import { displayPatternForFormat } from '@/shared/lib/utils/iso-date'
 import {
   buildHeadModel,
+  buildPathHeadModel,
   formatReportTitle,
+  hasHeaderPath,
   isHighlightRow,
 } from '@/features/report-result-view'
 
@@ -73,12 +75,48 @@ const buildColumnMeta = (
   return meta
 }
 
+const buildPathHeaderRows = (
+  columns: ReportAltColumnDto[],
+  isKz: boolean,
+  leadColumnTitle?: string,
+  leadColumnNumber = ''
+): XlsxHeaderCell[][] => {
+  const offset = leadColumnTitle != null ? 1 : 0
+  const model = buildPathHeadModel(columns, { isKz })
+  const rows: XlsxHeaderCell[][] = model.rows.map((cells) =>
+    cells.map((cell) => {
+      const out: XlsxHeaderCell = { text: cell.title, col: cell.col0 + offset }
+      if (cell.colSpan > 1) out.colSpan = cell.colSpan
+      if (cell.rowSpan > 1) out.rowSpan = cell.rowSpan
+      if (cell.vertical) out.vertical = true
+      return out
+    })
+  )
+  if (leadColumnTitle != null) {
+    const lead: XlsxHeaderCell = { text: leadColumnTitle, col: 0 }
+    if (model.depth > 1) lead.rowSpan = model.depth
+    rows[0].unshift(lead)
+  }
+  if (columns.some((c) => !!c.columnNumber)) {
+    const numbers: XlsxHeaderCell[] = columns.map((c, i) => ({
+      text: c.columnNumber ?? '',
+      col: i + offset,
+    }))
+    if (leadColumnTitle != null)
+      numbers.unshift({ text: leadColumnNumber, col: 0 })
+    rows.push(numbers)
+  }
+  return rows
+}
+
 const buildNumberedHeaderRows = (
   columns: ReportAltColumnDto[],
   isKz: boolean,
   leadColumnTitle?: string,
   leadColumnNumber = ''
 ): XlsxHeaderCell[][] | undefined => {
+  if (hasHeaderPath(columns))
+    return buildPathHeaderRows(columns, isKz, leadColumnTitle, leadColumnNumber)
   if (!columns.some((c) => !!c.columnNumber)) return undefined
   const offset = leadColumnTitle != null ? 1 : 0
   const model = buildHeadModel(columns, { isKz, levels: 2 })

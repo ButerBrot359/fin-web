@@ -25,6 +25,10 @@ export interface HeadModelColumn {
   groupTitleKz?: string
   subGroupTitleRu?: string
   subGroupTitleKz?: string
+  headerPathRu?: string[]
+  headerPathKz?: string[]
+  headerPathVertical?: boolean[]
+  verticalTitle?: boolean
 }
 
 export interface HeadModelOptions {
@@ -235,4 +239,83 @@ export const buildHeadModel = <C extends HeadModelColumn>(
   }
 
   return model
+}
+
+export interface PathHeadCell<
+  C extends HeadModelColumn = HeadModelColumn,
+> extends HeadModelCell<C> {
+  vertical: boolean
+}
+
+export interface PathHeadModel<C extends HeadModelColumn = HeadModelColumn> {
+  depth: number
+  rows: PathHeadCell<C>[][]
+}
+
+export const hasHeaderPath = (columns: HeadModelColumn[]): boolean =>
+  columns.some(
+    (c) =>
+      (c.headerPathRu?.length ?? 0) > 0 || (c.headerPathKz?.length ?? 0) > 0
+  )
+
+export const headerPathOf = (col: HeadModelColumn, isKz: boolean): string[] => {
+  const ru = col.headerPathRu ?? []
+  if (!isKz) return ru
+  const kz = col.headerPathKz ?? []
+  return Array.from(
+    { length: Math.max(ru.length, kz.length) },
+    (_, i) => kz[i] || ru[i] || ''
+  )
+}
+
+export const buildPathHeadModel = <C extends HeadModelColumn>(
+  columns: C[],
+  opts: { isKz: boolean; keyPrefix?: string }
+): PathHeadModel<C> => {
+  const { isKz, keyPrefix = 'path-' } = opts
+  const paths = columns.map((c) => headerPathOf(c, isKz))
+  const depth = paths.reduce((m, p) => Math.max(m, p.length), 0) + 1
+  const rows: PathHeadCell<C>[][] = Array.from({ length: depth }, () => [])
+
+  const place = (level: number, from: number, to: number) => {
+    let i = from
+    while (i < to) {
+      const col = columns[i]
+      const path = paths[i]
+      if (path.length <= level) {
+        rows[level].push({
+          key: col.code,
+          title: headColumnTitle(col, isKz),
+          colSpan: 1,
+          rowSpan: depth - level,
+          col0: i,
+          col,
+          vertical: col.verticalTitle === true,
+        })
+        i++
+        continue
+      }
+      let j = i + 1
+      while (
+        j < to &&
+        paths[j].length > level &&
+        paths[j][level] === path[level]
+      ) {
+        j++
+      }
+      rows[level].push({
+        key: `${keyPrefix}${String(level)}-${col.code}`,
+        title: path[level],
+        colSpan: j - i,
+        rowSpan: 1,
+        col0: i,
+        vertical: col.headerPathVertical?.[level] === true,
+      })
+      place(level + 1, i, j)
+      i = j
+    }
+  }
+  place(0, 0, columns.length)
+
+  return { depth, rows }
 }

@@ -1,7 +1,7 @@
 import type { FC } from 'react'
 
 import type { NodeProps } from '../../../types/view'
-import { isNodeVisible } from '../../../lib/utils/node-visibility'
+import { layoutGridCells } from '../../../lib/utils/grid-bands'
 import { resolveStackGap } from '../../../lib/utils/resolve-stack-gap'
 import { NodeRenderer } from '../../node-renderer'
 
@@ -31,6 +31,13 @@ export const GridNode: FC<NodeProps> = ({ node }) => {
     return Math.min(columns, Math.round(raw))
   }
 
+  const cellStart = (colStart: unknown, newRow: unknown): string => {
+    if (typeof colStart === 'number' && colStart >= 1 && colStart <= columns) {
+      return `${String(Math.round(colStart))} / `
+    }
+    return newRow === true ? '1 / ' : ''
+  }
+
   return (
     <div
       style={{
@@ -40,11 +47,11 @@ export const GridNode: FC<NodeProps> = ({ node }) => {
         columnGap,
       }}
     >
-      {node.children?.filter(isNodeVisible).map((c) => (
+      {layoutGridCells(node.children ?? []).map((c) => (
         <div
           key={c.id}
           style={{
-            gridColumn: `${c.props?.newRow === true ? '1 / ' : ''}span ${String(cellSpan(c.props?.colSpan))}`,
+            gridColumn: `${cellStart(c.props?.colStart, c.props?.newRow)}span ${String(cellSpan(c.props?.colSpan))}`,
             minWidth: 0,
           }}
         >

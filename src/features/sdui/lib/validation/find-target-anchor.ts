@@ -1,5 +1,6 @@
 import type { ValidationMessage } from '@/entities/validation-report'
 
+import { REPORT_CELL_ATTR, reportCellKey } from './report-cell-target'
 import { targetBinding } from './target-binding'
 
 /**
@@ -8,7 +9,9 @@ import { targetBinding } from './target-binding'
  *
  * Для TABLE_CELL сперва ищется сама ячейка (строка — по ЛОГИЧЕСКОМУ номеру
  * data-sdui-row-index, не по позиции в разметке); строка вне окна
- * виртуализации — легальная деградация до таблицы.
+ * виртуализации — легальная деградация до таблицы. REPORT_CELL — ячейка
+ * сетки отчёта по адресу {pokazatelId, indeks}; нет такой ячейки в текущем
+ * payload — та же деградация до всей сетки.
  */
 export function findTargetAnchor(
   scope: ParentNode,
@@ -26,6 +29,11 @@ export function findTargetAnchor(
     const cell = container.querySelector(
       `[data-sdui-row-index="${String(t.rowIndex)}"] [data-sdui-col="${CSS.escape(t.columnCode)}"]`
     )
+    if (cell) return firstBoxedElement(cell)
+  }
+  if (t?.kind === 'REPORT_CELL') {
+    const key = reportCellKey(t.pokazatelId, t.indeks)
+    const cell = container.querySelector(`[${REPORT_CELL_ATTR}="${key}"]`)
     if (cell) return firstBoxedElement(cell)
   }
   return firstBoxedElement(container)

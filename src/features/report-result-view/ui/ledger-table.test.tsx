@@ -65,3 +65,46 @@ describe('LedgerTable — строка номеров граф', () => {
     expect(screen.queryByTestId('report-column-numbers')).toBeNull()
   })
 })
+
+describe('LedgerTable — шапка по headerPath', () => {
+  it('строит многоуровневую шапку и поворачивает verticalTitle', () => {
+    const columns: ReportColumnDto[] = [
+      {
+        code: 'Nomer',
+        titleRu: '№',
+        role: 'ATTRIBUTE',
+        valueType: 'STRING',
+        columnNumber: '1',
+      },
+      {
+        code: 'Postavshchik',
+        titleRu: 'Разряд',
+        role: 'ATTRIBUTE',
+        valueType: 'STRING',
+        headerPathRu: ['Тарификация', 'Основные'],
+        verticalTitle: true,
+        columnNumber: '2',
+      },
+    ]
+
+    const { container } = render(
+      <LedgerTable result={resultOf(columns)} columns={columns} />
+    )
+
+    const headRows = container.querySelectorAll('thead tr')
+    expect(headRows).toHaveLength(4)
+    const first = headRows[0].querySelectorAll('th')
+    expect(first[0].textContent).toBe('№')
+    expect(first[0].getAttribute('rowspan')).toBe('3')
+    expect(first[1].textContent).toBe('Тарификация')
+    const leaf = screen.getByText('Разряд')
+    expect(leaf.getAttribute('data-vertical')).toBe('true')
+    expect(leaf.style.transform).toBe('rotate(180deg)')
+    expect(
+      screen.getByText('Тарификация').getAttribute('data-vertical')
+    ).toBeNull()
+    expect(headRows[3].getAttribute('data-testid')).toBe(
+      'report-column-numbers'
+    )
+  })
+})

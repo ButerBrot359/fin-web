@@ -16,8 +16,17 @@ import {
 } from '../../../lib/utils/field-width'
 import { NumberInput } from '@/shared/ui/inputs'
 import { FieldLabelLeft } from './field-label-left'
+import { NumberChoiceField } from './number-choice-field'
 
 export const NumberFieldNode: FC<NodeProps> = ({ node }) => {
+  const options = node.props?.options
+  if (Array.isArray(options) && options.length > 0) {
+    return <NumberChoiceField node={node} />
+  }
+  return <NumberInputField node={node} />
+}
+
+const NumberInputField: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
   // Правило общее с ячейкой ТЧ — см. allowsDecimalInput.
   const allowDecimal = allowsDecimalInput(

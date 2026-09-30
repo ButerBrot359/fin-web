@@ -17,7 +17,9 @@ export type RevealKind = ValidationTarget['kind'] | null
  */
 function matchesKind(node: ViewNode, kind: RevealKind): boolean {
   if (kind === 'FIELD') return node.type !== 'TABLE_COLUMN'
-  if (kind === 'TABLE' || kind === 'TABLE_CELL') return node.type === 'TABLE'
+  if (kind === 'TABLE' || kind === 'TABLE_CELL' || kind === 'REPORT_CELL') {
+    return node.type === 'TABLE'
+  }
   return true
 }
 

@@ -7,6 +7,7 @@ import {
 } from './statistics-format'
 import { getStatisticsCopy, statisticsLocale } from './statistics-copy'
 import { formatStatisticsNote } from './statistics-notes'
+import { setUiDictionary } from '@/shared/lib/i18n'
 
 describe('AI statistics presentation', () => {
   it('contains exactly twenty distinct metrics with the requested averages first', () => {
@@ -37,12 +38,20 @@ describe('AI statistics presentation', () => {
     expect(isValidStatisticsPeriod('2026-09-10', '2026-09-09')).toBe(false)
   })
   it('provides Kazakh metric labels and localized caveats without exposing protocol codes', () => {
+    setUiDictionary({
+      'Статистика ИИ': 'ЖИ статистикасы',
+      'Для части обращений расход токенов неизвестен; итог может быть неполным.':
+        'Кейбір сұраулар үшін токен шығыны белгісіз; қорытынды толық болмауы мүмкін.',
+    })
     expect(statisticsLocale('kk-KZ')).toBe('kk-KZ')
     expect(getStatisticsCopy('kz').title).toBe('ЖИ статистикасы')
     for (const { key } of STATISTICS_METRICS)
       expect(getStatisticsCopy('kz').metrics[key][0]).toBeTruthy()
     expect(formatStatisticsNote('TOKEN_USAGE_INCOMPLETE', 'ru')).toContain(
       'неизвестен'
+    )
+    expect(formatStatisticsNote('TOKEN_USAGE_INCOMPLETE', 'kz')).toContain(
+      'белгісіз'
     )
     expect(formatStatisticsNote('UNKNOWN_FUTURE_CODE', 'ru')).toBeNull()
   })

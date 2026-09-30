@@ -57,7 +57,9 @@ describe('connection pricing editor', () => {
     fireEvent.change(screen.getByLabelText('Чтение кеша'), {
       target: { value: '0,3' },
     })
-    fireEvent.change(screen.getByLabelText('Выход'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Выход модели'), {
+      target: { value: '' },
+    })
     fireEvent.click(screen.getByText('Submit'))
     expect(submit).toHaveBeenCalledWith({
       inputPerMillion: 0,

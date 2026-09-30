@@ -11,6 +11,7 @@ import {
 } from '@mui/material'
 
 import type { ReportFilterDto } from '@/pages/reports/report-list/types/report'
+import { useUiDictionary } from '@/shared/lib/i18n'
 
 import {
   comparisonIsMulti,
@@ -47,6 +48,7 @@ export const ReportFilterTable = ({
   isKz,
 }: ReportFilterTableProps) => {
   const { t } = useTranslation()
+  useUiDictionary(isKz)
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
 
   const fieldByKey = useMemo(() => {

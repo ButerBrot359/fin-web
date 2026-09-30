@@ -262,3 +262,35 @@ describe('buildReportAltExport — шапка по headerPath', () => {
     ])
   })
 })
+
+describe('buildReportAltExport — числовой формат колонок', () => {
+  it('мера с форматом «#,##0» выгружается целым числом, без формата — с копейками', () => {
+    const columns: ReportAltColumnDto[] = [
+      {
+        code: 'Kolichestvo',
+        titleRu: 'Количество',
+        role: 'MEASURE',
+        valueType: 'DECIMAL',
+        format: '#,##0',
+      },
+      {
+        code: 'Summa',
+        titleRu: 'Сумма',
+        role: 'MEASURE',
+        valueType: 'DECIMAL',
+      },
+    ] as ReportAltColumnDto[]
+
+    const data = buildReportAltExport(
+      treeResult(columns),
+      false,
+      'Группировка',
+      'Итого'
+    )
+
+    expect(data.columns?.slice(1).map((c) => c.numFmt)).toEqual([
+      'integer',
+      'money',
+    ])
+  })
+})

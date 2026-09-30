@@ -213,6 +213,8 @@
   },
   "inputs": {
     "noOptions": "Нет вариантов",
+    "checkAll": "Отметить все",
+    "uncheckAll": "Снять все",
     "loading": "Загрузка...",
     "openReference": "Открыть запись",
     "copyReference": "Скопировать запись"

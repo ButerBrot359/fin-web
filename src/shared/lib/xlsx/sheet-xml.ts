@@ -20,7 +20,7 @@ export interface XlsxHeaderCell {
 /** Метаданные колонки для оформления и автоширины. */
 export interface XlsxColumnMeta {
   /** Числовой формат значений-чисел этой колонки. */
-  numFmt?: 'money' | 'quantity'
+  numFmt?: 'money' | 'quantity' | 'integer'
   /** Выравнивание текстовых ячеек (числа всегда справа). */
   align?: 'left' | 'right'
   /** Явная ширина в символах (иначе — автоширина по содержимому). */
@@ -191,6 +191,9 @@ const dataCellStyle = (
   kind: XlsxRowKind
 ): number => {
   const hl = kind === 'highlight'
+  if (typeof cell === 'number' && meta.numFmt === 'integer') {
+    return hl ? XF.HL_INT : XF.DATA_INT
+  }
   if (typeof cell === 'number' && meta.numFmt === 'quantity') {
     return hl ? XF.HL_QTY : XF.DATA_QTY
   }

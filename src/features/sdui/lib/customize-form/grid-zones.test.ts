@@ -162,13 +162,18 @@ describe('extractGridZones: скрытия и подписи', () => {
     expect(zone.rows[0][1].hidden).toBe(true)
   })
 
-  it('поле без подписи получает сентинел «⋯», а не технический id', () => {
-    const tree = grid24('g', [node('f.raw', 'TEXT_FIELD', { colSpan: 12 })])
+  // SCRUM-412 п.5: безымянное (служебное) поле пользователю не предъявляется —
+  // плашка «Без названия» читалась как сломанная. В раскладке поле остаётся и,
+  // как спейсер, занимает свои юниты: сосед с ним не помещается в одну строку.
+  it('поле без подписи не попадает в модель, но держит юниты строки', () => {
+    const tree = grid24('g', [
+      node('f.raw', 'TEXT_FIELD', { colSpan: 14 }),
+      field('a', { colSpan: 12 }),
+    ])
 
     const [zone] = extractGridZones(tree, noHidden)
 
-    expect(zone.rows[0][0].label).toBe('⋯')
-    expect(zone.rows[0][0].homeZoneId).toBe('g')
+    expect(rowIds(zone)).toEqual([['a']])
   })
 })
 

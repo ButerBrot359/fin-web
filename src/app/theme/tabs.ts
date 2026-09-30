@@ -9,12 +9,21 @@ export const tabsComponents: Components<Omit<Theme, 'components'>> = {
   MuiTabs: {
     styleOverrides: {
       root: { minHeight: 36 },
-      indicator: {
-        height: 3,
-        borderRadius: 2,
-        backgroundColor: cssVar(semantic.primary),
-      },
+      // Родной индикатор MUI позиционируется JS-ом по offsetLeft/offsetWidth
+      // активной вкладки; когда ширины вкладок меняются после первого замера
+      // (догрузился шрифт), полоса остаётся на старом месте и «выходит за
+      // рамки» плашки (SCRUM-412 п.6). Вместо него полоску рисует box-shadow
+      // самой активной вкладки (см. MuiTab ниже) — чистый CSS, разъехаться не
+      // может.
+      indicator: { display: 'none' },
       flexContainer: { gap: 2 },
+      // Вертикальная лента (ЭСФ, tabsPlacement=LEFT): полоска не снизу, а по
+      // внутреннему краю плашки — как у родного вертикального индикатора.
+      vertical: {
+        '& .MuiTab-root.Mui-selected': {
+          boxShadow: `inset -3px 0 0 0 ${cssVar(semantic.primary)}`,
+        },
+      },
     },
   },
   MuiTab: {
@@ -34,6 +43,9 @@ export const tabsComponents: Components<Omit<Theme, 'components'>> = {
         '&.Mui-selected': {
           backgroundColor: cssVar(palette.ui06),
           color: cssVar(palette.ui01),
+          // Синяя полоска-подчёркивание строго по ширине плашки — замена
+          // JS-индикатора MuiTabs (см. комментарий выше).
+          boxShadow: `inset 0 -3px 0 0 ${cssVar(semantic.primary)}`,
         },
       },
     },

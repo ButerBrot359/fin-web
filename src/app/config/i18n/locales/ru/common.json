@@ -1037,7 +1037,20 @@
       "presetsDeleteFailed": "Не удалось удалить пресет",
       "defaultScope": "Для кого",
       "defaultScopeAll": "Для всех",
-      "defaultRoleWarning": "Настройка сохранится как стандарт формы для роли «{{name}}» и применится её пользователям (личные настройки останутся поверх)."
+      "defaultRoleWarning": "Настройка сохранится как стандарт формы для роли «{{name}}» и применится её пользователям (личные настройки останутся поверх).",
+      "history": "История изменений",
+      "historyTitle": "История изменений формы для всех",
+      "historyLoading": "Загрузка…",
+      "historyEmpty": "Форму для всех ещё никто не менял",
+      "historyClose": "Закрыть",
+      "historyUnknownUser": "Неизвестный пользователь",
+      "historyLayerAll": "Для всех",
+      "historyLayerProfile": "Для роли «{{name}}»",
+      "historyActionReset": "сброс к стандартной форме",
+      "historyActionSave_one": "сохранение ({{count}} правка)",
+      "historyActionSave_few": "сохранение ({{count}} правки)",
+      "historyActionSave_many": "сохранение ({{count}} правок)",
+      "historyActionSave_other": "сохранение ({{count}} правок)"
     },
     "menuSettings": {
       "title": "Настройка меню",

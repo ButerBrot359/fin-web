@@ -10,6 +10,7 @@ import {
   DATA_FS,
   GREEN_1C,
   HEAD_FS,
+  decimalsOfFormat,
   formatMoney1C,
   isDateCell,
   isNumericCell,
@@ -191,6 +192,7 @@ export const ReportCell = ({
         blankOnZero={col.blankOnZero}
         bold={bold}
         dcIndicator={col.dcIndicator}
+        decimals={decimalsOfFormat(col.format)}
       />
     )
   }

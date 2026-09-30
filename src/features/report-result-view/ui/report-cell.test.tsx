@@ -52,6 +52,28 @@ describe('ReportCell — формат по объявленному типу з�
     expect(screen.getByText('150,50')).toBeTruthy()
   })
 
+  it('мера с форматом «#,##0» печатается целым числом, без копеек', () => {
+    render(
+      <ReportCell
+        value={1}
+        col={column({ role: 'MEASURE', format: '#,##0' })}
+      />
+    )
+
+    expect(screen.getByText('1')).toBeTruthy()
+  })
+
+  it('мера с форматом количества «#,##0.000» печатается с тремя знаками', () => {
+    render(
+      <ReportCell
+        value={2.5}
+        col={column({ role: 'MEASURE', format: '#,##0.000' })}
+      />
+    )
+
+    expect(screen.getByText('2,500')).toBeTruthy()
+  })
+
   it('строковая колонка не трогается: текст остаётся как есть', () => {
     render(<ReportCell value="1315" col={column({})} />)
 

@@ -95,6 +95,13 @@ export const isStrongSpanRow = (rowKind?: RowKind): boolean =>
  * сумм, 3 для количества), разряды пробелами, десятичный разделитель —
  * запятая («1 350 000,00»).
  */
+export const decimalsOfFormat = (format?: string | null): number => {
+  const pattern = format?.split(';')[0]
+  if (!pattern || !/[#0]/.test(pattern)) return 2
+  const fraction = /\.([0#]+)/.exec(pattern)
+  return fraction ? fraction[1].length : 0
+}
+
 export const formatMoney1C = (value: number, decimals = 2): string => {
   const negative = value < 0
   const [intPart, decPart] = Math.abs(value).toFixed(decimals).split('.')

@@ -80,6 +80,7 @@ export interface TableCommandDescriptor {
   // true ⇒ команду выполняет двойной клик / Enter по строке (решение бэка,
   // когда строковых команд несколько: «Открыть» + «Создать новую редакцию»).
   defaultForRow?: boolean | null
+  icon?: string | null
 }
 
 export interface ViewAction {

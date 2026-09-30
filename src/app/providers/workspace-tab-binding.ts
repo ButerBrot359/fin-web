@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import {
   discardTabSession,
   dropCachedScreensFor,
+  forgetListMemory,
   setWorkspaceTabGateway,
   usePanelStore,
 } from '@/features/sdui'
@@ -44,11 +45,19 @@ export function useWorkspaceTabGatewayBinding(): void {
     // «Создать»/копия/ввод на основании: маршрут начинает новый экземпляр формы —
     // снимок вкладки снимаем, иначе новая форма создания открылась бы заполненной.
     const unsubscribeFresh = onFreshFormInstance(dropCachedScreensFor)
+    const unsubscribeTabs = useWorkspaceTabsStore.subscribe((state, prev) => {
+      if (state.tabs === prev.tabs) return
+      const openIds = new Set(state.tabs.map((tab) => tab.id))
+      for (const tab of prev.tabs) {
+        if (!openIds.has(tab.id)) forgetListMemory(tab.id)
+      }
+    })
     return () => {
       setWorkspaceTabGateway(null)
       unsubscribe()
       unsubscribeDiscard()
       unsubscribeFresh()
+      unsubscribeTabs()
     }
   }, [])
 }

@@ -125,4 +125,36 @@ describe('useListTrail', () => {
     expect(result.current.levelParams).toBe(params)
     expect(result.current.canDrillInto({ id: 1, isGroup: true })).toBe(false)
   })
+
+  it('без серверного пути стартует с запомненных выделения и папки', () => {
+    const { result } = renderHook(() =>
+      useListTrail({
+        node: node(),
+        source: hierSource(),
+        debouncedSearch: '',
+        restored: { selectedRowId: 7, trail: [{ id: 5, label: 'Папка' }] },
+      })
+    )
+
+    expect(result.current.selectedRowId).toBe(7)
+    expect(result.current.trail).toEqual([{ id: 5, label: 'Папка' }])
+    expect(result.current.levelParams).toEqual({ parent: '5' })
+  })
+
+  it('серверный путь и выделение приоритетнее запомненных', () => {
+    const { result } = renderHook(() =>
+      useListTrail({
+        node: node({
+          selectedId: 42,
+          selectedPath: [{ id: 9, presentation: 'Серверная' }],
+        }),
+        source: hierSource(),
+        debouncedSearch: '',
+        restored: { selectedRowId: 7, trail: [{ id: 5, label: 'Папка' }] },
+      })
+    )
+
+    expect(result.current.selectedRowId).toBe(42)
+    expect(result.current.trail).toEqual([{ id: 9, label: 'Серверная' }])
+  })
 })

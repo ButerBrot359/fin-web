@@ -737,10 +737,59 @@ const FloorTreeTable = ({
 
   const totalHeaderRows = floorCodes.length + leafHead.leafRows
 
-  // Многоуровневую шапку мер выводим, когда этажей ровно 2 и лист-ряд один (форма 326):
-  // top→этаж1, mid→этаж2, bot→ряд листьев. Иначе — прежний одноуровневый вывод мер.
-  const useMeasure3 =
-    measureHead3 != null && floorCodes.length === 2 && leafHead.leafRows === 1
+  // Многоуровневую шапку мер выводим, когда в шапке не меньше трёх рядов (форма 326):
+  // top→1-й ряд, mid→2-й, bot→3-й; лишние ряды шапки добирают ячейки, доходящие до низа.
+  const useMeasure3 = measureHead3 != null && totalHeaderRows >= 3
+
+  const measureRows = useMemo(() => {
+    const rows: {
+      key: string
+      title: string
+      colSpan: number
+      rowSpan: number
+    }[][] = Array.from({ length: totalHeaderRows }, () => [])
+    if (measureHead3 == null || totalHeaderRows < 3) return rows
+    const extra = totalHeaderRows - 3
+    const place = (
+      r: number,
+      cells: { key: string; title: string; colSpan: number; rowSpan: number }[]
+    ) => {
+      cells.forEach((c) => {
+        rows[r].push({
+          ...c,
+          rowSpan: r + c.rowSpan === 3 ? c.rowSpan + extra : c.rowSpan,
+        })
+      })
+    }
+    place(
+      0,
+      measureHead3.topRow.map((c) => ({
+        key: c.key,
+        title: c.title,
+        colSpan: c.colSpan,
+        rowSpan: c.rowSpan,
+      }))
+    )
+    place(
+      1,
+      measureHead3.midRow.map((c) => ({
+        key: c.key,
+        title: c.title,
+        colSpan: c.colSpan,
+        rowSpan: c.rowSpan,
+      }))
+    )
+    place(
+      2,
+      measureHead3.botRow.map(({ key, col }) => ({
+        key,
+        title: columnTitle(col, isKz),
+        colSpan: 1,
+        rowSpan: 1,
+      }))
+    )
+    return rows
+  }, [measureHead3, totalHeaderRows, isKz])
 
   const data = useMemo(() => result.rows, [result.rows])
   const [expanded, setExpanded] = useState<ExpandedState>(true)
@@ -822,6 +871,20 @@ const FloorTreeTable = ({
     )
   }
 
+  const renderMeasureRow = (r: number) =>
+    measureRows[r].map((cell) => (
+      <th
+        key={cell.key}
+        colSpan={cell.colSpan}
+        rowSpan={cell.rowSpan}
+        className={thBase}
+      >
+        <Typography variant="body2" sx={thTextSx}>
+          {cell.title}
+        </Typography>
+      </th>
+    ))
+
   return (
     <div className={TABLE_SCROLL}>
       <table className="table-fixed border-collapse bg-white">
@@ -848,23 +911,7 @@ const FloorTreeTable = ({
                   </Typography>
                 </th>
                 {useMeasure3
-                  ? (idx === 0
-                      ? measureHead3.topRow
-                      : idx === 1
-                        ? measureHead3.midRow
-                        : []
-                    ).map((cell) => (
-                      <th
-                        key={cell.key}
-                        colSpan={cell.colSpan}
-                        rowSpan={cell.rowSpan}
-                        className={thBase}
-                      >
-                        <Typography variant="body2" sx={thTextSx}>
-                          {cell.title}
-                        </Typography>
-                      </th>
-                    ))
+                  ? renderMeasureRow(idx)
                   : idx === 0 &&
                     measureColumns.map((m) => (
                       <th
@@ -895,6 +942,7 @@ const FloorTreeTable = ({
                     </Typography>
                   </th>
                 ))}
+                {useMeasure3 && renderMeasureRow(floorCodes.length)}
               </tr>
               {leafHead.midRow.length > 0 && (
                 <tr>
@@ -910,6 +958,7 @@ const FloorTreeTable = ({
                       </Typography>
                     </th>
                   ))}
+                  {useMeasure3 && renderMeasureRow(floorCodes.length + 1)}
                 </tr>
               )}
               <tr>
@@ -920,6 +969,7 @@ const FloorTreeTable = ({
                     </Typography>
                   </th>
                 ))}
+                {useMeasure3 && renderMeasureRow(totalHeaderRows - 1)}
               </tr>
             </>
           ) : (
@@ -932,14 +982,7 @@ const FloorTreeTable = ({
                 </th>
               ))}
               {/* Форма 326: нижний ряд шапки мер (Кол-во/Сумма под Дебет/Кредит). */}
-              {useMeasure3 &&
-                measureHead3.botRow.map(({ key, col }) => (
-                  <th key={key} className={thBase}>
-                    <Typography variant="body2" sx={thTextSx}>
-                      {columnTitle(col, isKz)}
-                    </Typography>
-                  </th>
-                ))}
+              {useMeasure3 && renderMeasureRow(totalHeaderRows - 1)}
             </tr>
           )}
         </thead>

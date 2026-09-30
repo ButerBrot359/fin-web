@@ -779,3 +779,125 @@ describe('TreeTable — колонка дерева задана графой о
     expect(screen.getByText('001')).toBeTruthy()
   })
 })
+
+describe('TreeTable — ведомости ВНА по форме КБП', () => {
+  const mera = (
+    code: string,
+    titleRu: string,
+    groupTitleRu?: string,
+    subGroupTitleRu?: string
+  ) =>
+    ({
+      code,
+      titleRu,
+      groupTitleRu,
+      subGroupTitleRu,
+      role: 'MEASURE',
+      valueType: 'DECIMAL',
+    }) as unknown as ReportColumnDto
+
+  const dim = (code: string, titleRu: string) =>
+    ({ code, titleRu, role: 'DIMENSION' }) as unknown as ReportColumnDto
+
+  const rekvizit = (code: string, titleRu: string, groupTitleRu?: string) =>
+    ({
+      code,
+      titleRu,
+      groupTitleRu,
+      role: 'ATTRIBUTE',
+    }) as unknown as ReportColumnDto
+
+  const stroka = {
+    level: 3,
+    cells: { NomerPoPoryadku: 1, VnaName: 'Автомобиль', OstatokNachalnyy: 100 },
+    children: [],
+  } as unknown as ReportRowDto
+
+  const gruppa = (
+    groupCode: string,
+    groupValue: string,
+    children: ReportRowDto[]
+  ) =>
+    ({
+      level: 0,
+      groupCode,
+      groupValue,
+      rowKind: 'GROUP_HEADER',
+      cells: { OstatokNachalnyy: 100 },
+      children,
+    }) as unknown as ReportRowDto
+
+  it('три этажа группировок: остатки и оборот с Дебет/Кредит раскладываются по рядам шапки, итог группы в строке группы', () => {
+    const kolonki = [
+      dim('Schet', 'Счет'),
+      dim('Podrazdelenie', 'Подразделение'),
+      dim('Mol', 'МОЛ'),
+      rekvizit('NomerPoPoryadku', '№ п/п'),
+      rekvizit('VnaName', 'Наименование'),
+      mera('OstatokNachalnyy', 'сумма', 'Остаток на 30.09.2026'),
+      mera('Postuplenie', 'сумма', 'Оборот с 30.09.2026 - 30.09.2026', 'Дебет'),
+      mera('Vybytie', 'сумма', 'Оборот с 30.09.2026 - 30.09.2026', 'Кредит'),
+    ]
+    const rezultat = {
+      ...result,
+      columns: kolonki,
+      groupFloorCodes: ['Schet', 'Podrazdelenie', 'Mol'],
+      rows: [
+        gruppa('Schet', '2350', [
+          gruppa('Podrazdelenie', 'Штат', [
+            gruppa('Mol', 'Трохлазова', [stroka]),
+          ]),
+        ]),
+      ],
+    } as unknown as ReportResultDto
+
+    const { container } = render(
+      <TreeTable result={rezultat} columns={kolonki} />
+    )
+
+    const ryady = container.querySelectorAll('thead tr')
+    expect(ryady).toHaveLength(4)
+    expect(screen.getByText('Остаток на 30.09.2026').closest('tr')).toBe(
+      ryady[0]
+    )
+    expect(screen.getByText('Дебет').closest('tr')).toBe(ryady[1])
+    const summy = screen.getAllByText('сумма')
+    expect(summy[0].closest('th')?.getAttribute('rowspan')).toBe('3')
+    expect(summy[1].closest('tr')).toBe(ryady[2])
+    expect(summy[1].closest('th')?.getAttribute('rowspan')).toBe('2')
+    expect(screen.getByText('2350').closest('tr')?.textContent).toContain('100')
+  })
+
+  it('два этажа и двухэтажная шапка детальных граф: группа «Дополнительные поля» у мер тоже выводится', () => {
+    const kolonki = [
+      dim('Podrazdelenie', 'Местонахождение'),
+      dim('Mol', 'МОЛ'),
+      rekvizit('NomerPoPoryadku', '№ п/п'),
+      rekvizit('ZavodskoyNomer', 'Заводской номер', 'Дополнительные поля'),
+      mera('StepenAmortizatsii', 'Степень амортизации', 'Дополнительные поля'),
+      mera('Kolichestvo', 'Количество'),
+    ]
+    const rezultat = {
+      ...result,
+      columns: kolonki,
+      groupFloorCodes: ['Podrazdelenie', 'Mol'],
+      rows: [gruppa('Podrazdelenie', 'Штат', [stroka])],
+    } as unknown as ReportResultDto
+
+    const { container } = render(
+      <TreeTable result={rezultat} columns={kolonki} />
+    )
+
+    expect(container.querySelectorAll('thead tr')).toHaveLength(4)
+    expect(screen.getAllByText('Дополнительные поля')).toHaveLength(2)
+    expect(
+      screen.getByText('Количество').closest('th')?.getAttribute('rowspan')
+    ).toBe('4')
+    expect(
+      screen
+        .getByText('Степень амортизации')
+        .closest('th')
+        ?.getAttribute('rowspan')
+    ).toBe('3')
+  })
+})

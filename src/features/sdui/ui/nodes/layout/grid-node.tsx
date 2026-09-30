@@ -1,7 +1,7 @@
 import type { FC } from 'react'
 
 import type { NodeProps } from '../../../types/view'
-import { isNodeVisible } from '../../../lib/utils/node-visibility'
+import { layoutGridCells } from '../../../lib/utils/grid-bands'
 import { resolveStackGap } from '../../../lib/utils/resolve-stack-gap'
 import { NodeRenderer } from '../../node-renderer'
 
@@ -47,7 +47,7 @@ export const GridNode: FC<NodeProps> = ({ node }) => {
         columnGap,
       }}
     >
-      {node.children?.filter(isNodeVisible).map((c) => (
+      {layoutGridCells(node.children ?? []).map((c) => (
         <div
           key={c.id}
           style={{

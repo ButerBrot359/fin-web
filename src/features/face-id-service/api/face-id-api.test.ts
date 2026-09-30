@@ -19,6 +19,9 @@ vi.mock('axios', () => ({
 vi.mock('@/shared/api/attach-client-context-headers', () => ({
   attachClientContextHeaders: vi.fn(),
 }))
+vi.mock('@/shared/api/attach-language-header', () => ({
+  attachLanguageHeader: vi.fn(),
+}))
 vi.mock('@/shared/api/api', () => ({
   apiService: {
     get: mocks.authenticatedGet,

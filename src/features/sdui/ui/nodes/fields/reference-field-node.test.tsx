@@ -470,6 +470,36 @@ describe('ReferenceFieldNode — SCRUM-291 §19.3 props.multiple', () => {
     })
   })
 
+  it('(g) multiple: «Отметить все» добавляет все опции списка, «Снять все» очищает выбор', async () => {
+    state.ref = [{ id: 1, presentation: 'Счёт 1' }]
+    fetchMock.mockResolvedValue([
+      { id: 1, code: '1', label: 'Счёт 1' },
+      { id: 2, code: '2', label: 'Счёт 2' },
+    ])
+    render(<ReferenceFieldNode node={makeNode({ multiple: true })} />)
+
+    openDropdown()
+    await screen.findByRole('option', { name: 'Счёт 2' })
+    fireEvent.mouseDown(
+      screen.getByRole('button', { name: /^(inputs\.checkAll|Отметить все)$/ })
+    )
+
+    await waitFor(() => {
+      expect(state.ref).toEqual([
+        { id: 1, presentation: 'Счёт 1' },
+        { id: 2, presentation: 'Счёт 2' },
+      ])
+    })
+
+    fireEvent.mouseDown(
+      screen.getByRole('button', { name: /uncheckAll|Снять все/ })
+    )
+
+    await waitFor(() => {
+      expect(state.ref).toEqual([])
+    })
+  })
+
   it('(c) multiple: одиночный объект {id,presentation} в состоянии приводится к массиву из одного элемента', () => {
     state.ref = { id: 1, presentation: 'Счёт 1' }
     render(<ReferenceFieldNode node={makeNode({ multiple: true })} />)

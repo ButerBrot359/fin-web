@@ -93,6 +93,16 @@ describe('ObjectFieldNode выбор типа', () => {
     expect(list.getByText('Физические лица')).toBeTruthy()
   })
 
+  it('несколько членов и тип не выбран → подпись реквизита на месте', () => {
+    render(<ObjectFieldNode node={node([KONTRAGENTY, FIZ_LITSA])} />)
+    const placeholder = screen.getByLabelText(/Сотрудники и контрагенты/)
+    expect(placeholder).toBeTruthy()
+    expect((placeholder as HTMLInputElement).disabled).toBe(true)
+    expect(
+      screen.getByPlaceholderText('sdui.objectField.choosePlaceholder')
+    ).toBeTruthy()
+  })
+
   it('один член → селектор не показываем', () => {
     render(<ObjectFieldNode node={node([KONTRAGENTY])} />)
     expect(

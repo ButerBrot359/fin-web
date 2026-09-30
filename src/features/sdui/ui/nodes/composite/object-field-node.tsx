@@ -120,7 +120,7 @@ export const ObjectFieldNode: FC<NodeProps> = ({ node }) => {
           ))}
         </TextField>
       )}
-      {member && (
+      {member ? (
         // key: смена члена перемонтирует пикер — чистые inputValue/кэш опций
         <ObjectValuePicker
           key={memberKey(member)}
@@ -128,6 +128,17 @@ export const ObjectFieldNode: FC<NodeProps> = ({ node }) => {
           field={f}
           value={value}
           onEmit={emitChange}
+        />
+      ) : (
+        <TextField
+          disabled
+          fullWidth
+          label={f.label}
+          required={f.required}
+          error={!!f.error}
+          value=""
+          placeholder={t('sdui.objectField.choosePlaceholder')}
+          slotProps={{ inputLabel: { shrink: true } }}
         />
       )}
     </div>

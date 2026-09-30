@@ -247,6 +247,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   const sessionValue = useMemo<SduiSessionValue>(
     () => ({
       kind: 'root',
+      screenRoute,
       getSession: () => {
         const s = useTreeStore.getState()
         return { formSessionId: s.formSessionId, revision: s.revision }

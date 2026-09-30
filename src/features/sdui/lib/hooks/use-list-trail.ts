@@ -14,12 +14,14 @@ import {
   supportsHierarchy,
 } from '../../ui/nodes/composite/list-hierarchy'
 import { isTreeDisplayMode } from '../utils/list-tree-mode'
+import type { ListMemoryEntry } from '../stores/list-memory-store'
 
 interface UseListTrailArgs {
   node: ViewNode
   source: ListSource | undefined
   /** ОТЛОЖЕННАЯ строка поиска — см. комментарий к isSearchMode. */
   debouncedSearch: string
+  restored?: Pick<ListMemoryEntry, 'selectedRowId' | 'trail'>
 }
 
 /**
@@ -30,20 +32,23 @@ export const useListTrail = ({
   node,
   source,
   debouncedSearch,
+  restored,
 }: UseListTrailArgs) => {
   // Панель выбора открывается на записи, стоящей в поле: сервер кладёт её id в
   // props.selectedId (клиенту неоткуда его взять — панель приходит отдельным
   // поддеревом и связи с полем не имеет).
   const serverSelectedId = node.props?.selectedId as number | undefined
   const [selectedRowId, setSelectedRowId] = useState<number | null>(
-    serverSelectedId ?? null
+    serverSelectedId ?? restored?.selectedRowId ?? null
   )
 
   // Путь по папкам справочника; пустой — корневой уровень. Начальное значение —
   // с сервера: если запись из поля лежит внутри папки, панель открывается сразу там,
   // иначе выделять на корне нечего (её строки там просто нет).
   const [trail, setTrail] = useState<ListTrailEntry[]>(() =>
-    parseSelectedPath(node.props?.selectedPath)
+    node.props?.selectedPath == null && restored
+      ? restored.trail
+      : parseSelectedPath(node.props?.selectedPath)
   )
   // SCRUM-360 v6 §8: в древовидном режиме клиентский drill-down выключен —
   // раскрытием владеет сервер (list.toggleExpand), крошки не рендерятся.

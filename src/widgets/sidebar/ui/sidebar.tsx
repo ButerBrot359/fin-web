@@ -66,7 +66,7 @@ export const Sidebar = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    void handleSelectItem(item)
+                    handleSelectItem(item)
                   }}
                   className={getButtonStyles(isActive, isCollapsed)}
                 >

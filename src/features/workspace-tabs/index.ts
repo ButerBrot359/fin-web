@@ -6,6 +6,7 @@ export { resolvePageType } from './lib/utils/resolve-page-type'
 export { decideTabSync } from './lib/utils/decide-tab-sync'
 export type { TabSyncAction, TabSyncInput } from './lib/utils/decide-tab-sync'
 export { performTabClose } from './lib/utils/perform-tab-close'
+export { performSectionToggle } from './lib/utils/perform-section-toggle'
 export {
   performCloseAllTabs,
   findDirtyTabIds,

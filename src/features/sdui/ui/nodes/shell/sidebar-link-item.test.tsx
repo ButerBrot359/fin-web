@@ -8,11 +8,13 @@ vi.mock('../../../lib/shell/icon-resolver', () => ({
 
 const navigate = vi.fn()
 vi.mock('react-router-dom', async () => {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const actual =
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
     await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return { ...actual, useNavigate: () => navigate }
 })
+
+import { useWorkspaceTabsStore } from '@/features/workspace-tabs'
 
 import type { ViewNode } from '../../../types/view'
 import { SidebarLinkItem } from './sidebar-link-item'
@@ -41,6 +43,38 @@ describe('SidebarLinkItem', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: /Банк и касса/ }))
     expect(navigate).toHaveBeenCalledWith('/modules/Bank')
+  })
+
+  it('повторное нажатие на открытый раздел закрывает его вкладку', () => {
+    useWorkspaceTabsStore.setState({
+      tabs: [
+        {
+          id: '/modules/ZarplatiIKadri',
+          path: '/modules/ZarplatiIKadri',
+          search: '',
+          title: 'Зарплата и кадры',
+          pageType: 'module',
+          createdAt: 1,
+        },
+      ],
+      activeTabId: '/modules/ZarplatiIKadri',
+      activationOrder: ['/modules/ZarplatiIKadri'],
+    })
+    render(
+      <MemoryRouter initialEntries={['/modules/ZarplatiIKadri']}>
+        <SidebarLinkItem
+          node={link({
+            label: 'Зарплата и кадры',
+            icon: 'salary',
+            route: '/modules/ZarplatiIKadri',
+          })}
+          collapsed={false}
+        />
+      </MemoryRouter>
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Зарплата и кадры/ }))
+    expect(useWorkspaceTabsStore.getState().tabs).toHaveLength(0)
+    expect(navigate).toHaveBeenCalledWith('/')
   })
 
   it('активен, когда pathname совпадает с route (startsWith для не-корня)', () => {

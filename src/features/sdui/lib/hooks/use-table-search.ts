@@ -71,9 +71,10 @@ export function useTableSearch(
   if (q) {
     for (const row of rows) {
       for (const col of columns) {
-        if (cellText(row[col.binding]).toLowerCase().includes(q)) {
-          matches.push({ rowId: row.rowId, columnId: col.id })
-        }
+        if (!cellText(row[col.binding]).toLowerCase().includes(q)) continue
+        const last = matches.at(-1)
+        if (last?.rowId === row.rowId && last.columnId === col.id) continue
+        matches.push({ rowId: row.rowId, columnId: col.id })
       }
     }
   }

@@ -33,6 +33,7 @@ const node = (props: Record<string, unknown> = {}): ViewNode =>
     id: 'ir.form.PoryadokOkrugleniya.field.Tochnost',
     type: 'NUMBER_FIELD',
     binding: 'Tochnost',
+    actions: [{ trigger: 'change', actionId: 'fieldEvent' }],
     props: {
       label: 'Точность',
       visible: true,
@@ -49,33 +50,69 @@ beforeEach(() => {
 })
 afterEach(cleanup)
 
-describe('NUMBER_FIELD со списком выбора', () => {
-  it('рисует выпадающий список со всеми значениями', () => {
+const input = () => screen.getByRole<HTMLInputElement>('combobox')
+
+const openList = () => {
+  fireEvent.mouseDown(input())
+  return within(screen.getByRole('listbox')).getAllByRole('option')
+}
+
+describe('NUMBER_FIELD с подсказками значений', () => {
+  it('показывает все подсказки', () => {
     state.Tochnost = 1
     render(<NumberFieldNode node={node()} />)
-    fireEvent.mouseDown(screen.getByRole('combobox'))
-    const items = within(screen.getByRole('listbox')).getAllByRole('option')
-    expect(items.map((i) => i.textContent)).toEqual(TOCHNOSTI)
+    expect(openList().map((i) => i.textContent)).toEqual(TOCHNOSTI)
   })
 
-  it('показывает текущее значение, пришедшее числом с хвостом нулей', () => {
-    state.Tochnost = '1.00'
+  it('значение, пришедшее строкой с нулями, показывается числом', () => {
+    state.Tochnost = '10.00'
     render(<NumberFieldNode node={node()} />)
-    expect(screen.getByRole('combobox').textContent).toBe('1')
+    expect(input().value).toBe('10')
   })
 
-  it('выбор пишет число в сессию', () => {
+  it('выбор подсказки пишет число и шлёт change', () => {
     state.Tochnost = 1
     render(<NumberFieldNode node={node()} />)
-    fireEvent.mouseDown(screen.getByRole('combobox'))
+    openList()
     fireEvent.click(screen.getByRole('option', { name: '0.05' }))
     expect(state.Tochnost).toBe(0.05)
+    expect(dispatch).toHaveBeenCalledTimes(1)
   })
 
-  it('значение вне списка не теряется', () => {
-    state.Tochnost = 0.001
+  it('своё значение вводится вручную, запятая допустима', () => {
+    state.Tochnost = 1
     render(<NumberFieldNode node={node()} />)
-    expect(screen.getByRole('combobox').textContent).toBe('0.001')
+    fireEvent.focus(input())
+    fireEvent.change(input(), { target: { value: '0,25' } })
+    fireEvent.blur(input())
+    expect(state.Tochnost).toBe(0.25)
+    expect(dispatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('при вводе текста список подсказок не сужается', () => {
+    state.Tochnost = 1
+    render(<NumberFieldNode node={node()} />)
+    fireEvent.change(input(), { target: { value: '7' } })
+    expect(openList()).toHaveLength(TOCHNOSTI.length)
+  })
+
+  it('нечисловой ввод откатывается к прежнему значению', () => {
+    state.Tochnost = 1
+    render(<NumberFieldNode node={node()} />)
+    fireEvent.focus(input())
+    fireEvent.change(input(), { target: { value: 'abc' } })
+    fireEvent.blur(input())
+    expect(state.Tochnost).toBe(1)
+    expect(input().value).toBe('1')
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('blur без правки не шлёт change', () => {
+    state.Tochnost = 1
+    render(<NumberFieldNode node={node()} />)
+    fireEvent.focus(input())
+    fireEvent.blur(input())
+    expect(dispatch).not.toHaveBeenCalled()
   })
 
   it('без options — обычный числовой ввод', () => {

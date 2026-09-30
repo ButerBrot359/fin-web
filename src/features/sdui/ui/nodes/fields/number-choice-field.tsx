@@ -1,5 +1,5 @@
-import type { FC } from 'react'
-import { FormControl, InputLabel, MenuItem, Select } from '@mui/material'
+import { useState, type FC } from 'react'
+import { Autocomplete, TextField } from '@mui/material'
 
 import type { NodeProps } from '../../../types/view'
 import type { EnumOption } from '../../../lib/utils/enum-value'
@@ -9,58 +9,67 @@ function toNumber(raw: unknown): number | null {
   const n =
     typeof raw === 'number'
       ? raw
-      : typeof raw === 'string' && raw !== ''
-        ? parseFloat(raw)
+      : typeof raw === 'string' && raw.trim() !== ''
+        ? Number(raw.trim().replace(',', '.'))
         : NaN
   return Number.isFinite(n) ? n : null
+}
+
+function display(n: number | null): string {
+  return n === null ? '' : String(n)
 }
 
 export const NumberChoiceField: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
   const options = (node.props?.options as EnumOption[] | undefined) ?? []
+  const current = toNumber(f.value)
+  const [draft, setDraft] = useState<string | null>(null)
+  const input = draft ?? display(current)
 
   if (!f.visible) return null
 
-  const current = toNumber(f.value)
-  const matched =
-    current === null
-      ? undefined
-      : options.find((o) => toNumber(o.value) === current)
-  const items =
-    current !== null && !matched
-      ? [...options, { value: String(current), label: String(current) }]
-      : options
-  const selected = current === null ? '' : (matched?.value ?? String(current))
-  const labelId = `number-choice-${node.id}-label`
+  const commit = (text: string) => {
+    setDraft(null)
+    const next = toNumber(text)
+    if (next === null && text.trim() !== '') return
+    if (next === current) return
+    f.setValue(next)
+    f.fireServerEvent('change', next)
+  }
 
   return (
-    <FormControl
+    <Autocomplete
+      freeSolo
+      disableClearable
       fullWidth
-      variant="filled"
-      error={!!f.error}
-      required={f.required}
+      options={options.map((o) => o.value)}
+      getOptionLabel={(v) => options.find((o) => o.value === v)?.label ?? v}
+      filterOptions={(all) => all}
+      value={display(current)}
+      inputValue={input}
+      readOnly={f.readonly}
       disabled={!f.enabled}
-    >
-      {f.label && <InputLabel id={labelId}>{f.label}</InputLabel>}
-      <Select
-        labelId={f.label ? labelId : undefined}
-        label={f.label}
-        value={selected}
-        readOnly={f.readonly}
-        IconComponent={f.readonly ? () => null : undefined}
-        onChange={(e) => {
-          const next = toNumber(e.target.value)
-          if (next === null || next === current) return
-          f.setValue(next)
-          f.fireServerEvent('change', next)
-        }}
-      >
-        {items.map((opt) => (
-          <MenuItem key={opt.value} value={opt.value}>
-            {opt.label}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+      onInputChange={(_, text, reason) => {
+        if (reason === 'input') setDraft(text)
+      }}
+      onChange={(_, v) => {
+        commit(typeof v === 'string' ? v : '')
+      }}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label={f.label}
+          size={node.props?.size as 'small' | undefined}
+          required={f.required}
+          error={!!f.error}
+          onBlur={() => {
+            commit(input)
+          }}
+          slotProps={{
+            htmlInput: { ...params.inputProps, inputMode: 'decimal' },
+          }}
+        />
+      )}
+    />
   )
 }

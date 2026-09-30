@@ -21,6 +21,8 @@ import type { QueryClient } from '@tanstack/react-query'
 export const invalidateReferencePickers = (qc: QueryClient) => {
   void qc.invalidateQueries({ queryKey: ['dictionary-search'] })
   void qc.invalidateQueries({ queryKey: ['dictionary-entries-active'] })
+  void qc.invalidateQueries({ queryKey: ['dictionary-entries'] })
+  void qc.invalidateQueries({ queryKey: ['dictionary-entry-by-id'] })
 }
 
 /**

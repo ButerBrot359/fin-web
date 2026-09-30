@@ -1,6 +1,7 @@
-import axios from 'axios'
+import axios, { type AxiosError } from 'axios'
 import i18n from 'i18next'
 
+import { classifyTransportFailure } from '@/shared/api/api-error'
 import { attachAuthInterceptors } from '@/shared/api/auth/attach-auth-interceptors'
 import { attachClientContextHeaders } from '@/shared/api/attach-client-context-headers'
 
@@ -47,6 +48,11 @@ export class ViewHttpError extends Error {
   }
 }
 
+const fallbackMessage = (error: AxiosError): string => {
+  const kind = classifyTransportFailure(error)
+  return kind ? i18n.t(`errors.transport.${kind}`) : i18n.t('sdui.requestError')
+}
+
 export const viewTransport = {
   post: async (req: ViewRequest): Promise<ViewResponse> => {
     try {
@@ -62,7 +68,7 @@ export const viewTransport = {
       if (axios.isAxiosError(error)) {
         const meta = parseViewError(error.response?.data)
         throw new ViewHttpError(
-          meta.message ?? error.message,
+          meta.message ?? fallbackMessage(error),
           error.response?.status,
           meta.code,
           meta.kind,

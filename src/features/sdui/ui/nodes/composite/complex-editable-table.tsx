@@ -30,6 +30,7 @@ import {
   extractAllLeafColumns,
   VERTICAL_SUB_ROW_HEIGHT,
 } from '../../../lib/utils/build-column-defs'
+import { extractSearchColumns } from '../../../lib/utils/table-column-def'
 import { parseRowAppearance } from '../../../lib/utils/row-appearance'
 import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { editableTableSx } from './editable-table-sx'
@@ -214,10 +215,11 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     activateRow(rowId)
   }
 
-  const search = useTableSearch(
-    visibleRows,
-    flatColumns.map((c) => ({ id: c.id, binding: c.binding }))
+  const searchColumns = useMemo(
+    () => extractSearchColumns(node.children),
+    [node.children]
   )
+  const search = useTableSearch(visibleRows, searchColumns)
 
   const { headTopOffset, setFirstHeadRowRef } = useStickyHeadOffset()
 

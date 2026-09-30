@@ -78,4 +78,23 @@ describe('useTableSearch (SCRUM-302)', () => {
     expect(result.current.query).toBe('')
     expect(result.current.current).toBeNull()
   })
+
+  it('несколько под-колонок одной ячейки дают одно совпадение', () => {
+    const groupColumns: TableSearchColumn[] = [
+      { id: 'grp', binding: 'IstochnikFinansirovaniya' },
+      { id: 'grp', binding: 'FKR' },
+    ]
+    const groupRows = [
+      {
+        rowId: 'r1',
+        IstochnikFinansirovaniya: { id: 1, presentation: '111 Бюджет' },
+        FKR: { id: 2, presentation: '111' },
+      },
+    ]
+    const { result } = renderHook(() => useTableSearch(groupRows, groupColumns))
+    act(() => {
+      result.current.setQuery('111')
+    })
+    expect(result.current.matches).toEqual([{ rowId: 'r1', columnId: 'grp' }])
+  })
 })

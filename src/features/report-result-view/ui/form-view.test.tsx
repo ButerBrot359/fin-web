@@ -76,3 +76,35 @@ describe('FormView — строка номеров граф', () => {
     expect(screen.queryByText('2')).toBeNull()
   })
 })
+
+describe('FormView — бланк по ширине страницы (fitToWidth)', () => {
+  const form = (fitToWidth: boolean): ReportFormDto => ({
+    title: 'Мемориальный ордер №5',
+    sections: [
+      {
+        fitToWidth,
+        columns: [
+          { code: 'F405Opisanie', titleRu: '', width: 35, wrap: true },
+          { code: 'F405Summa', titleRu: 'Сумма, тенге', width: 14 },
+        ] as never,
+        rows: [{ level: 0, cells: { F405Opisanie: 'Начислено' } }],
+      } as never,
+    ],
+  })
+
+  it('ширины граф задаются долями страницы', () => {
+    const { container } = render(<FormView form={form(true)} />)
+
+    const cols = container.querySelectorAll('col')
+    expect(cols[0].style.width).toMatch(/%$/)
+    expect(cols[1].style.width).toMatch(/%$/)
+    expect(container.querySelector('table')?.style.minWidth).not.toBe('')
+  })
+
+  it('без флага ширины остаются в пикселях', () => {
+    const { container } = render(<FormView form={form(false)} />)
+
+    expect(container.querySelectorAll('col')[0].style.width).toBe('280px')
+    expect(container.querySelector('table')?.style.minWidth).toBe('')
+  })
+})

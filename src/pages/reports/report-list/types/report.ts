@@ -79,6 +79,7 @@ export interface ReportFormSectionDto {
   numberGraphs?: boolean
   /** Номер первой графы секции (1 у дебетовой, продолжение у кредитовой). */
   graphNumberStart?: number
+  fitToWidth?: boolean
 }
 
 /** Подпись бланка («Исполнитель:» — должность/подпись/расшифровка). */

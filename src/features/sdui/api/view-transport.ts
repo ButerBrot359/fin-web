@@ -14,12 +14,15 @@ import type {
 import { normalizeConflictBody } from './normalize-conflict'
 import { parseViewError } from './parse-view-error'
 import { resolveViewLanguage } from './view-language'
+import { attachLanguageHeader } from '@/shared/api/attach-language-header'
 
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 30000,
 })
+
+attachLanguageHeader(instance)
 
 // SDUI ходит в тот же webbuh, что и общий клиент, поэтому токен нужен и здесь (SCRUM-373).
 // Инстанс отдельный по историческим причинам — забыть его значит получить экраны SDUI,

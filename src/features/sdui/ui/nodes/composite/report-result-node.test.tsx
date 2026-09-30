@@ -58,6 +58,8 @@ vi.mock('react-i18next', () => ({
 const useInfiniteQuery = vi.fn<(cfg: QueryConfig) => QueryReturn>()
 vi.mock('@tanstack/react-query', () => ({
   useInfiniteQuery: (cfg: QueryConfig) => useInfiniteQuery(cfg),
+  // SCRUM-360 #1: use-list-infinite-rows импортирует keepPreviousData.
+  keepPreviousData: (prev: unknown) => prev,
 }))
 
 const postMock =

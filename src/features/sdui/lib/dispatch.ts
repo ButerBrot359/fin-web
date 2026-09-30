@@ -26,6 +26,7 @@ import {
 import { useCustomizeFormStore } from './customize-form/customize-form-store'
 import { revealAllTableErrors } from './table-validation-registry'
 import { shouldRevealTableErrors } from './utils/reveal-policy'
+import { isTreeExpandCommand } from './utils/list-tree-mode'
 import {
   currentFormInstanceId,
   prepareFreshFormInstanceId,
@@ -94,8 +95,14 @@ export function useSduiDispatch() {
       // пока предыдущий той же сессии не отвечен, дропается молча: раньше он ждал
       // блокировку на бэке 20 с и падал 409 LOCK_CONFLICT. isRetry пропускаем —
       // retry конфликт-хендлера стартует, пока флаг исходной команды ещё держится.
+      // Команды раскрытия дерева гард обходят (SCRUM-360 #1: идемпотентны, без
+      // блокировок; клик по папке не должен мигать disabled-кнопками тулбара).
       const inflightKey =
-        action.type === 'COMMAND' && !isRetry ? formSessionId : null
+        action.type === 'COMMAND' &&
+        !isRetry &&
+        !isTreeExpandCommand(action.command)
+          ? formSessionId
+          : null
       if (inflightKey) {
         if (inflightKey in useCommandInflightStore.getState().sessions) {
           return false

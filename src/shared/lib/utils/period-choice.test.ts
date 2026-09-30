@@ -5,6 +5,7 @@ import {
   isQuarterInPeriod,
   isMonthInPeriod,
   monthPeriod,
+  monthSpanPeriod,
   normalizePeriod,
   quarterOf,
   quarterPeriod,
@@ -64,6 +65,17 @@ describe('period-choice', () => {
     expect(unionPeriod({ from: '', to: '' }, monthPeriod(2026, 1))).toEqual(
       monthPeriod(2026, 1)
     )
+  })
+
+  it('диапазон месяцев упорядочивается и переходит через границу года', () => {
+    expect(monthSpanPeriod(2026 * 12 + 5, 2026 * 12 + 3)).toEqual({
+      from: '2026-04-01',
+      to: '2026-06-30',
+    })
+    expect(monthSpanPeriod(2026 * 12 + 10, 2027 * 12 + 1)).toEqual({
+      from: '2026-11-01',
+      to: '2027-02-28',
+    })
   })
 
   it('месяц подсвечивается, только если целиком внутри периода', () => {

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
+import { performSectionToggle } from '@/features/workspace-tabs'
 import {
   getStorageItem,
   setStorageItem,
@@ -57,10 +58,10 @@ export function useSidebar() {
   )
 
   const handleSelectItem = useCallback(
-    async (item: NavigationItem) => {
-      await navigate(item.path)
+    (item: NavigationItem) => {
+      performSectionToggle(item.path, location.pathname, navigate)
     },
-    [navigate]
+    [navigate, location.pathname]
   )
 
   return {

@@ -2,6 +2,7 @@ import type { FC } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Typography } from '@mui/material'
 
+import { performSectionToggle } from '@/features/workspace-tabs'
 import { cn } from '@/shared/lib/utils/cn'
 
 import type { ViewNode } from '../../../types/view'
@@ -48,7 +49,7 @@ export const SidebarLinkItem: FC<SidebarLinkItemProps> = ({
     <button
       type="button"
       onClick={() => {
-        void navigate(route)
+        performSectionToggle(route, pathname, navigate)
       }}
       aria-current={isActive ? 'page' : undefined}
       className={buttonStyles(isActive, collapsed)}

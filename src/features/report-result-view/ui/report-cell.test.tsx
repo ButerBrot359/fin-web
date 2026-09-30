@@ -74,6 +74,26 @@ describe('ReportCell — формат по объявленному типу з�
     expect(screen.getByText('2,500')).toBeTruthy()
   })
 
+  it('формат «#,##0.##» печатает копейки только когда они есть, как в 1С', () => {
+    const col = column({ role: 'MEASURE', format: '#,##0.##' })
+    render(<ReportCell value={32922} col={col} />)
+    render(<ReportCell value={4479.17} col={col} />)
+
+    expect(screen.getByText('32 922')).toBeTruthy()
+    expect(screen.getByText('4 479,17')).toBeTruthy()
+  })
+
+  it('норма амортизации с форматом «#,##0.0» печатается с одним знаком', () => {
+    render(
+      <ReportCell
+        value={25}
+        col={column({ valueType: 'DECIMAL', format: '#,##0.0' })}
+      />
+    )
+
+    expect(screen.getByText('25,0')).toBeTruthy()
+  })
+
   it('строковая колонка не трогается: текст остаётся как есть', () => {
     render(<ReportCell value="1315" col={column({})} />)
 

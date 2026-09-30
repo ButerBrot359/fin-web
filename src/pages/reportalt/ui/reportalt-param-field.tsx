@@ -254,6 +254,23 @@ export const ReportAltParamField = ({
       ? selectedDictId
       : null
   )
+  const selectedDictLabel =
+    selectedDictId == null
+      ? null
+      : (sourceOptions.find((o) => Number(o.id) === selectedDictId)?.label ??
+        pickedLabels[selectedDictId] ??
+        resolveDictionaryEntryLabel(selectedDictEntry, selectedDictId))
+  const selectedDictOption = useMemo<SelectOption | null>(
+    () =>
+      selectedDictId == null || selectedDictLabel == null
+        ? null
+        : {
+            id: selectedDictId,
+            code: String(selectedDictId),
+            label: selectedDictLabel,
+          },
+    [selectedDictId, selectedDictLabel]
+  )
 
   const allowedValuesSelect = (options: SelectOption[]) => {
     const selected =
@@ -477,24 +494,9 @@ export const ReportAltParamField = ({
         return allowedValuesSelect(allowedOptions)
       }
       if (param.dataType === 'DICTIONARY_REF' && optionsUrl) {
-        const selected: SelectOption | null =
-          selectedDictId == null
-            ? null
-            : {
-                id: selectedDictId,
-                code: String(selectedDictId),
-                label:
-                  sourceOptions.find((o) => Number(o.id) === selectedDictId)
-                    ?.label ??
-                  pickedLabels[selectedDictId] ??
-                  resolveDictionaryEntryLabel(
-                    selectedDictEntry,
-                    selectedDictId
-                  ),
-              }
         return (
           <AutocompleteInput
-            value={selected}
+            value={selectedDictOption}
             options={sourceOptions}
             loading={sourceLoading}
             onOpen={() => {

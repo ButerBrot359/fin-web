@@ -133,4 +133,26 @@ describe('ReportAltParamField — ссылка на большой справо�
     expect(fetchByIdMock).toHaveBeenCalledWith(42, expect.anything())
     expect(fetchOptionsMock).not.toHaveBeenCalled()
   })
+
+  it('набранный поверх выбранного значения текст не стирается', async () => {
+    fetchByIdMock.mockResolvedValue({ id: 42, nameRu: 'Выбранная программа' })
+    fetchOptionsMock.mockResolvedValue([])
+
+    renderField(
+      <ReportAltParamField param={programma} value={42} onChange={vi.fn()} />
+    )
+    const input = screen.getByRole<HTMLInputElement>('combobox')
+    await waitFor(() => {
+      expect(input.value).toBe('Выбранная программа')
+    })
+
+    fireEvent.focus(input)
+    fireEvent.change(input, { target: { value: '101' } })
+    await waitFor(() => {
+      expect(fetchOptionsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search: '101' })
+      )
+    })
+    expect(input.value).toBe('101')
+  })
 })

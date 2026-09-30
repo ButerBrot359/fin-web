@@ -23,6 +23,7 @@ import {
   isSpanRow,
   resolveReportLang,
 } from '../lib/cell-helpers'
+import { fitColumnWidths } from '../lib/fit-column-widths'
 import {
   buildHeadModel,
   buildPathHeadModel,
@@ -137,12 +138,16 @@ export const LedgerTable = ({
     if (avail <= 0) return
     const sum = defaultWidths.reduce((a, b) => a + b, 0)
     if (sum <= 0) return
-    const scale = Math.min(1, avail / sum)
     fitDoneRef.current = true
     setColWidths(
-      defaultWidths.map((w) => Math.max(MIN_COL_WIDTH, Math.round(w * scale)))
+      fitColumnWidths(
+        defaultWidths,
+        columns.map((c) => c.width != null),
+        avail,
+        MIN_COL_WIDTH
+      )
     )
-  }, [defaultWidths, columns.length])
+  }, [defaultWidths, columns])
 
   const startResize = (index: number, e: ReactMouseEvent) => {
     e.preventDefault()

@@ -97,4 +97,46 @@ describe('useTableSearch (SCRUM-302)', () => {
     })
     expect(result.current.matches).toEqual([{ rowId: 'r1', columnId: 'grp' }])
   })
+
+  it('отбирает строки с совпадением, без запроса отдаёт все', () => {
+    const { result } = renderHook(() => useTableSearch(rows, columns))
+    expect(result.current.rows).toBe(rows)
+    act(() => {
+      result.current.setQuery('НАДБАВКА')
+    })
+    expect(result.current.rows.map((r) => r.rowId)).toEqual(['r2', 'r3'])
+    act(() => {
+      result.current.clear()
+    })
+    expect(result.current.rows).toBe(rows)
+  })
+
+  it('строка, добавленная во время поиска, видна без совпадения', () => {
+    const { result, rerender } = renderHook(
+      ({ data }) => useTableSearch(data, columns),
+      { initialProps: { data: rows } }
+    )
+    act(() => {
+      result.current.setQuery('оклад')
+    })
+    rerender({
+      data: [...rows, { rowId: 'tmp-1', Name: '', VychetIPN: null }],
+    })
+    expect(result.current.rows.map((r) => r.rowId)).toEqual(['r1', 'tmp-1'])
+  })
+
+  it('найденная строка не пропадает, когда её правят в ходе поиска', () => {
+    const { result, rerender } = renderHook(
+      ({ data }) => useTableSearch(data, columns),
+      { initialProps: { data: rows } }
+    )
+    act(() => {
+      result.current.setQuery('оклад')
+    })
+    rerender({
+      data: rows.map((r) => (r.rowId === 'r1' ? { ...r, Name: 'Окла' } : r)),
+    })
+    expect(result.current.rows.map((r) => r.rowId)).toEqual(['r1'])
+    expect(result.current.matches).toEqual([])
+  })
 })

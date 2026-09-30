@@ -34,6 +34,7 @@ import { CustomizeFormPreview } from './customize-form-preview'
 import { CustomizeFormScopeSelect } from './customize-form-scope-select'
 import { CustomizeFormSectionList } from './customize-form-section-list'
 import { ShareViewSettingsDialog } from './share-view-settings-dialog'
+import { ViewSettingsHistoryDialog } from './view-settings-history-dialog'
 import { ViewSettingsPresetsDialog } from './view-settings-presets-dialog'
 
 /**
@@ -128,6 +129,11 @@ export const CustomizeFormDialog: FC = () => {
   const [presetsOpen, setPresetsOpen] = useState(false)
   const presetsAvailable = mode !== 'default' && screenKey != null
 
+  // SCRUM-412 п.4: журнал «кто и когда менял форму для всех» — только в
+  // админ-режиме (у сервера история и так под административными ролями).
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const historyAvailable = mode === 'default' && screenKey != null
+
   const applyPreset = async (presetPatch: ViewSettingsPatchEntry[]) => {
     await viewSettingsApi.put(screenKey ?? '', presetPatch)
     setPresetsOpen(false)
@@ -215,6 +221,17 @@ export const CustomizeFormDialog: FC = () => {
           />
         </DialogContent>
         <DialogActions>
+          {historyAvailable && (
+            <Button
+              variant="tertiary"
+              onClick={() => {
+                setHistoryOpen(true)
+              }}
+              disabled={busy}
+            >
+              {t('sdui.customizeForm.history')}
+            </Button>
+          )}
           {presetsAvailable && (
             <>
               <Button
@@ -258,6 +275,16 @@ export const CustomizeFormDialog: FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      {historyAvailable && (
+        <ViewSettingsHistoryDialog
+          open={historyOpen}
+          screenKey={screenKey}
+          profiles={profiles}
+          onClose={() => {
+            setHistoryOpen(false)
+          }}
+        />
+      )}
       {presetsAvailable && (
         <>
           <ShareViewSettingsDialog

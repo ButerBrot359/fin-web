@@ -964,7 +964,17 @@
       "presetsDeleteFailed": "Пресетті жою мүмкін болмады",
       "defaultScope": "Кім үшін",
       "defaultScopeAll": "Барлығына",
-      "defaultRoleWarning": "Баптау «{{name}}» рөлі үшін пішін стандарты ретінде сақталады және оның пайдаланушыларына қолданылады (жеке баптаулар үстінде қалады)."
+      "defaultRoleWarning": "Баптау «{{name}}» рөлі үшін пішін стандарты ретінде сақталады және оның пайдаланушыларына қолданылады (жеке баптаулар үстінде қалады).",
+      "history": "Өзгерістер тарихы",
+      "historyTitle": "Барлығына арналған пішіннің өзгерістер тарихы",
+      "historyLoading": "Жүктелуде…",
+      "historyEmpty": "Барлығына арналған пішінді әлі ешкім өзгертпеген",
+      "historyClose": "Жабу",
+      "historyUnknownUser": "Белгісіз пайдаланушы",
+      "historyLayerAll": "Барлығына",
+      "historyLayerProfile": "«{{name}}» рөлі үшін",
+      "historyActionReset": "стандартты пішінге қайтару",
+      "historyActionSave_other": "сақтау ({{count}} түзету)"
     },
     "designAdmin": {
       "menuItem": "Дизайн конструкторы",

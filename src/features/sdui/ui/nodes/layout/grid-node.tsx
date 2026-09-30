@@ -16,6 +16,17 @@ import { NodeRenderer } from '../../node-renderer'
  * SPACER-ячейки конвертации рендерятся пустыми клетками — они держат дыры
  * исходной раскладки, пока пользователь не задал свой порядок.
  */
+/**
+ * Потолок ширины НОРМАЛИЗОВАННОЙ шапки (columns=24). Без него резиновая сетка
+ * растягивает инпуты на всю ширину окна, и на широких экранах поля шапки
+ * доминируют над табличными частями (SCRUM-412 п.3 — «уменьшить ширину
+ * инпутов, приоритет у табличных частей»). 1200px ≈ два поля по ~580px — как
+ * компактные ряды параметров reportalt. Легаси-гриды (columns=2 страницы
+ * модуля) не трогаем: у них своя раскладка.
+ */
+const NORMALIZED_GRID_MAX_WIDTH = 1200
+const NORMALIZED_GRID_COLUMNS = 24
+
 export const GridNode: FC<NodeProps> = ({ node }) => {
   const columns = (node.props?.columns as number | undefined) ?? 1
   const rowGap = resolveStackGap(node.props?.gap as number | undefined)
@@ -38,6 +49,9 @@ export const GridNode: FC<NodeProps> = ({ node }) => {
         gridTemplateColumns: `repeat(${String(columns)}, 1fr)`,
         rowGap,
         columnGap,
+        ...(columns === NORMALIZED_GRID_COLUMNS
+          ? { maxWidth: NORMALIZED_GRID_MAX_WIDTH }
+          : {}),
       }}
     >
       {node.children?.filter(isNodeVisible).map((c) => (

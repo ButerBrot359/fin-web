@@ -78,10 +78,15 @@ function toZone(
     const props = child.props ?? {}
     const userHidden = hiddenByUser.has(child.id)
     const serverHidden = props.visible === false && !userHidden
-    if (child.type === 'SPACER' || serverHidden) {
+    const label = ((props.label as string | undefined) ?? '').trim()
+    if (child.type === 'SPACER' || serverHidden || label === '') {
       // Спейсер — дыра исходной раскладки: в модели редактора она выражается
       // границей строки. Скрытые СЕРВЕРОМ ноды не редактируются вовсе.
-      if (child.type === 'SPACER') used += spanOf(props)
+      // Поле БЕЗ ПОДПИСИ (служебное) пользователю не предъявляется — плашка
+      // «Без названия» читалась как сломанная (SCRUM-412 п.5); в раскладке оно
+      // остаётся и, как спейсер, занимает свои юниты. Так же безымянные ноды
+      // отсеивают collect-customizable-nodes и build-preview-model.
+      if (!serverHidden) used += spanOf(props)
       continue
     }
     const span = spanOf(props)
@@ -93,9 +98,7 @@ function toZone(
     }
     current.push({
       nodeId: child.id,
-      // Поле без подписи (напр. служебная сумма): нейтральный глиф вместо
-      // технического id — id пользователю ни о чём.
-      label: (props.label as string | undefined) ?? '⋯',
+      label,
       span,
       hidden: userHidden,
       homeZoneId: grid.id,

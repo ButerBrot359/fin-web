@@ -131,14 +131,18 @@ describe('под-строки вертикальной группы колоно
     }
   })
 
-  it('длинное значение переносится, как во вкладке без вертикальных групп', () => {
+  // SCRUM-412 п.2: высота под-строки зафиксирована общей сеткой, а обрезать
+  // ячейку по границе нельзя (clip=false из-за рамок редакторов) — перенос в
+  // под-строках выключен принудительно, иначе значение вытекает на соседнюю
+  // под-строку («буквы друг на друге»).
+  it('длинное значение в под-строке — одна строка с многоточием', () => {
     const { container } = renderTable(<TableNode node={node()} />)
     const longText = Array.from(
       container.querySelectorAll<HTMLElement>('tbody span')
     ).find((el) => el.textContent.startsWith('Функциональная классификация'))
     expect(longText).toBeTruthy()
-    expect(longText?.style.whiteSpace).toBe('normal')
-    expect(longText?.style.overflowWrap).toBe('anywhere')
+    expect(longText?.style.whiteSpace).toBe('nowrap')
+    expect(longText?.style.textOverflow).toBe('ellipsis')
   })
 
   // «Сотрудник» и «Должность» из правила переноса исключены (isNoWrapColumn):
@@ -156,21 +160,24 @@ describe('под-строки вертикальной группы колоно
 })
 
 describe('редакторы в под-строке вертикальной группы', () => {
-  it('текстовый редактор — textarea: значение переносится по ширине колонки', () => {
+  // SCRUM-412 п.2: в под-строках перенос выключен — текстовый редактор
+  // однострочный <input>, а не textarea (многострочное значение вытекало бы
+  // за фиксированную высоту под-строки).
+  it('текстовый редактор в под-строке — однострочный input, не textarea', () => {
     const { container } = renderTable(<TableNode node={node()} />)
-    expect(container.querySelectorAll('tbody textarea').length).toBeGreaterThan(
-      0
-    )
+    expect(container.querySelectorAll('tbody textarea')).toHaveLength(0)
+    expect(container.querySelectorAll('tbody input').length).toBeGreaterThan(0)
   })
 
-  it('подпись перечисления переносится, а не обрезается', () => {
+  it('подпись перечисления в под-строке — одна строка с многоточием', () => {
     const { container } = renderTable(<TableNode node={node()} />)
-    // Второе перечисление таблицы — «Специфика», колонка вне исключений.
+    // Второе перечисление таблицы — «Специфика», колонка вне исключений, но в
+    // под-строке VERTICAL-группы перенос выключен и для неё.
     const selects = container.querySelectorAll<HTMLElement>(
       'tbody .MuiSelect-select'
     )
     expect(selects).toHaveLength(2)
-    expect(getComputedStyle(selects[1]).whiteSpace).toBe('normal')
+    expect(getComputedStyle(selects[1]).whiteSpace).toBe('nowrap')
   })
 
   it('перечисление исключённой колонки — одна строка с многоточием', () => {

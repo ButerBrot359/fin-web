@@ -18,7 +18,9 @@ export const ReportSignature = ({
   signature: ReportFormSignatureDto
 }) => {
   const { t } = useTranslation()
-  const captions = signature.captions ?? [t('reports.signatureCaption')]
+  const captions = signature.captions?.length
+    ? signature.captions
+    : [t('reports.signatureCaption')]
   const lastIdx = captions.length - 1
   return (
     <div className="mt-8 flex flex-wrap items-start gap-x-8 gap-y-3">

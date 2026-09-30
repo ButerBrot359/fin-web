@@ -1,6 +1,7 @@
 import { type KeyboardEvent, type ReactNode, useMemo } from 'react'
 import {
   Autocomplete,
+  Checkbox,
   TextField,
   Tooltip,
   type SxProps,
@@ -253,6 +254,32 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
       <Autocomplete
         multiple
         {...commonProps}
+        sx={[
+          ...(Array.isArray(sx) ? sx : [sx]),
+          {
+            '& .MuiAutocomplete-inputRoot': { overflow: 'hidden' },
+            '& .MuiAutocomplete-tag': {
+              minWidth: 0,
+              maxWidth: 'calc(100% - 96px)',
+              flexShrink: 1,
+            },
+            '& .MuiAutocomplete-input': { minWidth: '24px !important' },
+          },
+        ]}
+        disableCloseOnSelect
+        renderOption={(optionProps, option, { selected }) => {
+          const { key, ...rest } = optionProps
+          return (
+            <li key={key} {...rest}>
+              <Checkbox
+                size="small"
+                checked={selected}
+                sx={{ mr: 1, p: 0.5 }}
+              />
+              {option.label}
+            </li>
+          )
+        }}
         value={value}
         onChange={(_e, newValue) => {
           onChange(newValue)

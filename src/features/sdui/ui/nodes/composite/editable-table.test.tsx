@@ -40,10 +40,25 @@ vi.mock('./table-cell-editor', () => ({
   ),
 }))
 vi.mock('./table-toolbar', () => ({
-  TableToolbar: ({ onAdd }: { onAdd?: () => void }) => (
-    <button type="button" onClick={onAdd}>
-      Добавить
-    </button>
+  TableToolbar: ({
+    onAdd,
+    search,
+  }: {
+    onAdd?: () => void
+    search: { query: string; setQuery: (q: string) => void }
+  }) => (
+    <>
+      <button type="button" onClick={onAdd}>
+        Добавить
+      </button>
+      <input
+        placeholder="Поиск"
+        value={search.query}
+        onChange={(event) => {
+          search.setQuery(event.target.value)
+        }}
+      />
+    </>
   ),
 }))
 
@@ -205,5 +220,29 @@ describe('EditableTable — добавление строки', () => {
     expect(rows[1].classList.contains('Mui-selected')).toBe(true)
     expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' })
     expect(scrollIntoView.mock.contexts.at(-1)).toBe(rows[1])
+  })
+})
+
+describe('EditableTable — поиск', () => {
+  it('оставляет строки с совпадением и показывает строку, добавленную во время поиска', () => {
+    state.TMZ = [
+      { rowId: 'r1', Nomen: '2Алдигурова Фируза Жумановна' },
+      { rowId: 'r2', Nomen: '3Андосов Нурлан Мурзахметович' },
+    ]
+    HTMLTableRowElement.prototype.scrollIntoView = vi.fn()
+    renderTable({ allowAdd: true })
+
+    fireEvent.change(screen.getByPlaceholderText('Поиск'), {
+      target: { value: '2алдигурова' },
+    })
+
+    expect(screen.getByText('2Алдигурова Фируза Жумановна')).toBeTruthy()
+    expect(screen.queryByText('3Андосов Нурлан Мурзахметович')).toBeNull()
+
+    fireEvent.click(screen.getByText('Добавить'))
+
+    const rows = document.querySelectorAll('tbody tr')
+    expect(rows).toHaveLength(2)
+    expect(rows[1].classList.contains('Mui-selected')).toBe(true)
   })
 })

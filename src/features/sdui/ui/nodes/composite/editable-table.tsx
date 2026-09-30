@@ -106,7 +106,13 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   // Отбор строк внешним списком (порт 1С `ОтборСтрок`) считается ДО поиска,
   // виртуализации и операций тулбара: всё перечисленное обязано работать над тем
   // же набором, который реально отрисован, иначе индексы разъезжаются с экраном.
-  const visibleRows = useExternalRowFilter(node, sync.rows)
+  const otobrannyeRows = useExternalRowFilter(node, sync.rows)
+
+  const search = useTableSearch(
+    otobrannyeRows,
+    visibleColumns.map((c) => ({ id: c.id, binding: c.binding }))
+  )
+  const visibleRows = search.rows
 
   // Позиция видимой строки в ПОЛНОМ массиве: `selectedIndex` и `row.index`
   // TanStack'а нумеруют отфильтрованный набор, а мутации sync принимают индекс
@@ -126,11 +132,6 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   // Выделение живёт только при текущей строке: её снимают и снаружи, и тогда «Удалить»
   // обязана погаснуть вместе с ней.
   const vydelennyeRowIds = selectedRowId === null ? [] : vybor.vydelennyeRowIds
-
-  const search = useTableSearch(
-    visibleRows,
-    visibleColumns.map((c) => ({ id: c.id, binding: c.binding }))
-  )
 
   // Виртуализация SCRUM-368 + внутренний скролл SCRUM-327 — общий контейнер.
   const { containerRef, virt, maxHeight, minHeight, setContainerRef } =

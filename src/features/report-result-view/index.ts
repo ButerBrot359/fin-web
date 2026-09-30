@@ -8,11 +8,18 @@ export {
 export { isUnifiedRendererEnabled } from './lib/feature-flag'
 export { formatMoney1C, isHighlightRow } from './lib/cell-helpers'
 export { formatReportTitle } from './lib/format-title'
-export { buildHeadModel, headColumnTitle } from './lib/head-model'
+export {
+  buildHeadModel,
+  buildPathHeadModel,
+  hasHeaderPath,
+  headColumnTitle,
+} from './lib/head-model'
 export type {
   HeadModel,
   HeadModelCell,
   HeadModelColumn,
   HeadModelLeaf,
   HeadModelOptions,
+  PathHeadCell,
+  PathHeadModel,
 } from './lib/head-model'

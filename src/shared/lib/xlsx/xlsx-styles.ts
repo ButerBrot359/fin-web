@@ -24,6 +24,7 @@ export const XF = {
   HL_RIGHT: 9,
   HL_MONEY: 10,
   HL_QTY: 11,
+  HEADER_VERTICAL: 12,
 } as const
 
 const NUMFMT_MONEY = 164 // # ##0.00
@@ -59,7 +60,7 @@ export const buildStylesXml = (): string =>
   `<diagonal/></border>` +
   '</borders>' +
   '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-  '<cellXfs count="12">' +
+  '<cellXfs count="13">' +
   // 0 DEFAULT
   '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
   // 1 TITLE
@@ -95,6 +96,9 @@ export const buildStylesXml = (): string =>
   // 11 HL_QTY
   `<xf numFmtId="${String(NUMFMT_QTY)}" fontId="4" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyAlignment="1">` +
   '<alignment horizontal="right" vertical="top"/></xf>' +
+  // 12 HEADER_VERTICAL
+  '<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyAlignment="1">' +
+  '<alignment horizontal="center" vertical="center" textRotation="90" wrapText="1"/></xf>' +
   '</cellXfs>' +
   '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
   '</styleSheet>'

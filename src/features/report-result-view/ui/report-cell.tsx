@@ -200,12 +200,14 @@ export const ReportCell = ({
   if (isDateCell(col) && /^\d{4}-\d{2}-\d{2}/.test(text)) {
     text = formatPeriodValue(text, col)
   }
+  const multiline = text.includes('\n')
   return (
     <Typography
       variant="body2"
-      noWrap={!bold && !col.wrap}
+      noWrap={!multiline && !bold && !col.wrap}
       className={isRightAligned(col) ? 'text-right' : ''}
       sx={textStyle(bold)}
+      style={multiline ? { whiteSpace: 'pre-line' } : undefined}
     >
       {text}
     </Typography>

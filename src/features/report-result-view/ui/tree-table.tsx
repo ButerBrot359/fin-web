@@ -33,7 +33,12 @@ import {
   indicatorSubLabels,
   showsGrandTotal,
 } from '../lib/cell-helpers'
-import { buildHeadModel } from '../lib/head-model'
+import {
+  buildHeadModel,
+  buildPathHeadModel,
+  hasHeaderPath,
+} from '../lib/head-model'
+import { HeadTitle } from './head-title'
 import { ReportCell } from './report-cell'
 
 export type ReportRowClickZone = 'label' | 'value'
@@ -299,6 +304,14 @@ const PlainTreeTable = ({
       : null
   }, [bodyColumns, isKz])
 
+  const pathModel = useMemo(
+    () =>
+      hasHeaderPath(bodyColumns)
+        ? buildPathHeadModel(bodyColumns, { isKz })
+        : null,
+    [bodyColumns, isKz]
+  )
+
   const hasColumnNumbers = bodyColumns.some((c) => !!c.columnNumber)
 
   if (result.rows.length === 0) {
@@ -438,7 +451,32 @@ const PlainTreeTable = ({
           ))}
         </colgroup>
         <thead>
-          {headModel3 ? (
+          {pathModel ? (
+            pathModel.rows.map((cells, level) => (
+              <tr key={`path-row-${String(level)}`}>
+                {level === 0 && (
+                  <th
+                    rowSpan={pathModel.depth}
+                    className={th}
+                    style={stickyTree}
+                  >
+                    {treeHeader}
+                  </th>
+                )}
+                {cells.map((cell) => (
+                  <th
+                    key={cell.key}
+                    colSpan={cell.colSpan}
+                    rowSpan={cell.rowSpan}
+                    className={`${th} ${cell.vertical ? 'align-bottom' : ''}`}
+                    style={stickyAt(cell.col0, cell.colSpan)}
+                  >
+                    <HeadTitle title={cell.title} vertical={cell.vertical} />
+                  </th>
+                ))}
+              </tr>
+            ))
+          ) : headModel3 ? (
             <>
               <tr>
                 <th rowSpan={3} className={th} style={stickyTree}>

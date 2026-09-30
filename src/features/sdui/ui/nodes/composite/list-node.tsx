@@ -22,6 +22,7 @@ import { useListQuickFilters } from '../../../lib/hooks/use-list-quick-filters'
 import { useListSelection } from '../../../lib/hooks/use-list-selection'
 import { useListSelectionEvent } from '../../../lib/hooks/use-list-selection-event'
 import { useListTrail } from '../../../lib/hooks/use-list-trail'
+import { useListClientExpand } from '../../../lib/hooks/use-list-client-expand'
 import { isTreeDisplayMode } from '../../../lib/utils/list-tree-mode'
 import { useSduiDispatch } from '../../../lib/dispatch'
 
@@ -102,6 +103,11 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   // строки уходит событием selectionChanged (только при action с бэка).
   useListSelectionEvent(node, selectedRowId, dispatch)
 
+  // SCRUM-360 #3: панель «Родитель» — дерево с клиентским раскрытием
+  // (expandMode=CLIENT): множество раскрытых id живёт на клиенте и уезжает в
+  // params.expanded (CSV); серверной команды раскрытия у панели нет.
+  const clientExpand = useListClientExpand(node, source)
+
   const {
     rows,
     pagedData,
@@ -111,7 +117,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     sentinelRef,
   } = useListInfiniteRows({
     source,
-    params: levelParams,
+    params: clientExpand.params ?? levelParams,
     search: debouncedSearch,
     pageSize,
   })
@@ -138,6 +144,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     filterCommand,
     filterOpLabels,
     expandAction,
+    clientToggleExpand: clientExpand.onToggleExpand,
     dispatch,
     nodeId: node.id,
     sortInFlightRef,

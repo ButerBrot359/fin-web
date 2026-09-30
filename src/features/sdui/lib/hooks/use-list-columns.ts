@@ -18,6 +18,11 @@ interface UseListColumnsArgs {
   filterCommand: string | undefined
   filterOpLabels: Record<string, string> | undefined
   expandAction: ViewNodeAction | undefined
+  /**
+   * SCRUM-360 #3: клиентское раскрытие (expandMode=CLIENT, панель «Родитель») —
+   * вытесняет серверный toggleExpand: команды раскрытия у панели нет вовсе.
+   */
+  clientToggleExpand?: (rowId: number, expanded: boolean) => void
   dispatch: ReturnType<typeof useSduiDispatch>
   nodeId: string
   sortInFlightRef: RefObject<boolean>
@@ -38,6 +43,7 @@ export function useListColumns({
   filterCommand,
   filterOpLabels,
   expandAction,
+  clientToggleExpand,
   dispatch,
   nodeId,
   sortInFlightRef,
@@ -55,12 +61,9 @@ export function useListColumns({
         nodeId,
         sortInFlightRef,
         search,
-        onToggleExpand: buildToggleExpand(
-          isTree,
-          expandAction,
-          dispatch,
-          nodeId
-        ),
+        onToggleExpand:
+          (isTree ? clientToggleExpand : undefined) ??
+          buildToggleExpand(isTree, expandAction, dispatch, nodeId),
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -74,6 +77,7 @@ export function useListColumns({
       isTree,
       expandAction,
       search,
+      clientToggleExpand,
     ]
   )
 }

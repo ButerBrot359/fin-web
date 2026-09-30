@@ -1,6 +1,12 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  DICT_SIDEBAR_Z,
+  panelZIndex,
+  POPUP_Z,
+} from '@/shared/lib/utils/overlay-z-index'
+
 import { ConfirmDialog } from './confirm-dialog'
 
 vi.mock('@/shared/assets/icons/cross.svg', () => ({ default: () => null }))
@@ -15,7 +21,7 @@ const renderDialog = (onConfirm = vi.fn(), onCancel = vi.fn()) => {
       cancelLabel="Нет"
       onConfirm={onConfirm}
       onCancel={onCancel}
-    />,
+    />
   )
   return { onConfirm, onCancel }
 }
@@ -43,5 +49,19 @@ describe('ConfirmDialog', () => {
     fireEvent.click(screen.getByText('Нет'))
     expect(onCancel).toHaveBeenCalledTimes(1)
     expect(onConfirm).not.toHaveBeenCalled()
+  })
+
+  it('ложится поверх панелей стека, но под всплывающими списками', () => {
+    renderDialog()
+    const zIndex = Number(
+      screen
+        .getByText('Текст сообщения')
+        .closest('.MuiDialog-root')
+        ?.getAttribute('style')
+        ?.match(/z-index:\s*(\d+)/)?.[1]
+    )
+    expect(zIndex).toBeGreaterThan(panelZIndex(5))
+    expect(zIndex).toBeGreaterThan(DICT_SIDEBAR_Z)
+    expect(zIndex).toBeLessThan(POPUP_Z)
   })
 })

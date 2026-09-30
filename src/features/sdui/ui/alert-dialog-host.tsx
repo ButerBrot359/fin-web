@@ -3,6 +3,7 @@ import { Dialog, Typography } from '@mui/material'
 
 import CrossIcon from '@/shared/assets/icons/cross.svg'
 import { Button } from '@/shared/ui/buttons'
+import { QUESTION_Z } from '@/shared/lib/utils/overlay-z-index'
 import { cssVar, shadows } from '@/shared/design/tokens'
 
 import { useAlertStore } from '../lib/stores/alert-store'
@@ -21,6 +22,7 @@ export const AlertDialogHost = () => {
   return (
     <Dialog
       open={open}
+      style={{ zIndex: QUESTION_Z }}
       onClose={close}
       slotProps={{
         paper: {

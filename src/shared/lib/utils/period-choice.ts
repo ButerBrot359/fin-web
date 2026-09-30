@@ -69,6 +69,15 @@ const range = (from: Date, to: Date): PeriodRange => ({
 export const monthPeriod = (year: number, month: number): PeriodRange =>
   range(new Date(year, month, 1), new Date(year, month + 1, 0))
 
+export const monthSpanPeriod = (a: number, b: number): PeriodRange => {
+  const first = Math.min(a, b)
+  const last = Math.max(a, b)
+  return {
+    from: monthPeriod(Math.floor(first / 12), first % 12).from,
+    to: monthPeriod(Math.floor(last / 12), last % 12).to,
+  }
+}
+
 export const quarterPeriod = (year: number, quarter: number): PeriodRange =>
   range(new Date(year, quarter * 3, 1), new Date(year, quarter * 3 + 3, 0))
 

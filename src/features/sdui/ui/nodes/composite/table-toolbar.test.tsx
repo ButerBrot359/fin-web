@@ -353,3 +353,46 @@ describe('TableToolbar: доменные кнопки из tableCommands (SCRUM-
     )
   })
 })
+
+describe('TableToolbar: команда со значком', () => {
+  beforeEach(() => {
+    cleanup()
+    mockDispatch.mockClear()
+  })
+
+  const ustanovitFlazhki: TableCommandDescriptor = {
+    command: 'report.accountTable.checkAll:SchetaPoRazvernutomuSaldo',
+    label: 'Установить флажки',
+    labelKz: 'Белгілерді қою',
+    enabled: true,
+    disabledReason: null,
+    behavior: {
+      flushPendingTables: true,
+      resetsDirty: false,
+      closeAfter: false,
+    },
+    icon: 'check-all',
+  }
+
+  it('известный значок рисует кнопку без текста, подпись уходит в aria-label', () => {
+    render(<TableToolbar {...baseProps} commands={[ustanovitFlazhki]} />)
+
+    const btn = screen.getByRole('button', { name: 'Установить флажки' })
+    expect(btn.textContent).toBe('')
+    fireEvent.click(btn)
+    expect(mockDispatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('незнакомый значок оставляет текстовую кнопку', () => {
+    render(
+      <TableToolbar
+        {...baseProps}
+        commands={[{ ...ustanovitFlazhki, icon: 'delete', label: 'Удалить' }]}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Удалить' }).textContent).toBe(
+      'Удалить'
+    )
+  })
+})

@@ -22,6 +22,7 @@ import {
   buildTableCommandAction,
   isRowScopedCommand,
 } from '../../../lib/utils/table-command-action'
+import { resolveButtonIcon } from '../action/button-icons'
 import { TableMoreMenu } from './table-more-menu'
 
 interface TableToolbarProps {
@@ -185,7 +186,18 @@ export const TableToolbar = ({
           : needsRow
             ? t('table.selectRowFirst')
             : undefined
-        const btn = (
+        const icon = resolveButtonIcon(cmd.icon ?? undefined)
+        const btn = icon ? (
+          <Button
+            variant="secondary"
+            disabled={disabled}
+            aria-label={commandLabel(cmd)}
+            onClick={() => {
+              runCommand(cmd)
+            }}
+            startIcon={icon}
+          />
+        ) : (
           <Button
             variant="secondary"
             disabled={disabled}
@@ -196,9 +208,11 @@ export const TableToolbar = ({
             {commandLabel(cmd)}
           </Button>
         )
-        return disabled && reason ? (
+        const tooltip =
+          disabled && reason ? reason : icon ? commandLabel(cmd) : null
+        return tooltip ? (
           // span-обёртка обязательна: без неё tooltip не работает на disabled-кнопке
-          <Tooltip key={cmd.command} title={reason}>
+          <Tooltip key={cmd.command} title={tooltip}>
             <span style={{ display: 'inline-flex' }}>{btn}</span>
           </Tooltip>
         ) : (

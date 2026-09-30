@@ -1,4 +1,5 @@
 import type { DocumentAttribute } from '@/entities/document-type'
+import { translateUi } from '@/shared/lib/i18n'
 
 // Per-(domain, typeCode) partial overrides applied on top of backend
 // attribute metadata for the dictionary list view. Useful when the
@@ -18,7 +19,9 @@ const ATTRIBUTE_OVERRIDES: Record<
       showInList: true,
       tableSortOrder: 1.5,
       nameRu: 'Организация',
-      nameKz: 'Организация',
+      get nameKz() {
+        return translateUi('Организация', 'kz')
+      },
     },
   },
 }

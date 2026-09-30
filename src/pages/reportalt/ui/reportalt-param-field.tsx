@@ -20,6 +20,10 @@ import {
 import { fetchReferenceOptions, useReferenceOptions } from '@/features/sdui'
 import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
 import {
+  resolveDictionaryEntryLabel,
+  useDictionaryEntry,
+} from '@/shared/lib/dictionary-entry/use-dictionary-entry'
+import {
   AutocompleteInput,
   DateTimeInput,
   NumberInput,
@@ -135,12 +139,14 @@ export const ReportAltParamField = ({
   )
   const isEnumByAllowedValues =
     param.dataType === 'ENUM_REF' && allowedOptions !== null
+  const isServerDictRef =
+    !isCharacteristicsRef &&
+    param.dataType === 'DICTIONARY_REF' &&
+    !!param.referenceDomain
   const isDictRef =
     !isCharacteristicsRef &&
     !isEnumByAllowedValues &&
-    (param.dataType === 'DICTIONARY_REF' ||
-      param.dataType === 'ENUM_REF' ||
-      param.dataType === 'REF_LIST')
+    (param.dataType === 'ENUM_REF' || param.dataType === 'REF_LIST')
 
   // Единственный поддержанный ПВХ-домен — «Виды субконто (БУ)»; при появлении других
   // обобщить на generic-хук по characteristicsTypeCode (тот же TODO, что в легаси).
@@ -208,7 +214,11 @@ export const ReportAltParamField = ({
     allowedAccountIds,
   ])
 
-  const optionsUrl = optionsSource?.url ?? null
+  const optionsUrl =
+    optionsSource?.url ??
+    (isServerDictRef
+      ? `/api/dictionary-entries/${param.referenceDomain!}/entries`
+      : null)
   const optionsParams = optionsSource?.params
   const {
     options: sourceOptions,
@@ -229,6 +239,21 @@ export const ReportAltParamField = ({
   const [pickedLabels, setPickedLabels] = useState<
     Partial<Record<number, string>>
   >({})
+  const selectedDictId =
+    param.dataType === 'DICTIONARY_REF' &&
+    value != null &&
+    value !== '' &&
+    typeof value !== 'object' &&
+    Number.isFinite(Number(value))
+      ? Number(value)
+      : null
+  const { entry: selectedDictEntry } = useDictionaryEntry(
+    selectedDictId != null &&
+      sourceOptions.every((o) => Number(o.id) !== selectedDictId) &&
+      pickedLabels[selectedDictId] == null
+      ? selectedDictId
+      : null
+  )
 
   const allowedValuesSelect = (options: SelectOption[]) => {
     const selected =
@@ -450,6 +475,51 @@ export const ReportAltParamField = ({
     case 'ENUM_REF': {
       if (param.dataType === 'ENUM_REF' && allowedOptions) {
         return allowedValuesSelect(allowedOptions)
+      }
+      if (param.dataType === 'DICTIONARY_REF' && optionsUrl) {
+        const selected: SelectOption | null =
+          selectedDictId == null
+            ? null
+            : {
+                id: selectedDictId,
+                code: String(selectedDictId),
+                label:
+                  sourceOptions.find((o) => Number(o.id) === selectedDictId)
+                    ?.label ??
+                  pickedLabels[selectedDictId] ??
+                  resolveDictionaryEntryLabel(
+                    selectedDictEntry,
+                    selectedDictId
+                  ),
+              }
+        return (
+          <AutocompleteInput
+            value={selected}
+            options={sourceOptions}
+            loading={sourceLoading}
+            onOpen={() => {
+              loadSourceOptions()
+            }}
+            onInputChange={(_e, text, reason) => {
+              if (reason === 'input') loadSourceOptionsDebounced(text)
+            }}
+            onChange={(o) => {
+              if (o) {
+                setPickedLabels((prev) => ({
+                  ...prev,
+                  [Number(o.id)]: o.label,
+                }))
+              }
+              onChange(o ? Number(o.id) : '')
+            }}
+            label={label}
+            required={param.required}
+            error={invalid}
+            disabled={disabled}
+            helperText={helperText}
+            fullWidth
+          />
+        )
       }
       // Одиночный выбор; значение — id записи (number).
       const selected =

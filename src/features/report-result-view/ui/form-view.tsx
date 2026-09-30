@@ -18,6 +18,7 @@ import {
   isRightAligned,
   resolveReportLang,
 } from '../lib/cell-helpers'
+import { fitToWidthLayout } from '../lib/fit-to-width'
 import { buildHeadModel } from '../lib/head-model'
 import { ReportCell } from './report-cell'
 
@@ -191,8 +192,14 @@ const SectionTable = ({
   const cols = deriveFormColumns(section)
   const start = section.graphNumberStart ?? 1
   const headRows = buildHeadRows(cols, isKz)
+  const fit = section.fitToWidth
+    ? fitToWidthLayout(cols, section, CHAR_PX)
+    : null
   return (
-    <table className="w-full table-fixed border-collapse bg-white">
+    <table
+      className="w-full table-fixed border-collapse bg-white"
+      style={fit ? { minWidth: fit.minWidth } : undefined}
+    >
       <colgroup>
         {cols.map((c, i) => (
           <col
@@ -203,8 +210,9 @@ const SectionTable = ({
               // Итого/суммы) компактные (не растягиваются, как было при auto);
               // дата — умеренная; описательные (наименование/МОЛ) — широкие;
               // DIMENSION — авто.
-              width:
-                c.width != null
+              width: fit
+                ? fit.widths[i]
+                : c.width != null
                   ? c.width * CHAR_PX
                   : i === 0
                     ? 40

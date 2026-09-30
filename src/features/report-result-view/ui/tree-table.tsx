@@ -127,6 +127,10 @@ const tdWrap =
 const thNumber =
   'whitespace-nowrap border border-pending-gray-1 px-1.5 py-0.5 text-center'
 
+const TABLE_SCROLL =
+  'max-h-[75vh] overflow-auto rounded-md border border-pending-gray-1 print:max-h-none print:overflow-visible'
+const STICKY_HEAD = 'sticky top-0 z-[3] bg-white'
+
 /** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, 13px, без капса. */
 const thTextSx = { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
 
@@ -439,7 +443,7 @@ const PlainTreeTable = ({
   }
 
   return (
-    <div className="overflow-auto rounded-md border border-pending-gray-1">
+    <div className={TABLE_SCROLL}>
       <table
         className="table-fixed border-collapse bg-white"
         style={tableStyle}
@@ -450,7 +454,7 @@ const PlainTreeTable = ({
             <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
           ))}
         </colgroup>
-        <thead>
+        <thead className={STICKY_HEAD}>
           {pathModel ? (
             pathModel.rows.map((cells, level) => (
               <tr key={`path-row-${String(level)}`}>
@@ -819,7 +823,7 @@ const FloorTreeTable = ({
   }
 
   return (
-    <div className="overflow-auto rounded-md border border-pending-gray-1">
+    <div className={TABLE_SCROLL}>
       <table className="table-fixed border-collapse bg-white">
         <colgroup>
           {leafColumns.map((col) => (
@@ -829,7 +833,7 @@ const FloorTreeTable = ({
             <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
           ))}
         </colgroup>
-        <thead>
+        <thead className={STICKY_HEAD}>
           {floorCodes.map((code, idx) => {
             const col = result.columns.find((c) => c.code === code)
             const title = col ? columnTitle(col, isKz) : code

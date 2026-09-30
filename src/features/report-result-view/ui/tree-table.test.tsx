@@ -218,6 +218,15 @@ describe('TreeTable — дерево с этажами', () => {
     expect(zones).toEqual(['label', 'value'])
   })
 
+  it('шапка этажного дерева закреплена при прокрутке таблицы', () => {
+    const { container } = render(
+      <TreeTable result={floorResult} columns={floorColumns} />
+    )
+
+    expect(container.querySelector('thead')?.className).toContain('sticky')
+    expect(container.firstElementChild?.className).toContain('max-h-[75vh]')
+  })
+
   it('без обработчиков строки этажного дерева не кликабельны', () => {
     render(<TreeTable result={floorResult} columns={floorColumns} />)
 

@@ -14,6 +14,22 @@ export const isTreeDisplayMode = (node: ViewNode): boolean =>
   (node.props?.displayMode as string | undefined) === 'TREE'
 
 /**
+ * Команды раскрытия/свёртки дерева (SCRUM-360 #1/#2). Идемпотентны и терпимы к
+ * устаревшей ревизии (бэк отвечает без блокировок и 409), поэтому in-flight-гард
+ * COMMAND на них не распространяется: клик по раскрывателю не должен на время
+ * полёта дизейблить командные кнопки тулбара — «Создать» мигала при каждом
+ * открытии папки. Сериализацию запросов сессии держит очередь хода dispatch.
+ */
+const TREE_EXPAND_COMMANDS = new Set([
+  'list.toggleExpand',
+  'list.expandAll',
+  'list.collapseAll',
+])
+
+export const isTreeExpandCommand = (command: string | undefined): boolean =>
+  command != null && TREE_EXPAND_COMMANDS.has(command)
+
+/**
  * Колбэк раскрывателя дерева. value.expanded — ЖЕЛАЕМОЕ состояние, не
  * переключатель (команда идемпотентна, рассинхрон не страшен — §8.5).
  * Behavior — из действия expand (flush:false и т.д.), фронт его не сочиняет.

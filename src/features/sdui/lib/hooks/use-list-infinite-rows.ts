@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 
 import { fetchListPage } from '../../api/reference-options'
 import type {
@@ -65,6 +65,11 @@ export const useListInfiniteRows = ({
     },
     enabled: !!source,
     staleTime: 60 * 1000,
+    // SCRUM-360 #1: смена queryKey (drill-down по папке, патч source после
+    // toggleExpand/expandAll) держит ПРЕЖНИЕ строки до прихода новых вместо
+    // «Загрузка» на пустом месте — таблица не мигает. isLoading при этом true
+    // только у самого первого запроса без данных.
+    placeholderData: keepPreviousData,
   })
 
   const rows: ListRow[] = useMemo(

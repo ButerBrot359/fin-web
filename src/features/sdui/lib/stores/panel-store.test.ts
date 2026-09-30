@@ -165,3 +165,58 @@ describe('panel-store — замена панели', () => {
     expect(usePanelStore.getState().panels[0].swappedIn).toBeUndefined()
   })
 })
+
+describe('panel-store: патчи экрана в панели без своей сессии', () => {
+  beforeEach(() => {
+    usePanelStore.setState({ panels: [] })
+  })
+
+  const tableNode = (): ViewNode =>
+    ({
+      id: 'settings',
+      type: 'PAGE',
+      children: [
+        {
+          id: 'report.OSV.param.Scheta.schet',
+          type: 'TABLE_COLUMN',
+          props: { optionsSource: { url: '/a', params: {} } },
+        },
+      ],
+    }) as ViewNode
+
+  const setProp = {
+    op: 'setProp' as const,
+    nodeId: 'report.OSV.param.Scheta.schet',
+    key: 'optionsSource',
+    value: { url: '/a', params: { accountIds: '-1' } },
+  }
+
+  it('setProp экрана меняет узел панели, открытой в сессии экрана', () => {
+    usePanelStore.getState().push({ ...entry('settings'), node: tableNode() })
+
+    usePanelStore.getState().applyScreenPatches([setProp])
+
+    const column = usePanelStore.getState().panels[0].node.children?.[0]
+    expect(column?.props?.optionsSource).toEqual(setProp.value)
+  })
+
+  it('панель со своей сессией и панель-снимок патчи экрана не трогают', () => {
+    usePanelStore
+      .getState()
+      .push({ ...entry('own', 'fs-9'), node: tableNode() })
+    usePanelStore.getState().push({
+      ...entry('snapshot'),
+      node: { ...tableNode(), id: 'snapshot' },
+      hasChildState: true,
+    })
+
+    usePanelStore.getState().applyScreenPatches([setProp])
+
+    for (const panel of usePanelStore.getState().panels) {
+      expect(panel.node.children?.[0].props?.optionsSource).toEqual({
+        url: '/a',
+        params: {},
+      })
+    }
+  })
+})

@@ -32,13 +32,17 @@ const formatPeriodValue = (raw: string, col: ReportColumnDto): string => {
 }
 
 /** Стиль текста 1С: данные — #333/11px, выделенные строки — зелёный жирный/13px. */
-const textStyle = (highlight?: boolean, negative?: boolean) => ({
+const textStyle = (
+  highlight?: boolean,
+  negative?: boolean,
+  strong?: boolean
+) => ({
   color: negative
     ? cssVar(palette.pending1cRed)
     : highlight
       ? GREEN_1C
       : cssVar(palette.pendingText1),
-  fontWeight: highlight ? 700 : 400,
+  fontWeight: highlight || strong ? 700 : 400,
   fontSize: highlight ? HEAD_FS : DATA_FS,
   lineHeight: 1.3,
 })
@@ -54,6 +58,7 @@ export const MoneyCell = ({
   negativeRed,
   blankOnZero,
   bold,
+  strong,
   dcIndicator,
   decimals = 2,
   minDecimals,
@@ -62,6 +67,7 @@ export const MoneyCell = ({
   negativeRed?: boolean
   blankOnZero?: boolean
   bold?: boolean
+  strong?: boolean
   dcIndicator?: boolean
   decimals?: number
   minDecimals?: number
@@ -87,7 +93,7 @@ export const MoneyCell = ({
       variant="body2"
       noWrap
       className="text-right tabular-nums"
-      sx={textStyle(bold, isNeg)}
+      sx={textStyle(bold, isNeg, strong)}
     >
       {text}
     </Typography>
@@ -122,6 +128,8 @@ interface ReportCellProps {
    * десятичными знаками, остальные — двумя.
    */
   subLabels?: string[]
+  strong?: boolean
+  preserveIndent?: boolean
 }
 
 /**
@@ -136,6 +144,8 @@ export const ReportCell = ({
   col,
   bold,
   subLabels,
+  strong,
+  preserveIndent,
 }: ReportCellProps) => {
   if (Array.isArray(value)) {
     if (isNumericCell(col)) {
@@ -182,7 +192,7 @@ export const ReportCell = ({
           variant="body2"
           noWrap
           className="text-right tabular-nums"
-          sx={textStyle(bold)}
+          sx={textStyle(bold, false, strong)}
         >
           {text}
         </Typography>
@@ -194,6 +204,7 @@ export const ReportCell = ({
         negativeRed={col.negativeRed}
         blankOnZero={col.blankOnZero}
         bold={bold}
+        strong={strong}
         dcIndicator={col.dcIndicator}
         decimals={decimalsOfFormat(col.format).max}
         minDecimals={decimalsOfFormat(col.format).min}
@@ -207,13 +218,20 @@ export const ReportCell = ({
     text = formatPeriodValue(text, col)
   }
   const multiline = text.includes('\n')
+  const indented = !!preserveIndent && text.startsWith(' ')
   return (
     <Typography
       variant="body2"
-      noWrap={!multiline && !bold && !col.wrap}
+      noWrap={!multiline && !indented && !bold && !col.wrap}
       className={isRightAligned(col) ? 'text-right' : ''}
-      sx={textStyle(bold)}
-      style={multiline ? { whiteSpace: 'pre-line' } : undefined}
+      sx={textStyle(bold, false, strong)}
+      style={
+        multiline
+          ? { whiteSpace: 'pre-line' }
+          : indented
+            ? { whiteSpace: 'pre-wrap' }
+            : undefined
+      }
     >
       {text}
     </Typography>

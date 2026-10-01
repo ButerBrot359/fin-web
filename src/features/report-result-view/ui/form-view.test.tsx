@@ -179,3 +179,51 @@ describe('FormView — шапка и выравнивание бланка ф405
     expect(vsego?.colSpan).toBe(1)
   })
 })
+
+describe('FormView — строки программы и подпрограммы ф405 оборотной стороны', () => {
+  const form: ReportFormDto = {
+    title: '№ 5 Мемориальный ордер (оборотная сторона)',
+    sections: [
+      {
+        columns: [
+          { code: 'Uchrezhdenie', titleRu: 'Учреждение' },
+          { code: 'Itogo', titleRu: 'Итого', align: 'RIGHT' },
+        ] as never,
+        rows: [
+          {
+            level: 1,
+            rowKind: 'DATA',
+            appearance: ['BOLD_GROUP'],
+            cells: { Uchrezhdenie: '         001 001', Itogo: 325878 },
+          },
+          {
+            level: 2,
+            rowKind: 'DATA',
+            cells: { Uchrezhdenie: '                  015 015', Itogo: 51125 },
+          },
+        ],
+      } as never,
+    ],
+  }
+
+  it('отступ из макета 1С сохраняется пробелами в начале текста', () => {
+    render(<FormView form={form} />)
+
+    const programma = screen.getByText('001 001')
+    expect(programma.textContent).toBe('         001 001')
+    expect(getComputedStyle(programma).whiteSpace).toBe('pre-wrap')
+  })
+
+  it('строка BOLD_GROUP жирная целиком, подпрограмма — обычным шрифтом', () => {
+    render(<FormView form={form} />)
+
+    expect(getComputedStyle(screen.getByText('001 001')).fontWeight).toBe('700')
+    expect(getComputedStyle(screen.getByText(/^325.878,00$/)).fontWeight).toBe(
+      '700'
+    )
+    expect(getComputedStyle(screen.getByText('015 015')).fontWeight).toBe('400')
+    expect(getComputedStyle(screen.getByText(/^51.125,00$/)).fontWeight).toBe(
+      '400'
+    )
+  })
+})

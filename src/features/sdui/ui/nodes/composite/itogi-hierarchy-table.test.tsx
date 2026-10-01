@@ -211,11 +211,19 @@ describe('ItogiHierarchyTable — свод «Итоги»', () => {
     expect(getComputedStyle(thead!).position).toBe('sticky')
   })
 
-  it('фон строки — по правилам rowAppearance и __stil', () => {
+  it('фон строки — токены дизайн-системы по __stil, а не цвета 1С из rowAppearance', () => {
     const { container } = render(<ItogiHierarchyTable node={node} />)
-    const [fiz, itogo] = bodyRows(container)
-    expect(getComputedStyle(fiz).backgroundColor).toBe('rgb(228, 240, 221)')
-    expect(getComputedStyle(itogo).backgroundColor).toBe('rgb(214, 229, 203)')
+    fireEvent.click(screen.getByRole('button', { name: 'table.expandAll' }))
+    const bg = (i: number) =>
+      getComputedStyle(bodyRows(container)[i]).backgroundColor
+    expect(bg(0)).toBe('var(--ui-04, #dbe7fd)')
+    expect(bg(1)).toBe('var(--ui-02, #f2f6fd)')
+    expect(bg(2)).toBe('var(--ui-02, #f2f6fd)')
+    expect(bg(3)).toBe('var(--ui-08, #c4d6f5)')
+    const head = screen.getByText('Начислено').closest('th') as HTMLElement
+    expect(getComputedStyle(head).backgroundColor).not.toBe(
+      'rgb(214, 229, 203)'
+    )
   })
 
   it('физлицо и «Итого» — жирным крупным, глубокие уровни — обычным мелким', () => {

@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
@@ -19,6 +20,11 @@ import {
 } from '@/entities/account-plan'
 import { fetchReferenceOptions, useReferenceOptions } from '@/features/sdui'
 import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
+import { fetchDictionaryEntryById } from '@/shared/lib/dictionary-entry/dictionary-entry-api'
+import {
+  resolveDictionaryEntryLabel,
+  useDictionaryEntry,
+} from '@/shared/lib/dictionary-entry/use-dictionary-entry'
 import {
   AutocompleteInput,
   DateTimeInput,
@@ -135,12 +141,19 @@ export const ReportAltParamField = ({
   )
   const isEnumByAllowedValues =
     param.dataType === 'ENUM_REF' && allowedOptions !== null
+  const isServerDictRef =
+    !isCharacteristicsRef &&
+    param.dataType === 'DICTIONARY_REF' &&
+    !!param.referenceDomain
+  const isServerDictList =
+    param.dataType === 'REF_LIST' &&
+    !!param.referenceDomain &&
+    !param.referenceDomain.includes(':')
   const isDictRef =
     !isCharacteristicsRef &&
     !isEnumByAllowedValues &&
-    (param.dataType === 'DICTIONARY_REF' ||
-      param.dataType === 'ENUM_REF' ||
-      param.dataType === 'REF_LIST')
+    (param.dataType === 'ENUM_REF' ||
+      (param.dataType === 'REF_LIST' && !isServerDictList))
 
   // Единственный поддержанный ПВХ-домен — «Виды субконто (БУ)»; при появлении других
   // обобщить на generic-хук по characteristicsTypeCode (тот же TODO, что в легаси).
@@ -208,7 +221,11 @@ export const ReportAltParamField = ({
     allowedAccountIds,
   ])
 
-  const optionsUrl = optionsSource?.url ?? null
+  const optionsUrl =
+    optionsSource?.url ??
+    (isServerDictRef || isServerDictList
+      ? `/api/dictionary-entries/${param.referenceDomain!}/entries`
+      : null)
   const optionsParams = optionsSource?.params
   const {
     options: sourceOptions,
@@ -229,6 +246,86 @@ export const ReportAltParamField = ({
   const [pickedLabels, setPickedLabels] = useState<
     Partial<Record<number, string>>
   >({})
+  const selectedDictId =
+    param.dataType === 'DICTIONARY_REF' &&
+    value != null &&
+    value !== '' &&
+    typeof value !== 'object' &&
+    Number.isFinite(Number(value))
+      ? Number(value)
+      : null
+  const { entry: selectedDictEntry } = useDictionaryEntry(
+    selectedDictId != null &&
+      sourceOptions.every((o) => Number(o.id) !== selectedDictId) &&
+      pickedLabels[selectedDictId] == null
+      ? selectedDictId
+      : null
+  )
+  const unresolvedListIds = useMemo(
+    () =>
+      param.dataType === 'REF_LIST' && isServerDictList && Array.isArray(value)
+        ? value.filter(
+            (id) =>
+              pickedLabels[id] == null &&
+              sourceOptions.every((o) => Number(o.id) !== id)
+          )
+        : [],
+    [param.dataType, isServerDictList, value, pickedLabels, sourceOptions]
+  )
+  const resolvedListLabels = useQueries({
+    queries: unresolvedListIds.map((id) => ({
+      queryKey: ['dictionary-entry-by-id', id],
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        fetchDictionaryEntryById(id, signal),
+      staleTime: Infinity,
+    })),
+    combine: (results) =>
+      Object.fromEntries(
+        results.flatMap((r, i) =>
+          r.data
+            ? [
+                [
+                  unresolvedListIds[i],
+                  resolveDictionaryEntryLabel(r.data, unresolvedListIds[i]),
+                ],
+              ]
+            : []
+        )
+      ) as Partial<Record<number, string>>,
+  })
+  const sourceListSignature = JSON.stringify(
+    (Array.isArray(value) ? value : []).map((id) => [
+      id,
+      sourceOptions.find((o) => Number(o.id) === id)?.label ??
+        pickedLabels[id] ??
+        resolvedListLabels[id] ??
+        `#${String(id)}`,
+    ])
+  )
+  const sourceListSelected = useMemo(
+    () =>
+      (JSON.parse(sourceListSignature) as [number, string][]).map<SelectOption>(
+        ([id, itemLabel]) => ({ id, code: String(id), label: itemLabel })
+      ),
+    [sourceListSignature]
+  )
+  const selectedDictLabel =
+    selectedDictId == null
+      ? null
+      : (sourceOptions.find((o) => Number(o.id) === selectedDictId)?.label ??
+        pickedLabels[selectedDictId] ??
+        resolveDictionaryEntryLabel(selectedDictEntry, selectedDictId))
+  const selectedDictOption = useMemo<SelectOption | null>(
+    () =>
+      selectedDictId == null || selectedDictLabel == null
+        ? null
+        : {
+            id: selectedDictId,
+            code: String(selectedDictId),
+            label: selectedDictLabel,
+          },
+    [selectedDictId, selectedDictLabel]
+  )
 
   const allowedValuesSelect = (options: SelectOption[]) => {
     const selected =
@@ -274,14 +371,7 @@ export const ReportAltParamField = ({
       const selectedIds = Array.isArray(value) ? value : []
       const listOptions = optionsUrl ? sourceOptions : refOptions
       const selected = optionsUrl
-        ? selectedIds.map<SelectOption>((id) => ({
-            id,
-            code: String(id),
-            label:
-              sourceOptions.find((o) => Number(o.id) === id)?.label ??
-              pickedLabels[id] ??
-              `#${String(id)}`,
-          }))
+        ? sourceListSelected
         : refOptions.filter((o) => selectedIds.includes(Number(o.id)))
       const multiSelectActions: MultiSelectActions = {
         onCheckAll: () => {
@@ -450,6 +540,36 @@ export const ReportAltParamField = ({
     case 'ENUM_REF': {
       if (param.dataType === 'ENUM_REF' && allowedOptions) {
         return allowedValuesSelect(allowedOptions)
+      }
+      if (param.dataType === 'DICTIONARY_REF' && optionsUrl) {
+        return (
+          <AutocompleteInput
+            value={selectedDictOption}
+            options={sourceOptions}
+            loading={sourceLoading}
+            onOpen={() => {
+              loadSourceOptions()
+            }}
+            onInputChange={(_e, text, reason) => {
+              if (reason === 'input') loadSourceOptionsDebounced(text)
+            }}
+            onChange={(o) => {
+              if (o) {
+                setPickedLabels((prev) => ({
+                  ...prev,
+                  [Number(o.id)]: o.label,
+                }))
+              }
+              onChange(o ? Number(o.id) : '')
+            }}
+            label={label}
+            required={param.required}
+            error={invalid}
+            disabled={disabled}
+            helperText={helperText}
+            fullWidth
+          />
+        )
       }
       // Одиночный выбор; значение — id записи (number).
       const selected =

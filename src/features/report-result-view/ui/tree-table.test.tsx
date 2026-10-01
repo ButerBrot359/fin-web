@@ -1,10 +1,4 @@
-import {
-  render,
-  screen,
-  fireEvent,
-  cleanup,
-  within,
-} from '@testing-library/react'
+import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -910,7 +904,7 @@ describe('TreeTable — ведомости ВНА по форме КБП', () =>
   })
 })
 
-describe('TreeTable — уровни группировки', () => {
+describe('TreeTable — дерево регистра по ИПН и СН', () => {
   const registrColumns: ReportColumnDto[] = [
     {
       code: 'FizicheskoeLitso',
@@ -953,19 +947,17 @@ describe('TreeTable — уровни группировки', () => {
     layout: 'TREE',
   } as unknown as ReportResultDto
 
-  const levelButton = (level: string) =>
-    within(screen.getByRole('toolbar')).getByText(level)
-
-  it('кнопка «1» сворачивает дерево до месяцев, «2» раскрывает физлиц', () => {
+  it('месяц сворачивается и разворачивается стрелкой в самой таблице, без отдельной панели уровней', () => {
     render(<TreeTable result={registrResult} columns={registrColumns} />)
 
+    expect(screen.queryByRole('toolbar')).toBeNull()
     expect(screen.getAllByText('Иванов Иван').length).toBeGreaterThan(0)
 
-    fireEvent.click(levelButton('1'))
+    fireEvent.click(screen.getByRole('button', { name: 'reports.collapse' }))
     expect(screen.queryAllByText('Иванов Иван')).toHaveLength(0)
     expect(screen.getByText('10.2026')).toBeInTheDocument()
 
-    fireEvent.click(levelButton('2'))
+    fireEvent.click(screen.getByRole('button', { name: 'reports.expand' }))
     expect(screen.getAllByText('Иванов Иван').length).toBeGreaterThan(0)
   })
 
@@ -991,16 +983,5 @@ describe('TreeTable — уровни группировки', () => {
     expect(container.querySelectorAll('thead th')).toHaveLength(2)
     expect(screen.getByText('10.2026')).toBeInTheDocument()
     expect(screen.getAllByText('Иванов Иван')).toHaveLength(1)
-  })
-
-  it('у плоского результата без групп кнопок уровней нет', () => {
-    render(
-      <TreeTable
-        result={{ ...result, rows: [subkontoRow] }}
-        columns={columns}
-      />
-    )
-
-    expect(screen.queryByRole('toolbar')).toBeNull()
   })
 })

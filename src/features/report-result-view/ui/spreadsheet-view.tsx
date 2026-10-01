@@ -36,6 +36,7 @@ interface SpreadsheetViewProps {
 }
 
 const MASSHTAB_SHRIFTA_1S = 0.94
+const MEZHSTROCHNYY_INTERVAL_1S = 1.15
 
 const GRAN: Record<string, string> = {
   thin: '1px solid',
@@ -116,6 +117,72 @@ type Kletka = ReportSpreadsheetCellDto | PustayaKletka
 const zapolnennaya = (kletka: Kletka): kletka is ReportSpreadsheetCellDto =>
   'row' in kletka
 
+const shirinaKletki = (
+  sheet: ReportSpreadsheetSheetDto,
+  kletka: Kletka
+): number => {
+  const span = zapolnennaya(kletka) ? (kletka.colSpan ?? 1) : 1
+  return sheet.columnWidths
+    .slice(kletka.column, kletka.column + span)
+    .reduce((sum, w) => sum + w, 0)
+}
+
+const bezTeksta = (kletka: Kletka): boolean =>
+  !zapolnennaya(kletka) || (!kletka.text && kletka.field == null)
+
+const prostor = (
+  sheet: ReportSpreadsheetSheetDto,
+  yacheyki: Kletka[],
+  i: number,
+  shag: 1 | -1
+): number => {
+  let sum = 0
+  let ozhidaemaya =
+    shag > 0
+      ? yacheyki[i].column +
+        (zapolnennaya(yacheyki[i]) ? (yacheyki[i].colSpan ?? 1) : 1)
+      : yacheyki[i].column
+  for (let j = i + shag; j >= 0 && j < yacheyki.length; j += shag) {
+    const sosed = yacheyki[j]
+    const span = zapolnennaya(sosed) ? (sosed.colSpan ?? 1) : 1
+    const primykaet =
+      shag > 0
+        ? sosed.column === ozhidaemaya
+        : sosed.column + span === ozhidaemaya
+    if (!primykaet || !bezTeksta(sosed)) break
+    sum += shirinaKletki(sheet, sosed)
+    ozhidaemaya = shag > 0 ? sosed.column + span : sosed.column
+  }
+  return sum
+}
+
+/**
+ * Текст без переноса, как в 1С, выходит в соседние пустые клетки и обрезается на первой
+ * заполненной — иначе подпись реквизита налезает на его значение.
+ */
+const vylet = (
+  sheet: ReportSpreadsheetSheetDto,
+  yacheyki: Kletka[],
+  i: number
+): React.CSSProperties => {
+  const kletka = yacheyki[i]
+  if (!zapolnennaya(kletka) || kletka.style?.wrap || kletka.style?.rotation) {
+    return { overflow: 'hidden' }
+  }
+  const align = kletka.style?.align
+  if (align === 'center') {
+    const storona = Math.min(
+      prostor(sheet, yacheyki, i, 1),
+      prostor(sheet, yacheyki, i, -1)
+    )
+    return { overflow: 'hidden', left: -storona, right: -storona }
+  }
+  if (align === 'right') {
+    return { overflow: 'hidden', left: -prostor(sheet, yacheyki, i, -1) }
+  }
+  return { overflow: 'hidden', right: -prostor(sheet, yacheyki, i, 1) }
+}
+
 /**
  * Раскладывает ячейки по сетке, добавляя пустые клетки на месте пропусков.
  *
@@ -180,7 +247,11 @@ const SheetView = ({
     <div className="overflow-x-auto">
       <table
         className="border-collapse bg-white"
-        style={{ tableLayout: 'fixed', width: `${String(shirinaLista)}px` }}
+        style={{
+          tableLayout: 'fixed',
+          width: `${String(shirinaLista)}px`,
+          lineHeight: MEZHSTROCHNYY_INTERVAL_1S,
+        }}
       >
         <colgroup>
           {sheet.columnWidths.map((width, i) => (
@@ -190,7 +261,7 @@ const SheetView = ({
         <tbody>
           {stroki.map((yacheyki, r) => (
             <tr key={r} style={{ height: `${String(sheet.rowHeights[r])}px` }}>
-              {yacheyki.map((kletka) =>
+              {yacheyki.map((kletka, i) =>
                 zapolnennaya(kletka) ? (
                   <td
                     key={klyuch(kletka.row, kletka.column)}
@@ -244,6 +315,7 @@ const SheetView = ({
                       <div
                         style={{
                           ...sloyTeksta(kletka.style),
+                          ...vylet(sheet, yacheyki, i),
                           pointerEvents: 'none',
                         }}
                       >

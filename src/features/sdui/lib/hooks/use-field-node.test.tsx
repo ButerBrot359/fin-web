@@ -10,12 +10,19 @@ vi.mock('../dispatch', () => ({ useSduiDispatch: () => mockDispatch }))
 
 const state: Record<string, unknown> = { name: 'Иван' }
 const applyTreePatches = vi.fn()
+const dirtyWrites: string[] = []
+const quietWrites: string[] = []
 vi.mock('../sdui-session-context', () => ({
   useSduiSession: () => ({
     kind: 'panel',
     getSession: () => ({ formSessionId: null, revision: null }),
     getValue: (b?: string) => (b ? state[b] : undefined),
     setValue: (b: string, v: unknown) => {
+      dirtyWrites.push(b)
+      state[b] = v
+    },
+    setFromServer: (b: string, v: unknown) => {
+      quietWrites.push(b)
       state[b] = v
     },
     applyTreePatches,
@@ -129,5 +136,40 @@ describe('useFieldNode', () => {
     result.current.setValue('Сидор')
 
     expect(applyTreePatches).not.toHaveBeenCalled()
+  })
+
+  it('поле с savedData=false пишет значение, не помечая форму изменённой', () => {
+    dirtyWrites.length = 0
+    quietWrites.length = 0
+    const node = {
+      id: 'field.sUchetomFKR',
+      type: 'CHECKBOX_FIELD',
+      binding: 'SUchetomFKR',
+      props: { visible: true, enabled: true, savedData: false },
+    } as ViewNode
+    const { result } = renderHook(() => useFieldNode(node))
+
+    result.current.setValue(true)
+
+    expect(state.SUchetomFKR).toBe(true)
+    expect(quietWrites).toEqual(['SUchetomFKR'])
+    expect(dirtyWrites).toEqual([])
+  })
+
+  it('поле без savedData по-прежнему помечает форму изменённой', () => {
+    dirtyWrites.length = 0
+    quietWrites.length = 0
+    const node = {
+      id: 'f1',
+      type: 'TEXT_FIELD',
+      binding: 'name',
+      props: { visible: true, enabled: true },
+    } as ViewNode
+    const { result } = renderHook(() => useFieldNode(node))
+
+    result.current.setValue('Пётр')
+
+    expect(dirtyWrites).toEqual(['name'])
+    expect(quietWrites).toEqual([])
   })
 })

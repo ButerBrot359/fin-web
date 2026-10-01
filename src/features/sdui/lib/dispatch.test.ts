@@ -762,6 +762,16 @@ describe('useSduiDispatch: 404 на OPEN (SCRUM-244 I-1)', () => {
     expect(ok).toBe(false)
     expect(showToast).toHaveBeenCalledTimes(1)
   })
+
+  it('ошибка CLOSE не показывает тост', async () => {
+    vi.mocked(viewTransport.post).mockRejectedValue(
+      new ViewHttpError('Соединение с сервером прервано', undefined)
+    )
+    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
+
+    expect(await result.current({ type: 'CLOSE' })).toBe(false)
+    expect(showToast).not.toHaveBeenCalled()
+  })
 })
 
 // Гейт ошибок OPEN на 3 ветки (SCRUM-290 §2 бэк-спеки): ROUTE_UNKNOWN →

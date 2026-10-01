@@ -40,6 +40,7 @@ export function handleDispatchError(
   ctx: DispatchErrorCtx
 ): void {
   const { action, session } = ctx
+  if (action.type === 'CLOSE') return
   if (
     error instanceof ViewHttpError &&
     error.status === 422 &&

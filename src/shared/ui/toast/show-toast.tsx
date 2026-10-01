@@ -200,13 +200,16 @@ export const showToast = (
   for (const listener of listeners) {
     listener({ type, title, description, route: opts?.route ?? null })
   }
-  toast.custom((id) => (
-    <ToastContent
-      id={id}
-      type={type}
-      title={title}
-      description={description}
-      onClick={opts?.onClick}
-    />
-  ))
+  toast.custom(
+    (id) => (
+      <ToastContent
+        id={id}
+        type={type}
+        title={title}
+        description={description}
+        onClick={opts?.onClick}
+      />
+    ),
+    { id: JSON.stringify([type, title, description ?? '']) }
+  )
 }

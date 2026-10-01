@@ -1,81 +1,57 @@
 import { useTranslation } from 'react-i18next'
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Typography,
-} from '@mui/material'
+import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material'
 
 import type { AuditLogRecord } from '../api/audit-log-api'
+import { AuditLogRow } from './audit-log-row'
 
 interface AuditLogTableProps {
   rows: AuditLogRecord[]
+  onOpen: (row: AuditLogRecord) => void
 }
 
 /**
- * Таблица ленты журнала. Русские подписи действий и исходов приходят с сервера
- * (`actionPresentation`, `outcomePresentation`) — см. комментарий на странице.
- * Пустые ячейки — норма: у входа/выхода нет объекта, у неудачного входа может
- * не быть пользователя.
+ * Таблица ленты журнала — колонки журнала регистрации 1С: Дата, Пользователь, Компьютер,
+ * Приложение, Событие, Статус, Метаданные, Данные, Сеанс, Рабочий сервер, IP-адреса, Комментарий.
+ * Русские подписи событий и статусов приходят с сервера. Колонок много — таблица прокручивается
+ * по горизонтали, а не сжимает текст до нечитаемого.
  */
-export const AuditLogTable = ({ rows }: AuditLogTableProps) => {
+export const AuditLogTable = ({ rows, onOpen }: AuditLogTableProps) => {
   const { t } = useTranslation()
 
+  const headers = [
+    t('auditLog.occurredAt'),
+    t('auditLog.user'),
+    t('auditLog.computer'),
+    t('auditLog.application'),
+    t('auditLog.event'),
+    t('auditLog.status'),
+    t('auditLog.metadata'),
+    t('auditLog.data'),
+    t('auditLog.session'),
+    t('auditLog.serverNode'),
+    t('auditLog.ip'),
+    t('auditLog.comment'),
+  ]
+
   return (
-    <Table size="small">
-      <TableHead>
-        <TableRow>
-          <TableCell>{t('auditLog.occurredAt')}</TableCell>
-          <TableCell>{t('auditLog.user')}</TableCell>
-          <TableCell>{t('auditLog.action')}</TableCell>
-          <TableCell>{t('auditLog.outcome')}</TableCell>
-          <TableCell>{t('auditLog.object')}</TableCell>
-          <TableCell>{t('auditLog.message')}</TableCell>
-          <TableCell>{t('auditLog.clientAddress')}</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {rows.map((row) => (
-          <TableRow key={row.id}>
-            <TableCell className="whitespace-nowrap">
-              {new Date(row.occurredAt).toLocaleString()}
-            </TableCell>
-            <TableCell>
-              {row.userName ?? row.userLogin ?? ''}
-              {row.userLogin && row.userLogin !== row.userName && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                >
-                  {row.userLogin}
-                </Typography>
-              )}
-            </TableCell>
-            <TableCell>{row.actionPresentation}</TableCell>
-            <TableCell>{row.outcomePresentation}</TableCell>
-            <TableCell>
-              {row.entryPresentation ?? ''}
-              {row.typeCode && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                >
-                  {row.typeCode}
-                </Typography>
-              )}
-            </TableCell>
-            <TableCell>{row.message ?? ''}</TableCell>
-            <TableCell className="whitespace-nowrap">
-              {row.clientAddress ?? ''}
-            </TableCell>
+    <div className="overflow-x-auto">
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            {headers.map((header) => (
+              <TableCell key={header} className="whitespace-nowrap">
+                {header}
+              </TableCell>
+            ))}
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHead>
+        <TableBody>
+          {rows.map((row) => (
+            <AuditLogRow key={row.id} row={row} onOpen={onOpen} />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   )
 }

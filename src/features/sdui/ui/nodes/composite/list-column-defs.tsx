@@ -10,6 +10,7 @@ import {
   columnSizeProps,
   toColumnWidth,
 } from '../../../lib/utils/column-sizing'
+import { HighlightedText } from '@/shared/ui/highlight/highlighted-text'
 import { getCellIcon } from './cell-icon-registry'
 import { ListDocumentLinkCell } from './list-document-link-cell'
 import { ListHierarchyCell } from './list-hierarchy-cell'
@@ -66,6 +67,12 @@ export interface BuildListColumnsArgs {
   // (диспатч list.toggleExpand с behavior действия expand). Нет действия с
   // бэка → undefined, раскрыватель в ячейке HIERARCHY не рендерится.
   onToggleExpand?: (rowId: number, expanded: boolean) => void
+  /**
+   * Действующая строка поиска — её вхождения подсвечиваются в ячейках, как в списке 1С:
+   * пользователь сразу видит, ПО КАКОЙ колонке строка попала в результат (обращение
+   * 21.09.2026: «нужно выделять, по каким объектам совпадение»).
+   */
+  search?: string
 }
 
 export const buildListColumns = (
@@ -79,6 +86,7 @@ export const buildListColumns = (
     filterOpLabels,
     dispatch,
     nodeId,
+    search,
   } = args
 
   return columnNodes.map((col: ViewNode) => {
@@ -211,6 +219,7 @@ export const buildListColumns = (
                 <ListHierarchyCell
                   // eslint-disable-next-line @typescript-eslint/no-base-to-string
                   text={String(info.getValue() ?? '')}
+                  search={search}
                   level={typeof _level === 'number' && _level > 0 ? _level : 0}
                   indentPerLevel={
                     toColumnWidth(col.props?.indentPerLevel) ?? 16
@@ -236,6 +245,7 @@ export const buildListColumns = (
                   row={info.row.original}
                   // eslint-disable-next-line @typescript-eslint/no-base-to-string
                   text={String(info.getValue() ?? '')}
+                  search={search}
                 />
               )
             : col.props?.cellKind === 'ICON'
@@ -252,8 +262,11 @@ export const buildListColumns = (
                 }
               : (info: { getValue: () => unknown }) => (
                   <Typography variant="body2" noWrap className="text-ui-06">
-                    {/* eslint-disable-next-line @typescript-eslint/no-base-to-string */}
-                    {String(info.getValue() ?? '')}
+                    <HighlightedText
+                      // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                      text={String(info.getValue() ?? '')}
+                      query={search}
+                    />
                   </Typography>
                 ),
     }

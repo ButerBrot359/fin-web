@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   useLocation,
   useNavigate,
@@ -6,15 +6,37 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { Button, Typography } from '@mui/material'
 
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
-import { ReportResultView } from '@/features/report-result-view'
+import {
+  ReportResultView,
+  type ReportRowClickZone,
+} from '@/features/report-result-view'
 import { PageHeader } from '@/widgets/page-header'
+import { PeriodChoiceButton } from '@/shared/ui/period-choice'
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { exportTableToXlsx } from '@/shared/lib/table-export'
 
+import {
+  fetchReportAltBlank,
+  fetchSokhranennyyOtchet,
+  saveReportAlt,
+  vygruzkaFno,
+  vygruzkaJson,
+  vygruzkaPrilozheniya,
+  vygruzkaXml,
+} from '../api/reportalt-api'
+import {
+  otkazRasshifrovki,
+  rasshifrovkaKletki,
+} from '../lib/utils/blank-drilldown'
+import {
+  pustyeOblastiStranits,
+  stranitsaPrilozheniya,
+} from '../lib/utils/blank-ochistka'
 import { useReportAltMeta } from '../lib/hooks/use-reportalt-meta'
 import { useRunReportAlt } from '../lib/hooks/use-run-reportalt'
 import { useReportAltUserSettings } from '../lib/hooks/use-reportalt-user-settings'
@@ -22,21 +44,25 @@ import { useReportAltParamState } from '../lib/hooks/use-reportalt-param-state'
 import { buildAccountCardParams } from '../lib/utils/account-card-link'
 import {
   DRILLDOWN_URL_KEY,
+  accountCodeOf,
   buildDrilldownTarget,
   resolveDrilldownKinds,
-} from '../lib/utils/report-drilldown'
+} from '@/entities/report-drilldown'
 import { buildReportAltExport } from '../lib/utils/build-reportalt-export'
 import {
   SETTINGS_URL_KEY,
   clearStoredSettings,
 } from '../lib/utils/user-settings'
 import {
+  GRUPPA_NASTROEK,
   LANG_PARAM_CODE,
   defaultParamValue,
   deserializeParam,
   isFilled,
   isPeriod,
+  kvartalnyyPeriod,
   normalizeBodyDates,
+  primenimyePriOtkrytii,
   serializeParams,
   type ParamValues,
   type PeriodValue,
@@ -47,8 +73,9 @@ import {
   readParamDraft,
   saveParamDraft,
 } from '../lib/utils/param-draft'
-import { PeriodQuickSelect } from './period-quick-select'
+import { kvartalDaty } from '../lib/utils/kvartalnyy-period'
 import { ReportAltParamField } from './reportalt-param-field'
+import { ReportAltKnopkaMenyu } from './reportalt-knopka-menyu'
 import {
   ReportAltRowMenu,
   type ReportAltMenuItem,
@@ -63,6 +90,9 @@ import type {
 } from '../types/reportalt'
 
 /** Сообщение из тела ошибки бэка (api.ts бросает `error.response.data`). */
+const FORMY_VYGRUZKI_PO_BLANKU = ['200.00', '870.00']
+const FORMY_VYGRUZKI_JSON = ['200.00']
+
 const errorMessage = (error: unknown): string | undefined => {
   if (typeof error === 'string') return error
   if (error != null && typeof error === 'object') {
@@ -71,6 +101,13 @@ const errorMessage = (error: unknown): string | undefined => {
     if (typeof o.data?.message === 'string') return o.data.message
   }
   return undefined
+}
+
+interface ReportAltRowMenuState {
+  position: ReportAltMenuPosition
+  row: ReportAltRowDto
+  ancestors: ReportAltRowDto[]
+  zone: ReportRowClickZone
 }
 
 /**
@@ -107,8 +144,15 @@ export const ReportAltPage = () => {
     () => meta?.parameters.find((p) => p.code === LANG_PARAM_CODE) ?? null,
     [meta]
   )
+  const settingsParams = useMemo(
+    () => meta?.parameters.filter((p) => p.group === GRUPPA_NASTROEK) ?? [],
+    [meta]
+  )
   const visibleParams = useMemo(
-    () => meta?.parameters.filter((p) => p.code !== LANG_PARAM_CODE) ?? [],
+    () =>
+      meta?.parameters.filter(
+        (p) => p.code !== LANG_PARAM_CODE && p.group !== GRUPPA_NASTROEK
+      ) ?? [],
     [meta]
   )
 
@@ -130,16 +174,32 @@ export const ReportAltPage = () => {
     // сессии (см. param-draft.ts). URL главнее: он описывает таблицу на экране.
     const draft = readParamDraft(moduleCode)
     const next: ParamValues = {}
+    const poUmolchaniyu = new Set<string>()
     for (const param of meta.parameters) {
       const raw = initialParamRaw(param, searchParams.get(param.code), draft)
+      if (raw == null) poUmolchaniyu.add(param.code)
       next[param.code] =
         raw != null ? deserializeParam(raw, param) : defaultParamValue(param)
+      const period = next[param.code] as PeriodValue | undefined
+      if (kvartalnyyPeriod(param) && period?.from) {
+        next[param.code] = kvartalDaty(period.from) ?? period
+      }
     }
     // Сознательная синхронизация черновика формы из URL+meta при их смене.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setValues(next)
     if (meta.parameters.some((p) => p.refreshesForm)) {
-      void refreshParamState(normalizeBodyDates(next, meta.parameters), null)
+      void refreshParamState(
+        normalizeBodyDates(next, meta.parameters),
+        null
+      ).then((state) => {
+        const vychislennye = primenimyePriOtkrytii(
+          state?.values ?? {},
+          poUmolchaniyu
+        )
+        if (Object.keys(vychislennye).length === 0) return
+        setValues((prev) => ({ ...prev, ...vychislennye }))
+      })
     }
   }, [meta, moduleCode, searchParams, refreshParamState])
 
@@ -154,6 +214,32 @@ export const ReportAltPage = () => {
     persistDraft,
   } = useReportAltUserSettings(moduleCode, meta, searchParams)
   const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // Клетки бланка, которые заполняет пользователь: в 1С ручная правка табличного документа
+  // приоритетнее автозаполнения, поэтому значения уходят в тело /run и возвращаются в бланке.
+  const [blankValues, setBlankValues] = useState<Record<string, string>>({})
+  // Выделенная клетка бланка: в 1С «Расшифровать» работает от имени области текущей области.
+  const [vybrannayaOblast, setVybrannayaOblast] = useState<string | null>(null)
+  const [aktivnayaStranitsa, setAktivnayaStranitsa] = useState(0)
+
+  // Открытие сохранённого отчёта из журнала: организация и период приходят в URL, как в 1С, а
+  // ручной ввод лежит в «Данных отчёта» документа и поднимается по его id.
+  const sokhranennyyId = Number(searchParams.get('sokhranennyy') ?? '')
+  const { data: sokhranennyy } = useQuery({
+    queryKey: ['reportalt-sokhranennyy', sokhranennyyId],
+    queryFn: ({ signal }) => fetchSokhranennyyOtchet(sokhranennyyId, signal),
+    enabled: Number.isFinite(sokhranennyyId) && sokhranennyyId > 0,
+    staleTime: Infinity,
+  })
+  // Сохранённые значения — основа, правки пользователя ложатся поверх. Слияние выводится, а не
+  // кладётся в состояние: иначе первый же рендер после загрузки документа перетирал бы ввод.
+  const blankValuesEffektivnye = useMemo(
+    () => ({ ...(sokhranennyy?.znacheniyaBlanka ?? {}), ...blankValues }),
+    [sokhranennyy, blankValues]
+  )
+  const izmenitKletku = useCallback((field: string, value: string) => {
+    setBlankValues((prev) => ({ ...prev, [field]: value }))
+  }, [])
 
   // Applied-параметры — производные от URL: запрос уходит, когда в URL есть
   // хотя бы один параметр и заполнены все обязательные. userSettings попадает
@@ -178,10 +264,28 @@ export const ReportAltPage = () => {
       ...(appliedUserSettings != null
         ? { userSettings: appliedUserSettings }
         : {}),
+      ...(Object.keys(blankValuesEffektivnye).length > 0
+        ? { blankValues: blankValuesEffektivnye }
+        : {}),
     }
-  }, [meta, searchParams, appliedUserSettings])
+  }, [meta, searchParams, appliedUserSettings, blankValuesEffektivnye])
 
   const isLedger = meta?.definition.layout === 'LEDGER'
+
+  // Незаполненный бланк: 1С открывает форму отчёта пустым утверждённым листом и наполняет его
+  // только по «Заполнить». Отчёты без бланка отвечают пустым телом — тогда показывать нечего.
+  // «Добавить строку» и «Удалить строку» формы 1С меняют число строк в таблицах приложений:
+  // в макете строка одна и размножается по этому числу.
+  const [strokBlanka, setStrokBlanka] = useState(1)
+  // «Добавить страницу»: экземпляры многостраничного раздела (у формы 200.00 — приложения 200.03).
+  const [stranitsBlanka, setStranitsBlanka] = useState(1)
+  const { data: pustoyBlank } = useQuery({
+    queryKey: ['reportalt-blank', moduleCode, strokBlanka],
+    queryFn: ({ signal }) =>
+      fetchReportAltBlank(moduleCode, strokBlanka, stranitsBlanka, signal),
+    enabled: moduleCode.length > 0,
+    staleTime: Infinity,
+  })
 
   const {
     result,
@@ -193,6 +297,32 @@ export const ReportAltPage = () => {
     isFetchingNextPage,
     refetch,
   } = useRunReportAlt(moduleCode, appliedBody, appliedBody != null, isLedger)
+
+  // Бланк на экране: заполненный после «Сформировать», иначе пустой утверждённый лист.
+  const blankDokument = result?.spreadsheet ?? pustoyBlank ?? undefined
+  // Пустой бланк показывается тем же рендерером результата — без строк, колонок и итогов.
+  const pustoyBlankResult = pustoyBlank
+    ? {
+        reportCode: moduleCode,
+        reportNameRu: reportName,
+        appliedParameters: {},
+        columns: [],
+        rows: [],
+        total: {},
+        spreadsheet: pustoyBlank,
+      }
+    : null
+
+  // «Добавить страницу» работает только на многостраничном разделе — приложении 200.03.
+  const estMnogostranichnyyRazdel =
+    blankDokument?.sheets.some((s) =>
+      stranitsaPrilozheniya(s.title, '200.03')
+    ) ?? false
+
+  const estPrilozhenie20005 =
+    blankDokument?.sheets.some((s) =>
+      stranitsaPrilozheniya(s.title, '200.05')
+    ) ?? false
 
   // Ошибка формирования (422 — невалидные параметры / слишком большой
   // результат; прочее) — тостом, с сообщением бэка при наличии.
@@ -226,6 +356,55 @@ export const ReportAltPage = () => {
         return merged
       })
     })
+  }
+
+  /**
+   * «Сохранить» формы 1С: пишет документ «Регламентированный отчет» — из таких документов
+   * строится список сохранённой отчётности. Сам бланк не сохраняется: он пересобирается по
+   * организации и периоду, а вот ручной ввод повторить неоткуда, поэтому уходит в документ.
+   */
+  const handleSave = () => {
+    if (!meta) return
+    const periodValue = values.Period as PeriodValue | undefined
+    const organizatsiyaValue = values.Organizatsiya
+
+    void saveReportAlt(moduleCode, {
+      kodOtcheta: moduleCode,
+      naimenovanie: reportName,
+      organizatsiyaId:
+        typeof organizatsiyaValue === 'number' ? organizatsiyaValue : null,
+      periodOt: periodValue?.from ?? null,
+      periodDo: periodValue?.to ?? null,
+      kazakhskiy: values[LANG_PARAM_CODE] === 'Kz',
+      znacheniyaBlanka: blankValuesEffektivnye,
+    })
+      .then(() => {
+        showToast('success', t('reportalt.saved'))
+      })
+      .catch((e: unknown) => {
+        showToast('error', t('reportalt.saveError'), errorMessage(e))
+      })
+  }
+
+  /** «Очистить» формы 1С: бланк возвращается к пустому, ручной ввод сбрасывается. */
+  const handleClear = () => {
+    setBlankValues({})
+    const next = new URLSearchParams(searchParams)
+    meta?.parameters.forEach((p) => {
+      next.delete(p.code)
+    })
+    setSearchParams(next, { replace: true })
+  }
+
+  /**
+   * «Очистить текущую страницу» и «Очистить приложение 200.05» формы 1С: стираются области
+   * только выбранных страниц, остальной бланк остаётся заполненным.
+   */
+  const ochistitStranitsy = (
+    nuzhna: (title: string, indeks: number) => boolean
+  ) => {
+    const pustye = pustyeOblastiStranits(blankDokument, nuzhna)
+    setBlankValues((prev) => ({ ...prev, ...pustye }))
   }
 
   const handleSubmit = () => {
@@ -286,41 +465,13 @@ export const ReportAltPage = () => {
     exportTableToXlsx(reportName, data)
   }
 
-  const [rowMenu, setRowMenu] = useState<{
-    position: ReportAltMenuPosition
-    row: ReportAltRowDto
-    ancestors: ReportAltRowDto[]
-  } | null>(null)
-
-  const menuRow = rowMenu?.row ?? null
-  const openRef =
-    menuRow?.rowRef && menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
-      ? menuRow.rowRef
-      : null
-  const openLabel = openRef
-    ? menuRow?.groupValue
-      ? `${t('osv.openElement')} «${menuRow.groupValue}»`
-      : t('osv.openElement')
-    : null
-  const accountRow = rowMenu
-    ? [...rowMenu.ancestors, rowMenu.row]
-        .reverse()
-        .find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
-    : undefined
-  const accountCardLabel = accountRow
-    ? `${t('osv.accountCard')} ${accountRow.groupValue ?? ''}`.trim()
-    : null
+  const [rowMenu, setRowMenu] = useState<ReportAltRowMenuState | null>(null)
 
   const openRowRef = (ref: ReportAltRowRefDto) => {
     const segment = ref.domain === 'DICTIONARY' ? 'dictionary' : 'document'
     void navigate(
       `/modules/${pageCode}/${segment}/${ref.typeCode}/${String(ref.id)}`
     )
-  }
-
-  const handleOpenElement = () => {
-    if (!openRef) return
-    openRowRef(openRef)
   }
 
   const appliedPeriod = appliedBody?.parameters
@@ -330,76 +481,288 @@ export const ReportAltPage = () => {
       ) ?? {})
     : {}
 
-  const handleOpenAccountCard = () => {
-    if (!accountRow?.rowRef) return
-    const params = buildAccountCardParams(
-      rowMenu ? [...rowMenu.ancestors, rowMenu.row] : [],
-      {
-        accountId: accountRow.rowRef.id,
-        accountCode: accountRow.groupValue ?? '',
-        from: appliedPeriod.from,
-        to: appliedPeriod.to,
-      }
-    )
-    void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
-  }
-
-  const drilldownOptions = rowMenu
-    ? {
-        reportCode: moduleCode,
-        chain: [...rowMenu.ancestors, rowMenu.row],
-        accountRow,
-        valueRow: rowMenu.row,
-        from: appliedPeriod.from,
-        to: appliedPeriod.to,
-      }
-    : null
-
-  const rowMenuItems: ReportAltMenuItem[] = []
-  if (openLabel != null) {
-    rowMenuItems.push({
-      key: 'open',
-      label: openLabel,
-      onClick: handleOpenElement,
-    })
-  }
-  for (const kind of drilldownOptions
-    ? resolveDrilldownKinds(drilldownOptions)
-    : []) {
-    if (kind === 'accountCard') {
-      if (accountCardLabel != null) {
-        rowMenuItems.push({
-          key: kind,
-          label: accountCardLabel,
-          onClick: handleOpenAccountCard,
-        })
-      }
-      continue
-    }
-    const target = drilldownOptions
-      ? buildDrilldownTarget(kind, drilldownOptions)
+  const rowMenuItemsFor = (
+    menu: ReportAltRowMenuState | null
+  ): ReportAltMenuItem[] => {
+    const menuRow = menu?.row ?? null
+    const openRef =
+      menu?.zone === 'label' &&
+      menuRow?.rowRef &&
+      menuRow.rowRef.domain !== 'ACCOUNT_PLAN'
+        ? menuRow.rowRef
+        : null
+    const openLabel = openRef
+      ? menuRow?.groupValue
+        ? `${t('osv.openElement')} «${menuRow.groupValue}»`
+        : t('osv.openElement')
       : null
-    if (target == null) continue
-    const label =
-      kind === 'osvPoSchetu' ||
-      kind === 'analizScheta' ||
-      kind === 'turnoverByDays' ||
-      kind === 'turnoverByMonths'
-        ? `${t(`reportalt.drilldown.${kind}`)} ${accountRow?.groupValue ?? ''}`.trim()
-        : t(`reportalt.drilldown.${kind}`)
-    rowMenuItems.push({
-      key: kind,
-      label,
-      onClick: () => {
-        void navigate(
-          `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`
-        )
-      },
-    })
+    const accountRow = menu
+      ? [...menu.ancestors, menu.row]
+          .reverse()
+          .find((r) => r.rowRef?.domain === 'ACCOUNT_PLAN')
+      : undefined
+    const accountCardLabel = accountRow
+      ? `${t('osv.accountCard')} ${accountCodeOf(accountRow)}`.trim()
+      : null
+
+    const handleOpenElement = () => {
+      if (!openRef) return
+      openRowRef(openRef)
+    }
+
+    const handleOpenAccountCard = () => {
+      if (!accountRow?.rowRef) return
+      const params = buildAccountCardParams(
+        menu ? [...menu.ancestors, menu.row] : [],
+        {
+          accountId: accountRow.rowRef.id,
+          accountCode: accountRow.groupValue ?? '',
+          from: appliedPeriod.from,
+          to: appliedPeriod.to,
+          parameters: appliedBody?.parameters,
+        }
+      )
+      void navigate(`/modules/${pageCode}/account-card?${params.toString()}`)
+    }
+
+    const drilldownOptions = menu
+      ? {
+          reportCode: moduleCode,
+          chain: [...menu.ancestors, menu.row],
+          accountRow,
+          valueRow: menu.row,
+          from: appliedPeriod.from,
+          to: appliedPeriod.to,
+          parameters: appliedBody?.parameters,
+        }
+      : null
+
+    const rowMenuItems: ReportAltMenuItem[] = []
+    if (openLabel != null) {
+      rowMenuItems.push({
+        key: 'open',
+        label: openLabel,
+        onClick: handleOpenElement,
+      })
+    }
+    for (const kind of drilldownOptions
+      ? resolveDrilldownKinds(drilldownOptions)
+      : []) {
+      if (kind === 'accountCard') {
+        if (accountCardLabel != null) {
+          rowMenuItems.push({
+            key: kind,
+            label: accountCardLabel,
+            onClick: handleOpenAccountCard,
+          })
+        }
+        continue
+      }
+      const target = drilldownOptions
+        ? buildDrilldownTarget(kind, drilldownOptions)
+        : null
+      if (target == null) continue
+      const label =
+        kind === 'osvPoSchetu' ||
+        kind === 'analizScheta' ||
+        kind === 'turnoverByDays' ||
+        kind === 'turnoverByMonths'
+          ? t(`reportalt.drilldown.${kind}`, {
+              code: accountCodeOf(accountRow),
+            }).trim()
+          : t(`reportalt.drilldown.${kind}`)
+      rowMenuItems.push({
+        key: kind,
+        label,
+        onClick: () => {
+          void navigate(
+            `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`
+          )
+        },
+      })
+    }
+    return rowMenuItems
   }
+
+  const rowMenuItems = rowMenuItemsFor(rowMenu)
 
   // Печать в PDF: бэк может отвечать 501 (печать не реализована) — тост.
   const [isPrinting, setIsPrinting] = useState(false)
+  /**
+   * «Выгрузить в XML» формы 1С: файл ФНО по организации и кварталу отчёта.
+   *
+   * Коды форм налоговой отчётности бэк принимает в виде «200.00» — у нас он живёт в наименовании
+   * отчёта, поэтому берётся оттуда; отчёты, у которых такого кода нет, выгрузку не поддерживают.
+   */
+  const stroka = (znachenie: ReportAltParamValue): string | null =>
+    typeof znachenie === 'string' && znachenie.length > 0 ? znachenie : null
+
+  const handleExportXml = () => {
+    const kodFormy = /\d{3}\.\d{2}/.exec(reportName)?.[0]
+    const organizatsiyaId = values.Organizatsiya
+    const periodValue = values.Period as PeriodValue | undefined
+
+    if (
+      !kodFormy ||
+      typeof organizatsiyaId !== 'number' ||
+      !periodValue?.from
+    ) {
+      showToast('warning', t('reportalt.exportXmlUnavailable'))
+      return
+    }
+    if (FORMY_VYGRUZKI_PO_BLANKU.includes(kodFormy)) {
+      if (!appliedBody) {
+        showToast('warning', t('reportalt.exportXmlUnavailable'))
+        return
+      }
+      void vygruzkaXml(moduleCode, appliedBody)
+        .then((res) => {
+          const ssylka = document.createElement('a')
+          ssylka.href = URL.createObjectURL(res.data)
+          ssylka.download = `${kodFormy}.xml`
+          ssylka.click()
+        })
+        .catch((e: unknown) => {
+          showToast(
+            'error',
+            t('reportalt.exportXmlUnavailable'),
+            errorMessage(e)
+          )
+        })
+      return
+    }
+    void vygruzkaFno(kodFormy, organizatsiyaId, periodValue.from, {
+      vidDeklaratsii: stroka(values.VidDeklaratsii),
+      nomerUvedomleniya: stroka(values.NomerUvedomleniya),
+      dataUvedomleniya: stroka(values.DataUvedomleniya),
+    })
+      .then((res) => {
+        const ssylka = document.createElement('a')
+        ssylka.href = URL.createObjectURL(res.data)
+        ssylka.download = `${kodFormy}.xml`
+        ssylka.click()
+      })
+      .catch((e: unknown) => {
+        showToast('error', t('reportalt.exportXmlUnavailable'), errorMessage(e))
+      })
+  }
+
+  const kodFormyJson = /\d{3}\.\d{2}/.exec(reportName)?.[0]
+  const estVygruzkaJson =
+    kodFormyJson != null && FORMY_VYGRUZKI_JSON.includes(kodFormyJson)
+
+  const handleExportJson = () => {
+    if (!appliedBody || !kodFormyJson) {
+      showToast('warning', t('reportalt.exportJsonUnavailable'))
+      return
+    }
+    void vygruzkaJson(moduleCode, appliedBody)
+      .then((res) => {
+        const ssylka = document.createElement('a')
+        ssylka.href = URL.createObjectURL(res.data)
+        ssylka.download = `${kodFormyJson}.json`
+        ssylka.click()
+      })
+      .catch((e: unknown) => {
+        showToast(
+          'error',
+          t('reportalt.exportJsonUnavailable'),
+          errorMessage(e)
+        )
+      })
+  }
+
+  /**
+   * «Расшифровать» формы 1С: от имени области выделенной клетки бланка открывается регистр
+   * налогового учёта по ИПН и СН за месяц её графы (графа 4 — за весь квартал).
+   */
+  const handleDecipher = () => {
+    const otkaz = otkazRasshifrovki(vybrannayaOblast)
+    if (otkaz) {
+      showToast('warning', t(`reportalt.decipherOtkaz.${otkaz}`))
+      return
+    }
+    const organizatsiyaId = values.Organizatsiya
+    const period = values.Period as PeriodValue | undefined
+    const target = rasshifrovkaKletki(
+      vybrannayaOblast,
+      typeof organizatsiyaId === 'number' ? organizatsiyaId : null,
+      period
+    )
+    if (!target) {
+      showToast('warning', t('reportalt.decipherUnavailable'))
+      return
+    }
+    void navigate(
+      `/modules/${pageCode}/reportalt/${target.reportCode}?${target.params.toString()}`
+    )
+  }
+
+  /**
+   * «Выгрузить в XML 200.03» формы 1С: приложение по структурным подразделениям отдельным файлом.
+   *
+   * <p>Выгружается активный экземпляр раздела — тот, который открыт в списке страниц.
+   */
+  const handleExportPrilozhenie = () => {
+    if (!appliedBody) {
+      showToast('warning', t('reportalt.exportXmlUnavailable'))
+      return
+    }
+    const nomerEkzemplyara = /\((\d+)\)$/.exec(
+      blankDokument?.sheets[aktivnayaStranitsa]?.title ?? ''
+    )
+    void vygruzkaPrilozheniya(
+      moduleCode,
+      appliedBody,
+      nomerEkzemplyara ? Number(nomerEkzemplyara[1]) : 1
+    )
+      .then((res) => {
+        const ssylka = document.createElement('a')
+        ssylka.href = URL.createObjectURL(res.data)
+        ssylka.download = '200.03.xml'
+        ssylka.click()
+      })
+      .catch((e: unknown) => {
+        showToast('error', t('reportalt.exportXmlUnavailable'), errorMessage(e))
+      })
+  }
+
+  /**
+   * «Выгрузить все приложения» формы 1С: каждый экземпляр раздела уходит своим файлом.
+   *
+   * <p>Эталон нумерует файлы «Приложение 200.03 №1», «…№2» — здесь так же. Экземпляры считаются
+   * по страницам бланка: копия приходит с бэка как «200.03 стр.1 (2)».
+   */
+  const handleExportVsePrilozheniya = () => {
+    if (!appliedBody) {
+      showToast('warning', t('reportalt.exportXmlUnavailable'))
+      return
+    }
+    const ekzemplyarov = Math.max(
+      ...(blankDokument?.sheets ?? []).map((s) => {
+        const nomer = /\((\d+)\)$/.exec(s.title)
+        return nomer ? Number(nomer[1]) : 1
+      }),
+      1
+    )
+    for (let nomer = 1; nomer <= ekzemplyarov; nomer++) {
+      void vygruzkaPrilozheniya(moduleCode, appliedBody, nomer)
+        .then((res) => {
+          const ssylka = document.createElement('a')
+          ssylka.href = URL.createObjectURL(res.data)
+          ssylka.download = `200.03 №${String(nomer)}.xml`
+          ssylka.click()
+        })
+        .catch((e: unknown) => {
+          showToast(
+            'error',
+            t('reportalt.exportXmlUnavailable'),
+            errorMessage(e)
+          )
+        })
+    }
+  }
+
   const handlePrintPdf = () => {
     if (!appliedBody || isPrinting) return
     // Язык печати — выбранный «Язык формы» (YazykFormy): берём применённое
@@ -474,8 +837,13 @@ export const ReportAltPage = () => {
             }
             const title =
               (isKz ? param.titleKz : param.titleRu) || param.titleRu
+            const kvartalnyy = kvartalnyyPeriod(param)
             const setPeriod = (patch: Partial<PeriodValue>) => {
-              setParamValue(param.code, { ...period, ...patch })
+              const next = { ...period, ...patch }
+              const kvartal = kvartalnyy
+                ? kvartalDaty(patch.from ?? patch.to ?? '')
+                : undefined
+              setParamValue(param.code, kvartal ?? next)
             }
             return (
               <div key={param.code} className="flex flex-wrap gap-4">
@@ -511,16 +879,13 @@ export const ReportAltPage = () => {
                     helperText={!period.to ? requiredHint : undefined}
                   />
                 </div>
-                {/* Быстрый период: месяц/квартал/год одним действием. Поля дат
-                    остаются рабочими — список только проставляет в них границы. */}
-                <div className="w-48">
-                  <PeriodQuickSelect
-                    period={period}
-                    onChange={(next) => {
-                      setParamValue(param.code, next)
-                    }}
-                  />
-                </div>
+                <PeriodChoiceButton
+                  period={period}
+                  quarterOnly={kvartalnyy}
+                  onChange={(next) => {
+                    setParamValue(param.code, next)
+                  }}
+                />
               </div>
             )
           }
@@ -556,8 +921,112 @@ export const ReportAltPage = () => {
           sx={{ height: 48, flexShrink: 0 }}
           onClick={handleSubmit}
         >
-          {t('reportalt.generate')}
+          {pustoyBlank ? t('reportalt.fill') : t('reportalt.generate')}
         </Button>
+        {/* «Обновить» — сосед «Заполнить» на панели формы 1С: перезапрашивает те же данные.
+            «Очистить» там всплывающее меню, оно ниже. */}
+        {pustoyBlank && (
+          <>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              disabled={appliedBody == null}
+              onClick={() => {
+                void refetch()
+              }}
+            >
+              {t('reportalt.refresh')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              onClick={handleSave}
+            >
+              {t('reportalt.save')}
+            </Button>
+            {/* Команды собраны в выпадающие меню, как на панели формы 1С: «Выгрузить»,
+                «Выгрузить в XML 200.03» и «Очистить» там всплывающие, а не отдельные кнопки. */}
+            <ReportAltKnopkaMenyu
+              label={t('reportalt.exportMenu')}
+              items={[
+                {
+                  key: 'xml',
+                  label: t('reportalt.exportXml'),
+                  onClick: handleExportXml,
+                },
+                ...(estVygruzkaJson
+                  ? [
+                      {
+                        key: 'json',
+                        label: t('reportalt.exportJson'),
+                        onClick: handleExportJson,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+            {estMnogostranichnyyRazdel && (
+              <ReportAltKnopkaMenyu
+                label={t('reportalt.exportXmlPrilozhenie')}
+                items={[
+                  {
+                    key: 'tekushchee',
+                    label: t('reportalt.exportPrilozhenieTekushchee'),
+                    onClick: handleExportPrilozhenie,
+                  },
+                  {
+                    key: 'vse',
+                    label: t('reportalt.exportPrilozhenieVse'),
+                    onClick: handleExportVsePrilozheniya,
+                  },
+                ]}
+              />
+            )}
+            <ReportAltKnopkaMenyu
+              label={t('reportalt.clearMenu')}
+              items={[
+                {
+                  key: 'otchet',
+                  label: t('reportalt.clearReport'),
+                  onClick: handleClear,
+                },
+                {
+                  key: 'stranitsa',
+                  label: t('reportalt.clearPage'),
+                  disabled: blankDokument == null,
+                  onClick: () => {
+                    ochistitStranitsy(
+                      (_, indeks) => indeks === aktivnayaStranitsa
+                    )
+                  },
+                },
+                ...(estPrilozhenie20005
+                  ? [
+                      {
+                        key: 'pril20005',
+                        label: t('reportalt.clearPrilozhenie20005'),
+                        onClick: () => {
+                          ochistitStranitsy((title) =>
+                            stranitsaPrilozheniya(title, '200.05')
+                          )
+                        },
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+            <Button
+              variant="outlined"
+              size="medium"
+              sx={{ height: 48, flexShrink: 0 }}
+              onClick={handleDecipher}
+            >
+              {t('reportalt.decipher')}
+            </Button>
+          </>
+        )}
         {/* Панель настроек — для отчётов с наполненным meta (F-S3) ИЛИ когда
             есть «Язык формы» (у ГСМ/МО прочих настроек нет, но язык нужен). */}
         {(supportsSettings || langParam != null) && !rezhimRasshifrovki && (
@@ -604,17 +1073,31 @@ export const ReportAltPage = () => {
             <div className="min-h-0 overflow-auto pb-4">
               <ReportResultView
                 result={result}
+                blankValues={blankValuesEffektivnye}
+                onBlankValueChange={izmenitKletku}
+                vybrannayaOblast={vybrannayaOblast}
+                onVyborOblasti={setVybrannayaOblast}
+                aktivnayaStranitsa={aktivnayaStranitsa}
+                onVyborStranitsy={setAktivnayaStranitsa}
                 onDrilldown={(row) => {
                   if (!row.rowRef || row.rowRef.domain === 'ACCOUNT_PLAN')
                     return
                   openRowRef(row.rowRef)
                 }}
-                onRowDoubleClick={(row, ancestors, event) => {
-                  setRowMenu({
+                onRowDoubleClick={(row, ancestors, event, zone) => {
+                  const menu = {
                     position: { top: event.clientY, left: event.clientX },
                     row,
                     ancestors,
-                  })
+                    zone,
+                  }
+                  const items = rowMenuItemsFor(menu)
+                  if (items.length === 1 && !items[0].disabled) {
+                    setRowMenu(null)
+                    items[0].onClick()
+                    return
+                  }
+                  setRowMenu(menu)
                 }}
               />
               {/* LEDGER: постраничная подгрузка (F4 — hasMore/nextOffset). */}
@@ -635,10 +1118,85 @@ export const ReportAltPage = () => {
             </div>
           )}
         </div>
+      ) : pustoyBlankResult ? (
+        /* Как в 1С: до «Заполнить» форма показывает пустой утверждённый бланк, и в его клетки
+           ручного ввода уже можно вписывать реквизиты, которых нет в учёте. */
+        <div className="min-h-0 overflow-auto pb-4">
+          <ReportResultView
+            result={pustoyBlankResult}
+            blankValues={blankValuesEffektivnye}
+            onBlankValueChange={izmenitKletku}
+            vybrannayaOblast={vybrannayaOblast}
+            onVyborOblasti={setVybrannayaOblast}
+            aktivnayaStranitsa={aktivnayaStranitsa}
+            onVyborStranitsy={setAktivnayaStranitsa}
+          />
+        </div>
       ) : (
         appliedBody == null && (
           <Typography variant="body2" className="text-ui-05">
             {t('reportalt.notGenerated')}
+
+            {/* Нижняя панель бланка — как в форме 1С: работа со страницами и строками стоит ПОД
+          табличным документом, отдельным рядом, а не в общем ряду команд отчёта. */}
+            {pustoyBlank && (
+              <div className="flex flex-wrap items-center gap-2 pb-2">
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 40, flexShrink: 0 }}
+                  disabled={!estMnogostranichnyyRazdel}
+                  onClick={() => {
+                    setStranitsBlanka((prev) => prev + 1)
+                  }}
+                >
+                  {t('reportalt.addPage')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 40, flexShrink: 0 }}
+                  disabled={!estMnogostranichnyyRazdel || stranitsBlanka <= 1}
+                  onClick={() => {
+                    setStranitsBlanka((prev) => Math.max(prev - 1, 1))
+                  }}
+                >
+                  {t('reportalt.removePage')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 40, flexShrink: 0 }}
+                  disabled={!estMnogostranichnyyRazdel || stranitsBlanka <= 1}
+                  onClick={() => {
+                    setStranitsBlanka(1)
+                  }}
+                >
+                  {t('reportalt.removeAllPages')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 40, flexShrink: 0 }}
+                  onClick={() => {
+                    setStrokBlanka((prev) => prev + 1)
+                  }}
+                >
+                  {t('reportalt.addRow')}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  sx={{ height: 40, flexShrink: 0 }}
+                  disabled={strokBlanka <= 1}
+                  onClick={() => {
+                    setStrokBlanka((prev) => Math.max(prev - 1, 1))
+                  }}
+                >
+                  {t('reportalt.removeRow')}
+                </Button>
+              </div>
+            )}
           </Typography>
         )
       )}
@@ -658,6 +1216,9 @@ export const ReportAltPage = () => {
           }}
           onReset={handleResetSettings}
           langParam={langParam}
+          settingsParams={settingsParams}
+          paramValues={values}
+          onParamChange={setParamValue}
           langValue={
             typeof values[LANG_PARAM_CODE] === 'string'
               ? values[LANG_PARAM_CODE]

@@ -11,13 +11,14 @@ import {
 
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-import { useTreasuryExportPreview } from '../lib/hooks/use-treasury-export-preview'
-import { treasuryExportDownloadUrl } from '../lib/download-url'
+import { saveBlobAsFile } from '@/shared/lib/fs/save-blob-as-file'
 import {
   supportsDirectoryPicker,
   pickDirectory,
   writeBlobToDirectory,
-} from '../lib/save-to-directory'
+} from '@/shared/lib/fs/save-to-directory'
+
+import { useTreasuryExportPreview } from '../lib/hooks/use-treasury-export-preview'
 import { fetchTreasuryExportBlob } from '../api/treasury-export-api'
 import { TreasuryExportTable } from './treasury-export-table'
 import type {
@@ -79,11 +80,28 @@ export const TreasuryExportPage = () => {
     }
   }
 
+  const downloadFile = async (data: TreasuryExportPreviewResponse) => {
+    try {
+      const res = await fetchTreasuryExportBlob(typeCode, id)
+      const fallbackName =
+        data.rows[0]?.fileName ?? `${typeCode}_${String(id)}.xml`
+      saveBlobAsFile(
+        res.data,
+        res.headers['content-disposition'] as string | undefined,
+        fallbackName
+      )
+    } catch (e) {
+      console.error('[treasury-export] скачивание не удалось', e)
+      showToast('error', t('treasuryExport.saveFailed'))
+    }
+  }
+
   const handleExport = () => {
     if (!typeCode || Number.isNaN(id)) return
 
-    // FF/Safari или нет File System Access: текущее поведение —
-    // re-validate + браузерное скачивание (GET-навигация).
+    // FF/Safari или нет File System Access: re-validate + скачивание файла
+    // авторизованным запросом (нативная GET-навигация уходила без токена и
+    // получала 401).
     if (!supportsDirectoryPicker()) {
       preview.mutate([item], {
         onSuccess: (data: TreasuryExportPreviewResponse) => {
@@ -91,7 +109,7 @@ export const TreasuryExportPage = () => {
             showToast('error', t('treasuryExport.hasErrorsToast'))
             return
           }
-          window.location.assign(treasuryExportDownloadUrl(typeCode, id))
+          void downloadFile(data)
         },
         onError: () => {
           showToast('error', t('treasuryExport.loadFailed'))

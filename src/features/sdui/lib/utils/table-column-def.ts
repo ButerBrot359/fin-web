@@ -56,3 +56,39 @@ export function extractAllLeafColumns(
 
   return result
 }
+
+export interface SearchColumn {
+  id: string
+  binding: string
+}
+
+function visibleLeafColumns(nodes: ViewNode[] | undefined): TableColumnDef[] {
+  return (nodes ?? []).flatMap((node) => {
+    if (node.props?.visible === false) return []
+    const nodeType = node.type as string
+    if (nodeType === 'TABLE_COLUMN') return [nodeToTableColumnDef(node)]
+    if (nodeType === 'COLUMN_GROUP') return visibleLeafColumns(node.children)
+    return []
+  })
+}
+
+export function extractSearchColumns(
+  children: ViewNode[] | undefined
+): SearchColumn[] {
+  return (children ?? []).flatMap((node) => {
+    if (node.props?.visible === false) return []
+    const nodeType = node.type as string
+    if (nodeType === 'TABLE_COLUMN') {
+      const col = nodeToTableColumnDef(node)
+      return [{ id: col.id, binding: col.binding }]
+    }
+    if (nodeType !== 'COLUMN_GROUP') return []
+    if (node.props?.orientation === 'VERTICAL') {
+      return visibleLeafColumns(node.children).map((col) => ({
+        id: node.id,
+        binding: col.binding,
+      }))
+    }
+    return extractSearchColumns(node.children)
+  })
+}

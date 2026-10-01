@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
-import type { ViewNode } from '../../types/view'
+import { applyPatches } from '../patch-applier'
+import type { ViewNode, ViewPatch } from '../../types/view'
 
 export interface PanelEntry {
   panelId: string
@@ -38,6 +39,7 @@ interface PanelStore {
   replace: (closePanelIds: string[], entry: PanelEntry) => void
   updateSession: (panelId: string, revision: number) => void
   findBySessionId: (sessionId: string) => PanelEntry | undefined
+  applyScreenPatches: (patches: ViewPatch[]) => void
   reset: () => void
 }
 
@@ -110,6 +112,16 @@ export const usePanelStore = create<PanelStore>((set, get) => ({
   },
   findBySessionId: (sessionId) =>
     get().panels.find((p) => p.session?.formSessionId === sessionId),
+  applyScreenPatches: (patches) => {
+    set((s) => {
+      const panels = s.panels.map((p) => {
+        if (p.session || p.hasChildState) return p
+        const node = applyPatches(p.node, patches)
+        return node === p.node ? p : { ...p, node }
+      })
+      return panels.some((p, i) => p !== s.panels[i]) ? { panels } : s
+    })
+  },
   // reset зовётся при размонтировании SduiScreen (sdui-screen.tsx): диалоги
   // умирают вместе с формой, а панели workspace-вкладок самодостаточны
   // (childState) и живут до закрытия своей вкладки.

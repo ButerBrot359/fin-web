@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
+import ComputerIcon from '@mui/icons-material/Computer'
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize'
 import FaceIcon from '@mui/icons-material/Face'
 import LogoutIcon from '@mui/icons-material/Logout'
@@ -16,6 +17,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 
 import { LOGIN_ROUTE, useAuthStore } from '@/features/auth'
+import { DeviceNameDialog } from '@/features/client-device-name'
 import { FacePhotoDialog } from '@/features/face-auth'
 import { viewSettingsAdminApi } from '@/features/sdui'
 import { ThemeSettingsDialog } from '@/features/theme-settings'
@@ -40,6 +42,7 @@ export const TopBarUser = () => {
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null)
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false)
   const [themeDialogOpen, setThemeDialogOpen] = useState(false)
+  const [deviceNameDialogOpen, setDeviceNameDialogOpen] = useState(false)
 
   // Вход в админку конструктора — только админам; признак считает бэк.
   // Ключ включает пользователя: staleTime Infinity без него показывал пункт
@@ -139,6 +142,19 @@ export const TopBarUser = () => {
           <ListItemText>{t('themeSettings.menuItem')}</ListItemText>
         </MenuItem>
 
+        {/* Подпись рабочего места для журнала регистрации (SCRUM-371). */}
+        <MenuItem
+          onClick={() => {
+            setAnchorElement(null)
+            setDeviceNameDialogOpen(true)
+          }}
+        >
+          <ListItemIcon>
+            <ComputerIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t('deviceName.menuItem')}</ListItemText>
+        </MenuItem>
+
         {adminInfo?.admin === true && (
           <MenuItem
             onClick={() => {
@@ -177,6 +193,13 @@ export const TopBarUser = () => {
         open={themeDialogOpen}
         onClose={() => {
           setThemeDialogOpen(false)
+        }}
+      />
+
+      <DeviceNameDialog
+        open={deviceNameDialogOpen}
+        onClose={() => {
+          setDeviceNameDialogOpen(false)
         }}
       />
     </>

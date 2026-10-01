@@ -23,6 +23,11 @@ import { useListSelection } from '../../../lib/hooks/use-list-selection'
 import { useListSelectionEvent } from '../../../lib/hooks/use-list-selection-event'
 import { useListTrail } from '../../../lib/hooks/use-list-trail'
 import { useListClientExpand } from '../../../lib/hooks/use-list-client-expand'
+import {
+  useRememberListMemory,
+  useRestoredListMemory,
+} from '../../../lib/hooks/use-list-memory'
+import { useRestoreRowScroll } from '../../../lib/hooks/use-restore-row-scroll'
 import { isTreeDisplayMode } from '../../../lib/utils/list-tree-mode'
 import { useSduiDispatch } from '../../../lib/dispatch'
 
@@ -81,7 +86,8 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   // повторные клики по заголовкам игнорируются («последний выигрывает» не требуется).
   const sortInFlightRef = useRef(false)
 
-  const [search, setSearch] = useState('')
+  const restored = useRestoredListMemory(node.id)
+  const [search, setSearch] = useState(restored?.search ?? '')
   // Запрос уходит НЕ на каждое нажатие клавиши: у LIST-узла search сидит в queryKey, а смена
   // ключа сбрасывает бесконечную прокрутку и перезапускает EAV-поиск. Пауза та же, что у
   // пикера ссылочного поля (use-reference-options) и легаси-списков.
@@ -97,7 +103,9 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     drillInto,
     canDrillInto,
     navigateToDepth,
-  } = useListTrail({ node, source, debouncedSearch })
+  } = useListTrail({ node, source, debouncedSearch, restored })
+
+  useRememberListMemory(node.id, { search, selectedRowId, trail })
 
   // SCRUM-308 §4.4: панель контактов списка «Пользователи» — смена выделенной
   // строки уходит событием selectionChanged (только при action с бэка).
@@ -148,6 +156,7 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     dispatch,
     nodeId: node.id,
     sortInFlightRef,
+    search: debouncedSearch,
   })
 
   const sizing = useSduiColumnSizing(node)
@@ -171,35 +180,42 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     overscan: 10,
   })
 
+  useRestoreRowScroll(restored?.selectedRowId, rows, rowVirtualizer)
+
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-2">
       {/* Период, отборы и поиск — ОДНОЙ строкой, как шапка журнала 1С: там «Период»,
           «Организация» и прочие параметры стоят в ряд, а не двумя этажами над таблицей
-          (обращение 20.09.2026). Ряд переносится, когда параметров больше, чем ширины. */}
-      <div className="flex flex-wrap items-center gap-4">
-        {periodCommand && (
-          <ListPeriodControl
-            period={periodProp ?? { from: null, to: null }}
-            command={periodCommand}
-            nodeId={node.id}
-            dispatch={dispatch}
-          />
-        )}
+          (обращение 20.09.2026). Ряд переносится, когда параметров больше, чем ширины.
+          Поиск — отдельной группой справа (`justify-between`), как во всех прочих
+          тулбарах приложения: `ml-auto` на самом поле оставлял его прижатым к отборам,
+          а не к правому краю (обращение 21.09.2026). */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          {periodCommand && (
+            <ListPeriodControl
+              period={periodProp ?? { from: null, to: null }}
+              command={periodCommand}
+              nodeId={node.id}
+              dispatch={dispatch}
+            />
+          )}
 
-        {filterCommand && (
-          <ListQuickFilters
-            filters={quickFilters}
-            onApply={(field, op, value) => {
-              void dispatch({
-                type: 'COMMAND',
-                command: filterCommand,
-                value:
-                  value === undefined ? { field, op } : { field, op, value },
-                sourceNodeId: node.id,
-              })
-            }}
-          />
-        )}
+          {filterCommand && (
+            <ListQuickFilters
+              filters={quickFilters}
+              onApply={(field, op, value) => {
+                void dispatch({
+                  type: 'COMMAND',
+                  command: filterCommand,
+                  value:
+                    value === undefined ? { field, op } : { field, op, value },
+                  sourceNodeId: node.id,
+                })
+              }}
+            />
+          )}
+        </div>
 
         {searchable && (
           <SearchInput

@@ -50,6 +50,7 @@ import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 export const LegacyDictionaryEntryPage = () => {
   const { moduleCode = '', pageCode = '', entryId } = useParams()
@@ -59,6 +60,7 @@ export const LegacyDictionaryEntryPage = () => {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  const tabKey = tabRouteKey(location.pathname, location.search)
   const queryClient = useQueryClient()
 
   const isNew = !entryId
@@ -106,13 +108,11 @@ export const LegacyDictionaryEntryPage = () => {
 
   useEffect(() => {
     if (isNew && copyFrom && !copyFromData) {
-      useFormCacheStore.getState().clearCache(location.pathname)
+      useFormCacheStore.getState().clearCache(tabKey)
       return
     }
 
-    const cached = useFormCacheStore
-      .getState()
-      .getCachedValues(location.pathname)
+    const cached = useFormCacheStore.getState().getCachedValues(tabKey)
 
     if (entryData) {
       const values: Record<string, unknown> = { ...entryData.attributes }
@@ -121,7 +121,7 @@ export const LegacyDictionaryEntryPage = () => {
       values.code = entryData.code
 
       if (cached) {
-        markRestoring(location.pathname)
+        markRestoring(tabKey)
         form.reset(values)
         for (const [key, value] of Object.entries(cached)) {
           form.setValue(key, value, { shouldDirty: true })
@@ -129,11 +129,11 @@ export const LegacyDictionaryEntryPage = () => {
         const hasDirtyFields = Object.keys(cached).some(
           (key) => JSON.stringify(cached[key]) !== JSON.stringify(values[key])
         )
-        useFormCacheStore.getState().clearCache(location.pathname)
-        useFormCacheStore.getState().setDirty(location.pathname, hasDirtyFields)
+        useFormCacheStore.getState().clearCache(tabKey)
+        useFormCacheStore.getState().setDirty(tabKey, hasDirtyFields)
         restoredRef.current = hasDirtyFields
         queueMicrotask(() => {
-          unmarkRestoring(location.pathname)
+          unmarkRestoring(tabKey)
         })
       } else if (!form.formState.isDirty && !restoredRef.current) {
         form.reset(values)
@@ -145,16 +145,16 @@ export const LegacyDictionaryEntryPage = () => {
       values.nameKz = copyFromData.nameKz
 
       if (cached) {
-        markRestoring(location.pathname)
+        markRestoring(tabKey)
         form.reset({})
         for (const [key, value] of Object.entries(cached)) {
           form.setValue(key, value, { shouldDirty: true })
         }
-        useFormCacheStore.getState().clearCache(location.pathname)
-        useFormCacheStore.getState().setDirty(location.pathname, true)
+        useFormCacheStore.getState().clearCache(tabKey)
+        useFormCacheStore.getState().setDirty(tabKey, true)
         restoredRef.current = true
         queueMicrotask(() => {
-          unmarkRestoring(location.pathname)
+          unmarkRestoring(tabKey)
         })
       } else if (!form.formState.isDirty && !restoredRef.current) {
         form.reset({})
@@ -164,19 +164,19 @@ export const LegacyDictionaryEntryPage = () => {
         restoredRef.current = true
       }
     } else if (isNew && cached) {
-      markRestoring(location.pathname)
+      markRestoring(tabKey)
       form.reset(cached)
-      useFormCacheStore.getState().clearCache(location.pathname)
-      useFormCacheStore.getState().setDirty(location.pathname, true)
+      useFormCacheStore.getState().clearCache(tabKey)
+      useFormCacheStore.getState().setDirty(tabKey, true)
       restoredRef.current = true
       queueMicrotask(() => {
-        unmarkRestoring(location.pathname)
+        unmarkRestoring(tabKey)
       })
     }
   }, [entryData, copyFromData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { pendingAction, markClosing } = useFormCache({
-    tabId: location.pathname,
+    tabId: tabKey,
     form,
   })
 
@@ -287,8 +287,8 @@ export const LegacyDictionaryEntryPage = () => {
 
   const closeCurrentTab = () => {
     markClosing()
-    useFormCacheStore.getState().removeTab(location.pathname)
-    useWorkspaceTabsStore.getState().closeTab(location.pathname)
+    useFormCacheStore.getState().removeTab(tabKey)
+    useWorkspaceTabsStore.getState().closeTab(tabKey)
   }
 
   const handleSaveAndClose = form.handleSubmit((data) => {
@@ -327,7 +327,7 @@ export const LegacyDictionaryEntryPage = () => {
   // Handle pending save-and-close triggered from tab bar
   useEffect(() => {
     if (pendingAction && !isLoadingEntry) {
-      useFormCacheStore.getState().consumePendingAction(location.pathname)
+      useFormCacheStore.getState().consumePendingAction(tabKey)
       void handleSaveAndClose()
     }
   }, [pendingAction, isLoadingEntry]) // eslint-disable-line react-hooks/exhaustive-deps

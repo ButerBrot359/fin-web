@@ -119,6 +119,85 @@ describe('TableToolbar: построчные команды требуют вы�
   })
 })
 
+describe('TableToolbar: команды одной группы едут кнопкой-подменю (эталон «Заполнить»)', () => {
+  const zapolnitParametry: TableCommandDescriptor = {
+    command: 'table.zapolnitParametryTekushchikh:OsnovnyeSredstva',
+    label: 'Заполнить данные текущих ОС',
+    enabled: true,
+    disabledReason: null,
+    behavior: {
+      flushPendingTables: true,
+      resetsDirty: false,
+      closeAfter: false,
+    },
+    group: 'zapolnit',
+    groupLabel: 'Заполнить',
+  }
+  const raspredelit: TableCommandDescriptor = {
+    command: 'table.raspredelitStoimost:OsnovnyeSredstva',
+    label: 'Распределить сумму модернизации',
+    enabled: true,
+    disabledReason: null,
+    behavior: {
+      flushPendingTables: true,
+      resetsDirty: false,
+      closeAfter: false,
+    },
+    group: 'zapolnit',
+    groupLabel: 'Заполнить',
+  }
+
+  beforeEach(() => {
+    cleanup()
+    mockDispatch.mockClear()
+  })
+
+  it('вместо двух кнопок показывает одну «Заполнить»', () => {
+    render(
+      <TableToolbar
+        {...baseProps}
+        commands={[zapolnitParametry, raspredelit]}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Заполнить' })).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: 'Распределить сумму модернизации' })
+    ).toBeNull()
+  })
+
+  it('пункты подменю видны после клика и отправляют свою команду', () => {
+    render(
+      <TableToolbar
+        {...baseProps}
+        commands={[zapolnitParametry, raspredelit]}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Заполнить' }))
+    fireEvent.click(
+      screen.getByRole('menuitem', { name: 'Распределить сумму модернизации' })
+    )
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'COMMAND',
+        command: 'table.raspredelitStoimost:OsnovnyeSredstva',
+      }),
+      raspredelit.behavior
+    )
+  })
+
+  it('команда без группы остаётся отдельной кнопкой', () => {
+    render(
+      <TableToolbar {...baseProps} commands={[zapolnitParametry, podbor]} />
+    )
+
+    expect(screen.getByRole('button', { name: 'Подбор' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Заполнить' })).toBeTruthy()
+  })
+})
+
 describe('TableToolbar: доменные кнопки из tableCommands (SCRUM-302)', () => {
   beforeEach(() => {
     cleanup()
@@ -243,6 +322,77 @@ describe('TableToolbar: доменные кнопки из tableCommands (SCRUM-
     expect(mockDispatch).toHaveBeenCalledWith(
       { type: 'COMMAND', command: 'table.podbor:VychetyIPN' },
       { flushPendingTables: false, resetsDirty: false, closeAfter: false }
+    )
+  })
+
+  const izmenit: TableCommandDescriptor = {
+    ...podbor,
+    command: 'otchetnost.x.izmenit',
+    label: 'Изменить',
+    requiresSelectedRow: true,
+  }
+
+  it('requiresSelectedRow: без строки кнопка недоступна, со строкой — доступна', () => {
+    const { rerender } = render(
+      <TableToolbar {...baseProps} commands={[izmenit]} />
+    )
+    expect(screen.getByRole('button', { name: 'Изменить' })).toBeDisabled()
+
+    rerender(
+      <TableToolbar {...baseProps} commands={[izmenit]} selectedRowId="17" />
+    )
+    expect(screen.getByRole('button', { name: 'Изменить' })).toBeEnabled()
+  })
+
+  it('requiresSelectedRow: пункт меню «Ещё» без строки недоступен', () => {
+    render(<TableToolbar {...baseProps} commands={[izmenit]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'table.more' }))
+    expect(screen.getByRole('menuitem', { name: 'Изменить' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+  })
+})
+
+describe('TableToolbar: команда со значком', () => {
+  beforeEach(() => {
+    cleanup()
+    mockDispatch.mockClear()
+  })
+
+  const ustanovitFlazhki: TableCommandDescriptor = {
+    command: 'report.accountTable.checkAll:SchetaPoRazvernutomuSaldo',
+    label: 'Установить флажки',
+    labelKz: 'Белгілерді қою',
+    enabled: true,
+    disabledReason: null,
+    behavior: {
+      flushPendingTables: true,
+      resetsDirty: false,
+      closeAfter: false,
+    },
+    icon: 'check-all',
+  }
+
+  it('известный значок рисует кнопку без текста, подпись уходит в aria-label', () => {
+    render(<TableToolbar {...baseProps} commands={[ustanovitFlazhki]} />)
+
+    const btn = screen.getByRole('button', { name: 'Установить флажки' })
+    expect(btn.textContent).toBe('')
+    fireEvent.click(btn)
+    expect(mockDispatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('незнакомый значок оставляет текстовую кнопку', () => {
+    render(
+      <TableToolbar
+        {...baseProps}
+        commands={[{ ...ustanovitFlazhki, icon: 'delete', label: 'Удалить' }]}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Удалить' }).textContent).toBe(
+      'Удалить'
     )
   })
 })

@@ -7,7 +7,11 @@ import { performTabClose } from '@/features/workspace-tabs'
 
 import { useSduiCacheStore } from './stores/sdui-cache-store'
 import { currentFormInstanceId } from './form-instance'
-import { dropCachedScreensFor, isCreateRoute } from './fresh-form-instance'
+import {
+  dropCachedScreensFor,
+  isCreateRoute,
+  isReportRoute,
+} from './fresh-form-instance'
 
 const NEW_ROUTE = '/modules/ZarplatiIKadri/document/Otpusk/new'
 const SAVED_ROUTE = '/modules/ZarplatiIKadri/document/Otpusk/42'
@@ -86,5 +90,13 @@ describe('formInstanceId экземпляра формы', () => {
     expect(isCreateRoute(NEW_ROUTE)).toBe(true)
     expect(isCreateRoute(NEW_ROUTE + '?basisId=7')).toBe(true)
     expect(isCreateRoute(SAVED_ROUTE)).toBe(false)
+  })
+
+  it('отчёт опознаётся по маршруту вместе с токеном параметров, документ — нет', () => {
+    expect(
+      isReportRoute('/modules/Otchety/reportalt/KartochkaScheta?rp=r1.abc')
+    ).toBe(true)
+    expect(isReportRoute(SAVED_ROUTE)).toBe(false)
+    expect(isReportRoute('/modules/Otchety?next=/reportalt/x')).toBe(false)
   })
 })

@@ -14,6 +14,14 @@ vi.mock('axios', () => ({
     isAxiosError: () => false,
   },
 }))
+// Заголовки рабочего места (SCRUM-371) — отдельный интерсептор со своими тестами; у мок-инстанса
+// axios здесь нет interceptors.
+vi.mock('@/shared/api/attach-client-context-headers', () => ({
+  attachClientContextHeaders: vi.fn(),
+}))
+vi.mock('@/shared/api/attach-language-header', () => ({
+  attachLanguageHeader: vi.fn(),
+}))
 vi.mock('@/shared/api/api', () => ({
   apiService: {
     get: mocks.authenticatedGet,

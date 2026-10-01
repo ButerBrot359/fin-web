@@ -10,6 +10,7 @@ import {
 } from '@/entities/notification-history'
 
 import { NotificationDetailsDialog } from './notification-details-dialog'
+import { formatTime } from '@/shared/lib/utils/date'
 
 const LEVEL_DOT: Record<NotificationRecord['level'], string> = {
   error: 'bg-support-01',
@@ -27,17 +28,13 @@ const LEVEL_DOT: Record<NotificationRecord['level'], string> = {
 export const NotificationCenterPanel: FC<{ onNavigate: () => void }> = ({
   onNavigate,
 }) => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const records = useNotificationHistoryStore((s) => s.records)
   const clear = useNotificationHistoryStore((s) => s.clear)
   const [details, setDetails] = useState<NotificationRecord | null>(null)
 
-  const formatTime = (at: number) =>
-    new Date(at).toLocaleTimeString(i18n.language === 'kz' ? 'kk' : 'ru', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+  const formatAt = (at: number) => formatTime(new Date(at))
 
   return (
     <div className="flex w-[400px] flex-col">
@@ -98,7 +95,7 @@ export const NotificationCenterPanel: FC<{ onNavigate: () => void }> = ({
                       ×{String(r.count)}
                     </span>
                   )}
-                  {formatTime(r.at)}
+                  {formatAt(r.at)}
                 </Typography>
                 {r.level === 'error' && (
                   <button

@@ -8,6 +8,11 @@ export function isCreateRoute(route: string): boolean {
   return (i >= 0 ? route.slice(0, i) : route).endsWith('/new')
 }
 
+export function isReportRoute(route: string): boolean {
+  const i = route.indexOf('?')
+  return (i >= 0 ? route.slice(0, i) : route).includes('/reportalt/')
+}
+
 export function consumeFreshFormInstance(route: string): boolean {
   return consumeIntent(route)
 }

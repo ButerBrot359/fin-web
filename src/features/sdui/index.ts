@@ -36,6 +36,8 @@ export {
   hasSduiUnsavedWork,
   closeAllSduiSessions,
 } from './lib/language-session-control'
+export { refreshTabTitles } from './lib/tab-title-refresh'
+export type { TabTitleTarget } from './lib/tab-title-refresh'
 export { openMovementsForEntry } from './lib/open-movements'
 export { fetchReferenceOptions } from './api/reference-options'
 export { useReferenceOptions } from './lib/hooks/use-reference-options'
@@ -43,10 +45,23 @@ export { mapKindToPageType } from './lib/tab-kind'
 export { useCustomizeFormStore } from './lib/customize-form/customize-form-store'
 export { viewSettingsAdminApi } from './api/view-settings-admin-api'
 export type { ViewSettingsScreen } from './api/view-settings-admin-api'
+export { menuSettingsApi } from './api/menu-settings-api'
+export { MenuSettingsEditor } from './ui/menu-settings/menu-settings-editor'
+export type {
+  MenuPatchEntry,
+  MenuScope,
+  MenuSettingsOption,
+  MenuSettingsPatch,
+  MenuStructure,
+  MenuStructureElement,
+  MenuStructureModule,
+  MenuStructureSection,
+} from './api/menu-settings-api'
 export { viewSettingsProfileDefaultsApi } from './api/view-settings-profile-defaults-api'
 export type { ViewSettingsProfile } from './api/view-settings-profile-defaults-api'
 export { viewSettingsDefaultsApi } from './api/view-settings-api'
 export { ShellSidebarHost } from './ui/shell-sidebar-host'
 export { discardTabSession, markDiscardDraftClose } from './lib/close-intent'
 export { dropCachedScreensFor } from './lib/fresh-form-instance'
+export { forgetListMemory } from './lib/stores/list-memory-store'
 export { resetAdminCustomizeAutoOpen } from './ui/admin-customize-auto-open'

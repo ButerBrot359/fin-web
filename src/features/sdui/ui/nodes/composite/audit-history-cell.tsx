@@ -2,6 +2,12 @@ import { Box, Chip, Stack, Typography } from '@mui/material'
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined'
 import { useTranslation } from 'react-i18next'
 
+import {
+  NetworkChainView,
+  resolveNetworkChain,
+  type NetworkChainSource,
+} from '@/entities/network-chain'
+
 import { renderCellValue } from '../../../lib/utils/cell-value'
 
 interface HistoryAi {
@@ -27,6 +33,12 @@ export interface AuditHistoryRow {
 }
 
 const shown = (value: unknown) => renderCellValue(value).trim() || '—'
+
+/**
+ * «Откуда» было изменение (SCRUM-371): компьютер и рабочий сервер — готовые строки с сервера,
+ * пустое значение — «—» (у записей до SCRUM-371 этих полей нет).
+ */
+const ORIGIN_TEXT_BINDINGS = new Set(['computer', 'serverNode'])
 
 /** Receiver for TABLE binding=history; old server rows keep their text fallback. */
 export function AuditHistoryCell({
@@ -64,6 +76,15 @@ export function AuditHistoryCell({
       />
     )
   }
+  if (binding === 'networkChain') {
+    // Строкой сервер может прислать уже готовое представление — показываем как есть.
+    if (typeof row.networkChain === 'string')
+      return <>{shown(row.networkChain)}</>
+    return (
+      <NetworkChainView hops={resolveNetworkChain(row as NetworkChainSource)} />
+    )
+  }
+  if (ORIGIN_TEXT_BINDINGS.has(binding)) return <>{shown(row[binding])}</>
   if (binding === 'occurredAt') {
     const parts = /^(\d{2}\.\d{2}\.\d{4}) (\d{2}:\d{2}:\d{2})$/.exec(value)
     return parts ? (

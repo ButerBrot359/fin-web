@@ -69,6 +69,12 @@ const HIGHLIGHT_ROW_KINDS = new Set<RowKind>([
 export const isHighlightRow = (rowKind?: RowKind): boolean =>
   rowKind != null && HIGHLIGHT_ROW_KINDS.has(rowKind)
 
+export const showsGrandTotal = (
+  total: Record<string, unknown>,
+  rows: readonly { rowKind?: RowKind }[]
+): boolean =>
+  Object.keys(total).length > 0 && !rows.some((r) => r.rowKind === 'TOTAL')
+
 /**
  * Является ли строка span-строкой (подпись labelText на первые колонки,
  * дальше значения). Строки-итоги БЕЗ labelText (напр. «Начальное сальдо»
@@ -89,6 +95,31 @@ export const isStrongSpanRow = (rowKind?: RowKind): boolean =>
  * сумм, 3 для количества), разряды пробелами, десятичный разделитель —
  * запятая («1 350 000,00»).
  */
+export const decimalsOfFormat = (
+  format?: string | null
+): { min: number; max: number } => {
+  const pattern = format?.split(';')[0]
+  if (!pattern || !/[#0]/.test(pattern)) return { min: 2, max: 2 }
+  const fraction = /\.([0#]+)/.exec(pattern)
+  if (!fraction) return { min: 0, max: 0 }
+  return {
+    min: (fraction[1].match(/0/g) ?? []).length,
+    max: fraction[1].length,
+  }
+}
+
+export const formatNumber1C = (
+  value: number,
+  minDecimals: number,
+  maxDecimals: number
+): string => {
+  const text = formatMoney1C(value, maxDecimals)
+  if (maxDecimals <= minDecimals) return text
+  const [intPart, decPart = ''] = text.split(',')
+  const trimmed = decPart.replace(/0+$/, '').padEnd(minDecimals, '0')
+  return trimmed ? `${intPart},${trimmed}` : intPart
+}
+
 export const formatMoney1C = (value: number, decimals = 2): string => {
   const negative = value < 0
   const [intPart, decPart] = Math.abs(value).toFixed(decimals).split('.')
@@ -121,3 +152,11 @@ export const indicatorSubLabels = (
   const v = cells.Pokazatel
   return Array.isArray(v) ? v.map((x) => String(x)) : undefined
 }
+
+/**
+ * Правило оформления СТРОКИ пришло с бэка. Правила уровня строки лежат в
+ * `ReportRowDto.appearance`, а не на колонке: условие берётся из данных (эталон 1С выделяет
+ * жирным счёт-группу, у которого нет родителя), поэтому колонка о нём знать не может.
+ */
+export const hasAppearance = (row: ReportRowDto, rule: string): boolean =>
+  row.appearance?.includes(rule) === true

@@ -6,7 +6,7 @@ import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { ViewEffect } from '../types/view'
 import { createActionRequestExecutor } from './action-request'
-import { parseContentDispositionFilename } from './parse-content-disposition'
+import { parseContentDispositionFilename } from '@/shared/lib/http/parse-content-disposition'
 
 type ToastLevel = 'success' | 'error' | 'info' | 'warning'
 
@@ -74,6 +74,11 @@ export interface EffectHandlerDeps {
   // форм-сессионного пути; без него — фолбэк на warning-тост, чтобы текст
   // не потерялся вовсе.
   alert?: (effect: ViewEffect) => void
+  // uploadFile: выбрать файл и отправить его POST-запросом на effect.url, а по
+  // успеху диспатчить effect.successCommand в ту же сессию. Реализация в
+  // dispatch (нужен redispatch); session-less путь деп не даёт — эффект туда
+  // прийти не должен.
+  uploadFile?: (effect: ViewEffect) => void
 }
 
 /**
@@ -192,6 +197,14 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
           deps.taskStarted(effect)
         } else {
           console.warn('[sdui] эффект taskStarted вне форм-сессии', effect)
+        }
+        break
+
+      case 'uploadFile':
+        if (deps.uploadFile) {
+          deps.uploadFile(effect)
+        } else {
+          console.warn('[sdui] эффект uploadFile вне форм-сессии', effect)
         }
         break
 

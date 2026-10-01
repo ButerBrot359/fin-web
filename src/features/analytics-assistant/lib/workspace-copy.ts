@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import type { AnalyticsItemKind } from '@/entities/analytics'
+import { localizeDeep } from '@/shared/lib/i18n'
 const ru = {
   shortDashboard: 'ИИ · Дашборды',
   shortReport: 'ИИ · Отчёты',
@@ -50,62 +51,11 @@ const ru = {
   preserved:
     'Последний готовый результат сохранён. Продолжите диалог, чтобы его уточнить.',
 }
-const kz: typeof ru = {
-  shortDashboard: 'ЖИ · Дашбордтар',
-  shortReport: 'ЖИ · Есептер',
-  shortBack: 'Режим',
-  shortNew: 'Жаңа чат',
-  landingTitle: 'Не жасағыңыз келеді?',
-  landingHint:
-    'Міндетіңізді өз сөзіңізбен сипаттаңыз. Ассистент деректерді таңдауға көмектесіп, мәліметтерді нақтылайды.',
-  dashboardTitle: 'Дашборд ассистенті',
-  reportTitle: 'Есеп ассистенті',
-  dashboardHint:
-    'Көрнекі көрініс: көрсеткіштер, графиктер және салыстырулар бір экранда.',
-  reportHint:
-    'Тексеруге, талдауға және әрі қарай жұмыс істеуге арналған толық кесте.',
-  dashboardStart: 'Дашборд жасау',
-  reportStart: 'Есеп жасау',
-  dashboardExamples: [
-    'Шығындардың ай сайын қалай өзгеретінін көргім келеді',
-    'Бөлімшелердің шығындарын салыстыруға көмектес',
-    'Басты экранға қандай көрсеткіштерді шығарған дұрыс?',
-  ],
-  reportExamples: [
-    'Таңдалған кезеңдегі шығындар тізімі керек',
-    'Кімге қанша қарыз екенімізді түсінуге көмектес',
-    'Қызметкерлер туралы деректерді тексергім келеді. Неден бастаймын?',
-  ],
-  friendly:
-    'Кесте атауларын білу немесе сұрау жазу қажет емес. Нені білгіңіз келетінін айтыңыз — мәліметтерді бірге нақтылаймыз.',
-  examples: 'Осылай бастауға болады',
-  chat: 'Диалог',
-  result: 'Нәтиже',
-  expand: 'Нәтижені кеңейту',
-  collapse: 'Диалогқа оралу',
-  previewEmpty: 'Нәтиже осында көрсетіледі',
-  previewHint:
-    'Алдымен міндетіңізді сипаттаңыз. Деректер жеткіліксіз болса, ассистент нақтылайтын сұрақтар қояды.',
-  placeholder: 'Нені білгіңіз немесе салыстырғыңыз келеді?',
-  send: 'Жіберу',
-  keyHint: 'Enter — жіберу · Shift+Enter — жаңа жол',
-  clarify: 'Мәліметтерді нақтылайық',
-  suggestions: 'Келесі қадамдар',
-  restore: 'Диалог қалпына келтірілуде…',
-  restoreError: 'Сақталған диалогты ашу мүмкін болмады.',
-  retry: 'Қайта көру',
-  wrongKind: 'Жауап басқа режимге қатысты. Алдыңғы нәтиже сақталды.',
-  newChat: 'Жаңа диалог',
-  save: 'Нәтижені сақтау',
-  back: 'Басқа режимді таңдау',
-  preserved:
-    'Соңғы дайын нәтиже сақталды. Оны нақтылау үшін диалогты жалғастырыңыз.',
-}
 export function useAnalyticsWorkspaceCopy(
   kind: AnalyticsItemKind = 'DASHBOARD'
 ) {
   const { i18n } = useTranslation()
-  const copy = /^(kz|kk)/i.test(i18n.language) ? kz : ru
+  const copy = localizeDeep(ru, i18n.language)
   return {
     ...copy,
     title: kind === 'REPORT' ? copy.reportTitle : copy.dashboardTitle,

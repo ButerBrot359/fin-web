@@ -19,6 +19,7 @@ import {
   defaultFieldRows,
   type ReportAltSettingsState,
 } from '../../lib/utils/user-settings'
+import type { ParamValues, ReportAltParamValue } from '../../lib/utils/params'
 import { SettingsGeneralTab } from './settings-general-tab'
 import { SettingsFieldsTab } from './settings-fields-tab'
 import { SettingsFiltersTab } from './settings-filters-tab'
@@ -45,6 +46,9 @@ interface ReportAltSettingsDrawerProps {
   langValue?: string
   onLangChange?: (value: string) => void
   groupingTitles?: Record<string, string>
+  settingsParams?: ReportAltParameterDto[]
+  paramValues?: ParamValues
+  onParamChange?: (code: string, value: ReportAltParamValue) => void
 }
 
 /**
@@ -65,6 +69,9 @@ export const ReportAltSettingsDrawer = ({
   langValue,
   onLangChange,
   groupingTitles,
+  settingsParams,
+  paramValues,
+  onParamChange,
 }: ReportAltSettingsDrawerProps) => {
   const { t, i18n } = useTranslation()
   const isKz = i18n.language === 'kz'
@@ -78,7 +85,11 @@ export const ReportAltSettingsDrawer = ({
   const filterFields = meta.filters ?? []
   const groupingOptions = (meta.availableGroupings ?? []).map((o) =>
     groupingTitles?.[o.code]
-      ? { ...o, titleRu: groupingTitles[o.code], titleKz: groupingTitles[o.code] }
+      ? {
+          ...o,
+          titleRu: groupingTitles[o.code],
+          titleKz: groupingTitles[o.code],
+        }
       : o
   )
 
@@ -105,18 +116,22 @@ export const ReportAltSettingsDrawer = ({
   const tabs: { key: string; label: string; content: ReactNode }[] = []
   // «Основные» — «Язык формы» (параметр YazykFormy), как секция «Язык печатной
   // формы» в 1С. Показывается, даже если у отчёта нет прочих настроек.
-  if (langParam) {
+  const parametryNastroek = settingsParams ?? []
+  if (langParam || parametryNastroek.length > 0) {
     tabs.push({
       key: 'general',
       label: t('reportalt.settings.general'),
       content: (
         <SettingsGeneralTab
-          langParam={langParam}
+          langParam={langParam ?? null}
           value={langValue ?? ''}
           onChange={(v) => {
             onLangChange?.(v)
           }}
           isKz={isKz}
+          params={parametryNastroek}
+          paramValues={paramValues ?? {}}
+          onParamChange={onParamChange}
         />
       ),
     })

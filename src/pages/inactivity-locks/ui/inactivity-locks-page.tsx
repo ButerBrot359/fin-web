@@ -18,6 +18,7 @@ import {
 } from '../api/inactivity-locks-api'
 import { Button } from '@/shared/ui/buttons/button'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
+import { formatDateTime } from '@/shared/lib/utils/date'
 
 const LOCKS_QUERY_KEY = ['inactivity-locks']
 
@@ -134,7 +135,7 @@ export const InactivityLocksPage = () => {
                 </TableCell>
                 <TableCell>
                   {lock.lastLoginAt
-                    ? new Date(lock.lastLoginAt).toLocaleString()
+                    ? formatDateTime(lock.lastLoginAt)
                     : t('inactivityLocks.neverLoggedIn')}
                 </TableCell>
                 <TableCell align="right">

@@ -18,7 +18,24 @@ import type {
  */
 interface SpreadsheetViewProps {
   spreadsheet: ReportSpreadsheetDto
+  /** Значения клеток, вписанные пользователем: имя области макета → текст. */
+  blankValues?: Record<string, string>
+  /**
+   * Изменение клетки бланка. В 1С бланк редактируемый: отметку «X» в виде декларации,
+   * номер уведомления и разрезы, которых нет в учёте, вписывает бухгалтер, и автозаполнение
+   * их не перетирает. Отсутствие обработчика ⇒ бланк только для чтения.
+   */
+  onBlankValueChange?: (field: string, value: string) => void
+  /** Имя области выделенной клетки — по нему строится расшифровка, как в 1С. */
+  vybrannayaOblast?: string | null
+  /** Клик по клетке бланка: в 1С расшифровка идёт от имени области текущей области. */
+  onVyborOblasti?: (oblast: string | null) => void
+  /** Активная страница бланка; без неё список страниц ведёт себя сам. */
+  aktivnayaStranitsa?: number
+  onVyborStranitsy?: (indeks: number) => void
 }
+
+const MASSHTAB_SHRIFTA_1S = 0.94
 
 const GRAN: Record<string, string> = {
   thin: '1px solid',
@@ -41,25 +58,53 @@ const stilYacheyki = (
   if (!style) return {}
   return {
     fontFamily: style.fontName,
-    fontSize: style.fontSize ? `${String(style.fontSize)}pt` : undefined,
+    fontSize: style.fontSize
+      ? `${String(Number((style.fontSize * MASSHTAB_SHRIFTA_1S).toFixed(2)))}pt`
+      : undefined,
     fontWeight: style.bold ? 700 : undefined,
     fontStyle: style.italic ? 'italic' : undefined,
     textDecoration: style.underline ? 'underline' : undefined,
     color: style.color,
     backgroundColor: style.background,
-    textAlign: (style.align as React.CSSProperties['textAlign']) ?? undefined,
-    verticalAlign: style.verticalAlign ?? undefined,
-    whiteSpace: style.wrap ? 'pre-wrap' : 'nowrap',
     borderTop: granitsa(style.borderTop, style.borderColor),
     borderRight: granitsa(style.borderRight, style.borderColor),
     borderBottom: granitsa(style.borderBottom, style.borderColor),
     borderLeft: granitsa(style.borderLeft, style.borderColor),
-    writingMode:
-      style.rotation === 90 || style.rotation === -90
-        ? 'vertical-rl'
-        : undefined,
   }
 }
+
+const PO_GORIZONTALI: Record<string, React.CSSProperties['justifyContent']> = {
+  center: 'center',
+  right: 'flex-end',
+}
+
+const PO_VERTIKALI: Record<string, React.CSSProperties['alignItems']> = {
+  top: 'flex-start',
+  bottom: 'flex-end',
+}
+
+const sloyTeksta = (
+  style: ReportSpreadsheetCellStyleDto | undefined
+): React.CSSProperties => ({
+  position: 'absolute',
+  inset: 0,
+  display: 'flex',
+  justifyContent: PO_GORIZONTALI[style?.align ?? ''] ?? 'flex-start',
+  alignItems: PO_VERTIKALI[style?.verticalAlign ?? ''] ?? 'center',
+})
+
+const stilTeksta = (
+  style: ReportSpreadsheetCellStyleDto | undefined
+): React.CSSProperties => ({
+  flexShrink: 0,
+  width: style?.wrap ? '100%' : undefined,
+  textAlign: (style?.align as React.CSSProperties['textAlign']) ?? undefined,
+  whiteSpace: style?.wrap ? 'pre-wrap' : 'pre',
+  writingMode:
+    style?.rotation === 90 || style?.rotation === -90
+      ? 'vertical-rl'
+      : undefined,
+})
 
 /** Пустая клетка сетки — ячейка, которой нет в ответе бэка. */
 interface PustayaKletka {
@@ -114,13 +159,28 @@ const razmetka = (sheet: ReportSpreadsheetSheetDto): Kletka[][] => {
   return setka
 }
 
-const SheetView = ({ sheet }: { sheet: ReportSpreadsheetSheetDto }) => {
+interface SheetViewProps {
+  sheet: ReportSpreadsheetSheetDto
+  blankValues?: Record<string, string>
+  onBlankValueChange?: (field: string, value: string) => void
+  vybrannayaOblast?: string | null
+  onVyborOblasti?: (oblast: string | null) => void
+}
+
+const SheetView = ({
+  sheet,
+  blankValues,
+  onBlankValueChange,
+  vybrannayaOblast,
+  onVyborOblasti,
+}: SheetViewProps) => {
   const stroki = useMemo(() => razmetka(sheet), [sheet])
+  const shirinaLista = sheet.columnWidths.reduce((sum, w) => sum + w, 0)
   return (
     <div className="overflow-x-auto">
       <table
         className="border-collapse bg-white"
-        style={{ tableLayout: 'fixed', width: 'max-content' }}
+        style={{ tableLayout: 'fixed', width: `${String(shirinaLista)}px` }}
       >
         <colgroup>
           {sheet.columnWidths.map((width, i) => (
@@ -136,9 +196,66 @@ const SheetView = ({ sheet }: { sheet: ReportSpreadsheetSheetDto }) => {
                     key={klyuch(kletka.row, kletka.column)}
                     rowSpan={kletka.rowSpan ?? 1}
                     colSpan={kletka.colSpan ?? 1}
-                    style={{ padding: '0 2px', ...stilYacheyki(kletka.style) }}
+                    style={{
+                      padding: 0,
+                      position: 'relative',
+                      ...stilYacheyki(kletka.style),
+                      ...(kletka.field != null &&
+                      kletka.field === vybrannayaOblast
+                        ? {
+                            outline: `2px solid ${cssVar(semantic.primary)}`,
+                            outlineOffset: '-2px',
+                          }
+                        : {}),
+                    }}
+                    onClick={
+                      onVyborOblasti
+                        ? () => {
+                            onVyborOblasti(kletka.field ?? null)
+                          }
+                        : undefined
+                    }
                   >
-                    {kletka.text ?? ''}
+                    {kletka.editable && kletka.field && onBlankValueChange ? (
+                      <div style={sloyTeksta(kletka.style)}>
+                        <input
+                          type="text"
+                          className="h-full w-full bg-transparent outline-none"
+                          style={{
+                            font: 'inherit',
+                            color: 'inherit',
+                            textAlign:
+                              (kletka.style
+                                ?.align as React.CSSProperties['textAlign']) ??
+                              undefined,
+                          }}
+                          value={
+                            blankValues?.[kletka.field] ?? kletka.text ?? ''
+                          }
+                          onChange={(event) => {
+                            onBlankValueChange(
+                              kletka.field!,
+                              event.target.value
+                            )
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          ...sloyTeksta(kletka.style),
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        <span style={stilTeksta(kletka.style)}>
+                          {(kletka.field != null
+                            ? blankValues?.[kletka.field]
+                            : undefined) ??
+                            kletka.text ??
+                            ''}
+                        </span>
+                      </div>
+                    )}
                   </td>
                 ) : (
                   <td key={`empty:${klyuch(r, kletka.column)}`} />
@@ -152,34 +269,149 @@ const SheetView = ({ sheet }: { sheet: ReportSpreadsheetSheetDto }) => {
   )
 }
 
-export const SpreadsheetView = ({ spreadsheet }: SpreadsheetViewProps) => {
+/**
+ * Список страниц бланка — как в форме отчёта 1С.
+ *
+ * <p>Список плоский: «Страница 1», «200.01 стр.1», … Сворачиваются только страницы
+ * многостраничного раздела — у формы 200.00 это приложение 3 по структурным подразделениям.
+ * Каждая такая страница раскрывается в свои экземпляры, которые добавляет «Добавить страницу»:
+ * первый — сама страница, копии приходят с бэка как «<имя> (2)».
+ */
+const SpisokStranits = ({
+  sheets,
+  aktivnyy,
+  onVybor,
+}: {
+  sheets: ReportSpreadsheetSheetDto[]
+  aktivnyy: number
+  onVybor: (indeks: number) => void
+}) => {
+  const [svernutye, setSvernutye] = useState<Record<string, boolean>>({})
+
+  // Копия экземпляра приходит с бэка как «200.03 стр.1 (2)» — суффикс и даёт узел.
+  const uzly: { title: string; indeks: number; ekzemplyary: number[] }[] = []
+  sheets.forEach((s, indeks) => {
+    const kopiya = /^(.*) \(\d+\)$/.exec(s.title)
+    if (kopiya) {
+      const bazovyy = uzly.find((u) => u.title === kopiya[1])
+      if (bazovyy) {
+        bazovyy.ekzemplyary.push(indeks)
+        return
+      }
+    }
+    uzly.push({
+      title: s.title,
+      indeks,
+      ekzemplyary: s.mnogostranichnyy ? [indeks] : [],
+    })
+  })
+
+  const knopka = (title: string, indeks: number, vlozhennaya: boolean) => (
+    <button
+      key={indeks}
+      type="button"
+      onClick={() => {
+        onVybor(indeks)
+      }}
+      className={`w-full rounded px-2 py-1 text-left text-sm ${
+        vlozhennaya ? 'pl-6' : ''
+      } ${
+        indeks === aktivnyy
+          ? 'bg-blue-50 font-medium text-blue-700'
+          : 'text-ui-05 hover:bg-pending-gray-7'
+      }`}
+    >
+      {title}
+    </button>
+  )
+
+  return (
+    <div className="max-h-full w-56 shrink-0 overflow-auto border-r border-pending-gray-6 pr-2">
+      {uzly.map((uzel) =>
+        uzel.ekzemplyary.length === 0 ? (
+          knopka(uzel.title, uzel.indeks, false)
+        ) : (
+          <Stranitsa
+            key={uzel.title}
+            title={uzel.title}
+            ekzemplyary={uzel.ekzemplyary}
+            svernuto={svernutye[uzel.title] ?? false}
+            onPereklyuchit={() => {
+              setSvernutye((prev) => ({
+                ...prev,
+                [uzel.title]: !prev[uzel.title],
+              }))
+            }}
+            knopka={knopka}
+          />
+        )
+      )}
+    </div>
+  )
+}
+
+/** Страница многостраничного раздела: заголовок со стрелкой и экземпляры внутри. */
+const Stranitsa = ({
+  title,
+  ekzemplyary,
+  svernuto,
+  onPereklyuchit,
+  knopka,
+}: {
+  title: string
+  ekzemplyary: number[]
+  svernuto: boolean
+  onPereklyuchit: () => void
+  knopka: (
+    title: string,
+    indeks: number,
+    vlozhennaya: boolean
+  ) => React.ReactNode
+}) => (
+  <div>
+    <button
+      type="button"
+      onClick={onPereklyuchit}
+      className="w-full rounded px-2 py-1 text-left text-sm font-medium text-ui-05 hover:bg-pending-gray-7"
+    >
+      {svernuto ? '▸' : '▾'} {title}
+    </button>
+    {!svernuto &&
+      ekzemplyary.map((indeks, nomer) =>
+        knopka(`Страница ${String(nomer + 1)}`, indeks, true)
+      )}
+  </div>
+)
+
+export const SpreadsheetView = ({
+  spreadsheet,
+  blankValues,
+  onBlankValueChange,
+  vybrannayaOblast,
+  onVyborOblasti,
+  aktivnayaStranitsa,
+  onVyborStranitsy,
+}: SpreadsheetViewProps) => {
   const sheets = spreadsheet.sheets
-  const [aktivnyy, setAktivnyy] = useState(0)
+  const [svoyaStranitsa, setSvoyuStranitsu] = useState<number>(0)
+  const aktivnyy: number = aktivnayaStranitsa ?? svoyaStranitsa
+  const vybrat: (indeks: number) => void = onVyborStranitsy ?? setSvoyuStranitsu
   if (sheets.length === 0) return null
   const sheet = sheets[Math.min(aktivnyy, sheets.length - 1)]
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex min-h-0 gap-3">
       {sheets.length > 1 && (
-        <div className="flex flex-wrap gap-1">
-          {sheets.map((s, i) => (
-            <button
-              key={s.code}
-              type="button"
-              onClick={() => {
-                setAktivnyy(i)
-              }}
-              className={`rounded border px-3 py-1 text-sm ${
-                i === aktivnyy
-                  ? 'border-blue-600 bg-blue-50 text-blue-700'
-                  : 'border-pending-gray-6 bg-white'
-              }`}
-            >
-              {s.title}
-            </button>
-          ))}
-        </div>
+        <SpisokStranits sheets={sheets} aktivnyy={aktivnyy} onVybor={vybrat} />
       )}
-      <SheetView sheet={sheet} />
+      <div className="min-w-0 flex-1 overflow-auto">
+        <SheetView
+          sheet={sheet}
+          blankValues={blankValues}
+          onBlankValueChange={onBlankValueChange}
+          vybrannayaOblast={vybrannayaOblast}
+          onVyborOblasti={onVyborOblasti}
+        />
+      </div>
     </div>
   )
 }

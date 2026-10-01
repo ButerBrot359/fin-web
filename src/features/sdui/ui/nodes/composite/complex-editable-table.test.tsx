@@ -479,13 +479,14 @@ describe('ComplexEditableTable: копирование строки (SCRUM-302)'
 })
 
 describe('ComplexEditableTable: поиск (SCRUM-302)', () => {
-  it('поиск подсвечивает, но НЕ фильтрует строки', () => {
+  it('поиск оставляет только строки с совпадением, очистка возвращает все', () => {
     state['VychetyIPN.__selectedRowId'] = 'm1'
     render(<ComplexEditableTable node={detailNode} />)
-    fireEvent.change(screen.getByPlaceholderText('table.searchPlaceholder'), {
-      target: { value: 'dA2' },
-    })
-    // обе видимые строки на месте — включая несовпадающую
+    const input = screen.getByPlaceholderText('table.searchPlaceholder')
+    fireEvent.change(input, { target: { value: 'da2' } })
+    expect(screen.queryByText('Row dA1')).toBeNull()
+    expect(screen.getByText('Row dA2')).toBeTruthy()
+    fireEvent.change(input, { target: { value: '' } })
     expect(screen.getByText('Row dA1')).toBeTruthy()
     expect(screen.getByText('Row dA2')).toBeTruthy()
   })

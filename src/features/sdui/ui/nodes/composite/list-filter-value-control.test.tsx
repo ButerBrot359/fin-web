@@ -159,7 +159,7 @@ describe('ListFilterValueControl', () => {
     expect(onChange).toHaveBeenCalledWith([undefined, '2026-01-31'])
   })
 
-  it('ENUMS → select, value = строковый value (не id)', () => {
+  it('ENUMS → тот же автокомплит, что у ссылки; наружу уходит строковый value (не id)', () => {
     const onChange = vi.fn()
     render(
       <ListFilterValueControl
@@ -174,28 +174,27 @@ describe('ListFilterValueControl', () => {
         onChange={onChange}
       />
     )
-    fireEvent.change(screen.getByTestId('filter-enum-select'), {
+    fireEvent.change(screen.getByTestId('ref-select'), {
       target: { value: 'B' },
     })
     expect(onChange).toHaveBeenCalledWith('B')
   })
 
-  it('ENUMS select имеет доступное имя (aria-label)', () => {
+  it('ENUMS: выбранное значение показано в контроле', () => {
     render(
       <ListFilterValueControl
         op="eq"
         column={{
           filterValueOptions: [
             { value: 'A', label: 'Альфа', id: 1, code: 'A' },
+            { value: 'B', label: 'Бета', id: 2, code: 'B' },
           ],
         }}
-        value=""
+        value="B"
         onChange={vi.fn()}
       />
     )
-    expect(
-      screen.getByRole('combobox', { name: 'table.filterValuePlaceholder' })
-    ).toBeTruthy()
+    expect(screen.getByTestId('ref-select')).toHaveValue('B')
   })
 
   it('ссылка (filterValueSource) → голый числовой id', async () => {

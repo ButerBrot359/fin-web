@@ -1,4 +1,5 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { Profiler } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
@@ -40,7 +41,26 @@ vi.mock('./table-cell-editor', () => ({
   ),
 }))
 vi.mock('./table-toolbar', () => ({
-  TableToolbar: () => null,
+  TableToolbar: ({
+    onAdd,
+    search,
+  }: {
+    onAdd?: () => void
+    search: { query: string; setQuery: (q: string) => void }
+  }) => (
+    <>
+      <button type="button" onClick={onAdd}>
+        Добавить
+      </button>
+      <input
+        placeholder="Поиск"
+        value={search.query}
+        onChange={(event) => {
+          search.setQuery(event.target.value)
+        }}
+      />
+    </>
+  ),
 }))
 
 const TABLE_ID = 'table.tmz'
@@ -184,5 +204,80 @@ describe('EditableTable — ресайз колонок', () => {
       '400px',
       '100px',
     ])
+  })
+})
+
+describe('EditableTable — добавление строки', () => {
+  it('новая строка становится текущей и прокручивается в видимую область', () => {
+    state.TMZ = [{ rowId: 'r1', Nomen: 'Гвозди' }]
+    const scrollIntoView = vi.fn()
+    HTMLTableRowElement.prototype.scrollIntoView = scrollIntoView
+    renderTable({ allowAdd: true })
+
+    fireEvent.click(screen.getByText('Добавить'))
+
+    const rows = document.querySelectorAll('tbody tr')
+    expect(rows).toHaveLength(2)
+    expect(rows[1].classList.contains('Mui-selected')).toBe(true)
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' })
+    expect(scrollIntoView.mock.contexts.at(-1)).toBe(rows[1])
+  })
+})
+
+describe('EditableTable — поиск', () => {
+  it('оставляет строки с совпадением и показывает строку, добавленную во время поиска', () => {
+    state.TMZ = [
+      { rowId: 'r1', Nomen: '2Алдигурова Фируза Жумановна' },
+      { rowId: 'r2', Nomen: '3Андосов Нурлан Мурзахметович' },
+    ]
+    HTMLTableRowElement.prototype.scrollIntoView = vi.fn()
+    renderTable({ allowAdd: true })
+
+    fireEvent.change(screen.getByPlaceholderText('Поиск'), {
+      target: { value: '2алдигурова' },
+    })
+
+    expect(screen.getByText('2Алдигурова Фируза Жумановна')).toBeTruthy()
+    expect(screen.queryByText('3Андосов Нурлан Мурзахметович')).toBeNull()
+
+    fireEvent.click(screen.getByText('Добавить'))
+
+    const rows = document.querySelectorAll('tbody tr')
+    expect(rows).toHaveLength(2)
+    expect(rows[1].classList.contains('Mui-selected')).toBe(true)
+  })
+})
+
+describe('EditableTable — поиск без бесконечной перерисовки', () => {
+  it('после ввода запроса таблица успокаивается, а не перерисовывается по кругу', async () => {
+    state.TMZ = [
+      { rowId: 'r1', Nomen: '2Алдигурова Фируза Жумановна' },
+      { rowId: 'r2', Nomen: '3Андосов Нурлан Мурзахметович' },
+    ]
+    Element.prototype.scrollIntoView = vi.fn()
+    let commits = 0
+    render(
+      <Profiler
+        id="tmz"
+        onRender={() => {
+          commits++
+        }}
+      >
+        <EditableTable
+          node={makeNode({})}
+          columns={columnNodes.map(nodeToTableColumnDef)}
+        />
+      </Profiler>
+    )
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    fireEvent.change(screen.getByPlaceholderText('Поиск'), {
+      target: { value: '2алдигурова' },
+    })
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    const posleVvoda = commits
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    expect(commits).toBe(posleVvoda)
   })
 })

@@ -95,7 +95,10 @@ const ToastContent = ({
         borderRadius: '8px',
         boxShadow: cssVar(shadows.popup),
         padding: '12px 16px',
-        width: '351px',
+        // Ширина этажа колонки угла — наследуется от <ol data-sonner-toaster>,
+        // где её объявляет toast.tsx. Не '100%': элемент списка у custom-тоста
+        // сжимается по содержимому, и тост получился бы уже панели.
+        width: 'var(--width)',
         display: 'flex',
         flexDirection: description ? 'column' : 'row',
         gap: '6px',
@@ -167,7 +170,8 @@ export interface ToastEvent {
 
 type ToastListener = (event: ToastEvent) => void
 
-// SCRUM-317 канал №8: центр оповещений копит всё, что показано всплывашкой.
+// SCRUM-317 канал №8: сюда приходит всё, что показано всплывашкой, а какие
+// уровни копить — решает подписчик (connectToastHistory).
 // Подписка вместо прямого импорта — shared не знает про entities-стор.
 const listeners = new Set<ToastListener>()
 

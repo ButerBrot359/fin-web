@@ -7,6 +7,9 @@ import { useTableSync } from '../../../lib/hooks/use-table-sync'
 import { useTableSearch } from '../../../lib/hooks/use-table-search'
 import { useSearchScroll } from '../../../lib/hooks/use-search-scroll'
 import { useTableRowCommands } from '../../../lib/hooks/use-table-row-commands'
+import { useFormSaveCommand } from '../../../lib/hooks/use-form-save-command'
+import { navestiFokusNaTablitsu } from '../../../lib/utils/table-keyboard-focus'
+import { useTableMultiSelection } from '../../../lib/hooks/use-table-multi-selection'
 import { useRowSelectionIdentity } from '../../../lib/hooks/use-row-selection-identity'
 import { useMasterDetailRows } from '../../../lib/hooks/use-master-detail-rows'
 import { useAutoAdvance } from '../../../lib/hooks/use-auto-advance'
@@ -27,6 +30,7 @@ import {
   extractAllLeafColumns,
   VERTICAL_SUB_ROW_HEIGHT,
 } from '../../../lib/utils/build-column-defs'
+import { extractSearchColumns } from '../../../lib/utils/table-column-def'
 import { parseRowAppearance } from '../../../lib/utils/row-appearance'
 import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { editableTableSx } from './editable-table-sx'
@@ -109,7 +113,14 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // Отбор по внешнему списку (панель сотрудников) — независим от master-detail:
   // тот связывает ДВЕ ТЧ одного документа, этот фильтрует по витрине формы и не
   // трогает доступность команд таблицы.
-  const visibleRows = useExternalRowFilter(node, masterDetailRows)
+  const otobrannyeRows = useExternalRowFilter(node, masterDetailRows)
+
+  const searchColumns = useMemo(
+    () => extractSearchColumns(node.children),
+    [node.children]
+  )
+  const search = useTableSearch(otobrannyeRows, searchColumns)
+  const visibleRows = search.rows
 
   const selection = useRowSelectionIdentity(node.binding, visibleRows)
 
@@ -161,7 +172,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   )
 
   // ── Footer ──
-  const footerValues = useTableFooterValues(node, visibleRows)
+  const footerValues = useTableFooterValues(node, otobrannyeRows)
   const hasFooter = Boolean(footerValues && tableHasFooter(tableColumns))
 
   const sizing = useSduiColumnSizing(node)
@@ -193,34 +204,56 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // добавляется сверху и выделение не трогает.
   const openRow = useRowOpen(node)
 
-  const handleRowClick = (rowId: string) => {
+  // Выделение НЕСКОЛЬКИХ строк (Ctrl/Shift/Ctrl+A) поверх текущей строки — как в 1С.
+  const vybor = useTableMultiSelection(visibleRows)
+
+  // Выделение живёт только при текущей строке: её снимают и снаружи (подмена записи под тем
+  // же rowId, SCRUM-291 §0.5), и тогда «Удалить» обязана погаснуть вместе с ней.
+  const vydelennyeRowIds =
+    selection.selectedRowId === null ? [] : vybor.vydelennyeRowIds
+
+  const handleRowClick = (
+    rowId: string,
+    visibleIndex: number,
+    mods: { ctrl: boolean; shift: boolean }
+  ) => {
     selection.selectRow(rowId)
+    vybor.klik(rowId, visibleIndex, mods)
     activateRow(rowId)
   }
-
-  const search = useTableSearch(
-    visibleRows,
-    flatColumns.map((c) => ({ id: c.id, binding: c.binding }))
-  )
 
   const { headTopOffset, setFirstHeadRowRef } = useStickyHeadOffset()
 
   useSearchScroll(search, visibleRows, virt, containerRef)
+
+  // Ctrl+S из ТЧ — та же команда записи, что у кнопки «Записать» формы.
+  const saveForm = useFormSaveCommand()
 
   const commands = useTableRowCommands({
     sync,
     columns: flatColumns,
     visibleRows,
     selectedRowId: selection.selectedRowId,
+    selectedRowIds: vydelennyeRowIds,
     selectedVisibleIndex: selection.selectedVisibleIndex,
     onAdd: handleAddWithAutoAdvance,
-    clearSelection: selection.clearSelection,
-    selectRow: selection.selectRow,
-    // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail
-    // в тулбаре) — там visibleRows === sync.rows, поэтому видимый индекс
-    // совпадает с глобальным и move корректен.
-    globalIndexOf: (visibleIndex) => visibleIndex,
+    clearSelection: () => {
+      selection.clearSelection()
+      vybor.tolkoOdna(null)
+    },
+    selectRow: (rowId) => {
+      selection.selectRow(rowId)
+      vybor.tolkoOdna(rowId)
+    },
+    selectAll: vybor.vydelitVse,
+    extendSelection: vybor.rasshirit,
+    moveCurrentRow: selection.selectRow,
+    globalIndexOf: (visibleIndex) => {
+      const rowId = visibleRows[visibleIndex]?.rowId
+      return sync.rows.findIndex((r) => r.rowId === rowId)
+    },
     search,
+    onSave: saveForm,
   })
 
   // Колонок в разметке — столько, сколько РИСУЕТСЯ. flatColumns.length
@@ -241,6 +274,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
       tabIndex={-1}
       data-sdui-table-keyboard="true"
       onKeyDown={commands.handleKeyDown}
+      onPaste={commands.handlePasteEvent}
       style={{
         outline: 'none',
         display: 'flex',
@@ -261,6 +295,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           commands={tableCommands}
           search={search}
           selectedRowId={selection.selectedRowId}
+          selectedRowIds={vydelennyeRowIds}
         />
       </div>
       {/* basis auto, а не 0: контейнер растёт до высоты колонки, но никогда не
@@ -269,6 +304,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
         component={Paper}
         ref={setContainerRef}
         data-own-scroll="true"
+        onMouseDown={navestiFokusNaTablitsu}
         sx={{
           flex: '1 1 auto',
           // Высоту даёт либо замер по вьюпорту, либо растянутый предок — в обоих
@@ -317,9 +353,15 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
                     <TableBodyRow
                       key={row.id}
                       row={row}
-                      selected={row.id === selection.selectedRowId}
+                      selected={
+                        row.id === selection.selectedRowId ||
+                        vybor.vydelennye.has(row.original.rowId)
+                      }
                       onRowClick={(event) => {
-                        handleRowClick(row.id)
+                        handleRowClick(row.original.rowId, row.index, {
+                          ctrl: event.ctrlKey || event.metaKey,
+                          shift: event.shiftKey,
+                        })
                         // Ячейка-ссылка (props.cellHyperlink, порт CellHyperlink 1С)
                         // открывается ОДНИМ кликом — тем же событием, что двойной
                         // клик по строке, только жест другой.

@@ -1,5 +1,12 @@
 import type { FC } from 'react'
-import { render, cleanup, screen, fireEvent, act } from '@testing-library/react'
+import {
+  render as renderRaw,
+  cleanup,
+  screen,
+  fireEvent,
+  act,
+} from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 interface QueryConfig {
@@ -40,7 +47,8 @@ interface GatewayImplStub {
     onRowMenu?: (
       row: unknown,
       ancestors: unknown[],
-      position: { top: number; left: number }
+      position: { top: number; left: number },
+      zone: 'label' | 'value'
     ) => void
   }>
   print?: (url: string, body: unknown) => Promise<void>
@@ -50,7 +58,8 @@ interface GatewayImplStub {
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (k: string) => k,
+    t: (k: string, o?: { code?: string }) =>
+      o?.code != null ? `${k} ${o.code}` : k,
     i18n: { language: 'ru' },
   }),
 }))
@@ -91,8 +100,23 @@ vi.mock('../../../lib/dispatch', () => ({
   useSduiDispatch: () => dispatchMock,
 }))
 
+const navigateMock = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual: Record<string, unknown> =
+    await vi.importActual('react-router-dom')
+  return { ...actual, useNavigate: () => navigateMock }
+})
+
 import { ReportResultNode } from './report-result-node'
 import type { ViewNode } from '../../../types/view'
+
+// Нода уходит в другие отчёты расшифровкой (useNavigate) — рендерим в роутере.
+const render = (ui: React.ReactElement) =>
+  renderRaw(
+    <MemoryRouter initialEntries={['/modules/Otchety/reportalt/Osv']}>
+      {ui}
+    </MemoryRouter>
+  )
 
 const baseQueryResult = {
   data: undefined,
@@ -212,21 +236,27 @@ describe('ReportResultNode', () => {
     expect(screen.queryByTestId('report-result-gateway-missing')).toBeNull()
   })
 
-  it('onRowMenu открывает меню строки: пункт «Открыть» шлёт команду расшифровки', () => {
+  it('единственный пункт «Открыть» выполняется сразу, без меню', () => {
     const row = { groupValue: 'ручка', rowRef: { domain: 'DICTIONARY', id: 7 } }
     useInfiniteQuery.mockReturnValue({
       ...baseQueryResult,
       data: { pages: [{ reportCode: 'OSV', rows: [row] }] },
     })
     let openMenu:
-      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
       | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
         onRowMenu?: (
           r: unknown,
           a: unknown[],
-          p: { top: number; left: number }
+          p: { top: number; left: number },
+          z: 'label' | 'value'
         ) => void
       }) => {
         openMenu = props.onRowMenu
@@ -241,10 +271,10 @@ describe('ReportResultNode', () => {
     )
     expect(openMenu).toBeTypeOf('function')
     act(() => {
-      openMenu?.(row, [], { top: 10, left: 20 })
+      openMenu?.(row, [], { top: 10, left: 20 }, 'label')
     })
 
-    fireEvent.click(screen.getByText('osv.openElement «ручка»'))
+    expect(screen.queryByText('osv.openElement «ручка»')).toBeNull()
 
     expect(dispatchMock).toHaveBeenCalledWith({
       type: 'COMMAND',
@@ -260,14 +290,20 @@ describe('ReportResultNode', () => {
       data: { pages: [{ reportCode: 'OSV', rows: [row] }] },
     })
     let openMenu:
-      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
       | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
         onRowMenu?: (
           r: unknown,
           a: unknown[],
-          p: { top: number; left: number }
+          p: { top: number; left: number },
+          z: 'label' | 'value'
         ) => void
       }) => {
         openMenu = props.onRowMenu
@@ -281,7 +317,7 @@ describe('ReportResultNode', () => {
       />
     )
     act(() => {
-      openMenu?.(row, [], { top: 10, left: 20 })
+      openMenu?.(row, [], { top: 10, left: 20 }, 'label')
     })
 
     expect(screen.queryByText(/osv.openElement/)).toBeNull()
@@ -301,14 +337,20 @@ describe('ReportResultNode', () => {
       data: { pages: [{ reportCode: 'OSV', rows: [accountRow] }] },
     })
     let openMenu:
-      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
       | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
         onRowMenu?: (
           r: unknown,
           a: unknown[],
-          p: { top: number; left: number }
+          p: { top: number; left: number },
+          z: 'label' | 'value'
         ) => void
       }) => {
         openMenu = props.onRowMenu
@@ -322,7 +364,7 @@ describe('ReportResultNode', () => {
       />
     )
     act(() => {
-      openMenu?.(subkontoRow, [accountRow], { top: 10, left: 20 })
+      openMenu?.(subkontoRow, [accountRow], { top: 10, left: 20 }, 'label')
     })
 
     fireEvent.click(screen.getByText('osv.accountCard 1316'))
@@ -330,11 +372,268 @@ describe('ReportResultNode', () => {
     expect(dispatchMock).toHaveBeenCalledWith({
       type: 'COMMAND',
       command: 'report.drilldown',
-      value: { rowRef: accountRow.rowRef },
+      value: { rowRef: accountRow.rowRef, target: 'accountCard' },
     })
   })
 
-  it('на самой строке-счёте пункт «Карточка счёта» не дублирует «Открыть»', () => {
+  it('ОСВ по счёту: «Карточка счёта» со строки физлица уносит субконто ветки для отбора', () => {
+    const accountRow = {
+      groupCode: 'Schet',
+      groupValue:
+        '3241, Краткосрочная кредиторская задолженность работникам по оплате труда',
+      rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 99 },
+    }
+    const fizlitsoRow = {
+      groupCode: 'Subkonto1',
+      groupValue: 'Касымов Алмас Ержанович',
+      rowRef: { domain: 'DICTIONARY', typeCode: 'FizicheskieLitsa', id: 501 },
+    }
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSVPoSchetu', rows: [accountRow] }] },
+    })
+    let openMenu:
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
+      | undefined
+    getReportResultGateway.mockReturnValue({
+      Renderer: (props: {
+        onRowMenu?: (
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void
+      }) => {
+        openMenu = props.onRowMenu
+        return <div data-testid="renderer" />
+      },
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({
+          drilldownCommand: 'report.drilldown',
+          reportCode: 'OSVPoSchetu',
+        })}
+      />
+    )
+    act(() => {
+      openMenu?.(fizlitsoRow, [accountRow], { top: 10, left: 20 }, 'label')
+    })
+
+    fireEvent.click(screen.getByText('osv.accountCard 3241'))
+
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'report.drilldown',
+      value: {
+        rowRef: accountRow.rowRef,
+        target: 'accountCard',
+        subkonto: [{ groupCode: 'Subkonto1', rowRef: fizlitsoRow.rowRef }],
+      },
+    })
+  })
+
+  it('ОСВ по счёту: клик по сумме с единственным вариантом сразу открывает карточку счёта без меню', () => {
+    const accountRow = {
+      groupCode: 'Schet',
+      groupValue:
+        '3241, Краткосрочная кредиторская задолженность работникам по оплате труда',
+      rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 99 },
+    }
+    const fizlitsoRow = {
+      groupCode: 'Subkonto1',
+      groupValue: 'Касымов Алмас Ержанович',
+      rowRef: { domain: 'DICTIONARY', typeCode: 'FizicheskieLitsa', id: 501 },
+    }
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSVPoSchetu', rows: [accountRow] }] },
+    })
+    let openMenu:
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
+      | undefined
+    getReportResultGateway.mockReturnValue({
+      Renderer: (props: {
+        onRowMenu?: (
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void
+      }) => {
+        openMenu = props.onRowMenu
+        return <div data-testid="renderer" />
+      },
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({
+          drilldownCommand: 'report.drilldown',
+          reportCode: 'OSVPoSchetu',
+        })}
+      />
+    )
+    act(() => {
+      openMenu?.(fizlitsoRow, [accountRow], { top: 10, left: 20 }, 'value')
+    })
+
+    expect(screen.queryByText('osv.accountCard 3241')).toBeNull()
+    expect(dispatchMock).toHaveBeenCalledTimes(1)
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'report.drilldown',
+      value: {
+        rowRef: accountRow.rowRef,
+        target: 'accountCard',
+        subkonto: [{ groupCode: 'Subkonto1', rowRef: fizlitsoRow.rowRef }],
+      },
+    })
+  })
+
+  it('клик по ФИО при двух вариантах показывает меню, а не выбирает сам', () => {
+    const accountRow = {
+      groupCode: 'Schet',
+      groupValue: '3241, Краткосрочная кредиторская задолженность',
+      rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 99 },
+    }
+    const fizlitsoRow = {
+      groupCode: 'Subkonto1',
+      groupValue: 'Касымов Алмас Ержанович',
+      rowRef: { domain: 'DICTIONARY', typeCode: 'FizicheskieLitsa', id: 501 },
+    }
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSVPoSchetu', rows: [accountRow] }] },
+    })
+    let openMenu:
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
+      | undefined
+    getReportResultGateway.mockReturnValue({
+      Renderer: (props: {
+        onRowMenu?: (
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void
+      }) => {
+        openMenu = props.onRowMenu
+        return <div data-testid="renderer" />
+      },
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({
+          drilldownCommand: 'report.drilldown',
+          reportCode: 'OSVPoSchetu',
+        })}
+      />
+    )
+    act(() => {
+      openMenu?.(fizlitsoRow, [accountRow], { top: 10, left: 20 }, 'label')
+    })
+
+    expect(dispatchMock).not.toHaveBeenCalled()
+    expect(
+      screen.getByText('osv.openElement «Касымов Алмас Ержанович»')
+    ).toBeTruthy()
+    expect(screen.getByText('osv.accountCard 3241')).toBeTruthy()
+  })
+
+  it('ОСВ: у строки-счёта меню эталона — ОСВ по счёту, карточка, анализ, обороты по месяцам и по дням', () => {
+    const accountRow = {
+      groupCode: 'Schet',
+      groupValue: '3100, Краткосрочная кредиторская задолженность',
+      rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 99 },
+    }
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ rows: [accountRow] }] },
+    })
+    let openMenu:
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
+      | undefined
+    getReportResultGateway.mockReturnValue({
+      Renderer: (props: {
+        onRowMenu?: (
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void
+      }) => {
+        openMenu = props.onRowMenu
+        return <div data-testid="renderer" />
+      },
+    })
+
+    render(
+      <ReportResultNode
+        node={nodeWithSource({
+          reportCode: 'OborotnoSaldovayaVedomost',
+          drilldownCommand: 'report.drilldown',
+          source: {
+            url: '/api/reportalt/OborotnoSaldovayaVedomost/run',
+            method: 'POST',
+            body: {
+              parameters: { Period: { from: '2026-01-01', to: '2026-09-09' } },
+            },
+          },
+        })}
+      />
+    )
+    act(() => {
+      openMenu?.(accountRow, [], { top: 10, left: 20 }, 'label')
+    })
+
+    expect(screen.getByText('osv.openElement «3100»')).toBeTruthy()
+    expect(
+      screen.getByText('reportalt.drilldown.osvPoSchetu 3100')
+    ).toBeTruthy()
+    expect(screen.getByText('osv.accountCard 3100')).toBeTruthy()
+    expect(
+      screen.getByText('reportalt.drilldown.analizScheta 3100')
+    ).toBeTruthy()
+    expect(
+      screen.getByText('reportalt.drilldown.turnoverByMonths 3100')
+    ).toBeTruthy()
+    expect(
+      screen.getByText('reportalt.drilldown.turnoverByDays 3100')
+    ).toBeTruthy()
+    // Переход в отчёт — серверной командой с ключом перехода: маршрут и токен
+    // параметров целевого отчёта собирает ReportDrilldownService.
+    fireEvent.click(screen.getByText('reportalt.drilldown.analizScheta 3100'))
+    expect(dispatchMock).toHaveBeenCalledWith({
+      type: 'COMMAND',
+      command: 'report.drilldown',
+      value: { rowRef: accountRow.rowRef, target: 'analizScheta' },
+    })
+  })
+
+  it('на строке-счёте «Открыть» ведёт в карточку записи плана счетов, а «Карточка счёта» — в отчёт', () => {
     const accountRow = {
       groupValue: '1316',
       rowRef: { domain: 'ACCOUNT_PLAN', typeCode: 'EPSGU', id: 99 },
@@ -344,14 +643,20 @@ describe('ReportResultNode', () => {
       data: { pages: [{ reportCode: 'OSV', rows: [accountRow] }] },
     })
     let openMenu:
-      | ((r: unknown, a: unknown[], p: { top: number; left: number }) => void)
+      | ((
+          r: unknown,
+          a: unknown[],
+          p: { top: number; left: number },
+          z: 'label' | 'value'
+        ) => void)
       | undefined
     getReportResultGateway.mockReturnValue({
       Renderer: (props: {
         onRowMenu?: (
           r: unknown,
           a: unknown[],
-          p: { top: number; left: number }
+          p: { top: number; left: number },
+          z: 'label' | 'value'
         ) => void
       }) => {
         openMenu = props.onRowMenu
@@ -365,11 +670,18 @@ describe('ReportResultNode', () => {
       />
     )
     act(() => {
-      openMenu?.(accountRow, [], { top: 10, left: 20 })
+      openMenu?.(accountRow, [], { top: 10, left: 20 }, 'label')
     })
 
-    expect(screen.queryByText(/osv.accountCard/)).toBeNull()
+    // Эталон первым пунктом даёт «Открыть "<счёт>"» — у нас это карточка записи
+    // плана счетов (легаси-страница; SDUI-маршрут домена отвечает «не поддержано»),
+    // а вторым пунктом остаётся отчёт «Карточка счёта».
     expect(screen.getByText('osv.openElement «1316»')).toBeTruthy()
+    expect(screen.getByText('osv.accountCard 1316')).toBeTruthy()
+    fireEvent.click(screen.getByText('osv.openElement «1316»'))
+    expect(navigateMock).toHaveBeenCalledWith(
+      '/modules/Otchety/accountplan/EPSGU/99'
+    )
   })
 
   it('LEDGER: страницы мержатся (rows конкатенируются), «Показать ещё» зовёт fetchNextPage', () => {

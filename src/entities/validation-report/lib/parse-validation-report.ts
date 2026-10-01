@@ -47,7 +47,20 @@ function parseTarget(raw: unknown): ValidationTarget | null {
     // на границе провода деградируем тем же способом.
     return tableCode ? { kind: 'TABLE', tableCode } : null
   }
+  if (kind === 'REPORT_CELL') {
+    // Навигируемо только с обоими полями адреса (report-sheet/v1); неполный
+    // адрес — сообщение остаётся текстом, без понижения до таблицы.
+    const { pokazatelId, indeks } = t
+    if (isWholeNumber(pokazatelId) && isWholeNumber(indeks)) {
+      return { kind: 'REPORT_CELL', pokazatelId, indeks }
+    }
+    return null
+  }
   return null
+}
+
+function isWholeNumber(v: unknown): v is number {
+  return typeof v === 'number' && Number.isInteger(v) && v >= 0
 }
 
 function parseMessage(raw: unknown, index: number): ValidationMessage | null {

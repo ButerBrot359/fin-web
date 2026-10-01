@@ -25,6 +25,7 @@ interface ObjectCellEditorProps {
   value: unknown
   onChange: (value: unknown) => void
   onCommit: () => void
+  extraParams?: Record<string, string>
 }
 
 // Компактная стилизация под ячейку ТЧ — по образцу wrapperSx из
@@ -90,6 +91,7 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
   value,
   onChange,
   onCommit,
+  extraParams,
 }) => {
   const { t } = useTranslation()
 
@@ -178,6 +180,7 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
         mode: 'list',
         domain: picked.domainKind,
         typeCode: picked.targetTypeCode,
+        searchParams: { ...picked.optionsSource.params, ...extraParams },
         onSelect: (option) => {
           applyPicked(picked, option)
         },
@@ -203,6 +206,7 @@ export const ObjectCellEditor: FC<ObjectCellEditorProps> = ({
           onChange={onChange}
           onCommit={onCommit}
           onCleared={handleValueCleared}
+          extraParams={extraParams}
         />
       ) : (
         // Тип не задан. Один член — выбирать не из чего: ветка недостижима,

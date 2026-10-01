@@ -5,6 +5,7 @@ import type {
   PasswordRecoveryAck,
   PasswordRecoveryTicket,
 } from '@/shared/types/auth.types'
+import { attachLanguageHeader } from '../attach-language-header'
 
 /**
  * Анонимный контур входа (SCRUM-355 §2.1–2.2): настройки экрана входа и
@@ -16,6 +17,8 @@ const anonymousInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000,
 })
+
+attachLanguageHeader(anonymousInstance)
 
 const RECOVERY_BASE = '/api/auth/password-recovery'
 

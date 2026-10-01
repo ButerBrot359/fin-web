@@ -1,7 +1,9 @@
-import axios from 'axios'
+import axios, { type AxiosError } from 'axios'
 import i18n from 'i18next'
 
+import { classifyTransportFailure } from '@/shared/api/api-error'
 import { attachAuthInterceptors } from '@/shared/api/auth/attach-auth-interceptors'
+import { attachClientContextHeaders } from '@/shared/api/attach-client-context-headers'
 
 import type {
   ViewRequest,
@@ -12,6 +14,7 @@ import type {
 import { normalizeConflictBody } from './normalize-conflict'
 import { parseViewError } from './parse-view-error'
 import { resolveViewLanguage } from './view-language'
+import { attachLanguageHeader } from '@/shared/api/attach-language-header'
 
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -19,10 +22,14 @@ const instance = axios.create({
   timeout: 30000,
 })
 
+attachLanguageHeader(instance)
+
 // SDUI ходит в тот же webbuh, что и общий клиент, поэтому токен нужен и здесь (SCRUM-373).
 // Инстанс отдельный по историческим причинам — забыть его значит получить экраны SDUI,
 // молча отваливающиеся в 401, когда бэкенд включит проверку доступа.
 attachAuthInterceptors(instance)
+// Рабочее место для журнала регистрации (SCRUM-371) — проведение и запись идут именно здесь.
+attachClientContextHeaders(instance)
 
 export class ViewConflictError extends Error {
   constructor(public data: ConflictError) {
@@ -44,6 +51,11 @@ export class ViewHttpError extends Error {
   }
 }
 
+const fallbackMessage = (error: AxiosError): string => {
+  const kind = classifyTransportFailure(error)
+  return kind ? i18n.t(`errors.transport.${kind}`) : i18n.t('sdui.requestError')
+}
+
 export const viewTransport = {
   post: async (req: ViewRequest): Promise<ViewResponse> => {
     try {
@@ -59,7 +71,7 @@ export const viewTransport = {
       if (axios.isAxiosError(error)) {
         const meta = parseViewError(error.response?.data)
         throw new ViewHttpError(
-          meta.message ?? error.message,
+          meta.message ?? fallbackMessage(error),
           error.response?.status,
           meta.code,
           meta.kind,

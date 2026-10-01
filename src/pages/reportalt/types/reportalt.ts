@@ -54,8 +54,16 @@ export interface ReportAltColumnDto {
   groupTitleKz?: string
   subGroupTitleRu?: string
   subGroupTitleKz?: string
+  headerPathRu?: string[]
+  headerPathKz?: string[]
+  headerPathVertical?: boolean[]
+  verticalTitle?: boolean
   width?: number
   dcIndicator?: boolean
+  columnNumber?: string
+  wrap?: boolean
+  treeColumn?: boolean
+  frozen?: boolean
 }
 
 /**
@@ -81,6 +89,18 @@ export interface ReportAltRowDto {
   labelColSpan?: number
   /** Цель расшифровки (SCRUM-370 блок В); часто отсутствует — строка не кликабельна. */
   rowRef?: ReportAltRowRefDto
+  /**
+   * Правила оформления СТРОКИ (в отличие от `negativeRed`/`blankOnZero`, которые живут на
+   * колонке). `BOLD_GROUP` — счёт-группа: эталон 1С выделяет её жирным, когда в отчёте видны
+   * субсчета («Выделять группы счетов»).
+   */
+  appearance?: string[]
+  /**
+   * Колонки, которые в ЭТОЙ строке рисуются пустыми независимо от значения. Эталон гасит
+   * валютные графы у невалютных счетов; по значению (`blankOnZero`) так нельзя — погас бы и
+   * нулевой остаток валютного счёта.
+   */
+  blankColumns?: string[]
 }
 
 /** Блок гос-бланка над титулом (реквизиты приказа / организация). */
@@ -165,6 +185,10 @@ export interface ReportAltSpreadsheetCellDto {
   rowSpan?: number
   colSpan?: number
   text?: string
+  /** Имя области макета 1С — ключ, по которому значение уходит на сервер. */
+  field?: string
+  /** Клетку заполняет пользователь (в макете 1С — containsValue). */
+  editable?: boolean
   style?: ReportAltSpreadsheetCellStyleDto
 }
 
@@ -254,6 +278,7 @@ export interface ReportAltParameterDto {
   allowedValues?: ReportAltAllowedValue[]
   dependsOnParam?: { param: string; resolver: string }
   refreshesForm?: boolean
+  periodicity?: string
 }
 
 export interface ReportAltOptionsSource {
@@ -441,4 +466,9 @@ export interface RunReportAltBody {
   pageSize?: number
   /** Пользовательская дельта настроек (inline, сервер не персистит — F-S1). */
   userSettings?: ReportAltUserSettingsDto
+  /**
+   * Значения клеток бланка, вписанные пользователем: имя области макета → текст.
+   * В 1С ручная правка табличного документа приоритетнее автозаполнения.
+   */
+  blankValues?: Record<string, string>
 }

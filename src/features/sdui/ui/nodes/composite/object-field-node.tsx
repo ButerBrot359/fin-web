@@ -19,6 +19,7 @@ import {
   membersSignature,
   isValueAllowed,
   buildObjectValue,
+  memberSelectOptions,
   type AllowedType,
   type ObjectValue,
 } from './object-field-logic'
@@ -119,7 +120,7 @@ export const ObjectFieldNode: FC<NodeProps> = ({ node }) => {
           ))}
         </TextField>
       )}
-      {member && (
+      {member ? (
         // key: смена члена перемонтирует пикер — чистые inputValue/кэш опций
         <ObjectValuePicker
           key={memberKey(member)}
@@ -127,6 +128,17 @@ export const ObjectFieldNode: FC<NodeProps> = ({ node }) => {
           field={f}
           value={value}
           onEmit={emitChange}
+        />
+      ) : (
+        <TextField
+          disabled
+          fullWidth
+          label={f.label}
+          required={f.required}
+          error={!!f.error}
+          value=""
+          placeholder={t('sdui.objectField.choosePlaceholder')}
+          slotProps={{ inputLabel: { shrink: true } }}
         />
       )}
     </div>
@@ -162,6 +174,35 @@ const ObjectValuePicker: FC<ObjectValuePickerProps> = ({
         : Promise.resolve([]),
     JSON.stringify(optionsSource ?? null)
   )
+
+  const staticOptions = memberSelectOptions(member)
+
+  if (!optionsSource && staticOptions.length > 0) {
+    return (
+      <AutocompleteInput
+        value={
+          value && value.targetTypeCode === member.targetTypeCode
+            ? {
+                id: value.id,
+                code: String(value.id),
+                label: value.presentation,
+              }
+            : null
+        }
+        options={staticOptions}
+        label={field.label}
+        required={field.required}
+        readOnly={field.readonly}
+        disabled={!field.enabled}
+        error={!!field.error}
+        fullWidth
+        autoHighlight
+        onChange={(opt) => {
+          onEmit(opt ? buildObjectValue(member, opt) : null)
+        }}
+      />
+    )
+  }
 
   // Член без optionsSource (примитив/ENUMS) — пока не поддержан, не падаем
   if (!optionsSource) {

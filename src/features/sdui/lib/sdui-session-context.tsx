@@ -6,6 +6,7 @@ import { useViewStateStore } from './stores/view-state-store'
 
 export interface SduiSessionValue {
   kind: 'root' | 'panel'
+  screenRoute?: string
   getSession: () => { formSessionId: string | null; revision: number | null }
   getValue: (binding: string | undefined) => unknown
   setValue: (binding: string, value: unknown) => void

@@ -25,6 +25,16 @@ export type ValidationTarget =
       rowIndex: number
       columnCode: string
     }
+  | {
+      /**
+       * Ячейка сетки регламентированного отчёта (report-sheet/v1): адрес —
+       * показатель и индекс строки раскрытия (0 — итог), НЕ позиция в ТЧ.
+       * Узел сетки синтетический, tableCode у цели нет.
+       */
+      kind: 'REPORT_CELL'
+      pokazatelId: number
+      indeks: number
+    }
 
 export interface ValidationMessage {
   /** Стабилен только внутри одного отчёта; ключ списка и активного сообщения. */

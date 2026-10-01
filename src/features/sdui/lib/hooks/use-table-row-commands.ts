@@ -1,7 +1,19 @@
-import type { KeyboardEvent } from 'react'
+import type { ClipboardEvent, KeyboardEvent } from 'react'
 
-import { createTableHotkeysHandler } from '../utils/table-hotkeys'
+import {
+  createTableHotkeysHandler,
+  isEditableTarget,
+} from '../utils/table-hotkeys'
 import { omitServiceRowKeys } from '../utils/service-row-keys'
+import { isColumnVisible } from '../utils/column-visibility'
+import {
+  razobratTsv,
+  stroitTsv,
+  vzyatKopiyu,
+  zapomnitKopiyu,
+  type ClipboardRowValues,
+} from '../utils/table-clipboard'
+import { buildEmptyRow } from './table-sync-model'
 import type {
   TableColumnDef,
   TableRow,
@@ -15,7 +27,10 @@ import type { TableSearchApi } from './use-table-search'
  * EditableTable и ComplexEditableTable; различия селекции параметризованы явно.
  */
 export interface UseTableRowCommandsParams {
-  sync: Pick<UseTableSyncResult, 'rows' | 'addRow' | 'deleteRow' | 'moveRow'>
+  sync: Pick<
+    UseTableSyncResult,
+    'rows' | 'addRow' | 'deleteRow' | 'moveRow' | 'replaceRows' | 'undo'
+  >
   /**
    * Колонки СИНХРОНИЗАЦИИ — все, включая скрытые: на них держатся ключи
    * master-detail и служебные значения, они обязаны попадать в новую строку.
@@ -25,6 +40,11 @@ export interface UseTableRowCommandsParams {
   visibleRows: TableRow[]
   /** rowId выбранной строки; null — выбора нет. */
   selectedRowId: string | null
+  /**
+   * rowId ВСЕХ выделенных строк (Ctrl/Shift, Ctrl+A) в порядке видимого набора. Пусто —
+   * выделения нет и команда работает по текущей строке, как раньше.
+   */
+  selectedRowIds?: string[]
   /** Индекс выбранной строки в ВИДИМОМ наборе; -1 — выбора нет. */
   selectedVisibleIndex: number
   /**
@@ -34,8 +54,13 @@ export interface UseTableRowCommandsParams {
   onAdd: () => void
   /** Снять выделение после удаления строки. */
   clearSelection: () => void
-  /** Выделить строку по rowId — переход стрелками ↑/↓ (поведение таблицы 1С). */
+  /** Выделить строку по rowId — переход стрелками (поведение таблицы 1С). */
   selectRow?: (rowId: string) => void
+  /** Выделить все видимые строки (Ctrl+A). */
+  selectAll?: () => void
+  /** Расширить выделение до строки с данным видимым индексом (Shift и стрелки). */
+  extendSelection?: (visibleIndex: number) => void
+  moveCurrentRow?: (rowId: string) => void
   /**
    * Перевод ВИДИМОГО индекса в индекс полного массива для moveRow
    * (SCRUM-282 C1): editable считает его по rowId (отбор строк разрежает
@@ -50,6 +75,11 @@ export interface UseTableRowCommandsParams {
    */
   onMoved?: (toVisibleIndex: number) => void
   search: Pick<TableSearchApi, 'focusInput' | 'clear'>
+  /**
+   * Ctrl+S — записать форму (`useFormSaveCommand`). Передают таблицы; в тестах
+   * хука не нужен, поэтому опционален.
+   */
+  onSave?: () => void
 }
 
 export interface UseTableRowCommandsResult {
@@ -62,7 +92,16 @@ export interface UseTableRowCommandsResult {
   canMoveDown: boolean
   canRemove: boolean
   canCopy: boolean
+  /** Ctrl+C — выделенные строки в буфер обмена (TSV + свой буфер значений). */
+  handleCopyToClipboard: () => void
+  /** Ctrl+Z — отмена последнего действия над строками. */
+  handleUndo: () => void
   handleKeyDown: (e: KeyboardEvent<HTMLElement>) => void
+  /**
+   * Ctrl+V — обработчик события `paste` контейнера таблицы. Событие, а не
+   * хоткей: `clipboardData` доступен синхронно и без разрешения на чтение буфера.
+   */
+  handlePasteEvent: (e: ClipboardEvent<HTMLElement>) => void
   /** Готовый проброс команд в TableToolbar (спред; частные флаги — поверх). */
   toolbarProps: {
     onAdd: () => void
@@ -82,13 +121,18 @@ export function useTableRowCommands({
   columns,
   visibleRows,
   selectedRowId,
+  selectedRowIds = [],
   selectedVisibleIndex,
   onAdd,
   clearSelection,
   selectRow,
+  selectAll,
+  extendSelection,
+  moveCurrentRow,
   globalIndexOf,
   onMoved,
   search,
+  onSave,
 }: UseTableRowCommandsParams): UseTableRowCommandsResult {
   const handleAdd = onAdd
 
@@ -96,10 +140,27 @@ export function useTableRowCommands({
   // индекс указывает на позицию в отфильтрованном visibleRows и не годится
   // для sync.deleteRow.
   const handleRemove = () => {
-    if (selectedRowId === null) return
-    const globalIndex = sync.rows.findIndex((r) => r.rowId === selectedRowId)
-    if (globalIndex >= 0) sync.deleteRow(globalIndex)
+    const udalyaemye = udalyaemyeRowIds()
+    if (udalyaemye.length === 0) return
+    const nabor = new Set(udalyaemye)
+    const ostayutsya = sync.rows.filter((r) => !nabor.has(r.rowId))
+    const skolkoUdalyaem = sync.rows.length - ostayutsya.length
+    if (skolkoUdalyaem === 0) return
+    if (skolkoUdalyaem > 1) {
+      sync.replaceRows(ostayutsya)
+      // Выделенного диапазона больше нет — текущей строки в 1С после такого удаления тоже
+      // нет, пока пользователь не выберет её сам.
+      clearSelection()
+      return
+    }
+    sync.deleteRow(sync.rows.findIndex((r) => nabor.has(r.rowId)))
     vydelitPosleUdaleniya()
+  }
+
+  /** Что удаляем: выделенный набор, а без него — текущую строку (прежнее поведение). */
+  const udalyaemyeRowIds = (): string[] => {
+    if (selectedRowIds.length > 0) return selectedRowIds
+    return selectedRowId === null ? [] : [selectedRowId]
   }
 
   /**
@@ -167,7 +228,7 @@ export function useTableRowCommands({
 
   // Стрелки водят по строкам: без выделения начинаем с первой (↓) или последней (↑) —
   // так же ведёт себя таблица 1С, когда текущей строки ещё нет.
-  const perehod = (shag: -1 | 1) => {
+  const perehod = (shag: -1 | 1, rasshirit = false) => {
     if (selectRow === undefined || visibleRows.length === 0) return
     const tekushchiy = selectedVisibleIndex
     const sleduyushchiy =
@@ -176,7 +237,68 @@ export function useTableRowCommands({
           ? 0
           : visibleRows.length - 1
         : Math.min(Math.max(tekushchiy + shag, 0), visibleRows.length - 1)
-    selectRow(visibleRows[sleduyushchiy].rowId)
+    const rowId = visibleRows[sleduyushchiy].rowId
+    if (rasshirit) {
+      moveCurrentRow?.(rowId)
+      extendSelection?.(sleduyushchiy)
+      return
+    }
+    selectRow(rowId)
+  }
+
+  /** Строки под операцию буфера: выделенный набор, а без него — текущая. */
+  const kopiruemyeStroki = (): TableRow[] => {
+    const rowIds = udalyaemyeRowIds()
+    return rowIds
+      .map((rowId) => sync.rows.find((r) => r.rowId === rowId))
+      .filter((row): row is TableRow => row !== undefined)
+  }
+
+  /**
+   * Ctrl+C: в системный буфер уходит TSV по ВИДИМЫМ колонкам (его читает Excel),
+   * а рядом остаётся свой буфер с полными значениями строк — по нему вставка
+   * внутри приложения восстанавливает ссылки и скрытые колонки, которых в
+   * тексте нет. Текст пишем через navigator.clipboard: событие `copy` браузер
+   * при пустом текстовом выделении не гарантирует.
+   */
+  const handleCopyToClipboard = () => {
+    const stroki = kopiruemyeStroki()
+    if (stroki.length === 0) return
+    const tekst = stroitTsv(stroki, columns.filter(isColumnVisible))
+    zapomnitKopiyu(tekst, stroki)
+    // Системного буфера может не быть вовсе (не https, старый браузер) — тип
+    // обещает его безусловно, поэтому отказ ловим, а не проверяем. Вставка
+    // внутри приложения работает и без него: она идёт из своего буфера.
+    try {
+      void navigator.clipboard.writeText(tekst).catch(() => undefined)
+    } catch {
+      // Буфер недоступен — ограничиваемся своим.
+    }
+  }
+
+  /** Ctrl+V: строки из буфера дописываются в конец ТЧ — как «Вставить» в 1С. */
+  const vstavit = (znacheniya: ClipboardRowValues[]) => {
+    if (znacheniya.length === 0) return
+    const novye = znacheniya.map((values) => ({
+      ...buildEmptyRow(columns),
+      ...values,
+    }))
+    sync.replaceRows([...sync.rows, ...novye])
+  }
+
+  const handlePasteEvent = (e: ClipboardEvent<HTMLElement>) => {
+    // В ячейке Ctrl+V обязан остаться вставкой текста в инпут.
+    if (isEditableTarget(e.target)) return
+    const tekst = e.clipboardData.getData('text/plain')
+    if (tekst.trim() === '') return
+    e.preventDefault()
+    vstavit(
+      vzyatKopiyu(tekst) ?? razobratTsv(tekst, columns.filter(isColumnVisible))
+    )
+  }
+
+  const handleUndo = () => {
+    sync.undo()
   }
 
   const handleKeyDown = createTableHotkeysHandler({
@@ -193,12 +315,22 @@ export function useTableRowCommands({
     onMoveDown: handleMoveDown,
     onFocusSearch: search.focusInput,
     onClearSearch: search.clear,
+    onSelectAll: selectAll,
+    onExtendPrev: () => {
+      perehod(-1, true)
+    },
+    onExtendNext: () => {
+      perehod(1, true)
+    },
+    onCopyToClipboard: handleCopyToClipboard,
+    onUndo: handleUndo,
+    onSave: onSave,
   })
 
   const canMoveUp = selectedVisibleIndex > 0
   const canMoveDown =
     selectedVisibleIndex >= 0 && selectedVisibleIndex < visibleRows.length - 1
-  const canRemove = selectedRowId !== null
+  const canRemove = selectedRowId !== null || selectedRowIds.length > 0
   const canCopy = selectedRowId !== null
 
   return {
@@ -211,7 +343,10 @@ export function useTableRowCommands({
     canMoveDown,
     canRemove,
     canCopy,
+    handleCopyToClipboard,
+    handleUndo,
     handleKeyDown,
+    handlePasteEvent,
     toolbarProps: {
       onAdd: handleAdd,
       onCopy: handleCopy,

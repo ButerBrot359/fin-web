@@ -161,3 +161,40 @@ describe('activateOrCreate — «Создать» vs «Создать групп
     )
   })
 })
+
+describe('экземпляры формы создания', () => {
+  it('два «Создать» одного типа с разным fi живут в разных вкладках', () => {
+    const store = useWorkspaceTabsStore.getState()
+    const first = store.activateOrCreate(
+      '/documents/RKO/new',
+      '?fi=a',
+      'document-entry'
+    )
+    const second = store.activateOrCreate(
+      '/documents/RKO/new',
+      '?fi=b',
+      'document-entry'
+    )
+    const state = useWorkspaceTabsStore.getState()
+    expect(state.tabs).toHaveLength(2)
+    expect(first).not.toBe(second)
+    expect(state.activeTabId).toBe(second)
+  })
+
+  it('возврат на тот же экземпляр активирует существующую вкладку', () => {
+    const store = useWorkspaceTabsStore.getState()
+    const first = store.activateOrCreate(
+      '/documents/RKO/new',
+      '?fi=a',
+      'document-entry'
+    )
+    store.activateOrCreate('/documents/RKO/new', '?fi=b', 'document-entry')
+    const again = store.activateOrCreate(
+      '/documents/RKO/new',
+      '?fi=a',
+      'document-entry'
+    )
+    expect(useWorkspaceTabsStore.getState().tabs).toHaveLength(2)
+    expect(again).toBe(first)
+  })
+})

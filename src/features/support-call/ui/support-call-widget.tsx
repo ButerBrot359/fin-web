@@ -6,7 +6,10 @@ import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/features/auth/lib/hooks/use-auth-store'
 import { FLOATING_BOTTOM } from '@/shared/lib/utils/floating-widgets'
 import { cn } from '@/shared/lib/utils/cn'
-import { SUPPORT_WIDGET_OPEN_EVENT } from '@/shared/lib/widgets/widget-launchers'
+import {
+  SUPPORT_WIDGET_OPEN_EVENT,
+  consumePendingWidgetEvent,
+} from '@/shared/lib/widgets/widget-launchers'
 
 import type { SupportCallSession } from '../model/types'
 import {
@@ -48,10 +51,14 @@ export const SupportCallWidget = () => {
   useEffect(() => {
     const openWidget = () => {
       if (!user || session) return
+      // Живое событие снимает метку «повисшей» команды — см. widget-launchers.ts.
+      consumePendingWidgetEvent(SUPPORT_WIDGET_OPEN_EVENT)
       if (restoreAvailable && restored) setSession(restored)
       else if (isAgent) setQueueOpen(true)
       else setCallerOpen(true)
     }
+    // Виджет ленивый: клик из шапки мог прозвучать до монтирования — доигрываем.
+    if (consumePendingWidgetEvent(SUPPORT_WIDGET_OPEN_EVENT)) openWidget()
     window.addEventListener(SUPPORT_WIDGET_OPEN_EVENT, openWidget)
     return () => {
       window.removeEventListener(SUPPORT_WIDGET_OPEN_EVENT, openWidget)

@@ -17,6 +17,9 @@ import { useCellValueApplier } from '../../../lib/hooks/use-cell-value-applier'
 import { useTableSearch } from '../../../lib/hooks/use-table-search'
 import { useSearchScroll } from '../../../lib/hooks/use-search-scroll'
 import { useTableRowCommands } from '../../../lib/hooks/use-table-row-commands'
+import { useFormSaveCommand } from '../../../lib/hooks/use-form-save-command'
+import { navestiFokusNaTablitsu } from '../../../lib/utils/table-keyboard-focus'
+import { useTableMultiSelection } from '../../../lib/hooks/use-table-multi-selection'
 import { useTableScrollContainer } from '../../../lib/hooks/use-table-scroll-container'
 import { windowedRows } from '../../../lib/utils/virtual-window'
 import { useRowActivate } from '../../../lib/hooks/use-row-activate'
@@ -103,7 +106,14 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   // Отбор строк внешним списком (порт 1С `ОтборСтрок`) считается ДО поиска,
   // виртуализации и операций тулбара: всё перечисленное обязано работать над тем
   // же набором, который реально отрисован, иначе индексы разъезжаются с экраном.
-  const visibleRows = useExternalRowFilter(node, sync.rows)
+  const otobrannyeRows = useExternalRowFilter(node, sync.rows)
+
+  const searchColumns = useMemo(
+    () => visibleColumns.map((c) => ({ id: c.id, binding: c.binding })),
+    [visibleColumns]
+  )
+  const search = useTableSearch(otobrannyeRows, searchColumns)
+  const visibleRows = search.rows
 
   // Позиция видимой строки в ПОЛНОМ массиве: `selectedIndex` и `row.index`
   // TanStack'а нумеруют отфильтрованный набор, а мутации sync принимают индекс
@@ -117,16 +127,30 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const selectedRowId =
     selectedIndex != null ? (visibleRows[selectedIndex]?.rowId ?? null) : null
 
-  const search = useTableSearch(
-    visibleRows,
-    visibleColumns.map((c) => ({ id: c.id, binding: c.binding }))
-  )
+  // Выделение НЕСКОЛЬКИХ строк (Ctrl/Shift/Ctrl+A) поверх текущей строки — как в 1С.
+  const vybor = useTableMultiSelection(visibleRows)
+
+  // Выделение живёт только при текущей строке: её снимают и снаружи, и тогда «Удалить»
+  // обязана погаснуть вместе с ней.
+  const vydelennyeRowIds = selectedRowId === null ? [] : vybor.vydelennyeRowIds
 
   // Виртуализация SCRUM-368 + внутренний скролл SCRUM-327 — общий контейнер.
   const { containerRef, virt, maxHeight, minHeight, setContainerRef } =
     useTableScrollContainer(node, visibleRows.length)
 
   useSearchScroll(search, visibleRows, virt, containerRef)
+
+  const novayaStrokaRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const rowId = novayaStrokaRef.current
+    if (rowId === null) return
+    const index = visibleRows.findIndex((row) => row.rowId === rowId)
+    if (index < 0) return
+    novayaStrokaRef.current = null
+    setSelectedIndex(index)
+    virt.scrollToRow(index)
+  }, [visibleRows, virt])
 
   useEffect(() => {
     setSelectedIndex((prev) => {
@@ -174,20 +198,34 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
     table.getTotalSize() + (showRowNumbers ? ROW_NUMBER_WIDTH : 0)
   )
 
+  // Ctrl+S из ТЧ — та же команда записи, что у кнопки «Записать» формы.
+  const saveForm = useFormSaveCommand()
+
   const commands = useTableRowCommands({
     sync,
     columns,
     visibleRows,
     selectedRowId,
+    selectedRowIds: vydelennyeRowIds,
     selectedVisibleIndex: selectedIndex ?? -1,
     onAdd: () => {
-      sync.addRow(columns)
+      const row = sync.addRow(columns)
+      novayaStrokaRef.current = row.rowId
+      vybor.tolkoOdna(row.rowId)
     },
     clearSelection: () => {
       setSelectedIndex(null)
+      vybor.tolkoOdna(null)
     },
     // Селекция здесь индексная, а хук оперирует rowId — переводим по видимому набору.
     selectRow: (rowId) => {
+      const index = visibleRows.findIndex((row) => row.rowId === rowId)
+      if (index >= 0) setSelectedIndex(index)
+      vybor.tolkoOdna(rowId)
+    },
+    selectAll: vybor.vydelitVse,
+    extendSelection: vybor.rasshirit,
+    moveCurrentRow: (rowId) => {
       const index = visibleRows.findIndex((row) => row.rowId === rowId)
       if (index >= 0) setSelectedIndex(index)
     },
@@ -197,6 +235,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
       setSelectedIndex(toVisibleIndex)
     },
     search,
+    onSave: saveForm,
   })
 
   return (
@@ -211,6 +250,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
         minHeight: 0,
       }}
       onKeyDown={commands.handleKeyDown}
+      onPaste={commands.handlePasteEvent}
     >
       <div style={{ marginBottom: 8 }}>
         <TableToolbar
@@ -221,12 +261,14 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
           commands={tableCommands}
           search={search}
           selectedRowId={selectedRowId}
+          selectedRowIds={vydelennyeRowIds}
         />
       </div>
       <TableContainer
         component={Paper}
         ref={setContainerRef}
         data-own-scroll="true"
+        onMouseDown={navestiFokusNaTablitsu}
         sx={{
           flex: '1 1 auto',
           overflowY: 'auto',
@@ -267,10 +309,17 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
                     <TableBodyRow
                       key={row.id}
                       row={row}
-                      selected={selectedIndex === row.index}
+                      selected={
+                        selectedIndex === row.index ||
+                        vybor.vydelennye.has(row.original.rowId)
+                      }
                       rowError={rowErrors.has(row.index)}
-                      onRowClick={() => {
+                      onRowClick={(event) => {
                         setSelectedIndex(row.index)
+                        vybor.klik(row.original.rowId, row.index, {
+                          ctrl: event.ctrlKey || event.metaKey,
+                          shift: event.shiftKey,
+                        })
                         activateRow(row.id)
                       }}
                       onRowDoubleClick={(event) => {

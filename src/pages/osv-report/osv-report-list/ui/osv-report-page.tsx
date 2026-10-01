@@ -25,7 +25,7 @@ import type { SelectOption } from '@/shared/types/select-option'
 
 import { useOsvReport } from '../lib/hooks/use-osv-report'
 import { resolveOpenTarget } from '../lib/resolve-open-target'
-import { OsvReportTable } from './osv-report-table'
+import { OsvReportTable, type OsvClickZone } from './osv-report-table'
 import { OsvRowContextMenu, type OsvMenuPosition } from './osv-row-context-menu'
 import {
   OSV_DEFAULT_DIMENSIONS,
@@ -326,11 +326,16 @@ export const OsvReportPage = () => {
 
   const handleRowDoubleClick = (
     row: Row<OsvReportEntry>,
-    e: ReactMouseEvent
+    e: ReactMouseEvent,
+    zone: OsvClickZone
   ) => {
     // Двойной клик выделяет текст строки — снимаем выделение, чтобы меню
     // открывалось «чисто».
     window.getSelection()?.removeAllRanges()
+    if (zone === 'value' || resolveOpenTarget(row.original) == null) {
+      handleOpenAccountCard(row)
+      return
+    }
     setMenu({ pos: { top: e.clientY, left: e.clientX }, row })
   }
 

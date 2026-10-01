@@ -1,4 +1,4 @@
-import type { MouseEvent as ReactMouseEvent } from 'react'
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
@@ -24,15 +24,36 @@ import {
   DATA_FS,
   GREEN_1C,
   HEAD_FS,
+  hasAppearance,
   isHighlightRow,
   isMeasure,
   isNumericCell,
   isRightAligned,
   resolveReportLang,
   indicatorSubLabels,
+  showsGrandTotal,
 } from '../lib/cell-helpers'
-import { buildHeadModel } from '../lib/head-model'
+import {
+  buildHeadModel,
+  buildPathHeadModel,
+  hasHeaderPath,
+} from '../lib/head-model'
+import { expandedToLevel, treeLevelCount } from '../lib/tree-levels'
+import { HeadTitle } from './head-title'
 import { ReportCell } from './report-cell'
+import { TreeLevelBar } from './tree-level-bar'
+
+export type ReportRowClickZone = 'label' | 'value'
+
+const VALUE_CELL_ATTR = 'data-report-cell'
+
+const clickZoneOf = (e: ReactMouseEvent): ReportRowClickZone =>
+  e.target instanceof Element &&
+  e.target.closest('td')?.getAttribute(VALUE_CELL_ATTR) === 'value'
+    ? 'value'
+    : 'label'
+
+const valueCellProps = { [VALUE_CELL_ATTR]: 'value' }
 
 interface TreeTableProps {
   result: ReportResultDto
@@ -42,7 +63,8 @@ interface TreeTableProps {
   onRowDoubleClick?: (
     row: ReportRowDto,
     ancestors: ReportRowDto[],
-    event: ReactMouseEvent
+    event: ReactMouseEvent,
+    zone: ReportRowClickZone
   ) => void
   /**
    * Правый клик по строке — тот же набор действий, что и по двойному клику
@@ -52,7 +74,8 @@ interface TreeTableProps {
   onRowContextMenu?: (
     row: ReportRowDto,
     ancestors: ReportRowDto[],
-    event: ReactMouseEvent
+    event: ReactMouseEvent,
+    zone: ReportRowClickZone
   ) => void
 }
 
@@ -76,7 +99,8 @@ const rowInteraction = (
         onRowDoubleClick(
           row.original,
           row.getParentRows().map((p) => p.original),
-          e
+          e,
+          clickZoneOf(e)
         )
       }
     : undefined,
@@ -86,7 +110,8 @@ const rowInteraction = (
         onRowContextMenu(
           row.original,
           row.getParentRows().map((p) => p.original),
-          e
+          e,
+          clickZoneOf(e)
         )
       }
     : undefined,
@@ -97,6 +122,16 @@ const tdBase =
   'overflow-hidden whitespace-nowrap border border-pending-gray-1 px-1.5 py-0.5'
 const thBase =
   'whitespace-nowrap border border-pending-gray-1 px-1.5 py-1 text-left'
+const thWrap =
+  'whitespace-normal break-words border border-pending-gray-1 px-1.5 py-1 text-center align-middle'
+const tdWrap =
+  'overflow-hidden whitespace-normal break-words border border-pending-gray-1 px-1.5 py-0.5'
+const thNumber =
+  'whitespace-nowrap border border-pending-gray-1 px-1.5 py-0.5 text-center'
+
+const TABLE_SCROLL =
+  'max-h-[75vh] overflow-auto rounded-md border border-pending-gray-1 print:max-h-none print:overflow-visible'
+const STICKY_HEAD = 'sticky top-0 z-[3] bg-white'
 
 /** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, 13px, без капса. */
 const thTextSx = { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
@@ -126,9 +161,26 @@ const bodyColWidthPx = (col: ReportColumnDto): number => {
   }
 }
 
+const stickyCell = (left: number, lastFrozen: boolean): CSSProperties => ({
+  position: 'sticky',
+  left,
+  zIndex: 2,
+  background: cssVar(palette.ui01),
+  ...(lastFrozen
+    ? { boxShadow: `inset -2px 0 0 ${cssVar(palette.pendingGray1)}` }
+    : {}),
+})
+
 /** Локализованный заголовок колонки. */
 const columnTitle = (col: ReportColumnDto, isKz: boolean): string =>
   (isKz ? col.titleKz : col.titleRu) || col.titleRu
+
+const anyRowHasCell = (rows: ReportRowDto[], code: string): boolean =>
+  rows.some(
+    (r) =>
+      (r.cells[code] != null && r.cells[code] !== '') ||
+      anyRowHasCell(r.children, code)
+  )
 
 /** Опции сборки шапки tree-table: разбор склейки « — » включён (LEVEL_SEP). */
 const HEAD_OPTS = { parseLevelSep: true } as const
@@ -141,11 +193,18 @@ const HEAD_OPTS = { parseLevelSep: true } as const
  * тёмно-зелёные без заливок; двухуровневая шапка через `groupTitleRu`.
  */
 /**
- * Роутер рендера дерева: при наличии `result.groupFloorCodes` — 1С-«Ведомость»
- * (группировки этажами + полосы-бэнды), иначе — обычное дерево-с-отступами (ОСВ).
+ * Роутер рендера дерева: при наличии `result.groupFloorCodes` и колонок деталей —
+ * 1С-«Ведомость» (группировки этажами + полосы-бэнды), иначе — обычное
+ * дерево-с-отступами (ОСВ).
  */
 export const TreeTable = (props: TreeTableProps) => {
-  if (props.result.groupFloorCodes && props.result.groupFloorCodes.length > 0) {
+  const hasFloors =
+    props.result.groupFloorCodes != null &&
+    props.result.groupFloorCodes.length > 0
+  const hasLeafColumns = props.columns.some(
+    (c) => c.role !== 'DIMENSION' && !isMeasure(c)
+  )
+  if (hasFloors && hasLeafColumns) {
     return <FloorTreeTable {...props} />
   }
   return <PlainTreeTable {...props} />
@@ -171,10 +230,16 @@ const PlainTreeTable = ({
   useEffect(() => {
     setExpanded(true)
   }, [result])
+  const levelCount = useMemo(() => treeLevelCount(data), [data])
+  const expandToLevel = (level: number) => {
+    setExpanded(level >= levelCount ? true : expandedToLevel(data, level))
+  }
 
   // Первая DIMENSION-колонка, чьи значения лежат в groupValue строк, — это
   // «колонка дерева»: её заголовок вешаем на первую колонку и не дублируем.
   const treeColumn = useMemo<ReportColumnDto | null>(() => {
+    const explicit = result.columns.find((c) => c.treeColumn)
+    if (explicit) return explicit
     const first = result.columns.find((c) => c.role === 'DIMENSION')
     if (!first) return null
     const usedAsGroup = result.rows.some((r) => r.groupCode === first.code)
@@ -184,12 +249,32 @@ const PlainTreeTable = ({
     return usedAsGroup && !hasOwnCells ? first : null
   }, [result])
 
+  const groupOnlyCodes = useMemo(() => {
+    const codes = new Set<string>()
+    if (!treeColumn) return codes
+    codes.add(treeColumn.code)
+    for (const col of result.columns) {
+      if (col.role === 'DIMENSION' && !anyRowHasCell(result.rows, col.code)) {
+        codes.add(col.code)
+      }
+    }
+    return codes
+  }, [result, treeColumn])
+
   // Колонки тела: без колонки дерева (она рендерится первой, из groupValue).
   const bodyColumns = useMemo(
-    () =>
-      treeColumn ? columns.filter((c) => c.code !== treeColumn.code) : columns,
-    [columns, treeColumn]
+    () => columns.filter((c) => !groupOnlyCodes.has(c.code)),
+    [columns, groupOnlyCodes]
   )
+
+  const treeHeaderTitles = useMemo(() => {
+    if (!treeColumn) return []
+    const floorTitles = (result.groupFloorCodes ?? [])
+      .map((code) => result.columns.find((c) => c.code === code))
+      .filter((c): c is ReportColumnDto => c != null)
+      .map((c) => columnTitle(c, isKz))
+    return floorTitles.length > 1 ? floorTitles : []
+  }, [result, treeColumn, isKz])
 
   // Колонка-заглушка для модели дерева TanStack; рендер тела кастомный.
   const tableColumns = useMemo<ColumnDef<ReportRowDto>[]>(
@@ -229,6 +314,16 @@ const PlainTreeTable = ({
       : null
   }, [bodyColumns, isKz])
 
+  const pathModel = useMemo(
+    () =>
+      hasHeaderPath(bodyColumns)
+        ? buildPathHeadModel(bodyColumns, { isKz })
+        : null,
+    [bodyColumns, isKz]
+  )
+
+  const hasColumnNumbers = bodyColumns.some((c) => !!c.columnNumber)
+
   if (result.rows.length === 0) {
     return (
       <div className="flex items-center justify-center py-10">
@@ -239,26 +334,79 @@ const PlainTreeTable = ({
     )
   }
 
-  /** Выделенная 1С-строка: группа дерева либо строка-итог по rowKind. */
+  /** Выделенная 1С-строка: группа дерева, строка-итог по rowKind либо счёт-группа плана счетов. */
   const isGroupRow = (row: Row<ReportRowDto>): boolean =>
     isHighlightRow(row.original.rowKind) ||
     (row.original.rowKind == null && row.depth === 0) ||
-    row.original.rowKind === 'GROUP_HEADER'
+    row.original.rowKind === 'GROUP_HEADER' ||
+    hasAppearance(row.original, 'BOLD_GROUP')
+
+  /** Ячейка погашена бэкендом для ЭТОЙ строки (эталон: валютные графы у невалютного счёта). */
+  const isBlankCell = (row: Row<ReportRowDto>, code: string): boolean =>
+    row.original.blankColumns?.includes(code) === true
 
   const treeHeaderTitle = treeColumn
     ? columnTitle(treeColumn, isKz)
     : t('reports.group')
 
+  const treeHeader =
+    treeHeaderTitles.length > 0 ? (
+      <div className="flex flex-col">
+        {treeHeaderTitles.map((title, idx) => (
+          <Typography key={idx} variant="body2" sx={thTextSx}>
+            {title}
+          </Typography>
+        ))}
+      </div>
+    ) : (
+      <HeadTitle title={treeHeaderTitle} />
+    )
+
   // Ширина первой колонки (наименование группы): backend-width либо дефолт.
   const treeColWidthPx =
     treeColumn?.width != null ? treeColumn.width * CHAR_PX : TREE_COL_DEFAULT_PX
+
+  let frozenCount = 0
+  while (frozenCount < bodyColumns.length && bodyColumns[frozenCount].frozen) {
+    frozenCount++
+  }
+  const frozenLeft: number[] = []
+  bodyColumns.slice(0, frozenCount).reduce((acc, col) => {
+    frozenLeft.push(acc)
+    return acc + bodyColWidthPx(col)
+  }, treeColWidthPx)
+  const fixedLayout =
+    bodyColumns.length > 0 && bodyColumns.every((c) => c.width != null)
+  const tableStyle: CSSProperties | undefined = fixedLayout
+    ? {
+        width: bodyColumns.reduce(
+          (acc, col) => acc + bodyColWidthPx(col),
+          treeColWidthPx
+        ),
+      }
+    : undefined
+  const th = fixedLayout ? thWrap : thBase
+  const stickyTree: CSSProperties | undefined =
+    frozenCount > 0 ? stickyCell(0, false) : undefined
+  const stickyAt = (idx: number, span = 1): CSSProperties | undefined =>
+    span === 1 && idx < frozenCount
+      ? stickyCell(frozenLeft[idx], idx === frozenCount - 1)
+      : undefined
 
   // Первая колонка (наименование группы) со стрелкой разворота и отступом 1С (~13px).
   const renderGroupCell = (row: Row<ReportRowDto>) => {
     const canExpand = row.getCanExpand()
     const isExpanded = row.getIsExpanded()
     const bold = isGroupRow(row)
-    const label = row.original.labelText ?? row.original.groupValue ?? ''
+    const treeCell = treeColumn?.treeColumn
+      ? row.original.cells[treeColumn.code]
+      : undefined
+    const label =
+      row.original.labelText ??
+      (typeof treeCell === 'string' && treeCell !== ''
+        ? treeCell
+        : row.original.groupValue) ??
+      ''
     return (
       <div
         className="flex items-center gap-1"
@@ -299,169 +447,220 @@ const PlainTreeTable = ({
   }
 
   return (
-    <div className="overflow-auto rounded-md border border-pending-gray-1">
-      <table className="table-fixed border-collapse bg-white">
-        <colgroup>
-          <col style={{ width: treeColWidthPx }} />
-          {bodyColumns.map((col) => (
-            <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
-          ))}
-        </colgroup>
-        <thead>
-          {headModel3 ? (
-            <>
+    <>
+      <TreeLevelBar levels={levelCount} onSelect={expandToLevel} />
+      <div className={TABLE_SCROLL}>
+        <table
+          className="table-fixed border-collapse bg-white"
+          style={tableStyle}
+        >
+          <colgroup>
+            <col style={{ width: treeColWidthPx }} />
+            {bodyColumns.map((col) => (
+              <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
+            ))}
+          </colgroup>
+          <thead className={STICKY_HEAD}>
+            {pathModel ? (
+              pathModel.rows.map((cells, level) => (
+                <tr key={`path-row-${String(level)}`}>
+                  {level === 0 && (
+                    <th
+                      rowSpan={pathModel.depth}
+                      className={th}
+                      style={stickyTree}
+                    >
+                      {treeHeader}
+                    </th>
+                  )}
+                  {cells.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={`${th} ${cell.vertical ? 'align-bottom' : ''}`}
+                      style={stickyAt(cell.col0, cell.colSpan)}
+                    >
+                      <HeadTitle title={cell.title} vertical={cell.vertical} />
+                    </th>
+                  ))}
+                </tr>
+              ))
+            ) : headModel3 ? (
+              <>
+                <tr>
+                  <th rowSpan={3} className={th} style={stickyTree}>
+                    {treeHeader}
+                  </th>
+                  {headModel3.topRow.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={th}
+                      style={stickyAt(cell.col0, cell.colSpan)}
+                    >
+                      <Typography variant="body2" sx={thTextSx}>
+                        {cell.title}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {headModel3.midRow.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={th}
+                      style={stickyAt(cell.col0, cell.colSpan)}
+                    >
+                      <Typography variant="body2" sx={thTextSx}>
+                        {cell.title}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {headModel3.botRow.map(({ key, col, col0 }) => (
+                    <th key={key} className={th} style={stickyAt(col0)}>
+                      <Typography variant="body2" sx={thTextSx}>
+                        {columnTitle(col, isKz)}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+              </>
+            ) : headModel ? (
+              <>
+                <tr>
+                  <th rowSpan={2} className={th} style={stickyTree}>
+                    {treeHeader}
+                  </th>
+                  {headModel.topRow.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={th}
+                      style={stickyAt(cell.col0, cell.colSpan)}
+                    >
+                      <Typography variant="body2" sx={thTextSx}>
+                        {cell.title}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {headModel.subRow.map(({ key, col, col0 }) => (
+                    <th key={key} className={th} style={stickyAt(col0)}>
+                      <Typography variant="body2" sx={thTextSx}>
+                        {columnTitle(col, isKz)}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+              </>
+            ) : (
               <tr>
-                <th rowSpan={3} className={thBase}>
-                  <Typography variant="body2" sx={thTextSx}>
-                    {treeHeaderTitle}
-                  </Typography>
+                <th className={th} style={stickyTree}>
+                  {treeHeader}
                 </th>
-                {headModel3.topRow.map((cell) => (
-                  <th
-                    key={cell.key}
-                    colSpan={cell.colSpan}
-                    rowSpan={cell.rowSpan}
-                    className={thBase}
-                  >
-                    <Typography variant="body2" sx={thTextSx}>
-                      {cell.title}
-                    </Typography>
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {headModel3.midRow.map((cell) => (
-                  <th
-                    key={cell.key}
-                    colSpan={cell.colSpan}
-                    rowSpan={cell.rowSpan}
-                    className={thBase}
-                  >
-                    <Typography variant="body2" sx={thTextSx}>
-                      {cell.title}
-                    </Typography>
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {headModel3.botRow.map(({ key, col }) => (
-                  <th key={key} className={thBase}>
+                {bodyColumns.map((col, idx) => (
+                  <th key={col.code} className={th} style={stickyAt(idx)}>
                     <Typography variant="body2" sx={thTextSx}>
                       {columnTitle(col, isKz)}
                     </Typography>
                   </th>
                 ))}
               </tr>
-            </>
-          ) : headModel ? (
-            <>
-              <tr>
-                <th rowSpan={2} className={thBase}>
+            )}
+            {hasColumnNumbers && (
+              <tr data-testid="report-column-numbers">
+                <th className={thNumber} style={stickyTree}>
                   <Typography variant="body2" sx={thTextSx}>
-                    {treeHeaderTitle}
+                    {treeColumn?.columnNumber ?? ''}
                   </Typography>
                 </th>
-                {headModel.topRow.map((cell) => (
-                  <th
-                    key={cell.key}
-                    colSpan={cell.colSpan}
-                    rowSpan={cell.rowSpan}
-                    className={thBase}
+                {bodyColumns.map((col, idx) => (
+                  <th key={col.code} className={thNumber} style={stickyAt(idx)}>
+                    <Typography variant="body2" sx={thTextSx}>
+                      {col.columnNumber ?? ''}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+            )}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => {
+              const bold = isGroupRow(row)
+              return (
+                <tr
+                  key={row.id}
+                  {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
+                >
+                  <td className={`${tdBase} align-top`} style={stickyTree}>
+                    {renderGroupCell(row)}
+                  </td>
+                  {bodyColumns.map((col, idx) => (
+                    <td
+                      key={col.code}
+                      style={stickyAt(idx)}
+                      {...(isMeasure(col) ? valueCellProps : {})}
+                      className={`${col.wrap ? tdWrap : tdBase} align-top ${
+                        isMeasure(col) || isRightAligned(col)
+                          ? 'text-right tabular-nums'
+                          : ''
+                      }`}
+                    >
+                      {isBlankCell(row, col.code) ? null : (
+                        <ReportCell
+                          subLabels={indicatorSubLabels(row.original.cells)}
+                          value={row.original.cells[col.code]}
+                          col={col}
+                          bold={bold}
+                        />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              )
+            })}
+          </tbody>
+          {showsGrandTotal(result.total, result.rows) && (
+            <tfoot>
+              <tr>
+                <td className={tdBase} style={stickyTree}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
                   >
-                    <Typography variant="body2" sx={thTextSx}>
-                      {cell.title}
-                    </Typography>
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {headModel.subRow.map(({ key, col }) => (
-                  <th key={key} className={thBase}>
-                    <Typography variant="body2" sx={thTextSx}>
-                      {columnTitle(col, isKz)}
-                    </Typography>
-                  </th>
-                ))}
-              </tr>
-            </>
-          ) : (
-            <tr>
-              <th className={thBase}>
-                <Typography variant="body2" sx={thTextSx}>
-                  {treeHeaderTitle}
-                </Typography>
-              </th>
-              {bodyColumns.map((col) => (
-                <th key={col.code} className={thBase}>
-                  <Typography variant="body2" sx={thTextSx}>
-                    {columnTitle(col, isKz)}
+                    {t('reports.total', { lng: reportLang })}
                   </Typography>
-                </th>
-              ))}
-            </tr>
-          )}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => {
-            const bold = isGroupRow(row)
-            return (
-              <tr
-                key={row.id}
-                {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
-              >
-                <td className={`${tdBase} align-top`}>{renderGroupCell(row)}</td>
-                {bodyColumns.map((col) => (
+                </td>
+                {bodyColumns.map((col, idx) => (
                   <td
                     key={col.code}
-                    className={`${tdBase} align-top ${
-                      isMeasure(col) || isRightAligned(col)
-                        ? 'text-right tabular-nums'
-                        : ''
+                    style={stickyAt(idx)}
+                    className={`${tdBase} ${
+                      isNumericCell(col) ? 'text-right tabular-nums' : ''
                     }`}
                   >
                     <ReportCell
-                      subLabels={indicatorSubLabels(row.original.cells)}
-                      value={row.original.cells[col.code]}
+                      subLabels={indicatorSubLabels(result.total)}
+                      value={result.total[col.code]}
                       col={col}
-                      bold={bold}
+                      bold
                     />
                   </td>
                 ))}
               </tr>
-            )
-          })}
-        </tbody>
-        {Object.keys(result.total).length > 0 && (
-          <tfoot>
-            <tr>
-              <td className={tdBase}>
-                <Typography
-                  variant="body2"
-                  sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
-                >
-                  {t('reports.total', { lng: reportLang })}
-                </Typography>
-              </td>
-              {bodyColumns.map((col) => (
-                <td
-                  key={col.code}
-                  className={`${tdBase} ${
-                    isNumericCell(col) ? 'text-right tabular-nums' : ''
-                  }`}
-                >
-                  <ReportCell
-                    subLabels={indicatorSubLabels(result.total)}
-                    value={result.total[col.code]}
-                    col={col}
-                    bold
-                  />
-                </td>
-              ))}
-            </tr>
-          </tfoot>
-        )}
-      </table>
-    </div>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </>
   )
 }
 
@@ -503,11 +702,26 @@ const FloorTreeTable = ({
   // Двухэтажный заголовок детальных колонок (напр. «Дополнительные поля» над
   // «Единица измерения»): верхний ряд групп + нижний ряд титулов колонок группы.
   const leafHead = useMemo(() => {
+    const model3 = buildHeadModel(leafColumns, {
+      isKz,
+      levels: 3,
+      ...HEAD_OPTS,
+    })
+    if (model3.hasSub) {
+      return {
+        hasGroups: true,
+        leafRows: 3,
+        topRow: model3.topRow,
+        midRow: model3.midRow,
+        subRow: model3.leafRow,
+      }
+    }
     const model = buildHeadModel(leafColumns, { isKz, levels: 2, ...HEAD_OPTS })
     return {
       hasGroups: model.hasGroups,
       leafRows: model.hasGroups ? 2 : 1,
       topRow: model.topRow,
+      midRow: [] as typeof model.midRow,
       subRow: model.leafRow,
     }
   }, [leafColumns, isKz])
@@ -530,16 +744,69 @@ const FloorTreeTable = ({
 
   const totalHeaderRows = floorCodes.length + leafHead.leafRows
 
-  // Многоуровневую шапку мер выводим, когда этажей ровно 2 и лист-ряд один (форма 326):
-  // top→этаж1, mid→этаж2, bot→ряд листьев. Иначе — прежний одноуровневый вывод мер.
-  const useMeasure3 =
-    measureHead3 != null && floorCodes.length === 2 && leafHead.leafRows === 1
+  // Многоуровневую шапку мер выводим, когда в шапке не меньше трёх рядов (форма 326):
+  // top→1-й ряд, mid→2-й, bot→3-й; лишние ряды шапки добирают ячейки, доходящие до низа.
+  const useMeasure3 = measureHead3 != null && totalHeaderRows >= 3
+
+  const measureRows = useMemo(() => {
+    const rows: {
+      key: string
+      title: string
+      colSpan: number
+      rowSpan: number
+    }[][] = Array.from({ length: totalHeaderRows }, () => [])
+    if (measureHead3 == null || totalHeaderRows < 3) return rows
+    const extra = totalHeaderRows - 3
+    const place = (
+      r: number,
+      cells: { key: string; title: string; colSpan: number; rowSpan: number }[]
+    ) => {
+      cells.forEach((c) => {
+        rows[r].push({
+          ...c,
+          rowSpan: r + c.rowSpan === 3 ? c.rowSpan + extra : c.rowSpan,
+        })
+      })
+    }
+    place(
+      0,
+      measureHead3.topRow.map((c) => ({
+        key: c.key,
+        title: c.title,
+        colSpan: c.colSpan,
+        rowSpan: c.rowSpan,
+      }))
+    )
+    place(
+      1,
+      measureHead3.midRow.map((c) => ({
+        key: c.key,
+        title: c.title,
+        colSpan: c.colSpan,
+        rowSpan: c.rowSpan,
+      }))
+    )
+    place(
+      2,
+      measureHead3.botRow.map(({ key, col }) => ({
+        key,
+        title: columnTitle(col, isKz),
+        colSpan: 1,
+        rowSpan: 1,
+      }))
+    )
+    return rows
+  }, [measureHead3, totalHeaderRows, isKz])
 
   const data = useMemo(() => result.rows, [result.rows])
   const [expanded, setExpanded] = useState<ExpandedState>(true)
   useEffect(() => {
     setExpanded(true)
   }, [result])
+  const levelCount = useMemo(() => treeLevelCount(data), [data])
+  const expandToLevel = (level: number) => {
+    setExpanded(level >= levelCount ? true : expandedToLevel(data, level))
+  }
 
   const tableColumns = useMemo<ColumnDef<ReportRowDto>[]>(
     () => [{ id: 'tree', accessorFn: (r) => r.groupValue ?? null }],
@@ -572,7 +839,8 @@ const FloorTreeTable = ({
   const isBandRow = (row: Row<ReportRowDto>): boolean =>
     row.getCanExpand() ||
     row.original.children.length > 0 ||
-    row.original.rowKind === 'GROUP_HEADER'
+    row.original.rowKind === 'GROUP_HEADER' ||
+    row.original.labelText != null
 
   // Ячейка бэнда (colspan по детальным колонкам): стрелка + отступ уровня + подпись.
   const renderBandCell = (row: Row<ReportRowDto>) => {
@@ -614,38 +882,84 @@ const FloorTreeTable = ({
     )
   }
 
+  const renderMeasureRow = (r: number) =>
+    measureRows[r].map((cell) => (
+      <th
+        key={cell.key}
+        colSpan={cell.colSpan}
+        rowSpan={cell.rowSpan}
+        className={thBase}
+      >
+        <Typography variant="body2" sx={thTextSx}>
+          {cell.title}
+        </Typography>
+      </th>
+    ))
+
   return (
-    <div className="overflow-auto rounded-md border border-pending-gray-1">
-      <table className="table-fixed border-collapse bg-white">
-        <colgroup>
-          {leafColumns.map((col) => (
-            <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
-          ))}
-          {measureColumns.map((col) => (
-            <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
-          ))}
-        </colgroup>
-        <thead>
-          {floorCodes.map((code, idx) => {
-            const col = result.columns.find((c) => c.code === code)
-            const title = col ? columnTitle(col, isKz) : code
-            return (
-              <tr key={`floor-${code}`}>
-                <th
-                  colSpan={leafColumns.length}
-                  className={`${thBase} align-bottom`}
-                >
-                  <Typography variant="body2" sx={thTextSx}>
-                    {title}
-                  </Typography>
-                </th>
-                {useMeasure3
-                  ? (idx === 0
-                      ? measureHead3.topRow
-                      : idx === 1
-                        ? measureHead3.midRow
-                        : []
-                    ).map((cell) => (
+    <>
+      <TreeLevelBar levels={levelCount} onSelect={expandToLevel} />
+      <div className={TABLE_SCROLL}>
+        <table className="table-fixed border-collapse bg-white">
+          <colgroup>
+            {leafColumns.map((col) => (
+              <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
+            ))}
+            {measureColumns.map((col) => (
+              <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
+            ))}
+          </colgroup>
+          <thead className={STICKY_HEAD}>
+            {floorCodes.map((code, idx) => {
+              const col = result.columns.find((c) => c.code === code)
+              const title = col ? columnTitle(col, isKz) : code
+              return (
+                <tr key={`floor-${code}`}>
+                  <th
+                    colSpan={leafColumns.length}
+                    className={`${thBase} align-bottom`}
+                  >
+                    <Typography variant="body2" sx={thTextSx}>
+                      {title}
+                    </Typography>
+                  </th>
+                  {useMeasure3
+                    ? renderMeasureRow(idx)
+                    : idx === 0 &&
+                      measureColumns.map((m) => (
+                        <th
+                          key={m.code}
+                          rowSpan={totalHeaderRows}
+                          className={`${thBase} align-bottom`}
+                        >
+                          <Typography variant="body2" sx={thTextSx}>
+                            {columnTitle(m, isKz)}
+                          </Typography>
+                        </th>
+                      ))}
+                </tr>
+              )
+            })}
+            {leafHead.hasGroups ? (
+              <>
+                <tr>
+                  {leafHead.topRow.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={thBase}
+                    >
+                      <Typography variant="body2" sx={thTextSx}>
+                        {cell.title}
+                      </Typography>
+                    </th>
+                  ))}
+                  {useMeasure3 && renderMeasureRow(floorCodes.length)}
+                </tr>
+                {leafHead.midRow.length > 0 && (
+                  <tr>
+                    {leafHead.midRow.map((cell) => (
                       <th
                         key={cell.key}
                         colSpan={cell.colSpan}
@@ -656,157 +970,126 @@ const FloorTreeTable = ({
                           {cell.title}
                         </Typography>
                       </th>
-                    ))
-                  : idx === 0 &&
-                    measureColumns.map((m) => (
-                      <th
-                        key={m.code}
-                        rowSpan={totalHeaderRows}
-                        className={`${thBase} align-bottom`}
-                      >
-                        <Typography variant="body2" sx={thTextSx}>
-                          {columnTitle(m, isKz)}
-                        </Typography>
-                      </th>
                     ))}
-              </tr>
-            )
-          })}
-          {leafHead.hasGroups ? (
-            <>
+                    {useMeasure3 && renderMeasureRow(floorCodes.length + 1)}
+                  </tr>
+                )}
+                <tr>
+                  {leafHead.subRow.map(({ key, col }) => (
+                    <th key={key} className={thBase}>
+                      <Typography variant="body2" sx={thTextSx}>
+                        {columnTitle(col, isKz)}
+                      </Typography>
+                    </th>
+                  ))}
+                  {useMeasure3 && renderMeasureRow(totalHeaderRows - 1)}
+                </tr>
+              </>
+            ) : (
               <tr>
-                {leafHead.topRow.map((cell) => (
-                  <th
-                    key={cell.key}
-                    colSpan={cell.colSpan}
-                    rowSpan={cell.rowSpan}
-                    className={thBase}
+                {leafColumns.map((col) => (
+                  <th key={col.code} className={thBase}>
+                    <Typography variant="body2" sx={thTextSx}>
+                      {columnTitle(col, isKz)}
+                    </Typography>
+                  </th>
+                ))}
+                {/* Форма 326: нижний ряд шапки мер (Кол-во/Сумма под Дебет/Кредит). */}
+                {useMeasure3 && renderMeasureRow(totalHeaderRows - 1)}
+              </tr>
+            )}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => {
+              if (isBandRow(row)) {
+                return (
+                  <tr
+                    key={row.id}
+                    {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
                   >
-                    <Typography variant="body2" sx={thTextSx}>
-                      {cell.title}
-                    </Typography>
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {leafHead.subRow.map(({ key, col }) => (
-                  <th key={key} className={thBase}>
-                    <Typography variant="body2" sx={thTextSx}>
-                      {columnTitle(col, isKz)}
-                    </Typography>
-                  </th>
-                ))}
-              </tr>
-            </>
-          ) : (
-            <tr>
-              {leafColumns.map((col) => (
-                <th key={col.code} className={thBase}>
-                  <Typography variant="body2" sx={thTextSx}>
-                    {columnTitle(col, isKz)}
-                  </Typography>
-                </th>
-              ))}
-              {/* Форма 326: нижний ряд шапки мер (Кол-во/Сумма под Дебет/Кредит). */}
-              {useMeasure3 &&
-                measureHead3.botRow.map(({ key, col }) => (
-                  <th key={key} className={thBase}>
-                    <Typography variant="body2" sx={thTextSx}>
-                      {columnTitle(col, isKz)}
-                    </Typography>
-                  </th>
-                ))}
-            </tr>
-          )}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => {
-            if (isBandRow(row)) {
+                    <td
+                      colSpan={leafColumns.length}
+                      className={`${tdBase} align-top`}
+                    >
+                      {renderBandCell(row)}
+                    </td>
+                    {measureColumns.map((m) => (
+                      <td
+                        key={m.code}
+                        {...valueCellProps}
+                        className={`${tdBase} align-top text-right tabular-nums`}
+                      >
+                        <ReportCell
+                          subLabels={indicatorSubLabels(row.original.cells)}
+                          value={row.original.cells[m.code]}
+                          col={m}
+                          bold
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                )
+              }
               return (
                 <tr
                   key={row.id}
                   {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
                 >
-                  <td
-                    colSpan={leafColumns.length}
-                    className={`${tdBase} align-top`}
-                  >
-                    {renderBandCell(row)}
-                  </td>
+                  {leafColumns.map((col) => (
+                    <td
+                      key={col.code}
+                      className={`${tdBase} align-top ${
+                        isRightAligned(col) ? 'text-right tabular-nums' : ''
+                      }`}
+                    >
+                      <ReportCell
+                        subLabels={indicatorSubLabels(row.original.cells)}
+                        value={row.original.cells[col.code]}
+                        col={col}
+                      />
+                    </td>
+                  ))}
                   {measureColumns.map((m) => (
                     <td
                       key={m.code}
+                      {...valueCellProps}
                       className={`${tdBase} align-top text-right tabular-nums`}
                     >
                       <ReportCell
                         subLabels={indicatorSubLabels(row.original.cells)}
                         value={row.original.cells[m.code]}
                         col={m}
-                        bold
                       />
                     </td>
                   ))}
                 </tr>
               )
-            }
-            return (
-              <tr
-                key={row.id}
-                {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
-              >
-                {leafColumns.map((col) => (
-                  <td
-                    key={col.code}
-                    className={`${tdBase} align-top ${
-                      isRightAligned(col) ? 'text-right tabular-nums' : ''
-                    }`}
+            })}
+          </tbody>
+          {showsGrandTotal(result.total, result.rows) && (
+            <tfoot>
+              <tr>
+                <td colSpan={leafColumns.length} className={tdBase}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
                   >
-                    <ReportCell
-                      subLabels={indicatorSubLabels(row.original.cells)}
-                      value={row.original.cells[col.code]}
-                      col={col}
-                    />
-                  </td>
-                ))}
+                    {t('reports.total', { lng: reportLang })}
+                  </Typography>
+                </td>
                 {measureColumns.map((m) => (
                   <td
                     key={m.code}
-                    className={`${tdBase} align-top text-right tabular-nums`}
+                    className={`${tdBase} text-right tabular-nums`}
                   >
-                    <ReportCell
-                      subLabels={indicatorSubLabels(row.original.cells)}
-                      value={row.original.cells[m.code]}
-                      col={m}
-                    />
+                    <ReportCell value={result.total[m.code]} col={m} bold />
                   </td>
                 ))}
               </tr>
-            )
-          })}
-        </tbody>
-        {Object.keys(result.total).length > 0 && (
-          <tfoot>
-            <tr>
-              <td colSpan={leafColumns.length} className={tdBase}>
-                <Typography
-                  variant="body2"
-                  sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
-                >
-                  {t('reports.total', { lng: reportLang })}
-                </Typography>
-              </td>
-              {measureColumns.map((m) => (
-                <td
-                  key={m.code}
-                  className={`${tdBase} text-right tabular-nums`}
-                >
-                  <ReportCell value={result.total[m.code]} col={m} bold />
-                </td>
-              ))}
-            </tr>
-          </tfoot>
-        )}
-      </table>
-    </div>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </>
   )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 import { registerOpenViewsRefresh } from '@/shared/lib/refresh/open-views-refresh'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 import type { useSduiDispatch } from '../dispatch'
 import { viewTransport } from '../../api/view-transport'
@@ -69,7 +70,11 @@ export function useExternalViewRefresh(
 
       // Hidden dirty tabs keep their snapshots. Clean tabs must reopen from DB.
       const cache = useSduiCacheStore.getState()
-      const cacheRoute = route.split('?')[0]
+      const queryStart = route.indexOf('?')
+      const cacheRoute =
+        queryStart >= 0
+          ? tabRouteKey(route.slice(0, queryStart), route.slice(queryStart))
+          : route
       for (const [cachedRoute, entry] of Object.entries(cache.cache)) {
         if (cachedRoute === cacheRoute) continue
         if (entry.dirty) {

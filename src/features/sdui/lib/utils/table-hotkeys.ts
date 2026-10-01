@@ -15,9 +15,26 @@ export interface TableHotkeyHandlers {
   onMoveDown: () => void
   onFocusSearch: () => void
   onClearSearch: () => void
+  /** Ctrl+A — выделить все строки таблицы (в ячейке остаётся выделением текста). */
+  onSelectAll?: () => void
+  /** Shift + стрелка вверх — расширить выделение на строку выше. */
+  onExtendPrev?: () => void
+  /** Shift + стрелка вниз — расширить выделение на строку ниже. */
+  onExtendNext?: () => void
+  /** Ctrl+C — скопировать выделенные строки в буфер обмена. */
+  onCopyToClipboard?: () => void
+  /** Ctrl+Z — отменить последнее действие над строками. */
+  onUndo?: () => void
+  /** Ctrl+S — записать документ (в ячейке тоже: правка уже в снимке ТЧ). */
+  onSave?: () => void
 }
 
-function isEditableTarget(target: EventTarget | null): boolean {
+/**
+ * Цель события — редактируемое поле ячейки. Экспортируется: те же клавиши, что
+ * разбираются здесь, приходят и событием `paste`, и там правило «в инпуте
+ * работает инпут» обязано быть тем же.
+ */
+export function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
   return (
     target.tagName === 'INPUT' ||
@@ -26,22 +43,66 @@ function isEditableTarget(target: EventTarget | null): boolean {
   )
 }
 
+export function isLetterKey(
+  e: { key: string; code: string },
+  letter: string
+): boolean {
+  if (/^[a-z]$/i.test(e.key)) return e.key.toLowerCase() === letter
+  return e.code === `Key${letter.toUpperCase()}`
+}
+
 export function createTableHotkeysHandler(
   handlers: TableHotkeyHandlers
 ): (e: React.KeyboardEvent<HTMLElement>) => void {
   return (e) => {
     const ctrl = e.ctrlKey || e.metaKey
 
-    if (ctrl && e.key.toLowerCase() === 'f') {
+    // Ctrl+S разбирается ДО проверки ячейки: запись документа нужна и из
+    // недопечатанной ячейки (её значение уже в снимке ТЧ, а поведение команды
+    // записи дошлёт его перед сохранением). preventDefault безусловный — диалог
+    // «Сохранить страницу» браузера в форме документа не нужен никогда.
+    if (ctrl && isLetterKey(e, 's')) {
+      e.preventDefault()
+      handlers.onSave?.()
+      return
+    }
+    if (ctrl && isLetterKey(e, 'f')) {
       e.preventDefault()
       handlers.onFocusSearch()
       return
     }
-    if (e.ctrlKey && e.key.toLowerCase() === 'q') {
+    if (e.ctrlKey && isLetterKey(e, 'q')) {
       e.preventDefault()
       handlers.onClearSearch()
       return
     }
+    if (ctrl && isLetterKey(e, 'a') && !e.shiftKey) {
+      // В ячейке Ctrl+A обязан остаться «выделить текст» — иначе правка значения
+      // превратилась бы в выделение всей таблицы.
+      if (isEditableTarget(e.target)) return
+      e.preventDefault()
+      handlers.onSelectAll?.()
+      return
+    }
+    if (ctrl && isLetterKey(e, 'c') && !e.shiftKey) {
+      // В ячейке Ctrl+C обязан остаться «скопировать текст» — как и Ctrl+A.
+      if (isEditableTarget(e.target)) return
+      e.preventDefault()
+      handlers.onCopyToClipboard?.()
+      return
+    }
+    if (ctrl && isLetterKey(e, 'z')) {
+      // В ячейке Ctrl+Z — отмена ввода символов средствами инпута.
+      if (isEditableTarget(e.target)) return
+      e.preventDefault()
+      handlers.onUndo?.()
+      return
+    }
+    // Ctrl+V здесь НЕ перехватывается намеренно: вставку принимает событие
+    // `paste` контейнера таблицы (см. handlePasteEvent). Через событие данные
+    // приходят синхронно из `clipboardData`, без разрешения на чтение буфера,
+    // которое требуется `navigator.clipboard.readText` и которого в Firefox
+    // не получить вовсе.
     if (ctrl && e.shiftKey && e.key === 'ArrowUp') {
       e.preventDefault()
       handlers.onMoveUp()
@@ -76,6 +137,16 @@ export function createTableHotkeysHandler(
     // реагировали» (обращение 20.09.2026 по доверенности). Модификаторы уже
     // разобраны выше (Ctrl+Shift+стрелки переставляют строку), а внутри ячейки
     // стрелки остаются за курсором — сюда мы не доходим (isEditableTarget).
+    if (e.shiftKey && e.key === 'ArrowUp') {
+      e.preventDefault()
+      handlers.onExtendPrev?.()
+      return
+    }
+    if (e.shiftKey && e.key === 'ArrowDown') {
+      e.preventDefault()
+      handlers.onExtendNext?.()
+      return
+    }
     if (e.key === 'ArrowUp') {
       e.preventDefault()
       handlers.onSelectPrev()

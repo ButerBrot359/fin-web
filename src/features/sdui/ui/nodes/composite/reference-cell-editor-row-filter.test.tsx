@@ -48,4 +48,32 @@ describe('ReferenceCellEditor — rowFilter/__rowParentIds (SCRUM-332 §3)', () 
       })
     )
   })
+
+  it('«Показать все» получает и фильтр колонки, и отбор строки', () => {
+    render(
+      <ReferenceCellEditor
+        colProps={{
+          optionsSource: {
+            url: '/api/dictionary-entries/DogovoryKontragentov/entries',
+          },
+          domain: 'DICTIONARY',
+          targetTypeCode: 'DogovoryKontragentov',
+          allowShowAll: true,
+          filter: { Organizatsiya: 42 },
+        }}
+        extraParams={{ Vladelets: '55' }}
+        value={null}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />
+    )
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' })
+    fireEvent.mouseDown(
+      screen.getByRole('button', { name: /showAll|Показать все/i })
+    )
+
+    expect(openPickerMock.mock.calls[0][0]).toMatchObject({
+      searchParams: { Organizatsiya: '42', Vladelets: '55' },
+    })
+  })
 })

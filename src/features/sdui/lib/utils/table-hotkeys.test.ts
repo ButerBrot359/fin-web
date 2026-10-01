@@ -16,12 +16,19 @@ function makeHandlers(): TableHotkeyHandlers {
     onSelectNext: vi.fn(),
     onFocusSearch: vi.fn(),
     onClearSearch: vi.fn(),
+    onSelectAll: vi.fn(),
+    onExtendPrev: vi.fn(),
+    onExtendNext: vi.fn(),
+    onCopyToClipboard: vi.fn(),
+    onUndo: vi.fn(),
+    onSave: vi.fn(),
   }
 }
 
 function keyEvent(
   init: Partial<{
     key: string
+    code: string
     ctrlKey: boolean
     metaKey: boolean
     shiftKey: boolean
@@ -32,6 +39,7 @@ function keyEvent(
   const target = document.createElement(init.targetTag ?? 'div')
   return {
     key: init.key ?? '',
+    code: init.code ?? '',
     ctrlKey: init.ctrlKey ?? false,
     metaKey: init.metaKey ?? false,
     shiftKey: init.shiftKey ?? false,
@@ -42,6 +50,37 @@ function keyEvent(
 }
 
 describe('createTableHotkeysHandler (SCRUM-302)', () => {
+  it('русская раскладка: Ctrl+A/C/Z/S/F узнаются по физической клавише', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+    const nazhat = (key: string, code: string) => {
+      const e = keyEvent({ key, code, ctrlKey: true })
+      onKeyDown(e)
+      return e
+    }
+    const { preventDefault } = nazhat('ф', 'KeyA') as unknown as {
+      preventDefault: ReturnType<typeof vi.fn>
+    }
+    expect(preventDefault).toHaveBeenCalled()
+    nazhat('с', 'KeyC')
+    nazhat('я', 'KeyZ')
+    nazhat('ы', 'KeyS')
+    nazhat('а', 'KeyF')
+    expect(h.onSelectAll).toHaveBeenCalledTimes(1)
+    expect(h.onCopyToClipboard).toHaveBeenCalledTimes(1)
+    expect(h.onUndo).toHaveBeenCalledTimes(1)
+    expect(h.onSave).toHaveBeenCalledTimes(1)
+    expect(h.onFocusSearch).toHaveBeenCalledTimes(1)
+  })
+
+  it('латинская буква берётся как есть, даже если физическая клавиша другая', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+    onKeyDown(keyEvent({ key: 'a', code: 'KeyQ', ctrlKey: true }))
+    expect(h.onSelectAll).toHaveBeenCalledTimes(1)
+    expect(h.onClearSearch).not.toHaveBeenCalled()
+  })
+
   it('Insert/F9/Delete зовут add/copy/remove вне инпута', () => {
     const h = makeHandlers()
     const onKeyDown = createTableHotkeysHandler(h)
@@ -156,5 +195,91 @@ describe('createTableHotkeysHandler (SCRUM-302)', () => {
 
     expect(h.onMoveDown).toHaveBeenCalledTimes(1)
     expect(h.onSelectNext).not.toHaveBeenCalled()
+  })
+})
+
+describe('выделение нескольких строк (порт таблицы 1С)', () => {
+  it('Ctrl+A выделяет все строки таблицы', () => {
+    const handlers = makeHandlers()
+    const e = keyEvent({ key: 'a', ctrlKey: true })
+    createTableHotkeysHandler(handlers)(e as never)
+    expect(handlers.onSelectAll).toHaveBeenCalledTimes(1)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).toHaveBeenCalled()
+  })
+
+  it('Ctrl+A внутри ячейки остаётся выделением текста', () => {
+    const handlers = makeHandlers()
+    const e = keyEvent({ key: 'a', ctrlKey: true, targetTag: 'input' })
+    createTableHotkeysHandler(handlers)(e as never)
+    expect(handlers.onSelectAll).not.toHaveBeenCalled()
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).not.toHaveBeenCalled()
+  })
+
+  it('Shift и стрелки расширяют выделение, а не просто переводят строку', () => {
+    const handlers = makeHandlers()
+    createTableHotkeysHandler(handlers)(
+      keyEvent({ key: 'ArrowDown', shiftKey: true }) as never
+    )
+    createTableHotkeysHandler(handlers)(
+      keyEvent({ key: 'ArrowUp', shiftKey: true }) as never
+    )
+    expect(handlers.onExtendNext).toHaveBeenCalledTimes(1)
+    expect(handlers.onExtendPrev).toHaveBeenCalledTimes(1)
+    expect(handlers.onSelectNext).not.toHaveBeenCalled()
+    expect(handlers.onSelectPrev).not.toHaveBeenCalled()
+  })
+})
+
+describe('буфер обмена, отмена и запись (порт хоткеев таблицы 1С)', () => {
+  it('Ctrl+C копирует выделенные строки, Cmd+C — тоже', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+    const e = keyEvent({ key: 'c', ctrlKey: true })
+    onKeyDown(e)
+    onKeyDown(keyEvent({ key: 'C', metaKey: true }))
+    expect(h.onCopyToClipboard).toHaveBeenCalledTimes(2)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).toHaveBeenCalled()
+  })
+
+  it('Ctrl+C внутри ячейки остаётся копированием текста', () => {
+    const h = makeHandlers()
+    const e = keyEvent({ key: 'c', ctrlKey: true, targetTag: 'input' })
+    createTableHotkeysHandler(h)(e)
+    expect(h.onCopyToClipboard).not.toHaveBeenCalled()
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).not.toHaveBeenCalled()
+  })
+
+  it('Ctrl+Z отменяет последнее действие, а в ячейке — ввод символов', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+    const e = keyEvent({ key: 'z', ctrlKey: true })
+    onKeyDown(e)
+    onKeyDown(keyEvent({ key: 'z', ctrlKey: true, targetTag: 'input' }))
+    expect(h.onUndo).toHaveBeenCalledTimes(1)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).toHaveBeenCalled()
+  })
+
+  it('Ctrl+S записывает документ И из ячейки: значение уже в снимке ТЧ', () => {
+    const h = makeHandlers()
+    const onKeyDown = createTableHotkeysHandler(h)
+    const e = keyEvent({ key: 's', ctrlKey: true, targetTag: 'input' })
+    onKeyDown(e)
+    expect(h.onSave).toHaveBeenCalledTimes(1)
+    // Диалог «Сохранить страницу» браузера в форме документа не нужен никогда
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).toHaveBeenCalled()
+  })
+
+  it('Ctrl+V не перехватывается хоткеем — вставку принимает событие paste', () => {
+    const h = makeHandlers()
+    const e = keyEvent({ key: 'v', ctrlKey: true })
+    createTableHotkeysHandler(h)(e)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(e.preventDefault).not.toHaveBeenCalled()
   })
 })

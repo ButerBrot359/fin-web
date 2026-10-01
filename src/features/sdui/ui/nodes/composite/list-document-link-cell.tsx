@@ -2,6 +2,7 @@ import { Link, Typography } from '@mui/material'
 import type { MouseEvent } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 
+import { HighlightedText } from '@/shared/ui/highlight/highlighted-text'
 import { armNewTab } from '../../../lib/workspace-tab-gateway'
 import type { ListRow } from './list-column-defs'
 
@@ -20,11 +21,14 @@ const readEntryId = (row: ListRow): string => {
 interface ListDocumentLinkCellProps {
   row: ListRow
   text: string
+  /** Строка поиска — её вхождения подсвечиваются в тексте ссылки. */
+  search?: string
 }
 
 export const ListDocumentLinkCell = ({
   row,
   text,
+  search,
 }: ListDocumentLinkCellProps) => {
   const typeCode = readTypeCode(row)
   const entryId = readEntryId(row)
@@ -32,7 +36,7 @@ export const ListDocumentLinkCell = ({
   if (!typeCode || !entryId) {
     return (
       <Typography variant="body2" noWrap className="text-ui-06">
-        {text}
+        <HighlightedText text={text} query={search} />
       </Typography>
     )
   }
@@ -52,7 +56,7 @@ export const ListDocumentLinkCell = ({
       noWrap
       onClick={handleClick}
     >
-      {text}
+      <HighlightedText text={text} query={search} />
     </Link>
   )
 }

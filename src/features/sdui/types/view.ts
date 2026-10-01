@@ -69,6 +69,18 @@ export interface TableCommandDescriptor {
   behavior: ActionBehavior
   column?: string | null // служебное поле бэка, фронт не использует
   inMoreMenu?: boolean // true ⇒ продублировать пункт в меню «Ещё»
+  // true ⇒ команда над ТЕКУЩЕЙ строкой: без выбора кнопка неактивна, клик несёт
+  // value={rowId}. Декларация бэка (TableCommandDescriptorDto), а не догадка по имени.
+  requiresSelectedRow?: boolean | null
+  // Команды с одинаковым group бэк просит показать ОДНОЙ кнопкой-подменю с подписью
+  // groupLabel: так в 1С выглядит «Заполнить» у ТЧ «Модернизации ОС». null ⇒ отдельная кнопка.
+  group?: string | null
+  groupLabel?: string | null
+  groupLabelKz?: string | null
+  // true ⇒ команду выполняет двойной клик / Enter по строке (решение бэка,
+  // когда строковых команд несколько: «Открыть» + «Создать новую редакцию»).
+  defaultForRow?: boolean | null
+  icon?: string | null
 }
 
 export interface ViewAction {
@@ -206,6 +218,12 @@ export interface ViewEffect {
   applyToParentTargetNodeId?: string
   applyToParentCommand?: string
   applyToParentValue?: unknown
+  // uploadFile: фильтр диалога выбора файла (значение атрибута accept),
+  // предел размера в байтах и команда, которую фронт шлёт в ТУ ЖЕ сессию после
+  // успешной отправки (форма перечитывает изменённый на сервере документ).
+  accept?: string
+  maxSizeBytes?: number | null
+  successCommand?: string
 }
 
 export interface NodeProps {

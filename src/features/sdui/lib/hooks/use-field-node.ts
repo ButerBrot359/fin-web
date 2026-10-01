@@ -23,7 +23,7 @@ export interface FieldNodeCommon {
 }
 
 export function useFieldNode(node: ViewNode): FieldNodeCommon {
-  const { setValue, applyTreePatches } = useSduiSession()
+  const { setValue, setFromServer, applyTreePatches } = useSduiSession()
   const dispatch = useSduiDispatch()
   // Точечная подписка: нода ре-рендерится только при изменении своего значения (фикс M1).
   const value = useBindingValue(node.binding)
@@ -53,7 +53,9 @@ export function useFieldNode(node: ViewNode): FieldNodeCommon {
       if (node.binding && options?.silent !== true) {
         notifyFieldEdited(node.binding)
       }
-      if (node.binding) setValue(node.binding, v)
+      if (!node.binding) return
+      if (node.props?.savedData === false) setFromServer(node.binding, v)
+      else setValue(node.binding, v)
     },
     fireServerEvent: (trigger, newValue) => {
       if (

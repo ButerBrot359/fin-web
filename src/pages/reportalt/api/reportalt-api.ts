@@ -1,4 +1,5 @@
 import { apiService } from '@/shared/api/api'
+import type { ReportSpreadsheetDto } from '@/pages/reports/report-list/types/report'
 import type { ApiResponse } from '@/shared/types/api.types'
 
 import type {
@@ -44,6 +45,167 @@ export const fetchReportAltMeta = (code: string, signal?: AbortSignal) =>
       signal,
     })
     .then((res) => unwrap(res.data))
+
+/**
+ * Незаполненный бланк: GET /api/reportalt/{code}/blank.
+ *
+ * В 1С форма отчёта открывается пустым утверждённым бланком, и только «Заполнить» наполняет
+ * его данными. Отчёты без бланка отвечают пустым телом — тогда форма ведёт себя как раньше.
+ */
+export const fetchReportAltBlank = (
+  code: string,
+  strok = 1,
+  stranits = 1,
+  signal?: AbortSignal
+) =>
+  apiService
+    .get<
+      ReportSpreadsheetDto | ApiResponse<ReportSpreadsheetDto | null> | null
+    >({
+      url: `/api/reportalt/${code}/blank`,
+      params: { strok, stranits },
+      signal,
+    })
+    .then((res) => unwrap(res.data) ?? null)
+
+/** Сохранённый регламентированный отчёт: реквизиты и значения клеток ручного ввода. */
+export interface SokhranennyyOtchetDto {
+  kodOtcheta?: string | null
+  organizatsiyaId?: number | null
+  periodOt?: string | null
+  periodDo?: string | null
+  kazakhskiy?: boolean
+  znacheniyaBlanka?: Record<string, string>
+  izmenenVruchnuyu?: boolean
+  versiyaSkhemy?: number | null
+}
+
+/**
+ * Сохранённый отчёт по id документа — им экран восстанавливает ручной ввод бланка.
+ *
+ * <p>Организация и период приходят в маршруте, как в 1С; значения клеток в параметры формы не
+ * идут и поднимаются отдельно из «Данных отчёта».
+ */
+export const fetchSokhranennyyOtchet = (
+  entryId: number,
+  signal?: AbortSignal
+) =>
+  apiService
+    .get<SokhranennyyOtchetDto | ApiResponse<SokhranennyyOtchetDto>>({
+      url: `/api/reportalt/sokhranennyy/${String(entryId)}`,
+      signal,
+    })
+    .then((res) => unwrap(res.data))
+
+/**
+ * «Выгрузить в XML 200.03»: приложение бланка отдельным файлом ФНО.
+ *
+ * <p>В 1С приложение по структурным подразделениям сдаётся своим файлом со своими кодом и
+ * версией формы, поэтому это отдельная команда, а не часть общей выгрузки.
+ *
+ * @param ekzemplyar номер экземпляра многостраничного раздела; 1 — сам раздел
+ */
+export const vygruzkaPrilozheniya = (
+  code: string,
+  body: RunReportAltBody,
+  ekzemplyar = 1,
+  signal?: AbortSignal
+) =>
+  apiService.postFileBlob({
+    url: `/api/reportalt/${code}/vygruzka-prilozheniya`,
+    data: body,
+    params: { ekzemplyar },
+    signal,
+  })
+
+export const vygruzkaXml = (
+  code: string,
+  body: RunReportAltBody,
+  signal?: AbortSignal
+) =>
+  apiService.postFileBlob({
+    url: `/api/reportalt/${code}/vygruzka-xml`,
+    data: body,
+    signal,
+  })
+
+export const vygruzkaJson = (
+  code: string,
+  body: RunReportAltBody,
+  signal?: AbortSignal
+) =>
+  apiService.postFileBlob({
+    url: `/api/reportalt/${code}/vygruzka-json`,
+    data: body,
+    signal,
+  })
+
+/** Что уходит в POST /api/reportalt/{code}/save — реквизиты сохраняемого экземпляра отчёта. */
+export interface SaveReportAltBody {
+  kodOtcheta: string
+  naimenovanie: string
+  organizatsiyaId?: number | null
+  periodOt?: string | null
+  periodDo?: string | null
+  kommentariy?: string | null
+  kazakhskiy: boolean
+  znacheniyaBlanka: Record<string, string>
+}
+
+/**
+ * Сохранение сформированного отчёта: POST /api/reportalt/{code}/save.
+ *
+ * Пишет документ «Регламентированный отчет» — из таких документов строится список сохранённой
+ * отчётности, как в 1С.
+ */
+export const saveReportAlt = (
+  code: string,
+  body: SaveReportAltBody,
+  signal?: AbortSignal
+) =>
+  apiService.post({
+    url: `/api/reportalt/${code}/save`,
+    data: body,
+    signal,
+  })
+
+/**
+ * Файл ФНО: GET /api/otchetnost/fno/{kodFormy}.
+ *
+ * Кнопка «Выгрузить в XML» формы 1С. Квартал бэк определяет по переданной дате — декларация
+ * сдаётся за квартал целиком.
+ */
+/** Признаки шапки декларации, которые ставит пользователь: расчёт о них не знает. */
+export interface VygruzkaFnoPriznaki {
+  vidDeklaratsii?: string | null
+  nomerUvedomleniya?: string | null
+  dataUvedomleniya?: string | null
+}
+
+export const vygruzkaFno = (
+  kodFormy: string,
+  organizatsiyaId: number,
+  period: string,
+  priznaki: VygruzkaFnoPriznaki = {},
+  signal?: AbortSignal
+) =>
+  apiService.getFileBlob({
+    url: `/api/otchetnost/fno/${kodFormy}`,
+    params: {
+      organizatsiyaId,
+      period,
+      ...(priznaki.vidDeklaratsii
+        ? { vidDeklaratsii: priznaki.vidDeklaratsii }
+        : {}),
+      ...(priznaki.nomerUvedomleniya
+        ? { nomerUvedomleniya: priznaki.nomerUvedomleniya }
+        : {}),
+      ...(priznaki.dataUvedomleniya
+        ? { dataUvedomleniya: priznaki.dataUvedomleniya }
+        : {}),
+    },
+    signal,
+  })
 
 export const fetchReportAltParamState = (
   code: string,

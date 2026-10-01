@@ -1,6 +1,6 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
 
-import i18n from '@/app/config/i18n'
+import '@/app/config/i18n'
 import type {
   BlobRequestConfig,
   RequestConfig,
@@ -9,6 +9,8 @@ import type {
 
 import { rethrowApiError } from './api-error'
 import { attachAuthInterceptors } from './auth/attach-auth-interceptors'
+import { attachClientContextHeaders } from './attach-client-context-headers'
+import { attachLanguageHeader } from './attach-language-header'
 
 /**
  * Таймаут обычного запроса. Без него axios ждёт БЕСКОНЕЧНО: если соединение
@@ -41,17 +43,16 @@ const instance = axios.create({
 // после `i18n.changeLanguage` следующий запрос уходит уже с новым языком — инстанс
 // пересоздавать не нужно. По этому заголовку бэкенд локализует серверно-рендеримый
 // контент отчётов (бланк мемориального ордера, titleTemplate): `kz` → казахский,
-// `ru`/пусто → русский. Интерсептор навешан только на этот инстанс; SDUI-транспорт
-// (`features/sdui/api/view-transport.ts`) — отдельный axios-инстанс и не затрагивается.
-instance.interceptors.request.use((config) => {
-  config.headers.set('Accept-Language', i18n.language)
-  return config
-})
+// `ru`/пусто → русский.
+attachLanguageHeader(instance)
 
 // Bearer-токен на каждый запрос и автопродление сессии по 401 (SCRUM-373). Навешивается
 // ПОСЛЕ Accept-Language: интерсепторы запроса выполняются в порядке регистрации, и токен
 // подставляется последним — на уже сформированный конфиг.
 attachAuthInterceptors(instance)
+
+// Рабочее место для журнала регистрации (SCRUM-371): device id, локальные адреса, имя компьютера.
+attachClientContextHeaders(instance)
 
 // Все сбои запроса летят наверх типизированными ошибками (`ApiTransportError` /
 // `ApiConflictError` / `ApiHttpError` — W-6): маппинг общий с form-configs-api,

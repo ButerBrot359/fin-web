@@ -3,7 +3,7 @@ import { Typography } from '@mui/material'
 import type { TFunction } from 'i18next'
 
 import type { DocumentAttribute } from '@/entities/document-type'
-import { formatDate } from '@/shared/lib/utils/date'
+import { formatDate, formatDateTimeSeconds } from '@/shared/lib/utils/date'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
 import type { DictColumnDto, DictEntry } from '../../api/dict-sidebar-api'
@@ -68,18 +68,21 @@ export const buildDictColumns = (
     sortable: true,
     render: (entry) => {
       const value =
-        attr.code === 'Kod' &&
-        typeCode === 'EdiniyPlanSchetovGosUchrezhdeniya'
-          ? (entry.code || entry.attributes?.[attr.code])
+        attr.code === 'Kod' && typeCode === 'EdiniyPlanSchetovGosUchrezhdeniya'
+          ? entry.code || entry.attributes?.[attr.code]
           : entry.attributes?.[attr.code]
 
       if (
         (attr.dataType === 'DATE' || attr.dataType === 'DATETIME') &&
         typeof value === 'string'
       ) {
-        const fmt =
-          attr.dataType === 'DATE' ? 'dd.MM.yyyy' : 'dd.MM.yyyy HH:mm:ss'
-        return <Text>{formatDate(value, fmt)}</Text>
+        return (
+          <Text>
+            {attr.dataType === 'DATE'
+              ? formatDate(value)
+              : formatDateTimeSeconds(value)}
+          </Text>
+        )
       }
 
       const asCode = isAccountRef(attr.dataType, attr.domainKind)

@@ -26,6 +26,7 @@ import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved
 
 import { useUnsavedChangesDialog } from '@/pages/documents/documents-entry/lib/hooks/use-unsaved-changes-dialog'
 import { useUniversalDomainType } from '../../universal-domain-list'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 /**
  * SDUI-карточка записи универсального домена (SCRUM-388, ADR-0048 Tier R):
@@ -56,6 +57,7 @@ export const UniversalDomainEntryPage = () => {
   const [searchParams] = useSearchParams()
   const domain = searchParams.get('domain') ?? 'CALCULATION_PLAN'
   const location = useLocation()
+  const tabKey = tabRouteKey(location.pathname, location.search)
   const navigate = useNavigate()
   const { t } = useTranslation()
   const dispatch = useSduiDispatch()
@@ -75,8 +77,8 @@ export const UniversalDomainEntryPage = () => {
   const listPath = `/modules/${pageCode}/calculationplan/${moduleCode}?domain=${domain}`
 
   const closeCurrentTab = () => {
-    useFormCacheStore.getState().removeTab(location.pathname)
-    useWorkspaceTabsStore.getState().closeTab(location.pathname)
+    useFormCacheStore.getState().removeTab(tabKey)
+    useWorkspaceTabsStore.getState().closeTab(tabKey)
   }
 
   const unsavedDialog = useUnsavedChangesDialog({
@@ -89,7 +91,7 @@ export const UniversalDomainEntryPage = () => {
     },
     onDiscard: () => {
       // «Не сохранять» → ближайший CLOSE уйдёт с discardDraft=true (SCRUM-276)
-      markDiscardDraftClose(location.pathname)
+      markDiscardDraftClose(tabKey)
       closeCurrentTab()
       void navigate(listPath)
     },

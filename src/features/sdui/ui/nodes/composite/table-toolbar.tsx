@@ -3,7 +3,14 @@ import { useTranslation } from 'react-i18next'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import CloseIcon from '@mui/icons-material/Close'
-import { IconButton, InputAdornment, TextField, Tooltip } from '@mui/material'
+import {
+  IconButton,
+  InputAdornment,
+  Menu,
+  MenuItem,
+  TextField,
+  Tooltip,
+} from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons'
 import { figmaIcons } from '@/shared/ui/icons'
@@ -11,9 +18,12 @@ import { figmaIcons } from '@/shared/ui/icons'
 import type { TableCommandDescriptor } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import type { TableSearchApi } from '../../../lib/hooks/use-table-search'
+import {
+  buildTableCommandAction,
+  isRowScopedCommand,
+} from '../../../lib/utils/table-command-action'
+import { resolveButtonIcon } from '../action/button-icons'
 import { TableMoreMenu } from './table-more-menu'
-
-const ROW_SCOPED_COMMANDS = ['table.deleteRow', 'table.copyRow']
 
 interface TableToolbarProps {
   onAdd: () => void
@@ -30,8 +40,10 @@ interface TableToolbarProps {
   allowReorder?: boolean
   allowDelete?: boolean
   commands?: TableCommandDescriptor[]
-  search: TableSearchApi
+  search: Omit<TableSearchApi, 'rows'>
   selectedRowId?: string | null
+  /** rowId всех выделенных строк — серверная «Удалить» снимает их разом, как в 1С. */
+  selectedRowIds?: string[]
 }
 
 export const TableToolbar = ({
@@ -51,29 +63,43 @@ export const TableToolbar = ({
   commands = [],
   search,
   selectedRowId = null,
+  selectedRowIds = [],
 }: TableToolbarProps) => {
   const { t, i18n } = useTranslation()
   const dispatch = useSduiDispatch()
   const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null)
+  // Открытая кнопка-подменю панели ТЧ: код группы + её якорь. Групп на панели может быть
+  // несколько, поэтому храним какая именно раскрыта, а не просто «открыто/закрыто».
+  const [groupMenu, setGroupMenu] = useState<{
+    group: string
+    anchor: HTMLElement
+  } | null>(null)
 
   const commandLabel = (cmd: TableCommandDescriptor) =>
     i18n.language.startsWith('kz') ? (cmd.labelKz ?? cmd.label) : cmd.label
 
   // Команды панели ТЧ, которые сервер выполняет НАД ТЕКУЩЕЙ СТРОКОЙ: без выделения
   // сервер отвечает «Выберите строку…», поэтому кнопка гасится заранее — как в 1С.
-  const rowScoped = (cmd: TableCommandDescriptor) =>
-    ROW_SCOPED_COMMANDS.some((prefix) => cmd.command.startsWith(prefix + ':'))
+  const rowScoped = isRowScopedCommand
 
+  // Команды с непустым group собираются под одну кнопку-подменю; порядок групп и кнопок —
+  // тот же, в котором их прислал сервер, чтобы панель не «прыгала» между отдачами.
+  const plainCommands = commands.filter((cmd) => !cmd.group)
+  const groupedCommands = [
+    ...commands
+      .filter((cmd) => Boolean(cmd.group))
+      .reduce<Map<string, TableCommandDescriptor[]>>((acc, cmd) => {
+        const key = cmd.group!
+        acc.set(key, [...(acc.get(key) ?? []), cmd])
+        return acc
+      }, new Map()),
+  ]
+
+  // rowId нужен построчным командам (table.copyRow, requiresSelectedRow); сервер
+  // читает его только у них, прочие игнорируют (SCRUM-332 §1).
   const runCommand = (cmd: TableCommandDescriptor) => {
     void dispatch(
-      {
-        type: 'COMMAND',
-        command: cmd.command,
-        // rowId нужен построчным командам (table.copyRow); сервер читает его
-        // через extractRowId только у них, прочие игнорируют (SCRUM-332 §1).
-        // Спред, а не value:undefined — иначе ключ value ломает прежние тесты.
-        ...(selectedRowId ? { value: { rowId: selectedRowId } } : {}),
-      },
+      buildTableCommandAction(cmd, selectedRowId, selectedRowIds),
       cmd.behavior
     )
   }
@@ -108,7 +134,51 @@ export const TableToolbar = ({
           />
         </>
       )}
-      {commands.map((cmd) => {
+      {groupedCommands.map(([group, groupCmds]) => {
+        // Кнопка-подменю: бэк пометил команды общим group (props.zapolnitGroup у ТЧ) —
+        // в эталоне 1С это «Заполнить» с пунктами внутри, а не кнопки в ряд.
+        const label =
+          (i18n.language.startsWith('kz')
+            ? groupCmds[0].groupLabelKz
+            : groupCmds[0].groupLabel) ?? group
+        return (
+          <span key={`group:${group}`} style={{ display: 'inline-flex' }}>
+            <Button
+              variant="secondary"
+              onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                setGroupMenu({ group, anchor: e.currentTarget })
+              }}
+              endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 20 }} />}
+            >
+              {label}
+            </Button>
+            <Menu
+              anchorEl={groupMenu?.group === group ? groupMenu.anchor : null}
+              open={groupMenu?.group === group}
+              onClose={() => {
+                setGroupMenu(null)
+              }}
+            >
+              {groupCmds.map((cmd) => {
+                const needsRow = rowScoped(cmd) && !selectedRowId
+                return (
+                  <MenuItem
+                    key={cmd.command}
+                    disabled={!cmd.enabled || needsRow}
+                    onClick={() => {
+                      setGroupMenu(null)
+                      runCommand(cmd)
+                    }}
+                  >
+                    {commandLabel(cmd)}
+                  </MenuItem>
+                )
+              })}
+            </Menu>
+          </span>
+        )
+      })}
+      {plainCommands.map((cmd) => {
         const needsRow = rowScoped(cmd) && !selectedRowId
         const disabled = !cmd.enabled || needsRow
         const reason = !cmd.enabled
@@ -116,7 +186,18 @@ export const TableToolbar = ({
           : needsRow
             ? t('table.selectRowFirst')
             : undefined
-        const btn = (
+        const icon = resolveButtonIcon(cmd.icon ?? undefined)
+        const btn = icon ? (
+          <Button
+            variant="secondary"
+            disabled={disabled}
+            aria-label={commandLabel(cmd)}
+            onClick={() => {
+              runCommand(cmd)
+            }}
+            startIcon={icon}
+          />
+        ) : (
           <Button
             variant="secondary"
             disabled={disabled}
@@ -127,9 +208,11 @@ export const TableToolbar = ({
             {commandLabel(cmd)}
           </Button>
         )
-        return disabled && reason ? (
+        const tooltip =
+          disabled && reason ? reason : icon ? commandLabel(cmd) : null
+        return tooltip ? (
           // span-обёртка обязательна: без неё tooltip не работает на disabled-кнопке
-          <Tooltip key={cmd.command} title={reason}>
+          <Tooltip key={cmd.command} title={tooltip}>
             <span style={{ display: 'inline-flex' }}>{btn}</span>
           </Tooltip>
         ) : (
@@ -203,6 +286,9 @@ export const TableToolbar = ({
         commands={commands}
         commandLabel={commandLabel}
         onCommand={runCommand}
+        isCommandDisabled={(cmd) =>
+          !cmd.enabled || (rowScoped(cmd) && !selectedRowId)
+        }
       />
     </div>
   )

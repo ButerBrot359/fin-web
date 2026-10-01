@@ -1,12 +1,16 @@
-import { useMemo, useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   Autocomplete,
   Box,
+  Button,
   Checkbox,
   FormControlLabel,
+  Paper,
   TextField,
   Typography,
+  type PaperProps,
 } from '@mui/material'
 
 import {
@@ -14,8 +18,17 @@ import {
   useAccountPlanList,
   useSubcontoBuTypes,
 } from '@/entities/account-plan'
-import { fetchReferenceOptions, useReferenceOptions } from '@/features/sdui'
+import {
+  fetchReferenceOptions,
+  openReferencePicker,
+  useReferenceOptions,
+} from '@/features/sdui'
 import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
+import { fetchDictionaryEntryById } from '@/shared/lib/dictionary-entry/dictionary-entry-api'
+import {
+  resolveDictionaryEntryLabel,
+  useDictionaryEntry,
+} from '@/shared/lib/dictionary-entry/use-dictionary-entry'
 import {
   AutocompleteInput,
   DateTimeInput,
@@ -33,6 +46,63 @@ import type { ReportAltParamValue } from '../lib/utils/params'
 
 /** Маркер домена «План видов характеристик» в `referenceDomain` параметра. */
 const CHARACTERISTICS_PLAN_PREFIX = 'CHARACTERISTICS_PLAN:'
+
+interface MultiSelectActions {
+  onCheckAll: () => void
+  onUncheckAll: () => void
+  checkAllLabel: string
+  uncheckAllLabel: string
+  onShowAll?: () => void
+  showAllLabel: string
+}
+
+const MultiSelectActionsContext = createContext<MultiSelectActions | null>(null)
+
+const MultiSelectPaper = ({ children, ...props }: PaperProps) => {
+  const actions = useContext(MultiSelectActionsContext)
+  return (
+    <Paper {...props}>
+      {actions && (
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 1,
+            px: 1,
+            py: 0.5,
+            borderBottom: `1px solid ${cssVar(palette.pendingGray1)}`,
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault()
+          }}
+        >
+          <Button size="small" onClick={actions.onCheckAll}>
+            {actions.checkAllLabel}
+          </Button>
+          <Button size="small" onClick={actions.onUncheckAll}>
+            {actions.uncheckAllLabel}
+          </Button>
+        </Box>
+      )}
+      {children}
+      {actions?.onShowAll && (
+        <Box
+          sx={{
+            px: 1,
+            py: 0.5,
+            borderTop: `1px solid ${cssVar(palette.pendingGray1)}`,
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault()
+          }}
+        >
+          <Button size="small" onClick={actions.onShowAll}>
+            {actions.showAllLabel}
+          </Button>
+        </Box>
+      )}
+    </Paper>
+  )
+}
 
 interface ReportAltParamFieldProps {
   param: ReportAltParameterDto
@@ -80,11 +150,32 @@ export const ReportAltParamField = ({
     ? param.referenceDomain!.slice(CHARACTERISTICS_PLAN_PREFIX.length)
     : null
 
+  const allowedOptions = useMemo<SelectOption[] | null>(
+    () =>
+      param.allowedValues && param.allowedValues.length > 0
+        ? param.allowedValues.map<SelectOption>((av) => ({
+            id: String(av.value),
+            code: String(av.value),
+            label: (isKz ? av.titleKz : av.titleRu) || av.titleRu,
+          }))
+        : null,
+    [param.allowedValues, isKz]
+  )
+  const isEnumByAllowedValues =
+    param.dataType === 'ENUM_REF' && allowedOptions !== null
+  const isServerDictRef =
+    !isCharacteristicsRef &&
+    param.dataType === 'DICTIONARY_REF' &&
+    !!param.referenceDomain
+  const isServerDictList =
+    param.dataType === 'REF_LIST' &&
+    !!param.referenceDomain &&
+    !param.referenceDomain.includes(':')
   const isDictRef =
     !isCharacteristicsRef &&
-    (param.dataType === 'DICTIONARY_REF' ||
-      param.dataType === 'ENUM_REF' ||
-      param.dataType === 'REF_LIST')
+    !isEnumByAllowedValues &&
+    (param.dataType === 'ENUM_REF' ||
+      (param.dataType === 'REF_LIST' && !isServerDictList))
 
   // Единственный поддержанный ПВХ-домен — «Виды субконто (БУ)»; при появлении других
   // обобщить на generic-хук по characteristicsTypeCode (тот же TODO, что в легаси).
@@ -152,7 +243,11 @@ export const ReportAltParamField = ({
     allowedAccountIds,
   ])
 
-  const optionsUrl = optionsSource?.url ?? null
+  const optionsUrl =
+    optionsSource?.url ??
+    (isServerDictRef || isServerDictList
+      ? `/api/dictionary-entries/${param.referenceDomain!}/entries`
+      : null)
   const optionsParams = optionsSource?.params
   const {
     options: sourceOptions,
@@ -173,7 +268,134 @@ export const ReportAltParamField = ({
   const [pickedLabels, setPickedLabels] = useState<
     Partial<Record<number, string>>
   >({})
+  const selectedDictId =
+    param.dataType === 'DICTIONARY_REF' &&
+    value != null &&
+    value !== '' &&
+    typeof value !== 'object' &&
+    Number.isFinite(Number(value))
+      ? Number(value)
+      : null
+  const { entry: selectedDictEntry } = useDictionaryEntry(
+    selectedDictId != null &&
+      sourceOptions.every((o) => Number(o.id) !== selectedDictId) &&
+      pickedLabels[selectedDictId] == null
+      ? selectedDictId
+      : null
+  )
+  const unresolvedListIds = useMemo(
+    () =>
+      param.dataType === 'REF_LIST' && isServerDictList && Array.isArray(value)
+        ? value.filter(
+            (id) =>
+              pickedLabels[id] == null &&
+              sourceOptions.every((o) => Number(o.id) !== id)
+          )
+        : [],
+    [param.dataType, isServerDictList, value, pickedLabels, sourceOptions]
+  )
+  const resolvedListLabels = useQueries({
+    queries: unresolvedListIds.map((id) => ({
+      queryKey: ['dictionary-entry-by-id', id],
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        fetchDictionaryEntryById(id, signal),
+      staleTime: Infinity,
+    })),
+    combine: (results) =>
+      Object.fromEntries(
+        results.flatMap((r, i) =>
+          r.data
+            ? [
+                [
+                  unresolvedListIds[i],
+                  resolveDictionaryEntryLabel(r.data, unresolvedListIds[i]),
+                ],
+              ]
+            : []
+        )
+      ) as Partial<Record<number, string>>,
+  })
+  const sourceListSignature = JSON.stringify(
+    (Array.isArray(value) ? value : []).map((id) => [
+      id,
+      sourceOptions.find((o) => Number(o.id) === id)?.label ??
+        pickedLabels[id] ??
+        resolvedListLabels[id] ??
+        `#${String(id)}`,
+    ])
+  )
+  const sourceListSelected = useMemo(
+    () =>
+      (JSON.parse(sourceListSignature) as [number, string][]).map<SelectOption>(
+        ([id, itemLabel]) => ({ id, code: String(id), label: itemLabel })
+      ),
+    [sourceListSignature]
+  )
+  const showAllSearchParams = optionsSource?.params
+  const canShowAll =
+    !disabled &&
+    !!param.referenceDomain &&
+    ((isServerDictRef && !param.referenceDomain.includes(':')) ||
+      isServerDictList)
+  const openShowAll = (
+    selectedId: number | undefined,
+    onPicked: (option: SelectOption) => void
+  ) => {
+    openReferencePicker({
+      mode: 'list',
+      domain: 'DICTIONARY',
+      typeCode: param.referenceDomain!,
+      selectedId,
+      searchParams: showAllSearchParams,
+      onSelect: (option) => {
+        if (!option) return
+        setPickedLabels((prev) => ({
+          ...prev,
+          [Number(option.id)]: option.label,
+        }))
+        onPicked(option)
+      },
+    })
+  }
+  const selectedDictLabel =
+    selectedDictId == null
+      ? null
+      : (sourceOptions.find((o) => Number(o.id) === selectedDictId)?.label ??
+        pickedLabels[selectedDictId] ??
+        resolveDictionaryEntryLabel(selectedDictEntry, selectedDictId))
+  const selectedDictOption = useMemo<SelectOption | null>(
+    () =>
+      selectedDictId == null || selectedDictLabel == null
+        ? null
+        : {
+            id: selectedDictId,
+            code: String(selectedDictId),
+            label: selectedDictLabel,
+          },
+    [selectedDictId, selectedDictLabel]
+  )
 
+  const allowedValuesSelect = (options: SelectOption[]) => {
+    const selected =
+      typeof value === 'string' && value !== ''
+        ? (options.find((o) => o.id === value) ?? null)
+        : null
+    return (
+      <AutocompleteInput
+        value={selected}
+        options={options}
+        onChange={(o) => {
+          onChange(o ? String(o.id) : '')
+        }}
+        label={label}
+        required={param.required}
+        error={invalid}
+        disabled={disabled}
+        helperText={helperText}
+        fullWidth
+      />
+    )
+  }
   switch (param.dataType) {
     case 'DATE':
     case 'PERIOD':
@@ -197,148 +419,223 @@ export const ReportAltParamField = ({
       const selectedIds = Array.isArray(value) ? value : []
       const listOptions = optionsUrl ? sourceOptions : refOptions
       const selected = optionsUrl
-        ? selectedIds.map<SelectOption>((id) => ({
-            id,
-            code: String(id),
-            label:
-              sourceOptions.find((o) => Number(o.id) === id)?.label ??
-              pickedLabels[id] ??
-              `#${String(id)}`,
-          }))
+        ? sourceListSelected
         : refOptions.filter((o) => selectedIds.includes(Number(o.id)))
+      const multiSelectActions: MultiSelectActions = {
+        onCheckAll: () => {
+          if (optionsUrl) {
+            setPickedLabels((prev) => ({
+              ...prev,
+              ...Object.fromEntries(
+                listOptions.map((o) => [Number(o.id), o.label])
+              ),
+            }))
+          }
+          onChange([
+            ...new Set([
+              ...selectedIds,
+              ...listOptions.map((o) => Number(o.id)),
+            ]),
+          ])
+        },
+        onUncheckAll: () => {
+          onChange([])
+        },
+        checkAllLabel: t('inputs.checkAll'),
+        uncheckAllLabel: t('inputs.uncheckAll'),
+        onShowAll: canShowAll
+          ? () => {
+              openShowAll(undefined, (option) => {
+                onChange([...new Set([...selectedIds, Number(option.id)])])
+              })
+            }
+          : undefined,
+        showAllLabel: t('dictSidebar.showAll'),
+      }
       return (
-        <Autocomplete
-          multiple
-          disableCloseOnSelect
-          forcePopupIcon
-          disabled={disabled}
-          {...(optionsUrl
-            ? {
-                filterOptions: (opts: SelectOption[]) => opts,
-                loading: sourceLoading,
-                onOpen: () => {
-                  loadSourceOptions()
-                },
-                onInputChange: (_e: unknown, text: string, reason: string) => {
-                  if (reason === 'input') loadSourceOptionsDebounced(text)
-                },
-              }
-            : {})}
-          // Ширину задаёт контейнер строки параметров (w-72) — поле не шире
-          // соседей и не наезжает на них (прежний фикс sx={{width:300}} вылезал
-          // за контейнер). Высота — обычный tall-инпут темы (minHeight 44,
-          // paddingTop 22) — как у дат и одиночных выпадашек.
-          fullWidth
-          sx={{
-            // Длинная сводка обрезается внутри поля, а не «вылезает» за край
-            // (тема задаёт inputRoot flexWrap:nowrap).
-            '& .MuiFilledInput-root': { overflow: 'hidden' },
-            '& .MuiAutocomplete-input': { minWidth: 24 },
-            // При наборе (фокусе) прячем сводку — поле поиска на всю ширину.
-            '& .MuiFilledInput-root.Mui-focused .reportalt-ms-summary': {
-              display: 'none',
-            },
-          }}
-          // Значение — компактная сводка «Имя (+N)» с многоточием (как в легаси
-          // report-param-field): чипы при nowrap-теме вылезали за границу поля
-          // и наезжали на соседний селект.
-          renderValue={(tagValue) => {
-            if (!Array.isArray(tagValue) || tagValue.length === 0) return null
-            return (
-              <Box
-                component="span"
-                className="reportalt-ms-summary"
-                sx={{
-                  // 22/6 — паддинги значения filled-инпута из темы: сводка
-                  // садится на уровень значений соседних полей.
-                  alignSelf: 'flex-start',
-                  pt: '22px',
-                  pb: '6px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  minWidth: 0,
-                  flexShrink: 1,
-                  overflow: 'hidden',
-                }}
-              >
-                <Typography
+        <MultiSelectActionsContext.Provider value={multiSelectActions}>
+          <Autocomplete
+            multiple
+            disableCloseOnSelect
+            slots={{ paper: MultiSelectPaper }}
+            forcePopupIcon
+            disabled={disabled}
+            {...(optionsUrl
+              ? {
+                  filterOptions: (opts: SelectOption[]) => opts,
+                  loading: sourceLoading,
+                  onOpen: () => {
+                    loadSourceOptions()
+                  },
+                  onInputChange: (
+                    _e: unknown,
+                    text: string,
+                    reason: string
+                  ) => {
+                    if (reason === 'input') loadSourceOptionsDebounced(text)
+                  },
+                }
+              : {})}
+            // Ширину задаёт контейнер строки параметров (w-72) — поле не шире
+            // соседей и не наезжает на них (прежний фикс sx={{width:300}} вылезал
+            // за контейнер). Высота — обычный tall-инпут темы (minHeight 44,
+            // paddingTop 22) — как у дат и одиночных выпадашек.
+            fullWidth
+            sx={{
+              // Длинная сводка обрезается внутри поля, а не «вылезает» за край
+              // (тема задаёт inputRoot flexWrap:nowrap).
+              '& .MuiFilledInput-root': { overflow: 'hidden' },
+              '& .MuiAutocomplete-input': { minWidth: 24 },
+              // При наборе (фокусе) прячем сводку — поле поиска на всю ширину.
+              '& .MuiFilledInput-root.Mui-focused .reportalt-ms-summary': {
+                display: 'none',
+              },
+            }}
+            // Значение — компактная сводка «Имя (+N)» с многоточием (как в легаси
+            // report-param-field): чипы при nowrap-теме вылезали за границу поля
+            // и наезжали на соседний селект.
+            renderValue={(tagValue) => {
+              if (!Array.isArray(tagValue) || tagValue.length === 0) return null
+              return (
+                <Box
                   component="span"
+                  className="reportalt-ms-summary"
                   sx={{
-                    fontSize: 16,
-                    fontWeight: 500,
-                    lineHeight: 1.4,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    color: cssVar(semantic.textPrimary),
+                    // 22/6 — паддинги значения filled-инпута из темы: сводка
+                    // садится на уровень значений соседних полей.
+                    alignSelf: 'flex-start',
+                    pt: '22px',
+                    pb: '6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
                     minWidth: 0,
+                    flexShrink: 1,
+                    overflow: 'hidden',
                   }}
                 >
-                  {tagValue[0].label}
-                </Typography>
-                {/* «+N» (сколько ещё выбрано) — всегда видно, не обрезается. */}
-                {tagValue.length > 1 && (
                   <Typography
                     component="span"
                     sx={{
-                      ml: 0.5,
                       fontSize: 16,
                       fontWeight: 500,
                       lineHeight: 1.4,
-                      color: cssVar(palette.pendingText2),
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      flexShrink: 0,
+                      color: cssVar(semantic.textPrimary),
+                      minWidth: 0,
                     }}
                   >
-                    +{tagValue.length - 1}
+                    {tagValue[0].label}
                   </Typography>
-                )}
-              </Box>
-            )
-          }}
-          options={listOptions}
-          value={selected}
-          onChange={(_e, next) => {
-            if (optionsUrl) {
-              setPickedLabels((prev) => ({
-                ...prev,
-                ...Object.fromEntries(next.map((o) => [Number(o.id), o.label])),
-              }))
-            }
-            onChange(next.map((o) => Number(o.id)))
-          }}
-          getOptionLabel={(o) => o.label}
-          isOptionEqualToValue={(o, v) => o.id === v.id}
-          noOptionsText={t('inputs.noOptions')}
-          renderOption={(props, option, { selected: isSelected }) => {
-            const { key, ...optionProps } = props
-            return (
-              <li key={key} {...optionProps}>
-                <Checkbox
-                  size="small"
-                  checked={isSelected}
-                  sx={{ mr: 1, p: 0.5 }}
-                />
-                {option.label}
-              </li>
-            )
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label={label}
-              required={param.required}
-              error={invalid}
-              helperText={helperText}
-            />
-          )}
-        />
+                  {/* «+N» (сколько ещё выбрано) — всегда видно, не обрезается. */}
+                  {tagValue.length > 1 && (
+                    <Typography
+                      component="span"
+                      sx={{
+                        ml: 0.5,
+                        fontSize: 16,
+                        fontWeight: 500,
+                        lineHeight: 1.4,
+                        color: cssVar(palette.pendingText2),
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                      }}
+                    >
+                      +{tagValue.length - 1}
+                    </Typography>
+                  )}
+                </Box>
+              )
+            }}
+            options={listOptions}
+            value={selected}
+            onChange={(_e, next) => {
+              if (optionsUrl) {
+                setPickedLabels((prev) => ({
+                  ...prev,
+                  ...Object.fromEntries(
+                    next.map((o) => [Number(o.id), o.label])
+                  ),
+                }))
+              }
+              onChange(next.map((o) => Number(o.id)))
+            }}
+            getOptionLabel={(o) => o.label}
+            isOptionEqualToValue={(o, v) => o.id === v.id}
+            noOptionsText={t('inputs.noOptions')}
+            renderOption={(props, option, { selected: isSelected }) => {
+              const { key, ...optionProps } = props
+              return (
+                <li key={key} {...optionProps}>
+                  <Checkbox
+                    size="small"
+                    checked={isSelected}
+                    sx={{ mr: 1, p: 0.5 }}
+                  />
+                  {option.label}
+                </li>
+              )
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={label}
+                required={param.required}
+                error={invalid}
+                helperText={helperText}
+              />
+            )}
+          />
+        </MultiSelectActionsContext.Provider>
       )
     }
 
     case 'ACCOUNT_REF':
     case 'DICTIONARY_REF':
     case 'ENUM_REF': {
+      if (param.dataType === 'ENUM_REF' && allowedOptions) {
+        return allowedValuesSelect(allowedOptions)
+      }
+      if (param.dataType === 'DICTIONARY_REF' && optionsUrl) {
+        return (
+          <AutocompleteInput
+            value={selectedDictOption}
+            options={sourceOptions}
+            loading={sourceLoading}
+            onOpen={() => {
+              loadSourceOptions()
+            }}
+            onInputChange={(_e, text, reason) => {
+              if (reason === 'input') loadSourceOptionsDebounced(text)
+            }}
+            onChange={(o) => {
+              if (o) {
+                setPickedLabels((prev) => ({
+                  ...prev,
+                  [Number(o.id)]: o.label,
+                }))
+              }
+              onChange(o ? Number(o.id) : '')
+            }}
+            onShowAll={
+              canShowAll
+                ? () => {
+                    openShowAll(selectedDictId ?? undefined, (option) => {
+                      onChange(Number(option.id))
+                    })
+                  }
+                : undefined
+            }
+            label={label}
+            required={param.required}
+            error={invalid}
+            disabled={disabled}
+            helperText={helperText}
+            fullWidth
+          />
+        )
+      }
       // Одиночный выбор; значение — id записи (number).
       const selected =
         value == null || value === '' || typeof value === 'object'

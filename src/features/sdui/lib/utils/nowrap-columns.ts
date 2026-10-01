@@ -22,6 +22,7 @@
  */
 const NOWRAP_BINDING_PREFIXES = [
   'istochnikfinansirovaniya',
+  'fkr',
   'sotrudnik',
   'periodregistratsii',
   'podrazdelenie',
@@ -51,6 +52,7 @@ const NOWRAP_BINDING_PREFIXES = [
  */
 const NOWRAP_LABEL_PREFIXES = [
   'источник финансирования',
+  'фкр',
   'сотрудник',
   'период регистрации',
   'подразделение',

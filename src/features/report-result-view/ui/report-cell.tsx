@@ -1,6 +1,7 @@
 import { Typography } from '@mui/material'
 
 import { formatDate } from '@/shared/lib/utils/date'
+import { displayPatternForFormat } from '@/shared/lib/utils/iso-date'
 import { cssVar, palette } from '@/shared/design/tokens'
 
 import type { ReportColumnDto } from '@/pages/reports/report-list/types/report'
@@ -9,7 +10,9 @@ import {
   DATA_FS,
   GREEN_1C,
   HEAD_FS,
+  decimalsOfFormat,
   formatMoney1C,
+  formatNumber1C,
   isDateCell,
   isNumericCell,
   isRightAligned,
@@ -25,20 +28,21 @@ const SUB_LABELS_KOLICHESTVO = new Set(['Кол.', 'Сан.'])
  * (`dd.MM.yyyy`, с временем — если формат содержит часы).
  */
 const formatPeriodValue = (raw: string, col: ReportColumnDto): string => {
-  const pattern = col.format?.includes('HH')
-    ? 'dd.MM.yyyy HH:mm:ss'
-    : 'dd.MM.yyyy'
-  return formatDate(raw, pattern) || raw
+  return formatDate(raw, displayPatternForFormat(col.format)) || raw
 }
 
 /** Стиль текста 1С: данные — #333/11px, выделенные строки — зелёный жирный/13px. */
-const textStyle = (highlight?: boolean, negative?: boolean) => ({
+const textStyle = (
+  highlight?: boolean,
+  negative?: boolean,
+  strong?: boolean
+) => ({
   color: negative
     ? cssVar(palette.pending1cRed)
     : highlight
       ? GREEN_1C
       : cssVar(palette.pendingText1),
-  fontWeight: highlight ? 700 : 400,
+  fontWeight: highlight || strong ? 700 : 400,
   fontSize: highlight ? HEAD_FS : DATA_FS,
   lineHeight: 1.3,
 })
@@ -54,15 +58,19 @@ export const MoneyCell = ({
   negativeRed,
   blankOnZero,
   bold,
+  strong,
   dcIndicator,
   decimals = 2,
+  minDecimals,
 }: {
   value: number
   negativeRed?: boolean
   blankOnZero?: boolean
   bold?: boolean
+  strong?: boolean
   dcIndicator?: boolean
   decimals?: number
+  minDecimals?: number
 }) => {
   if (value === 0 && blankOnZero) {
     return null
@@ -77,7 +85,7 @@ export const MoneyCell = ({
         ? formatMoney1C(0, decimals)
         : `${value < 0 ? 'К' : 'Д'} ${formatMoney1C(Math.abs(value), decimals)}`
   } else {
-    text = formatMoney1C(value, decimals)
+    text = formatNumber1C(value, minDecimals ?? decimals, decimals)
     isNeg = !!negativeRed && value < 0
   }
   return (
@@ -85,7 +93,7 @@ export const MoneyCell = ({
       variant="body2"
       noWrap
       className="text-right tabular-nums"
-      sx={textStyle(bold, isNeg)}
+      sx={textStyle(bold, isNeg, strong)}
     >
       {text}
     </Typography>
@@ -120,6 +128,8 @@ interface ReportCellProps {
    * десятичными знаками, остальные — двумя.
    */
   subLabels?: string[]
+  strong?: boolean
+  preserveIndent?: boolean
 }
 
 /**
@@ -134,6 +144,8 @@ export const ReportCell = ({
   col,
   bold,
   subLabels,
+  strong,
+  preserveIndent,
 }: ReportCellProps) => {
   if (Array.isArray(value)) {
     if (isNumericCell(col)) {
@@ -180,7 +192,7 @@ export const ReportCell = ({
           variant="body2"
           noWrap
           className="text-right tabular-nums"
-          sx={textStyle(bold)}
+          sx={textStyle(bold, false, strong)}
         >
           {text}
         </Typography>
@@ -192,7 +204,10 @@ export const ReportCell = ({
         negativeRed={col.negativeRed}
         blankOnZero={col.blankOnZero}
         bold={bold}
+        strong={strong}
         dcIndicator={col.dcIndicator}
+        decimals={decimalsOfFormat(col.format).max}
+        minDecimals={decimalsOfFormat(col.format).min}
       />
     )
   }
@@ -202,12 +217,21 @@ export const ReportCell = ({
   if (isDateCell(col) && /^\d{4}-\d{2}-\d{2}/.test(text)) {
     text = formatPeriodValue(text, col)
   }
+  const multiline = text.includes('\n')
+  const indented = !!preserveIndent && text.startsWith(' ')
   return (
     <Typography
       variant="body2"
-      noWrap={!bold}
+      noWrap={!multiline && !indented && !bold && !col.wrap}
       className={isRightAligned(col) ? 'text-right' : ''}
-      sx={textStyle(bold)}
+      sx={textStyle(bold, false, strong)}
+      style={
+        multiline
+          ? { whiteSpace: 'pre-line' }
+          : indented
+            ? { whiteSpace: 'pre-wrap' }
+            : undefined
+      }
     >
       {text}
     </Typography>

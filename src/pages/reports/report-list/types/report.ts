@@ -79,6 +79,7 @@ export interface ReportFormSectionDto {
   numberGraphs?: boolean
   /** Номер первой графы секции (1 у дебетовой, продолжение у кредитовой). */
   graphNumberStart?: number
+  fitToWidth?: boolean
 }
 
 /** Подпись бланка («Исполнитель:» — должность/подпись/расшифровка). */
@@ -103,6 +104,7 @@ export interface ReportHeaderBlockDto {
   lines: string[]
   underline: boolean
   caption: string | null
+  placement?: 'BEFORE_TITLE' | 'AFTER_TITLE' | null
 }
 
 /** Официальный бланк (мемориальный ордер): шапка, секции, остатки, подписи. */
@@ -158,6 +160,10 @@ export interface ReportSpreadsheetCellDto {
   rowSpan?: number
   colSpan?: number
   text?: string
+  /** Имя области макета 1С — ключ, по которому значение уходит на сервер. */
+  field?: string
+  /** Клетку заполняет пользователь (в макете 1С — containsValue). */
+  editable?: boolean
   style?: ReportSpreadsheetCellStyleDto
 }
 
@@ -165,6 +171,8 @@ export interface ReportSpreadsheetCellDto {
 export interface ReportSpreadsheetSheetDto {
   code: string
   title: string
+  /** Страница многостраничного раздела: её экземпляры добавляет «Добавить страницу». */
+  mnogostranichnyy?: boolean
   columnWidths: number[]
   rowHeights: number[]
   cells: ReportSpreadsheetCellDto[]
@@ -242,10 +250,19 @@ export interface ReportColumnDto {
    */
   subGroupTitleRu?: string
   subGroupTitleKz?: string
+  headerPathRu?: string[]
+  headerPathKz?: string[]
+  headerPathVertical?: boolean[]
+  verticalTitle?: boolean
   /** Ширина колонки в символах (≈ width × 8px); null ⇒ авто. */
   width?: number
   /** Рендер значения с 1С-признаком сальдо: «Д <abs>» при ≥0, «К <abs>» при <0. */
   dcIndicator?: boolean
+  columnNumber?: string
+  frozen?: boolean
+  wrap?: boolean
+  treeColumn?: boolean
+  verticalAlign?: string
 }
 
 /** Одно допустимое значение параметра (для NUMBER с фиксированным списком). */
@@ -358,12 +375,25 @@ export interface ReportRowDto {
    * индекс первой колонки, где начинаются значения `cells`.
    */
   labelColSpan?: number
+  labelAlign?: string
   /**
    * Цель расшифровки (SCRUM-370 блок В). Отсутствует у большинства строк
    * (итоги, сальдо, заголовки групп) — такая строка не кликабельна, это
    * штатное состояние. Уходит в команду эхом, как есть.
    */
   rowRef?: ReportRowRefDto
+  /**
+   * Правила оформления СТРОКИ — в отличие от `negativeRed`/`blankOnZero`, которые живут на
+   * колонке. `BOLD_GROUP` — счёт-группа: эталон 1С выделяет её жирным, когда в отчёте видны
+   * субсчета («Выделять группы счетов» в условном оформлении типовой ОСВ).
+   */
+  appearance?: string[]
+  /**
+   * Колонки, которые в ЭТОЙ строке рисуются пустыми независимо от значения. Эталон гасит
+   * валютные графы у невалютных счетов; через `blankOnZero` так нельзя — он гасит по
+   * значению и съел бы нулевой остаток валютного счёта.
+   */
+  blankColumns?: string[]
 }
 
 /** Результат формирования отчёта (`/api/reports/{code}/run`). */
@@ -408,6 +438,8 @@ export interface ReportResultDto {
   footerBlock?: ReportFormSignatureDto
   /** Подписи бланка, когда их несколько (приказные формы 4-09 и 4-20 подписывают двое). */
   footerBlocks?: ReportFormSignatureDto[]
+  footerLines?: string[]
+  noteLines?: string[]
   /**
    * Коды измерений-группировок, рисуемых «этажами» (1С-«Ведомость»): их подписи
    * идут стопкой в шапке, а значения — полосами-бэндами по телу (colspan по

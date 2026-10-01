@@ -98,25 +98,27 @@ const EnumValueControl: FC<SingleValueControlProps> = ({
   value,
   onChange,
 }) => {
-  const { t } = useTranslation()
-  const options = column.filterValueOptions ?? []
+  // Тот же автокомплит, что у ссылочного отбора: раньше перечисление рисовалось
+  // нативным <select> — он выбивался из ряда и по ширине (налезал на соседнее поле
+  // «Контрагент»), и по виду (обращение 21.09.2026 по РКО).
+  const options: SelectOption[] = (column.filterValueOptions ?? []).map(
+    (opt) => ({
+      id: opt.value,
+      code: opt.code ?? opt.value,
+      label: opt.label,
+    })
+  )
+  const selected = options.find((o) => o.id === value) ?? null
   return (
-    <select
+    <AutocompleteInput
       data-testid="filter-enum-select"
-      aria-label={t('table.filterValuePlaceholder')}
-      value={typeof value === 'string' ? value : ''}
-      onChange={(e) => {
-        onChange(e.target.value)
+      fullWidth
+      value={selected}
+      options={options}
+      onChange={(opt: SelectOption | null) => {
+        onChange(opt ? String(opt.id) : undefined)
       }}
-      className="h-9 rounded-md border border-ui-04 px-2 text-body2 text-ui-06"
-    >
-      <option value="" />
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
+    />
   )
 }
 

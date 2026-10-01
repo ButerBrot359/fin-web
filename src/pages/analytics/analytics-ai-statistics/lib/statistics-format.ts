@@ -1,4 +1,7 @@
+import { differenceInCalendarDays, parseISO } from 'date-fns'
+
 import type { AiStatisticsMetrics } from '@/entities/analytics'
+import { toIsoDate } from '@/shared/lib/utils/iso-date'
 
 export type MetricUnit = 'count' | 'percent' | 'latency' | 'cost' | 'average'
 export const STATISTICS_METRICS: {
@@ -40,21 +43,13 @@ export function formatStatistic(
   }).format(display)
 }
 
-export function localDate(date: Date): string {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, '0'),
-    String(date.getDate()).padStart(2, '0'),
-  ].join('-')
-}
-
 export function recentPeriod(
   days: number,
   now = new Date()
 ): { from: string; to: string } {
   const from = new Date(now)
   from.setDate(from.getDate() - days + 1)
-  return { from: localDate(from), to: localDate(now) }
+  return { from: toIsoDate(from) ?? '', to: toIsoDate(now) ?? '' }
 }
 
 /** Date-only bucket identifiers represent calendar dates, not UTC instants. */
@@ -81,10 +76,8 @@ export function formatBucket(
 
 export function isValidStatisticsPeriod(from: string, to: string): boolean {
   const valid = (value: string) =>
-    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-    Number.isFinite(Date.parse(value)) &&
-    new Date(value).toISOString().slice(0, 10) === value
+    /^\d{4}-\d{2}-\d{2}$/.test(value) && toIsoDate(value) === value
   if (!valid(from) || !valid(to)) return false
-  const days = (Date.parse(to) - Date.parse(from)) / 86_400_000 + 1
+  const days = differenceInCalendarDays(parseISO(to), parseISO(from)) + 1
   return days >= 1 && days <= 366
 }

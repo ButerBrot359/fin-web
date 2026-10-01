@@ -47,19 +47,18 @@ const contentBelow = (
   element: HTMLElement,
   scroller: HTMLElement | null
 ): number => {
-  const height = element.offsetHeight
-  if (scroller) {
-    const topInContent =
-      element.getBoundingClientRect().top -
-      scroller.getBoundingClientRect().top +
-      scroller.scrollTop
-    return Math.max(0, scroller.scrollHeight - (topInContent + height))
+  const bottom = element.getBoundingClientRect().bottom
+  let lowest = bottom
+  let node: HTMLElement | null = element
+  while (node && node !== scroller && node !== document.body) {
+    let sibling = node.nextElementSibling
+    while (sibling) {
+      lowest = Math.max(lowest, sibling.getBoundingClientRect().bottom)
+      sibling = sibling.nextElementSibling
+    }
+    node = node.parentElement
   }
-  const topInDocument = element.getBoundingClientRect().top + window.scrollY
-  return Math.max(
-    0,
-    document.documentElement.scrollHeight - (topInDocument + height)
-  )
+  return Math.max(0, lowest - bottom)
 }
 
 export interface TableViewportMaxHeight {

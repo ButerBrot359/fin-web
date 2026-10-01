@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { ModuleElementType } from '@/entities/module'
 import type { ModuleSection } from '@/entities/module'
+import { translateUi } from '@/shared/lib/i18n'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
 
 // Импорт напрямую из api-файла, а не из бареля слайса: барель реэкспортирует
@@ -28,6 +29,8 @@ const ADMIN_MODULE_CODE = 'Administrirovanie'
  * @returns секцию для вставки в {@link ModuleItems}, либо `null` — если это не
  *          модуль администрирования или отчётов нет.
  */
+
+const READY_REPORTS_RU = 'Готовые отчёты'
 export function useReadyReportsSection(pageCode: string): ModuleSection | null {
   const { i18n } = useTranslation()
   const isAdmin = pageCode === ADMIN_MODULE_CODE
@@ -61,8 +64,8 @@ export function useReadyReportsSection(pageCode: string): ModuleSection | null {
       }))
 
     return {
-      nameRu: 'Готовые отчёты',
-      nameKz: 'Дайын есептер',
+      nameRu: READY_REPORTS_RU,
+      nameKz: translateUi(READY_REPORTS_RU, 'kz'),
       elements,
     }
   }, [isAdmin, data, i18n.language])

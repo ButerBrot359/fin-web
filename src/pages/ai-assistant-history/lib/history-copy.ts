@@ -1,3 +1,5 @@
+import { localizeDeep } from '@/shared/lib/i18n'
+
 const ru = {
   title: 'История ИИ-помощника',
   shortTitle: 'История чатов',
@@ -21,31 +23,6 @@ const ru = {
   assistant: 'ИИ-помощник',
   unknownTime: 'Время не сохранено',
 }
-const kz: typeof ru = {
-  title: 'ЖИ-көмекші тарихы',
-  shortTitle: 'Чаттар тарихы',
-  chats: 'Диалогтарыңыз',
-  subtitle: 'Сақталған сұрақтар мен жауаптар',
-  empty: 'Диалогтар әлі жоқ',
-  emptyHint:
-    'ЖИ-көмекшіге сұрау жібергеннен кейін хат алмасу осында пайда болады.',
-  choose: 'Диалогты таңдаңыз',
-  chooseHint:
-    'Мұнда жауаптарды қайта оқып, байланысты құжаттарды ашуға болады.',
-  untitled: 'Атаусыз диалог',
-  conversation: 'Сақталған диалог',
-  loading: 'Жүктелуде…',
-  failed: 'Тарихты жүктеу мүмкін болмады',
-  retry: 'Қайталау',
-  more: 'Қосымша диалогтар',
-  earlier: 'Алдыңғы хабарламалар',
-  noMessages: 'Бұл диалогта хабарламалар әлі жоқ',
-  readOnly: 'Сақталған хат алмасу',
-  back: 'Диалогтар тізіміне',
-  user: 'Сіз',
-  assistant: 'ЖИ-көмекші',
-  unknownTime: 'Уақыт сақталмаған',
-}
 export type HistoryCopy = typeof ru
 export const historyCopy = (language: string): HistoryCopy =>
-  /^(?:kz|kk)(?:-|$)/i.test(language) ? kz : ru
+  localizeDeep(ru, language)

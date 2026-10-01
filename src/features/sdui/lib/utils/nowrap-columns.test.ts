@@ -4,6 +4,7 @@ import { isNoWrapColumn } from './nowrap-columns'
 describe('isNoWrapColumn — по биндингу', () => {
   it.each([
     'IstochnikFinansirovaniya',
+    'FKR',
     'Sotrudnik',
     'PeriodRegistratsii',
     'PodrazdelenieOrganizatsii',
@@ -55,6 +56,10 @@ describe('isNoWrapColumn — по подписи', () => {
     ['Whatever', 'Подразделение'],
   ])('биндинг %s + подпись «%s» → без переноса', (binding, label) => {
     expect(isNoWrapColumn(binding, label)).toBe(true)
+  })
+
+  it('«ФКР» — длинное «360/001/045 (За счет субвенций…)» в одну строку', () => {
+    expect(isNoWrapColumn('X', 'ФКР')).toBe(true)
   })
 
   it('регистр и «ё» подписи не важны', () => {

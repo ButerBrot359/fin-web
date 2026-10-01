@@ -10,6 +10,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   onPanelTabClose,
+  onTabDiscardClose,
+  useFormCacheStore,
   useWorkspaceTabsStore,
 } from '@/features/workspace-tabs'
 
@@ -17,6 +19,10 @@ import { WorkspaceTabBar } from './workspace-tab-bar'
 
 vi.mock('@/shared/assets/icons/cross.svg', () => ({
   default: () => null,
+}))
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
 }))
 
 const LocationProbe = () => {
@@ -57,7 +63,7 @@ const renderBar = () =>
     <MemoryRouter initialEntries={['/documents/42']}>
       <WorkspaceTabBar />
       <LocationProbe />
-    </MemoryRouter>,
+    </MemoryRouter>
   )
 
 describe('WorkspaceTabBar: navigateAfterClose — активный таб из стора', () => {
@@ -118,5 +124,62 @@ describe('WorkspaceTabBar: панельные вкладки', () => {
       '/documents/42',
     ])
     unsubscribe()
+  })
+})
+
+describe('WorkspaceTabBar: «Закрыть все»', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+    useFormCacheStore.setState({ cache: {}, pendingActions: {} })
+    useWorkspaceTabsStore.setState({
+      tabs: [formTab, formTab2, panelTab],
+      activeTabId: formTab.id,
+    })
+  })
+  afterEach(cleanup)
+
+  it('при одной вкладке кнопки нет', () => {
+    useWorkspaceTabsStore.setState({ tabs: [formTab], activeTabId: formTab.id })
+    renderBar()
+    expect(screen.queryByTestId('workspace-tabs-close-all')).toBeNull()
+  })
+
+  it('без изменённых форм закрывает все вкладки сразу и уходит на главную', () => {
+    renderBar()
+    fireEvent.click(screen.getByTestId('workspace-tabs-close-all'))
+
+    expect(useWorkspaceTabsStore.getState().tabs).toEqual([])
+    expect(screen.getByTestId('loc').textContent).toBe('/')
+    expect(screen.queryByText('workspaceTabs.closeAllDirtyTitle')).toBeNull()
+  })
+
+  it('с изменённой формой спрашивает; «Отмена» оставляет вкладки', () => {
+    useFormCacheStore.setState({
+      cache: { [formTab2.id]: { values: null, isDirty: true } },
+    })
+    renderBar()
+    fireEvent.click(screen.getByTestId('workspace-tabs-close-all'))
+
+    expect(screen.getByText('workspaceTabs.closeAllDirtyTitle')).toBeTruthy()
+    fireEvent.click(screen.getByText('actions.cancel'))
+
+    expect(useWorkspaceTabsStore.getState().tabs).toHaveLength(3)
+    expect(screen.getByTestId('loc').textContent).toBe('/documents/42')
+  })
+
+  it('с изменённой формой «Закрыть без сохранения» снимает черновик и закрывает все', () => {
+    useFormCacheStore.setState({
+      cache: { [formTab2.id]: { values: null, isDirty: true } },
+    })
+    const discarded: string[] = []
+    const off = onTabDiscardClose((id) => discarded.push(id))
+    renderBar()
+    fireEvent.click(screen.getByTestId('workspace-tabs-close-all'))
+    fireEvent.click(screen.getByText('workspaceTabs.closeAllDirtyConfirm'))
+
+    expect(discarded).toEqual([formTab2.id])
+    expect(useWorkspaceTabsStore.getState().tabs).toEqual([])
+    expect(screen.getByTestId('loc').textContent).toBe('/')
+    off()
   })
 })

@@ -78,22 +78,23 @@ describe('TreasuryExportPage', () => {
     ])
   })
 
-  it('чистый результат по «Выгрузить» → навигация на GET-URL', async () => {
+  it('чистый результат по «Выгрузить» → авторизованное скачивание файла', async () => {
     mockPreview(false)
+    const blobSpy = vi
+      .spyOn(api, 'fetchTreasuryExportBlob')
+      .mockResolvedValue({ data: new Blob(['<xml/>']), headers: {} } as never)
     renderPage('?typeCode=ZayavkaNaRegistratsiyuGPSdelki&id=42')
     await screen.findByText('Заявка AAC00-00007')
     fireEvent.click(screen.getByRole('button', { name: 'Выгрузить' }))
     await waitFor(() => {
-      expect(assignMock).toHaveBeenCalledWith(
-        expect.stringContaining(
-          '/api/document-entries/ZayavkaNaRegistratsiyuGPSdelki/42/treasury-export'
-        )
-      )
+      expect(blobSpy).toHaveBeenCalledWith('ZayavkaNaRegistratsiyuGPSdelki', 42)
     })
+    expect(assignMock).not.toHaveBeenCalled()
   })
 
-  it('hasErrors по «Выгрузить» → нет навигации, показан блок ошибок', async () => {
+  it('hasErrors по «Выгрузить» → файл не запрашивается, показан блок ошибок', async () => {
     mockPreview(true, ['Не указан номер счета банка контрагента!'])
+    const blobSpy = vi.spyOn(api, 'fetchTreasuryExportBlob')
     renderPage('?typeCode=ZayavkaNaRegistratsiyuGPSdelki&id=42')
     await screen.findByText('Заявка AAC00-00007')
     fireEvent.click(screen.getByRole('button', { name: 'Выгрузить' }))
@@ -103,6 +104,7 @@ describe('TreasuryExportPage', () => {
       ).toBeGreaterThan(0)
     })
     expect(assignMock).not.toHaveBeenCalled()
+    expect(blobSpy).not.toHaveBeenCalled()
   })
 
   it('смена документа в URL без перемонтирования страницы триггерит повторный auto-preview', async () => {

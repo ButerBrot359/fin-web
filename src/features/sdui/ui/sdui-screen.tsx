@@ -1,10 +1,10 @@
-import { useEffect, useMemo, type FC } from 'react'
+import { useEffect, useMemo, useRef, type FC } from 'react'
 import { useLocation } from 'react-router-dom'
 import i18n from 'i18next'
 
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { subscribeViewSettingsChanged } from '@/shared/lib/design-settings/design-settings-events'
-import { groupCreateRoute } from '@/shared/lib/router/group-create-route'
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 
 import {
   clearDiscardDraftClose,
@@ -20,6 +20,7 @@ import { useSessionHeartbeat } from '../lib/hooks/use-session-heartbeat'
 import { useTaskWatcher } from '../lib/hooks/use-task-watcher'
 import { useExternalViewRefresh } from '../lib/hooks/use-external-view-refresh'
 import { useExternalPanelRefresh } from '../lib/hooks/use-external-panel-refresh'
+import { useFormSaveHotkey } from '../lib/hooks/use-form-save-hotkey'
 import {
   SduiSessionProvider,
   type SduiSessionValue,
@@ -77,7 +78,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   // маркера обязана переоткрыть сессию (CLOSE → OPEN), а кэши вкладок и
   // dirty-колбэки — различать их. Прочие query-параметры (в т.ч. ?ls= дерева,
   // который сервер меняет REPLACE_URL-эффектом) в ключ не входят.
-  const screenRoute = groupCreateRoute(location.pathname, location.search)
+  const screenRoute = tabRouteKey(location.pathname, location.search)
   const tree = useTreeStore((s) => s.root)
   const reset = useTreeStore((s) => s.reset)
   const dispatch = useSduiDispatch()
@@ -88,6 +89,12 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   useTaskWatcher(formSessionId)
   useExternalViewRefresh(location.pathname + location.search, dispatch, onTab)
   useExternalPanelRefresh()
+  const screenRootRef = useRef<HTMLDivElement>(null)
+  useFormSaveHotkey(screenRootRef)
+  const onTabRef = useRef(onTab)
+  useEffect(() => {
+    onTabRef.current = onTab
+  }, [onTab])
 
   const title = (tree?.props?.title as string | undefined) ?? ''
   useEffect(() => {
@@ -194,6 +201,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       void reopenFormForLanguageChange({
         dispatch,
         route: screenRoute,
+        onOpenTab: (tab) => onTabRef.current?.(tab),
       })
     }
     i18n.on('languageChanged', handler)
@@ -239,6 +247,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   const sessionValue = useMemo<SduiSessionValue>(
     () => ({
       kind: 'root',
+      screenRoute,
       getSession: () => {
         const s = useTreeStore.getState()
         return { formSessionId: s.formSessionId, revision: s.revision }
@@ -283,6 +292,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
           целиком (панели-порталы рендерят те же узлы). display:contents не
           участвует в раскладке. */}
       <div
+        ref={screenRootRef}
         className={
           rastyanutyyKoren
             ? 'flex min-h-0 flex-1 flex-col overflow-y-auto'

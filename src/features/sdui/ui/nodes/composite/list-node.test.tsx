@@ -141,6 +141,14 @@ vi.mock('@tanstack/react-query', () => ({
 import { fetchListPage } from '../../../api/reference-options'
 import { ListNode } from './list-node'
 import type { ViewNode } from '../../../types/view'
+import {
+  SduiSessionProvider,
+  type SduiSessionValue,
+} from '../../../lib/sdui-session-context'
+import {
+  forgetListMemory,
+  useListMemoryStore,
+} from '../../../lib/stores/list-memory-store'
 
 // jsdom не реализует IntersectionObserver (используется для infinite-scroll в list-node).
 class IntersectionObserverStub {
@@ -219,6 +227,63 @@ describe('ListNode — транспорт', () => {
     setSelectionMock.mockReset()
     clearSelectionMock.mockReset()
     dispatchMock.mockReset()
+  })
+
+  it('совпадения строки поиска подсвечены в ячейках — видно, по какой колонке нашлось', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      isLoading: false,
+      data: {
+        pages: [
+          {
+            data: {
+              content: [{ id: 1, Nomer: 'ABZ00-00052' }],
+              last: true,
+              number: 0,
+              totalElements: 1,
+            },
+          },
+        ],
+      },
+    })
+    const node = {
+      ...searchNode,
+      props: { ...searchNode.props, searchable: true },
+      children: [
+        {
+          id: 'col-nomer',
+          type: 'TABLE_COLUMN',
+          props: { header: 'Номер', attributeCode: 'Nomer' },
+        },
+      ],
+    } as unknown as ViewNode
+
+    const { container } = render(<ListNode node={node} />)
+    fireEvent.change(screen.getByPlaceholderText('pageToolbar.search'), {
+      target: { value: '52' },
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400))
+    })
+
+    const marks = container.querySelectorAll('tbody mark')
+    expect(marks).toHaveLength(1)
+    expect(marks[0].textContent).toBe('52')
+  })
+
+  it('поиск стоит правой группой ряда — последним элементом после периода и отборов', () => {
+    const node = {
+      ...searchNode,
+      props: { ...searchNode.props, searchable: true },
+    } as unknown as ViewNode
+    render(<ListNode node={node} />)
+
+    const input = screen.getByPlaceholderText('pageToolbar.search')
+    const ryad = input.closest('div.justify-between')
+    expect(ryad).not.toBeNull()
+    // Поле поиска — в ПОСЛЕДНЕЙ группе ряда: слева период и отборы, справа поиск.
+    expect(ryad?.lastElementChild?.contains(input)).toBe(true)
   })
 
   it('queryKey содержит method и body из source', () => {
@@ -849,7 +914,7 @@ describe('ListNode — 2c-a: воронка колоночного фильтр�
     fireEvent.click(
       within(statusHeader).getByRole('button', { name: 'table.filter' })
     )
-    fireEvent.change(screen.getByTestId('filter-enum-select'), {
+    fireEvent.change(screen.getByTestId('ref-select'), {
       target: { value: 'B' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'table.filterApply' }))
@@ -1504,5 +1569,105 @@ describe('ListNode — дебаунс строки поиска', () => {
     })
 
     expect(searchesSent().filter(Boolean)).toEqual(['Хал'])
+  })
+})
+
+describe('ListNode — поиск переживает уход в карточку и возврат', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+    useListMemoryStore.setState({ entries: {} })
+  })
+
+  const route = '/modules/nalogi/dictionary/KodyStrokDeklaratsii'
+
+  const searchableNode = {
+    id: 'lst',
+    type: 'LIST',
+    props: {
+      searchable: true,
+      source: { url: '/x/search', method: 'POST', body: { filters: [] } },
+    },
+    children: [],
+    actions: [],
+  } as unknown as ViewNode
+
+  const renderInSession = (session: Partial<SduiSessionValue>) =>
+    render(
+      <SduiSessionProvider value={session as SduiSessionValue}>
+        <ListNode node={searchableNode} />
+      </SduiSessionProvider>
+    )
+
+  const lastSearchSent = () =>
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    (useInfiniteQuery.mock.calls as { 0: { queryKey: unknown[] } }[]).at(
+      -1
+    )?.[0].queryKey[5]
+
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReset()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({ ...baseQueryResult, isLoading: false })
+  })
+
+  it('после повторного монтирования экрана строка поиска и запрос по ней восстановлены', () => {
+    vi.useFakeTimers()
+    const first = renderInSession({ kind: 'root', screenRoute: route })
+    fireEvent.change(screen.getByPlaceholderText('pageToolbar.search'), {
+      target: { value: '341-1-17-8' },
+    })
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+    first.unmount()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockClear()
+
+    renderInSession({ kind: 'root', screenRoute: route })
+
+    expect(screen.getByPlaceholderText('pageToolbar.search')).toHaveValue(
+      '341-1-17-8'
+    )
+    expect(lastSearchSent()).toBe('341-1-17-8')
+  })
+
+  it('очищенный пользователем поиск при возврате остаётся пустым', () => {
+    const first = renderInSession({ kind: 'root', screenRoute: route })
+    const input = screen.getByPlaceholderText('pageToolbar.search')
+    fireEvent.change(input, { target: { value: '341' } })
+    fireEvent.change(input, { target: { value: '' } })
+    first.unmount()
+
+    renderInSession({ kind: 'root', screenRoute: route })
+
+    expect(screen.getByPlaceholderText('pageToolbar.search')).toHaveValue('')
+  })
+
+  it('после закрытия вкладки списка поиск не восстанавливается', () => {
+    const first = renderInSession({ kind: 'root', screenRoute: route })
+    fireEvent.change(screen.getByPlaceholderText('pageToolbar.search'), {
+      target: { value: '341' },
+    })
+    first.unmount()
+    forgetListMemory(route)
+
+    renderInSession({ kind: 'root', screenRoute: route })
+
+    expect(screen.getByPlaceholderText('pageToolbar.search')).toHaveValue('')
+  })
+
+  it('список панели без маршрута экрана поиск не запоминает', () => {
+    const first = renderInSession({ kind: 'panel' })
+    fireEvent.change(screen.getByPlaceholderText('pageToolbar.search'), {
+      target: { value: '341' },
+    })
+    first.unmount()
+
+    renderInSession({ kind: 'panel' })
+
+    expect(screen.getByPlaceholderText('pageToolbar.search')).toHaveValue('')
+    expect(useListMemoryStore.getState().entries).toEqual({})
   })
 })

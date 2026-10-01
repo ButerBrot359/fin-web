@@ -14,9 +14,10 @@ import { formatReportTitle } from '../lib/format-title'
 import { FormView } from './form-view'
 import { SpreadsheetView } from './spreadsheet-view'
 import { LedgerTable } from './ledger-table'
-import { TreeTable } from './tree-table'
+import { TreeTable, type ReportRowClickZone } from './tree-table'
 import { ReportHeaderBlocks } from './report-header-blocks'
 import { ReportSignatures } from './report-signatures'
+import { ReportNoteLines } from './report-note-lines'
 
 /** Настройки вкладки «Оформление» (проброс из панели настроек отчёта). */
 export interface ReportResultAppearance {
@@ -42,13 +43,26 @@ interface ReportResultViewProps {
   onRowDoubleClick?: (
     row: ReportRowDto,
     ancestors: ReportRowDto[],
-    event: ReactMouseEvent
+    event: ReactMouseEvent,
+    zone: ReportRowClickZone
   ) => void
+  /** Значения клеток бланка, вписанные пользователем (layout=FORM с табличным документом). */
+  blankValues?: Record<string, string>
+  /** Изменение клетки бланка; отсутствие ⇒ бланк только для чтения. */
+  onBlankValueChange?: (field: string, value: string) => void
+  /** Имя области выделенной клетки бланка — источник расшифровки. */
+  vybrannayaOblast?: string | null
+  /** Клик по клетке бланка. */
+  onVyborOblasti?: (oblast: string | null) => void
+  /** Активная страница бланка и её выбор — нужны командам очистки страницы. */
+  aktivnayaStranitsa?: number
+  onVyborStranitsy?: (indeks: number) => void
   /** Правый клик по строке дерева — те же действия, что по двойному клику. */
   onRowContextMenu?: (
     row: ReportRowDto,
     ancestors: ReportRowDto[],
-    event: ReactMouseEvent
+    event: ReactMouseEvent,
+    zone: ReportRowClickZone
   ) => void
 }
 
@@ -67,6 +81,12 @@ export const ReportResultView = ({
   onDrilldown,
   onRowDoubleClick,
   onRowContextMenu,
+  blankValues,
+  onBlankValueChange,
+  vybrannayaOblast,
+  onVyborOblasti,
+  aktivnayaStranitsa,
+  onVyborStranitsy,
 }: ReportResultViewProps) => {
   // Скрываем колонки, выключенные настройками (показатели/группировка), и —
   // когда «Выделять отрицательные» выключено — гасим negativeRed на колонках
@@ -90,11 +110,27 @@ export const ReportResultView = ({
   const isLedger = result.layout === 'LEDGER'
   // Гос-бланк (М-44): титул и период центрируются над таблицей, как в 1С.
   const isBlank = !!result.headerBlocks && result.headerBlocks.length > 0
+  const blocksBeforeTitle = (result.headerBlocks ?? []).filter(
+    (b) => b.placement !== 'AFTER_TITLE'
+  )
+  const blocksAfterTitle = (result.headerBlocks ?? []).filter(
+    (b) => b.placement === 'AFTER_TITLE'
+  )
 
   // Утверждённый бланк, снятый с макета 1С, рисуется как табличный документ —
   // ровно тот же, что уходит в печать.
   if (result.spreadsheet && result.spreadsheet.sheets.length > 0) {
-    return <SpreadsheetView spreadsheet={result.spreadsheet} />
+    return (
+      <SpreadsheetView
+        spreadsheet={result.spreadsheet}
+        blankValues={blankValues}
+        onBlankValueChange={onBlankValueChange}
+        vybrannayaOblast={vybrannayaOblast}
+        onVyborOblasti={onVyborOblasti}
+        aktivnayaStranitsa={aktivnayaStranitsa}
+        onVyborStranitsy={onVyborStranitsy}
+      />
+    )
   }
 
   // Официальный бланк (мемориальный ордер) — своя шапка, заголовок не нужен.
@@ -104,8 +140,8 @@ export const ReportResultView = ({
 
   return (
     <div className="flex flex-col gap-1">
-      {result.headerBlocks && result.headerBlocks.length > 0 && (
-        <ReportHeaderBlocks blocks={result.headerBlocks} />
+      {blocksBeforeTitle.length > 0 && (
+        <ReportHeaderBlocks blocks={blocksBeforeTitle} />
       )}
       {result.organizationTitle && (
         <Typography
@@ -150,6 +186,9 @@ export const ReportResultView = ({
           {line}
         </Typography>
       ))}
+      {blocksAfterTitle.length > 0 && (
+        <ReportHeaderBlocks blocks={blocksAfterTitle} />
+      )}
       <div className="mt-2">
         {isLedger ? (
           <LedgerTable
@@ -171,6 +210,10 @@ export const ReportResultView = ({
       {/* Подписей у приказного бланка может быть несколько (казначейство и учреждение):
           список главнее одиночной подписи, как и в печати. Сторона `side` раскладывает их
           в две колонки — слева казначейство, справа учреждение (макет формы 4-20). */}
+      <ReportNoteLines
+        lines={result.footerLines}
+        testId="report-footer-lines"
+      />
       <ReportSignatures
         signatures={
           result.footerBlocks?.length
@@ -180,6 +223,7 @@ export const ReportResultView = ({
               : []
         }
       />
+      <ReportNoteLines lines={result.noteLines} />
     </div>
   )
 }

@@ -3,12 +3,15 @@ import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
+import { HighlightedText } from '@/shared/ui/highlight/highlighted-text'
 
 /** Ширина раскрывателя — плейсхолдер той же ширины держит текст строк без потомков в колонке. */
 const EXPANDER_WIDTH = 18
 
 export interface ListHierarchyCellProps {
   text: string
+  /** Строка поиска — её вхождения подсвечиваются в тексте узла. */
+  search?: string
   /** Глубина от корня выдачи (`_level`), корень = 0. */
   level: number
   /** Отступ на уровень — `props.indentPerLevel` колонки (контракт §8.3). */
@@ -29,6 +32,7 @@ export interface ListHierarchyCellProps {
 // состояние, не переключатель (§8.5): шлём инверсию текущего серверного.
 export const ListHierarchyCell: FC<ListHierarchyCellProps> = ({
   text,
+  search,
   level,
   indentPerLevel,
   icon: Icon,
@@ -69,7 +73,7 @@ export const ListHierarchyCell: FC<ListHierarchyCellProps> = ({
         ))}
       {Icon ? <Icon aria-hidden="true" className="h-4 w-4 shrink-0" /> : null}
       <Typography variant="body2" noWrap className="text-ui-06">
-        {text}
+        <HighlightedText text={text} query={search} />
       </Typography>
     </span>
   )

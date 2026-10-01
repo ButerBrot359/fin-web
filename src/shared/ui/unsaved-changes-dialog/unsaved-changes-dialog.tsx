@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import CrossIcon from '@/shared/assets/icons/cross.svg'
 import { Button } from '@/shared/ui/buttons'
+import { QUESTION_Z } from '@/shared/lib/utils/overlay-z-index'
 import { cssVar, shadows } from '@/shared/design/tokens'
 
 interface UnsavedChangesDialogProps {
@@ -23,6 +24,7 @@ export const UnsavedChangesDialog = ({
   return (
     <Dialog
       open={open}
+      style={{ zIndex: QUESTION_Z }}
       onClose={onCancel}
       slotProps={{
         paper: {

@@ -44,7 +44,7 @@ describe('SpreadsheetView — табличный документ бланка',
   it('первая страница рисуется с оформлением бланка', () => {
     render(<SpreadsheetView spreadsheet={dokument} />)
 
-    const yacheyka = screen.getByText('Форма 200.00')
+    const yacheyka = screen.getByText('Форма 200.00').closest('td')!
     expect(yacheyka.getAttribute('colspan')).toBe('2')
     expect(yacheyka.style.backgroundColor).toBe('rgb(255, 0, 0)')
     expect(yacheyka.style.color).toBe('rgb(255, 255, 255)')
@@ -61,6 +61,72 @@ describe('SpreadsheetView — табличный документ бланка',
     expect(vtoraya[2].textContent).toBe('ИИН')
   })
 
+  it('подпись без переноса выступает из клетки в сторону выравнивания, как в 1С', () => {
+    const dokumentSPodpisyu: ReportSpreadsheetDto = {
+      sheets: [
+        {
+          code: 'Страница 1',
+          title: 'Страница 1',
+          columnWidths: [20, 20],
+          rowHeights: [16],
+          cells: [
+            {
+              row: 0,
+              column: 1,
+              text: 'первоначальная  ',
+              style: { align: 'right' },
+            },
+          ],
+        },
+      ],
+    }
+
+    render(<SpreadsheetView spreadsheet={dokumentSPodpisyu} />)
+
+    const tekst = screen.getByText('первоначальная', { exact: false })
+    const sloy = tekst.parentElement!
+    expect(tekst.style.whiteSpace).toBe('pre')
+    expect(sloy.style.position).toBe('absolute')
+    expect(sloy.style.justifyContent).toBe('flex-end')
+    expect(sloy.style.pointerEvents).toBe('none')
+    expect(tekst.closest('td')!.style.position).toBe('relative')
+  })
+
+  it('шрифт клетки ужат до ширины текста 1С — подписи переносятся там же, где в 1С', () => {
+    const dokumentSoShriftom: ReportSpreadsheetDto = {
+      sheets: [
+        {
+          code: 'Страница 1',
+          title: 'Страница 1',
+          columnWidths: [120],
+          rowHeights: [16],
+          cells: [
+            {
+              row: 0,
+              column: 0,
+              text: 'налогового агента/Ф.И.О.',
+              style: { fontSize: 10 },
+            },
+          ],
+        },
+      ],
+    }
+
+    render(<SpreadsheetView spreadsheet={dokumentSoShriftom} />)
+
+    expect(
+      screen.getByText('налогового агента/Ф.И.О.').closest('td')!.style.fontSize
+    ).toBe('9.4pt')
+  })
+
+  it('ширина листа равна сумме колонок — длинная подпись не раздвигает сетку', () => {
+    const { container } = render(<SpreadsheetView spreadsheet={dokument} />)
+
+    const tablitsa = container.querySelector('table')!
+    expect(tablitsa.style.tableLayout).toBe('fixed')
+    expect(tablitsa.style.width).toBe('180px')
+  })
+
   it('страницы переключаются, как в списке страниц 1С', () => {
     render(<SpreadsheetView spreadsheet={dokument} />)
 
@@ -75,5 +141,133 @@ describe('SpreadsheetView — табличный документ бланка',
     )
 
     expect(container.querySelector('table')).toBeNull()
+  })
+
+  it('клетка ввода бланка редактируется, изменение уходит наружу', () => {
+    const dokumentSVvodom: ReportSpreadsheetDto = {
+      sheets: [
+        {
+          code: 'Страница 1',
+          title: 'Страница 1',
+          columnWidths: [80],
+          rowHeights: [20],
+          cells: [
+            {
+              row: 0,
+              column: 0,
+              text: '',
+              field: 'НомерУведомления',
+              editable: true,
+            },
+          ],
+        },
+      ],
+    }
+    const izmeneniya: [string, string][] = []
+
+    render(
+      <SpreadsheetView
+        spreadsheet={dokumentSVvodom}
+        blankValues={{}}
+        onBlankValueChange={(field, value) => {
+          izmeneniya.push([field, value])
+        }}
+      />
+    )
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '42' } })
+
+    expect(izmeneniya).toEqual([['НомерУведомления', '42']])
+  })
+
+  it('без обработчика бланк только для чтения — полей ввода нет', () => {
+    const { container } = render(<SpreadsheetView spreadsheet={dokument} />)
+
+    expect(container.querySelector('input')).toBeNull()
+  })
+
+  it('клик по клетке отдаёт имя её области — по нему строится расшифровка', () => {
+    const dokumentSOblastyu: ReportSpreadsheetDto = {
+      sheets: [
+        {
+          code: 'Страница 1',
+          title: 'Страница 1',
+          columnWidths: [80, 80],
+          rowHeights: [20],
+          cells: [
+            { row: 0, column: 0, text: '100', field: 's_200_00_001_1' },
+            { row: 0, column: 1, text: 'без области' },
+          ],
+        },
+      ],
+    }
+    const vybrano: (string | null)[] = []
+
+    render(
+      <SpreadsheetView
+        spreadsheet={dokumentSOblastyu}
+        onVyborOblasti={(oblast: string | null) => {
+          vybrano.push(oblast)
+        }}
+      />
+    )
+    fireEvent.click(screen.getByText('100'))
+    fireEvent.click(screen.getByText('без области'))
+
+    expect(vybrano).toEqual(['s_200_00_001_1', null])
+  })
+
+  it('очищенная область показывается пустой и без обработчика ввода', () => {
+    const dokumentSOblastyu: ReportSpreadsheetDto = {
+      sheets: [
+        {
+          code: 'Страница 1',
+          title: 'Страница 1',
+          columnWidths: [80],
+          rowHeights: [20],
+          cells: [{ row: 0, column: 0, text: '100', field: 's_200_00_001_1' }],
+        },
+      ],
+    }
+
+    render(
+      <SpreadsheetView
+        spreadsheet={dokumentSOblastyu}
+        blankValues={{ s_200_00_001_1: '' }}
+      />
+    )
+
+    expect(screen.queryByText('100')).toBeNull()
+  })
+
+  it('список страниц плоский, сворачиваются только экземпляры многостраничного раздела', () => {
+    const list = (title: string, mnogostranichnyy = false) => ({
+      code: title,
+      title,
+      mnogostranichnyy,
+      columnWidths: [40],
+      rowHeights: [20],
+      cells: [{ row: 0, column: 0, text: title }],
+    })
+    const dokument: ReportSpreadsheetDto = {
+      sheets: [
+        list('Страница 1'),
+        list('200.02 стр.1'),
+        list('200.03 стр.1', true),
+        list('200.03 стр.1 (2)', true),
+      ],
+    }
+
+    render(<SpreadsheetView spreadsheet={dokument} />)
+
+    // «Страница 1» в списке две: страница самой формы и первый экземпляр приложения 3.
+    expect(screen.getAllByRole('button', { name: 'Страница 1' })).toHaveLength(
+      2
+    )
+    expect(screen.getByRole('button', { name: '200.02 стр.1' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '▾ 200.03 стр.1' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Страница 2' })).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: '200.03 стр.1 (2)' })
+    ).toBeNull()
   })
 })

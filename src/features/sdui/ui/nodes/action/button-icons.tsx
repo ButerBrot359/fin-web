@@ -76,6 +76,9 @@ const BUTTON_ICON_MAP: Record<string, ReactNode> = {
   'related-hierarchy': relatedHierarchyIcon,
   dtkt: figmaIcons['debet-kredit'],
   copy: figmaIcons.copy,
+  'check-all': figmaIcons['check-all'],
+  'uncheck-all': figmaIcons['uncheck-all'],
+  sorting: figmaIcons.sorting,
 }
 
 /** Иконка по имени или null для неизвестного (кнопка деградирует до текста). */

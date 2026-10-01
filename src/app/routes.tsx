@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 
 import { MainPage } from '@/pages/main'
 
@@ -28,6 +28,10 @@ const UniversalDomainEntryPage = lazyNamed(
 const TreasuryExportPage = lazyNamed(
   () => import('@/features/treasury-export'),
   'TreasuryExportPage'
+)
+const SwiftExportPage = lazyNamed(
+  () => import('@/features/swift-export'),
+  'SwiftExportPage'
 )
 const AuditLogPage = lazyNamed(
   () => import('@/pages/audit-log'),
@@ -98,11 +102,20 @@ export const AppRoutes = () => {
             path="/admin/design-constructor"
             element={<DesignConstructorPage />}
           />
+          {/* Конструктор меню (SCRUM-426) живёт вкладкой в конструкторе дизайна;
+              старый адрес (и пункт меню «Настройка меню» из сида бэка) ведёт туда. */}
+          <Route
+            path="/admin/menu-settings"
+            element={
+              <Navigate to="/admin/design-constructor?tab=menu" replace />
+            }
+          />
           {/*
             Выгрузка документов в казначейство (SCRUM-265): SDUI-эффект
             navigate ведёт сюда с ?typeCode&id — легаси-страница вне SDUI.
           */}
           <Route path="/treasury-export" element={<TreasuryExportPage />} />
+          <Route path="/swift-export" element={<SwiftExportPage />} />
           <Route path="/modules/:pageCode" element={<ModulePage />} />
           {/*
             SCRUM-45: плоские ссылки с бэка /information-registers/:typeCode…

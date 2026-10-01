@@ -8,6 +8,7 @@ const col = (code1C: string, code = ''): DocumentAttribute =>
 describe('isNoWrapColumn', () => {
   it.each([
     'ИсточникФинансирования',
+    'ФКР',
     'Сотрудник',
     'ПериодРегистрации',
     'ПодразделениеОрганизации',
@@ -41,6 +42,7 @@ describe('isNoWrapColumn', () => {
   it('без 1С-имени опознаётся по транслитерированному code', () => {
     expect(isNoWrapColumn(col('', 'istochnikFinansirovaniya'))).toBe(true)
     expect(isNoWrapColumn(col('', 'OtrabotanoDney'))).toBe(true)
+    expect(isNoWrapColumn(col('', 'FKR'))).toBe(true)
   })
 
   it('остальные колонки ТЧ переносят текст как прежде', () => {

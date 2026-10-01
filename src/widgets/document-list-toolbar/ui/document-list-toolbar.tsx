@@ -6,6 +6,7 @@ import type { DocumentEntry } from '@/entities/document-entry'
 import { useDocumentType } from '@/entities/document-type'
 
 import { apiService } from '@/shared/api/api'
+import { withNewFormInstance } from '@/shared/lib/router/form-instance-route'
 import type { ApiResponse } from '@/shared/types/api.types'
 import CopyDocIcon from '@/shared/assets/icons/copy-doc.svg'
 import DebetKreditIcon from '@/shared/assets/icons/debet-kredit.svg'
@@ -14,7 +15,6 @@ import SearchIcon from '@/shared/assets/icons/search.svg'
 import { Button, DropdownButton } from '@/shared/ui/buttons'
 import { SearchInput } from '@/shared/ui/inputs'
 import { SelectOperationDialog } from '@/shared/ui/select-operation-dialog'
-import { markFreshFormInstance } from '@/features/workspace-tabs'
 
 import { useDocumentEntryPrint } from '@/entities/document-entry'
 import { PrintDropdownButton } from '@/widgets/document-form-toolbar'
@@ -122,8 +122,7 @@ export const DocumentListToolbar = ({
   // маршрута (свой на сервере и снимок вкладки) снимается, иначе новый документ открылся бы
   // с чужими значениями. Владелец формы (SDUI) слушает реестр сам — прямой связи нет.
   const goToNewDocument = (route: string) => {
-    markFreshFormInstance(route)
-    void navigate(route)
+    void navigate(withNewFormInstance(route))
   }
 
   const handleSelectOperation = (operationCode: string) => {

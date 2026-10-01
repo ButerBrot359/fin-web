@@ -1,13 +1,12 @@
 import {
   endOfMonth,
   endOfYear,
-  format,
-  isValid,
-  parseISO,
   startOfMonth,
   startOfYear,
   subYears,
 } from 'date-fns'
+
+import { toIsoDate } from '@/shared/lib/utils/iso-date'
 
 import type { AnalyticsParameter } from '@/entities/analytics'
 
@@ -15,9 +14,6 @@ import type {
   AnalyticsDateRangeValue,
   AnalyticsParamValues,
 } from '../types/params'
-
-/** Формат, в котором даты уходят на бэкенд и хранятся в значениях панели. */
-export const ISO_DATE = 'yyyy-MM-dd'
 
 /** Макросы `defaultValue`, которые раскрывает клиент. */
 const MACROS = new Map<string, (now: Date) => Date>([
@@ -30,21 +26,11 @@ const MACROS = new Map<string, (now: Date) => Date>([
   ['@endOfPrevYear', (now) => endOfYear(subYears(now, 1))],
 ])
 
-/** Дата в `yyyy-MM-dd`; всё, что не разбирается как дата, даёт null. */
-export const toIsoDate = (value: unknown): string | null => {
-  if (value == null || value === '') return null
-  if (value instanceof Date)
-    return isValid(value) ? format(value, ISO_DATE) : null
-  if (typeof value !== 'string') return null
-  const parsed = parseISO(value)
-  return isValid(parsed) ? format(parsed, ISO_DATE) : null
-}
-
 /** Раскрывает макрос в дату; значение-не-макрос возвращается как есть. */
 export const resolveMacro = (value: unknown, now = new Date()): unknown => {
   if (typeof value !== 'string' || !value.startsWith('@')) return value
   const macro = MACROS.get(value)
-  return macro ? format(macro(now), ISO_DATE) : value
+  return macro ? toIsoDate(macro(now)) : value
 }
 
 /** Приводит `defaultValue` любого вида к паре дат периода. */

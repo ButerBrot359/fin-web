@@ -1,5 +1,7 @@
 import { AxiosError } from 'axios'
 
+import i18n from 'i18next'
+
 /**
  * Сбой ТРАНСПОРТА — осмысленного ответа бэкенда нет вообще:
  *  - `timeout`  — сработал клиентский таймаут axios (ECONNABORTED/ETIMEDOUT);
@@ -17,18 +19,18 @@ export type ApiTransportErrorKind = 'timeout' | 'network' | 'gateway'
 // Сообщение технического уровня — для консоли и для мест, которые читают
 // `error.message` напрямую. Пользовательский текст с рекомендацией даёт вызывающий
 // код через i18n (см. use-document-entry-actions).
-const KIND_MESSAGES: Record<ApiTransportErrorKind, string> = {
-  timeout: 'Превышено время ожидания ответа сервера',
-  network: 'Соединение с сервером прервано',
-  gateway: 'Шлюз разорвал соединение, не дождавшись ответа сервера',
-}
+const KIND_MESSAGE_KEYS = {
+  timeout: 'errors.transport.timeout',
+  network: 'errors.transport.network',
+  gateway: 'errors.transport.gateway',
+} as const satisfies Record<ApiTransportErrorKind, string>
 
 export class ApiTransportError extends Error {
   readonly kind: ApiTransportErrorKind
   readonly status?: number
 
   constructor(kind: ApiTransportErrorKind, status?: number) {
-    super(KIND_MESSAGES[kind])
+    super(i18n.t(KIND_MESSAGE_KEYS[kind]))
     this.name = 'ApiTransportError'
     this.kind = kind
     this.status = status

@@ -49,6 +49,16 @@ describe('targetBinding', () => {
       })
     ).toBeNull()
   })
+
+  it('REPORT_CELL → binding сетки отчёта (tableCode у цели нет)', () => {
+    expect(
+      targetBinding({
+        ...base,
+        target: { kind: 'REPORT_CELL', pokazatelId: 4501, indeks: 0 },
+        attributeCode: null,
+      })
+    ).toBe('ReportSheet')
+  })
 })
 
 describe('subtreeHasBinding', () => {

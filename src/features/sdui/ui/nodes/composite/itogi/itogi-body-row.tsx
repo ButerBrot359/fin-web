@@ -6,7 +6,10 @@ import {
   type ItogiBodyCell,
   type ItogiRow,
 } from '../../../../lib/utils/itogi-columns'
-import { itogiRowText } from '../../../../lib/utils/itogi-row-style'
+import {
+  itogiRowBackground,
+  itogiRowText,
+} from '../../../../lib/utils/itogi-row-style'
 import { ITOGI_CELL_SX } from './itogi-cell-sx'
 import { ItogiTreeToggle } from './itogi-tree-toggle'
 
@@ -15,7 +18,6 @@ export const ITOGI_LEVEL_INDENT = 12
 interface ItogiBodyRowProps {
   row: ItogiRow
   cells: ItogiBodyCell[]
-  background?: string
   expandable: boolean
   expanded: boolean
   onToggle: (rowId: string) => void
@@ -24,14 +26,13 @@ interface ItogiBodyRowProps {
 export const ItogiBodyRow: FC<ItogiBodyRowProps> = ({
   row,
   cells,
-  background,
   expandable,
   expanded,
   onToggle,
 }) => {
   const text = itogiRowText(row.__stil)
   return (
-    <TableRow sx={{ backgroundColor: background }}>
+    <TableRow sx={{ backgroundColor: itogiRowBackground(row.__stil) }}>
       {cells.map(({ column, colSpan, tree }) => {
         const value = formatItogiValue(row[column.binding], column)
         return (

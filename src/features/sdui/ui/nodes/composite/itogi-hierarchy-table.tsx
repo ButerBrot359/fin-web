@@ -23,10 +23,6 @@ import {
 } from '../../../lib/utils/itogi-columns'
 import { buildItogiHeader } from '../../../lib/utils/itogi-header-model'
 import { itogiParentIds, visibleItogiRows } from '../../../lib/utils/itogi-tree'
-import {
-  parseRowAppearance,
-  resolveRowBackground,
-} from '../../../lib/utils/row-appearance'
 import { NodeRenderer } from '../../node-renderer'
 import { ItogiHeader } from './itogi/itogi-header'
 import { ItogiBodyRow } from './itogi/itogi-body-row'
@@ -56,10 +52,6 @@ export const ItogiHierarchyTable: FC<NodeProps> = ({ node }) => {
   const toolbarNodes = useMemo(
     () => (node.children ?? []).filter((c) => !COLUMN_TYPES.has(c.type)),
     [node.children]
-  )
-  const rowAppearance = useMemo(
-    () => parseRowAppearance(node.props),
-    [node.props]
   )
 
   const rows = useMemo<ItogiRow[]>(
@@ -137,7 +129,6 @@ export const ItogiHierarchyTable: FC<NodeProps> = ({ node }) => {
                 key={row.rowId}
                 row={row}
                 cells={itogiBodyCells(columns, layout, row)}
-                background={resolveRowBackground(rowAppearance, row)}
                 expandable={parents.has(row.rowId)}
                 expanded={open.has(row.rowId)}
                 onToggle={toggle}

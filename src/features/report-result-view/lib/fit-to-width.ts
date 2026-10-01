@@ -9,6 +9,7 @@ const WRAP_MIN_CHARS = 13
 
 export interface FitToWidthLayout {
   widths: string[]
+  width: number
   minWidth: number
 }
 
@@ -54,5 +55,5 @@ export const fitToWidthLayout = (
         : mx
     }, 0)
   )
-  return { widths, minWidth }
+  return { widths, width: total * charPx, minWidth }
 }

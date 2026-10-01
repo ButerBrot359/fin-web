@@ -197,8 +197,12 @@ const SectionTable = ({
     : null
   return (
     <table
-      className="w-full table-fixed border-collapse bg-white"
-      style={fit ? { minWidth: fit.minWidth } : undefined}
+      className={`${fit ? 'mx-auto' : 'w-full'} table-fixed border-collapse bg-white`}
+      style={
+        fit
+          ? { width: fit.width, maxWidth: '100%', minWidth: fit.minWidth }
+          : undefined
+      }
     >
       <colgroup>
         {cols.map((c, i) => (

@@ -98,7 +98,11 @@ describe('FormView — бланк по ширине страницы (fitToWidth
     const cols = container.querySelectorAll('col')
     expect(cols[0].style.width).toMatch(/%$/)
     expect(cols[1].style.width).toMatch(/%$/)
-    expect(container.querySelector('table')?.style.minWidth).not.toBe('')
+    const table = container.querySelector('table')
+    expect(table?.style.width).toBe('392px')
+    expect(table?.style.maxWidth).toBe('100%')
+    expect(table?.style.minWidth).not.toBe('')
+    expect(table?.classList.contains('w-full')).toBe(false)
   })
 
   it('без флага ширины остаются в пикселях', () => {

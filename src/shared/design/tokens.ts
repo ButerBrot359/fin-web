@@ -58,6 +58,8 @@ export const palette = {
   // тёмно-зелёный групп/итогов и красный отрицательных значений.
   pending1cGreen: t('--pending-1c-green', 'rgb(0,63,47)'),
   pending1cRed: t('--pending-1c-red', 'rgb(255,0,0)'),
+  pending1cHeaderBg: t('--pending-1c-header-bg', '#d6e5cb'),
+  pending1cGridLine: t('--pending-1c-grid-line', '#acc8bd'),
   // LiveKit-тема звонилки: полупрозрачная рамка контролов.
   pendingLkBorder: t('--pending-lk-border', 'rgba(255, 255, 255, 0.08)'),
   // Функциональные цвета liveness-вспышки face-auth (не дизайн-система):

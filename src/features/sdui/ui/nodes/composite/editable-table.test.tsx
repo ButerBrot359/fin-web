@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { Profiler } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
@@ -244,5 +245,39 @@ describe('EditableTable — поиск', () => {
     const rows = document.querySelectorAll('tbody tr')
     expect(rows).toHaveLength(2)
     expect(rows[1].classList.contains('Mui-selected')).toBe(true)
+  })
+})
+
+describe('EditableTable — поиск без бесконечной перерисовки', () => {
+  it('после ввода запроса таблица успокаивается, а не перерисовывается по кругу', async () => {
+    state.TMZ = [
+      { rowId: 'r1', Nomen: '2Алдигурова Фируза Жумановна' },
+      { rowId: 'r2', Nomen: '3Андосов Нурлан Мурзахметович' },
+    ]
+    Element.prototype.scrollIntoView = vi.fn()
+    let commits = 0
+    render(
+      <Profiler
+        id="tmz"
+        onRender={() => {
+          commits++
+        }}
+      >
+        <EditableTable
+          node={makeNode({})}
+          columns={columnNodes.map(nodeToTableColumnDef)}
+        />
+      </Profiler>
+    )
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    fireEvent.change(screen.getByPlaceholderText('Поиск'), {
+      target: { value: '2алдигурова' },
+    })
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    const posleVvoda = commits
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    expect(commits).toBe(posleVvoda)
   })
 })

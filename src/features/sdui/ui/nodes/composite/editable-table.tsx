@@ -108,10 +108,11 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   // же набором, который реально отрисован, иначе индексы разъезжаются с экраном.
   const otobrannyeRows = useExternalRowFilter(node, sync.rows)
 
-  const search = useTableSearch(
-    otobrannyeRows,
-    visibleColumns.map((c) => ({ id: c.id, binding: c.binding }))
+  const searchColumns = useMemo(
+    () => visibleColumns.map((c) => ({ id: c.id, binding: c.binding })),
+    [visibleColumns]
   )
+  const search = useTableSearch(otobrannyeRows, searchColumns)
   const visibleRows = search.rows
 
   // Позиция видимой строки в ПОЛНОМ массиве: `selectedIndex` и `row.index`

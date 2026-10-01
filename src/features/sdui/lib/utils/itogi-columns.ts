@@ -39,6 +39,8 @@ export interface ItogiBodyCell {
 
 const NUMERIC_TYPES = new Set(['INTEGER', 'DECIMAL', 'NUMBER'])
 
+const ACROSS_TREE = new Set(['FizicheskoeLitso', 'VidNachisleniya', 'Itogo'])
+
 const FROM_NUMBER_COLUMN = new Set(['VidNachisleniya', 'Itogo'])
 
 export function extractItogiColumns(
@@ -80,11 +82,12 @@ export function itogiBodyCells(
   row: ItogiRow
 ): ItogiBodyCell[] {
   const { numberIndex, treeIndex, rightIndex } = layout
-  const spanRight = rightIndex >= 0 && isEmpty(row[columns[rightIndex].binding])
+  const gruppirovka = row.__gruppirovka ?? ''
+  const spanRight = rightIndex >= 0 && ACROSS_TREE.has(gruppirovka)
   const spanNumber =
     numberIndex >= 0 &&
     isEmpty(row[columns[numberIndex].binding]) &&
-    FROM_NUMBER_COLUMN.has(row.__gruppirovka ?? '')
+    FROM_NUMBER_COLUMN.has(gruppirovka)
 
   const cells: ItogiBodyCell[] = []
   columns.forEach((column, index) => {

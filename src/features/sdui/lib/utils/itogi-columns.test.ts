@@ -142,7 +142,7 @@ describe('itogiBodyCells', () => {
     )
   })
 
-  it('«Удержания…» с пустой правой частью занимает обе колонки дерева', () => {
+  it('сотрудник и должность — без объединения, даже «Удержания…» с пустой должностью', () => {
     expect(
       spans(
         row({
@@ -151,7 +151,51 @@ describe('itogiBodyCells', () => {
           DerevoPravo: '',
         })
       )
-    ).toEqual(['NomerPoPoryadku', 'Derevo×2', 'Nachisleno', 'KVyplate'])
+    ).toEqual([
+      'NomerPoPoryadku',
+      'Derevo',
+      'DerevoPravo',
+      'Nachisleno',
+      'KVyplate',
+    ])
+  })
+
+  it('ФКР и специфика — без объединения в обоих вариантах ветки', () => {
+    const bez = [
+      'NomerPoPoryadku',
+      'Derevo',
+      'DerevoPravo',
+      'Nachisleno',
+      'KVyplate',
+    ]
+    expect(
+      spans(
+        row({
+          __gruppirovka: 'FKRSpetsifika',
+          Derevo: '01 1 123 011',
+          DerevoPravo: '111',
+        })
+      )
+    ).toEqual(bez)
+    expect(
+      spans(
+        row({
+          __gruppirovka: 'FKRSpetsifikaDetalnaya',
+          Derevo: '01 1 123 011',
+          DerevoPravo: null,
+        })
+      )
+    ).toEqual(bez)
+  })
+
+  it('строка без кода группировки не объединяется', () => {
+    expect(spans(row({ Derevo: 'x', DerevoPravo: null }))).toEqual([
+      'NomerPoPoryadku',
+      'Derevo',
+      'DerevoPravo',
+      'Nachisleno',
+      'KVyplate',
+    ])
   })
 
   it('без колонки номера вид начисления ничего лишнего не объединяет', () => {

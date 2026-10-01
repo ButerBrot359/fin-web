@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  within,
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -224,7 +230,9 @@ describe('TreeTable — дерево с этажами', () => {
     )
 
     expect(container.querySelector('thead')?.className).toContain('sticky')
-    expect(container.firstElementChild?.className).toContain('max-h-[75vh]')
+    expect(
+      container.querySelector('table')?.parentElement?.className
+    ).toContain('max-h-[75vh]')
   })
 
   it('без обработчиков строки этажного дерева не кликабельны', () => {
@@ -899,5 +907,100 @@ describe('TreeTable — ведомости ВНА по форме КБП', () =>
         .closest('th')
         ?.getAttribute('rowspan')
     ).toBe('3')
+  })
+})
+
+describe('TreeTable — уровни группировки', () => {
+  const registrColumns: ReportColumnDto[] = [
+    {
+      code: 'FizicheskoeLitso',
+      titleRu: 'Физическое лицо',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+    },
+    {
+      code: 'NachislenoDokhodov',
+      titleRu: 'Начислено доходов',
+      role: 'MEASURE',
+      valueType: 'NUMBER',
+    },
+  ]
+
+  const registrResult = {
+    reportCode: 'RegistrNalogovogoUchetaPoIPNiSN',
+    reportNameRu: 'Регистр налогового учёта по ИПН и СН',
+    columns: registrColumns,
+    rows: [
+      {
+        level: 0,
+        rowKind: 'GROUP_HEADER',
+        groupCode: 'Mesyats',
+        groupValue: '10.2026',
+        cells: { Mesyats: '10.2026' },
+        children: [
+          {
+            level: 1,
+            rowKind: 'DATA',
+            groupCode: 'FizicheskoeLitso',
+            groupValue: 'Иванов Иван',
+            cells: { FizicheskoeLitso: 'Иванов Иван', NachislenoDokhodov: 500 },
+            children: [],
+          },
+        ],
+      },
+    ],
+    total: {},
+    layout: 'TREE',
+  } as unknown as ReportResultDto
+
+  const levelButton = (level: string) =>
+    within(screen.getByRole('toolbar')).getByText(level)
+
+  it('кнопка «1» сворачивает дерево до месяцев, «2» раскрывает физлиц', () => {
+    render(<TreeTable result={registrResult} columns={registrColumns} />)
+
+    expect(screen.getAllByText('Иванов Иван').length).toBeGreaterThan(0)
+
+    fireEvent.click(levelButton('1'))
+    expect(screen.queryAllByText('Иванов Иван')).toHaveLength(0)
+    expect(screen.getByText('10.2026')).toBeInTheDocument()
+
+    fireEvent.click(levelButton('2'))
+    expect(screen.getAllByText('Иванов Иван').length).toBeGreaterThan(0)
+  })
+
+  it('колонка дерева регистра: шапка в две строки, физлицо не дублируется отдельной графой', () => {
+    const treeColumns = registrColumns.map((c) =>
+      c.code === 'FizicheskoeLitso'
+        ? {
+            ...c,
+            titleRu: 'Месяц налогового периода\nФизическое лицо',
+            treeColumn: true,
+          }
+        : c
+    )
+    const { container } = render(
+      <TreeTable
+        result={{ ...registrResult, columns: treeColumns }}
+        columns={treeColumns}
+      />
+    )
+
+    const shapka = screen.getByText(/Месяц налогового периода/)
+    expect(shapka).toHaveStyle({ whiteSpace: 'pre-line' })
+    expect(container.querySelectorAll('thead th')).toHaveLength(2)
+    expect(screen.getByText('10.2026')).toBeInTheDocument()
+    expect(screen.getAllByText('Иванов Иван')).toHaveLength(1)
+  })
+
+  it('у плоского результата без групп кнопок уровней нет', () => {
+    render(
+      <TreeTable
+        result={{ ...result, rows: [subkontoRow] }}
+        columns={columns}
+      />
+    )
+
+    expect(screen.queryByRole('toolbar')).toBeNull()
   })
 })

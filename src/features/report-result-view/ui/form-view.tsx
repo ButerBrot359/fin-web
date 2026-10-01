@@ -1,5 +1,5 @@
 import { Typography } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { cssVar, palette } from '@/shared/design/tokens'
@@ -150,6 +150,13 @@ interface HeadCell {
   rowSpan: number
   /** Средний ряд — номер счёта-подгруппы (1С печатает его жирным курсивом). */
   emphasis?: boolean
+  vertical?: boolean
+}
+
+const verticalHeadStyle: CSSProperties = {
+  writingMode: 'vertical-rl',
+  transform: 'rotate(180deg)',
+  margin: '0 auto',
 }
 
 /**
@@ -170,16 +177,19 @@ const buildHeadRows = (
     subEmphasis: true,
   })
   if (model.levels === 1) return null
+  const withVertical = (row: typeof model.topRow): HeadCell[] =>
+    row.map((cell) => ({ ...cell, vertical: cell.col?.verticalTitle === true }))
   // Нижний ряд: листовые колонки как обычные ячейки 1×1.
   const leafCells: HeadCell[] = model.leafRow.map(({ key, col }) => ({
     key,
     title: columnTitle(col, isKz),
     colSpan: 1,
     rowSpan: 1,
+    vertical: col.verticalTitle === true,
   }))
   return model.levels === 3
-    ? [model.topRow, model.midRow, leafCells]
-    : [model.topRow, leafCells]
+    ? [withVertical(model.topRow), withVertical(model.midRow), leafCells]
+    : [withVertical(model.topRow), leafCells]
 }
 
 /**
@@ -245,10 +255,11 @@ const SectionTable = ({
                   key={cell.key}
                   colSpan={cell.colSpan}
                   rowSpan={cell.rowSpan}
-                  className={th}
+                  className={`${th} ${cell.vertical ? 'align-bottom' : ''}`}
                 >
                   <Typography
                     variant="caption"
+                    style={cell.vertical ? verticalHeadStyle : undefined}
                     sx={{
                       color: cssVar(palette.pendingText1),
                       fontWeight: cell.emphasis ? 700 : undefined,
@@ -267,9 +278,13 @@ const SectionTable = ({
         ) : (
           <tr>
             {cols.map((col) => (
-              <th key={col.code} className={th}>
+              <th
+                key={col.code}
+                className={`${th} ${col.verticalTitle ? 'align-bottom' : ''}`}
+              >
                 <Typography
                   variant="caption"
+                  style={col.verticalTitle ? verticalHeadStyle : undefined}
                   sx={{
                     color: cssVar(palette.pendingText1),
                     whiteSpace: 'pre-line',

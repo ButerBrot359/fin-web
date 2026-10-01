@@ -227,3 +227,41 @@ describe('FormView — строки программы и подпрограмм
     )
   })
 })
+
+describe('FormView — вертикальные заголовки граф', () => {
+  const form: ReportFormDto = {
+    title: '№ 5 Мемориальный ордер (оборотная сторона)',
+    sections: [
+      {
+        columns: [
+          {
+            code: 'Oklad',
+            titleRu: 'Оклад по дням',
+            groupTitleRu: 'Начислено',
+            verticalTitle: true,
+          },
+          { code: 'Vsego', titleRu: 'Всего', groupTitleRu: 'Начислено' },
+          {
+            code: 'VsegoUderzhano',
+            titleRu: 'Всего удержано',
+            verticalTitle: true,
+          },
+        ] as never,
+        rows: [],
+      } as never,
+    ],
+  }
+
+  it('графа с verticalTitle повёрнута, как в макете 1С; остальные горизонтальны', () => {
+    render(<FormView form={form} />)
+
+    expect(screen.getByText('Оклад по дням').style.writingMode).toBe(
+      'vertical-rl'
+    )
+    expect(screen.getByText('Всего удержано').style.writingMode).toBe(
+      'vertical-rl'
+    )
+    expect(screen.getByText('Всего').style.writingMode).toBe('')
+    expect(screen.getByText('Начислено').style.writingMode).toBe('')
+  })
+})

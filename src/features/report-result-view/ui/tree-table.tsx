@@ -359,9 +359,7 @@ const PlainTreeTable = ({
         ))}
       </div>
     ) : (
-      <Typography variant="body2" sx={thTextSx}>
-        {treeHeaderTitle}
-      </Typography>
+      <HeadTitle title={treeHeaderTitle} />
     )
 
   // Ширина первой колонки (наименование группы): backend-width либо дефолт.

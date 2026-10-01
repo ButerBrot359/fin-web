@@ -969,6 +969,30 @@ describe('TreeTable — уровни группировки', () => {
     expect(screen.getAllByText('Иванов Иван').length).toBeGreaterThan(0)
   })
 
+  it('колонка дерева регистра: шапка в две строки, физлицо не дублируется отдельной графой', () => {
+    const treeColumns = registrColumns.map((c) =>
+      c.code === 'FizicheskoeLitso'
+        ? {
+            ...c,
+            titleRu: 'Месяц налогового периода\nФизическое лицо',
+            treeColumn: true,
+          }
+        : c
+    )
+    const { container } = render(
+      <TreeTable
+        result={{ ...registrResult, columns: treeColumns }}
+        columns={treeColumns}
+      />
+    )
+
+    const shapka = screen.getByText(/Месяц налогового периода/)
+    expect(shapka).toHaveStyle({ whiteSpace: 'pre-line' })
+    expect(container.querySelectorAll('thead th')).toHaveLength(2)
+    expect(screen.getByText('10.2026')).toBeInTheDocument()
+    expect(screen.getAllByText('Иванов Иван')).toHaveLength(1)
+  })
+
   it('у плоского результата без групп кнопок уровней нет', () => {
     render(
       <TreeTable

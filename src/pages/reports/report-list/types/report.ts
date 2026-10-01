@@ -262,6 +262,7 @@ export interface ReportColumnDto {
   frozen?: boolean
   wrap?: boolean
   treeColumn?: boolean
+  verticalAlign?: string
 }
 
 /** Одно допустимое значение параметра (для NUMBER с фиксированным списком). */
@@ -374,6 +375,7 @@ export interface ReportRowDto {
    * индекс первой колонки, где начинаются значения `cells`.
    */
   labelColSpan?: number
+  labelAlign?: string
   /**
    * Цель расшифровки (SCRUM-370 блок В). Отсутствует у большинства строк
    * (итоги, сальдо, заголовки групп) — такая строка не кликабельна, это

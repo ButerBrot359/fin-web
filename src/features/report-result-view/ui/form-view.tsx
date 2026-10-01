@@ -15,10 +15,14 @@ import type {
 import {
   formatMoney1C,
   isHighlightRow,
-  isRightAligned,
   resolveReportLang,
 } from '../lib/cell-helpers'
 import { fitToWidthLayout } from '../lib/fit-to-width'
+import {
+  horizontalAlignClass,
+  labelAlignClass,
+  verticalAlignClass,
+} from '../lib/form-cell-align'
 import { buildHeadModel } from '../lib/head-model'
 import { ReportCell } from './report-cell'
 
@@ -26,7 +30,7 @@ import { ReportCell } from './report-cell'
  * Сетка бланка 1С: чёткая серая рамка каждой ячейки (официальная форма
  * печатается с выраженной сеткой, темнее аналитических отчётов), плотные ячейки.
  */
-const td = 'border border-pending-gray-6 px-1.5 py-0.5 align-top'
+const td = 'border border-pending-gray-6 px-1.5 py-0.5'
 const th = 'border border-pending-gray-6 px-1.5 py-1 text-center align-middle'
 
 /** Ширина одного символа колонки (`width` приходит в символах, как в 1С). */
@@ -265,7 +269,10 @@ const SectionTable = ({
               <th key={col.code} className={th}>
                 <Typography
                   variant="caption"
-                  sx={{ color: cssVar(palette.pendingText1) }}
+                  sx={{
+                    color: cssVar(palette.pendingText1),
+                    whiteSpace: 'pre-line',
+                  }}
                 >
                   {columnTitle(col, isKz)}
                 </Typography>
@@ -308,7 +315,7 @@ const SectionTable = ({
                     <td
                       key={col.code}
                       colSpan={labelSpan}
-                      className={`${td} text-right`}
+                      className={`${td} ${verticalAlignClass(col.verticalAlign)} ${labelAlignClass(row.labelAlign)}`}
                     >
                       <Typography
                         variant="body2"
@@ -325,7 +332,7 @@ const SectionTable = ({
                 return (
                   <td
                     key={col.code}
-                    className={`${td} ${isRightAligned(col) ? 'text-right' : ci === 0 ? 'text-center' : ''}`}
+                    className={`${td} ${verticalAlignClass(col.verticalAlign)} ${horizontalAlignClass(col, ci, !!section.fitToWidth)}`}
                   >
                     <ReportCell
                       value={row.cells[col.code]}

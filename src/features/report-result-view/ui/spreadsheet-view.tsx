@@ -37,6 +37,7 @@ interface SpreadsheetViewProps {
 
 const MASSHTAB_SHRIFTA_1S = 0.94
 const MEZHSTROCHNYY_INTERVAL_1S = 1.15
+const OTSTUP_TEKSTA_PX = { vertikal: 1, gorizontal: 3 }
 
 const GRAN: Record<string, string> = {
   thin: '1px solid',
@@ -89,6 +90,7 @@ const sloyTeksta = (
 ): React.CSSProperties => ({
   position: 'absolute',
   inset: 0,
+  padding: `${String(OTSTUP_TEKSTA_PX.vertikal)}px ${String(OTSTUP_TEKSTA_PX.gorizontal)}px`,
   display: 'flex',
   justifyContent: PO_GORIZONTALI[style?.align ?? ''] ?? 'flex-start',
   alignItems: PO_VERTIKALI[style?.verticalAlign ?? ''] ?? 'center',
@@ -246,7 +248,7 @@ const SheetView = ({
   return (
     <div className="overflow-x-auto">
       <table
-        className="border-collapse bg-white"
+        className="border-collapse"
         style={{
           tableLayout: 'fixed',
           width: `${String(shirinaLista)}px`,

@@ -130,6 +130,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       // Экран всегда route-only (SCRUM-290): layoutCode больше не хранится
       // ни в кэше вкладки, ни в пропах — сброшен, реопен идёт по маршруту.
       useTreeStore.getState().setLayoutCode(null)
+      useTreeStore.getState().setOnDirtyClose(cached.onDirtyClose ?? null)
+      useTreeStore.getState().setScreenKey(cached.screenKey ?? null)
       useViewStateStore.getState().replaceAll(cached.viewState)
       useViewStateStore.getState().setDirty(true)
     } else {
@@ -157,6 +159,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
           revision: treeState.revision,
           viewState: useViewStateStore.getState().getAll(),
           dirty: useViewStateStore.getState().dirty,
+          onDirtyClose: treeState.onDirtyClose,
+          screenKey: treeState.screenKey,
         })
       } else {
         // SCRUM-276 (черновики): CLOSE при навигации черновик сохраняет;
@@ -170,8 +174,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
         // Сбросить state+dirty: SDUI-экран размонтирован, стейл dirty
         // не должен триггерить confirm переключения языка
         useViewStateStore.getState().replaceAll({})
+        onDirtyChange?.(route, false)
       }
-      onDirtyChange?.(route, false)
       usePanelStore.getState().reset()
       // SCRUM-317 §5.3: отчёт принадлежит карточке — гасим на размонтировании
       // экрана, а не только при открытии (грязный документ возвращается из
@@ -182,13 +186,22 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   }, [screenRoute])
 
   useEffect(() => {
-    const handler = () => {
+    const warnUnsaved = (e: BeforeUnloadEvent) => {
+      const hasUnsaved =
+        useViewStateStore.getState().dirty ||
+        Object.values(useSduiCacheStore.getState().cache).some((c) => c.dirty)
+      if (!hasUnsaved) return
+      e.preventDefault()
+    }
+    const closeOnUnload = () => {
       const sid = useTreeStore.getState().formSessionId
       if (sid) viewTransport.closeBeacon(sid)
     }
-    window.addEventListener('beforeunload', handler)
+    window.addEventListener('beforeunload', warnUnsaved)
+    window.addEventListener('pagehide', closeOnUnload)
     return () => {
-      window.removeEventListener('beforeunload', handler)
+      window.removeEventListener('beforeunload', warnUnsaved)
+      window.removeEventListener('pagehide', closeOnUnload)
     }
   }, [])
 

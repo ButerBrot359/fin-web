@@ -1,9 +1,13 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
-import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
+import {
+  formInstanceOf,
+  tabRouteKey,
+} from '@/shared/lib/router/form-instance-route'
 
 import { MAX_TABS } from '../consts/workspace-tabs-config'
+import { adoptFormInstanceId } from '../utils/form-instance-id'
 import { tabEntityKey } from '../utils/tab-entity-key'
 import type { WorkspaceTab, TabPageType } from '../../types/workspace-tab'
 
@@ -227,6 +231,13 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
 
       updateTabPath: (tabId, path, search) => {
         const newId = tabRouteKey(path, search)
+        const previous = get().tabs.find((t) => t.id === tabId)
+        const carried = previous
+          ? formInstanceOf(previous.path, previous.search)
+          : null
+        if (carried && !formInstanceOf(path, search)) {
+          adoptFormInstanceId(path, carried)
+        }
         set((state) => ({
           tabs: updateTab(state.tabs, tabId, (t) => ({
             ...t,

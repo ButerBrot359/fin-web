@@ -8,6 +8,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../../types/view'
+import type { ReferencePickerRequest } from '../../../lib/reference-picker-gateway'
 import { ObjectFieldNode } from './object-field-node'
 
 const state: Record<string, unknown> = {}
@@ -34,6 +35,12 @@ vi.mock('react-i18next', () => ({
 // Опции справочника здесь не предмет проверки — сеть не трогаем.
 vi.mock('../../../api/reference-options', () => ({
   fetchReferenceOptions: () => Promise.resolve([]),
+}))
+const pickerRequests: ReferencePickerRequest[] = []
+vi.mock('../../../lib/reference-picker-gateway', () => ({
+  openReferencePicker: (req: ReferencePickerRequest) => {
+    pickerRequests.push(req)
+  },
 }))
 
 const KONTRAGENTY = {
@@ -81,6 +88,7 @@ const typeSelect = () =>
 beforeEach(() => {
   delete state.Subkonto1
   events.length = 0
+  pickerRequests.length = 0
 })
 afterEach(cleanup)
 
@@ -283,5 +291,48 @@ describe('ObjectFieldNode член-перечисление', () => {
     expect(
       screen.getByPlaceholderText('sdui.objectField.unsupportedMember')
     ).toBeTruthy()
+  })
+})
+
+describe('ObjectFieldNode «Показать все»', () => {
+  const openList = () => {
+    fireEvent.mouseDown(
+      screen.getByRole('combobox', { name: /Сотрудники и контрагенты/ })
+    )
+  }
+
+  it('ссылочный член → кнопка открывает форму списка его справочника', () => {
+    render(<ObjectFieldNode node={node([KONTRAGENTY])} />)
+    openList()
+    fireEvent.mouseDown(screen.getByText('dictSidebar.showAll'))
+
+    expect(pickerRequests).toHaveLength(1)
+    expect(pickerRequests[0]).toMatchObject({
+      mode: 'list',
+      domain: 'DICTIONARY',
+      typeCode: 'Kontragenty',
+    })
+  })
+
+  it('выбор в форме списка уходит составным значением', () => {
+    render(<ObjectFieldNode node={node([KONTRAGENTY])} />)
+    openList()
+    fireEvent.mouseDown(screen.getByText('dictSidebar.showAll'))
+    pickerRequests[0].onSelect({ id: 7, code: '7', label: '"Байкон"' })
+
+    const expected = {
+      id: 7,
+      presentation: '"Байкон"',
+      type: 'DICTIONARY',
+      targetTypeCode: 'Kontragenty',
+    }
+    expect(state.Subkonto1).toEqual(expected)
+    expect(events.at(-1)?.value).toEqual(expected)
+  })
+
+  it('член-перечисление без optionsSource кнопки не имеет', () => {
+    render(<ObjectFieldNode node={node([VIDY_NALOGOV])} />)
+    openList()
+    expect(screen.queryByText('dictSidebar.showAll')).toBeNull()
   })
 })

@@ -92,6 +92,34 @@ describe('SpreadsheetView — табличный документ бланка',
     expect(tekst.closest('td')!.style.position).toBe('relative')
   })
 
+  it('подпись без переноса выходит только в пустые клетки и обрезается на заполненной, как в 1С', () => {
+    const dokumentSRekvizitom: ReportSpreadsheetDto = {
+      sheets: [
+        {
+          code: 'Рус',
+          title: 'Рус',
+          columnWidths: [30, 40, 50, 60],
+          rowHeights: [16],
+          cells: [
+            { row: 0, column: 0, text: 'Администратор бюджетных программ' },
+            { row: 0, column: 3, text: '124' },
+          ],
+        },
+      ],
+    }
+
+    const { container } = render(
+      <SpreadsheetView spreadsheet={dokumentSRekvizitom} />
+    )
+
+    const sloy = screen.getByText(
+      'Администратор бюджетных программ'
+    ).parentElement!
+    expect(sloy.style.overflow).toBe('hidden')
+    expect(sloy.style.right).toBe('-90px')
+    expect(container.querySelector('table')!.style.lineHeight).toBe('1.15')
+  })
+
   it('шрифт клетки ужат до ширины текста 1С — подписи переносятся там же, где в 1С', () => {
     const dokumentSoShriftom: ReportSpreadsheetDto = {
       sheets: [

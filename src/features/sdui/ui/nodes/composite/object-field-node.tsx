@@ -9,6 +9,7 @@ import {
 } from '../../../lib/hooks/use-field-node'
 import { useReferenceOptions } from '../../../lib/hooks/use-reference-options'
 import { fetchReferenceOptions } from '../../../api/reference-options'
+import { openReferencePicker } from '../../../lib/reference-picker-gateway'
 import { AutocompleteInput } from '@/shared/ui/inputs'
 import type { SelectOption } from '@/shared/types/select-option'
 import {
@@ -163,17 +164,18 @@ const ObjectValuePicker: FC<ObjectValuePickerProps> = ({
 
   const [inputValue, setInputValue] = useState('')
 
-  const { options, loading, load, loadDebounced } = useReferenceOptions(
-    (search?: string) =>
-      optionsSource
-        ? fetchReferenceOptions({
-            url: optionsSource.url,
-            params: optionsSource.params,
-            search,
-          })
-        : Promise.resolve([]),
-    JSON.stringify(optionsSource ?? null)
-  )
+  const { options, loading, load, loadDebounced, resetOptions } =
+    useReferenceOptions(
+      (search?: string) =>
+        optionsSource
+          ? fetchReferenceOptions({
+              url: optionsSource.url,
+              params: optionsSource.params,
+              search,
+            })
+          : Promise.resolve([]),
+      JSON.stringify(optionsSource ?? null)
+    )
 
   const staticOptions = memberSelectOptions(member)
 
@@ -224,6 +226,24 @@ const ObjectValuePicker: FC<ObjectValuePickerProps> = ({
       ? { id: value.id, code: String(value.id), label: value.presentation }
       : null
 
+  const targetTypeCode = member.targetTypeCode
+  const openDictList =
+    targetTypeCode && !field.readonly && field.enabled
+      ? () => {
+          openReferencePicker({
+            mode: 'list',
+            domain: member.domainKind,
+            typeCode: targetTypeCode,
+            searchParams: optionsSource.params,
+            selectedId: selectedOption?.id,
+            onSelect: (opt) => {
+              resetOptions()
+              onEmit(opt ? buildObjectValue(member, opt) : null)
+            },
+          })
+        }
+      : undefined
+
   return (
     <AutocompleteInput
       value={selectedOption}
@@ -248,6 +268,7 @@ const ObjectValuePicker: FC<ObjectValuePickerProps> = ({
           load()
         }
       }}
+      onShowAll={openDictList}
       onChange={(opt) => {
         onEmit(opt ? buildObjectValue(member, opt) : null)
       }}

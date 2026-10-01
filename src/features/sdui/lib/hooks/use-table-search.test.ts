@@ -139,4 +139,14 @@ describe('useTableSearch (SCRUM-302)', () => {
     expect(result.current.rows.map((r) => r.rowId)).toEqual(['r1'])
     expect(result.current.matches).toEqual([])
   })
+
+  it('отобранные строки не пересоздаются на повторном рендере с теми же данными', () => {
+    const { result, rerender } = renderHook(() => useTableSearch(rows, columns))
+    act(() => {
+      result.current.setQuery('надбавка')
+    })
+    const first = result.current.rows
+    rerender()
+    expect(result.current.rows).toBe(first)
+  })
 })

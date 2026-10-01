@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import type { TableRow } from './use-table-sync'
 
@@ -88,23 +88,25 @@ export function useTableSearch(
   const [snimok, setSnimok] = useState<SnimokPoiska | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
-  // Пересчёт на каждый рендер сознательно: ТЧ — десятки строк, мемоизация
-  // не окупается.
   const q = query.trim().toLowerCase()
-  const matches = naytiSovpadeniya(rows, columns, q)
+  const matches = useMemo(
+    () => naytiSovpadeniya(rows, columns, q),
+    [rows, columns, q]
+  )
 
   const current = matches.length > 0 ? matches[index % matches.length] : null
 
-  const sovpavshie = new Set(matches.map((m) => m.rowId))
-  const otobrannye = q
-    ? rows.filter(
-        (row) =>
-          sovpavshie.has(row.rowId) ||
-          snimok === null ||
-          snimok.naydennye.has(row.rowId) ||
-          !snimok.izvestnye.has(row.rowId)
-      )
-    : rows
+  const otobrannye = useMemo(() => {
+    if (!q) return rows
+    const sovpavshie = new Set(matches.map((m) => m.rowId))
+    return rows.filter(
+      (row) =>
+        sovpavshie.has(row.rowId) ||
+        snimok === null ||
+        snimok.naydennye.has(row.rowId) ||
+        !snimok.izvestnye.has(row.rowId)
+    )
+  }, [rows, matches, q, snimok])
 
   const sbrosit = (next: string) => {
     setQueryState(next)

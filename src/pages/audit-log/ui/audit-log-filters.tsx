@@ -6,13 +6,14 @@ import { MenuItem, TextField } from '@mui/material'
 import { Button } from '@/shared/ui/buttons/button'
 import { DateTimeInput } from '@/shared/ui/inputs'
 
-import type { AuditActionOption } from '../api/audit-log-api'
+import type { AuditActionOption, AuditUserOption } from '../api/audit-log-api'
 import {
   countExtraFilters,
   type AuditLogFilterValues,
 } from '../lib/audit-log-filters'
 import { AuditEventsSelect } from './audit-events-select'
 import { AuditLogExtraFilters } from './audit-log-extra-filters'
+import { AuditUserSelect } from './audit-user-select'
 
 interface AuditLogFiltersProps {
   value: AuditLogFilterValues
@@ -21,6 +22,7 @@ interface AuditLogFiltersProps {
   onReset: () => void
   disabled: boolean
   actions: AuditActionOption[]
+  users: AuditUserOption[]
   applicationOptions: Record<string, string>
   extraOpen: boolean
   onToggleExtra: () => void
@@ -41,6 +43,7 @@ export const AuditLogFilters = ({
   onReset,
   disabled,
   actions,
+  users,
   applicationOptions,
   extraOpen,
   onToggleExtra,
@@ -95,17 +98,13 @@ export const AuditLogFilters = ({
           disabled={disabled}
         />
 
-        <TextField
-          label={t('auditLog.userLogin')}
-          size="small"
-          // Сервер сравнивает логин ТОЧНО, поэтому подсказываем формат: «Фамилия Имя», как в 1С.
-          placeholder={t('auth.loginPlaceholder')}
+        <AuditUserSelect
           value={value.userLogin}
-          onChange={(event) => {
-            set({ userLogin: event.target.value })
+          options={users}
+          onChange={(next) => {
+            set({ userLogin: next })
           }}
           disabled={disabled}
-          slotProps={{ inputLabel: { shrink: true } }}
         />
 
         <AuditEventsSelect

@@ -39,11 +39,13 @@ const renderPage = (initialEntry = '/admin/audit') =>
 const getAuditLog = vi.fn()
 const getAuditActions = vi.fn()
 const getAuditLogRecord = vi.fn()
+const getAuditUsers = vi.fn()
 
 vi.mock('../api/audit-log-api', () => ({
   getAuditLog: (query: unknown) => getAuditLog(query) as Promise<unknown>,
   getAuditActions: () => getAuditActions() as Promise<unknown>,
   getAuditLogRecord: (id: unknown) => getAuditLogRecord(id) as Promise<unknown>,
+  getAuditUsers: () => getAuditUsers() as Promise<unknown>,
 }))
 
 const sessionRow = {
@@ -121,6 +123,7 @@ describe('AuditLogPage', () => {
     getAuditLog.mockReset()
     getAuditActions.mockReset()
     getAuditLogRecord.mockReset()
+    getAuditUsers.mockReset()
   })
 
   const setup = (overrides: Record<string, unknown> = {}) => {
@@ -146,6 +149,10 @@ describe('AuditLogPage', () => {
       },
     ])
     getAuditLogRecord.mockRejectedValue(new Error('404'))
+    getAuditUsers.mockResolvedValue([
+      { login: 'Иванов Иван', name: 'Иванов Иван' },
+      { login: 'Мулдашев Нурлан', name: 'Нурлан Мулдашев' },
+    ])
   }
 
   it('показывает запись с серверными подписями, а незаполненные поля — прочерком', async () => {
@@ -238,6 +245,27 @@ describe('AuditLogPage', () => {
       )
     })
     expect(lastQuery().from).toBeUndefined()
+  })
+
+  it('пользователь выбирается из списка учётных записей', async () => {
+    setup()
+
+    renderPage()
+    await screen.findByText('Дорожкина Таисия')
+
+    const input = screen.getByLabelText('Пользователь')
+    fireEvent.change(input, { target: { value: 'нурлан' } })
+    const listbox = await screen.findByRole('listbox')
+    expect(within(listbox).queryByText('Иванов Иван')).toBeNull()
+    fireEvent.click(within(listbox).getByText('Мулдашев Нурлан'))
+    expect(input).toHaveValue('Мулдашев Нурлан')
+    fireEvent.click(screen.getByRole('button', { name: 'Применить' }))
+
+    await waitFor(() => {
+      expect(lastQuery()).toEqual(
+        expect.objectContaining({ userLogin: 'Мулдашев Нурлан', page: 0 })
+      )
+    })
   })
 
   it('отбор из адресной строки применяется сразу и раскрывает «Ещё отборы»', async () => {

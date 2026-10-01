@@ -84,6 +84,11 @@ export interface AuditActionOption {
   groupPresentation?: string | null
 }
 
+export interface AuditUserOption {
+  login: string
+  name: string
+}
+
 const TEXT_FILTERS = [
   'userLogin',
   'outcome',
@@ -154,6 +159,16 @@ export const getAuditActions = async (
 ): Promise<AuditActionOption[]> => {
   const response = await apiService.get<AuditActionOption[]>({
     url: '/api/audit/actions',
+    signal,
+  })
+  return Array.isArray(response.data) ? response.data : []
+}
+
+export const getAuditUsers = async (
+  signal?: AbortSignal
+): Promise<AuditUserOption[]> => {
+  const response = await apiService.get<AuditUserOption[]>({
+    url: '/api/audit/users',
     signal,
   })
   return Array.isArray(response.data) ? response.data : []

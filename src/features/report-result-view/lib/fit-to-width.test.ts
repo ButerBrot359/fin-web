@@ -32,6 +32,10 @@ describe('fitToWidthLayout', () => {
     ])
   })
 
+  it('своя ширина таблицы — сумма ширин граф, как у бланка 1С, а не вся страница', () => {
+    expect(fitToWidthLayout(cols, section(526000), 8)?.width).toBe(704)
+  })
+
   it('минимальная ширина — наименьшая, при которой ни одна графа не уже своего минимума', () => {
     expect(fitToWidthLayout(cols, section(526000), 8)?.minWidth).toBe(611)
   })

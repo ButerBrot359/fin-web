@@ -98,7 +98,11 @@ describe('FormView — бланк по ширине страницы (fitToWidth
     const cols = container.querySelectorAll('col')
     expect(cols[0].style.width).toMatch(/%$/)
     expect(cols[1].style.width).toMatch(/%$/)
-    expect(container.querySelector('table')?.style.minWidth).not.toBe('')
+    const table = container.querySelector('table')
+    expect(table?.style.width).toBe('392px')
+    expect(table?.style.maxWidth).toBe('100%')
+    expect(table?.style.minWidth).not.toBe('')
+    expect(table?.classList.contains('w-full')).toBe(false)
   })
 
   it('без флага ширины остаются в пикселях', () => {
@@ -106,5 +110,72 @@ describe('FormView — бланк по ширине страницы (fitToWidth
 
     expect(container.querySelectorAll('col')[0].style.width).toBe('280px')
     expect(container.querySelector('table')?.style.minWidth).toBe('')
+  })
+})
+
+describe('FormView — шапка и выравнивание бланка ф405', () => {
+  const form: ReportFormDto = {
+    title: 'Мемориальный ордер №5',
+    sections: [
+      {
+        fitToWidth: true,
+        columns: [
+          {
+            code: 'F405Opisanie',
+            titleRu: '',
+            width: 35,
+            align: 'LEFT',
+            verticalAlign: 'BOTTOM',
+          },
+          {
+            code: 'F405Debet',
+            titleRu: 'Дебет\nсчета/субсчета',
+            width: 24,
+            align: 'CENTER',
+            verticalAlign: 'BOTTOM',
+          },
+        ] as never,
+        rows: [
+          {
+            level: 0,
+            cells: { F405Opisanie: 'Начислены стипендий', F405Debet: '7010' },
+          },
+          {
+            level: 0,
+            rowKind: 'TOTAL',
+            labelText: 'ВСЕГО:',
+            labelColSpan: 1,
+            labelAlign: 'CENTER',
+            cells: {},
+          },
+        ],
+      } as never,
+    ],
+  }
+
+  it('заголовок графы переносится по \\n, как в макете', () => {
+    render(<FormView form={form} />)
+
+    const title = screen.getByText(/^Дебет/)
+    expect(title.textContent).toBe('Дебет\nсчета/субсчета')
+    expect(getComputedStyle(title).whiteSpace).toBe('pre-line')
+  })
+
+  it('описание слева, счета по центру, значения прижаты к низу', () => {
+    render(<FormView form={form} />)
+
+    const opisanie = screen.getByText('Начислены стипендий').closest('td')
+    const debet = screen.getByText('7010').closest('td')
+    expect(opisanie?.className).toContain('text-left')
+    expect(opisanie?.className).toContain('align-bottom')
+    expect(debet?.className).toContain('text-center')
+  })
+
+  it('подпись «ВСЕГО:» по центру своей графы', () => {
+    render(<FormView form={form} />)
+
+    const vsego = screen.getByText('ВСЕГО:').closest('td')
+    expect(vsego?.className).toContain('text-center')
+    expect(vsego?.colSpan).toBe(1)
   })
 })

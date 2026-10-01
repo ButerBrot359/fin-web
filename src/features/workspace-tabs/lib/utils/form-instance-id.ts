@@ -6,14 +6,44 @@
  * оба запроса — OPEN одного маршрута `/documents/<Type>/new`, и без идентификатора черновик
  * незаписанного документа всплывал бы в новой форме создания (бэк: DocumentFormDraftStore).
  *
- * <p><b>Только в памяти.</b> Ни в localStorage, ни в persisted-сторе вкладок: иначе ДВЕ вкладки
- * браузера получили бы один идентификатор и видели черновики друг друга (спека §5.1, приёмка
- * п.5). Ценой служит F5 — после перезагрузки идентификатор новый и черновик незаписанной формы
- * недостижим; это дешевле, чем чужие данные в форме.
+ * <p><b>sessionStorage, не localStorage.</b> sessionStorage у каждой вкладки браузера свой, поэтому
+ * две вкладки браузера не делят идентификатор и не видят черновики друг друга (спека §5.1,
+ * приёмка п.5), а F5 сохраняет идентификатор, и черновик формы восстанавливается.
  *
  * <p>Ключ — путь маршрута: рабочая вкладка адресуется им же (id вкладки = path).
  */
-const ids = new Map<string, string>()
+const STORAGE_KEY = 'workspace-form-instance-ids'
+
+function load(): Map<string, string> {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    if (!raw) return new Map()
+    const parsed: unknown = JSON.parse(raw)
+    if (parsed === null || typeof parsed !== 'object') return new Map()
+    return new Map(
+      Object.entries(parsed).filter(
+        (e): e is [string, string] => typeof e[1] === 'string'
+      )
+    )
+  } catch {
+    return new Map()
+  }
+}
+
+const ids = load()
+
+function persist(): void {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(ids)))
+  } catch {
+    return
+  }
+}
+
+function remember(path: string, id: string): void {
+  ids.set(path, id)
+  persist()
+}
 
 function generate(): string {
   if (
@@ -31,15 +61,19 @@ export function formInstanceIdFor(path: string): string {
   const existing = ids.get(path)
   if (existing) return existing
   const id = generate()
-  ids.set(path, id)
+  remember(path, id)
   return id
 }
 
 /** Начать НОВЫЙ экземпляр формы на этом маршруте («Создать», копия, ввод на основании). */
 export function rotateFormInstanceId(path: string): string {
   const id = generate()
-  ids.set(path, id)
+  remember(path, id)
   return id
+}
+
+export function adoptFormInstanceId(path: string, id: string): void {
+  remember(path, id)
 }
 
 /** Reserve a fresh draft scope without abandoning the current form before OPEN succeeds. */
@@ -53,7 +87,7 @@ export function prepareFreshFormInstanceId(path: string): {
     id,
     commit: () => {
       if (ids.get(path) !== previous) return false
-      ids.set(path, id)
+      remember(path, id)
       return true
     },
   }
@@ -61,5 +95,5 @@ export function prepareFreshFormInstanceId(path: string): {
 
 /** Вкладку закрыли — следующее открытие того же маршрута начнёт новый экземпляр (§5.1). */
 export function forgetFormInstanceId(path: string): void {
-  ids.delete(path)
+  if (ids.delete(path)) persist()
 }

@@ -198,3 +198,23 @@ describe('экземпляры формы создания', () => {
     expect(again).toBe(first)
   })
 })
+
+describe('updateTabPath: новый документ записан', () => {
+  it('записанный документ наследует идентификатор формы создания, черновик остаётся достижимым', async () => {
+    const { formInstanceIdFor } = await import('../utils/form-instance-id')
+    const store = useWorkspaceTabsStore.getState()
+    const tabId = store.activateOrCreate(
+      '/modules/zarplata/document/BolnichnyyList/new',
+      '?fi=tab-1',
+      'document-entry'
+    )
+
+    useWorkspaceTabsStore
+      .getState()
+      .updateTabPath(tabId!, '/modules/zarplata/document/BolnichnyyList/42', '')
+
+    expect(
+      formInstanceIdFor('/modules/zarplata/document/BolnichnyyList/42')
+    ).toBe('tab-1')
+  })
+})

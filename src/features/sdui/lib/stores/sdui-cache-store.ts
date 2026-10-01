@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-import type { ViewNode } from '../../types/view'
+import type { ViewNode, ViewNodeAction } from '../../types/view'
 
 /**
  * Снимок состояния SDUI-документа для одной рабочей вкладки (по route/pathname).
@@ -18,6 +18,8 @@ export interface SduiCacheEntry {
   // Были ли несохранённые изменения на момент ухода со вкладки —
   // нужен для confirm при переключении языка (SCRUM-268)
   dirty: boolean
+  onDirtyClose?: ViewNodeAction | null
+  screenKey?: string | null
 }
 
 interface SduiCacheStore {
@@ -30,14 +32,18 @@ interface SduiCacheStore {
 
 export const useSduiCacheStore = create<SduiCacheStore>((set, get) => ({
   cache: {},
-  save: (route, entry) =>
-    set((s) => ({ cache: { ...s.cache, [route]: entry } })),
+  save: (route, entry) => {
+    set((s) => ({ cache: { ...s.cache, [route]: entry } }))
+  },
   get: (route) => get().cache[route],
-  remove: (route) =>
-    set((s) => {
-      const next = { ...s.cache }
-      delete next[route]
-      return { cache: next }
-    }),
-  clear: () => set({ cache: {} }),
+  remove: (route) => {
+    set((s) => ({
+      cache: Object.fromEntries(
+        Object.entries(s.cache).filter(([key]) => key !== route)
+      ),
+    }))
+  },
+  clear: () => {
+    set({ cache: {} })
+  },
 }))

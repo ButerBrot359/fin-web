@@ -14,6 +14,7 @@ import type {
 
 import {
   formatMoney1C,
+  hasAppearance,
   isHighlightRow,
   resolveReportLang,
 } from '../lib/cell-helpers'
@@ -298,6 +299,7 @@ const SectionTable = ({
       <tbody>
         {section.rows.map((row, idx) => {
           const highlight = isHighlightRow(row.rowKind)
+          const strong = hasAppearance(row, 'BOLD_GROUP')
           // Подпись «Всего»/«Барлығы» объединяется по первым `labelColSpan`
           // колонкам (№пп|Дата|Номер|Наименование), как в 1С — иначе метка сидит
           // в одной графе, а не растянута по описательным колонкам.
@@ -338,6 +340,8 @@ const SectionTable = ({
                       value={row.cells[col.code]}
                       col={col}
                       bold={highlight}
+                      strong={strong}
+                      preserveIndent
                     />
                   </td>
                 )

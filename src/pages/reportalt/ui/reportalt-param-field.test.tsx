@@ -22,6 +22,17 @@ const fetchOptionsMock =
       search?: string
     }) => Promise<SelectOption[]>
   >()
+const openPickerMock =
+  vi.fn<
+    (req: {
+      mode: string
+      domain: string
+      typeCode: string
+      selectedId?: number | string
+      searchParams?: Record<string, string>
+      onSelect: (option: SelectOption | null) => void
+    }) => void
+  >()
 vi.mock('@/features/sdui', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   fetchReferenceOptions: (args: {
@@ -29,6 +40,9 @@ vi.mock('@/features/sdui', async (importOriginal) => ({
     params?: Record<string, unknown>
     search?: string
   }) => fetchOptionsMock(args),
+  openReferencePicker: (req: Parameters<typeof openPickerMock>[0]) => {
+    openPickerMock(req)
+  },
 }))
 
 const fetchActiveMock = vi.fn()
@@ -284,5 +298,99 @@ describe('ReportAltParamField — множественный выбор', () => 
 
     fireEvent.click(screen.getByText('Снять все'))
     expect(onChange).toHaveBeenLastCalledWith([])
+  })
+})
+
+describe('ReportAltParamField — «Показать все»', () => {
+  beforeEach(() => {
+    fetchOptionsMock.mockReset()
+    fetchActiveMock.mockReset()
+    fetchByIdMock.mockReset()
+    openPickerMock.mockReset()
+    fetchOptionsMock.mockResolvedValue([
+      { id: 7, code: '7', label: 'Программа 7' },
+    ])
+  })
+
+  it('открывает полную форму справочника и подставляет выбранную в ней запись', async () => {
+    fetchByIdMock.mockResolvedValue({ id: 42, nameRu: 'Выбранная программа' })
+    const onChange = vi.fn()
+    renderField(
+      <ReportAltParamField
+        param={programma}
+        value={42}
+        onChange={onChange}
+        optionsSource={{
+          url: '/api/dictionary-entries/FunktsionalnayaKlassifikatsiyaRaskhodov/entries',
+          params: { ABP: '124' },
+        }}
+      />
+    )
+
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' })
+    await screen.findByText('Программа 7')
+    fireEvent.mouseDown(screen.getByText('Показать все'))
+
+    expect(openPickerMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'list',
+        domain: 'DICTIONARY',
+        typeCode: 'FunktsionalnayaKlassifikatsiyaRaskhodov',
+        selectedId: 42,
+        searchParams: { ABP: '124' },
+      })
+    )
+    openPickerMock.mock.calls[0][0].onSelect({
+      id: 9,
+      code: '9',
+      label: 'Программа 9',
+    })
+    expect(onChange).toHaveBeenLastCalledWith(9)
+  })
+
+  it('во множественном выборе добавляет запись из полной формы к уже выбранным', async () => {
+    const onChange = vi.fn()
+    renderField(
+      <ReportAltParamField
+        param={{
+          code: 'SpisokFKR',
+          titleRu: 'Список ФКР',
+          dataType: 'REF_LIST',
+          required: false,
+          referenceDomain: 'FunktsionalnayaKlassifikatsiyaRaskhodov',
+        }}
+        value={[7]}
+        onChange={onChange}
+      />
+    )
+
+    fireEvent.mouseDown(screen.getByRole('combobox'))
+    fireEvent.click(await screen.findByText('Показать все'))
+    openPickerMock.mock.calls[0][0].onSelect({
+      id: 9,
+      code: '9',
+      label: 'Программа 9',
+    })
+
+    expect(onChange).toHaveBeenLastCalledWith([7, 9])
+  })
+
+  it('у недоступного поля и домена с префиксом кнопки нет', async () => {
+    renderField(
+      <ReportAltParamField
+        param={{
+          ...programma,
+          dataType: 'REF_LIST',
+          referenceDomain: 'DOCUMENT:SchetKOplate',
+        }}
+        value={[]}
+        onChange={vi.fn()}
+      />
+    )
+    fetchActiveMock.mockResolvedValue({ data: [] })
+    fireEvent.mouseDown(screen.getByRole('combobox'))
+
+    expect(await screen.findByText('Отметить все')).toBeTruthy()
+    expect(screen.queryByText('Показать все')).toBeNull()
   })
 })

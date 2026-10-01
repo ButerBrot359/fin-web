@@ -18,7 +18,11 @@ import {
   useAccountPlanList,
   useSubcontoBuTypes,
 } from '@/entities/account-plan'
-import { fetchReferenceOptions, useReferenceOptions } from '@/features/sdui'
+import {
+  fetchReferenceOptions,
+  openReferencePicker,
+  useReferenceOptions,
+} from '@/features/sdui'
 import { useDictionaryEntries } from '@/shared/lib/dictionary-entry/use-dictionary-entries'
 import { fetchDictionaryEntryById } from '@/shared/lib/dictionary-entry/dictionary-entry-api'
 import {
@@ -48,6 +52,8 @@ interface MultiSelectActions {
   onUncheckAll: () => void
   checkAllLabel: string
   uncheckAllLabel: string
+  onShowAll?: () => void
+  showAllLabel: string
 }
 
 const MultiSelectActionsContext = createContext<MultiSelectActions | null>(null)
@@ -78,6 +84,22 @@ const MultiSelectPaper = ({ children, ...props }: PaperProps) => {
         </Box>
       )}
       {children}
+      {actions?.onShowAll && (
+        <Box
+          sx={{
+            px: 1,
+            py: 0.5,
+            borderTop: `1px solid ${cssVar(palette.pendingGray1)}`,
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault()
+          }}
+        >
+          <Button size="small" onClick={actions.onShowAll}>
+            {actions.showAllLabel}
+          </Button>
+        </Box>
+      )}
     </Paper>
   )
 }
@@ -309,6 +331,32 @@ export const ReportAltParamField = ({
       ),
     [sourceListSignature]
   )
+  const showAllSearchParams = optionsSource?.params
+  const canShowAll =
+    !disabled &&
+    !!param.referenceDomain &&
+    ((isServerDictRef && !param.referenceDomain.includes(':')) ||
+      isServerDictList)
+  const openShowAll = (
+    selectedId: number | undefined,
+    onPicked: (option: SelectOption) => void
+  ) => {
+    openReferencePicker({
+      mode: 'list',
+      domain: 'DICTIONARY',
+      typeCode: param.referenceDomain!,
+      selectedId,
+      searchParams: showAllSearchParams,
+      onSelect: (option) => {
+        if (!option) return
+        setPickedLabels((prev) => ({
+          ...prev,
+          [Number(option.id)]: option.label,
+        }))
+        onPicked(option)
+      },
+    })
+  }
   const selectedDictLabel =
     selectedDictId == null
       ? null
@@ -395,6 +443,14 @@ export const ReportAltParamField = ({
         },
         checkAllLabel: t('inputs.checkAll'),
         uncheckAllLabel: t('inputs.uncheckAll'),
+        onShowAll: canShowAll
+          ? () => {
+              openShowAll(undefined, (option) => {
+                onChange([...new Set([...selectedIds, Number(option.id)])])
+              })
+            }
+          : undefined,
+        showAllLabel: t('dictSidebar.showAll'),
       }
       return (
         <MultiSelectActionsContext.Provider value={multiSelectActions}>
@@ -562,6 +618,15 @@ export const ReportAltParamField = ({
               }
               onChange(o ? Number(o.id) : '')
             }}
+            onShowAll={
+              canShowAll
+                ? () => {
+                    openShowAll(selectedDictId ?? undefined, (option) => {
+                      onChange(Number(option.id))
+                    })
+                  }
+                : undefined
+            }
             label={label}
             required={param.required}
             error={invalid}

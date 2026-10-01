@@ -38,8 +38,10 @@ import {
   buildPathHeadModel,
   hasHeaderPath,
 } from '../lib/head-model'
+import { expandedToLevel, treeLevelCount } from '../lib/tree-levels'
 import { HeadTitle } from './head-title'
 import { ReportCell } from './report-cell'
+import { TreeLevelBar } from './tree-level-bar'
 
 export type ReportRowClickZone = 'label' | 'value'
 
@@ -228,6 +230,10 @@ const PlainTreeTable = ({
   useEffect(() => {
     setExpanded(true)
   }, [result])
+  const levelCount = useMemo(() => treeLevelCount(data), [data])
+  const expandToLevel = (level: number) => {
+    setExpanded(level >= levelCount ? true : expandedToLevel(data, level))
+  }
 
   // Первая DIMENSION-колонка, чьи значения лежат в groupValue строк, — это
   // «колонка дерева»: её заголовок вешаем на первую колонку и не дублируем.
@@ -443,217 +449,220 @@ const PlainTreeTable = ({
   }
 
   return (
-    <div className={TABLE_SCROLL}>
-      <table
-        className="table-fixed border-collapse bg-white"
-        style={tableStyle}
-      >
-        <colgroup>
-          <col style={{ width: treeColWidthPx }} />
-          {bodyColumns.map((col) => (
-            <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
-          ))}
-        </colgroup>
-        <thead className={STICKY_HEAD}>
-          {pathModel ? (
-            pathModel.rows.map((cells, level) => (
-              <tr key={`path-row-${String(level)}`}>
-                {level === 0 && (
-                  <th
-                    rowSpan={pathModel.depth}
-                    className={th}
-                    style={stickyTree}
-                  >
+    <>
+      <TreeLevelBar levels={levelCount} onSelect={expandToLevel} />
+      <div className={TABLE_SCROLL}>
+        <table
+          className="table-fixed border-collapse bg-white"
+          style={tableStyle}
+        >
+          <colgroup>
+            <col style={{ width: treeColWidthPx }} />
+            {bodyColumns.map((col) => (
+              <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
+            ))}
+          </colgroup>
+          <thead className={STICKY_HEAD}>
+            {pathModel ? (
+              pathModel.rows.map((cells, level) => (
+                <tr key={`path-row-${String(level)}`}>
+                  {level === 0 && (
+                    <th
+                      rowSpan={pathModel.depth}
+                      className={th}
+                      style={stickyTree}
+                    >
+                      {treeHeader}
+                    </th>
+                  )}
+                  {cells.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={`${th} ${cell.vertical ? 'align-bottom' : ''}`}
+                      style={stickyAt(cell.col0, cell.colSpan)}
+                    >
+                      <HeadTitle title={cell.title} vertical={cell.vertical} />
+                    </th>
+                  ))}
+                </tr>
+              ))
+            ) : headModel3 ? (
+              <>
+                <tr>
+                  <th rowSpan={3} className={th} style={stickyTree}>
                     {treeHeader}
                   </th>
-                )}
-                {cells.map((cell) => (
-                  <th
-                    key={cell.key}
-                    colSpan={cell.colSpan}
-                    rowSpan={cell.rowSpan}
-                    className={`${th} ${cell.vertical ? 'align-bottom' : ''}`}
-                    style={stickyAt(cell.col0, cell.colSpan)}
-                  >
-                    <HeadTitle title={cell.title} vertical={cell.vertical} />
+                  {headModel3.topRow.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={th}
+                      style={stickyAt(cell.col0, cell.colSpan)}
+                    >
+                      <Typography variant="body2" sx={thTextSx}>
+                        {cell.title}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {headModel3.midRow.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={th}
+                      style={stickyAt(cell.col0, cell.colSpan)}
+                    >
+                      <Typography variant="body2" sx={thTextSx}>
+                        {cell.title}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {headModel3.botRow.map(({ key, col, col0 }) => (
+                    <th key={key} className={th} style={stickyAt(col0)}>
+                      <Typography variant="body2" sx={thTextSx}>
+                        {columnTitle(col, isKz)}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+              </>
+            ) : headModel ? (
+              <>
+                <tr>
+                  <th rowSpan={2} className={th} style={stickyTree}>
+                    {treeHeader}
                   </th>
-                ))}
-              </tr>
-            ))
-          ) : headModel3 ? (
-            <>
+                  {headModel.topRow.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={th}
+                      style={stickyAt(cell.col0, cell.colSpan)}
+                    >
+                      <Typography variant="body2" sx={thTextSx}>
+                        {cell.title}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {headModel.subRow.map(({ key, col, col0 }) => (
+                    <th key={key} className={th} style={stickyAt(col0)}>
+                      <Typography variant="body2" sx={thTextSx}>
+                        {columnTitle(col, isKz)}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+              </>
+            ) : (
               <tr>
-                <th rowSpan={3} className={th} style={stickyTree}>
+                <th className={th} style={stickyTree}>
                   {treeHeader}
                 </th>
-                {headModel3.topRow.map((cell) => (
-                  <th
-                    key={cell.key}
-                    colSpan={cell.colSpan}
-                    rowSpan={cell.rowSpan}
-                    className={th}
-                    style={stickyAt(cell.col0, cell.colSpan)}
-                  >
-                    <Typography variant="body2" sx={thTextSx}>
-                      {cell.title}
-                    </Typography>
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {headModel3.midRow.map((cell) => (
-                  <th
-                    key={cell.key}
-                    colSpan={cell.colSpan}
-                    rowSpan={cell.rowSpan}
-                    className={th}
-                    style={stickyAt(cell.col0, cell.colSpan)}
-                  >
-                    <Typography variant="body2" sx={thTextSx}>
-                      {cell.title}
-                    </Typography>
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {headModel3.botRow.map(({ key, col, col0 }) => (
-                  <th key={key} className={th} style={stickyAt(col0)}>
+                {bodyColumns.map((col, idx) => (
+                  <th key={col.code} className={th} style={stickyAt(idx)}>
                     <Typography variant="body2" sx={thTextSx}>
                       {columnTitle(col, isKz)}
                     </Typography>
                   </th>
                 ))}
               </tr>
-            </>
-          ) : headModel ? (
-            <>
-              <tr>
-                <th rowSpan={2} className={th} style={stickyTree}>
-                  {treeHeader}
+            )}
+            {hasColumnNumbers && (
+              <tr data-testid="report-column-numbers">
+                <th className={thNumber} style={stickyTree}>
+                  <Typography variant="body2" sx={thTextSx}>
+                    {treeColumn?.columnNumber ?? ''}
+                  </Typography>
                 </th>
-                {headModel.topRow.map((cell) => (
-                  <th
-                    key={cell.key}
-                    colSpan={cell.colSpan}
-                    rowSpan={cell.rowSpan}
-                    className={th}
-                    style={stickyAt(cell.col0, cell.colSpan)}
+                {bodyColumns.map((col, idx) => (
+                  <th key={col.code} className={thNumber} style={stickyAt(idx)}>
+                    <Typography variant="body2" sx={thTextSx}>
+                      {col.columnNumber ?? ''}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+            )}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => {
+              const bold = isGroupRow(row)
+              return (
+                <tr
+                  key={row.id}
+                  {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
+                >
+                  <td className={`${tdBase} align-top`} style={stickyTree}>
+                    {renderGroupCell(row)}
+                  </td>
+                  {bodyColumns.map((col, idx) => (
+                    <td
+                      key={col.code}
+                      style={stickyAt(idx)}
+                      {...(isMeasure(col) ? valueCellProps : {})}
+                      className={`${col.wrap ? tdWrap : tdBase} align-top ${
+                        isMeasure(col) || isRightAligned(col)
+                          ? 'text-right tabular-nums'
+                          : ''
+                      }`}
+                    >
+                      {isBlankCell(row, col.code) ? null : (
+                        <ReportCell
+                          subLabels={indicatorSubLabels(row.original.cells)}
+                          value={row.original.cells[col.code]}
+                          col={col}
+                          bold={bold}
+                        />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              )
+            })}
+          </tbody>
+          {showsGrandTotal(result.total, result.rows) && (
+            <tfoot>
+              <tr>
+                <td className={tdBase} style={stickyTree}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
                   >
-                    <Typography variant="body2" sx={thTextSx}>
-                      {cell.title}
-                    </Typography>
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {headModel.subRow.map(({ key, col, col0 }) => (
-                  <th key={key} className={th} style={stickyAt(col0)}>
-                    <Typography variant="body2" sx={thTextSx}>
-                      {columnTitle(col, isKz)}
-                    </Typography>
-                  </th>
-                ))}
-              </tr>
-            </>
-          ) : (
-            <tr>
-              <th className={th} style={stickyTree}>
-                {treeHeader}
-              </th>
-              {bodyColumns.map((col, idx) => (
-                <th key={col.code} className={th} style={stickyAt(idx)}>
-                  <Typography variant="body2" sx={thTextSx}>
-                    {columnTitle(col, isKz)}
+                    {t('reports.total', { lng: reportLang })}
                   </Typography>
-                </th>
-              ))}
-            </tr>
-          )}
-          {hasColumnNumbers && (
-            <tr data-testid="report-column-numbers">
-              <th className={thNumber} style={stickyTree}>
-                <Typography variant="body2" sx={thTextSx}>
-                  {treeColumn?.columnNumber ?? ''}
-                </Typography>
-              </th>
-              {bodyColumns.map((col, idx) => (
-                <th key={col.code} className={thNumber} style={stickyAt(idx)}>
-                  <Typography variant="body2" sx={thTextSx}>
-                    {col.columnNumber ?? ''}
-                  </Typography>
-                </th>
-              ))}
-            </tr>
-          )}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => {
-            const bold = isGroupRow(row)
-            return (
-              <tr
-                key={row.id}
-                {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
-              >
-                <td className={`${tdBase} align-top`} style={stickyTree}>
-                  {renderGroupCell(row)}
                 </td>
                 {bodyColumns.map((col, idx) => (
                   <td
                     key={col.code}
                     style={stickyAt(idx)}
-                    {...(isMeasure(col) ? valueCellProps : {})}
-                    className={`${col.wrap ? tdWrap : tdBase} align-top ${
-                      isMeasure(col) || isRightAligned(col)
-                        ? 'text-right tabular-nums'
-                        : ''
+                    className={`${tdBase} ${
+                      isNumericCell(col) ? 'text-right tabular-nums' : ''
                     }`}
                   >
-                    {isBlankCell(row, col.code) ? null : (
-                      <ReportCell
-                        subLabels={indicatorSubLabels(row.original.cells)}
-                        value={row.original.cells[col.code]}
-                        col={col}
-                        bold={bold}
-                      />
-                    )}
+                    <ReportCell
+                      subLabels={indicatorSubLabels(result.total)}
+                      value={result.total[col.code]}
+                      col={col}
+                      bold
+                    />
                   </td>
                 ))}
               </tr>
-            )
-          })}
-        </tbody>
-        {showsGrandTotal(result.total, result.rows) && (
-          <tfoot>
-            <tr>
-              <td className={tdBase} style={stickyTree}>
-                <Typography
-                  variant="body2"
-                  sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
-                >
-                  {t('reports.total', { lng: reportLang })}
-                </Typography>
-              </td>
-              {bodyColumns.map((col, idx) => (
-                <td
-                  key={col.code}
-                  style={stickyAt(idx)}
-                  className={`${tdBase} ${
-                    isNumericCell(col) ? 'text-right tabular-nums' : ''
-                  }`}
-                >
-                  <ReportCell
-                    subLabels={indicatorSubLabels(result.total)}
-                    value={result.total[col.code]}
-                    col={col}
-                    bold
-                  />
-                </td>
-              ))}
-            </tr>
-          </tfoot>
-        )}
-      </table>
-    </div>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </>
   )
 }
 
@@ -796,6 +805,10 @@ const FloorTreeTable = ({
   useEffect(() => {
     setExpanded(true)
   }, [result])
+  const levelCount = useMemo(() => treeLevelCount(data), [data])
+  const expandToLevel = (level: number) => {
+    setExpanded(level >= levelCount ? true : expandedToLevel(data, level))
+  }
 
   const tableColumns = useMemo<ColumnDef<ReportRowDto>[]>(
     () => [{ id: 'tree', accessorFn: (r) => r.groupValue ?? null }],
@@ -886,67 +899,53 @@ const FloorTreeTable = ({
     ))
 
   return (
-    <div className={TABLE_SCROLL}>
-      <table className="table-fixed border-collapse bg-white">
-        <colgroup>
-          {leafColumns.map((col) => (
-            <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
-          ))}
-          {measureColumns.map((col) => (
-            <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
-          ))}
-        </colgroup>
-        <thead className={STICKY_HEAD}>
-          {floorCodes.map((code, idx) => {
-            const col = result.columns.find((c) => c.code === code)
-            const title = col ? columnTitle(col, isKz) : code
-            return (
-              <tr key={`floor-${code}`}>
-                <th
-                  colSpan={leafColumns.length}
-                  className={`${thBase} align-bottom`}
-                >
-                  <Typography variant="body2" sx={thTextSx}>
-                    {title}
-                  </Typography>
-                </th>
-                {useMeasure3
-                  ? renderMeasureRow(idx)
-                  : idx === 0 &&
-                    measureColumns.map((m) => (
-                      <th
-                        key={m.code}
-                        rowSpan={totalHeaderRows}
-                        className={`${thBase} align-bottom`}
-                      >
-                        <Typography variant="body2" sx={thTextSx}>
-                          {columnTitle(m, isKz)}
-                        </Typography>
-                      </th>
-                    ))}
-              </tr>
-            )
-          })}
-          {leafHead.hasGroups ? (
-            <>
-              <tr>
-                {leafHead.topRow.map((cell) => (
+    <>
+      <TreeLevelBar levels={levelCount} onSelect={expandToLevel} />
+      <div className={TABLE_SCROLL}>
+        <table className="table-fixed border-collapse bg-white">
+          <colgroup>
+            {leafColumns.map((col) => (
+              <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
+            ))}
+            {measureColumns.map((col) => (
+              <col key={col.code} style={{ width: bodyColWidthPx(col) }} />
+            ))}
+          </colgroup>
+          <thead className={STICKY_HEAD}>
+            {floorCodes.map((code, idx) => {
+              const col = result.columns.find((c) => c.code === code)
+              const title = col ? columnTitle(col, isKz) : code
+              return (
+                <tr key={`floor-${code}`}>
                   <th
-                    key={cell.key}
-                    colSpan={cell.colSpan}
-                    rowSpan={cell.rowSpan}
-                    className={thBase}
+                    colSpan={leafColumns.length}
+                    className={`${thBase} align-bottom`}
                   >
                     <Typography variant="body2" sx={thTextSx}>
-                      {cell.title}
+                      {title}
                     </Typography>
                   </th>
-                ))}
-                {useMeasure3 && renderMeasureRow(floorCodes.length)}
-              </tr>
-              {leafHead.midRow.length > 0 && (
+                  {useMeasure3
+                    ? renderMeasureRow(idx)
+                    : idx === 0 &&
+                      measureColumns.map((m) => (
+                        <th
+                          key={m.code}
+                          rowSpan={totalHeaderRows}
+                          className={`${thBase} align-bottom`}
+                        >
+                          <Typography variant="body2" sx={thTextSx}>
+                            {columnTitle(m, isKz)}
+                          </Typography>
+                        </th>
+                      ))}
+                </tr>
+              )
+            })}
+            {leafHead.hasGroups ? (
+              <>
                 <tr>
-                  {leafHead.midRow.map((cell) => (
+                  {leafHead.topRow.map((cell) => (
                     <th
                       key={cell.key}
                       colSpan={cell.colSpan}
@@ -958,48 +957,100 @@ const FloorTreeTable = ({
                       </Typography>
                     </th>
                   ))}
-                  {useMeasure3 && renderMeasureRow(floorCodes.length + 1)}
+                  {useMeasure3 && renderMeasureRow(floorCodes.length)}
                 </tr>
-              )}
+                {leafHead.midRow.length > 0 && (
+                  <tr>
+                    {leafHead.midRow.map((cell) => (
+                      <th
+                        key={cell.key}
+                        colSpan={cell.colSpan}
+                        rowSpan={cell.rowSpan}
+                        className={thBase}
+                      >
+                        <Typography variant="body2" sx={thTextSx}>
+                          {cell.title}
+                        </Typography>
+                      </th>
+                    ))}
+                    {useMeasure3 && renderMeasureRow(floorCodes.length + 1)}
+                  </tr>
+                )}
+                <tr>
+                  {leafHead.subRow.map(({ key, col }) => (
+                    <th key={key} className={thBase}>
+                      <Typography variant="body2" sx={thTextSx}>
+                        {columnTitle(col, isKz)}
+                      </Typography>
+                    </th>
+                  ))}
+                  {useMeasure3 && renderMeasureRow(totalHeaderRows - 1)}
+                </tr>
+              </>
+            ) : (
               <tr>
-                {leafHead.subRow.map(({ key, col }) => (
-                  <th key={key} className={thBase}>
+                {leafColumns.map((col) => (
+                  <th key={col.code} className={thBase}>
                     <Typography variant="body2" sx={thTextSx}>
                       {columnTitle(col, isKz)}
                     </Typography>
                   </th>
                 ))}
+                {/* Форма 326: нижний ряд шапки мер (Кол-во/Сумма под Дебет/Кредит). */}
                 {useMeasure3 && renderMeasureRow(totalHeaderRows - 1)}
               </tr>
-            </>
-          ) : (
-            <tr>
-              {leafColumns.map((col) => (
-                <th key={col.code} className={thBase}>
-                  <Typography variant="body2" sx={thTextSx}>
-                    {columnTitle(col, isKz)}
-                  </Typography>
-                </th>
-              ))}
-              {/* Форма 326: нижний ряд шапки мер (Кол-во/Сумма под Дебет/Кредит). */}
-              {useMeasure3 && renderMeasureRow(totalHeaderRows - 1)}
-            </tr>
-          )}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => {
-            if (isBandRow(row)) {
+            )}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => {
+              if (isBandRow(row)) {
+                return (
+                  <tr
+                    key={row.id}
+                    {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
+                  >
+                    <td
+                      colSpan={leafColumns.length}
+                      className={`${tdBase} align-top`}
+                    >
+                      {renderBandCell(row)}
+                    </td>
+                    {measureColumns.map((m) => (
+                      <td
+                        key={m.code}
+                        {...valueCellProps}
+                        className={`${tdBase} align-top text-right tabular-nums`}
+                      >
+                        <ReportCell
+                          subLabels={indicatorSubLabels(row.original.cells)}
+                          value={row.original.cells[m.code]}
+                          col={m}
+                          bold
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                )
+              }
               return (
                 <tr
                   key={row.id}
                   {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
                 >
-                  <td
-                    colSpan={leafColumns.length}
-                    className={`${tdBase} align-top`}
-                  >
-                    {renderBandCell(row)}
-                  </td>
+                  {leafColumns.map((col) => (
+                    <td
+                      key={col.code}
+                      className={`${tdBase} align-top ${
+                        isRightAligned(col) ? 'text-right tabular-nums' : ''
+                      }`}
+                    >
+                      <ReportCell
+                        subLabels={indicatorSubLabels(row.original.cells)}
+                        value={row.original.cells[col.code]}
+                        col={col}
+                      />
+                    </td>
+                  ))}
                   {measureColumns.map((m) => (
                     <td
                       key={m.code}
@@ -1010,72 +1061,37 @@ const FloorTreeTable = ({
                         subLabels={indicatorSubLabels(row.original.cells)}
                         value={row.original.cells[m.code]}
                         col={m}
-                        bold
                       />
                     </td>
                   ))}
                 </tr>
               )
-            }
-            return (
-              <tr
-                key={row.id}
-                {...rowInteraction(row, onRowDoubleClick, onRowContextMenu)}
-              >
-                {leafColumns.map((col) => (
-                  <td
-                    key={col.code}
-                    className={`${tdBase} align-top ${
-                      isRightAligned(col) ? 'text-right tabular-nums' : ''
-                    }`}
+            })}
+          </tbody>
+          {showsGrandTotal(result.total, result.rows) && (
+            <tfoot>
+              <tr>
+                <td colSpan={leafColumns.length} className={tdBase}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
                   >
-                    <ReportCell
-                      subLabels={indicatorSubLabels(row.original.cells)}
-                      value={row.original.cells[col.code]}
-                      col={col}
-                    />
-                  </td>
-                ))}
+                    {t('reports.total', { lng: reportLang })}
+                  </Typography>
+                </td>
                 {measureColumns.map((m) => (
                   <td
                     key={m.code}
-                    {...valueCellProps}
-                    className={`${tdBase} align-top text-right tabular-nums`}
+                    className={`${tdBase} text-right tabular-nums`}
                   >
-                    <ReportCell
-                      subLabels={indicatorSubLabels(row.original.cells)}
-                      value={row.original.cells[m.code]}
-                      col={m}
-                    />
+                    <ReportCell value={result.total[m.code]} col={m} bold />
                   </td>
                 ))}
               </tr>
-            )
-          })}
-        </tbody>
-        {showsGrandTotal(result.total, result.rows) && (
-          <tfoot>
-            <tr>
-              <td colSpan={leafColumns.length} className={tdBase}>
-                <Typography
-                  variant="body2"
-                  sx={{ color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }}
-                >
-                  {t('reports.total', { lng: reportLang })}
-                </Typography>
-              </td>
-              {measureColumns.map((m) => (
-                <td
-                  key={m.code}
-                  className={`${tdBase} text-right tabular-nums`}
-                >
-                  <ReportCell value={result.total[m.code]} col={m} bold />
-                </td>
-              ))}
-            </tr>
-          </tfoot>
-        )}
-      </table>
-    </div>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </>
   )
 }

@@ -226,8 +226,13 @@ function buildColumnDefsInner(
         // TanStack `header` — string | функция; сырой элемент недопустим,
         // поэтому подпись оборачиваем в render-функцию (flexRender её вызовет).
         header: () => columnHeaderContent(col),
+        // SCRUM-412 п.2 (после теста 01.10): в таблице С вертикальными
+        // группами (subRowCount > 0) однострочны и ПЛОСКИЕ колонки — сетка
+        // строки держит фиксированные этажи, и перенесённое значение («Статья
+        // ДДС» Плана финансирования) вытекало на соседнюю строку так же, как
+        // раньше в под-строках групп. Таблицы без групп переносят как прежде.
         cell: (info: CellContext<TableRow, unknown>) =>
-          buildCellEditorElement(col, info.row.original, deps),
+          buildCellEditorElement(col, info.row.original, deps, subRowCount > 0),
         ...(node.props?.footer === true ? { footer: col.id } : {}),
       }
       result.push(colDef)

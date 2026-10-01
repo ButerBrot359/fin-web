@@ -14,6 +14,7 @@ import {
   type AuditLogFilterValues,
 } from '../lib/audit-log-filters'
 import { useAuditActions } from '../lib/use-audit-actions'
+import { useAuditUsers } from '../lib/use-audit-users'
 import { useAuditLogUrlState } from '../lib/use-audit-log-url-state'
 import { useSeenApplications } from '../lib/use-seen-applications'
 import { AuditEventCard } from './audit-event-card'
@@ -47,6 +48,7 @@ export const AuditLogPage = () => {
   const [extraOpen, setExtraOpen] = useState(countExtraFilters(filters) > 0)
   const [selected, setSelected] = useState<AuditLogRecord | null>(null)
   const actions = useAuditActions()
+  const users = useAuditUsers()
 
   // Отбор сменился снаружи (быстрый отбор, «Назад») — поля отбора показывают его, а не черновик.
   if (draftKey !== filtersKey) {
@@ -94,6 +96,7 @@ export const AuditLogPage = () => {
         }}
         disabled={isFetching}
         actions={actions}
+        users={users}
         applicationOptions={applicationOptions}
         extraOpen={extraOpen}
         onToggleExtra={() => {

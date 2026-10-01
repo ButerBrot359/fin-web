@@ -2,11 +2,17 @@ import type { TableExportData } from '@/shared/lib/table-export'
 import type {
   XlsxCell,
   XlsxColumnMeta,
+  XlsxHeaderCell,
   XlsxRowKind,
 } from '@/shared/lib/xlsx/write-xlsx'
 import { formatDate } from '@/shared/lib/utils/date'
+import { displayPatternForFormat } from '@/shared/lib/utils/iso-date'
 import {
+  buildHeadModel,
+  buildPathHeadModel,
+  decimalsOfFormat,
   formatReportTitle,
+  hasHeaderPath,
   isHighlightRow,
 } from '@/features/report-result-view'
 
@@ -50,10 +56,18 @@ const formatCell = (value: unknown, col: ReportAltColumnDto): XlsxCell => {
     typeof value === 'string' &&
     /^\d{4}-\d{2}-\d{2}/.test(value)
   ) {
-    return formatDate(value, 'dd.MM.yyyy') || value
+    return formatDate(value, displayPatternForFormat(col.format)) || value
   }
   if (typeof value === 'string' || typeof value === 'number') return value
   return ''
+}
+
+const measureNumFmt = (col: ReportAltColumnDto): XlsxColumnMeta['numFmt'] => {
+  if (!col.format) return 'money'
+  const { max } = decimalsOfFormat(col.format)
+  if (max === 0) return 'integer'
+  if (max === 3) return 'quantity'
+  return 'money'
 }
 
 /** Метаданные колонок листа: числовой формат и выравнивание. */
@@ -64,10 +78,91 @@ const buildColumnMeta = (
   const meta: XlsxColumnMeta[] = []
   if (hasLeadColumn) meta.push({ align: 'left', width: 45 })
   for (const col of columns) {
-    if (col.role === 'MEASURE') meta.push({ numFmt: 'money', align: 'right' })
+    if (col.role === 'MEASURE')
+      meta.push({ numFmt: measureNumFmt(col), align: 'right' })
     else meta.push({ align: col.align === 'RIGHT' ? 'right' : 'left' })
   }
   return meta
+}
+
+const buildPathHeaderRows = (
+  columns: ReportAltColumnDto[],
+  isKz: boolean,
+  leadColumnTitle?: string,
+  leadColumnNumber = ''
+): XlsxHeaderCell[][] => {
+  const offset = leadColumnTitle != null ? 1 : 0
+  const model = buildPathHeadModel(columns, { isKz })
+  const rows: XlsxHeaderCell[][] = model.rows.map((cells) =>
+    cells.map((cell) => {
+      const out: XlsxHeaderCell = { text: cell.title, col: cell.col0 + offset }
+      if (cell.colSpan > 1) out.colSpan = cell.colSpan
+      if (cell.rowSpan > 1) out.rowSpan = cell.rowSpan
+      if (cell.vertical) out.vertical = true
+      return out
+    })
+  )
+  if (leadColumnTitle != null) {
+    const lead: XlsxHeaderCell = { text: leadColumnTitle, col: 0 }
+    if (model.depth > 1) lead.rowSpan = model.depth
+    rows[0].unshift(lead)
+  }
+  if (columns.some((c) => !!c.columnNumber)) {
+    const numbers: XlsxHeaderCell[] = columns.map((c, i) => ({
+      text: c.columnNumber ?? '',
+      col: i + offset,
+    }))
+    if (leadColumnTitle != null)
+      numbers.unshift({ text: leadColumnNumber, col: 0 })
+    rows.push(numbers)
+  }
+  return rows
+}
+
+const buildNumberedHeaderRows = (
+  columns: ReportAltColumnDto[],
+  isKz: boolean,
+  leadColumnTitle?: string,
+  leadColumnNumber = ''
+): XlsxHeaderCell[][] | undefined => {
+  if (hasHeaderPath(columns))
+    return buildPathHeaderRows(columns, isKz, leadColumnTitle, leadColumnNumber)
+  if (!columns.some((c) => !!c.columnNumber)) return undefined
+  const offset = leadColumnTitle != null ? 1 : 0
+  const model = buildHeadModel(columns, { isKz, levels: 2 })
+  const numbers: XlsxHeaderCell[] = columns.map((c, i) => ({
+    text: c.columnNumber ?? '',
+    col: i + offset,
+  }))
+  if (leadColumnTitle != null)
+    numbers.unshift({ text: leadColumnNumber, col: 0 })
+
+  if (!model.hasGroups) {
+    const titles: XlsxHeaderCell[] = columns.map((c, i) => ({
+      text: columnTitle(c, isKz),
+      col: i + offset,
+    }))
+    if (leadColumnTitle != null)
+      titles.unshift({ text: leadColumnTitle, col: 0 })
+    return [titles, numbers]
+  }
+
+  const top: XlsxHeaderCell[] = []
+  if (leadColumnTitle != null) {
+    top.push({ text: leadColumnTitle, col: 0, rowSpan: 2 })
+  }
+  for (const cell of model.topRow) {
+    top.push(
+      cell.col != null
+        ? { text: cell.title, col: cell.col0 + offset, rowSpan: 2 }
+        : { text: cell.title, col: cell.col0 + offset, colSpan: cell.colSpan }
+    )
+  }
+  const sub: XlsxHeaderCell[] = model.leafRow.map((leaf) => ({
+    text: columnTitle(leaf.col, isKz),
+    col: leaf.col0 + offset,
+  }))
+  return [top, sub, numbers]
 }
 
 /** Шапка листа: организация + период + подзаголовки. */
@@ -120,6 +215,7 @@ export const buildReportAltExport = (
     return {
       ...sheetChrome(result),
       headers: columns.map((c) => columnTitle(c, isKz)),
+      headerRows: buildNumberedHeaderRows(columns, isKz),
       columns: buildColumnMeta(columns, false),
       rows: out,
       rowKinds,
@@ -127,12 +223,21 @@ export const buildReportAltExport = (
   }
 
   // TREE: служебная первая колонка — наименование группы с отступом по уровню.
+  const tree = columns.find((c) => c.treeColumn)
+  const body = tree ? columns.filter((c) => c !== tree) : columns
+  const leadHeader = tree ? columnTitle(tree, isKz) : groupHeader
+  const leadLabel = (row: ReportAltRowDto): string => {
+    const own = tree ? row.cells[tree.code] : undefined
+    return typeof own === 'string' && own !== ''
+      ? own
+      : (row.labelText ?? row.groupValue ?? '')
+  }
   const walk = (rows: ReportAltRowDto[]) => {
     for (const row of rows) {
       rowKinds.push(rowKindOf(row))
       out.push([
-        `${'  '.repeat(row.level)}${row.labelText ?? row.groupValue ?? ''}`,
-        ...columns.map((c) => formatCell(row.cells[c.code], c)),
+        `${'  '.repeat(row.level)}${row.labelText ?? leadLabel(row)}`,
+        ...body.map((c) => formatCell(row.cells[c.code], c)),
       ])
       if (row.children.length > 0) walk(row.children)
     }
@@ -143,14 +248,20 @@ export const buildReportAltExport = (
     rowKinds.push('highlight')
     out.push([
       totalLabel,
-      ...columns.map((c) => formatCell(result.total[c.code], c)),
+      ...body.map((c) => formatCell(result.total[c.code], c)),
     ])
   }
 
   return {
     ...sheetChrome(result),
-    headers: [groupHeader, ...columns.map((c) => columnTitle(c, isKz))],
-    columns: buildColumnMeta(columns, true),
+    headers: [leadHeader, ...body.map((c) => columnTitle(c, isKz))],
+    headerRows: buildNumberedHeaderRows(
+      body,
+      isKz,
+      leadHeader,
+      tree?.columnNumber ?? ''
+    ),
+    columns: buildColumnMeta(body, true),
     rows: out,
     rowKinds,
   }

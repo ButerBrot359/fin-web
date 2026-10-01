@@ -79,6 +79,7 @@ export interface ReportFormSectionDto {
   numberGraphs?: boolean
   /** Номер первой графы секции (1 у дебетовой, продолжение у кредитовой). */
   graphNumberStart?: number
+  fitToWidth?: boolean
 }
 
 /** Подпись бланка («Исполнитель:» — должность/подпись/расшифровка). */
@@ -103,6 +104,7 @@ export interface ReportHeaderBlockDto {
   lines: string[]
   underline: boolean
   caption: string | null
+  placement?: 'BEFORE_TITLE' | 'AFTER_TITLE' | null
 }
 
 /** Официальный бланк (мемориальный ордер): шапка, секции, остатки, подписи. */
@@ -248,10 +250,19 @@ export interface ReportColumnDto {
    */
   subGroupTitleRu?: string
   subGroupTitleKz?: string
+  headerPathRu?: string[]
+  headerPathKz?: string[]
+  headerPathVertical?: boolean[]
+  verticalTitle?: boolean
   /** Ширина колонки в символах (≈ width × 8px); null ⇒ авто. */
   width?: number
   /** Рендер значения с 1С-признаком сальдо: «Д <abs>» при ≥0, «К <abs>» при <0. */
   dcIndicator?: boolean
+  columnNumber?: string
+  frozen?: boolean
+  wrap?: boolean
+  treeColumn?: boolean
+  verticalAlign?: string
 }
 
 /** Одно допустимое значение параметра (для NUMBER с фиксированным списком). */
@@ -364,6 +375,7 @@ export interface ReportRowDto {
    * индекс первой колонки, где начинаются значения `cells`.
    */
   labelColSpan?: number
+  labelAlign?: string
   /**
    * Цель расшифровки (SCRUM-370 блок В). Отсутствует у большинства строк
    * (итоги, сальдо, заголовки групп) — такая строка не кликабельна, это

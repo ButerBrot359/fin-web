@@ -129,6 +129,17 @@ export const vygruzkaXml = (
     signal,
   })
 
+export const vygruzkaJson = (
+  code: string,
+  body: RunReportAltBody,
+  signal?: AbortSignal
+) =>
+  apiService.postFileBlob({
+    url: `/api/reportalt/${code}/vygruzka-json`,
+    data: body,
+    signal,
+  })
+
 /** Что уходит в POST /api/reportalt/{code}/save — реквизиты сохраняемого экземпляра отчёта. */
 export interface SaveReportAltBody {
   kodOtcheta: string

@@ -1,4 +1,5 @@
-import { format, isValid, parseISO } from 'date-fns'
+import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
+import { toDate } from '@/shared/lib/utils/iso-date'
 
 /**
  * Форматирование значения ячейки SDUI-списка по dataType колонки
@@ -15,12 +16,14 @@ export function formatSduiCellValue(value: unknown, dataType?: string): string {
 
     case 'DATE':
     case 'DATETIME': {
-      const date = typeof value === 'string' ? parseISO(value) : null
-      if (!date || !isValid(date)) return typeof value === 'string' ? value : ''
+      const date = typeof value === 'string' ? toDate(value) : null
+      if (!date) return typeof value === 'string' ? value : ''
       const hasTime =
         dataType === 'DATETIME' &&
-        (date.getHours() !== 0 || date.getMinutes() !== 0 || date.getSeconds() !== 0)
-      return format(date, hasTime ? 'dd.MM.yyyy HH:mm' : 'dd.MM.yyyy')
+        (date.getHours() !== 0 ||
+          date.getMinutes() !== 0 ||
+          date.getSeconds() !== 0)
+      return hasTime ? formatDateTime(date) : formatDate(date)
     }
 
     default:

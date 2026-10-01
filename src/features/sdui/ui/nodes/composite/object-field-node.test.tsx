@@ -93,6 +93,16 @@ describe('ObjectFieldNode выбор типа', () => {
     expect(list.getByText('Физические лица')).toBeTruthy()
   })
 
+  it('несколько членов и тип не выбран → подпись реквизита на месте', () => {
+    render(<ObjectFieldNode node={node([KONTRAGENTY, FIZ_LITSA])} />)
+    const placeholder = screen.getByLabelText(/Сотрудники и контрагенты/)
+    expect(placeholder).toBeTruthy()
+    expect((placeholder as HTMLInputElement).disabled).toBe(true)
+    expect(
+      screen.getByPlaceholderText('sdui.objectField.choosePlaceholder')
+    ).toBeTruthy()
+  })
+
   it('один член → селектор не показываем', () => {
     render(<ObjectFieldNode node={node([KONTRAGENTY])} />)
     expect(
@@ -197,5 +207,81 @@ describe('ObjectFieldNode смена счёта (патч allowedTypes)', () => 
     )
     rerender(<ObjectFieldNode node={node([KONTRAGENTY, DVIZHENIYA])} />)
     expect(state.Subkonto1).not.toBeNull()
+  })
+})
+
+const VIDY_NALOGOV = {
+  position: 1,
+  domainKind: 'ENUMS',
+  targetTypeCode: 'VidyNalogovVznosovOtchisleniy',
+  presentation: 'Виды налогов, взносов, отчислений',
+  options: [
+    {
+      value: 'OPV',
+      id: 11,
+      code: 'OPV',
+      label: 'Обязательные пенсионные взносы',
+    },
+    { value: 'SN', id: 12, code: 'SN', label: 'Социальный налог' },
+  ],
+}
+const VIDY_UDERZHANIY = {
+  position: 2,
+  domainKind: 'CALCULATION_PLAN',
+  targetTypeCode: 'VidyUderzhaniyOrganizatsii',
+  presentation: 'Виды удержаний организации',
+  optionsSource: {
+    url: '/api/calculation-plan/VidyUderzhaniyOrganizatsii/entries',
+  },
+}
+
+describe('ObjectFieldNode член-перечисление', () => {
+  it('значения перечисления выбираются из списка и уходят составным значением', () => {
+    render(<ObjectFieldNode node={node([VIDY_NALOGOV, VIDY_UDERZHANIY])} />)
+    fireEvent.mouseDown(typeSelect())
+    fireEvent.click(
+      within(screen.getByRole('listbox')).getByText(
+        'Виды налогов, взносов, отчислений'
+      )
+    )
+
+    expect(
+      screen.queryByPlaceholderText('sdui.objectField.unsupportedMember')
+    ).toBeNull()
+    const input = screen.getByRole('combobox', {
+      name: /Сотрудники и контрагенты/,
+    })
+    fireEvent.mouseDown(input)
+    fireEvent.click(
+      within(screen.getByRole('listbox')).getByText('Социальный налог')
+    )
+
+    const expected = {
+      id: 12,
+      presentation: 'Социальный налог',
+      type: 'ENUMS',
+      targetTypeCode: 'VidyNalogovVznosovOtchisleniy',
+    }
+    expect(state.Subkonto1).toEqual(expected)
+    expect(events.at(-1)?.value).toEqual(expected)
+  })
+
+  it('сохранённое значение перечисления показывается в поле', () => {
+    state.Subkonto1 = {
+      id: 11,
+      presentation: 'Обязательные пенсионные взносы',
+      targetTypeCode: 'VidyNalogovVznosovOtchisleniy',
+    }
+    render(<ObjectFieldNode node={node([VIDY_NALOGOV, VIDY_UDERZHANIY])} />)
+    expect(
+      screen.getByDisplayValue('Обязательные пенсионные взносы')
+    ).toBeTruthy()
+  })
+
+  it('перечисление без вариантов остаётся заглушкой', () => {
+    render(<ObjectFieldNode node={node([{ ...VIDY_NALOGOV, options: [] }])} />)
+    expect(
+      screen.getByPlaceholderText('sdui.objectField.unsupportedMember')
+    ).toBeTruthy()
   })
 })

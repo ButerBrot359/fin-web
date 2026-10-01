@@ -23,7 +23,13 @@ import {
   isSpanRow,
   resolveReportLang,
 } from '../lib/cell-helpers'
-import { buildHeadModel } from '../lib/head-model'
+import { fitColumnWidths } from '../lib/fit-column-widths'
+import {
+  buildHeadModel,
+  buildPathHeadModel,
+  hasHeaderPath,
+} from '../lib/head-model'
+import { HeadTitle } from './head-title'
 import { ReportCell } from './report-cell'
 
 interface LedgerTableProps {
@@ -55,6 +61,8 @@ const POKAZATEL_COL = 'Pokazatel'
 /** Сетка 1С: тонкие серые линии, плотные ячейки, вертикаль по верху. */
 const td = 'border border-pending-gray-1 px-1.5 py-0.5 align-top'
 const th = 'overflow-hidden border border-pending-gray-1 px-1.5 py-1 text-left'
+const thNumber =
+  'overflow-hidden border border-pending-gray-1 px-1.5 py-0.5 text-center'
 
 /** Стиль текста шапки колонок 1С: жирный тёмно-зелёный, 13px, без капса. */
 const thTextSx = { color: GREEN_1C, fontWeight: 700, fontSize: HEAD_FS }
@@ -130,12 +138,16 @@ export const LedgerTable = ({
     if (avail <= 0) return
     const sum = defaultWidths.reduce((a, b) => a + b, 0)
     if (sum <= 0) return
-    const scale = Math.min(1, avail / sum)
     fitDoneRef.current = true
     setColWidths(
-      defaultWidths.map((w) => Math.max(MIN_COL_WIDTH, Math.round(w * scale)))
+      fitColumnWidths(
+        defaultWidths,
+        columns.map((c) => c.width != null),
+        avail,
+        MIN_COL_WIDTH
+      )
     )
-  }, [defaultWidths, columns.length])
+  }, [defaultWidths, columns])
 
   const startResize = (index: number, e: ReactMouseEvent) => {
     e.preventDefault()
@@ -179,6 +191,14 @@ export const LedgerTable = ({
       ? { topRow: model.topRow, subRow: model.leafRow }
       : null
   }, [columns, isKz])
+
+  const pathModel = useMemo(
+    () =>
+      hasHeaderPath(columns) ? buildPathHeadModel(columns, { isKz }) : null,
+    [columns, isKz]
+  )
+
+  const hasColumnNumbers = columns.some((c) => !!c.columnNumber)
 
   if (result.rows.length === 0) {
     return (
@@ -355,7 +375,28 @@ export const LedgerTable = ({
             ))}
           </colgroup>
           <thead>
-            {headModel ? (
+            {pathModel ? (
+              pathModel.rows.map((cells, level) => (
+                <tr key={`path-row-${String(level)}`}>
+                  {cells.map((cell) => (
+                    <th
+                      key={cell.key}
+                      colSpan={cell.colSpan}
+                      rowSpan={cell.rowSpan}
+                      className={`${th} ${
+                        cell.vertical
+                          ? 'text-center align-bottom'
+                          : cell.colSpan > 1
+                            ? 'text-center'
+                            : ''
+                      }`}
+                    >
+                      <HeadTitle title={cell.title} vertical={cell.vertical} />
+                    </th>
+                  ))}
+                </tr>
+              ))
+            ) : headModel ? (
               <>
                 <tr>
                   {headModel.topRow.map((cell) => (
@@ -390,6 +431,17 @@ export const LedgerTable = ({
                   >
                     <Typography variant="body2" sx={thTextSx}>
                       {columnTitle(col, isKz)}
+                    </Typography>
+                  </th>
+                ))}
+              </tr>
+            )}
+            {hasColumnNumbers && (
+              <tr data-testid="report-column-numbers">
+                {columns.map((col) => (
+                  <th key={col.code} className={thNumber}>
+                    <Typography variant="body2" sx={thTextSx}>
+                      {col.columnNumber ?? ''}
                     </Typography>
                   </th>
                 ))}

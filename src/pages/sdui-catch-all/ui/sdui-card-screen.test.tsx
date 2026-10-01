@@ -142,6 +142,29 @@ describe('SduiCardScreen', () => {
     expect(screen.getByText('РКО №5 *')).toBeTruthy()
   })
 
+  it('отчёт (только шапка) с изменённым параметром → заголовок без « *», закрытие без диалога', () => {
+    act(() => {
+      useTreeStore.getState().setRoot({
+        id: 'report',
+        type: 'PAGE',
+        props: { title: 'Оборотно-сальдовая ведомость' },
+        children: [],
+      })
+    })
+    act(() => {
+      useViewStateStore.getState().set('report.Osv.param.Period', '2026-01-01')
+    })
+
+    renderAt(
+      '/modules/Otchety/reportalt/OborotnoSaldovayaVedomost',
+      false,
+      true
+    )
+
+    expect(screen.getByText('Оборотно-сальдовая ведомость')).toBeTruthy()
+    expect(screen.queryByText('Оборотно-сальдовая ведомость *')).toBeNull()
+  })
+
   it('смена showCardChrome (list-kind → card-kind) НЕ размонтирует SduiScreen', () => {
     const client = new QueryClient()
     const { rerender } = render(
@@ -170,7 +193,11 @@ describe('SduiCardScreen — шапка формы отчёта', () => {
   afterEach(cleanup)
 
   it('showHeader рисует шапку без карточной обвязки', () => {
-    renderAt('/modules/Otchety/reportalt/OborotnoSaldovayaVedomost', false, true)
+    renderAt(
+      '/modules/Otchety/reportalt/OborotnoSaldovayaVedomost',
+      false,
+      true
+    )
 
     expect(screen.getByTestId('page-header')).toBeTruthy()
   })

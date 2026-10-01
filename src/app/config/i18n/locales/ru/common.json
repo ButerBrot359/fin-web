@@ -213,6 +213,8 @@
   },
   "inputs": {
     "noOptions": "Нет вариантов",
+    "checkAll": "Отметить все",
+    "uncheckAll": "Снять все",
     "loading": "Загрузка...",
     "openReference": "Открыть запись",
     "copyReference": "Скопировать запись"
@@ -486,6 +488,8 @@
     "total": "Итого",
     "expand": "Развернуть",
     "collapse": "Свернуть",
+    "groupLevels": "Уровни группировки",
+    "groupLevel": "Показать до уровня группировки {{level}}",
     "noParams": "У отчёта нет параметров",
     "noData": "Нет данных за выбранный период",
     "loadError": "Не удалось сформировать отчёт",
@@ -582,6 +586,8 @@
     "clearMenu": "Очистить",
     "clearReport": "Очистить отчет",
     "exportXml": "Выгрузить в XML",
+    "exportJson": "Выгрузить в JSON",
+    "exportJsonUnavailable": "Выгрузка в JSON для этой формы недоступна",
     "exportXmlPrilozhenie": "Выгрузить в XML 200.03",
     "exportXmlUnavailable": "Выгрузка в XML для этой формы недоступна",
     "save": "Сохранить",
@@ -980,6 +986,23 @@
       "payloadError": "Не удалось отобразить данные табеля",
       "pickerUnavailable": "Подбор сотрудников недоступен: сервер не прислал контракт выбора"
     },
+    "reportSheet": {
+      "nameColumn": "Наименование показателя",
+      "codeColumn": "Код строки",
+      "grafaNumber": "Графа {{nomer}}",
+      "raskrytieRow": "Строка раскрытия {{indeks}}",
+      "empty": "Сетка отчёта пуста",
+      "noRows": "В структуре отчёта нет строк",
+      "payloadError": "Не удалось отобразить сетку отчёта",
+      "invalidNumber": "В ячейке должно быть указано число",
+      "rasshifrovka": "Расшифровка",
+      "izmenenoVruchnuyu": "Изменено вручную",
+      "vid": {
+        "zapolnyaemyy": "Заполняемый показатель",
+        "vychislyaemyy": "Вычисляемый показатель",
+        "strokovyy": "Показатель без правила заполнения"
+      }
+    },
     "listOutput": {
       "columns": "Колонки",
       "all": "Все",
@@ -1321,6 +1344,7 @@
     "from": "С даты",
     "to": "По дату",
     "userLogin": "Пользователь",
+    "userPlaceholder": "Выберите или введите логин",
     "action": "Действие",
     "outcome": "Исход",
     "object": "Объект",

@@ -9,7 +9,7 @@ import { pickLabel } from '@/entities/analytics'
 import { DateTimeInput, NumberInput, TextInput } from '@/shared/ui/inputs'
 
 import type { AnalyticsDateRangeValue } from '../types/params'
-import { toIsoDate } from '../lib/resolve-default-params'
+import { toIsoDate } from '@/shared/lib/utils/iso-date'
 import { ParamDateRangeField } from './param-date-range-field'
 
 export interface ParamFieldProps {

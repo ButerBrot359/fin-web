@@ -141,6 +141,14 @@ vi.mock('@tanstack/react-query', () => ({
 import { fetchListPage } from '../../../api/reference-options'
 import { ListNode } from './list-node'
 import type { ViewNode } from '../../../types/view'
+import {
+  SduiSessionProvider,
+  type SduiSessionValue,
+} from '../../../lib/sdui-session-context'
+import {
+  forgetListMemory,
+  useListMemoryStore,
+} from '../../../lib/stores/list-memory-store'
 
 // jsdom не реализует IntersectionObserver (используется для infinite-scroll в list-node).
 class IntersectionObserverStub {
@@ -1561,5 +1569,105 @@ describe('ListNode — дебаунс строки поиска', () => {
     })
 
     expect(searchesSent().filter(Boolean)).toEqual(['Хал'])
+  })
+})
+
+describe('ListNode — поиск переживает уход в карточку и возврат', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+    useListMemoryStore.setState({ entries: {} })
+  })
+
+  const route = '/modules/nalogi/dictionary/KodyStrokDeklaratsii'
+
+  const searchableNode = {
+    id: 'lst',
+    type: 'LIST',
+    props: {
+      searchable: true,
+      source: { url: '/x/search', method: 'POST', body: { filters: [] } },
+    },
+    children: [],
+    actions: [],
+  } as unknown as ViewNode
+
+  const renderInSession = (session: Partial<SduiSessionValue>) =>
+    render(
+      <SduiSessionProvider value={session as SduiSessionValue}>
+        <ListNode node={searchableNode} />
+      </SduiSessionProvider>
+    )
+
+  const lastSearchSent = () =>
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    (useInfiniteQuery.mock.calls as { 0: { queryKey: unknown[] } }[]).at(
+      -1
+    )?.[0].queryKey[5]
+
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReset()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockReturnValue({ ...baseQueryResult, isLoading: false })
+  })
+
+  it('после повторного монтирования экрана строка поиска и запрос по ней восстановлены', () => {
+    vi.useFakeTimers()
+    const first = renderInSession({ kind: 'root', screenRoute: route })
+    fireEvent.change(screen.getByPlaceholderText('pageToolbar.search'), {
+      target: { value: '341-1-17-8' },
+    })
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+    first.unmount()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    useInfiniteQuery.mockClear()
+
+    renderInSession({ kind: 'root', screenRoute: route })
+
+    expect(screen.getByPlaceholderText('pageToolbar.search')).toHaveValue(
+      '341-1-17-8'
+    )
+    expect(lastSearchSent()).toBe('341-1-17-8')
+  })
+
+  it('очищенный пользователем поиск при возврате остаётся пустым', () => {
+    const first = renderInSession({ kind: 'root', screenRoute: route })
+    const input = screen.getByPlaceholderText('pageToolbar.search')
+    fireEvent.change(input, { target: { value: '341' } })
+    fireEvent.change(input, { target: { value: '' } })
+    first.unmount()
+
+    renderInSession({ kind: 'root', screenRoute: route })
+
+    expect(screen.getByPlaceholderText('pageToolbar.search')).toHaveValue('')
+  })
+
+  it('после закрытия вкладки списка поиск не восстанавливается', () => {
+    const first = renderInSession({ kind: 'root', screenRoute: route })
+    fireEvent.change(screen.getByPlaceholderText('pageToolbar.search'), {
+      target: { value: '341' },
+    })
+    first.unmount()
+    forgetListMemory(route)
+
+    renderInSession({ kind: 'root', screenRoute: route })
+
+    expect(screen.getByPlaceholderText('pageToolbar.search')).toHaveValue('')
+  })
+
+  it('список панели без маршрута экрана поиск не запоминает', () => {
+    const first = renderInSession({ kind: 'panel' })
+    fireEvent.change(screen.getByPlaceholderText('pageToolbar.search'), {
+      target: { value: '341' },
+    })
+    first.unmount()
+
+    renderInSession({ kind: 'panel' })
+
+    expect(screen.getByPlaceholderText('pageToolbar.search')).toHaveValue('')
+    expect(useListMemoryStore.getState().entries).toEqual({})
   })
 })

@@ -25,6 +25,7 @@ import {
   fetchSokhranennyyOtchet,
   saveReportAlt,
   vygruzkaFno,
+  vygruzkaJson,
   vygruzkaPrilozheniya,
   vygruzkaXml,
 } from '../api/reportalt-api'
@@ -90,6 +91,7 @@ import type {
 
 /** Сообщение из тела ошибки бэка (api.ts бросает `error.response.data`). */
 const FORMY_VYGRUZKI_PO_BLANKU = ['200.00', '870.00']
+const FORMY_VYGRUZKI_JSON = ['200.00']
 
 const errorMessage = (error: unknown): string | undefined => {
   if (typeof error === 'string') return error
@@ -645,6 +647,31 @@ export const ReportAltPage = () => {
       })
   }
 
+  const kodFormyJson = /\d{3}\.\d{2}/.exec(reportName)?.[0]
+  const estVygruzkaJson =
+    kodFormyJson != null && FORMY_VYGRUZKI_JSON.includes(kodFormyJson)
+
+  const handleExportJson = () => {
+    if (!appliedBody || !kodFormyJson) {
+      showToast('warning', t('reportalt.exportJsonUnavailable'))
+      return
+    }
+    void vygruzkaJson(moduleCode, appliedBody)
+      .then((res) => {
+        const ssylka = document.createElement('a')
+        ssylka.href = URL.createObjectURL(res.data)
+        ssylka.download = `${kodFormyJson}.json`
+        ssylka.click()
+      })
+      .catch((e: unknown) => {
+        showToast(
+          'error',
+          t('reportalt.exportJsonUnavailable'),
+          errorMessage(e)
+        )
+      })
+  }
+
   /**
    * «Расшифровать» формы 1С: от имени области выделенной клетки бланка открывается регистр
    * налогового учёта по ИПН и СН за месяц её графы (графа 4 — за весь квартал).
@@ -929,6 +956,15 @@ export const ReportAltPage = () => {
                   label: t('reportalt.exportXml'),
                   onClick: handleExportXml,
                 },
+                ...(estVygruzkaJson
+                  ? [
+                      {
+                        key: 'json',
+                        label: t('reportalt.exportJson'),
+                        onClick: handleExportJson,
+                      },
+                    ]
+                  : []),
               ]}
             />
             {estMnogostranichnyyRazdel && (

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildHeadModel, type HeadModelColumn } from './head-model'
+import {
+  buildHeadModel,
+  buildPathHeadModel,
+  hasHeaderPath,
+  type HeadModelColumn,
+} from './head-model'
 
 const col = (
   code: string,
@@ -191,5 +196,118 @@ describe('buildHeadModel — локализация', () => {
     const ru = buildHeadModel(cols, { isKz: false, levels: 2 })
     expect(ru.topRow).toMatchObject([{ title: 'Дебет', colSpan: 2 }])
     expect(ru.leafRow.map((l) => l.col.titleRu)).toEqual(['Сумма', 'Кол.'])
+  })
+})
+
+describe('buildPathHeadModel — произвольная глубина headerPath', () => {
+  const pcol = (
+    code: string,
+    title: string,
+    path: string[],
+    extra: Partial<HeadModelColumn> = {}
+  ): HeadModelColumn => ({ code, titleRu: title, headerPathRu: path, ...extra })
+
+  it('глубина 3: объединение по общему префиксу соседних колонок', () => {
+    const cols = [
+      pcol('fio', 'ФИО', []),
+      pcol('a1', 'Ставка', ['Надбавки', 'За стаж']),
+      pcol('a2', 'Сумма', ['Надбавки', 'За стаж']),
+      pcol('b1', 'Ставка', ['Надбавки', 'За вредность']),
+      pcol('c1', 'Итого', ['Итоги', 'За стаж']),
+    ]
+    const model = buildPathHeadModel(cols, { isKz: false })
+    expect(model.depth).toBe(3)
+    expect(model.rows[0]).toMatchObject([
+      { key: 'fio', title: 'ФИО', colSpan: 1, rowSpan: 3, col0: 0 },
+      { title: 'Надбавки', colSpan: 3, rowSpan: 1, col0: 1 },
+      { title: 'Итоги', colSpan: 1, rowSpan: 1, col0: 4 },
+    ])
+    expect(model.rows[1]).toMatchObject([
+      { title: 'За стаж', colSpan: 2, col0: 1 },
+      { title: 'За вредность', colSpan: 1, col0: 3 },
+      { title: 'За стаж', colSpan: 1, col0: 4 },
+    ])
+    expect(model.rows[2].map((c) => [c.key, c.rowSpan, c.col0])).toEqual([
+      ['a1', 1, 1],
+      ['a2', 1, 2],
+      ['b1', 1, 3],
+      ['c1', 1, 4],
+    ])
+  })
+
+  it('разная глубина: короткий путь — лист на оставшиеся ряды (rowSpan)', () => {
+    const cols = [
+      pcol('x', 'Оклад', ['Начислено']),
+      pcol('y', 'Ставка', ['Начислено', 'Надбавка', 'Стаж']),
+      pcol('z', 'Итого', ['Начислено', 'Надбавка']),
+    ]
+    const model = buildPathHeadModel(cols, { isKz: false })
+    expect(model.depth).toBe(4)
+    expect(model.rows[0]).toMatchObject([{ title: 'Начислено', colSpan: 3 }])
+    expect(model.rows[1]).toMatchObject([
+      { key: 'x', rowSpan: 3, col0: 0 },
+      { title: 'Надбавка', colSpan: 2, col0: 1 },
+    ])
+    expect(model.rows[2]).toMatchObject([
+      { title: 'Стаж', colSpan: 1, col0: 1 },
+      { key: 'z', rowSpan: 2, col0: 2 },
+    ])
+    expect(model.rows[3]).toMatchObject([{ key: 'y', rowSpan: 1, col0: 1 }])
+  })
+
+  it('несмежные колонки с одинаковым путём не объединяются', () => {
+    const cols = [
+      pcol('a', 'A', ['G']),
+      pcol('b', 'B', []),
+      pcol('c', 'C', ['G']),
+    ]
+    const model = buildPathHeadModel(cols, { isKz: false })
+    expect(model.rows[0].map((c) => [c.title, c.colSpan])).toEqual([
+      ['G', 1],
+      ['B', 1],
+      ['G', 1],
+    ])
+  })
+
+  it('флаги поворота: verticalTitle у листа, headerPathVertical у группы', () => {
+    const cols = [
+      pcol('a', 'Разряд', ['Тарификация'], {
+        verticalTitle: true,
+        headerPathVertical: [true],
+      }),
+      pcol('b', 'Коэф.', ['Тарификация'], { headerPathVertical: [false] }),
+    ]
+    const model = buildPathHeadModel(cols, { isKz: false })
+    expect(model.rows[0][0]).toMatchObject({
+      title: 'Тарификация',
+      vertical: true,
+    })
+    expect(model.rows[1].map((c) => c.vertical)).toEqual([true, false])
+  })
+
+  it('kz: фолбэк на Ru поэлементно', () => {
+    const cols: HeadModelColumn[] = [
+      {
+        code: 'a',
+        titleRu: 'Сумма',
+        headerPathRu: ['Начислено', 'Оклад'],
+        headerPathKz: ['Есептелді'],
+      },
+    ]
+    const model = buildPathHeadModel(cols, { isKz: true })
+    expect(model.rows.slice(0, 2).map((r) => r[0].title)).toEqual([
+      'Есептелді',
+      'Оклад',
+    ])
+  })
+
+  it('hasHeaderPath: пустые пути не включают режим', () => {
+    expect(hasHeaderPath([col('a', 'A', 'G')])).toBe(false)
+    expect(hasHeaderPath([{ code: 'a', titleRu: 'A', headerPathRu: [] }])).toBe(
+      false
+    )
+    expect(
+      hasHeaderPath([{ code: 'a', titleRu: 'A', headerPathRu: ['G'] }])
+    ).toBe(true)
   })
 })

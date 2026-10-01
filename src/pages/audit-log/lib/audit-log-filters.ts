@@ -1,3 +1,5 @@
+import { toIsoDateTime } from '@/shared/lib/utils/iso-date'
+
 import type { AuditLogQuery } from '../api/audit-log-api'
 
 /**
@@ -107,10 +109,8 @@ export const filtersToSearchParams = (
 }
 
 /** `datetime-local` отдаёт минуты без секунд, сервер ждёт полный `LocalDateTime`. */
-const toLocalDateTime = (value: string): string | undefined => {
-  if (!value) return undefined
-  return value.length === 16 ? `${value}:00` : value
-}
+const toLocalDateTime = (value: string): string | undefined =>
+  toIsoDateTime(value) ?? undefined
 
 export const filtersToQuery = (
   filters: AuditLogFilterValues,

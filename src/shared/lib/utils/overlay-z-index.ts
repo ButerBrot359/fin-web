@@ -28,6 +28,8 @@ export const OVERLAY_Z_STEP = 10
  */
 export const DICT_SIDEBAR_Z = 1380
 
+export const QUESTION_Z = 1385
+
 /** Слой i-й панели стека (0 — самая нижняя). */
 export function panelZIndex(index: number): number {
   return OVERLAY_Z_BASE + index * OVERLAY_Z_STEP

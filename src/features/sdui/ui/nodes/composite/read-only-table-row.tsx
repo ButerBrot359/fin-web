@@ -1,5 +1,8 @@
 import type { FC } from 'react'
-import { TableCell, TableRow } from '@mui/material'
+import { useTranslation } from 'react-i18next'
+import { TableCell, TableRow, Typography } from '@mui/material'
+
+import { ShimmerBlock } from '@/shared/ui/page-skeleton/page-skeleton'
 
 import type { RowAppearanceRule } from '../../../types/view'
 import { formatNumericCell } from '../../../lib/utils/format-numeric-cell'
@@ -12,7 +15,46 @@ import { isNoWrapColumn } from '../../../lib/utils/nowrap-columns'
 import { ColumnHeaderLabel } from './column-header-label'
 import { ColumnResizeHandle } from './column-resize-handle'
 import { AuditHistoryCell } from './audit-history-cell'
+import { SELECTED_ROW_SX } from './selected-row-sx'
+import type { ReadOnlyRowSelection } from '../../../lib/hooks/use-read-only-row-commands'
 import type { UseManualColumnResizeResult } from '../../../lib/hooks/use-manual-column-resize'
+
+/**
+ * Тело read-only таблицы без строк (вынесено из read-only-table.tsx): первая
+ * страница PAGED-таблицы в полёте — шиммер-строки, иначе «пусто» или ошибка.
+ */
+export const ReadOnlyEmptyBody: FC<{
+  isLoading: boolean
+  isError: boolean
+  columns: ReadOnlyColumnDef[]
+  showRowNumbers: boolean
+}> = ({ isLoading, isError, columns, showRowNumbers }) => {
+  const { t } = useTranslation()
+  if (isLoading) {
+    return Array.from({ length: 6 }).map((_, rowIdx) => (
+      <TableRow key={rowIdx}>
+        {showRowNumbers && <TableCell />}
+        {columns.map((col) => (
+          <TableCell key={col.id}>
+            <ShimmerBlock className="h-4 w-full" />
+          </TableCell>
+        ))}
+      </TableRow>
+    ))
+  }
+  return (
+    <TableRow>
+      <TableCell
+        colSpan={columns.length + (showRowNumbers ? 1 : 0)}
+        align="center"
+      >
+        <Typography variant="body2" color="text.secondary">
+          {isError ? t('sdui.requestError') : t('table.empty')}
+        </Typography>
+      </TableCell>
+    </TableRow>
+  )
+}
 
 interface ReadOnlyHeaderCellProps {
   cell: HeaderCell
@@ -66,6 +108,23 @@ interface ReadOnlyTableRowProps {
   isHistory?: boolean
   isVirtualized: boolean
   measureRow: ((node: HTMLTableRowElement | null) => void) | undefined
+  /**
+   * Выбор строки для команд панели (props.tableCommands). Нет — строка
+   * пассивна, как прежде: без клика, подсветки и фокуса.
+   */
+  selection?: ReadOnlyRowSelection
+}
+
+/** Атрибуты выбираемой строки; data-sdui-ro-row-id — якорь доводки прокрутки. */
+function selectableRowProps(selection: ReadOnlyRowSelection) {
+  return {
+    hover: true,
+    selected: selection.selected,
+    'aria-selected': selection.selected,
+    'data-sdui-ro-row-id': selection.rowId,
+    onClick: selection.onSelect,
+    onDoubleClick: selection.onActivate,
+  }
 }
 
 /** Строка данных read-only таблицы (вынесено из read-only-table.tsx). */
@@ -79,13 +138,16 @@ export const ReadOnlyTableRow: FC<ReadOnlyTableRowProps> = ({
   isHistory,
   isVirtualized,
   measureRow,
+  selection,
 }) => (
   <TableRow
     data-index={isVirtualized ? index : undefined}
     ref={measureRow}
+    {...(selection ? selectableRowProps(selection) : {})}
     // Условная заливка строки (см. row-appearance.ts): правило
     // живёт на узле таблицы, признак — в данных строки.
     sx={{
+      ...(selection ? { cursor: 'pointer', ...SELECTED_ROW_SX } : {}),
       backgroundColor: resolveRowBackground(rowAppearance, row),
     }}
   >

@@ -107,4 +107,17 @@ describe('подписи приказного бланка', () => {
     expect(screen.getByText(/Главный бухгалтер/)).toBeInTheDocument()
     expect(screen.getByText(/Иванов И.И./)).toBeInTheDocument()
   })
+
+  it('подпись с пустым списком граф не пропадает', () => {
+    render(
+      <ReportResultView
+        result={{
+          ...base,
+          footerBlocks: [{ role: 'Руководитель:', name: '', captions: [] }],
+        }}
+      />
+    )
+
+    expect(screen.getByText('Руководитель:')).toBeInTheDocument()
+  })
 })

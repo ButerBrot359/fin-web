@@ -1,4 +1,4 @@
-import type { FC, MouseEvent } from 'react'
+import { useEffect, useRef, type FC, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
@@ -7,6 +7,7 @@ import { cn } from '@/shared/lib/utils/cn'
 import {
   isMonthInPeriod,
   monthPeriod,
+  monthSpanPeriod,
   QUARTER_LABELS,
   quarterPeriod,
   yearPeriod,
@@ -34,6 +35,29 @@ export const PeriodChoiceMonthGrid: FC<PeriodChoiceMonthGridProps> = ({
   })
   const pick = (e: MouseEvent, picked: PeriodRange) => {
     onPick(picked, e.shiftKey)
+  }
+  const dragAnchor = useRef<number | null>(null)
+
+  useEffect(() => {
+    const stopDrag = () => {
+      dragAnchor.current = null
+    }
+    document.addEventListener('mouseup', stopDrag)
+    return () => {
+      document.removeEventListener('mouseup', stopDrag)
+    }
+  }, [])
+
+  const startMonthDrag = (e: MouseEvent, index: number) => {
+    if (e.button !== 0) return
+    e.preventDefault()
+    if (!e.shiftKey) dragAnchor.current = index
+    pick(e, monthSpanPeriod(index, index))
+  }
+
+  const extendMonthDrag = (index: number) => {
+    if (dragAnchor.current === null) return
+    onPick(monthSpanPeriod(dragAnchor.current, index), false)
   }
 
   return (
@@ -69,6 +93,7 @@ export const PeriodChoiceMonthGrid: FC<PeriodChoiceMonthGridProps> = ({
               </button>
               {[0, 1, 2].map((offset) => {
                 const month = quarter * 3 + offset
+                const index = year * 12 + month
                 const selected = isMonthInPeriod(period, year, month)
                 return (
                   <button
@@ -81,8 +106,14 @@ export const PeriodChoiceMonthGrid: FC<PeriodChoiceMonthGridProps> = ({
                         ? 'bg-accent-01 text-ui-06'
                         : 'text-ui-06 hover:bg-ui-04'
                     )}
+                    onMouseDown={(e) => {
+                      startMonthDrag(e, index)
+                    }}
+                    onMouseEnter={() => {
+                      extendMonthDrag(index)
+                    }}
                     onClick={(e) => {
-                      pick(e, monthPeriod(year, month))
+                      if (e.detail === 0) pick(e, monthPeriod(year, month))
                     }}
                   >
                     {months[month]}

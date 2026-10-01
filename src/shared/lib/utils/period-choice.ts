@@ -3,7 +3,6 @@ import {
   endOfQuarter,
   endOfWeek,
   endOfYear,
-  format,
   isValid,
   parseISO,
   startOfMonth,
@@ -14,6 +13,8 @@ import {
   subWeeks,
   subYears,
 } from 'date-fns'
+
+import { toIsoDate } from './iso-date'
 
 export interface PeriodRange {
   from: string
@@ -58,7 +59,7 @@ export const QUARTER_LABELS = ['I', 'II', 'III', 'IV']
 
 export const EMPTY_PERIOD: PeriodRange = { from: '', to: '' }
 
-const day = (d: Date): string => format(d, 'yyyy-MM-dd')
+const day = (d: Date): string => toIsoDate(d) ?? ''
 
 const range = (from: Date, to: Date): PeriodRange => ({
   from: day(from),
@@ -67,6 +68,15 @@ const range = (from: Date, to: Date): PeriodRange => ({
 
 export const monthPeriod = (year: number, month: number): PeriodRange =>
   range(new Date(year, month, 1), new Date(year, month + 1, 0))
+
+export const monthSpanPeriod = (a: number, b: number): PeriodRange => {
+  const first = Math.min(a, b)
+  const last = Math.max(a, b)
+  return {
+    from: monthPeriod(Math.floor(first / 12), first % 12).from,
+    to: monthPeriod(Math.floor(last / 12), last % 12).to,
+  }
+}
 
 export const quarterPeriod = (year: number, quarter: number): PeriodRange =>
   range(new Date(year, quarter * 3, 1), new Date(year, quarter * 3 + 3, 0))
@@ -125,9 +135,7 @@ export function standardPeriod(
 }
 
 export function toDay(raw: string | null | undefined): string {
-  if (!raw) return ''
-  const d = parseISO(raw)
-  return isValid(d) ? day(d) : ''
+  return toIsoDate(raw) ?? ''
 }
 
 export function normalizePeriod(period: PeriodRange): PeriodRange {

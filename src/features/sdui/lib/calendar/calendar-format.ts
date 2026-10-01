@@ -1,6 +1,8 @@
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
+import { formatDate } from '@/shared/lib/utils/date'
+
 export const MONTHS = Array.from({ length: 12 }, (_, i) => i)
 
 // 2024-01-01 — понедельник: эталонная неделя для подписей пн..вс
@@ -9,7 +11,6 @@ export const WEEKDAY_LABELS = MONTHS.slice(0, 7).map((i) =>
 )
 
 export const monthLabel = (year: number, month: number) =>
-  format(new Date(year, month, 1), 'LLLL', { locale: ru })
+  formatDate(new Date(year, month, 1), 'LLLL')
 
-export const dayAriaLabel = (iso: string) =>
-  format(new Date(iso), 'd MMMM yyyy', { locale: ru })
+export const dayAriaLabel = (iso: string) => formatDate(iso, 'd MMMM yyyy')

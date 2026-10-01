@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import '@/app/config/i18n'
+import i18n from '@/app/config/i18n'
+import { ensureUiTranslations, isKzLanguage } from '@/shared/lib/i18n'
 import { QueryProvider } from './providers/query-provider'
 import { MuiProvider } from './providers/mui-provider'
 import { injectDesignTokens } from '@/shared/design/inject-design-tokens'
@@ -16,7 +17,8 @@ void startLocalIpDetection()
 
 const rootElement = document.getElementById('root')
 
-if (rootElement) {
+const render = () => {
+  if (!rootElement) return
   createRoot(rootElement).render(
     <StrictMode>
       <QueryProvider>
@@ -26,4 +28,10 @@ if (rootElement) {
       </QueryProvider>
     </StrictMode>
   )
+}
+
+if (isKzLanguage(i18n.language)) {
+  void ensureUiTranslations().finally(render)
+} else {
+  render()
 }

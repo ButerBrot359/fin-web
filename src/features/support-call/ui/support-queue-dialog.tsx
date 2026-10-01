@@ -6,6 +6,7 @@ import { callSounds } from '../lib/call-sounds'
 import type { SupportCall, SupportCallSession } from '../model/types'
 import { useJoinSupportCall, useSupportQueue } from '../model/use-support-call'
 import { SupportDialog } from './support-dialog'
+import { formatTime } from '@/shared/lib/utils/date'
 
 interface SupportQueueDialogProps {
   onClose: () => void
@@ -26,7 +27,7 @@ export const SupportQueueDialog = ({
   onClose,
   onConnected,
 }: SupportQueueDialogProps) => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { data, isLoading } = useSupportQueue(true)
   const { mutate, isPending, error } = useJoinSupportCall()
   const calls = data ?? []
@@ -36,10 +37,7 @@ export const SupportQueueDialog = ({
     if (call.status === 'WAITING') {
       // Локаль берётся из языка интерфейса, а не из системы: иначе в русской версии время
       // показывается американским «8:23 PM», что тут читается как ошибка.
-      const time = new Date(call.startedAt).toLocaleTimeString(
-        i18n.language === 'kz' ? 'kk-KZ' : 'ru-RU',
-        { hour: '2-digit', minute: '2-digit' }
-      )
+      const time = formatTime(call.startedAt)
       return (
         t('support.waitingSince', { time }) +
         (call.page ? ` · ${call.page}` : '')

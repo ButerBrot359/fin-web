@@ -38,6 +38,24 @@ describe('GridNode (грид-модель шапки)', () => {
     expect(getByTestId('c').parentElement!.style.gridColumn).toBe('span 1')
   })
 
+  it('colStart закрепляет ячейку за своей колонкой и перекрывает newRow', () => {
+    const { getByTestId } = render(
+      <GridNode
+        node={grid([
+          cell('r', { colSpan: 12, colStart: 13 }),
+          cell('l', { colSpan: 12, colStart: 1, newRow: true }),
+          cell('x', { colSpan: 12, colStart: 99 }),
+        ])}
+      />
+    )
+
+    expect(getByTestId('r').parentElement!.style.gridColumn).toBe(
+      '13 / span 12'
+    )
+    expect(getByTestId('l').parentElement!.style.gridColumn).toBe('1 / span 12')
+    expect(getByTestId('x').parentElement!.style.gridColumn).toBe('span 12')
+  })
+
   it('кламп colSpan к числу колонок, раздельные row/column gap', () => {
     const { getByTestId, container } = render(
       <GridNode node={grid([cell('k', { colSpan: 99 })])} />

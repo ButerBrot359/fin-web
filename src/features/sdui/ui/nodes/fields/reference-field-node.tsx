@@ -183,6 +183,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
       {multiple ? (
         <AutocompleteInput
           multiple
+          checkAllActions
           value={selectedOptions}
           onChange={applySelectedMultiple}
           {...commonInputProps}

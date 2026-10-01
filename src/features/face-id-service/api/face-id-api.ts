@@ -11,6 +11,7 @@ import type {
   FaceIdStart,
   FaceIdUser,
 } from '../types/face-id'
+import { attachLanguageHeader } from '@/shared/api/attach-language-header'
 
 // Как и парольный вход: без Bearer и без автоматического refresh/retry на 401.
 const publicApi = axios.create({
@@ -18,6 +19,8 @@ const publicApi = axios.create({
   timeout: 30_000,
   headers: { 'Content-Type': 'application/json' },
 })
+
+attachLanguageHeader(publicApi)
 
 // Вход через Face ID — событие LOGIN: журналу нужен компьютер и адреса (SCRUM-371).
 attachClientContextHeaders(publicApi)

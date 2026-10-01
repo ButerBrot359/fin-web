@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { cssVar, palette } from '@/shared/design/tokens'
+import { translateUi, useUiDictionary } from '@/shared/lib/i18n'
 
 import type {
   ReportColumnDto,
@@ -13,10 +14,16 @@ import type {
 
 import {
   formatMoney1C,
+  hasAppearance,
   isHighlightRow,
-  isRightAligned,
   resolveReportLang,
 } from '../lib/cell-helpers'
+import { fitToWidthLayout } from '../lib/fit-to-width'
+import {
+  horizontalAlignClass,
+  labelAlignClass,
+  verticalAlignClass,
+} from '../lib/form-cell-align'
 import { buildHeadModel } from '../lib/head-model'
 import { ReportCell } from './report-cell'
 
@@ -24,7 +31,7 @@ import { ReportCell } from './report-cell'
  * Сетка бланка 1С: чёткая серая рамка каждой ячейки (официальная форма
  * печатается с выраженной сеткой, темнее аналитических отчётов), плотные ячейки.
  */
-const td = 'border border-pending-gray-6 px-1.5 py-0.5 align-top'
+const td = 'border border-pending-gray-6 px-1.5 py-0.5'
 const th = 'border border-pending-gray-6 px-1.5 py-1 text-center align-middle'
 
 /** Ширина одного символа колонки (`width` приходит в символах, как в 1С). */
@@ -190,8 +197,18 @@ const SectionTable = ({
   const cols = deriveFormColumns(section)
   const start = section.graphNumberStart ?? 1
   const headRows = buildHeadRows(cols, isKz)
+  const fit = section.fitToWidth
+    ? fitToWidthLayout(cols, section, CHAR_PX)
+    : null
   return (
-    <table className="w-full table-fixed border-collapse bg-white">
+    <table
+      className={`${fit ? 'mx-auto' : 'w-full'} table-fixed border-collapse bg-white`}
+      style={
+        fit
+          ? { width: fit.width, maxWidth: '100%', minWidth: fit.minWidth }
+          : undefined
+      }
+    >
       <colgroup>
         {cols.map((c, i) => (
           <col
@@ -202,8 +219,9 @@ const SectionTable = ({
               // Итого/суммы) компактные (не растягиваются, как было при auto);
               // дата — умеренная; описательные (наименование/МОЛ) — широкие;
               // DIMENSION — авто.
-              width:
-                c.width != null
+              width: fit
+                ? fit.widths[i]
+                : c.width != null
                   ? c.width * CHAR_PX
                   : i === 0
                     ? 40
@@ -252,7 +270,10 @@ const SectionTable = ({
               <th key={col.code} className={th}>
                 <Typography
                   variant="caption"
-                  sx={{ color: cssVar(palette.pendingText1) }}
+                  sx={{
+                    color: cssVar(palette.pendingText1),
+                    whiteSpace: 'pre-line',
+                  }}
                 >
                   {columnTitle(col, isKz)}
                 </Typography>
@@ -268,7 +289,7 @@ const SectionTable = ({
                   variant="caption"
                   sx={{ color: cssVar(palette.pendingText1) }}
                 >
-                  {start + i}
+                  {col.columnNumber ?? start + i}
                 </Typography>
               </th>
             ))}
@@ -278,6 +299,7 @@ const SectionTable = ({
       <tbody>
         {section.rows.map((row, idx) => {
           const highlight = isHighlightRow(row.rowKind)
+          const strong = hasAppearance(row, 'BOLD_GROUP')
           // Подпись «Всего»/«Барлығы» объединяется по первым `labelColSpan`
           // колонкам (№пп|Дата|Номер|Наименование), как в 1С — иначе метка сидит
           // в одной графе, а не растянута по описательным колонкам.
@@ -295,7 +317,7 @@ const SectionTable = ({
                     <td
                       key={col.code}
                       colSpan={labelSpan}
-                      className={`${td} text-right`}
+                      className={`${td} ${verticalAlignClass(col.verticalAlign)} ${labelAlignClass(row.labelAlign)}`}
                     >
                       <Typography
                         variant="body2"
@@ -312,12 +334,14 @@ const SectionTable = ({
                 return (
                   <td
                     key={col.code}
-                    className={`${td} ${isRightAligned(col) ? 'text-right' : ci === 0 ? 'text-center' : ''}`}
+                    className={`${td} ${verticalAlignClass(col.verticalAlign)} ${horizontalAlignClass(col, ci, !!section.fitToWidth)}`}
                   >
                     <ReportCell
                       value={row.cells[col.code]}
                       col={col}
                       bold={highlight}
+                      strong={strong}
+                      preserveIndent
                     />
                   </td>
                 )
@@ -347,6 +371,7 @@ export const FormView = ({
   const { i18n } = useTranslation()
   // Язык бланка — по языку отчёта (может отличаться от языка UI), фолбэк на UI.
   const isKz = resolveReportLang(language, i18n.language) === 'kz'
+  useUiDictionary(isKz)
 
   // Страницы бланка приходят с бэкенда: состав и названия — свойство утверждённой формы,
   // а не интерфейса. Пустой список означает бланк без деления на страницы.
@@ -554,14 +579,14 @@ export const FormView = ({
             sx={{ color: cssVar(palette.pendingText1) }}
             className="w-44 shrink-0"
           >
-            {isKz ? 'Қосымшасы' : 'Приложение'}
+            {translateUi('Приложение', isKz ? 'kz' : 'ru')}
           </Typography>
           <div className="w-40 self-end border-t border-pending-text-1" />
           <Typography
             variant="caption"
             sx={{ color: cssVar(palette.pendingText2), fontSize: 10 }}
           >
-            {isKz ? 'парақ' : 'лист'}
+            {translateUi('лист', isKz ? 'kz' : 'ru')}
           </Typography>
         </div>
       )}

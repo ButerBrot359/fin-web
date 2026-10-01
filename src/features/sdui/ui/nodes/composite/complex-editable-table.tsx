@@ -30,6 +30,7 @@ import {
   extractAllLeafColumns,
   VERTICAL_SUB_ROW_HEIGHT,
 } from '../../../lib/utils/build-column-defs'
+import { extractSearchColumns } from '../../../lib/utils/table-column-def'
 import { parseRowAppearance } from '../../../lib/utils/row-appearance'
 import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { editableTableSx } from './editable-table-sx'
@@ -112,7 +113,14 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // Отбор по внешнему списку (панель сотрудников) — независим от master-detail:
   // тот связывает ДВЕ ТЧ одного документа, этот фильтрует по витрине формы и не
   // трогает доступность команд таблицы.
-  const visibleRows = useExternalRowFilter(node, masterDetailRows)
+  const otobrannyeRows = useExternalRowFilter(node, masterDetailRows)
+
+  const searchColumns = useMemo(
+    () => extractSearchColumns(node.children),
+    [node.children]
+  )
+  const search = useTableSearch(otobrannyeRows, searchColumns)
+  const visibleRows = search.rows
 
   const selection = useRowSelectionIdentity(node.binding, visibleRows)
 
@@ -164,7 +172,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   )
 
   // ── Footer ──
-  const footerValues = useTableFooterValues(node, visibleRows)
+  const footerValues = useTableFooterValues(node, otobrannyeRows)
   const hasFooter = Boolean(footerValues && tableHasFooter(tableColumns))
 
   const sizing = useSduiColumnSizing(node)
@@ -214,11 +222,6 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     activateRow(rowId)
   }
 
-  const search = useTableSearch(
-    visibleRows,
-    flatColumns.map((c) => ({ id: c.id, binding: c.binding }))
-  )
-
   const { headTopOffset, setFirstHeadRowRef } = useStickyHeadOffset()
 
   useSearchScroll(search, visibleRows, virt, containerRef)
@@ -245,10 +248,10 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     selectAll: vybor.vydelitVse,
     extendSelection: vybor.rasshirit,
     moveCurrentRow: selection.selectRow,
-    // Reorder возможен только вне master-detail (allowReorder && !isMasterDetail
-    // в тулбаре) — там visibleRows === sync.rows, поэтому видимый индекс
-    // совпадает с глобальным и move корректен.
-    globalIndexOf: (visibleIndex) => visibleIndex,
+    globalIndexOf: (visibleIndex) => {
+      const rowId = visibleRows[visibleIndex]?.rowId
+      return sync.rows.findIndex((r) => r.rowId === rowId)
+    },
     search,
     onSave: saveForm,
   })

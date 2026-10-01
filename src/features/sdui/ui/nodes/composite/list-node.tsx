@@ -23,6 +23,11 @@ import { useListSelection } from '../../../lib/hooks/use-list-selection'
 import { useListSelectionEvent } from '../../../lib/hooks/use-list-selection-event'
 import { useListTrail } from '../../../lib/hooks/use-list-trail'
 import { useListClientExpand } from '../../../lib/hooks/use-list-client-expand'
+import {
+  useRememberListMemory,
+  useRestoredListMemory,
+} from '../../../lib/hooks/use-list-memory'
+import { useRestoreRowScroll } from '../../../lib/hooks/use-restore-row-scroll'
 import { isTreeDisplayMode } from '../../../lib/utils/list-tree-mode'
 import { useSduiDispatch } from '../../../lib/dispatch'
 
@@ -81,7 +86,8 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
   // повторные клики по заголовкам игнорируются («последний выигрывает» не требуется).
   const sortInFlightRef = useRef(false)
 
-  const [search, setSearch] = useState('')
+  const restored = useRestoredListMemory(node.id)
+  const [search, setSearch] = useState(restored?.search ?? '')
   // Запрос уходит НЕ на каждое нажатие клавиши: у LIST-узла search сидит в queryKey, а смена
   // ключа сбрасывает бесконечную прокрутку и перезапускает EAV-поиск. Пауза та же, что у
   // пикера ссылочного поля (use-reference-options) и легаси-списков.
@@ -97,7 +103,9 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     drillInto,
     canDrillInto,
     navigateToDepth,
-  } = useListTrail({ node, source, debouncedSearch })
+  } = useListTrail({ node, source, debouncedSearch, restored })
+
+  useRememberListMemory(node.id, { search, selectedRowId, trail })
 
   // SCRUM-308 §4.4: панель контактов списка «Пользователи» — смена выделенной
   // строки уходит событием selectionChanged (только при action с бэка).
@@ -171,6 +179,8 @@ export const ListNode: FC<NodeProps> = ({ node }) => {
     estimateSize: () => 40,
     overscan: 10,
   })
+
+  useRestoreRowScroll(restored?.selectedRowId, rows, rowVirtualizer)
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-hidden pt-2">

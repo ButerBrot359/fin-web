@@ -10,7 +10,7 @@ import { Button, Typography } from '@mui/material'
 
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
-import { formatDate } from '@/shared/lib/utils/date'
+import { formatDateTimeSeconds } from '@/shared/lib/utils/date'
 
 import type {
   AccountCardEntry,
@@ -263,7 +263,7 @@ export const AccountCardTable = ({
                   <td className={`${td} whitespace-nowrap`}>
                     <Typography variant="body2" noWrap className="text-ui-06">
                       {typeof entry.period === 'string'
-                        ? formatDate(entry.period, 'dd.MM.yyyy HH:mm:ss')
+                        ? formatDateTimeSeconds(entry.period)
                         : ''}
                     </Typography>
                   </td>

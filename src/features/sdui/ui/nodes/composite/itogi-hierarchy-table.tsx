@@ -7,87 +7,86 @@ import {
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow,
   Typography,
 } from '@mui/material'
-import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 
 import { Button } from '@/shared/ui/buttons'
 
 import type { NodeProps } from '../../../types/view'
-import { useSduiSession } from '../../../lib/sdui-session-context'
-import { renderCellValue } from '../../../lib/utils/cell-value'
-import { extractReadOnlyColumns } from '../../../lib/utils/read-only-header-model'
+import { useBindingValue } from '../../../lib/sdui-session-context'
+import {
+  extractItogiColumns,
+  itogiBodyCells,
+  itogiTreeLayout,
+  type ItogiRow,
+} from '../../../lib/utils/itogi-columns'
+import { buildItogiHeader } from '../../../lib/utils/itogi-header-model'
+import { itogiParentIds, visibleItogiRows } from '../../../lib/utils/itogi-tree'
+import {
+  parseRowAppearance,
+  resolveRowBackground,
+} from '../../../lib/utils/row-appearance'
+import { NodeRenderer } from '../../node-renderer'
+import { ItogiHeader } from './itogi/itogi-header'
+import { ItogiBodyRow } from './itogi/itogi-body-row'
 
-const LEVEL_INDENT = 18
+const COLUMN_TYPES = new Set(['TABLE_COLUMN', 'COLUMN_GROUP'])
 
-interface ItogiRow {
-  rowId: string
-  __level: number
-  __parentRowId: string | null
-  [key: string]: unknown
+const NOTHING_OPEN: ReadonlySet<string> = new Set()
+
+interface Expansion {
+  source: unknown
+  open: ReadonlySet<string>
 }
 
 export const ItogiHierarchyTable: FC<NodeProps> = ({ node }) => {
   const { t } = useTranslation()
-  const { getValue } = useSduiSession()
+  const raw = useBindingValue(node.binding)
 
   const columns = useMemo(
-    () => extractReadOnlyColumns(node.children),
+    () => extractItogiColumns(node.children),
     [node.children]
   )
+  const layout = useMemo(() => itogiTreeLayout(columns), [columns])
+  const header = useMemo(
+    () => buildItogiHeader(columns, layout),
+    [columns, layout]
+  )
+  const toolbarNodes = useMemo(
+    () => (node.children ?? []).filter((c) => !COLUMN_TYPES.has(c.type)),
+    [node.children]
+  )
+  const rowAppearance = useMemo(
+    () => parseRowAppearance(node.props),
+    [node.props]
+  )
 
-  const rows = useMemo<ItogiRow[]>(() => {
-    const raw = node.binding ? getValue(node.binding) : undefined
-    return Array.isArray(raw) ? (raw as ItogiRow[]) : []
-  }, [getValue, node.binding])
+  const rows = useMemo<ItogiRow[]>(
+    () => (Array.isArray(raw) ? (raw as ItogiRow[]) : []),
+    [raw]
+  )
+  const parents = useMemo(() => itogiParentIds(rows), [rows])
 
-  const [expanded, setExpanded] = useState<Set<string> | null>(null)
+  const [expansion, setExpansion] = useState<Expansion>({
+    source: raw,
+    open: NOTHING_OPEN,
+  })
+  const open = expansion.source === raw ? expansion.open : NOTHING_OPEN
+  const setOpen = (next: ReadonlySet<string>) => {
+    setExpansion({ source: raw, open: next })
+  }
 
-  const hasChildren = useMemo(() => {
-    const parents = new Set<string>()
-    for (const row of rows) {
-      if (row.__parentRowId) parents.add(row.__parentRowId)
-    }
-    return parents
-  }, [rows])
-
-  const isExpanded = (rowId: string) => expanded?.has(rowId) === true
-
-  const visibleRows = useMemo(() => {
-    const byParent = new Map<string | null, ItogiRow[]>()
-    for (const row of rows) {
-      const key = row.__parentRowId ?? null
-      const list = byParent.get(key)
-      if (list) list.push(row)
-      else byParent.set(key, [row])
-    }
-    const out: ItogiRow[] = []
-    const raskryt = (rowId: string) => expanded?.has(rowId) === true
-    const walk = (parent: string | null) => {
-      for (const row of byParent.get(parent) ?? []) {
-        out.push(row)
-        if (raskryt(row.rowId)) walk(row.rowId)
-      }
-    }
-    walk(null)
-    return out
-  }, [rows, expanded])
+  const visibleRows = useMemo(() => visibleItogiRows(rows, open), [rows, open])
 
   const toggle = (rowId: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev ?? [])
-      if (next.has(rowId)) next.delete(rowId)
-      else next.add(rowId)
-      return next
-    })
+    const next = new Set(open)
+    if (next.has(rowId)) next.delete(rowId)
+    else next.add(rowId)
+    setOpen(next)
   }
 
   if ((node.props?.visible as boolean | undefined) === false) return null
-
-  const firstColumn = columns[0]
 
   return (
     <Box className="flex min-h-0 flex-1 flex-col">
@@ -95,7 +94,7 @@ export const ItogiHierarchyTable: FC<NodeProps> = ({ node }) => {
         <Button
           variant="secondary"
           onClick={() => {
-            setExpanded(new Set())
+            setOpen(NOTHING_OPEN)
           }}
         >
           {t('table.collapseAll')}
@@ -103,33 +102,26 @@ export const ItogiHierarchyTable: FC<NodeProps> = ({ node }) => {
         <Button
           variant="secondary"
           onClick={() => {
-            setExpanded(new Set(hasChildren))
+            setOpen(new Set(parents))
           }}
         >
           {t('table.expandAll')}
         </Button>
+        {toolbarNodes.map((child) => (
+          <NodeRenderer key={child.id} node={child} />
+        ))}
       </Box>
 
       <TableContainer
         component={Paper}
         variant="outlined"
-        sx={{ flex: '1 1 auto', overflowY: 'auto' }}
+        sx={{ flex: '1 1 auto', overflow: 'auto' }}
       >
         {/* Скролл живёт внутри свода — шапка колонок обязана оставаться видимой
             (та же причина, что у ТЧ: без stickyHeader заголовки уезжают вместе
             со строками). */}
-        <Table size="small" stickyHeader>
-          <TableHead>
-            <TableRow>
-              {columns.map((col) => (
-                <TableCell key={col.id}>
-                  <Typography variant="body2" fontWeight={600}>
-                    {col.label}
-                  </Typography>
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
+        <Table size="small">
+          <ItogiHeader rows={header} />
           <TableBody>
             {visibleRows.length === 0 && (
               <TableRow>
@@ -140,58 +132,17 @@ export const ItogiHierarchyTable: FC<NodeProps> = ({ node }) => {
                 </TableCell>
               </TableRow>
             )}
-            {visibleRows.map((row) => {
-              const expandable = hasChildren.has(row.rowId)
-              return (
-                <TableRow key={row.rowId} hover>
-                  {columns.map((col) => {
-                    const value = renderCellValue(
-                      col.binding ? row[col.binding] : undefined
-                    )
-                    if (col.id !== firstColumn.id) {
-                      return (
-                        <TableCell key={col.id} sx={{ color: col.textColor }}>
-                          {value}
-                        </TableCell>
-                      )
-                    }
-                    return (
-                      <TableCell key={col.id} sx={{ color: col.textColor }}>
-                        <Box
-                          className="flex items-center gap-1"
-                          style={{ paddingLeft: row.__level * LEVEL_INDENT }}
-                        >
-                          {expandable ? (
-                            <Box
-                              component="span"
-                              role="button"
-                              aria-label={
-                                isExpanded(row.rowId)
-                                  ? t('table.collapseRow')
-                                  : t('table.expandRow')
-                              }
-                              className="flex cursor-pointer"
-                              onClick={() => {
-                                toggle(row.rowId)
-                              }}
-                            >
-                              {isExpanded(row.rowId) ? (
-                                <KeyboardArrowDownIcon sx={{ fontSize: 18 }} />
-                              ) : (
-                                <KeyboardArrowRightIcon sx={{ fontSize: 18 }} />
-                              )}
-                            </Box>
-                          ) : (
-                            <Box component="span" sx={{ width: 18 }} />
-                          )}
-                          <span>{value}</span>
-                        </Box>
-                      </TableCell>
-                    )
-                  })}
-                </TableRow>
-              )
-            })}
+            {visibleRows.map((row) => (
+              <ItogiBodyRow
+                key={row.rowId}
+                row={row}
+                cells={itogiBodyCells(columns, layout, row)}
+                background={resolveRowBackground(rowAppearance, row)}
+                expandable={parents.has(row.rowId)}
+                expanded={open.has(row.rowId)}
+                onToggle={toggle}
+              />
+            ))}
           </TableBody>
         </Table>
       </TableContainer>

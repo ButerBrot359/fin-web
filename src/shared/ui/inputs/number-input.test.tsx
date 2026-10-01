@@ -178,6 +178,36 @@ describe('NumberInput — предел разрядности', () => {
   })
 })
 
+describe('NumberInput — замена дефолтного «0»', () => {
+  afterEach(cleanup)
+
+  const put = (value: string) => {
+    fireEvent.change(input(), { target: { value } })
+  }
+
+  it('«10» в ячейке с «0» даёт 10, а не 010', () => {
+    render(<Host initial={0} />)
+    put('01')
+    expect(input().value).toBe('1')
+    type('0')
+    expect(input().value).toBe('10')
+    expect(owner()).toBe('10')
+  })
+
+  it('цифра, набранная перед «0», тоже заменяет его', () => {
+    render(<Host initial={0} />)
+    put('10')
+    expect(input().value).toBe('1')
+    expect(owner()).toBe('1')
+  })
+
+  it('«0», набранный рядом с «0», оставляет 0', () => {
+    render(<Host initial={0} />)
+    put('00')
+    expect(input().value).toBe('0')
+  })
+})
+
 describe('NumberInput — стирание', () => {
   afterEach(cleanup)
 

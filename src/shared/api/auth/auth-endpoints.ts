@@ -7,6 +7,7 @@ import type {
 } from '@/shared/types/auth.types'
 
 import { attachClientContextHeaders } from '../attach-client-context-headers'
+import { attachLanguageHeader } from '../attach-language-header'
 
 /**
  * HTTP-вызовы контура входа.
@@ -24,6 +25,8 @@ const authInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000,
 })
+
+attachLanguageHeader(authInstance)
 
 // Метка рабочего места и локальные адреса нужны журналу прежде всего на входе (SCRUM-371):
 // событие LOGIN без компьютера — главный пробел журнала. Это не учётные данные, поэтому

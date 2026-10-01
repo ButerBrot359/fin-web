@@ -162,9 +162,17 @@ export const ReferenceCellEditor: FC<ReferenceCellEditorProps> = ({
 
   // Легаси-пикер получает готовый конкретный фильтр из props.filter (бэк кладёт
   // туда, например, {Vladelets: id}) — фронт его не синтезирует.
-  const searchParams = filter
-    ? Object.fromEntries(Object.entries(filter).map(([k, v]) => [k, String(v)]))
-    : undefined
+  const searchParams =
+    filter || extraParams
+      ? {
+          ...(filter
+            ? Object.fromEntries(
+                Object.entries(filter).map(([k, v]) => [k, String(v)])
+              )
+            : {}),
+          ...extraParams,
+        }
+      : undefined
 
   // Инвариант A4: без targetTypeCode бэк осознанно не кладёт ни optionsSource,
   // ни allow* — цель ссылки неизвестна, пикер открывать не по чему. Гейт

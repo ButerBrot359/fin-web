@@ -12,6 +12,8 @@ import { SubordinationTree } from './subordination-tree'
 import { KalendariTemplateTable } from './kalendari-template-table'
 import { isTabelMatrixNode } from './tabel/tabel-matrix-contract'
 import { TabelMatrixTable } from './tabel/tabel-matrix-table'
+import { isReportSheetNode } from './report-sheet/report-sheet-contract'
+import { ReportSheetTable } from './report-sheet/report-sheet-table'
 import { ItogiHierarchyTable } from './itogi-hierarchy-table'
 import { SelectionListTable } from './selection-list-table'
 
@@ -45,6 +47,11 @@ const renderTable = (node: ViewNode): ReactElement | null => {
   // Матрица Табеля (SCRUM-276): все три признака дискриминатора обязаны
   // совпасть, иначе обычный рендер — без декодирования packed-строк.
   if (isTabelMatrixNode(node)) return <TabelMatrixTable node={node} />
+
+  // Сетка регламентированного отчёта (report-sheet/v1, ADR-0087 §2.9.3):
+  // тот же механизм дискриминатора, что у матрицы Табеля. Проверка ДО ветки
+  // editable — узел приходит с editable: true, но без TABLE_COLUMN.
+  if (isReportSheetNode(node)) return <ReportSheetTable node={node} />
 
   // Свод «Итоги» (Начисление зарплаты): строки приходят плоским списком с
   // __level/__parentRowId, показ — дерево со сворачиванием, а не таблица ТЧ.
@@ -105,23 +112,12 @@ const renderTable = (node: ViewNode): ReactElement | null => {
   return <ReadOnlyTable node={node} />
 }
 
-export const TableNode: FC<NodeProps> = ({ node }) => {
-  const rendered = renderTable(node)
-  const title =
-    typeof node.props?.title === 'string' && node.props.title !== ''
-      ? node.props.title
-      : null
-  const content =
-    rendered && title ? (
-      <Box className="flex min-h-0 flex-1 flex-col">
-        <Typography variant="body2" fontWeight={600} className="mb-1">
-          {title}
-        </Typography>
-        {rendered}
-      </Box>
-    ) : (
-      rendered
-    )
+const STRETCHED_MIN_HEIGHT = 288
+
+const frameError = (
+  node: ViewNode,
+  content: ReactElement | null
+): ReactElement | null => {
   const error =
     typeof node.props?.error === 'string' && node.props.error !== ''
       ? node.props.error
@@ -141,5 +137,40 @@ export const TableNode: FC<NodeProps> = ({ node }) => {
     >
       {content}
     </Box>
+  )
+}
+
+export const TableNode: FC<NodeProps> = ({ node }) => {
+  const rendered = renderTable(node)
+  const title =
+    typeof node.props?.title === 'string' && node.props.title !== ''
+      ? node.props.title
+      : null
+  const content =
+    rendered && title ? (
+      <Box className="flex min-h-0 flex-1 flex-col">
+        <Typography variant="body2" fontWeight={600} className="mb-1">
+          {title}
+        </Typography>
+        {rendered}
+      </Box>
+    ) : (
+      rendered
+    )
+  const framed = frameError(node, content)
+  const flex = node.props?.flex as number | string | undefined
+  if (!framed || flex === undefined) return framed
+  return (
+    <div
+      data-stretch="true"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex,
+        minHeight: STRETCHED_MIN_HEIGHT,
+      }}
+    >
+      {framed}
+    </div>
   )
 }

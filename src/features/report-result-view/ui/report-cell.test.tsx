@@ -52,9 +52,67 @@ describe('ReportCell — формат по объявленному типу з�
     expect(screen.getByText('150,50')).toBeTruthy()
   })
 
+  it('мера с форматом «#,##0» печатается целым числом, без копеек', () => {
+    render(
+      <ReportCell
+        value={1}
+        col={column({ role: 'MEASURE', format: '#,##0' })}
+      />
+    )
+
+    expect(screen.getByText('1')).toBeTruthy()
+  })
+
+  it('мера с форматом количества «#,##0.000» печатается с тремя знаками', () => {
+    render(
+      <ReportCell
+        value={2.5}
+        col={column({ role: 'MEASURE', format: '#,##0.000' })}
+      />
+    )
+
+    expect(screen.getByText('2,500')).toBeTruthy()
+  })
+
+  it('формат «#,##0.##» печатает копейки только когда они есть, как в 1С', () => {
+    const col = column({ role: 'MEASURE', format: '#,##0.##' })
+    render(<ReportCell value={32922} col={col} />)
+    render(<ReportCell value={4479.17} col={col} />)
+
+    expect(screen.getByText('32 922')).toBeTruthy()
+    expect(screen.getByText('4 479,17')).toBeTruthy()
+  })
+
+  it('норма амортизации с форматом «#,##0.0» печатается с одним знаком', () => {
+    render(
+      <ReportCell
+        value={25}
+        col={column({ valueType: 'DECIMAL', format: '#,##0.0' })}
+      />
+    )
+
+    expect(screen.getByText('25,0')).toBeTruthy()
+  })
+
   it('строковая колонка не трогается: текст остаётся как есть', () => {
     render(<ReportCell value="1315" col={column({})} />)
 
     expect(screen.getByText('1315')).toBeTruthy()
+  })
+})
+
+describe('ReportCell — многострочные значения', () => {
+  it('строка с переводом строки рендерится с white-space: pre-line', () => {
+    render(<ReportCell value={'Иванов\nучитель'} col={column({})} />)
+
+    const el = screen.getByText(/Иванов/)
+    expect(el.style.whiteSpace).toBe('pre-line')
+    expect(el.textContent).toBe('Иванов\nучитель')
+  })
+
+  it('однострочная строка без pre-line', () => {
+    render(<ReportCell value="Иванов" col={column({})} />)
+
+    expect(screen.getByText('Иванов').style.whiteSpace).toBe('')
   })
 })

@@ -1,25 +1,11 @@
-import { formatDate, isValid, parseISO } from '@/shared/lib/utils/date'
+import { ru } from 'date-fns/locale'
+
+import { format, formatDate, isValid, parseISO } from '@/shared/lib/utils/date'
 
 import type { ReportResultDto } from '@/pages/reports/report-list/types/report'
 
 /** Ключи подстановки, которые форматируются как даты периода. */
 const DATE_KEYS = new Set(['from', 'to'])
-
-/** Месяцы в именительном падеже для 1С-формата периода («Январь 2024 г.»). */
-const MONTHS_RU = [
-  'Январь',
-  'Февраль',
-  'Март',
-  'Апрель',
-  'Май',
-  'Июнь',
-  'Июль',
-  'Август',
-  'Сентябрь',
-  'Октябрь',
-  'Ноябрь',
-  'Декабрь',
-]
 
 /** Дата — первый день месяца. */
 const isMonthStart = (d: Date): boolean => d.getDate() === 1
@@ -31,8 +17,10 @@ const isMonthEnd = (d: Date): boolean => {
 }
 
 /** «Январь 2024 г.» */
-const monthLabel = (d: Date): string =>
-  `${MONTHS_RU[d.getMonth()]} ${String(d.getFullYear())} г.`
+const monthLabel = (d: Date): string => {
+  const month = format(d, 'LLLL', { locale: ru })
+  return `${month.charAt(0).toUpperCase()}${month.slice(1)} ${String(d.getFullYear())} г.`
+}
 
 /**
  * 1С-формат периода в заголовке отчёта: если границы — целые месяцы

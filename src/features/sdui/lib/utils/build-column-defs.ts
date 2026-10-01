@@ -140,7 +140,14 @@ interface CellEditorDeps {
 function buildCellEditorElement(
   col: TableColumnDef,
   row: TableRow,
-  deps: CellEditorDeps
+  deps: CellEditorDeps,
+  // В под-строке VERTICAL-группы высота зафиксирована общей сеткой строки
+  // (VERTICAL_SUB_ROW_HEIGHT), а обрезать ячейку по границе нельзя (clip=false
+  // из-за рамок/focus-ring редакторов) — многострочное значение физически
+  // вытекало бы на соседнюю под-строку («буквы друг на друге», SCRUM-412 п.2).
+  // Поэтому там перенос выключен принудительно: одна строка + многоточие, как
+  // у nowrap-колонок эталона 1С.
+  forceNoWrap = false
 ): ReactNode {
   const { syncRef, validationRef, autoAdvance, cellRefHandlers } = deps
   // Доступность и обязательность считаются на ЯЧЕЙКЕ, а не на колонке:
@@ -152,7 +159,7 @@ function buildCellEditorElement(
     value: row[col.binding],
     readonly: state.readonly,
     required: state.required,
-    noWrap: isNoWrapColumn(col.binding, col.label),
+    noWrap: forceNoWrap || isNoWrapColumn(col.binding, col.label),
     revealErrors: validationRef?.current.revealErrors ?? false,
     props: col.props,
     extraParams: resolveRowFilterParams(col, row),
@@ -303,7 +310,9 @@ function buildColumnDefsInner(
             subLabels.length > 0
               ? () =>
                   verticalSubRows(
-                    subLabels.map((child) => subRow(child, columnHeaderContent)),
+                    subLabels.map((child) =>
+                      subRow(child, columnHeaderContent)
+                    ),
                     16,
                     true,
                     subRowCount
@@ -313,7 +322,12 @@ function buildColumnDefsInner(
             verticalSubRows(
               visibleChildren.map((child) =>
                 subRow(child, (childCol) =>
-                  buildCellEditorElement(childCol, info.row.original, deps)
+                  buildCellEditorElement(
+                    childCol,
+                    info.row.original,
+                    deps,
+                    true
+                  )
                 )
               ),
               0,

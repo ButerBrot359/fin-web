@@ -132,6 +132,10 @@ const useInfiniteQuery: MockedFunction<any> = vi.fn()
 vi.mock('@tanstack/react-query', () => ({
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   useInfiniteQuery: (cfg: Record<string, unknown>) => useInfiniteQuery(cfg),
+  // SCRUM-360 #1: use-list-infinite-rows импортирует keepPreviousData — моку
+  // достаточно любого значения-идентификатора, стаб useInfiniteQuery его
+  // игнорирует.
+  keepPreviousData: (prev: unknown) => prev,
 }))
 
 import { fetchListPage } from '../../../api/reference-options'

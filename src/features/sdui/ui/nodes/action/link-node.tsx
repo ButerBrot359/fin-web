@@ -11,7 +11,6 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
   const text = node.props?.text as string | undefined
   const route = node.props?.route as string | undefined
   const external = node.props?.external as boolean | undefined
-  const variant = node.props?.variant as string | undefined
   const disabled = node.props?.disabled === true
   const tooltip = node.props?.tooltip as string | undefined
   // SCRUM-308 v3 §3: серый поясняющий текст в 1–2 строки под ссылкой страницы
@@ -92,22 +91,12 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
     )
   }
 
-  // SCRUM-181: module-link — навигационная ссылка страницы модуля: без
-  // подчёркивания, в цвете текста; акцент только на hover.
+  // SCRUM-308 v5 §4: в эталоне 1С ВСЕ пункты страницы раздела — синие
+  // подчёркнутые ссылки, без различия клиентской и серверной навигации.
+  // Чёрный module-link из SCRUM-181 был отклонением от паритета; вид у обеих
+  // веток теперь одинаковый — дефолтный MUI Link.
   return withDescription(
-    <Link
-      component={RouterLink}
-      to={route ?? '/'}
-      underline={variant === 'module-link' ? 'none' : 'always'}
-      sx={
-        variant === 'module-link'
-          ? {
-              color: 'text.primary',
-              '&:hover': { color: 'primary.main', textDecoration: 'underline' },
-            }
-          : undefined
-      }
-    >
+    <Link component={RouterLink} to={route ?? '/'}>
       {text}
     </Link>
   )

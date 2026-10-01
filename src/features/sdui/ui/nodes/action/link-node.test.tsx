@@ -54,6 +54,41 @@ describe('LinkNode: module-link (SCRUM-181 v3)', () => {
     expect(item.getAttribute('aria-disabled')).toBe('true')
   })
 
+  // SCRUM-308 v5 §4: по паритету 1С все ссылки страницы раздела — синие
+  // подчёркнутые, одинаково для клиентской и серверной навигации.
+  it('module-link рисуется дефолтной подчёркнутой ссылкой', () => {
+    render(
+      <MemoryRouter>
+        <LinkNode
+          node={link({ text: 'Пункт', variant: 'module-link', route: '/x' })}
+        />
+      </MemoryRouter>
+    )
+    expect(screen.getByText('Пункт').className).toContain(
+      'MuiLink-underlineAlways'
+    )
+  })
+
+  it('ссылка с серверной навигацией выглядит так же — underlineAlways', () => {
+    render(
+      <MemoryRouter>
+        <LinkNode
+          node={
+            {
+              id: 'module.X.item.0.0.1',
+              type: 'LINK',
+              props: { text: 'Настройки входа', variant: 'module-link' },
+              actions: [{ actionId: 'navigate' }],
+            } as unknown as ViewNode
+          }
+        />
+      </MemoryRouter>
+    )
+    expect(screen.getByText('Настройки входа').className).toContain(
+      'MuiLink-underlineAlways'
+    )
+  })
+
   it('disabled: тултип с сервера показывается на наведении', async () => {
     render(
       <MemoryRouter>

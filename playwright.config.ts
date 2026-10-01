@@ -28,5 +28,10 @@ export default defineConfig({
     // провалидировать несвежий билд; strictPort превратит это в явную ошибку.
     reuseExistingServer: false,
     timeout: 120_000,
+    // Фикстуры сюиты сняты в анонимном контуре: JWT-гвард выключен на этапе
+    // СБОРКИ (флаг читается import.meta.env). Локальный .env с
+    // VITE_AUTH_ENABLED=true (нужен для живой отладки входа) иначе молча
+    // уводил все экраны на /login — прогон обязан не зависеть от .env машины.
+    env: { ...process.env, VITE_AUTH_ENABLED: 'false' },
   },
 })

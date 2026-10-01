@@ -1,6 +1,7 @@
 import { type KeyboardEvent, type ReactNode, useMemo } from 'react'
 import {
   Autocomplete,
+  Checkbox,
   TextField,
   Tooltip,
   type SxProps,
@@ -13,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import type { SelectOption } from '@/shared/types/select-option'
 import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
+import { CheckAllActionsContext } from './check-all-context'
 import { createFooterPaper } from './footer-paper'
 
 interface AutocompleteInputBaseProps {
@@ -75,6 +77,8 @@ export interface AutocompleteInputMultipleProps extends AutocompleteInputBasePro
   multiple: true
   value: SelectOption[]
   onChange: (value: SelectOption[]) => void
+  /** Кнопки «Отметить все» / «Снять все» над списком, как в форме выбора 1С. */
+  checkAllActions?: boolean
 }
 
 export type AutocompleteInputProps =
@@ -125,7 +129,8 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
   // Пустое поле (value=null) попадает в ветку «popup пуст → reset» (:425-429), а reset
   // возвращает defaultHighlighted (:333) — то есть 0. Так первая опция и подсвечивается.
 
-  const hasFooter = !!(onShowAll || onAdd)
+  const withCheckAll = props.multiple === true && props.checkAllActions === true
+  const hasFooter = !!(onShowAll || onAdd || withCheckAll)
 
   const PaperComponent = useMemo(() => {
     if (!hasFooter) return undefined
@@ -244,15 +249,63 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
   }
 
   if (props.multiple) {
-    return (
+    const { value, onChange } = props
+    const autocomplete = (
       <Autocomplete
         multiple
         {...commonProps}
-        value={props.value}
+        sx={[
+          ...(Array.isArray(sx) ? sx : [sx]),
+          {
+            '& .MuiAutocomplete-inputRoot': { overflow: 'hidden' },
+            '& .MuiAutocomplete-tag': {
+              minWidth: 0,
+              maxWidth: 'calc(100% - 96px)',
+              flexShrink: 1,
+            },
+            '& .MuiAutocomplete-input': { minWidth: '24px !important' },
+          },
+        ]}
+        disableCloseOnSelect
+        renderOption={(optionProps, option, { selected }) => {
+          const { key, ...rest } = optionProps
+          return (
+            <li key={key} {...rest}>
+              <Checkbox
+                size="small"
+                checked={selected}
+                sx={{ mr: 1, p: 0.5 }}
+              />
+              {option.label}
+            </li>
+          )
+        }}
+        value={value}
         onChange={(_e, newValue) => {
-          props.onChange(newValue)
+          onChange(newValue)
         }}
       />
+    )
+    if (!withCheckAll) return autocomplete
+    const known = new Set(value.map((o) => String(o.id)))
+    return (
+      <CheckAllActionsContext.Provider
+        value={{
+          onCheckAll: () => {
+            onChange([
+              ...value,
+              ...options.filter((o) => !known.has(String(o.id))),
+            ])
+          },
+          onUncheckAll: () => {
+            onChange([])
+          },
+          checkAllLabel: t('inputs.checkAll'),
+          uncheckAllLabel: t('inputs.uncheckAll'),
+        }}
+      >
+        {autocomplete}
+      </CheckAllActionsContext.Provider>
     )
   }
 

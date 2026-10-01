@@ -83,6 +83,41 @@ describe('PeriodChoiceNodeButton', () => {
     )
   })
 
+  it('протягивание мышью по месяцам переносит диапазон в поля периода отчёта', () => {
+    openDialog()
+    fireEvent.mouseDown(screen.getAllByText('M3')[1])
+    fireEvent.mouseEnter(screen.getAllByText('M4')[1])
+    fireEvent.mouseEnter(screen.getAllByText('M5')[1])
+    fireEvent.mouseUp(document)
+    fireEvent.mouseEnter(screen.getAllByText('M8')[1])
+
+    expect(screen.getByLabelText('periodChoice.from')).toHaveValue('2026-04-01')
+    expect(screen.getByLabelText('periodChoice.to')).toHaveValue('2026-06-30')
+    fireEvent.click(screen.getByText('periodChoice.select'))
+
+    expect(setValueMock).toHaveBeenCalledWith(choice.fromNodeId, '2026-04-01')
+    expect(setValueMock).toHaveBeenCalledWith(choice.toNodeId, '2026-06-30')
+    expect(dispatchMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        value: { from: '2026-04-01', to: '2026-06-30' },
+      })
+    )
+  })
+
+  it('протягивание назад и через границу года даёт упорядоченный период', () => {
+    openDialog()
+    fireEvent.mouseDown(screen.getAllByText('M1')[2])
+    fireEvent.mouseEnter(screen.getAllByText('M10')[1])
+    fireEvent.mouseUp(document)
+    fireEvent.click(screen.getByText('periodChoice.select'))
+
+    expect(dispatchMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        value: { from: '2026-11-01', to: '2027-02-28' },
+      })
+    )
+  })
+
   it('клик по году выбирает весь год', () => {
     openDialog()
     fireEvent.click(screen.getByText('2027'))

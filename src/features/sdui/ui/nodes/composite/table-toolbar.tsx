@@ -40,7 +40,7 @@ interface TableToolbarProps {
   allowReorder?: boolean
   allowDelete?: boolean
   commands?: TableCommandDescriptor[]
-  search: TableSearchApi
+  search: Omit<TableSearchApi, 'rows'>
   selectedRowId?: string | null
   /** rowId всех выделенных строк — серверная «Удалить» снимает их разом, как в 1С. */
   selectedRowIds?: string[]

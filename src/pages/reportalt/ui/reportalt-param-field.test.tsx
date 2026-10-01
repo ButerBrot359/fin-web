@@ -246,3 +246,43 @@ describe('ReportAltParamField — множественный выбор из с�
     expect(fetchOptionsMock).not.toHaveBeenCalled()
   })
 })
+
+describe('ReportAltParamField — множественный выбор', () => {
+  const organizatsii: ReportAltParameterDto = {
+    code: 'Organizatsiya',
+    titleRu: 'Организация',
+    dataType: 'REF_LIST',
+    required: false,
+    referenceDomain: 'Organizatsii',
+    allowedValues: [],
+  }
+
+  beforeEach(() => {
+    fetchOptionsMock.mockReset()
+    fetchActiveMock.mockReset()
+    fetchByIdMock.mockReset()
+  })
+
+  it('«Отметить все» отмечает все организации списка, «Снять все» очищает выбор', async () => {
+    fetchOptionsMock.mockResolvedValue([
+      { id: 1, code: '1', label: 'Отдел финансов' },
+      { id: 2, code: '2', label: 'Аппарат акима' },
+    ])
+    const onChange = vi.fn()
+    renderField(
+      <ReportAltParamField
+        param={organizatsii}
+        value={[2]}
+        onChange={onChange}
+      />
+    )
+
+    fireEvent.mouseDown(screen.getByRole('combobox'))
+    await screen.findByText('Отдел финансов')
+    fireEvent.click(screen.getByText('Отметить все'))
+    expect(onChange).toHaveBeenLastCalledWith([2, 1])
+
+    fireEvent.click(screen.getByText('Снять все'))
+    expect(onChange).toHaveBeenLastCalledWith([])
+  })
+})

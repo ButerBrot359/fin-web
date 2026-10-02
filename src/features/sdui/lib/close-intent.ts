@@ -1,4 +1,6 @@
 import { viewTransport } from '../api/view-transport'
+import { discardClosedFormDraft } from './closed-tab-session'
+import { isScreenMounted } from './mounted-screen'
 import { useSduiCacheStore } from './stores/sdui-cache-store'
 
 // SCRUM-276 (черновики форм): «Не сохранять» при закрытии вкладки должно
@@ -35,7 +37,11 @@ export function clearDiscardDraftClose(route: string): void {
  * Активная вкладка кэша не имеет — помечаем интент, его заберёт
  * cleanup SduiScreen при размонтировании.
  */
-export function discardTabSession(route: string): void {
+export function discardTabSession(route: string, fullRoute?: string): void {
+  if (isScreenMounted(route)) {
+    markDiscardDraftClose(route)
+    return
+  }
   const cached = useSduiCacheStore.getState().get(route)
   if (cached) {
     if (cached.formSessionId != null) {
@@ -51,6 +57,10 @@ export function discardTabSession(route: string): void {
         })
     }
     useSduiCacheStore.getState().remove(route)
+    return
+  }
+  if (fullRoute) {
+    void discardClosedFormDraft(fullRoute)
     return
   }
   markDiscardDraftClose(route)

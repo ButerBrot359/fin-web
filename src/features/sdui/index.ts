@@ -62,6 +62,11 @@ export type { ViewSettingsProfile } from './api/view-settings-profile-defaults-a
 export { viewSettingsDefaultsApi } from './api/view-settings-api'
 export { ShellSidebarHost } from './ui/shell-sidebar-host'
 export { discardTabSession, markDiscardDraftClose } from './lib/close-intent'
+export { releaseClosedTabScreen } from './lib/closed-tab-session'
+export {
+  flushScreenEdits,
+  hasPendingScreenEdits,
+} from './lib/flush-screen-edits'
 export { dropCachedScreensFor } from './lib/fresh-form-instance'
 export { forgetListMemory } from './lib/stores/list-memory-store'
 export { resetAdminCustomizeAutoOpen } from './ui/admin-customize-auto-open'

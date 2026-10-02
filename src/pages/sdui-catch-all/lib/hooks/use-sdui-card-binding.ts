@@ -11,11 +11,14 @@ import {
   useTreeStore,
   useSduiDispatch,
   markDiscardDraftClose,
+  flushScreenEdits,
+  hasPendingScreenEdits,
 } from '@/features/sdui'
 import {
   useWorkspaceTabsStore,
   useFormCacheStore,
   useTabMeta,
+  notifyTabSaveFailed,
 } from '@/features/workspace-tabs'
 
 import { invalidateDocumentQueries } from '@/shared/lib/query/invalidate-entities'
@@ -97,7 +100,7 @@ export function useSduiCardBinding(trackDirty = true) {
   const setTabTitle = useCallback((title: string) => {
     setTitleState((prev) => ({ route: prev.route, title }))
   }, [])
-  useTabMeta(titleState.title)
+  useTabMeta(titleState.title, titleState.route)
 
   const closeCurrentTab = () => {
     useFormCacheStore.getState().removeTab(screenRoute)
@@ -121,14 +124,26 @@ export function useSduiCardBinding(trackDirty = true) {
     },
   })
 
-  const handleClose = () => {
-    if (dirty) {
+  const closeOrAsk = () => {
+    if (trackDirty && useViewStateStore.getState().dirty) {
       unsavedDialog.open()
     } else {
       closeCurrentTab()
       navigateToNeighborTab(navigate)
     }
   }
+
+  const handleClose = () => {
+    if (!hasPendingScreenEdits()) {
+      closeOrAsk()
+      return
+    }
+    void flushScreenEdits().then(closeOrAsk)
+  }
+
+  const pendingAction = useFormCacheStore(
+    (s) => s.pendingActions[screenRoute] ?? null
+  )
 
   const tabsApi = useMemo(
     () => ({
@@ -144,6 +159,9 @@ export function useSduiCardBinding(trackDirty = true) {
       },
       consumePendingAction: (route: string) =>
         useFormCacheStore.getState().consumePendingAction(route),
+      onSaveAndCloseFailed: (route: string) => {
+        notifyTabSaveFailed(route)
+      },
       // Успешный save-and-close: закрыть вкладку и сесть на соседнюю (listPath
       // не знаем — универсальная карточка, вариант дедовки sdui-dictionary-entry-page).
       onSavedAndClosed: (route: string) => {
@@ -163,5 +181,10 @@ export function useSduiCardBinding(trackDirty = true) {
     [navigate, setTabTitle]
   )
 
-  return { tabsApi, pageTitle, unsavedDialog, handleClose }
+  return {
+    tabsApi: { ...tabsApi, pendingAction },
+    pageTitle,
+    unsavedDialog,
+    handleClose,
+  }
 }

@@ -11,13 +11,14 @@ import type {
   ActionBehavior,
   ViewAction,
   ViewEffect,
+  ViewResponse,
   ViewTabMeta,
 } from '../types/view'
 import { viewTransport } from '../api/view-transport'
 import { applyOpenResponse, applyServerPatches } from './apply-view-response'
 import { buildDispatchEffectHandler } from './build-dispatch-effect-deps'
 import { handleDispatchError } from './handle-dispatch-error'
-import { isRetryableAfterReopen } from './reopen-retry-policy'
+import { reopenPreservingClientState } from './reopen-preserving-client-state'
 import { useSduiSession } from './sdui-session-context'
 import { flushAllPendingTableCommits } from './pending-table-commits'
 import {
@@ -70,6 +71,7 @@ export function useSduiDispatch() {
         // Background refresh may finish after the user edits or changes tabs.
         acceptOpenResponse?: () => boolean
         freshOpen?: boolean
+        onOpenResponse?: (res: ViewResponse) => void
       }
     ): Promise<boolean> {
       // Конструктор дизайна Ф4/Ф5: «Изменить форму [для всех]» — клиентские
@@ -143,11 +145,17 @@ export function useSduiDispatch() {
         // резолвится в тот же экран). Сохранённый layoutCode берём, если он
         // всё же есть (переходный период страниц, ещё шлющих layoutCode).
         const layoutCode = session.getLayoutCode?.() ?? undefined
-        const ok = await dispatchAction({ type: 'OPEN', layoutCode })
         // Повторяем исходное действие, чтобы клик не терялся (кроме команд записи)
-        if (ok && isRetryableAfterReopen(action, behavior)) {
-          void dispatchAction(action, behavior, true)
-        }
+        await reopenPreservingClientState({
+          session,
+          action,
+          behavior,
+          openForm: (onOpenResponse) =>
+            dispatchAction({ type: 'OPEN', layoutCode }, null, false, {
+              onOpenResponse,
+            }),
+          retry: () => dispatchAction(action, behavior, true),
+        })
       }
 
       // SCRUM-308 §5: владелец запроса и ход FIFO-очереди — снимаются до
@@ -239,6 +247,7 @@ export function useSduiDispatch() {
             onOpenTab: opts?.onOpenTab,
             playEffects,
           })
+          opts?.onOpenResponse?.(res)
           // SCRUM-308 §5: дерево и значения восстановлены — теперь можно
           // проиграть исходы, отложенные, пока вкладка была скрыта.
           replayDeferredResponses(route)

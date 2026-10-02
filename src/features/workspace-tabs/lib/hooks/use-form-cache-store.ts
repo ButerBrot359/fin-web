@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
 interface FormCacheEntry {
   values: Record<string, unknown> | null
@@ -33,77 +34,109 @@ export function isRestoring(tabId: string): boolean {
   return _restoringTabs.has(tabId)
 }
 
-export const useFormCacheStore = create<FormCacheStore>((set, get) => ({
-  cache: {},
-  pendingActions: {},
+type PersistedFormCache = Pick<FormCacheStore, 'cache'>
 
-  setDirty: (tabId, isDirty) => {
-    set((state) => {
-      const existing = state.cache[tabId]
-      if (existing?.isDirty === isDirty) return state
+function dirtyOnly(
+  cache: FormCacheStore['cache']
+): PersistedFormCache['cache'] {
+  const result: PersistedFormCache['cache'] = {}
+  for (const [tabId, entry] of Object.entries(cache)) {
+    if (entry?.isDirty) result[tabId] = { values: null, isDirty: true }
+  }
+  return result
+}
 
-      return {
+export const FORM_DIRTY_STORAGE_KEY = 'workspace-tabs-dirty'
+
+export const useFormCacheStore = create<FormCacheStore>()(
+  persist<FormCacheStore, [], [], PersistedFormCache>(
+    (set, get) => ({
+      cache: {},
+      pendingActions: {},
+
+      setDirty: (tabId, isDirty) => {
+        set((state) => {
+          const existing = state.cache[tabId]
+          if (existing?.isDirty === isDirty) return state
+
+          return {
+            cache: {
+              ...state.cache,
+              [tabId]: {
+                values: existing ? existing.values : null,
+                isDirty,
+              },
+            },
+          }
+        })
+      },
+
+      setCachedValues: (tabId, values) => {
+        set((state) => {
+          const existing = state.cache[tabId]
+          return {
+            cache: {
+              ...state.cache,
+              [tabId]: {
+                values,
+                isDirty: existing ? existing.isDirty : true,
+              },
+            },
+          }
+        })
+      },
+
+      getCachedValues: (tabId) => {
+        const entry = get().cache[tabId]
+        return entry ? entry.values : null
+      },
+
+      clearCache: (tabId) => {
+        set((state) => {
+          if (!(tabId in state.cache)) return state
+          const { [tabId]: _, ...rest } = state.cache
+          return { cache: rest }
+        })
+      },
+
+      setPendingAction: (tabId, action) => {
+        set((state) => ({
+          pendingActions: { ...state.pendingActions, [tabId]: action },
+        }))
+      },
+
+      consumePendingAction: (tabId) => {
+        const action = get().pendingActions[tabId] ?? null
+        if (action) {
+          set((state) => {
+            const { [tabId]: _, ...rest } = state.pendingActions
+            return { pendingActions: rest }
+          })
+        }
+        return action
+      },
+
+      removeTab: (tabId) => {
+        set((state) => {
+          const { [tabId]: _cache, ...restCache } = state.cache
+          const { [tabId]: _action, ...restActions } = state.pendingActions
+          return { cache: restCache, pendingActions: restActions }
+        })
+      },
+    }),
+    {
+      name: FORM_DIRTY_STORAGE_KEY,
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({ cache: dirtyOnly(state.cache) }),
+      merge: (persisted, current) => ({
+        ...current,
         cache: {
-          ...state.cache,
-          [tabId]: {
-            values: existing ? existing.values : null,
-            isDirty,
-          },
+          ...dirtyOnly(
+            (persisted as PersistedFormCache | undefined)?.cache ?? {}
+          ),
+          ...current.cache,
         },
-      }
-    })
-  },
-
-  setCachedValues: (tabId, values) => {
-    set((state) => {
-      const existing = state.cache[tabId]
-      return {
-        cache: {
-          ...state.cache,
-          [tabId]: {
-            values,
-            isDirty: existing ? existing.isDirty : true,
-          },
-        },
-      }
-    })
-  },
-
-  getCachedValues: (tabId) => {
-    const entry = get().cache[tabId]
-    return entry ? entry.values : null
-  },
-
-  clearCache: (tabId) => {
-    set((state) => {
-      if (!(tabId in state.cache)) return state
-      const { [tabId]: _, ...rest } = state.cache
-      return { cache: rest }
-    })
-  },
-
-  setPendingAction: (tabId, action) => {
-    set((state) => ({
-      pendingActions: { ...state.pendingActions, [tabId]: action },
-    }))
-  },
-
-  consumePendingAction: (tabId) => {
-    const action = get().pendingActions[tabId] ?? null
-    if (action) {
-      set((state) => {
-        const { [tabId]: _, ...rest } = state.pendingActions
-        return { pendingActions: rest }
-      })
+      }),
     }
-    return action
-  },
-
-  removeTab: (tabId) => {
-    set((state) => {
-      const { [tabId]: _cache, ...restCache } = state.cache
-      const { [tabId]: _action, ...restActions } = state.pendingActions
-      return { cache: restCache, pendingActions: restActions }
-    })
-  },
-}))
+  )
+)

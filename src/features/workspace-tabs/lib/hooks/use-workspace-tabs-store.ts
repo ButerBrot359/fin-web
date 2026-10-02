@@ -1,3 +1,4 @@
+import i18n from 'i18next'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
@@ -5,9 +6,16 @@ import {
   formInstanceOf,
   tabRouteKey,
 } from '@/shared/lib/router/form-instance-route'
+import { showToast } from '@/shared/ui/toast/show-toast'
 
 import { MAX_TABS } from '../consts/workspace-tabs-config'
-import { adoptFormInstanceId } from '../utils/form-instance-id'
+import { notifyPanelTabClose } from '../panel-tab-close-registry'
+import {
+  adoptFormInstanceId,
+  forgetFormInstanceId,
+} from '../utils/form-instance-id'
+import { isTabDirty } from '../utils/is-tab-dirty'
+import { useFormCacheStore } from './use-form-cache-store'
 import { tabEntityKey } from '../utils/tab-entity-key'
 import type { WorkspaceTab, TabPageType } from '../../types/workspace-tab'
 
@@ -47,16 +55,35 @@ function remember(order: string[], tabId: string): string[] {
   return [tabId, ...order.filter((id) => id !== tabId)]
 }
 
-/**
- * Добавляет вкладку, соблюдая лимит MAX_TABS: первая вкладка (самая ранняя,
- * обычно «домашняя» для сессии) сохраняется, вытесняется старейшая из остальных.
- */
 function appendWithLimit(
   tabs: WorkspaceTab[],
-  tab: WorkspaceTab
-): WorkspaceTab[] {
-  const next = [...tabs, tab]
-  return next.length > MAX_TABS ? [next[0], ...next.slice(2)] : next
+  tab: WorkspaceTab,
+  activeTabId: string | null
+): { tabs: WorkspaceTab[]; evicted: WorkspaceTab | null } | null {
+  if (tabs.length < MAX_TABS) return { tabs: [...tabs, tab], evicted: null }
+  const inactive = (t: WorkspaceTab) => t.id !== activeTabId
+  const candidates = [
+    ...tabs.slice(1).filter(inactive),
+    ...tabs.slice(0, 1).filter(inactive),
+    ...tabs.filter((t) => !inactive(t)),
+  ]
+  const evicted = candidates.find((t) => !isTabDirty(t.id))
+  if (!evicted) return null
+  return { tabs: [...tabs.filter((t) => t !== evicted), tab], evicted }
+}
+
+function releaseEvicted(tab: WorkspaceTab | null): void {
+  if (!tab) return
+  if (tab.pageType === 'sdui-panel') {
+    if (tab.panelId) notifyPanelTabClose(tab.panelId)
+    return
+  }
+  useFormCacheStore.getState().removeTab(tab.id)
+  forgetFormInstanceId(tab.path)
+}
+
+function warnTabLimit(): void {
+  showToast('warning', i18n.t('workspaceTabs.limitAllDirty', { max: MAX_TABS }))
 }
 
 function updateTab(
@@ -129,11 +156,20 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
           createdAt: Date.now(),
         }
 
+        const appended = appendWithLimit(tabs, tab, get().activeTabId)
+        if (!appended) {
+          warnTabLimit()
+          return null
+        }
         set({
-          tabs: appendWithLimit(tabs, tab),
+          tabs: appended.tabs,
           activeTabId: id,
-          activationOrder: remember(get().activationOrder, id),
+          activationOrder: remember(
+            get().activationOrder.filter((t) => t !== appended.evicted?.id),
+            id
+          ),
         })
+        releaseEvicted(appended.evicted)
         return id
       },
 
@@ -170,11 +206,21 @@ export const useWorkspaceTabsStore = create<WorkspaceTabsStore>()(
           createdAt: Date.now(),
         }
 
+        const appended = appendWithLimit(tabs, tab, activeTabId)
+        if (!appended) {
+          warnTabLimit()
+          notifyPanelTabClose(panelId)
+          return
+        }
         set({
-          tabs: appendWithLimit(tabs, tab),
+          tabs: appended.tabs,
           activeTabId: id,
-          activationOrder: remember(get().activationOrder, id),
+          activationOrder: remember(
+            get().activationOrder.filter((t) => t !== appended.evicted?.id),
+            id
+          ),
         })
+        releaseEvicted(appended.evicted)
       },
 
       /**

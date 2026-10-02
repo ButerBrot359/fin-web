@@ -1,7 +1,8 @@
 import type { NavigateFunction } from 'react-router-dom'
 
 import { useWorkspaceTabsStore } from '../hooks/use-workspace-tabs-store'
-import { performTabClose } from './perform-tab-close'
+import { runAfterTabLeaveFlush } from '../tab-leave-flush-registry'
+import { requestTabClose } from './request-tab-close'
 
 export function performSectionToggle(
   route: string,
@@ -9,7 +10,9 @@ export function performSectionToggle(
   navigate: NavigateFunction
 ): void {
   if (route === '/' || pathname !== route) {
-    void navigate(route)
+    runAfterTabLeaveFlush(() => {
+      void navigate(route)
+    })
     return
   }
 
@@ -20,8 +23,13 @@ export function performSectionToggle(
     return
   }
   if (activeTab.pageType !== 'sdui-panel' && activeTab.path === route) {
-    performTabClose(activeTab.id, navigate)
+    const tabId = activeTab.id
+    runAfterTabLeaveFlush(() => {
+      requestTabClose(tabId, navigate)
+    })
     return
   }
-  void navigate(route)
+  runAfterTabLeaveFlush(() => {
+    void navigate(route)
+  })
 }

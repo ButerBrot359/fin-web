@@ -18,6 +18,8 @@ vi.mock('../../../lib/sdui-session-context', () => ({
       sessionState[b] = v
     },
     getValue: (b?: string) => (b ? sessionState[b] : undefined),
+    isDirty: false,
+    setDirty: () => undefined,
     tree: treeState.root,
   }),
   useBindingValue: (b?: string) => (b ? sessionState[b] : undefined),

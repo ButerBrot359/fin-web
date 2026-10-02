@@ -3,7 +3,10 @@ import { useEffect } from 'react'
 import {
   discardTabSession,
   dropCachedScreensFor,
+  flushScreenEdits,
   forgetListMemory,
+  hasPendingScreenEdits,
+  releaseClosedTabScreen,
   setWorkspaceTabGateway,
   usePanelStore,
 } from '@/features/sdui'
@@ -11,6 +14,7 @@ import {
   onFreshFormInstance,
   onPanelTabClose,
   onTabDiscardClose,
+  setTabLeaveFlush,
   useWorkspaceTabsStore,
 } from '@/features/workspace-tabs'
 
@@ -41,7 +45,16 @@ export function useWorkspaceTabGatewayBinding(): void {
     })
     // SCRUM-276 (черновики): «Не сохранять» на закрытии вкладки → CLOSE с
     // discardDraft (активная вкладка — интентом, кэшированная — транспортом).
-    const unsubscribeDiscard = onTabDiscardClose(discardTabSession)
+    const unsubscribeDiscard = onTabDiscardClose((tabId) => {
+      const tab = useWorkspaceTabsStore
+        .getState()
+        .tabs.find((t) => t.id === tabId)
+      discardTabSession(tabId, tab ? tab.path + tab.search : undefined)
+    })
+    const unsubscribeLeave = setTabLeaveFlush({
+      hasPending: hasPendingScreenEdits,
+      flush: flushScreenEdits,
+    })
     // «Создать»/копия/ввод на основании: маршрут начинает новый экземпляр формы —
     // снимок вкладки снимаем, иначе новая форма создания открылась бы заполненной.
     const unsubscribeFresh = onFreshFormInstance(dropCachedScreensFor)
@@ -49,13 +62,16 @@ export function useWorkspaceTabGatewayBinding(): void {
       if (state.tabs === prev.tabs) return
       const openIds = new Set(state.tabs.map((tab) => tab.id))
       for (const tab of prev.tabs) {
-        if (!openIds.has(tab.id)) forgetListMemory(tab.id)
+        if (openIds.has(tab.id)) continue
+        forgetListMemory(tab.id)
+        if (tab.pageType !== 'sdui-panel') releaseClosedTabScreen(tab.id)
       }
     })
     return () => {
       setWorkspaceTabGateway(null)
       unsubscribe()
       unsubscribeDiscard()
+      unsubscribeLeave()
       unsubscribeFresh()
       unsubscribeTabs()
     }

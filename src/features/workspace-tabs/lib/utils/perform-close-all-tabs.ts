@@ -5,12 +5,12 @@ import { notifyTabDiscardClose } from '../tab-discard-registry'
 import { forgetFormInstanceId } from './form-instance-id'
 import { useFormCacheStore } from '../hooks/use-form-cache-store'
 import { useWorkspaceTabsStore } from '../hooks/use-workspace-tabs-store'
+import { isTabDirty } from './is-tab-dirty'
 
 export function findDirtyTabIds(): string[] {
-  const { cache } = useFormCacheStore.getState()
   return useWorkspaceTabsStore
     .getState()
-    .tabs.filter((t) => cache[t.id]?.isDirty === true)
+    .tabs.filter((t) => isTabDirty(t.id))
     .map((t) => t.id)
 }
 

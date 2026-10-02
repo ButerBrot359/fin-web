@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NavigateFunction } from 'react-router-dom'
 
 import type { WorkspaceTab } from '../../types/workspace-tab'
+import { useFormCacheStore } from '../hooks/use-form-cache-store'
+import { useTabCloseFlowStore } from '../hooks/use-tab-close-flow-store'
 import { useWorkspaceTabsStore } from '../hooks/use-workspace-tabs-store'
 import { performSectionToggle } from './perform-section-toggle'
 
@@ -21,6 +23,8 @@ const tab = (patch: Partial<WorkspaceTab>): WorkspaceTab => ({
 describe('performSectionToggle', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    useFormCacheStore.setState({ cache: {}, pendingActions: {} })
+    useTabCloseFlowStore.getState().cancel()
     useWorkspaceTabsStore.setState({
       tabs: [],
       activeTabId: null,
@@ -116,5 +120,26 @@ describe('performSectionToggle', () => {
     performSectionToggle('/', '/', navigate)
 
     expect(navigate).toHaveBeenCalledWith('/')
+  })
+
+  it('D10: изменённый раздел не закрывается молча — открывается вопрос «Сохранить изменения?»', () => {
+    useWorkspaceTabsStore.setState({
+      tabs: [tab({})],
+      activeTabId: '/modules/ZarplatiIKadri',
+    })
+    useFormCacheStore.getState().setDirty('/modules/ZarplatiIKadri', true)
+
+    performSectionToggle(
+      '/modules/ZarplatiIKadri',
+      '/modules/ZarplatiIKadri',
+      navigate
+    )
+
+    expect(useWorkspaceTabsStore.getState().tabs).toHaveLength(1)
+    expect(navigate).not.toHaveBeenCalled()
+    expect(useTabCloseFlowStore.getState()).toMatchObject({
+      mode: 'single',
+      queue: ['/modules/ZarplatiIKadri'],
+    })
   })
 })

@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { Typography } from '@mui/material'
 
+import { useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
+import { PageHeader } from '@/widgets/page-header'
 
 import { getAuditLog, type AuditLogRecord } from '../api/audit-log-api'
 import {
@@ -41,6 +44,8 @@ const PAGE_SIZE = 50
  */
 export const AuditLogPage = () => {
   const { t } = useTranslation()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { filters, filtersKey, page, applyFilters, setPage } =
     useAuditLogUrlState()
   const [draft, setDraft] = useState<AuditLogFilterValues>(filters)
@@ -69,8 +74,23 @@ export const AuditLogPage = () => {
   const rows = data?.content ?? []
   const applicationOptions = useSeenApplications(rows)
 
+  const header = (
+    <PageHeader
+      title={t('auditLog.title')}
+      onClose={() => {
+        useWorkspaceTabsStore.getState().closeTab(location.pathname)
+        void navigate('/')
+      }}
+    />
+  )
+
   if (isPending) {
-    return <PageSkeleton />
+    return (
+      <div className="flex flex-col gap-4 p-6">
+        {header}
+        <PageSkeleton />
+      </div>
+    )
   }
 
   // Ориентируемся на ФАКТИЧЕСКИЕ значения из ответа: сервер молча ограничивает size (потолок 200),
@@ -80,9 +100,7 @@ export const AuditLogPage = () => {
 
   return (
     <div className="flex flex-col gap-4 p-6">
-      <Typography component="h1" fontSize={24} fontWeight={700}>
-        {t('auditLog.title')}
-      </Typography>
+      {header}
 
       <AuditLogFilters
         value={draft}

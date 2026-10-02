@@ -69,6 +69,23 @@ describe('LinkNode: module-link (SCRUM-181 v3)', () => {
     )
   })
 
+  it.each([
+    { text: 'Пункт', variant: 'module-link', route: '/x' },
+    { text: 'Пункт', variant: 'module-link', disabled: true },
+    { text: 'Пункт', route: 'https://example.com', external: true },
+  ])('ссылка не растягивается на ширину колонки: %o', (props) => {
+    render(
+      <MemoryRouter>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <LinkNode node={link(props)} />
+        </div>
+      </MemoryRouter>
+    )
+    expect(getComputedStyle(screen.getByText('Пункт')).width).toBe(
+      'fit-content'
+    )
+  })
+
   it('ссылка с серверной навигацией выглядит так же — underlineAlways', () => {
     render(
       <MemoryRouter>

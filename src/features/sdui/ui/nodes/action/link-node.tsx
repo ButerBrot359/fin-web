@@ -1,11 +1,14 @@
 import type { FC, ReactNode } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 import { Link, Typography } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material'
 
 import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
 
 import type { NodeProps } from '../../../types/view'
 import { useSduiDispatch } from '../../../lib/dispatch'
+
+const fitContent: SxProps<Theme> = { width: 'fit-content', maxWidth: '100%' }
 
 export const LinkNode: FC<NodeProps> = ({ node }) => {
   const text = node.props?.text as string | undefined
@@ -41,7 +44,7 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
         aria-disabled="true"
         tabIndex={0}
         underline="none"
-        sx={{ color: 'text.disabled', cursor: 'default' }}
+        sx={{ ...fitContent, color: 'text.disabled', cursor: 'default' }}
       >
         {text}
       </Link>
@@ -72,6 +75,7 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
         target="_blank"
         rel="noopener noreferrer"
         onClick={handleClick}
+        sx={fitContent}
       >
         {text}
       </Link>
@@ -84,7 +88,7 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
         component="a"
         href={route ?? '#'}
         onClick={handleClick}
-        sx={{ cursor: 'pointer' }}
+        sx={{ ...fitContent, cursor: 'pointer' }}
       >
         {text}
       </Link>
@@ -96,7 +100,7 @@ export const LinkNode: FC<NodeProps> = ({ node }) => {
   // Чёрный module-link из SCRUM-181 был отклонением от паритета; вид у обеих
   // веток теперь одинаковый — дефолтный MUI Link.
   return withDescription(
-    <Link component={RouterLink} to={route ?? '/'}>
+    <Link component={RouterLink} to={route ?? '/'} sx={fitContent}>
       {text}
     </Link>
   )

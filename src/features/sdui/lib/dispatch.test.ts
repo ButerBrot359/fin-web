@@ -32,6 +32,7 @@ const sessionMock = vi.hoisted(() => ({
     formSessionId: null as string | null,
     revision: null as number | null,
   }),
+  getAll: (): Record<string, unknown> => ({}),
   replaceAll: vi.fn(),
   merge: vi.fn(),
   setSession: vi.fn(),

@@ -97,3 +97,7 @@ export function prepareFreshFormInstanceId(path: string): {
 export function forgetFormInstanceId(path: string): void {
   if (ids.delete(path)) persist()
 }
+
+export function peekFormInstanceId(path: string): string | null {
+  return ids.get(path) ?? null
+}

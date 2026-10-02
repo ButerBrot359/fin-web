@@ -30,6 +30,8 @@ const state: Record<string, unknown> = {}
 vi.mock('../../../lib/sdui-session-context', () => ({
   useSduiSession: () => ({
     kind: 'panel',
+    isDirty: false,
+    setDirty: () => undefined,
     getSession: () => ({ formSessionId: null, revision: null }),
     getValue: (b?: string) => (b ? state[b] : undefined),
     setValue: (b: string, v: unknown) => {

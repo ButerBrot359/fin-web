@@ -110,7 +110,7 @@ export function useTableSync(
   node: ViewNode,
   columns: TableColumnDef[]
 ): UseTableSyncResult {
-  const { setValue } = useSduiSession()
+  const { setValue, setDirty, isDirty } = useSduiSession()
   const dispatch = useSduiDispatch()
 
   // Реактивная подписка на canon (как master-detail в SCRUM-282 #4): getValue давал
@@ -333,6 +333,7 @@ export function useTableSync(
     const dirty = dirtyRef.current
     const existing = dirty.get(rowId) ?? {}
     dirty.set(rowId, { ...existing, [binding]: value })
+    if (!isDirty) setDirty(true)
   }
 
   const commitCell = () => {

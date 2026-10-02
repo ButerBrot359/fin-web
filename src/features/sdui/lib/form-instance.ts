@@ -9,6 +9,7 @@ import { consumeFreshFormInstance } from './fresh-form-instance'
 
 export {
   formInstanceIdFor,
+  peekFormInstanceId,
   prepareFreshFormInstanceId,
 } from '@/features/workspace-tabs/lib/utils/form-instance-id'
 

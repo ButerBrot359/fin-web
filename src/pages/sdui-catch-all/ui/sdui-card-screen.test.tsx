@@ -5,6 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type * as SduiFeature from '@/features/sdui'
 import { useViewStateStore, useTreeStore } from '@/features/sdui'
+import {
+  onTabSaveFailed,
+  useFormCacheStore,
+  useWorkspaceTabsStore,
+} from '@/features/workspace-tabs'
 import type { ViewNode } from '@/features/sdui'
 
 import { SduiCardScreen } from './sdui-card-screen'
@@ -16,7 +21,12 @@ const { screenState } = vi.hoisted(() => ({
   screenState: {
     mountCount: 0,
     renderCount: 0,
-    lastProps: {} as { shouldPersistSession?: (route: string) => boolean },
+    lastProps: {} as {
+      shouldPersistSession?: (route: string) => boolean
+      pendingAction?: string | null
+      onSaveAndCloseFailed?: (route: string) => void
+    },
+    reportTitle: '',
   },
 }))
 
@@ -26,12 +36,17 @@ vi.mock('@/features/sdui', async (orig) => {
     ...actual,
     SduiScreen: (props: {
       shouldPersistSession?: (route: string) => boolean
+      onTitleChange?: (title: string) => void
     }) => {
       screenState.renderCount += 1
       screenState.lastProps = props
       useEffect(() => {
         screenState.mountCount += 1
       }, [])
+      const { onTitleChange } = props
+      useEffect(() => {
+        if (screenState.reportTitle) onTitleChange?.(screenState.reportTitle)
+      }, [onTitleChange])
       return <div>SDUI-ЭКРАН</div>
     },
   }
@@ -74,6 +89,7 @@ describe('SduiCardScreen', () => {
     screenState.mountCount = 0
     screenState.renderCount = 0
     screenState.lastProps = {}
+    screenState.reportTitle = ''
     act(() => {
       useViewStateStore.getState().replaceAll({})
       useTreeStore.getState().reset()
@@ -186,6 +202,62 @@ describe('SduiCardScreen', () => {
 
     expect(screenState.mountCount).toBe(1)
     expect(screen.getByTestId('page-header')).toBeTruthy()
+  })
+})
+
+describe('SduiCardScreen — заголовок вкладки', () => {
+  afterEach(() => {
+    cleanup()
+    screenState.reportTitle = ''
+    useWorkspaceTabsStore.setState({ tabs: [], activeTabId: null })
+  })
+
+  it('заголовок формы создания уходит в свою вкладку, а не в соседнюю форму создания того же типа', () => {
+    const path = '/modules/zarplata/document/BolnichnyyList/new'
+    const store = useWorkspaceTabsStore.getState()
+    const pervaya = store.activateOrCreate(path, '?fi=tab-1', 'document-entry')
+    store.setTabTitle(pervaya!, 'Больничный лист (создание)')
+    const vtoraya = store.activateOrCreate(path, '?fi=tab-2', 'document-entry')
+    store.activateOrCreate(
+      '/modules/zarplata/document/BolnichnyyList',
+      '',
+      'document-list'
+    )
+    screenState.reportTitle = 'Больничный лист DEMO00-00023'
+
+    renderAt(`${path}?fi=tab-2`, true)
+
+    const tabs = useWorkspaceTabsStore.getState().tabs
+    expect(tabs.find((t) => t.id === pervaya)?.title).toBe(
+      'Больничный лист (создание)'
+    )
+    expect(tabs.find((t) => t.id === vtoraya)?.title).toBe(
+      'Больничный лист DEMO00-00023'
+    )
+  })
+})
+
+describe('SduiCardScreen — save-and-close из бара вкладок (D5/D11)', () => {
+  afterEach(() => {
+    cleanup()
+    useFormCacheStore.setState({ cache: {}, pendingActions: {} })
+  })
+
+  it('pending save-and-close своей вкладки реактивно доходит до SduiScreen; неудача уведомляет бар', () => {
+    const route = '/modules/kazna/document/RKO/5'
+    renderAt(route, true)
+    expect(screenState.lastProps.pendingAction).toBeNull()
+
+    act(() => {
+      useFormCacheStore.getState().setPendingAction(route, 'save-and-close')
+    })
+    expect(screenState.lastProps.pendingAction).toBe('save-and-close')
+
+    const failed: string[] = []
+    const off = onTabSaveFailed((id) => failed.push(id))
+    screenState.lastProps.onSaveAndCloseFailed?.(route)
+    expect(failed).toEqual([route])
+    off()
   })
 })
 

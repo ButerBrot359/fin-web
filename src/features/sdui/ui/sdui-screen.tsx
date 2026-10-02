@@ -10,17 +10,22 @@ import {
   clearDiscardDraftClose,
   consumeDiscardDraftClose,
 } from '../lib/close-intent'
+import {
+  clearMountedScreenRoute,
+  setMountedScreenRoute,
+} from '../lib/mounted-screen'
 import { useTreeStore } from '../lib/stores/tree-store'
 import { useViewStateStore } from '../lib/stores/view-state-store'
 import { useSduiCacheStore } from '../lib/stores/sdui-cache-store'
 import { usePanelStore } from '../lib/stores/panel-store'
-import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
 import { useSessionHeartbeat } from '../lib/hooks/use-session-heartbeat'
 import { useTaskWatcher } from '../lib/hooks/use-task-watcher'
 import { useExternalViewRefresh } from '../lib/hooks/use-external-view-refresh'
 import { useExternalPanelRefresh } from '../lib/hooks/use-external-panel-refresh'
 import { useFormSaveHotkey } from '../lib/hooks/use-form-save-hotkey'
+import { usePendingSaveAndClose } from '../lib/hooks/use-pending-save-and-close'
+import { useUnloadGuard } from '../lib/hooks/use-unload-guard'
 import {
   SduiSessionProvider,
   type SduiSessionValue,
@@ -43,6 +48,8 @@ interface SduiScreenProps {
   onDirtyChange?: (route: string, dirty: boolean) => void
   // Возвращает pending-действие ('save-and-close' | null) и потребляет его
   consumePendingAction?: (route: string) => string | null
+  pendingAction?: string | null
+  onSaveAndCloseFailed?: (route: string) => void
   // Вызывается после успешного save-and-close: хост закрывает вкладку и навигирует
   onSavedAndClosed?: (route: string) => void
   // closeAfter=true из behavior: закрыть вкладку. didNavigate=true → сервер уже
@@ -66,6 +73,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   onTitleChange,
   onDirtyChange,
   consumePendingAction,
+  pendingAction,
+  onSaveAndCloseFailed,
   onSavedAndClosed,
   onCloseAfter,
   onOpenFailed,
@@ -107,6 +116,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
 
   useEffect(() => {
     const route = screenRoute
+    setMountedScreenRoute(route)
     // Стейл-интент discardDraft (например, от закрытия одноимённой легаси-
     // вкладки) не должен дожить до нашего CLOSE — снимаем на монтировании.
     clearDiscardDraftClose(route)
@@ -147,6 +157,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     }
 
     return () => {
+      clearMountedScreenRoute(route)
       const persist = shouldPersistSession?.(route) ?? false
       const treeState = useTreeStore.getState()
 
@@ -185,25 +196,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     }
   }, [screenRoute])
 
-  useEffect(() => {
-    const warnUnsaved = (e: BeforeUnloadEvent) => {
-      const hasUnsaved =
-        useViewStateStore.getState().dirty ||
-        Object.values(useSduiCacheStore.getState().cache).some((c) => c.dirty)
-      if (!hasUnsaved) return
-      e.preventDefault()
-    }
-    const closeOnUnload = () => {
-      const sid = useTreeStore.getState().formSessionId
-      if (sid) viewTransport.closeBeacon(sid)
-    }
-    window.addEventListener('beforeunload', warnUnsaved)
-    window.addEventListener('pagehide', closeOnUnload)
-    return () => {
-      window.removeEventListener('beforeunload', warnUnsaved)
-      window.removeEventListener('pagehide', closeOnUnload)
-    }
-  }, [])
+  useUnloadGuard()
 
   // Смена языка: язык фиксируется в form-session на OPEN, поэтому нужен
   // re-OPEN. Отдельная подписка (а не deps главного эффекта): cleanup
@@ -238,22 +231,14 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     })
   }, [screenRoute, dispatch])
 
-  useEffect(() => {
-    const route = screenRoute
-    const pending = consumePendingAction?.(route)
-    if (pending === 'save-and-close') {
-      // Имя команды и её поведение — из серверного дескриптора, не хардкод (§4.5)
-      const desc = useTreeStore.getState().onDirtyClose
-      if (!desc?.command) return
-      void dispatch(
-        { type: 'COMMAND', command: desc.command },
-        desc.behavior
-      ).then((ok) => {
-        if (!ok) return
-        onSavedAndClosed?.(route)
-      })
-    }
-  }, [screenRoute, dispatch, consumePendingAction, onSavedAndClosed])
+  usePendingSaveAndClose({
+    screenRoute,
+    dispatch,
+    pendingAction,
+    consumePendingAction,
+    onSavedAndClosed,
+    onSaveAndCloseFailed,
+  })
 
   // Стабильность контекста — суть фикса M1: пересоздание только при смене tree/dirty,
   // не при каждом вводе символа.

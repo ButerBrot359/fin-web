@@ -2,7 +2,10 @@ import { renderHook, act, cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ViewNode } from '../../types/view'
-import { flushAllPendingTableCommits } from '../pending-table-commits'
+import {
+  flushAllPendingTableCommits,
+  hasPendingTableCommits,
+} from '../pending-table-commits'
 import { useTableSync } from './use-table-sync'
 
 const mockDispatch =
@@ -12,9 +15,12 @@ vi.mock('../dispatch', () => ({
 }))
 
 const sessionState: Record<string, unknown> = {}
+const mockSetDirty = vi.fn<(value: boolean) => void>()
 vi.mock('../sdui-session-context', () => ({
   useSduiSession: () => ({
     kind: 'panel',
+    isDirty: false,
+    setDirty: mockSetDirty,
     getSession: () => ({ formSessionId: null, revision: null }),
     getValue: (b?: string) => (b ? sessionState[b] : undefined),
     setValue: (b: string, v: unknown) => {
@@ -43,8 +49,21 @@ describe('useTableSync', () => {
 
   beforeEach(() => {
     delete sessionState.rows
+    mockSetDirty.mockReset()
     mockDispatch.mockReset()
     mockDispatch.mockResolvedValue(true)
+  })
+
+  it('D8: незавершённая правка ячейки сразу делает форму изменённой и видна как pending', () => {
+    sessionState.rows = [{ rowId: '1', a: 1 }]
+    const { result } = renderHook(() => useTableSync(node, []))
+    expect(hasPendingTableCommits()).toBe(false)
+    act(() => {
+      result.current.updateCell('1', 'a', 2)
+    })
+    expect(mockSetDirty).toHaveBeenCalledWith(true)
+    expect(hasPendingTableCommits()).toBe(true)
+    expect(mockDispatch).not.toHaveBeenCalled()
   })
 
   it('не зацикливается, когда canon-значение отсутствует в сторе', () => {

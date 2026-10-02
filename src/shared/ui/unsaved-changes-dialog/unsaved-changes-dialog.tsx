@@ -11,6 +11,7 @@ interface UnsavedChangesDialogProps {
   onSave: () => void
   onDiscard: () => void
   onCancel: () => void
+  message?: string
 }
 
 export const UnsavedChangesDialog = ({
@@ -18,6 +19,7 @@ export const UnsavedChangesDialog = ({
   onSave,
   onDiscard,
   onCancel,
+  message,
 }: UnsavedChangesDialogProps) => {
   const { t } = useTranslation()
 
@@ -54,7 +56,7 @@ export const UnsavedChangesDialog = ({
         </div>
 
         <p className="text-base font-medium text-ui-06">
-          {t('unsavedChangesDialog.message')}
+          {message ?? t('unsavedChangesDialog.message')}
         </p>
 
         <div className="flex w-full gap-3">

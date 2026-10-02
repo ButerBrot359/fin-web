@@ -1,20 +1,17 @@
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import {
   useWorkspaceTabsStore,
-  useFormCacheStore,
-  performTabClose,
-  performCloseAllTabs,
-  findDirtyTabIds,
-  notifyTabDiscardClose,
+  requestTabClose,
+  requestCloseAllTabs,
+  runAfterTabLeaveFlush,
 } from '@/features/workspace-tabs'
 
 import CrossIcon from '@/shared/assets/icons/cross.svg'
-import { ConfirmDialog } from '@/shared/ui/confirm-dialog/confirm-dialog'
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog/unsaved-changes-dialog'
 
+import { useTabCloseFlow } from '../lib/hooks/use-tab-close-flow'
 import { WorkspaceTabItem } from './workspace-tab-item'
 
 export const WorkspaceTabBar = () => {
@@ -23,84 +20,35 @@ export const WorkspaceTabBar = () => {
 
   const tabs = useWorkspaceTabsStore((s) => s.tabs)
   const activeTabId = useWorkspaceTabsStore((s) => s.activeTabId)
-  const setActiveTab = useWorkspaceTabsStore((s) => s.setActiveTab)
-
-  const [dirtyCloseTabId, setDirtyCloseTabId] = useState<string | null>(null)
-  const [dirtyCloseAllCount, setDirtyCloseAllCount] = useState(0)
+  const closeFlow = useTabCloseFlow(navigate)
 
   if (tabs.length === 0) return null
 
   const handleActivate = (tabId: string) => {
     if (tabId === activeTabId) return
-    const tab = tabs.find((t) => t.id === tabId)
-    if (!tab) return
-    setActiveTab(tab.id)
-    // Панельная вкладка (sdui-panel) не привязана к роуту: контент рендерит
-    // WorkspacePanelHost по activeTabId, навигация не нужна (и сломала бы URL).
-    if (tab.pageType === 'sdui-panel') return
-    void navigate(tab.path + tab.search)
-  }
-
-  const performClose = (tabId: string) => {
-    performTabClose(tabId, navigate)
+    runAfterTabLeaveFlush(() => {
+      const store = useWorkspaceTabsStore.getState()
+      const tab = store.tabs.find((t) => t.id === tabId)
+      if (!tab) return
+      store.setActiveTab(tab.id)
+      // Панельная вкладка (sdui-panel) не привязана к роуту: контент рендерит
+      // WorkspacePanelHost по activeTabId, навигация не нужна (и сломала бы URL).
+      if (tab.pageType === 'sdui-panel') return
+      void navigate(tab.path + tab.search)
+    })
   }
 
   const handleClose = (e: React.MouseEvent, tabId: string) => {
     e.stopPropagation()
-
-    const cacheEntry = useFormCacheStore.getState().cache[tabId]
-    const isDirty = cacheEntry ? cacheEntry.isDirty : false
-    if (isDirty) {
-      setDirtyCloseTabId(tabId)
-      return
-    }
-
-    performClose(tabId)
-  }
-
-  const handleDialogSave = () => {
-    if (!dirtyCloseTabId) return
-    const tabId = dirtyCloseTabId
-    setDirtyCloseTabId(null)
-
-    useFormCacheStore.getState().setPendingAction(tabId, 'save-and-close')
-
-    if (tabId !== activeTabId) {
-      const tab = tabs.find((t) => t.id === tabId)
-      if (tab) {
-        setActiveTab(tab.id)
-        void navigate(tab.path + tab.search)
-      }
-    }
-  }
-
-  const handleDialogDiscard = () => {
-    if (!dirtyCloseTabId) return
-    const tabId = dirtyCloseTabId
-    setDirtyCloseTabId(null)
-
-    // «Не сохранять» — владелец формы (SDUI) должен снять серверный черновик
-    // (CLOSE c discardDraft), иначе он всплывёт при следующем открытии (SCRUM-276)
-    notifyTabDiscardClose(tabId)
-    performClose(tabId)
-  }
-
-  const handleDialogCancel = () => {
-    setDirtyCloseTabId(null)
+    runAfterTabLeaveFlush(() => {
+      requestTabClose(tabId, navigate)
+    })
   }
 
   const handleCloseAll = () => {
-    const dirtyCount = findDirtyTabIds().length
-    if (dirtyCount > 0) {
-      setDirtyCloseAllCount(dirtyCount)
-      return
-    }
-    performCloseAllTabs(navigate)
-  }
-
-  const handleCloseAllConfirm = () => {
-    setDirtyCloseAllCount(0)
-    performCloseAllTabs(navigate)
+    runAfterTabLeaveFlush(() => {
+      requestCloseAllTabs(navigate)
+    })
   }
 
   return (
@@ -138,24 +86,17 @@ export const WorkspaceTabBar = () => {
       </div>
 
       <UnsavedChangesDialog
-        open={dirtyCloseTabId !== null}
-        onSave={handleDialogSave}
-        onDiscard={handleDialogDiscard}
-        onCancel={handleDialogCancel}
-      />
-
-      <ConfirmDialog
-        open={dirtyCloseAllCount > 0}
-        title={t('workspaceTabs.closeAllDirtyTitle')}
-        message={t('workspaceTabs.closeAllDirtyMessage', {
-          count: dirtyCloseAllCount,
-        })}
-        confirmLabel={t('workspaceTabs.closeAllDirtyConfirm')}
-        cancelLabel={t('actions.cancel')}
-        onConfirm={handleCloseAllConfirm}
-        onCancel={() => {
-          setDirtyCloseAllCount(0)
-        }}
+        open={closeFlow.askedTab !== null}
+        message={
+          closeFlow.askedTab?.title
+            ? t('workspaceTabs.unsavedTabMessage', {
+                title: closeFlow.askedTab.title,
+              })
+            : undefined
+        }
+        onSave={closeFlow.onSave}
+        onDiscard={closeFlow.onDiscard}
+        onCancel={closeFlow.onCancel}
       />
     </>
   )

@@ -49,6 +49,14 @@ export const WorkspaceTabSync = () => {
       // Гасим только когда флаг реально сработал: до целевого маршрута может
       // быть хоп через /documents/:type/new, у которого pageType ещё нет.
       if (forceNewTab) consumeNewTab()
+      if (!tabId && pathname !== '/') {
+        const active = useWorkspaceTabsStore
+          .getState()
+          .tabs.find((t) => t.id === activeTabId)
+        if (active && active.pageType !== 'sdui-panel') {
+          void navigate(active.path + active.search, { replace: true })
+        }
+      }
       // SCRUM-386 фикс 2: сущность уже открыта во вкладке под другим URL
       // (модульный vs плоский) — activateOrCreate активировал её; доводим
       // адресную строку до пути этой вкладки, второй не появляется.

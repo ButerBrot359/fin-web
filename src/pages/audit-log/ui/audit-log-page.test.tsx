@@ -36,6 +36,20 @@ const renderPage = (initialEntry = '/admin/audit') =>
     </QueryClientProvider>
   )
 
+vi.mock('@/widgets/page-header', () => ({
+  PageHeader: ({ title, onClose }: { title: string; onClose?: () => void }) => (
+    <div data-testid="page-header">
+      {title}
+      <button onClick={onClose}>close-page</button>
+    </div>
+  ),
+}))
+
+const closeTab = vi.fn()
+vi.mock('@/features/workspace-tabs', () => ({
+  useWorkspaceTabsStore: { getState: () => ({ closeTab }) },
+}))
+
 const getAuditLog = vi.fn()
 const getAuditActions = vi.fn()
 const getAuditLogRecord = vi.fn()
@@ -352,5 +366,18 @@ describe('AuditLogPage', () => {
     fireEvent.mouseDown(screen.getByRole('combobox', { name: 'События' }))
     const listbox = await screen.findByRole('listbox')
     expect(within(listbox).getByText('Отмена проведения')).toBeTruthy()
+  })
+
+  it('шапка страницы: заголовок и крестик закрывают вкладку журнала', async () => {
+    setup({ totalPages: 1, totalElements: 1 })
+
+    renderPage()
+    await screen.findByText('Дорожкина Таисия')
+
+    expect(screen.getByTestId('page-header').textContent).toContain(
+      'Журнал регистрации'
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'close-page' }))
+    expect(closeTab).toHaveBeenCalledWith('/admin/audit')
   })
 })

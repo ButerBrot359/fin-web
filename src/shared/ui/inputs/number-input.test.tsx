@@ -34,6 +34,8 @@ const Host = ({
   )
 }
 
+const noop = () => undefined
+
 const input = () => screen.getByRole<HTMLInputElement>('textbox')
 const owner = () => screen.getByTestId('owner').textContent
 
@@ -93,43 +95,52 @@ describe('NumberInput — ввод дробных', () => {
   })
 })
 
-// Бэк присылает props.precision; эталон 1С показывает значения с хвостовыми
-// нулями: «Ставка» 1,500, «Тарифный коэффициент» 1,02, пустое поле 0,00.
-describe('NumberInput — хвостовые нули по precision', () => {
+describe('NumberInput — без хвостовых нулей', () => {
   afterEach(cleanup)
 
-  it('значение дополняется нулями до разрядности', () => {
-    render(<Host initial={1.5} decimal precision={3} />)
-    expect(input().value).toBe('1.500')
+  it('целое значение показывается без дробной части', () => {
+    render(<Host initial={9} decimal precision={2} />)
+    expect(input().value).toBe('9')
   })
 
-  it('ноль показывается как 0.00 при разрядности 2', () => {
-    render(<Host initial={0} decimal precision={2} />)
-    expect(input().value).toBe('0.00')
+  it('пришедшие с сервера нули отбрасываются', () => {
+    render(<NumberInput value="9.00" decimal precision={2} onChange={noop} />)
+    expect(input().value).toBe('9')
   })
 
-  // Пока идёт набор, нули не дописываются — иначе они лезли бы под курсор на
-  // каждый символ.
-  it('во время набора нули не дописываются, появляются после blur', () => {
-    render(<Host decimal precision={3} />)
-    type('1,5')
+  it('значащие знаки остаются, лишние нули — нет', () => {
+    render(<NumberInput value="1.500" decimal precision={3} onChange={noop} />)
     expect(input().value).toBe('1.5')
+  })
+
+  it('ноль остаётся нулём', () => {
+    render(<Host initial={0} decimal precision={2} />)
+    expect(input().value).toBe('0')
+  })
+
+  it('во время набора нули не стираются, после blur — убираются', () => {
+    render(<Host decimal precision={3} />)
+    type('1,50')
+    expect(input().value).toBe('1.50')
 
     fireEvent.blur(input())
-    expect(input().value).toBe('1.500')
+    expect(input().value).toBe('1.5')
     expect(owner()).toBe('1.5')
   })
 
-  // Сервер лишний знак не нормализует, ограничения ввода нет ни на одной
-  // стороне — значит показывать «1.23» при 1.2346 в базе нельзя.
   it('лишние знаки не обрезаются', () => {
     render(<Host initial={1.2346} decimal precision={2} />)
     expect(input().value).toBe('1.2346')
   })
 
-  it('precision: 0 — целое, без дописывания', () => {
-    render(<Host initial={5} precision={0} />)
-    expect(input().value).toBe('5')
+  it('целые с нулями на конце не теряют разряды', () => {
+    render(<NumberInput value="100.00" decimal precision={2} onChange={noop} />)
+    expect(input().value).toBe('100')
+  })
+
+  it('без precision значение показывается как есть', () => {
+    render(<NumberInput value="1607547.00" decimal onChange={noop} />)
+    expect(input().value).toBe('1 607 547.00')
   })
 
   it('пустое поле остаётся пустым', () => {

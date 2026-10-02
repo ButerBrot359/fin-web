@@ -22,9 +22,8 @@ type NumberInputProps = Omit<TextFieldProps, 'variant'> & {
   onCalculatorApply?: (value: number) => void
   /**
    * Разрядность с бэка (`props.precision`): сколько знаков после запятой
-   * показывать, когда поле не редактируется. В эталоне 1С значения стоят с
-   * хвостовыми нулями — «Ставка» 1,500, «Тарифный коэффициент» 1,02, пустое
-   * числовое поле 0,00.
+   * можно набрать. Хвостовые нули не показываются — 9,00 часов выглядит как 9,
+   * ставка 1,500 как 1,5: нули нужны только в суммах, а у сумм свой формат.
    */
   precision?: number
 }
@@ -43,26 +42,10 @@ const decimalsOf = (text: string): number => {
   return dotIdx >= 0 ? text.length - dotIdx - 1 : 0
 }
 
-/**
- * Дополнение хвостовыми нулями до `precision`.
- *
- * ТОЛЬКО дополняет и никогда не обрезает. Ввод сверх разрядности мы теперь не
- * пропускаем, но значение может прийти извне — из API, ввода на основании или
- * импорта. Обрезка на показе означала бы поле с 1.23 при 1.2346 в базе —
- * расхождение молча и в худшую сторону, поэтому лишние знаки показываем как
- * есть (сервер нормализует их своим патчем).
- */
-const padDecimals = (text: string, precision: number): string => {
-  if (!text || precision <= 0) return text
+const trimTrailingZeros = (text: string): string => {
   const normalized = text.replace(',', '.')
-  if (!/^-?\d*(?:\.\d*)?$/.test(normalized)) return text
-
-  const dotIdx = normalized.indexOf('.')
-  const decimals = dotIdx >= 0 ? normalized.length - dotIdx - 1 : 0
-  if (decimals >= precision) return normalized
-
-  const withDot = dotIdx >= 0 ? normalized : normalized + '.'
-  return withDot + '0'.repeat(precision - decimals)
+  if (!/^-?\d+\.\d*$/.test(normalized)) return text
+  return normalized.replace(/\.?0+$/, '')
 }
 
 const formatWithSpaces = (raw: string): string => {
@@ -119,13 +102,13 @@ export const NumberInput = ({
         ? String(value)
         : ''
   const rawValue = draft ?? valueText
-  // Пока идёт набор, показываем ровно набранное: дополнять нулями на каждый
-  // символ значило бы дописывать их пользователю под курсор. Хвостовые нули
-  // появляются, когда поле отпущено (draft снят на blur).
+  // Пока идёт набор, показываем ровно набранное: отбрасывать нули на каждый
+  // символ значило бы стирать их у пользователя под курсором («1,0» → «1»).
+  // Хвостовые нули убираются, когда поле отпущено (draft снят на blur).
   const displayValue = formatWithSpaces(
     draft !== null || precision === undefined
       ? rawValue
-      : padDecimals(rawValue, precision)
+      : trimTrailingZeros(rawValue)
   )
 
   /**

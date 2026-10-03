@@ -4,7 +4,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import type { ViewNode } from '../../types/view'
 import type { PaginationLoadTrigger } from '../../types/pagination'
 import { fetchListPage } from '../../api/reference-options'
-import { useSduiSession } from '../sdui-session-context'
+import { useBindingValue } from '../sdui-session-context'
 import { readPagination } from '../utils/pagination'
 
 /** Фолбэк на случай, если бэк не прислал pageSize (контракт его требует). */
@@ -33,7 +33,11 @@ export interface PagedTableRows<TRow> {
  * в этом режиме не читается вовсе.
  */
 export function usePagedTableRows<TRow>(node: ViewNode): PagedTableRows<TRow> {
-  const { getValue } = useSduiSession()
+  // Реактивная подписка на строки (как canon в useTableSync): getValue читал
+  // state без подписки, и ответ, пришедший мимо dispatch формы (ретрансляция
+  // «Применить» из диалога в родителя — relaySelectionToParent), менял строки
+  // в сторе, но таблица их не перерисовывала до перезагрузки страницы.
+  const stateRows = useBindingValue(node.binding)
   const pagination = readPagination(node)
   const paged = pagination?.mode === 'PAGED' && pagination.source != null
   const source = pagination?.source
@@ -78,7 +82,7 @@ export function usePagedTableRows<TRow>(node: ViewNode): PagedTableRows<TRow> {
   })
 
   const pagedRows = data?.pages.flatMap((page) => page.data.content) ?? []
-  const inlineRows = (getValue(node.binding) as TRow[] | undefined) ?? []
+  const inlineRows = (stateRows as TRow[] | undefined) ?? []
   const rows = paged ? (pagedRows as TRow[]) : inlineRows
 
   // Сентинел бесконечного скролла — паттерн list-node: root не задаём

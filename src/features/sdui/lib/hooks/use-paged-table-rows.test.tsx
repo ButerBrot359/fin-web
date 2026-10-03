@@ -13,7 +13,8 @@ vi.mock('../../api/reference-options', () => ({
 
 const getValue = vi.fn()
 vi.mock('../sdui-session-context', () => ({
-  useSduiSession: () => ({ getValue }),
+  useBindingValue: (binding: string | undefined) =>
+    getValue(binding) as unknown,
 }))
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -53,7 +54,8 @@ describe('usePagedTableRows (SCRUM-368)', () => {
     expect(fetchListPage).not.toHaveBeenCalled()
   })
 
-  it('PAGED — первая страница с source.url, page/size из контракта, state не читается', async () => {
+  it('PAGED — первая страница с source.url, page/size из контракта, строки не из state', async () => {
+    getValue.mockReturnValue([{ rowId: 'из state' }])
     fetchListPage.mockResolvedValue({
       data: {
         content: [{ rowId: 'a' }, { rowId: 'b' }],

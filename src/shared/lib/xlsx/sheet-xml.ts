@@ -37,6 +37,7 @@ export interface XlsxSheet {
   headers: string[]
   /** Строки данных. */
   rows: XlsxCell[][]
+  preambleLines?: string[]
   /** Заголовок листа («Карточка счета 1316 за …») — merged строка сверху. */
   title?: string
   /** Подзаголовки (организация, «Выводимые данные: …») под заголовком. */
@@ -47,6 +48,7 @@ export interface XlsxSheet {
   columns?: XlsxColumnMeta[]
   /** Вид каждой строки данных (для выделения итогов); по умолчанию data. */
   rowKinds?: XlsxRowKind[]
+  footerLines?: string[]
 }
 
 export const escapeXml = (value: string): string =>
@@ -81,12 +83,14 @@ const sanitizeSheetName = (name: string): string => {
 export interface NormalizedSheet {
   name: string
   columnCount: number
+  preambleLines: string[]
   title?: string
   subtitleLines: string[]
   headerRows: XlsxHeaderCell[][]
   columns: XlsxColumnMeta[]
   rows: XlsxCell[][]
   rowKinds: XlsxRowKind[]
+  footerLines: string[]
 }
 
 export const normalizeSheet = (sheet: XlsxSheet): NormalizedSheet => {
@@ -106,6 +110,7 @@ export const normalizeSheet = (sheet: XlsxSheet): NormalizedSheet => {
   return {
     name: sanitizeSheetName(sheet.name),
     columnCount,
+    preambleLines: sheet.preambleLines ?? [],
     title: sheet.title,
     subtitleLines: sheet.subtitleLines ?? [],
     headerRows,
@@ -115,6 +120,7 @@ export const normalizeSheet = (sheet: XlsxSheet): NormalizedSheet => {
     ),
     rows: sheet.rows,
     rowKinds: sheet.rows.map((_, i) => sheet.rowKinds?.[i] ?? 'data'),
+    footerLines: sheet.footerLines ?? [],
   }
 }
 
@@ -233,6 +239,22 @@ export const buildSheetXml = (s: NormalizedSheet): string => {
     }
   }
 
+  const pushTextRow = (line: string) => {
+    fullWidthMerge(rowRef)
+    rowsXml.push(
+      `<row r="${String(rowRef)}" ht="14" customHeight="1">` +
+        buildCellXml(line, 0, rowRef, XF.DEFAULT) +
+        '</row>'
+    )
+    rowRef++
+  }
+
+  for (const line of s.preambleLines) pushTextRow(line)
+  if (s.preambleLines.length > 0) {
+    rowsXml.push(`<row r="${String(rowRef)}" ht="6" customHeight="1"/>`)
+    rowRef++
+  }
+
   // Заголовок листа.
   if (s.title) {
     fullWidthMerge(rowRef)
@@ -311,6 +333,12 @@ export const buildSheetXml = (s: NormalizedSheet): string => {
     rowsXml.push(`<row r="${String(rowRef)}">${cells.join('')}</row>`)
     rowRef++
   }
+
+  if (s.footerLines.length > 0) {
+    rowsXml.push(`<row r="${String(rowRef)}"/>`)
+    rowRef++
+  }
+  for (const line of s.footerLines) pushTextRow(line)
 
   const colsXml = widths
     .map(

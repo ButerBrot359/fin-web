@@ -139,7 +139,7 @@ export const ReportResultView = ({
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex min-h-0 flex-col gap-1">
       {blocksBeforeTitle.length > 0 && (
         <ReportHeaderBlocks blocks={blocksBeforeTitle} />
       )}
@@ -189,7 +189,7 @@ export const ReportResultView = ({
       {blocksAfterTitle.length > 0 && (
         <ReportHeaderBlocks blocks={blocksAfterTitle} />
       )}
-      <div className="mt-2">
+      <div className="mt-2 flex min-h-0 flex-col">
         {isLedger ? (
           <LedgerTable
             result={result}

@@ -18,6 +18,8 @@ import {
 
 import type {
   ReportAltColumnDto,
+  ReportAltFormSignatureDto,
+  ReportAltHeaderBlockDto,
   ReportAltResultDto,
   ReportAltRowDto,
 } from '../../types/reportalt'
@@ -165,15 +167,35 @@ const buildNumberedHeaderRows = (
   return [top, sub, numbers]
 }
 
+const LINIYA_PODPISI = '___________________'
+
+const blockLines = (blocks: ReportAltHeaderBlockDto[]): string[] =>
+  blocks.flatMap((b) => (b.caption ? [...b.lines, b.caption] : b.lines))
+
+const signatureLine = (s: ReportAltFormSignatureDto): string =>
+  [s.role, s.name, LINIYA_PODPISI].filter((part) => !!part).join(' ')
+
 /** Шапка листа: организация + период + подзаголовки. */
 const sheetChrome = (result: ReportAltResultDto) => {
-  const subtitleLines: string[] = []
+  const blocks = result.headerBlocks ?? []
+  const subtitleLines = blockLines(
+    blocks.filter((b) => b.placement === 'AFTER_TITLE')
+  )
   if (result.organizationTitle) subtitleLines.push(result.organizationTitle)
   if (result.periodLine) subtitleLines.push(result.periodLine)
   if (result.subtitleLines) subtitleLines.push(...result.subtitleLines)
+  const signatures = result.footerBlocks?.length
+    ? result.footerBlocks
+    : result.footerBlock
+      ? [result.footerBlock]
+      : []
   return {
+    preambleLines: blockLines(
+      blocks.filter((b) => b.placement !== 'AFTER_TITLE')
+    ),
     title: formatReportTitle(result) || result.reportNameRu,
     subtitleLines,
+    footerLines: signatures.map(signatureLine),
   }
 }
 

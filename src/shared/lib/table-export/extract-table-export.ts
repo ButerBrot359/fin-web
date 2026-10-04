@@ -17,6 +17,7 @@ import { formatDate, formatDateTime } from '@/shared/lib/utils/date'
 export interface TableExportData {
   headers: string[]
   rows: XlsxCell[][]
+  preambleLines?: string[]
   /** Заголовок листа (merged строка над таблицей). */
   title?: string
   /** Подзаголовки (организация, «Выводимые данные: …»). */
@@ -27,6 +28,7 @@ export interface TableExportData {
   columns?: XlsxColumnMeta[]
   /** Вид каждой строки (выделение итогов/сальдо). */
   rowKinds?: XlsxRowKind[]
+  footerLines?: string[]
 }
 
 /**

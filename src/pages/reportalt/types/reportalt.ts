@@ -109,6 +109,7 @@ export interface ReportAltHeaderBlockDto {
   lines: string[]
   underline: boolean
   caption: string | null
+  placement?: 'BEFORE_TITLE' | 'AFTER_TITLE' | null
 }
 
 /** Подпись бланка («Исполнитель:» — должность/подпись/расшифровка). */

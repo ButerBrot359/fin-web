@@ -294,3 +294,49 @@ describe('buildReportAltExport — числовой формат колонок'
     ])
   })
 })
+
+describe('buildReportAltExport — бланк «Утверждаю» и подписи', () => {
+  it('переносит шапку над заголовком и подпись главного бухгалтера под таблицу', () => {
+    const result = {
+      ...treeResult([]),
+      layout: 'LEDGER',
+      titleTemplate: 'ШТАТНОЕ РАСПИСАНИЕ',
+      headerBlocks: [
+        {
+          side: 'RIGHT',
+          lines: [
+            'УТВЕРЖДАЮ',
+            'Директор:',
+            '___________________   ',
+            'Штатная численность: 2.5',
+            'Ежемесячная зарплата: 592011',
+          ],
+          underline: false,
+          caption: null,
+        },
+        {
+          side: 'LEFT',
+          lines: ['Учреждение'],
+          underline: false,
+          caption: null,
+          placement: 'AFTER_TITLE',
+        },
+      ],
+      footerBlocks: [{ role: 'Главный бухгалтер:', name: 'Петрова П.П.' }],
+    } as unknown as ReportAltResultDto
+
+    const data = buildReportAltExport(result, false, 'Группировка', 'Итого')
+
+    expect(data.preambleLines).toEqual([
+      'УТВЕРЖДАЮ',
+      'Директор:',
+      '___________________   ',
+      'Штатная численность: 2.5',
+      'Ежемесячная зарплата: 592011',
+    ])
+    expect(data.subtitleLines).toEqual(['Учреждение'])
+    expect(data.footerLines).toEqual([
+      'Главный бухгалтер: Петрова П.П. ___________________',
+    ])
+  })
+})

@@ -21,6 +21,7 @@ import { Button } from '@/shared/ui/buttons/button'
 import { DropdownButton } from '@/shared/ui/buttons/dropdown-button'
 import type { SelectOption } from '@/shared/types/select-option'
 import { getLocalizedName } from '@/shared/lib/utils/get-localized-name'
+import { cssVar, palette } from '@/shared/design/tokens'
 import { cn } from '@/shared/lib/utils/cn'
 
 import type { DictSidebarPanel } from '../types/dict-sidebar'
@@ -40,6 +41,8 @@ import {
   searchDictEntries,
   type DictEntry,
 } from '../api/dict-sidebar-api'
+
+const SELECTED_ROW_MARKER = `inset 3px 0 0 ${cssVar(palette.accent02)}`
 
 interface DictSidebarListViewProps {
   panel: DictSidebarPanel
@@ -485,17 +488,23 @@ export const DictSidebarListView = ({ panel }: DictSidebarListViewProps) => {
                         }}
                         onDoubleClick={handleSelect}
                         className={cn(
-                          'cursor-pointer transition-colors hover:bg-ui-07',
+                          'cursor-pointer transition-colors',
                           isSelected
-                            ? 'bg-ui-07'
-                            : virtualRow.index % 2 === 1
-                              ? 'bg-ui-01'
-                              : ''
+                            ? 'bg-ui-08'
+                            : cn(
+                                'hover:bg-ui-07',
+                                virtualRow.index % 2 === 1 && 'bg-ui-01'
+                              )
                         )}
                       >
-                        {row.getVisibleCells().map((cell) => (
+                        {row.getVisibleCells().map((cell, cellIndex) => (
                           <td
                             key={cell.id}
+                            style={
+                              isSelected && cellIndex === 0
+                                ? { boxShadow: SELECTED_ROW_MARKER }
+                                : undefined
+                            }
                             className="truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
                           >
                             {flexRender(

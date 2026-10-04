@@ -421,7 +421,7 @@ describe('ListNode — M5: сброс выделения при смене sourc
   // а не подстроку.
   const isRowSelected = (container: HTMLElement): boolean =>
     (container.querySelector('tbody tr')?.className.split(' ') ?? []).includes(
-      'bg-ui-07'
+      'bg-ui-08'
     )
 
   beforeEach(() => {

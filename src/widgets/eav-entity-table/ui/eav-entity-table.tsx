@@ -17,6 +17,7 @@ import {
 } from '@/shared/lib/table-export'
 import { useAutoFitColumnsByContent } from '@/shared/lib/table-autofit/use-auto-fit-columns'
 
+import { cssVar, palette } from '@/shared/design/tokens'
 import { cn } from '@/shared/lib/utils/cn'
 import { getApiErrorMessage } from '@/shared/lib/utils/get-api-error-message'
 import { showToast } from '@/shared/ui/toast/show-toast'
@@ -26,6 +27,8 @@ import type {
   EavColumnMetaExtra,
   EavEntityTableProps,
 } from '../types/eav-entity-table'
+
+const SELECTED_ROW_MARKER = `inset 3px 0 0 ${cssVar(palette.accent02)}`
 
 export const EavEntityTable = <T extends { id: number }>({
   filterTableId,
@@ -321,25 +324,30 @@ export const EavEntityTable = <T extends { id: number }>({
                       : undefined
                   }
                   className={cn(
-                    'transition-colors hover:bg-ui-07',
+                    'transition-colors',
                     (onRowClick ?? onRowDoubleClick) && 'cursor-pointer',
                     isSelected
-                      ? 'bg-ui-07'
-                      : virtualRow.index % 2 === 1
-                        ? 'bg-ui-01'
-                        : ''
+                      ? 'bg-ui-08'
+                      : cn(
+                          'hover:bg-ui-07',
+                          virtualRow.index % 2 === 1 && 'bg-ui-01'
+                        )
                   )}
                 >
-                  {row.getVisibleCells().map((cell) => {
+                  {row.getVisibleCells().map((cell, cellIndex) => {
                     const cellExtra = cell.column.columnDef.meta as
                       | EavColumnMetaExtra
                       | undefined
                     return (
                       <td
                         key={cell.id}
-                        style={
-                          fitted ? { width: cell.column.getSize() } : undefined
-                        }
+                        style={{
+                          width: fitted ? cell.column.getSize() : undefined,
+                          boxShadow:
+                            isSelected && cellIndex === 0
+                              ? SELECTED_ROW_MARKER
+                              : undefined,
+                        }}
                         className={cn(
                           'px-3 py-2 first:rounded-l-md last:rounded-r-md',
                           cellExtra?.metaCode === '__hierarchy' ||

@@ -1070,7 +1070,7 @@ export const ReportAltPage = () => {
               {t('reportalt.noData')}
             </Typography>
           ) : (
-            <div className="min-h-0 overflow-auto pb-4">
+            <div className="flex min-h-0 flex-col overflow-auto pb-4">
               <ReportResultView
                 result={result}
                 blankValues={blankValuesEffektivnye}

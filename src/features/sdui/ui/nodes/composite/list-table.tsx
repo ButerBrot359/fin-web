@@ -10,10 +10,13 @@ import { Button } from '@/shared/ui/buttons'
 import { flexRender, type Table } from '@tanstack/react-table'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
+import { cssVar, palette } from '@/shared/design/tokens'
 import { cn } from '@/shared/lib/utils/cn'
 import { resolveLoadedCountLabel } from './list-loaded-count'
 import { ColumnResizeHandle } from './column-resize-handle'
 import type { ListRow } from './list-column-defs'
+
+const SELECTED_ROW_MARKER = `inset 3px 0 0 ${cssVar(palette.accent02)}`
 
 interface ListTablePagedData {
   pages: { data: { totalElements?: number } }[]
@@ -194,17 +197,23 @@ export const ListTable: FC<ListTableProps> = ({
                         )
                       }}
                       className={cn(
-                        'cursor-pointer transition-colors hover:bg-ui-07',
+                        'cursor-pointer transition-colors',
                         isSelected
-                          ? 'bg-ui-07'
-                          : virtualRow.index % 2 === 1
-                            ? 'bg-ui-01'
-                            : ''
+                          ? 'bg-ui-08'
+                          : cn(
+                              'hover:bg-ui-07',
+                              virtualRow.index % 2 === 1 && 'bg-ui-01'
+                            )
                       )}
                     >
                       {row.getVisibleCells().map((cell, cellIndex) => (
                         <td
                           key={cell.id}
+                          style={
+                            isSelected && cellIndex === 0
+                              ? { boxShadow: SELECTED_ROW_MARKER }
+                              : undefined
+                          }
                           className="max-w-50 truncate px-3 py-2 first:rounded-l-md last:rounded-r-md"
                         >
                           {cellIndex === 0 && isFolder && showFolderIcon ? (

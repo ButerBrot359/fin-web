@@ -167,14 +167,15 @@ const verticalHeadStyle: CSSProperties = {
  */
 const buildHeadRows = (
   cols: ReportColumnDto[],
-  isKz: boolean
+  isKz: boolean,
+  plainSubGroups: boolean
 ): HeadCell[][] | null => {
   const model = buildHeadModel(cols, {
     isKz,
     levels: 'auto',
     groupKeyPrefix: 'g-',
     subKeyPrefix: 's-',
-    subEmphasis: true,
+    subEmphasis: !plainSubGroups,
   })
   if (model.levels === 1) return null
   const withVertical = (row: typeof model.topRow): HeadCell[] =>
@@ -206,7 +207,7 @@ const SectionTable = ({
 }) => {
   const cols = deriveFormColumns(section)
   const start = section.graphNumberStart ?? 1
-  const headRows = buildHeadRows(cols, isKz)
+  const headRows = buildHeadRows(cols, isKz, !!section.plainSubGroups)
   const fit = section.fitToWidth
     ? fitToWidthLayout(cols, section, CHAR_PX)
     : null
@@ -255,7 +256,7 @@ const SectionTable = ({
                   key={cell.key}
                   colSpan={cell.colSpan}
                   rowSpan={cell.rowSpan}
-                  className={`${th} ${cell.vertical ? 'align-bottom' : ''}`}
+                  className={th}
                 >
                   <Typography
                     variant="caption"
@@ -267,6 +268,7 @@ const SectionTable = ({
                       // Многострочные заголовки граф (напр. «Д»/«К» блока «Вторые
                       // записи» ф438: «Д» над «К» в одной графе) — переносим по '\n'.
                       whiteSpace: 'pre-line',
+                      overflowWrap: 'anywhere',
                     }}
                   >
                     {cell.title}
@@ -278,10 +280,7 @@ const SectionTable = ({
         ) : (
           <tr>
             {cols.map((col) => (
-              <th
-                key={col.code}
-                className={`${th} ${col.verticalTitle ? 'align-bottom' : ''}`}
-              >
+              <th key={col.code} className={th}>
                 <Typography
                   variant="caption"
                   style={col.verticalTitle ? verticalHeadStyle : undefined}

@@ -265,3 +265,45 @@ describe('FormView — вертикальные заголовки граф', ()
     expect(screen.getByText('Начислено').style.writingMode).toBe('')
   })
 })
+
+describe('FormView — подгруппы шапки обычным шрифтом (plainSubGroups)', () => {
+  const form = (plainSubGroups: boolean): ReportFormDto => ({
+    title: '№ 5 Мемориальный ордер (оборотная сторона)',
+    sections: [
+      {
+        plainSubGroups,
+        columns: [
+          {
+            code: 'Oklad',
+            titleRu: 'Оклад',
+            groupTitleRu: 'Начислено',
+            subGroupTitleRu: 'штатным работникам (по отдельным видам)',
+          },
+          {
+            code: 'Vsego',
+            titleRu: 'Всего',
+            groupTitleRu: 'Начислено',
+            subGroupTitleRu: 'по внештатным работникам',
+          },
+        ] as never,
+        rows: [],
+      } as never,
+    ],
+  })
+
+  it('plainSubGroups — подгруппа без жирного курсива, как в макете 1С', () => {
+    render(<FormView form={form(true)} />)
+
+    const sub = getComputedStyle(screen.getByText('по внештатным работникам'))
+    expect(sub.fontStyle).not.toBe('italic')
+    expect(sub.fontWeight).not.toBe('700')
+  })
+
+  it('без флага подгруппа остаётся жирным курсивом', () => {
+    render(<FormView form={form(false)} />)
+
+    const sub = getComputedStyle(screen.getByText('по внештатным работникам'))
+    expect(sub.fontStyle).toBe('italic')
+    expect(sub.fontWeight).toBe('700')
+  })
+})

@@ -135,7 +135,15 @@ export const ReportResultView = ({
 
   // Официальный бланк (мемориальный ордер) — своя шапка, заголовок не нужен.
   if (result.layout === 'FORM' && result.form) {
-    return <FormView form={result.form} language={result.language} />
+    if (!result.headerBlocks || result.headerBlocks.length === 0) {
+      return <FormView form={result.form} language={result.language} />
+    }
+    return (
+      <div className="flex min-h-0 flex-col">
+        <ReportHeaderBlocks blocks={result.headerBlocks} fullWidth />
+        <FormView form={result.form} language={result.language} />
+      </div>
+    )
   }
 
   return (

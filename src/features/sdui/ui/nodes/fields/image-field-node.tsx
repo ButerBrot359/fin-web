@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { FC } from 'react'
 import { Menu, MenuItem } from '@mui/material'
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
@@ -12,6 +13,7 @@ import type { NodeProps } from '../../../types/view'
 import { uploadImageFieldFile } from '../../../api/image-field-api'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { useImageFieldSource } from '../../../lib/hooks/use-image-field-source'
+import { FieldLabelLeft } from './field-label-left'
 
 // SCRUM-308 v3 §2: IMAGE_FIELD. Карточка — редактируемый узел с
 // uploadUrl/clearCommand (действия — пункты меню самого поля-картинки, как
@@ -29,6 +31,11 @@ export const ImageFieldNode: FC<NodeProps> = ({ node }) => {
   const maxSizeBytes = node.props?.maxSizeBytes as number | undefined
   const accept = node.props?.accept as string | undefined
   const enabled = node.props?.enabled === true
+  const label = node.props?.label as string | undefined
+  const uploadLabel = node.props?.uploadLabel as string | undefined
+  const clearLabel = node.props?.clearLabel as string | undefined
+  const openLabel = node.props?.openLabel as string | undefined
+  const placeholderKind = node.props?.placeholderKind as string | undefined
 
   const objectUrl = useImageFieldSource(sourceUrl)
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
@@ -96,17 +103,28 @@ export const ImageFieldNode: FC<NodeProps> = ({ node }) => {
           alt={t('sdui.imageField.alt')}
           className="h-full w-full object-cover"
         />
+      ) : placeholderKind === 'logo' ? (
+        <ImageOutlinedIcon fontSize="large" aria-hidden="true" />
       ) : (
         <AvatarPlaceholder />
       )}
     </div>
   )
 
-  if (!editable) return image
+  const titled = label ? (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+      <FieldLabelLeft text={label} />
+      {image}
+    </div>
+  ) : (
+    image
+  )
+
+  if (!editable) return titled
 
   return (
     <div>
-      {image}
+      {titled}
       <input
         ref={fileInputRef}
         type="file"
@@ -137,7 +155,7 @@ export const ImageFieldNode: FC<NodeProps> = ({ node }) => {
             fileInputRef.current?.click()
           }}
         >
-          {t('sdui.imageField.choosePhoto')}
+          {uploadLabel ?? t('sdui.imageField.choosePhoto')}
         </MenuItem>
         <MenuItem
           disabled={!clearCommand || sourceUrl == null}
@@ -147,8 +165,19 @@ export const ImageFieldNode: FC<NodeProps> = ({ node }) => {
               void dispatch({ type: 'COMMAND', command: clearCommand })
           }}
         >
-          {t('sdui.imageField.clearPhoto')}
+          {clearLabel ?? t('sdui.imageField.clearPhoto')}
         </MenuItem>
+        {openLabel ? (
+          <MenuItem
+            disabled={!objectUrl}
+            onClick={() => {
+              setMenuAnchor(null)
+              if (objectUrl) window.open(objectUrl, '_blank', 'noopener')
+            }}
+          >
+            {openLabel}
+          </MenuItem>
+        ) : null}
       </Menu>
     </div>
   )

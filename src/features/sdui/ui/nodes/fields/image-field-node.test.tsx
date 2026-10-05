@@ -93,4 +93,31 @@ describe('ImageFieldNode (SCRUM-308 v3 §2)', () => {
     })
     expect(screen.queryByRole('button')).toBeNull()
   })
+
+  it('логотип организации: подписи и заглушка из пропов узла, пункт «Открыть»', () => {
+    const { container } = renderNode(
+      editableNode({
+        label: 'Логотип',
+        uploadLabel: 'Загрузить логотип',
+        clearLabel: 'Очистить логотип',
+        openLabel: 'Открыть',
+        placeholderKind: 'logo',
+      })
+    )
+    expect(screen.getByText('Логотип')).toBeTruthy()
+    expect(
+      container.querySelector('[data-testid="ImageOutlinedIcon"]')
+    ).toBeTruthy()
+    fireEvent.click(screen.getByRole('button'))
+    expect(screen.getByText('Загрузить логотип')).toBeTruthy()
+    expect(screen.getByText('Очистить логотип')).toBeTruthy()
+    expect(screen.getByText('Открыть')).toBeTruthy()
+  })
+
+  it('без пропов подписей остаются тексты фотографии, пункта «Открыть» нет', () => {
+    renderNode(editableNode())
+    fireEvent.click(screen.getByRole('button'))
+    expect(screen.getByText('sdui.imageField.choosePhoto')).toBeTruthy()
+    expect(screen.queryByText('Открыть')).toBeNull()
+  })
 })

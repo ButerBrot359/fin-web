@@ -27,7 +27,7 @@ const HeaderBlock = ({ block }: { block: ReportHeaderBlockDto }) => (
             textAlign: 'center',
           }}
         >
-          {line}
+          {line || '\u00A0'}
         </Typography>
       ))}
     </div>
@@ -53,15 +53,19 @@ const HeaderBlock = ({ block }: { block: ReportHeaderBlockDto }) => (
  */
 export const ReportHeaderBlocks = ({
   blocks,
+  fullWidth = false,
 }: {
   blocks: ReportHeaderBlockDto[]
+  fullWidth?: boolean
 }) => {
   const left = blocks.filter((b) => b.side === 'LEFT')
   const right = blocks.filter((b) => b.side === 'RIGHT')
   return (
     // Ширину зоны ограничиваем (≈ ширина бланка-документа), чтобы правый блок
     // реквизитов встал в центр-право, как в 1С, а не к краю широкого контейнера.
-    <div className="mb-3 flex max-w-[900px] flex-wrap items-start justify-between gap-4">
+    <div
+      className={`mb-3 flex ${fullWidth ? '' : 'max-w-[900px] '}flex-wrap items-start justify-between gap-4`}
+    >
       <div className="flex flex-col gap-2">
         {left.map((b, i) => (
           <HeaderBlock key={i} block={b} />

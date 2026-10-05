@@ -23,13 +23,16 @@ import {
   isSpanRow,
   resolveReportLang,
 } from '../lib/cell-helpers'
+import {
+  columnContentWidths,
+  headWordWidths,
+} from '../lib/column-content-widths'
 import { fitColumnWidths } from '../lib/fit-column-widths'
 import {
   buildHeadModel,
   buildPathHeadModel,
   hasHeaderPath,
 } from '../lib/head-model'
-import { numericContentWidths } from '../lib/numeric-content-widths'
 import { HeadTitle } from './head-title'
 import { ReportCell } from './report-cell'
 
@@ -112,9 +115,24 @@ export const LedgerTable = ({
   // Язык рендера = язык отчёта (result.language), иначе — язык приложения.
   const isKz = resolveReportLang(result.language, i18n.language) === 'kz'
 
+  const headWidths = useMemo(
+    () => headWordWidths(columns, (c) => columnTitle(c, isKz)),
+    [columns, isKz]
+  )
+
   const defaultWidths = useMemo(
-    () => columns.map((c) => logicalWidth(c)),
-    [columns]
+    () =>
+      columns.map((c, i) =>
+        c.width != null
+          ? logicalWidth(c)
+          : Math.max(logicalWidth(c), headWidths[i])
+      ),
+    [columns, headWidths]
+  )
+
+  const contentWidths = useMemo(
+    () => columnContentWidths(columns, result.rows, headWidths),
+    [columns, result.rows, headWidths]
   )
 
   const [colWidths, setColWidths] = useState<number[]>(defaultWidths)
@@ -145,12 +163,10 @@ export const LedgerTable = ({
         defaultWidths,
         columns.map((c) => c.width != null),
         avail,
-        numericContentWidths(columns, result.rows).map((w) =>
-          Math.max(MIN_COL_WIDTH, w)
-        )
+        contentWidths.map((w) => Math.max(MIN_COL_WIDTH, w))
       )
     )
-  }, [defaultWidths, columns, result.rows])
+  }, [defaultWidths, columns, contentWidths])
 
   const startResize = (index: number, e: ReactMouseEvent) => {
     e.preventDefault()

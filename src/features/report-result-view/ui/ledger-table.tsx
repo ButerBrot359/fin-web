@@ -29,6 +29,7 @@ import {
   buildPathHeadModel,
   hasHeaderPath,
 } from '../lib/head-model'
+import { numericContentWidths } from '../lib/numeric-content-widths'
 import { HeadTitle } from './head-title'
 import { ReportCell } from './report-cell'
 
@@ -144,10 +145,12 @@ export const LedgerTable = ({
         defaultWidths,
         columns.map((c) => c.width != null),
         avail,
-        MIN_COL_WIDTH
+        numericContentWidths(columns, result.rows).map((w) =>
+          Math.max(MIN_COL_WIDTH, w)
+        )
       )
     )
-  }, [defaultWidths, columns])
+  }, [defaultWidths, columns, result.rows])
 
   const startResize = (index: number, e: ReactMouseEvent) => {
     e.preventDefault()

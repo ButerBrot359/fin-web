@@ -23,6 +23,8 @@ import { getApiErrorMessage } from '@/shared/lib/utils/get-api-error-message'
 import { showToast } from '@/shared/ui/toast/show-toast'
 import emptyImage from '@/shared/assets/info/empty.png'
 
+import { zoomAwareResizeHandler } from '@/shared/lib/table/zoom-aware-resize-handler'
+
 import type {
   EavColumnMetaExtra,
   EavEntityTableProps,
@@ -235,8 +237,8 @@ export const EavEntityTable = <T extends { id: number }>({
                       )}
                       {header.column.getCanResize() && (
                         <div
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
+                          onMouseDown={zoomAwareResizeHandler(header)}
+                          onTouchStart={zoomAwareResizeHandler(header)}
                           onClick={(e) => {
                             e.stopPropagation()
                           }}

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 
+import { cssZoomOf } from '@/shared/lib/utils/css-zoom'
+
 /** Минимальная ширина колонки при ресайзе (px). */
 const MIN_WIDTH = 64
 
@@ -49,9 +51,12 @@ export const useColumnWidths = (typeCode: string, defaultWidth = 180) => {
   )
 
   // Активный ресайз держим в ref, чтобы слушатели document не пересоздавались.
-  const dragRef = useRef<{ columnId: string; startX: number; startWidth: number } | null>(
-    null
-  )
+  const dragRef = useRef<{
+    columnId: string
+    startX: number
+    startWidth: number
+    zoom: number
+  } | null>(null)
 
   const startResize = useCallback(
     (columnId: string, event: ReactMouseEvent) => {
@@ -61,12 +66,16 @@ export const useColumnWidths = (typeCode: string, defaultWidth = 180) => {
         columnId,
         startX: event.clientX,
         startWidth: widths[columnId] ?? defaultWidth,
+        zoom: cssZoomOf(event.currentTarget as Element),
       }
 
       const onMove = (e: MouseEvent) => {
         const drag = dragRef.current
         if (!drag) return
-        const next = Math.max(MIN_WIDTH, drag.startWidth + (e.clientX - drag.startX))
+        const next = Math.max(
+          MIN_WIDTH,
+          drag.startWidth + (e.clientX - drag.startX) / drag.zoom
+        )
         setWidths((prev) => ({ ...prev, [drag.columnId]: next }))
       }
       const onUp = () => {

@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { TableCell, TableHead, TableRow as MuiTableRow } from '@mui/material'
 import { flexRender, type Table } from '@tanstack/react-table'
 
+import { zoomAwareResizeHandler } from '@/shared/lib/table/zoom-aware-resize-handler'
+
 import type { TableRow } from '../../../lib/hooks/use-table-sync'
 import type { SduiColumnMetaExtra } from '../../../lib/utils/build-column-defs'
 import { ColumnResizeHandle } from './column-resize-handle'
@@ -93,8 +95,8 @@ export const ComplexTableHead: FC<ComplexTableHeadProps> = ({
                 {canResizeHere && (
                   <ColumnResizeHandle
                     isResizing={header.column.getIsResizing()}
-                    onMouseDown={header.getResizeHandler()}
-                    onTouchStart={header.getResizeHandler()}
+                    onMouseDown={zoomAwareResizeHandler(header)}
+                    onTouchStart={zoomAwareResizeHandler(header)}
                   />
                 )}
               </TableCell>

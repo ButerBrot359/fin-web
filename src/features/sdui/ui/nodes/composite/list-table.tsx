@@ -12,6 +12,9 @@ import type { Virtualizer } from '@tanstack/react-virtual'
 import FolderIcon from '@/shared/assets/icons/folder-icon.svg'
 import { cssVar, palette } from '@/shared/design/tokens'
 import { cn } from '@/shared/lib/utils/cn'
+
+import { zoomAwareResizeHandler } from '@/shared/lib/table/zoom-aware-resize-handler'
+
 import { resolveLoadedCountLabel } from './list-loaded-count'
 import { ColumnResizeHandle } from './column-resize-handle'
 import type { ListRow } from './list-column-defs'
@@ -137,8 +140,8 @@ export const ListTable: FC<ListTableProps> = ({
                         {header.column.getCanResize() && (
                           <ColumnResizeHandle
                             isResizing={header.column.getIsResizing()}
-                            onMouseDown={header.getResizeHandler()}
-                            onTouchStart={header.getResizeHandler()}
+                            onMouseDown={zoomAwareResizeHandler(header)}
+                            onTouchStart={zoomAwareResizeHandler(header)}
                           />
                         )}
                       </th>

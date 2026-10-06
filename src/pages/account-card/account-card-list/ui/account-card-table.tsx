@@ -10,6 +10,7 @@ import { Button, Typography } from '@mui/material'
 
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
+import { cssZoomOf } from '@/shared/lib/utils/css-zoom'
 import { formatDateTimeSeconds } from '@/shared/lib/utils/date'
 
 import type {
@@ -140,12 +141,13 @@ export const AccountCardTable = ({
     e.preventDefault()
     const startX = e.clientX
     const startW = colWidths[index]
+    const zoom = cssZoomOf(e.currentTarget)
     setResizingCol(index)
     // Запрет выделения текста на время перетаскивания.
     // eslint-disable-next-line react-hooks/immutability
     document.body.style.userSelect = 'none'
     const onMove = (ev: MouseEvent) => {
-      const dx = ev.clientX - startX
+      const dx = (ev.clientX - startX) / zoom
       setColWidths((prev) => {
         const next = [...prev]
         next[index] = Math.max(MIN_COL_WIDTH, startW + dx)

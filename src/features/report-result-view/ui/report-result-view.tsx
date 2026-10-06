@@ -139,7 +139,10 @@ export const ReportResultView = ({
       return <FormView form={result.form} language={result.language} />
     }
     return (
-      <div className="flex min-h-0 flex-col">
+      <div
+        data-testid="report-form-blank"
+        className="flex min-h-0 flex-col bg-white"
+      >
         <ReportHeaderBlocks blocks={result.headerBlocks} fullWidth />
         <FormView form={result.form} language={result.language} />
       </div>

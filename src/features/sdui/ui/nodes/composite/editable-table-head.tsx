@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { TableCell, TableHead, TableRow as MuiTableRow } from '@mui/material'
 import { flexRender, type Table } from '@tanstack/react-table'
 
+import { zoomAwareResizeHandler } from '@/shared/lib/table/zoom-aware-resize-handler'
+
 import type { TableRow } from '../../../lib/hooks/use-table-sync'
 import { ColumnResizeHandle } from './column-resize-handle'
 import { ROW_NUMBER_WIDTH } from './table-sizing-colgroup'
@@ -62,8 +64,8 @@ export const EditableTableHead: FC<EditableTableHeadProps> = ({
               {header.column.getCanResize() && (
                 <ColumnResizeHandle
                   isResizing={header.column.getIsResizing()}
-                  onMouseDown={header.getResizeHandler()}
-                  onTouchStart={header.getResizeHandler()}
+                  onMouseDown={zoomAwareResizeHandler(header)}
+                  onTouchStart={zoomAwareResizeHandler(header)}
                 />
               )}
             </TableCell>

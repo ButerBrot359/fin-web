@@ -10,6 +10,8 @@ import {
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { useAutoFitColumns } from '@/shared/lib/table-autofit/use-auto-fit-columns'
 
+import { zoomAwareResizeHandler } from '@/shared/lib/table/zoom-aware-resize-handler'
+
 import type { AccountPlanRow } from '../lib/utils/build-tree-rows'
 
 // Логическая ширина колонок плана счетов: код/флаги/№ — узкие, наименования —
@@ -124,8 +126,8 @@ export const AccountPlanTreeTable = ({
                     </span>
                     {header.column.getCanResize() && (
                       <div
-                        onMouseDown={header.getResizeHandler()}
-                        onTouchStart={header.getResizeHandler()}
+                        onMouseDown={zoomAwareResizeHandler(header)}
+                        onTouchStart={zoomAwareResizeHandler(header)}
                         onDoubleClick={() => {
                           header.column.resetSize()
                         }}

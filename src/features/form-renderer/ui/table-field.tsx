@@ -22,6 +22,8 @@ import { usePersistedScroll } from '@/shared/lib/table/use-persisted-scroll'
 import emptyImage from '@/shared/assets/info/empty.png'
 import { cssVar, palette } from '@/shared/design/tokens'
 
+import { zoomAwareResizeHandler } from '@/shared/lib/table/zoom-aware-resize-handler'
+
 import { useTableColumns } from '../lib/hooks/use-table-columns'
 import { useAccountAutofill } from '../lib/hooks/use-account-autofill'
 import { buildEmptyRow } from '../lib/utils/build-empty-row'
@@ -480,8 +482,8 @@ export const TableField = ({ attribute, form, language }: TableFieldProps) => {
                         <div
                           role="separator"
                           aria-orientation="vertical"
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
+                          onMouseDown={zoomAwareResizeHandler(header)}
+                          onTouchStart={zoomAwareResizeHandler(header)}
                           onClick={(e) => {
                             e.stopPropagation()
                           }}

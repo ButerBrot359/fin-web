@@ -19,6 +19,7 @@ import {
 
 import { ShimmerBlock } from '@/shared/ui/shimmer-block'
 import { formatWithSpaces } from '@/shared/lib/utils/format-cell-value'
+import { cssZoomOf } from '@/shared/lib/utils/css-zoom'
 import ArrowDownIcon from '@/shared/assets/icons/arrow-down.svg'
 
 import type { OsvReportEntry, OsvReportTotal } from '../types/osv-report'
@@ -185,10 +186,11 @@ export const OsvReportTable = ({
     e.preventDefault()
     const startX = e.clientX
     const startW = colWidths[index]
+    const zoom = cssZoomOf(e.currentTarget)
     setResizingCol(index)
     document.body.style.userSelect = 'none'
     const onMove = (ev: MouseEvent) => {
-      const dx = ev.clientX - startX
+      const dx = (ev.clientX - startX) / zoom
       setColWidths((prev) => {
         const next = [...prev]
         next[index] = Math.max(MIN_COL_WIDTH, startW + dx)

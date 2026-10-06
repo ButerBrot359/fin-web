@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -13,6 +14,7 @@ import type {
   ReportResultDto,
   ReportRowDto,
 } from '@/pages/reports/report-list/types/report'
+import { cssZoomOf } from '@/shared/lib/utils/css-zoom'
 
 import {
   GREEN_1C,
@@ -139,12 +141,31 @@ export const LedgerTable = ({
   const [resizingCol, setResizingCol] = useState<number | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const fitDoneRef = useRef(false)
+  const manualResizeRef = useRef(false)
+  const scrollRatioRef = useRef<number | null>(null)
 
   // Сбрасываем ширины и флаг auto-fit при смене набора колонок.
   useLayoutEffect(() => {
     fitDoneRef.current = false
+    manualResizeRef.current = false
     setColWidths(defaultWidths)
   }, [defaultWidths])
+
+  const fitWidths = useCallback(
+    (el: HTMLElement): number[] | null => {
+      const avail = el.clientWidth - 2
+      if (avail <= 0) return null
+      const sum = defaultWidths.reduce((a, b) => a + b, 0)
+      if (sum <= 0) return null
+      return fitColumnWidths(
+        defaultWidths,
+        columns.map((c) => c.width != null),
+        avail,
+        contentWidths.map((w) => Math.max(MIN_COL_WIDTH, w))
+      )
+    },
+    [defaultWidths, columns, contentWidths]
+  )
 
   // При первом показе ужимаем колонки под ширину контейнера ТОЛЬКО при
   // переполнении (scale ≤ 1); если натуральная ширина влезает — оставляем её,
@@ -153,30 +174,52 @@ export const LedgerTable = ({
     if (fitDoneRef.current || columns.length === 0) return
     const el = containerRef.current
     if (!el) return
-    const avail = el.clientWidth - 2
-    if (avail <= 0) return
-    const sum = defaultWidths.reduce((a, b) => a + b, 0)
-    if (sum <= 0) return
+    const next = fitWidths(el)
+    if (!next) return
     fitDoneRef.current = true
-    setColWidths(
-      fitColumnWidths(
-        defaultWidths,
-        columns.map((c) => c.width != null),
-        avail,
-        contentWidths.map((w) => Math.max(MIN_COL_WIDTH, w))
-      )
-    )
-  }, [defaultWidths, columns, contentWidths])
+    setColWidths(next)
+  }, [columns.length, fitWidths])
+
+  useLayoutEffect(() => {
+    const el = containerRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    let lastWidth = el.offsetWidth
+    const observer = new ResizeObserver(() => {
+      const width = el.offsetWidth
+      if (width === lastWidth) return
+      lastWidth = width
+      if (!fitDoneRef.current || manualResizeRef.current) return
+      const next = fitWidths(el)
+      if (!next) return
+      const maxScroll = el.scrollWidth - el.clientWidth
+      scrollRatioRef.current = maxScroll > 0 ? el.scrollLeft / maxScroll : 0
+      setColWidths(next)
+    })
+    observer.observe(el)
+    return () => {
+      observer.disconnect()
+    }
+  }, [fitWidths, result.rows.length])
+
+  useLayoutEffect(() => {
+    const el = containerRef.current
+    const ratio = scrollRatioRef.current
+    if (!el || ratio == null) return
+    scrollRatioRef.current = null
+    el.scrollLeft = ratio * Math.max(0, el.scrollWidth - el.clientWidth)
+  }, [colWidths])
 
   const startResize = (index: number, e: ReactMouseEvent) => {
     e.preventDefault()
     const startX = e.clientX
     const startW = colWidths[index]
+    const zoom = cssZoomOf(containerRef.current)
+    manualResizeRef.current = true
     setResizingCol(index)
     // eslint-disable-next-line react-hooks/immutability
     document.body.style.userSelect = 'none'
     const onMove = (ev: MouseEvent) => {
-      const dx = ev.clientX - startX
+      const dx = (ev.clientX - startX) / zoom
       setColWidths((prev) => {
         const next = [...prev]
         next[index] = Math.max(MIN_COL_WIDTH, startW + dx)
@@ -194,6 +237,7 @@ export const LedgerTable = ({
   }
 
   const resetColWidth = (index: number) => {
+    manualResizeRef.current = true
     setColWidths((prev) => {
       const next = [...prev]
       next[index] = defaultWidths[index]

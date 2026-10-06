@@ -73,6 +73,28 @@ describe('applyServerTheme', () => {
       )
     })
 
+    it('компенсация учитывает zoom на html от масштаба интерфейса', () => {
+      const app = ensureAppRoot()
+      const parent = app.parentElement ?? document.body
+      Object.defineProperty(parent, 'currentCSSZoom', {
+        configurable: true,
+        value: 1.2,
+      })
+
+      try {
+        applyServerTheme({ 'ui-scale': '1.1' })
+
+        expect(app.style.getPropertyValue('width')).toBe(
+          `${String(window.innerWidth / (1.1 * 1.2))}px`
+        )
+        expect(app.style.getPropertyValue('height')).toBe(
+          `${String(window.innerHeight / (1.1 * 1.2))}px`
+        )
+      } finally {
+        Reflect.deleteProperty(parent, 'currentCSSZoom')
+      }
+    })
+
     it('кламп 0.8–1.5 и снятие при сбросе вместе с компенсацией', () => {
       const app = ensureAppRoot()
 

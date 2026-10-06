@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MouseEventHandler, TouchEventHandler } from 'react'
 
+import { cssZoomOf } from '@/shared/lib/utils/css-zoom'
+
 /**
  * clientX первого касания или undefined, если касаний нет (touchcancel).
  * Параметр структурный, а не `TouchList`: у DOM-события и у React-события это
@@ -56,49 +58,52 @@ export function useManualColumnResize(
     []
   )
 
-  const begin = useCallback((columnId: string, startX: number) => {
-    const { getWidth, getMinWidth, onResize } = optionsRef.current
-    const startWidth = getWidth(columnId)
-    const minWidth = getMinWidth(columnId)
+  const begin = useCallback(
+    (columnId: string, startX: number, zoom: number) => {
+      const { getWidth, getMinWidth, onResize } = optionsRef.current
+      const startWidth = getWidth(columnId)
+      const minWidth = getMinWidth(columnId)
 
-    const move = (clientX: number) => {
-      const next = Math.max(minWidth, startWidth + (clientX - startX))
-      optionsRef.current.onResize(columnId, Math.round(next))
-    }
-    // Первый onResize делаем сразу: ширина фиксируется даже если пользователь
-    // нажал и отпустил без движения (иначе колонка «прыгнет» при следующем
-    // ре-рендере от сервера, когда отклонения ещё нет).
-    onResize(columnId, Math.round(Math.max(minWidth, startWidth)))
+      const move = (clientX: number) => {
+        const next = Math.max(minWidth, startWidth + (clientX - startX) / zoom)
+        optionsRef.current.onResize(columnId, Math.round(next))
+      }
+      // Первый onResize делаем сразу: ширина фиксируется даже если пользователь
+      // нажал и отпустил без движения (иначе колонка «прыгнет» при следующем
+      // ре-рендере от сервера, когда отклонения ещё нет).
+      onResize(columnId, Math.round(Math.max(minWidth, startWidth)))
 
-    const onMouseMove = (event: MouseEvent) => {
-      move(event.clientX)
-    }
-    const onTouchMove = (event: TouchEvent) => {
-      const clientX = firstTouchX(event.touches)
-      if (clientX !== undefined) move(clientX)
-    }
-    const detach = () => {
-      document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseup', onEnd)
-      document.removeEventListener('touchmove', onTouchMove)
-      document.removeEventListener('touchend', onEnd)
-      document.removeEventListener('touchcancel', onEnd)
-      detachRef.current = null
-      setResizingColumnId(null)
-    }
-    function onEnd() {
-      detach()
-    }
+      const onMouseMove = (event: MouseEvent) => {
+        move(event.clientX)
+      }
+      const onTouchMove = (event: TouchEvent) => {
+        const clientX = firstTouchX(event.touches)
+        if (clientX !== undefined) move(clientX)
+      }
+      const detach = () => {
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', onEnd)
+        document.removeEventListener('touchmove', onTouchMove)
+        document.removeEventListener('touchend', onEnd)
+        document.removeEventListener('touchcancel', onEnd)
+        detachRef.current = null
+        setResizingColumnId(null)
+      }
+      function onEnd() {
+        detach()
+      }
 
-    detachRef.current?.()
-    detachRef.current = detach
-    setResizingColumnId(columnId)
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onEnd)
-    document.addEventListener('touchmove', onTouchMove)
-    document.addEventListener('touchend', onEnd)
-    document.addEventListener('touchcancel', onEnd)
-  }, [])
+      detachRef.current?.()
+      detachRef.current = detach
+      setResizingColumnId(columnId)
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onEnd)
+      document.addEventListener('touchmove', onTouchMove)
+      document.addEventListener('touchend', onEnd)
+      document.addEventListener('touchcancel', onEnd)
+    },
+    []
+  )
 
   const mouseDownHandler = useCallback(
     (columnId: string): MouseEventHandler<HTMLDivElement> =>
@@ -106,7 +111,7 @@ export function useManualColumnResize(
         // Нажатие на ручке не должно ни выделять текст, ни попадать в заголовок.
         event.preventDefault()
         event.stopPropagation()
-        begin(columnId, event.clientX)
+        begin(columnId, event.clientX, cssZoomOf(event.currentTarget))
       },
     [begin]
   )
@@ -117,7 +122,7 @@ export function useManualColumnResize(
         const clientX = firstTouchX(event.touches)
         if (clientX === undefined) return
         event.stopPropagation()
-        begin(columnId, clientX)
+        begin(columnId, clientX, cssZoomOf(event.currentTarget))
       },
     [begin]
   )

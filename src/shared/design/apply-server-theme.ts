@@ -1,3 +1,5 @@
+import { cssZoomOf } from '@/shared/lib/utils/css-zoom'
+
 import { allTokens } from './tokens'
 import { THEME_PRESETS } from './theme-presets'
 
@@ -110,18 +112,13 @@ function applyUiScale(_root: HTMLElement, raw: string): void {
   syncUiScale()
 }
 
-const outerZoom = (container: HTMLElement): number => {
-  const zoom = container.parentElement?.currentCSSZoom
-  return typeof zoom === 'number' && zoom > 0 ? zoom : 1
-}
-
 export function syncUiScale(): void {
   const container = appContainer()
   if (!container || activeScale == null) return
   container.style.setProperty('zoom', String(activeScale))
   // px внутри зумленного элемента рендерятся умноженными на zoom:
   // innerHeight/масштаб локальных px × масштаб = ровно вьюпорт.
-  const scale = activeScale * outerZoom(container)
+  const scale = activeScale * cssZoomOf(container.parentElement)
   container.style.setProperty('width', `${String(window.innerWidth / scale)}px`)
   container.style.setProperty(
     'height',

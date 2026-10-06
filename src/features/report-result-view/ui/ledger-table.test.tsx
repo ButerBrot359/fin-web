@@ -1,5 +1,5 @@
-import { render, screen, cleanup } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { act, render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ReportColumnDto,
@@ -172,5 +172,127 @@ describe('LedgerTable — шапка по groupTitle/subGroupTitle', () => {
     const headRows = container.querySelectorAll('thead tr')
     expect(headRows).toHaveLength(2)
     expect(headRows[0].querySelector('th')?.getAttribute('rowspan')).toBe('2')
+  })
+})
+
+describe('LedgerTable — масштаб страницы и ширина контейнера', () => {
+  const columns: ReportColumnDto[] = ['A', 'B', 'C', 'D'].map((code) => ({
+    code,
+    titleRu: code,
+    role: 'ATTRIBUTE',
+    valueType: 'STRING',
+  }))
+
+  let width = 2000
+  let zoom = 1
+  let observerCallback: (() => void) | null = null
+  const restore: (() => void)[] = []
+
+  const stubProp = (name: string, get: () => number) => {
+    const proto = HTMLElement.prototype as unknown as Record<string, unknown>
+    const own = Object.getOwnPropertyDescriptor(proto, name)
+    Object.defineProperty(proto, name, { configurable: true, get })
+    restore.push(() => {
+      if (own) Object.defineProperty(proto, name, own)
+      else Reflect.deleteProperty(proto, name)
+    })
+  }
+
+  beforeEach(() => {
+    width = 2000
+    zoom = 1
+    observerCallback = null
+    stubProp('clientWidth', () => width)
+    stubProp('offsetWidth', () => width)
+    stubProp('currentCSSZoom', () => zoom)
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: () => void) {
+          observerCallback = cb
+        }
+        observe = vi.fn()
+        disconnect = vi.fn()
+      }
+    )
+  })
+
+  afterEach(() => {
+    restore.splice(0).forEach((fn) => {
+      fn()
+    })
+    vi.unstubAllGlobals()
+  })
+
+  const colWidths = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll('col')).map((c) =>
+      parseFloat(c.style.width)
+    )
+  const total = (container: HTMLElement) =>
+    colWidths(container).reduce((a, b) => a + b, 0)
+  const resizeTo = (next: number) => {
+    width = next
+    act(() => {
+      observerCallback?.()
+    })
+  }
+
+  it('при сужении контейнера колонки подгоняются заново, при расширении возвращаются', () => {
+    const { container } = render(
+      <LedgerTable result={resultOf(columns)} columns={columns} />
+    )
+    const natural = total(container)
+
+    resizeTo(300)
+    expect(total(container)).toBeLessThan(natural)
+
+    resizeTo(2000)
+    expect(total(container)).toBe(natural)
+  })
+
+  it('после ручного ресайза смена ширины не перетирает ширины пользователя', () => {
+    const { container } = render(
+      <LedgerTable result={resultOf(columns)} columns={columns} />
+    )
+    const handle = container.querySelector('.cursor-col-resize')
+    if (!handle) throw new Error('нет ручки ресайза')
+    fireEvent.mouseDown(handle, { clientX: 100 })
+    fireEvent.mouseMove(document, { clientX: 150 })
+    fireEvent.mouseUp(document)
+    const manual = colWidths(container)
+
+    resizeTo(300)
+    expect(colWidths(container)).toEqual(manual)
+  })
+
+  it('при повторной подгонке горизонтальная прокрутка сохраняет долю хода', () => {
+    const { container } = render(
+      <LedgerTable result={resultOf(columns)} columns={columns} />
+    )
+    const scroller = container.firstElementChild as HTMLElement
+    stubProp('scrollWidth', () => total(container))
+    width = 100
+    scroller.scrollLeft = (total(container) - width) / 2
+
+    resizeTo(100)
+
+    expect(total(container)).toBeGreaterThan(width)
+    expect(scroller.scrollLeft).toBeCloseTo((total(container) - width) / 2)
+  })
+
+  it('ресайз колонки при масштабе учитывает zoom: граница идёт за курсором', () => {
+    zoom = 1.5
+    const { container } = render(
+      <LedgerTable result={resultOf(columns)} columns={columns} />
+    )
+    const before = colWidths(container)[0]
+    const handle = container.querySelector('.cursor-col-resize')
+    if (!handle) throw new Error('нет ручки ресайза')
+
+    fireEvent.mouseDown(handle, { clientX: 100 })
+    fireEvent.mouseMove(document, { clientX: 250 })
+    fireEvent.mouseUp(document)
+
+    expect(colWidths(container)[0]).toBe(before + 100)
   })
 })

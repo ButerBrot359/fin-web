@@ -129,42 +129,50 @@ const buildNumberedHeaderRows = (
 ): XlsxHeaderCell[][] | undefined => {
   if (hasHeaderPath(columns))
     return buildPathHeaderRows(columns, isKz, leadColumnTitle, leadColumnNumber)
-  if (!columns.some((c) => !!c.columnNumber)) return undefined
+  const hasNumbers = columns.some((c) => !!c.columnNumber)
+  const model = buildHeadModel(columns, { isKz, levels: 'auto' })
+  if (model.levels === 1 && !hasNumbers) return undefined
   const offset = leadColumnTitle != null ? 1 : 0
-  const model = buildHeadModel(columns, { isKz, levels: 2 })
   const numbers: XlsxHeaderCell[] = columns.map((c, i) => ({
     text: c.columnNumber ?? '',
     col: i + offset,
   }))
   if (leadColumnTitle != null)
     numbers.unshift({ text: leadColumnNumber, col: 0 })
+  const withNumbers = (rows: XlsxHeaderCell[][]): XlsxHeaderCell[][] =>
+    hasNumbers ? [...rows, numbers] : rows
 
-  if (!model.hasGroups) {
+  if (model.levels === 1) {
     const titles: XlsxHeaderCell[] = columns.map((c, i) => ({
       text: columnTitle(c, isKz),
       col: i + offset,
     }))
     if (leadColumnTitle != null)
       titles.unshift({ text: leadColumnTitle, col: 0 })
-    return [titles, numbers]
+    return withNumbers([titles])
   }
 
   const top: XlsxHeaderCell[] = []
   if (leadColumnTitle != null) {
-    top.push({ text: leadColumnTitle, col: 0, rowSpan: 2 })
+    top.push({ text: leadColumnTitle, col: 0, rowSpan: model.levels })
   }
   for (const cell of model.topRow) {
     top.push(
       cell.col != null
-        ? { text: cell.title, col: cell.col0 + offset, rowSpan: 2 }
+        ? { text: cell.title, col: cell.col0 + offset, rowSpan: cell.rowSpan }
         : { text: cell.title, col: cell.col0 + offset, colSpan: cell.colSpan }
     )
   }
+  const mid: XlsxHeaderCell[] = model.midRow.map((cell) =>
+    cell.col != null
+      ? { text: cell.title, col: cell.col0 + offset, rowSpan: cell.rowSpan }
+      : { text: cell.title, col: cell.col0 + offset, colSpan: cell.colSpan }
+  )
   const sub: XlsxHeaderCell[] = model.leafRow.map((leaf) => ({
     text: columnTitle(leaf.col, isKz),
     col: leaf.col0 + offset,
   }))
-  return [top, sub, numbers]
+  return withNumbers(model.levels === 3 ? [top, mid, sub] : [top, sub])
 }
 
 const LINIYA_PODPISI = '___________________'

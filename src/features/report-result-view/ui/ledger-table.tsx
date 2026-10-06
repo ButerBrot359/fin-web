@@ -201,13 +201,18 @@ export const LedgerTable = ({
     })
   }
 
-  // Двухуровневая шапка: соседние колонки с одинаковым groupTitle → группа
-  // (colspan) с подколонками во втором ряду; без groupTitle — rowspan=2.
+  // Многоуровневая шапка: соседние колонки с одинаковым groupTitle → группа
+  // (colspan) с подколонками ниже; при subGroupTitle — средний ряд подгрупп;
+  // без groupTitle — rowspan на всю высоту шапки.
   // Разбор склейки « — » НЕ применяется (историческое поведение LEDGER).
   const headModel = useMemo(() => {
-    const model = buildHeadModel(columns, { isKz, levels: 2 })
-    return model.hasGroups
-      ? { topRow: model.topRow, subRow: model.leafRow }
+    const model = buildHeadModel(columns, { isKz, levels: 'auto' })
+    return model.levels > 1
+      ? {
+          topRow: model.topRow,
+          midRow: model.midRow,
+          subRow: model.leafRow,
+        }
       : null
   }, [columns, isKz])
 
@@ -431,6 +436,22 @@ export const LedgerTable = ({
                     </th>
                   ))}
                 </tr>
+                {headModel.midRow.length > 0 && (
+                  <tr>
+                    {headModel.midRow.map((cell) => (
+                      <th
+                        key={cell.key}
+                        colSpan={cell.colSpan}
+                        rowSpan={cell.rowSpan}
+                        className={`${th} ${cell.colSpan > 1 ? 'text-center' : ''}`}
+                      >
+                        <Typography variant="body2" sx={thTextSx}>
+                          {cell.title}
+                        </Typography>
+                      </th>
+                    ))}
+                  </tr>
+                )}
                 <tr>
                   {headModel.subRow.map(({ key, col }) => (
                     <th key={key} className={th}>

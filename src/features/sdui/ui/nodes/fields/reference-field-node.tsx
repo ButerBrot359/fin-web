@@ -94,6 +94,10 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
   }
 
   const canBrowse = !!targetTypeCode && !f.readonly && f.enabled
+  // SCRUM-400 §5.7: на запертом поле выбор, «Показать все», «Создать» и
+  // «Копировать» недоступны, но «Открыть» карточку УЖЕ выбранной записи
+  // остаётся — просмотр не изменение.
+  const canOpenExisting = !!targetTypeCode && f.enabled
 
   // Легаси-пикер («Показать все»/создать) получает готовый конкретный фильтр
   // из node.props.filter (бэк кладёт туда {Vladelets: id}); фронт не синтезирует.
@@ -199,7 +203,7 @@ export const ReferenceFieldNode: FC<NodeProps> = ({ node }) => {
                 nodeId={node.id}
                 open={open}
                 copy={copy}
-                canBrowse={canBrowse}
+                canBrowse={canOpenExisting}
                 onLegacyOpen={() => {
                   // Вызывается только при canBrowse (гейт в ReferenceEndActions),
                   // поэтому domain/targetTypeCode здесь заведомо заданы.

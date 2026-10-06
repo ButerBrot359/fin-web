@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, type FC } from 'react'
 import { useLocation } from 'react-router-dom'
 import i18n from 'i18next'
 
+import { AccessDenied } from '@/shared/ui/access-denied'
+import { ObjectNotFound } from '@/shared/ui/object-not-found'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 import { subscribeViewSettingsChanged } from '@/shared/lib/design-settings/design-settings-events'
 import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
@@ -13,6 +15,10 @@ import {
 import { useTreeStore } from '../lib/stores/tree-store'
 import { useViewStateStore } from '../lib/stores/view-state-store'
 import { useSduiCacheStore } from '../lib/stores/sdui-cache-store'
+import {
+  useScreenAccessStore,
+  type ScreenAccessState,
+} from '../lib/access/screen-access-store'
 import { usePanelStore } from '../lib/stores/panel-store'
 import { viewTransport } from '../api/view-transport'
 import { useSduiDispatch } from '../lib/dispatch'
@@ -27,6 +33,7 @@ import {
 } from '../lib/sdui-session-context'
 import { reopenFormForLanguageChange } from '../lib/language-reopen'
 import { isStretchedRoot } from '../lib/utils/stretched-root'
+import { isFormReadOnly } from '../lib/utils/form-read-only'
 import type { ViewTabMeta } from '../types/view'
 import { NodeRenderer } from './node-renderer'
 import { DialogHost } from './dialog-host'
@@ -49,13 +56,12 @@ interface SduiScreenProps {
   // увёл эффектом navigate (напр. postAndClose→список), хост навигацию не дублирует;
   // didNavigate=false (save+closeAfter) → хост садится на соседнюю вкладку (SCRUM-283 v2).
   onCloseAfter?: (route: string, didNavigate?: boolean) => void
-  // Срабатывает на 404/422 OPEN — штатный гейт раскатки (§2 бэк-спеки
-  // SCRUM-290): тип ещё не переведён на SDUI (SCREEN_NOT_SDUI → info.kind)
-  // либо унаследованный 404. Хост может показать легаси-форму. Прочие
-  // ошибки OPEN (сеть, 5xx) сюда не попадают — прежнее поведение (тост + скелетон).
+  // Срабатывает ТОЛЬКО на 422 SCREEN_NOT_SDUI OPEN — штатный гейт раскатки
+  // (§2 бэк-спеки SCRUM-290): тип ещё не переведён на SDUI. 403/404 легаси
+  // больше НЕ открывают (SCRUM-400 §5.2/§9.5): «Нет доступа» и «Объект не
+  // найден» экран рисует сам из screen-access-store. Прочие ошибки OPEN
+  // (сеть, 5xx) сюда не попадают — прежнее поведение (тост + скелетон).
   onOpenFailed?: (info?: { kind?: string }) => void
-  // Маршрут не найден бэком (404 ROUTE_UNKNOWN) — экран NotFound на стороне хоста
-  onRouteUnknown?: () => void
   // Метаданные вкладки с последнего OPEN (kind/icon/closable) — хост
   // использует для синхронизации рабочих вкладок
   onTab?: (tab: ViewTabMeta | null) => void
@@ -69,7 +75,6 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   onSavedAndClosed,
   onCloseAfter,
   onOpenFailed,
-  onRouteUnknown,
   onTab,
 }) => {
   const location = useLocation()
@@ -84,6 +89,9 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   const dispatch = useSduiDispatch()
   const dirty = useViewStateStore((s) => s.dirty)
   const formSessionId = useTreeStore((s) => s.formSessionId)
+  const accessState = useScreenAccessStore(
+    (s): ScreenAccessState | undefined => s.byRoute[screenRoute]
+  )
   useSessionHeartbeat(formSessionId)
   // SCRUM-330: поллинг фоновых задач формы + рапорт task.finished в сессию
   useTaskWatcher(formSessionId)
@@ -134,12 +142,11 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       useViewStateStore.getState().setDirty(true)
     } else {
       // main: устаревший кэш вкладки снимаем перед переоткрытием;
-      // dev (SCRUM-244/290): 404/422 на OPEN → фолбэк на легаси через onOpenNotFound;
-      // 404 ROUTE_UNKNOWN → onRouteUnknown (экран NotFound).
+      // dev (SCRUM-244/290): 422 SCREEN_NOT_SDUI на OPEN → фолбэк на легаси
+      // через onOpenNotFound; 403/404 рисует сам экран (screen-access-store).
       if (cached) useSduiCacheStore.getState().remove(route)
       void dispatch({ type: 'OPEN' }, null, false, {
         onOpenNotFound: onOpenFailed,
-        onRouteUnknown,
         onOpenTab: (tab) => onTab?.(tab),
       })
     }
@@ -177,6 +184,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       // экрана, а не только при открытии (грязный документ возвращается из
       // кэша вкладки без повторного OPEN).
       useValidationReportStore.getState().clear(route)
+      // SCRUM-400: отказ принадлежит вкладке — закрыли вкладку, сняли отказ.
+      useScreenAccessStore.getState().clear(route)
       reset()
     }
   }, [screenRoute])
@@ -260,6 +269,7 @@ export const SduiScreen: FC<SduiScreenProps> = ({
       replaceAll: useViewStateStore.getState().replaceAll,
       merge: useViewStateStore.getState().merge,
       isDirty: dirty,
+      readOnly: isFormReadOnly(tree),
       resetDirty: useViewStateStore.getState().resetDirty,
       setDirty: useViewStateStore.getState().setDirty,
       tree,
@@ -279,6 +289,13 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     }),
     [tree, dirty, onCloseAfter, screenRoute]
   )
+
+  // SCRUM-400: отказ экрана авторитетнее скелетона и дерева — 403/404 могли
+  // прийти и на переоткрытии уже отрисованной формы (отзыв прав, смена языка).
+  if (accessState?.kind === 'denied') {
+    return <AccessDenied message={accessState.message} />
+  }
+  if (accessState?.kind === 'not-found') return <ObjectNotFound />
 
   if (!tree) return <PageSkeleton />
 

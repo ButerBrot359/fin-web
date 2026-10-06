@@ -3,6 +3,7 @@ import { createContext, useContext, type ReactNode } from 'react'
 import type { ViewNode, ViewNodeAction, ViewPatch } from '../types/view'
 import { useTreeStore } from './stores/tree-store'
 import { useViewStateStore } from './stores/view-state-store'
+import { isFormReadOnly } from './utils/form-read-only'
 
 export interface SduiSessionValue {
   kind: 'root' | 'panel'
@@ -15,6 +16,12 @@ export interface SduiSessionValue {
   replaceAll: (state: Record<string, unknown>) => void
   merge: (patch: Record<string, unknown>) => void
   isDirty: boolean
+  /**
+   * Форма сессии «только для чтения» (SCRUM-400 §5.3): readOnly корня дерева
+   * (или корня панели). Наследуется ВСЕМИ полями/ТЧ сессии — через это поле,
+   * а не через обход контейнеров: новая обёртка раскладки его не потеряет.
+   */
+  readOnly: boolean
   resetDirty: () => void
   // Авторитетный dirty от сервера (SCRUM-288 §2.5)
   setDirty: (value: boolean) => void
@@ -69,6 +76,7 @@ export const useSduiSession = (): SduiSessionValue => {
     replaceAll: useViewStateStore.getState().replaceAll,
     merge: useViewStateStore.getState().merge,
     isDirty: dirty,
+    readOnly: isFormReadOnly(tree),
     resetDirty: useViewStateStore.getState().resetDirty,
     setDirty: useViewStateStore.getState().setDirty,
     tree,

@@ -1,6 +1,8 @@
 import { useSduiDispatch } from '../dispatch'
 import { useSduiSession } from '../sdui-session-context'
 import { useTreeStore } from '../stores/tree-store'
+import { isCommandUnavailable } from '../access/command-availability'
+import { isFormReadOnly } from '../utils/form-read-only'
 
 /**
  * Команда записи текущей формы — для Ctrl+S из табличной части.
@@ -26,6 +28,12 @@ export function useFormSaveCommand(): () => void {
     if (session.kind !== 'root') return
     const desc = useTreeStore.getState().onDirtyClose
     if (!desc?.command) return
+    // SCRUM-400 §5.5: Ctrl+S уважает гашение по правам — форма только для
+    // чтения или все носители команды записи погашены ⇒ хоткей молчит,
+    // как молчала бы кнопка (иначе сервер ответит 403 на каждый Ctrl+S).
+    const tree = useTreeStore.getState().root
+    if (isFormReadOnly(tree)) return
+    if (isCommandUnavailable(tree, desc.command)) return
     void dispatch(
       { type: 'COMMAND', command: desc.command },
       { ...desc.behavior, closeAfter: false }

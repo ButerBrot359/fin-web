@@ -18,7 +18,6 @@ interface SduiCardScreenProps {
   showHeader?: boolean
   onTab?: (tab: ViewTabMeta | null) => void
   onOpenFailed?: (info?: { kind?: string }) => void
-  onRouteUnknown?: () => void
 }
 
 export const SduiCardScreen: FC<SduiCardScreenProps> = ({
@@ -26,7 +25,6 @@ export const SduiCardScreen: FC<SduiCardScreenProps> = ({
   showHeader = false,
   onTab,
   onOpenFailed,
-  onRouteUnknown,
 }) => {
   const { tabsApi, pageTitle, unsavedDialog, handleClose } =
     useSduiCardBinding(showCardChrome)
@@ -43,12 +41,7 @@ export const SduiCardScreen: FC<SduiCardScreenProps> = ({
       {(showCardChrome || showHeader || isListScreen) && (
         <PageHeader title={pageTitle} onClose={handleClose} />
       )}
-      <SduiScreen
-        {...tabsApi}
-        onTab={onTab}
-        onOpenFailed={onOpenFailed}
-        onRouteUnknown={onRouteUnknown}
-      />
+      <SduiScreen {...tabsApi} onTab={onTab} onOpenFailed={onOpenFailed} />
       {showCardChrome && (
         <UnsavedChangesDialog
           open={unsavedDialog.isOpen}

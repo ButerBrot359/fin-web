@@ -1,11 +1,16 @@
 import i18n from 'i18next'
 
+import { classifyAccessError } from '@/shared/api/access-denied'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
-import type { ViewAction } from '../types/view'
+import type { ActionBehavior, ViewAction } from '../types/view'
 import { ViewConflictError, ViewHttpError } from '../api/view-transport'
 import { handleConflict } from './conflict-handler'
 import type { SduiSessionValue } from './sdui-session-context'
+import {
+  handleAccessDenied,
+  handleObjectNotFound,
+} from './access/handle-access-denied'
 import {
   DOCUMENT_VALIDATION_CODE,
   buildValidationErrorPatches,
@@ -18,23 +23,26 @@ import {
 
 export interface DispatchErrorCtx {
   action: ViewAction
+  /** behavior исходного действия — распознавание «пишущей» команды (SCRUM-400 §5.9). */
+  behavior?: ActionBehavior | null
   isRetry: boolean
   /** Ключ вкладки экрана (tabRouteKey) — ключ стора отчёта (тот же, что на 200). */
   pathname: string
   session: SduiSessionValue
   opts?: {
     onOpenNotFound?: (info?: { kind?: string }) => void
-    onRouteUnknown?: () => void
   }
   /** Повтор исходного действия с isRetry=true (конфликт-хендлер). */
   retry: () => Promise<boolean>
   /** Восстановление сессии после SESSION_NOT_FOUND (route-only OPEN). */
   reopen: () => Promise<void>
+  /** Свежий OPEN без старого formSessionId — восстановление после 403 (SCRUM-400). */
+  reopenFresh: () => Promise<void>
 }
 
 // Catch-блок dispatch: 422-валидация документа, 409-конфликт ревизии/сессии,
-// гейты ошибок OPEN (SCRUM-290) и общий тост. Вызывающий после нас всегда
-// возвращает false.
+// 403/404 по правам (SCRUM-400), гейты ошибок OPEN (SCRUM-290) и общий тост.
+// Вызывающий после нас всегда возвращает false.
 export function handleDispatchError(
   error: unknown,
   ctx: DispatchErrorCtx
@@ -67,7 +75,9 @@ export function handleDispatchError(
     } else {
       showToast('error', error.message || i18n.t('sdui.requestError'))
     }
-  } else if (error instanceof ViewConflictError) {
+    return
+  }
+  if (error instanceof ViewConflictError) {
     const retry = !ctx.isRetry && action.type !== 'OPEN' ? ctx.retry : null
     handleConflict(
       error.data,
@@ -75,30 +85,58 @@ export function handleDispatchError(
       retry,
       ctx.reopen
     )
-  } else if (error instanceof ViewHttpError && action.type === 'OPEN') {
-    // Единый гейт раскатки под catch-all (§2 бэк-спеки SCRUM-290):
-    // ROUTE_UNKNOWN → «не найдено»; SCREEN_NOT_SDUI / унаследованный
-    // 404 → легаси-фолбэк. Без подходящего колбэка — общий тост, как раньше.
-    if (
-      error.status === 404 &&
-      error.code === 'ROUTE_UNKNOWN' &&
-      ctx.opts?.onRouteUnknown
-    ) {
-      ctx.opts.onRouteUnknown()
-    } else if (
-      error.status === 422 &&
-      error.code === 'SCREEN_NOT_SDUI' &&
-      ctx.opts?.onOpenNotFound
-    ) {
-      ctx.opts.onOpenNotFound({ kind: error.kind })
-    } else if (error.status === 404 && ctx.opts?.onOpenNotFound) {
-      ctx.opts.onOpenNotFound(undefined)
-    } else {
-      showToast('error', error.message || i18n.t('sdui.requestError'))
-    }
-  } else {
-    const message =
-      error instanceof Error ? error.message : i18n.t('sdui.requestError')
-    showToast('error', message)
+    return
   }
+  // SCRUM-400 §3.2/§5.9: 403 по правам — на ЛЮБОМ действии, не только OPEN.
+  // Раньше 403 на OPEN уходил в общий тост и оставлял вечный скелетон.
+  if (error instanceof ViewHttpError && error.status === 403) {
+    const kind = classifyAccessError(
+      403,
+      error.code,
+      error.message,
+      error.scope
+    )
+    if (
+      kind?.kind === 'password-change' ||
+      kind?.kind === 'account-ineligible'
+    ) {
+      // Оба случая уже перехвачены интерсептором (увод на смену пароля /
+      // экран входа) — дублирующий тост или «Нет доступа» здесь только мешал бы.
+      return
+    }
+    if (kind?.kind === 'access-denied') {
+      handleAccessDenied(kind.denial.message, kind.denial.scope, {
+        action,
+        behavior: ctx.behavior,
+        isRetry: ctx.isRetry,
+        screenKey: ctx.pathname,
+        session,
+        reopenFresh: ctx.reopenFresh,
+      })
+      return
+    }
+    // 403 с неизвестным кодом — показать message тостом (спека §3.2).
+    showToast('error', error.message || i18n.t('sdui.requestError'))
+    return
+  }
+  // SCRUM-400 §9.5: 404 — «Объект не найден» (запись не существует либо вне
+  // области RLS; с ней сервер намеренно неразличим). Легаси-фолбэк —
+  // ТОЛЬКО 422 SCREEN_NOT_SDUI: 403/404 в обход прав легаси открывать нельзя.
+  if (error instanceof ViewHttpError && error.status === 404) {
+    handleObjectNotFound({ action, session, screenKey: ctx.pathname })
+    return
+  }
+  if (
+    error instanceof ViewHttpError &&
+    action.type === 'OPEN' &&
+    error.status === 422 &&
+    error.code === 'SCREEN_NOT_SDUI' &&
+    ctx.opts?.onOpenNotFound
+  ) {
+    ctx.opts.onOpenNotFound({ kind: error.kind })
+    return
+  }
+  const message =
+    error instanceof Error ? error.message : i18n.t('sdui.requestError')
+  showToast('error', message)
 }

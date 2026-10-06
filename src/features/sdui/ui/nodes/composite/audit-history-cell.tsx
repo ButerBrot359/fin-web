@@ -60,7 +60,7 @@ export function AuditHistoryCell({
         variant="outlined"
         color={isAi ? 'primary' : 'default'}
         icon={isAi ? <AutoAwesomeOutlinedIcon /> : undefined}
-        label={isAi ? t('documentHistory.withAi') : value}
+        label={isAi ? t('documentHistory.withAi') : value.trim() || '—'}
         title={t(
           row.origin === 'UNKNOWN'
             ? 'documentHistory.unknownHint'

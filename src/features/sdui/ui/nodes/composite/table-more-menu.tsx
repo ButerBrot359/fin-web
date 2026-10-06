@@ -8,6 +8,8 @@ import {
   Typography,
 } from '@mui/material'
 
+import { Tooltip } from '@mui/material'
+
 import type { TableCommandDescriptor } from '../../../types/view'
 
 // Подписи хоткеев — непереводимые обозначения клавиш, не текст интерфейса
@@ -42,6 +44,8 @@ export interface TableMoreMenuProps {
   onClearSearch: () => void
   commands: TableCommandDescriptor[]
   commandLabel: (cmd: TableCommandDescriptor) => string
+  /** SCRUM-400 §5.6.1: причина запрета добавления — подсказка на «Добавить»/«Скопировать». */
+  addDeniedReason?: string
   onCommand: (cmd: TableCommandDescriptor) => void
   /** Недоступность пункта-команды; по умолчанию — только !enabled. */
   isCommandDisabled?: (cmd: TableCommandDescriptor) => boolean
@@ -68,6 +72,7 @@ export const TableMoreMenu = ({
   onClearSearch,
   commands,
   commandLabel,
+  addDeniedReason,
   onCommand,
   isCommandDisabled = (cmd) => !cmd.enabled,
 }: TableMoreMenuProps) => {
@@ -79,34 +84,53 @@ export const TableMoreMenu = ({
     label: ReactNode,
     hotkey: string | null,
     disabled: boolean,
-    onClick: () => void
-  ) => (
-    <MenuItem
-      key={key}
-      disabled={disabled}
-      onClick={() => {
-        onClose()
-        onClick()
-      }}
-    >
-      <ListItemText>{label}</ListItemText>
-      {hotkey && (
-        <Typography variant="body2" color="text.secondary" sx={{ ml: 3 }}>
-          {hotkey}
-        </Typography>
-      )}
-    </MenuItem>
-  )
+    onClick: () => void,
+    // SCRUM-400 §5.6.1: причина гашения — подсказка на отключённом пункте.
+    reason?: string | null
+  ) => {
+    const menuItem = (
+      <MenuItem
+        key={key}
+        disabled={disabled}
+        onClick={() => {
+          onClose()
+          onClick()
+        }}
+      >
+        <ListItemText>{label}</ListItemText>
+        {hotkey && (
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 3 }}>
+            {hotkey}
+          </Typography>
+        )}
+      </MenuItem>
+    )
+    return disabled && reason ? (
+      <Tooltip key={key} title={reason}>
+        <span style={{ display: 'block' }}>{menuItem}</span>
+      </Tooltip>
+    ) : (
+      menuItem
+    )
+  }
 
   return (
     <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={onClose}>
-      {item('add', t('table.add'), HOTKEYS.add, !allowAdd || !canAdd, onAdd)}
+      {item(
+        'add',
+        t('table.add'),
+        HOTKEYS.add,
+        !allowAdd || !canAdd,
+        onAdd,
+        addDeniedReason
+      )}
       {item(
         'copy',
         t('table.copyRow'),
         HOTKEYS.copy,
         !allowAdd || !canCopy,
-        onCopy
+        onCopy,
+        addDeniedReason
       )}
       {item(
         'remove',
@@ -146,7 +170,8 @@ export const TableMoreMenu = ({
           isCommandDisabled(cmd),
           () => {
             onCommand(cmd)
-          }
+          },
+          cmd.enabled ? null : cmd.disabledReason
         )
       )}
     </Menu>

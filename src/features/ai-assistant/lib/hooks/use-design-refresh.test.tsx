@@ -48,7 +48,7 @@ describe('useDesignRefresh', () => {
 
     refresh(answer({ themeChanged: true }))
 
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['theme', 'merged'] })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['theme'] })
   })
 
   it('без флагов (старый бэк) — ничего не происходит', () => {

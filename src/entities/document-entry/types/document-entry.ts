@@ -25,6 +25,10 @@ export interface DocumentEntry {
   // проведения/отмены документа-триггера. Сервер шлёт [] (не null), когда
   // устаревших расчётов нет; опционально — старые ответы поля не несут.
   recalculationNotices?: RecalculationNotice[]
+  // SCRUM-400 §9.4 (RLS): запись сохранена, но ушла из области пользователя —
+  // следующий GET по ней ответит 404. Только в ответах POST/PUT; когда запись
+  // видна, КЛЮЧА НЕТ (не false). Клиент не должен переходить на её карточку.
+  savedOutsideScope?: true
 }
 
 export interface CreateDocumentEntryPayload {

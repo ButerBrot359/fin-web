@@ -65,3 +65,8 @@ export { discardTabSession, markDiscardDraftClose } from './lib/close-intent'
 export { dropCachedScreensFor } from './lib/fresh-form-instance'
 export { forgetListMemory } from './lib/stores/list-memory-store'
 export { resetAdminCustomizeAutoOpen } from './ui/admin-customize-auto-open'
+export {
+  closeSduiSessionsForSignOut,
+  resetSduiClientState,
+  resumeSduiClose,
+} from './lib/sign-out-session-control'

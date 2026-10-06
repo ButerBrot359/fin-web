@@ -31,6 +31,8 @@ import { parseRowAppearance } from '../../../lib/utils/row-appearance'
 import { useExternalRowFilter } from '../../../lib/hooks/use-external-row-filter'
 import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { buildFlatColumnDefs } from '../../../lib/utils/build-flat-column-defs'
+import { buildTableMutationPolicy } from '../../../lib/utils/table-mutation-policy'
+import { useSduiSession } from '../../../lib/sdui-session-context'
 import { EditableTableHead } from './editable-table-head'
 import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { editableTableSx } from './editable-table-sx'
@@ -45,7 +47,10 @@ interface EditableTableProps {
   columns: TableColumnDef[]
 }
 
-export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
+export const EditableTable: FC<EditableTableProps> = ({
+  node,
+  columns: rawColumns,
+}) => {
   // ADR-0029 Phase 2b: server-ref-команды пикера ячейки; dispatch через ref
   // (тот же приём и та же причина, что у syncRef ниже) — см. use-cell-ref-handlers.
   const cellRefHandlers = useCellRefHandlers()
@@ -53,6 +58,26 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const allowDelete = node.props?.allowDelete === true
   const allowReorder = node.props?.allowReorder === true
   const showRowNumbers = node.props?.showRowNumbers === true
+
+  // SCRUM-400 §5.6: ТЧ целиком «только для чтения» — props.readOnly узла TABLE
+  // (права) либо readOnly корня формы (наследуется через сессию). Все колонки
+  // при этом заперты, любые мутации строк запрещены единой политикой.
+  const sessionReadOnly = useSduiSession().readOnly
+  const tableReadOnly = sessionReadOnly || node.props?.readOnly === true
+  const policy = buildTableMutationPolicy({
+    tableReadOnly,
+    allowAdd,
+    allowDelete,
+    allowReorder,
+  })
+  const columns = useMemo(
+    () =>
+      tableReadOnly
+        ? rawColumns.map((c) => (c.readonly ? c : { ...c, readonly: true }))
+        : rawColumns,
+    [rawColumns, tableReadOnly]
+  )
+  const addDeniedReason = node.props?.addDeniedReason as string | undefined
 
   const tableCommands = node.props?.tableCommands as
     | TableCommandDescriptor[]
@@ -204,6 +229,7 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
   const commands = useTableRowCommands({
     sync,
     columns,
+    policy,
     visibleRows,
     selectedRowId,
     selectedRowIds: vydelennyeRowIds,
@@ -256,8 +282,10 @@ export const EditableTable: FC<EditableTableProps> = ({ node, columns }) => {
         <TableToolbar
           {...commands.toolbarProps}
           allowAdd={allowAdd}
-          allowReorder={allowReorder}
-          allowDelete={allowDelete}
+          allowReorder={policy.canReorder}
+          allowDelete={policy.canDelete}
+          canAdd={policy.canAdd}
+          addDeniedReason={addDeniedReason}
           commands={tableCommands}
           search={search}
           selectedRowId={selectedRowId}

@@ -5,15 +5,10 @@ import { mapKindToPageType } from '@/features/sdui'
 import type { ViewTabMeta } from '@/features/sdui'
 import { useWorkspaceTabsStore } from '@/features/workspace-tabs'
 
-import { NotFound } from '@/shared/ui/not-found/not-found'
-
 import { LegacyFallback } from './legacy-fallback'
 import { SduiCardScreen } from './sdui-card-screen'
 
-type Mode =
-  | { kind: 'sdui' }
-  | { kind: 'legacy'; screenKind: string | null }
-  | { kind: 'not-found' }
+type Mode = { kind: 'sdui' } | { kind: 'legacy'; screenKind: string | null }
 
 // Виды экрана с карточной обвязкой (PageHeader, dirty-«*», диалог несохранённых,
 // SCRUM-360 этап B) — совпадает с покрытием mapKindToPageType в tab-kind.ts.
@@ -88,7 +83,6 @@ export const SduiCatchAllPage: FC = () => {
     }
   }
 
-  if (mode.kind === 'not-found') return <NotFound />
   if (mode.kind === 'legacy') return <LegacyFallback kind={mode.screenKind} />
 
   return (
@@ -98,9 +92,6 @@ export const SduiCatchAllPage: FC = () => {
       onTab={authorTab}
       onOpenFailed={(info) => {
         setMode({ kind: 'legacy', screenKind: info?.kind ?? null })
-      }}
-      onRouteUnknown={() => {
-        setMode({ kind: 'not-found' })
       }}
     />
   )

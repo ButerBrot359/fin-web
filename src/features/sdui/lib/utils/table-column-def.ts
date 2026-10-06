@@ -22,7 +22,9 @@ export function nodeToTableColumnDef(node: ViewNode): TableColumnDef {
     resizable: props.resizable as boolean | undefined,
     cellWidget: (props.cellWidget as string | undefined) ?? 'TEXT_FIELD',
     dataType: (props.dataType as string | undefined) ?? 'STRING',
-    readonly: (props.readonly as boolean | undefined) ?? false,
+    // SCRUM-400 §5.4: колонка заперта по `readonly || readOnly` (раскладка 1С
+    // ИЛИ права; ключи не нормализуются, оба могут стоять на одном узле).
+    readonly: props.readonly === true || props.readOnly === true,
     required: (props.required as boolean | undefined) ?? false,
     props,
     // ADR-0029 Phase 2b: аффордансы пикера ячейки. Бэк эмитит их на TABLE_COLUMN

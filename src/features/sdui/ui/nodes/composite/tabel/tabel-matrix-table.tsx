@@ -5,7 +5,10 @@ import { Typography } from '@mui/material'
 import { useDebouncedValue } from '@/shared/lib/hooks/use-debounced-value'
 
 import type { NodeProps } from '../../../../types/view'
-import { useBindingValue } from '../../../../lib/sdui-session-context'
+import {
+  useBindingValue,
+  useSduiSession,
+} from '../../../../lib/sdui-session-context'
 import {
   findSotrudnikContract,
   parseTabelMatrixPayload,
@@ -28,6 +31,15 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
   const { t, i18n } = useTranslation()
   const binding = node.binding ?? DEFAULT_BINDING
   const rawValue = useBindingValue(binding)
+
+  // SCRUM-400 §5.6: матрица уважает readOnly/allow* ТЧ целиком (колоночные
+  // ограничения матрица пока не отражает — она рисуется из payload, открытый
+  // пункт спеки). Отсутствие ключа allow* = прежнее поведение (кнопки есть).
+  const sessionReadOnly = useSduiSession().readOnly
+  const matrixReadOnly = sessionReadOnly || node.props?.readOnly === true
+  const allowAdd = !matrixReadOnly && node.props?.allowAdd !== false
+  const allowDelete = !matrixReadOnly && node.props?.allowDelete !== false
+  const addDeniedReason = node.props?.addDeniedReason as string | undefined
   // Матрица может быть большой (31 день × сотрудники × виды): парсим payload
   // и производные один раз на серверное обновление, не на каждый рендер.
   const payload = useMemo(() => {
@@ -87,17 +99,24 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
     <div className="flex flex-col gap-2">
       <TabelMatrixToolbar
         busy={queue.busy}
+        allowAdd={allowAdd}
+        addDeniedReason={addDeniedReason}
         hasActiveEmployee={actions.activeId !== null}
         manualWorkKinds={payload.manualWorkKinds}
         query={query}
         onQueryChange={setQuery}
         onAddEmployee={() => {
+          if (!allowAdd) return
           actions.addEmployee(picker)
         }}
         onOpenPodbor={() => {
+          if (!allowAdd) return
           setPodborOpen(true)
         }}
-        onAddWorkKind={actions.addWorkKind}
+        onAddWorkKind={(kind) => {
+          if (!allowAdd) return
+          actions.addWorkKind(kind)
+        }}
         onExpandAll={() => {
           setCollapsed(new Set())
         }}
@@ -111,6 +130,8 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
         collapsed={collapsed}
         activeId={actions.activeId}
         busy={queue.busy}
+        readOnly={matrixReadOnly}
+        deleteDisabled={!allowDelete}
         draftKindsFor={actions.draftKindsFor}
         onToggle={(id) => {
           setCollapsed((prev) => {
@@ -121,8 +142,14 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
           })
         }}
         onSelect={actions.selectEmployee}
-        onDeleteEmployee={actions.deleteEmployee}
-        onDeleteKind={actions.deleteWorkKind}
+        onDeleteEmployee={(employee) => {
+          if (!allowDelete) return
+          actions.deleteEmployee(employee)
+        }}
+        onDeleteKind={(employee, kind, draft) => {
+          if (!allowDelete) return
+          actions.deleteWorkKind(employee, kind, draft)
+        }}
         onCommitCell={actions.commitCell}
       />
       {podborOpen &&

@@ -39,6 +39,9 @@ interface TableToolbarProps {
   allowAdd?: boolean
   allowReorder?: boolean
   allowDelete?: boolean
+  /** SCRUM-400 §5.6.1: причина, почему нельзя добавлять, — подсказка на
+   * погашенной «Добавить» (без причины кнопка, как раньше, скрывается). */
+  addDeniedReason?: string
   commands?: TableCommandDescriptor[]
   search: Omit<TableSearchApi, 'rows'>
   selectedRowId?: string | null
@@ -60,6 +63,7 @@ export const TableToolbar = ({
   allowAdd = true,
   allowReorder = true,
   allowDelete = true,
+  addDeniedReason,
   commands = [],
   search,
   selectedRowId = null,
@@ -106,18 +110,32 @@ export const TableToolbar = ({
 
   return (
     <div className="flex items-center gap-2">
-      {allowAdd && (
+      {(allowAdd || addDeniedReason) &&
         // Figma 772:24370: «+ Добавить» — secondary; primary на экране одна,
         // и это главное действие тулбара документа («Провести и закрыть»).
-        <Button
-          variant="secondary"
-          disabled={!canAdd}
-          onClick={onAdd}
-          startIcon={figmaIcons.plus}
-        >
-          {t('table.add')}
-        </Button>
-      )}
+        // SCRUM-400 §5.6.1: при запрете правами кнопка не исчезает, а гаснет
+        // с причиной (addDeniedReason) — пользователь видит, почему нельзя.
+        (() => {
+          const disabled = !allowAdd || !canAdd
+          const btn = (
+            <Button
+              variant="secondary"
+              disabled={disabled}
+              onClick={onAdd}
+              startIcon={figmaIcons.plus}
+            >
+              {t('table.add')}
+            </Button>
+          )
+          return disabled && addDeniedReason ? (
+            // span-обёртка обязательна: tooltip не работает на disabled-кнопке
+            <Tooltip title={addDeniedReason}>
+              <span style={{ display: 'inline-flex' }}>{btn}</span>
+            </Tooltip>
+          ) : (
+            btn
+          )
+        })()}
       {allowReorder && (
         <>
           <Button
@@ -161,10 +179,11 @@ export const TableToolbar = ({
             >
               {groupCmds.map((cmd) => {
                 const needsRow = rowScoped(cmd) && !selectedRowId
-                return (
+                const disabled = !cmd.enabled || needsRow
+                const item = (
                   <MenuItem
                     key={cmd.command}
-                    disabled={!cmd.enabled || needsRow}
+                    disabled={disabled}
                     onClick={() => {
                       setGroupMenu(null)
                       runCommand(cmd)
@@ -172,6 +191,15 @@ export const TableToolbar = ({
                   >
                     {commandLabel(cmd)}
                   </MenuItem>
+                )
+                // SCRUM-400 §5.6.1: причина гашения серверной команды видна и
+                // в подменю (как у плоских кнопок панели).
+                return !cmd.enabled && cmd.disabledReason ? (
+                  <Tooltip key={cmd.command} title={cmd.disabledReason}>
+                    <span style={{ display: 'block' }}>{item}</span>
+                  </Tooltip>
+                ) : (
+                  item
                 )
               })}
             </Menu>
@@ -285,6 +313,7 @@ export const TableToolbar = ({
         onClearSearch={search.clear}
         commands={commands}
         commandLabel={commandLabel}
+        addDeniedReason={addDeniedReason}
         onCommand={runCommand}
         isCommandDisabled={(cmd) =>
           !cmd.enabled || (rowScoped(cmd) && !selectedRowId)

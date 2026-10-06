@@ -35,7 +35,8 @@ export const SidebarNode: FC<NodeProps> = ({ node }) => {
     })
   }
 
-  const links = node.children ?? []
+  // SCRUM-400: пункт без права в дерево не приходит; visible=false — вторая линия.
+  const links = (node.children ?? []).filter((c) => c.props?.visible !== false)
 
   return (
     <aside

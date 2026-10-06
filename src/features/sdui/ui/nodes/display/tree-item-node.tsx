@@ -27,7 +27,9 @@ export const TreeItemNode: FC<NodeProps> = ({ node }) => {
   const selected = node.props?.selected === true
   const enabled = node.props?.enabled === true
   const reason = node.props?.tooltip as string | undefined
-  const children = (node.children ?? []).filter((c) => c.type === 'TREE_NODE')
+  const children = (node.children ?? []).filter(
+    (c) => c.type === 'TREE_NODE' && c.props?.visible !== false
+  )
   const clickCommand = node.actions?.find((a) => a.trigger === 'click')
 
   const toggle = () => {

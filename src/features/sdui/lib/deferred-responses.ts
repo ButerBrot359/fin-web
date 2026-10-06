@@ -43,3 +43,8 @@ export function replayDeferredResponses(route: string): void {
 export function dropDeferredResponses(route: string): void {
   deferred.delete(route)
 }
+
+/** Выход/смена пользователя (SCRUM-400 §10): исходы прежней личности не играются. */
+export function dropAllDeferredResponses(): void {
+  deferred.clear()
+}

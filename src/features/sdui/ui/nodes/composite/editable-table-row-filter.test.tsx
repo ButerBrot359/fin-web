@@ -70,6 +70,7 @@ const node = {
   binding: 'Nachisleniya',
   props: {
     editable: true,
+    allowDelete: true,
     filterSource: 'OtborSotrudnikov',
     filterSourceColumn: 'Sotrudnik',
     filterColumn: 'Sotrudnik',

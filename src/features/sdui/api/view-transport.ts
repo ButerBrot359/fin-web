@@ -45,7 +45,10 @@ export class ViewHttpError extends Error {
     public kind?: string,
     public errors?: ValidationErrorDetail[],
     // SCRUM-317 §3.2: сырой отчёт о проверке из тела 422 DOCUMENT_VALIDATION
-    public validation?: unknown
+    public validation?: unknown,
+    // SCRUM-400 §3.2: scope 403 по правам ('TARGET' | 'SESSION'); отсутствие
+    // или неизвестное значение трактуется как SESSION на стороне политики.
+    public scope?: string
   ) {
     super(message)
   }
@@ -76,7 +79,8 @@ export const viewTransport = {
           meta.code,
           meta.kind,
           meta.errors,
-          meta.validation
+          meta.validation,
+          meta.scope
         )
       }
       throw error

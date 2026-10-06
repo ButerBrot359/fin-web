@@ -340,3 +340,71 @@ describe('buildReportAltExport — бланк «Утверждаю» и подп
     ])
   })
 })
+
+describe('buildReportAltExport — шапка по groupTitle/subGroupTitle', () => {
+  const nagruzka = (
+    code: string,
+    subGroupTitleRu?: string
+  ): ReportAltColumnDto => ({
+    code,
+    titleRu: 'Количество часов в неделю',
+    role: 'ATTRIBUTE',
+    valueType: 'DECIMAL',
+    groupTitleRu: 'Основные часы',
+    subGroupTitleRu,
+  })
+  const ledger = (columns: ReportAltColumnDto[]): ReportAltResultDto => ({
+    ...treeResult(columns),
+    layout: 'LEDGER',
+  })
+
+  it('LEDGER: средний ряд подгрупп выгружается и без номеров граф', () => {
+    const data = buildReportAltExport(
+      ledger([
+        { code: 'Nomer', titleRu: '№', role: 'ATTRIBUTE', valueType: 'STRING' },
+        nagruzka('Chasy_1_4', '1-4 кл'),
+        nagruzka('Chasy_5_9', '5-9 кл'),
+        { ...nagruzka('ChasyVsego'), titleRu: 'Количество часов, всего' },
+      ]),
+      false,
+      'Группировка',
+      'Итого'
+    )
+
+    expect(data.headerRows).toEqual([
+      [
+        { text: '№', col: 0, rowSpan: 3 },
+        { text: 'Основные часы', col: 1, colSpan: 3 },
+      ],
+      [
+        { text: '1-4 кл', col: 1, colSpan: 1 },
+        { text: '5-9 кл', col: 2, colSpan: 1 },
+        { text: 'Количество часов, всего', col: 3, rowSpan: 2 },
+      ],
+      [
+        { text: 'Количество часов в неделю', col: 1 },
+        { text: 'Количество часов в неделю', col: 2 },
+      ],
+    ])
+  })
+
+  it('LEDGER: группы без подгрупп и номеров граф дают двухуровневую шапку', () => {
+    const data = buildReportAltExport(
+      ledger([
+        { code: 'Nomer', titleRu: '№', role: 'ATTRIBUTE', valueType: 'STRING' },
+        nagruzka('Chasy_1_4'),
+      ]),
+      false,
+      'Группировка',
+      'Итого'
+    )
+
+    expect(data.headerRows).toEqual([
+      [
+        { text: '№', col: 0, rowSpan: 2 },
+        { text: 'Основные часы', col: 1, colSpan: 1 },
+      ],
+      [{ text: 'Количество часов в неделю', col: 1 }],
+    ])
+  })
+})

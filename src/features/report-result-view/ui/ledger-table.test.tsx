@@ -329,3 +329,73 @@ describe('LedgerTable — пустой результат', () => {
     expect(screen.queryByText('р/с.№ п/п')).toBeNull()
   })
 })
+
+describe('LedgerTable — ссылка ячейки', () => {
+  const columns: ReportColumnDto[] = [
+    {
+      code: 'NomerIspolnitelnogoLista',
+      titleRu: '№ ИЛ',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+    },
+    {
+      code: 'NomerDokumenta',
+      titleRu: '№ документа-регистратора',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+    },
+  ]
+  const ilRef = { domain: 'DOCUMENT', typeCode: 'IspolnitelnyyList', id: 1 }
+  const recorderRef = { domain: 'DOCUMENT', typeCode: 'SchetKOplate', id: 26 }
+  const result = {
+    ...resultOf(columns),
+    rowRefColumn: 'NomerIspolnitelnogoLista',
+    rows: [
+      {
+        level: 0,
+        rowKind: 'DATA',
+        rowRef: ilRef,
+        cellRefs: { NomerDokumenta: recorderRef },
+        cells: {
+          NomerIspolnitelnogoLista: 'AAY00-00001',
+          NomerDokumenta: 'AAY00-00026',
+        },
+        children: [],
+      },
+    ],
+  } as unknown as ReportResultDto
+
+  it('нажатие на № документа-регистратора открывает регистратор, на № ИЛ — исполнительный лист', () => {
+    const onDrilldown = vi.fn()
+    render(
+      <LedgerTable
+        result={result}
+        columns={columns}
+        onDrilldown={onDrilldown}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'AAY00-00026' }))
+    fireEvent.click(screen.getByRole('button', { name: 'AAY00-00001' }))
+
+    expect(onDrilldown).toHaveBeenCalledTimes(2)
+    expect(onDrilldown.mock.calls[0][0]).toMatchObject({ rowRef: recorderRef })
+    expect(onDrilldown.mock.calls[1][0]).toMatchObject({ rowRef: ilRef })
+  })
+
+  it('двойной клик по ячейке со своей ссылкой открывает только её', () => {
+    const onDrilldown = vi.fn()
+    render(
+      <LedgerTable
+        result={result}
+        columns={columns}
+        onDrilldown={onDrilldown}
+      />
+    )
+
+    fireEvent.doubleClick(screen.getByText('AAY00-00026'))
+
+    expect(onDrilldown).toHaveBeenCalledTimes(1)
+    expect(onDrilldown.mock.calls[0][0]).toMatchObject({ rowRef: recorderRef })
+  })
+})

@@ -89,6 +89,8 @@ export interface ReportAltRowDto {
   labelColSpan?: number
   /** Цель расшифровки (SCRUM-370 блок В); часто отсутствует — строка не кликабельна. */
   rowRef?: ReportAltRowRefDto
+  /** Ссылки отдельных ячеек: код колонки → объект, открываемый нажатием на ячейку. */
+  cellRefs?: Record<string, ReportAltRowRefDto>
   /**
    * Правила оформления СТРОКИ (в отличие от `negativeRed`/`blankOnZero`, которые живут на
    * колонке). `BOLD_GROUP` — счёт-группа: эталон 1С выделяет её жирным, когда в отчёте видны

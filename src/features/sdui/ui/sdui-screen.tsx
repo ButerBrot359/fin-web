@@ -31,6 +31,7 @@ import {
   type SduiSessionValue,
 } from '../lib/sdui-session-context'
 import { reopenFormForLanguageChange } from '../lib/language-reopen'
+import { consumeAdoptedScreen, takeScreenRebind } from '../lib/screen-rebind'
 import { isStretchedRoot } from '../lib/utils/stretched-root'
 import type { ViewTabMeta } from '../types/view'
 import { NodeRenderer } from './node-renderer'
@@ -88,6 +89,8 @@ export const SduiScreen: FC<SduiScreenProps> = ({
   // dirty-колбэки — различать их. Прочие query-параметры (в т.ч. ?ls= дерева,
   // который сервер меняет REPLACE_URL-эффектом) в ключ не входят.
   const screenRoute = tabRouteKey(location.pathname, location.search)
+  const currentRouteRef = useRef(screenRoute)
+  currentRouteRef.current = screenRoute
   const tree = useTreeStore((s) => s.root)
   const reset = useTreeStore((s) => s.reset)
   const dispatch = useSduiDispatch()
@@ -130,7 +133,9 @@ export const SduiScreen: FC<SduiScreenProps> = ({
     // OPEN, серверная form-session ещё жива. Чистый документ при возврате
     // переоткрываем (OPEN), чтобы данные/статус были всегда актуальными.
     const cached = useSduiCacheStore.getState().get(route)
-    if (cached?.dirty) {
+    if (consumeAdoptedScreen(route)) {
+      if (cached) useSduiCacheStore.getState().remove(route)
+    } else if (cached?.dirty) {
       useTreeStore.getState().setRoot(cached.root)
       if (cached.formSessionId != null && cached.revision != null) {
         useTreeStore
@@ -158,6 +163,13 @@ export const SduiScreen: FC<SduiScreenProps> = ({
 
     return () => {
       clearMountedScreenRoute(route)
+      if (takeScreenRebind(route, currentRouteRef.current)) {
+        useValidationReportStore
+          .getState()
+          .rekey(route, currentRouteRef.current)
+        onDirtyChange?.(route, false)
+        return
+      }
       const persist = shouldPersistSession?.(route) ?? false
       const treeState = useTreeStore.getState()
 

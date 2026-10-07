@@ -268,7 +268,7 @@ export const LedgerTable = ({
 
   const hasColumnNumbers = columns.some((c) => !!c.columnNumber)
 
-  if (result.rows.length === 0) {
+  if (result.rows.length === 0 && !result.showEmptyTable) {
     return (
       <div className="flex items-center justify-center py-10">
         <Typography variant="body2" className="text-ui-05">

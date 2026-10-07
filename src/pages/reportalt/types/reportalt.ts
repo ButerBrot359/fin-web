@@ -224,6 +224,8 @@ export interface ReportAltResultDto {
   form?: ReportAltFormDto
   /** Табличный документ утверждённого бланка — рисуется вместо построчных секций. */
   spreadsheet?: ReportAltSpreadsheetDto
+  /** Шапка таблицы выводится и без строк, как табличный документ 1С. */
+  showEmptyTable?: boolean
   language?: string
   headerBlocks?: ReportAltHeaderBlockDto[]
   periodLine?: string

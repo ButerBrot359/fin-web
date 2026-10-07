@@ -329,3 +329,81 @@ describe('LedgerTable — пустой результат', () => {
     expect(screen.queryByText('р/с.№ п/п')).toBeNull()
   })
 })
+
+describe('LedgerTable — расшифровка через графу rowRefColumn', () => {
+  const columns: ReportColumnDto[] = [
+    {
+      code: 'Podrazdelenie',
+      titleRu: 'Подразделение',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+    },
+    {
+      code: 'FizicheskoeLitso',
+      titleRu: 'Сотрудник',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+    },
+  ]
+
+  const resultWith = (rowRefColumnOnly?: boolean): ReportResultDto =>
+    ({
+      ...resultOf(columns),
+      rowRefColumn: 'FizicheskoeLitso',
+      rowRefColumnOnly,
+      rows: [
+        {
+          level: 0,
+          rowKind: 'DATA',
+          rowRef: { domain: 'DICTIONARY', typeCode: 'FizicheskieLitsa', id: 7 },
+          cells: { Podrazdelenie: 'Бухгалтерия', FizicheskoeLitso: 'Ким Ким' },
+          children: [],
+        },
+      ],
+    }) as unknown as ReportResultDto
+
+  it('при rowRefColumnOnly двойной клик по другой графе ничего не открывает', () => {
+    const onDrilldown = vi.fn()
+    render(
+      <LedgerTable
+        result={resultWith(true)}
+        columns={columns}
+        onDrilldown={onDrilldown}
+      />
+    )
+
+    fireEvent.doubleClick(screen.getByText('Бухгалтерия'))
+
+    expect(onDrilldown).not.toHaveBeenCalled()
+  })
+
+  it('при rowRefColumnOnly клик по ссылке в графе rowRefColumn открывает расшифровку', () => {
+    const onDrilldown = vi.fn()
+    render(
+      <LedgerTable
+        result={resultWith(true)}
+        columns={columns}
+        onDrilldown={onDrilldown}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ким Ким' }))
+
+    expect(onDrilldown).toHaveBeenCalledTimes(1)
+  })
+
+  it('без rowRefColumnOnly двойной клик по любой графе строки открывает расшифровку', () => {
+    const onDrilldown = vi.fn()
+    render(
+      <LedgerTable
+        result={resultWith()}
+        columns={columns}
+        onDrilldown={onDrilldown}
+      />
+    )
+
+    fireEvent.doubleClick(screen.getByText('Бухгалтерия'))
+
+    expect(onDrilldown).toHaveBeenCalledTimes(1)
+  })
+})

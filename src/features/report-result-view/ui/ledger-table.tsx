@@ -308,20 +308,24 @@ export const LedgerTable = ({
       row.groupRefId != null &&
       onOpenDocument != null
     const openRow = canDrilldown ? onDrilldown : canOpen ? onOpenDocument : null
+    const openRowByRow =
+      result.rowRefColumnOnly === true && result.rowRefColumn != null
+        ? null
+        : openRow
     return (
       <tr
         key={key}
         className={
           highlight
             ? ''
-            : `transition-colors hover:bg-ui-07 ${openRow ? 'cursor-pointer' : ''}`
+            : `transition-colors hover:bg-ui-07 ${openRowByRow ? 'cursor-pointer' : ''}`
         }
         onDoubleClick={
-          openRow
+          openRowByRow
             ? () => {
                 // Двойной клик выделяет текст ячейки — снимаем выделение.
                 window.getSelection()?.removeAllRanges()
-                openRow(row)
+                openRowByRow(row)
               }
             : undefined
         }

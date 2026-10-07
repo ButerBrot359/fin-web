@@ -451,6 +451,7 @@ export interface ReportResultDto {
    */
   groupFloorCodes?: string[]
   rowRefColumn?: string
+  rowRefColumnOnly?: boolean
 }
 
 /**

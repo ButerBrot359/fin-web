@@ -236,6 +236,44 @@ describe('ReportResultNode', () => {
     expect(screen.queryByTestId('report-result-gateway-missing')).toBeNull()
   })
 
+  it('outdatedMessage задан → прежняя таблица остаётся, поверх неё сообщение о неактуальности', () => {
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSV', rows: [{ id: 1 }] }] },
+    })
+    getReportResultGateway.mockReturnValue({
+      Renderer: () => <div data-testid="legacy-renderer" />,
+    })
+    const message =
+      'Отчёт не сформирован. Нажмите «Сформировать» для получения отчёта.'
+
+    render(
+      <ReportResultNode node={nodeWithSource({ outdatedMessage: message })} />
+    )
+
+    expect(screen.getByTestId('legacy-renderer')).toBeTruthy()
+    expect(screen.getByTestId('report-result-outdated').textContent).toBe(
+      message
+    )
+  })
+
+  it('outdatedMessage=null → сообщения о неактуальности нет', () => {
+    useInfiniteQuery.mockReturnValue({
+      ...baseQueryResult,
+      data: { pages: [{ reportCode: 'OSV', rows: [{ id: 1 }] }] },
+    })
+    getReportResultGateway.mockReturnValue({
+      Renderer: () => <div data-testid="legacy-renderer" />,
+    })
+
+    render(
+      <ReportResultNode node={nodeWithSource({ outdatedMessage: null })} />
+    )
+
+    expect(screen.getByTestId('legacy-renderer')).toBeTruthy()
+    expect(screen.queryByTestId('report-result-outdated')).toBeNull()
+  })
+
   it('единственный пункт «Открыть» выполняется сразу, без меню', () => {
     const row = { groupValue: 'ручка', rowRef: { domain: 'DICTIONARY', id: 7 } }
     useInfiniteQuery.mockReturnValue({

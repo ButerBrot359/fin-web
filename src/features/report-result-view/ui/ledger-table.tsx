@@ -54,9 +54,27 @@ interface LedgerTableProps {
    * `groupRefId` и не трогается).
    */
   onDrilldown?: (row: ReportRowDto) => void
+  fillScrollArea?: boolean
 }
 
 const MIN_COL_WIDTH = 40
+
+const scrollAreaOf = (el: HTMLElement | null): HTMLElement | null => {
+  for (let node = el; node; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node)
+    if (overflowY === 'auto' || overflowY === 'scroll') return node
+  }
+  return null
+}
+
+const innerHeightOf = (el: HTMLElement): number => {
+  const style = getComputedStyle(el)
+  return (
+    el.clientHeight -
+    (parseFloat(style.paddingTop) || 0) -
+    (parseFloat(style.paddingBottom) || 0)
+  )
+}
 
 /** Ширина одного символа колонки (`width` приходит в символах, как в 1С). */
 const CHAR_PX = 8
@@ -112,6 +130,7 @@ export const LedgerTable = ({
   columns,
   onOpenDocument,
   onDrilldown,
+  fillScrollArea = false,
 }: LedgerTableProps) => {
   const { t, i18n } = useTranslation()
   // Язык рендера = язык отчёта (result.language), иначе — язык приложения.
@@ -143,6 +162,27 @@ export const LedgerTable = ({
   const fitDoneRef = useRef(false)
   const manualResizeRef = useRef(false)
   const scrollRatioRef = useRef<number | null>(null)
+  const [maxHeight, setMaxHeight] = useState<number | undefined>(undefined)
+
+  useLayoutEffect(() => {
+    if (!fillScrollArea) {
+      setMaxHeight(undefined)
+      return
+    }
+    const area = scrollAreaOf(containerRef.current?.parentElement ?? null)
+    if (!area) return
+    const update = () => {
+      const height = innerHeightOf(area)
+      if (height > 0) setMaxHeight(height)
+    }
+    update()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(update)
+    observer.observe(area)
+    return () => {
+      observer.disconnect()
+    }
+  }, [fillScrollArea])
 
   // Сбрасываем ширины и флаг auto-fit при смене набора колонок.
   useLayoutEffect(() => {
@@ -415,6 +455,7 @@ export const LedgerTable = ({
     <div
       ref={containerRef}
       className="overflow-auto rounded-md border border-pending-gray-1"
+      style={maxHeight != null ? { maxHeight } : undefined}
     >
       {/* relative-обёртка: поверх таблицы — разделители-ручки на всю высоту. */}
       <div className="relative" style={{ width: totalWidth }}>

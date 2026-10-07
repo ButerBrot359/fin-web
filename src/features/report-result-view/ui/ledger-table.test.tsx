@@ -407,3 +407,56 @@ describe('LedgerTable — расшифровка через графу rowRefCol
     expect(onDrilldown).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('LedgerTable — высота таблицы в области прокрутки', () => {
+  const columns: ReportColumnDto[] = [
+    { code: 'Nomer', titleRu: '№', role: 'ATTRIBUTE', valueType: 'STRING' },
+  ]
+  const original = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'clientHeight'
+  )
+
+  beforeEach(() => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.dataset.testid === 'area' ? 600 : 0
+      },
+    })
+  })
+
+  afterEach(() => {
+    if (original)
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', original)
+  })
+
+  const renderIn = (fillScrollArea: boolean) =>
+    render(
+      <div
+        data-testid="area"
+        style={{ overflowY: 'auto', paddingBottom: '16px' }}
+      >
+        <p>Согласовано</p>
+        <LedgerTable
+          result={resultOf(columns)}
+          columns={columns}
+          fillScrollArea={fillScrollArea}
+        />
+      </div>
+    )
+
+  it('занимает всю видимую высоту области результата, а не её остаток', () => {
+    renderIn(true)
+
+    const container = screen.getByRole('table').parentElement?.parentElement
+    expect(container?.style.maxHeight).toBe('584px')
+  })
+
+  it('без признака высоту не ограничивает', () => {
+    renderIn(false)
+
+    const container = screen.getByRole('table').parentElement?.parentElement
+    expect(container?.style.maxHeight).toBe('')
+  })
+})

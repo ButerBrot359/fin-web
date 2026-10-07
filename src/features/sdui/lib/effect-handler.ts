@@ -61,6 +61,7 @@ export interface EffectHandlerDeps {
   // БЕЗ ремаунта экрана, БЕЗ повторного OPEN сессии. В отличие от navigate,
   // сессию не трогает. Реализация в dispatch.
   replaceUrl: (route: string) => void
+  rebindRoute?: (route: string) => void
   // taskStarted (SCRUM-330 §3.3): фоновая операция запущена — регистрация
   // задачи под поллинг. Реализация в dispatch (нужен formSessionId сессии);
   // session-less путь (use-sdui-effects) деп не даёт — эффект туда прийти
@@ -132,6 +133,10 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
         // Персист фильтра/сортировки/периода (SCRUM-291 §7): только query,
         // сессия и история не трогаются — см. комментарий на EffectHandlerDeps.
         if (effect.route) deps.replaceUrl(effect.route)
+        break
+
+      case 'rebindRoute':
+        if (effect.route) deps.rebindRoute?.(effect.route)
         break
 
       case 'notify': {

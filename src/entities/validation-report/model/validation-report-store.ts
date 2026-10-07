@@ -27,6 +27,7 @@ interface ValidationReportStoreState {
   setReport: (key: string, report: ValidationReport) => void
   /** Крестик панели / размонтирование экрана / успешная операция. */
   clear: (key: string) => void
+  rekey: (from: string, to: string) => void
   /** Одиночный клик по строке панели: ведём к цели, окно тултипа не трогаем. */
   setActive: (key: string, messageId: string | null) => void
   /** Двойной клик по строке панели: вернуть окно тултипа (v4 §4.4). */
@@ -82,6 +83,19 @@ export const useValidationReportStore = create<ValidationReportStoreState>(
         activeIds: omit(s.activeIds, key),
         tooltipOpen: omit(s.tooltipOpen, key),
       }))
+    },
+
+    rekey: (from, to) => {
+      set((s) => {
+        if (from === to) return s
+        const move = <T>(map: Record<string, T>): Record<string, T> =>
+          from in map ? { ...omit(map, from), [to]: map[from] } : omit(map, to)
+        return {
+          reports: move(s.reports),
+          activeIds: move(s.activeIds),
+          tooltipOpen: move(s.tooltipOpen),
+        }
+      })
     },
 
     setActive: (key, messageId) => {

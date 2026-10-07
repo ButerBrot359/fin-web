@@ -1,6 +1,8 @@
 import type { NavigateFunction } from 'react-router-dom'
 import type { QueryClient } from '@tanstack/react-query'
 
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
+
 import type { ActionBehavior, ViewAction } from '../types/view'
 import { uploadFileByEffect } from './upload-file-effect'
 import {
@@ -8,6 +10,7 @@ import {
   buildDialogEffectDeps,
 } from './build-effect-deps'
 import { createEffectHandler } from './effect-handler'
+import { requestScreenRebind } from './screen-rebind'
 import type { SduiSessionValue } from './sdui-session-context'
 import { useConfirmStore } from './stores/confirm-store'
 import { useUnsavedChangesStore } from './stores/unsaved-changes-store'
@@ -25,6 +28,7 @@ export interface DispatchEffectHandlerCtx {
   setSearchParams: (search: string, opts?: { replace?: boolean }) => void
   /** Ключ вкладки экрана (tabRouteKey) — ключ стора отчёта о проверке. */
   pathname: string
+  closeAfter?: boolean
   /**
    * Рекурсивный вход обратно в dispatchAction: серверные ответы диалогов
    * confirm/unsavedChanges — команды в ТУ ЖЕ форм-сессию.
@@ -79,6 +83,22 @@ export function buildDispatchEffectHandler(ctx: DispatchEffectHandlerCtx) {
             )
           })
       },
+      rebindRoute:
+        ctx.closeAfter || session.kind !== 'root'
+          ? undefined
+          : (route) => {
+              const queryStart = route.indexOf('?')
+              const target =
+                queryStart >= 0
+                  ? tabRouteKey(
+                      route.slice(0, queryStart),
+                      route.slice(queryStart)
+                    )
+                  : route
+              if (target === pathname) return
+              requestScreenRebind(pathname, target)
+              void ctx.navigate(route, { replace: true })
+            },
       validationReport: (effect) => {
         // SCRUM-317 §3.1/§3.3: отчёт ПОЛНОСТЬЮ заменяет прежний список
         // экрана; пустой — гасит панель (успешная операция без замечаний).

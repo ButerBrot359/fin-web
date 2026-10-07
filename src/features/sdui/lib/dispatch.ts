@@ -130,6 +130,7 @@ export function useSduiDispatch() {
         // validation-report-host и чистит sdui-screen. Голый pathname терял
         // отчёт на «Создать группу» справочника.
         pathname: tabRouteKey(location.pathname, location.search),
+        closeAfter: shouldClose,
         redispatch: (a, b) => dispatchAction(a, b),
       })
       const playEffects = (effects: ViewEffect[]) => {

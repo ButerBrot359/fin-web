@@ -367,24 +367,45 @@ export const LedgerTable = ({
         }
       >
         {columns.map((col) => {
+          const cellRef =
+            isDataRow && onDrilldown != null
+              ? row.cellRefs?.[col.code]
+              : undefined
+          const openCell =
+            cellRef != null && onDrilldown != null
+              ? () => {
+                  onDrilldown({ ...row, rowRef: cellRef })
+                }
+              : openRow != null &&
+                  result.rowRefColumn === col.code &&
+                  row.rowRef != null
+                ? () => {
+                    openRow(row)
+                  }
+                : null
           const asLink =
-            openRow != null &&
-            result.rowRefColumn === col.code &&
-            row.rowRef != null &&
+            openCell != null &&
             row.cells[col.code] !== '' &&
             row.cells[col.code] != null
           return (
             <td
               key={col.code}
               className={`${td} ${isRightAligned(col) ? 'text-right' : ''}`}
+              onDoubleClick={
+                cellRef != null && openCell != null
+                  ? (event) => {
+                      event.stopPropagation()
+                      window.getSelection()?.removeAllRanges()
+                      openCell()
+                    }
+                  : undefined
+              }
             >
               {asLink ? (
                 <button
                   type="button"
                   className="cursor-pointer text-left text-accent-02 underline"
-                  onClick={() => {
-                    openRow(row)
-                  }}
+                  onClick={openCell}
                 >
                   <ReportCell
                     value={row.cells[col.code]}

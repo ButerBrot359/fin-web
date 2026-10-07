@@ -87,6 +87,32 @@ describe('effect replaceUrl (SCRUM-291 §7 персист)', () => {
   })
 })
 
+describe('effect rebindRoute', () => {
+  it('передаёт адрес записанного объекта мосту, не закрывая сессию и не навигируя', () => {
+    const deps = { ...makeDeps(), rebindRoute: vi.fn() }
+    createEffectHandler(deps).play({
+      type: 'rebindRoute',
+      route: '/modules/zarplata/document/VedomostIspolnitelnyeListy/4',
+    })
+    expect(deps.rebindRoute).toHaveBeenCalledWith(
+      '/modules/zarplata/document/VedomostIspolnitelnyeListy/4'
+    )
+    expect(deps.navigate).not.toHaveBeenCalled()
+    expect(deps.closeSession).not.toHaveBeenCalled()
+  })
+
+  it('без моста эффект молча пропускается', () => {
+    const deps = makeDeps()
+    expect(() => {
+      createEffectHandler(deps).play({
+        type: 'rebindRoute',
+        route: '/documents/VedomostIspolnitelnyeListy/4',
+      })
+    }).not.toThrow()
+    expect(deps.navigate).not.toHaveBeenCalled()
+  })
+})
+
 describe('effect refresh', () => {
   it('вызывает инвалидацию списков', () => {
     const deps = makeDeps()

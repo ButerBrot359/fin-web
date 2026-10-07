@@ -82,6 +82,27 @@ describe('columnContentWidths', () => {
     ])
   })
 
+  it('итог-строку с неразрывными пробелами меряет целиком жирным шрифтом', () => {
+    const columns = [
+      col('Nadbavka', {
+        role: 'ATTRIBUTE',
+        valueType: 'STRING',
+        align: 'RIGHT',
+        verticalTitle: true,
+      }),
+    ]
+    expect(
+      columnContentWidths(
+        columns,
+        [
+          row({ Nadbavka: '10\u00a0618' }),
+          row({ Nadbavka: '3\u00a0260\u00a0227' }, 'TOTAL'),
+        ],
+        [0]
+      )
+    ).toEqual([Math.ceil('3 260 227'.length * 9.5) + 14])
+  })
+
   it('не бывает уже заголовка, даже если значения пустые', () => {
     const columns = [col('Nadbavka', { blankOnZero: true })]
     expect(

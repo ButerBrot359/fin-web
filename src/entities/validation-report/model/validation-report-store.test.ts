@@ -89,6 +89,28 @@ describe('validation-report-store', () => {
     expect(state.reports[KEY]).toBeUndefined()
     expect(state.reports['/doc/2'].messages[0].id).toBe('x1')
   })
+
+  it('rekey переносит отчёт, активную строку и окно тултипа на новый ключ экрана', () => {
+    const s = useValidationReportStore.getState()
+    s.setReport(
+      '/doc/new?fi=a',
+      report([msg('m1', { kind: 'FIELD', fieldCode: 'Summa' })])
+    )
+    s.setReport(KEY, report([msg('old')]))
+    s.rekey('/doc/new?fi=a', KEY)
+    const state = useValidationReportStore.getState()
+    expect(state.reports['/doc/new?fi=a']).toBeUndefined()
+    expect(state.reports[KEY].messages[0].id).toBe('m1')
+    expect(state.activeIds[KEY]).toBe('m1')
+    expect(state.tooltipOpen[KEY]).toBe(true)
+  })
+
+  it('rekey без отчёта снимает устаревший отчёт нового ключа', () => {
+    const s = useValidationReportStore.getState()
+    s.setReport(KEY, report([msg('old')]))
+    s.rekey('/doc/new?fi=a', KEY)
+    expect(useValidationReportStore.getState().reports[KEY]).toBeUndefined()
+  })
 })
 
 // SCRUM-317 v4 §4.4: «активное сообщение» и «тултип открыт» — разные состояния.

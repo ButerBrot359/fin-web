@@ -60,6 +60,17 @@ describe('бланк FORM — блок «Приложение N к приказ�
     ).toBeTruthy()
   })
 
+  it('стоит на белом листе бланка вместе с формой, а не на фоне страницы', () => {
+    render(<ReportResultView result={blank([PRAVYY_BLOK])} />)
+
+    const list = screen.getByTestId('report-form-blank')
+    expect(list).toHaveClass('bg-white')
+    expect(list).toContainElement(screen.getByText('Приложение 57'))
+    expect(list).toContainElement(
+      screen.getByText('Карточка-справка (Лицевой счет)')
+    )
+  })
+
   it('пустая строка блока остаётся видимым отступом перед номером формы', () => {
     render(<ReportResultView result={blank([PRAVYY_BLOK])} />)
 

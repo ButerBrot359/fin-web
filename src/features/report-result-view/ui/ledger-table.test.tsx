@@ -296,3 +296,36 @@ describe('LedgerTable — масштаб страницы и ширина кон
     expect(colWidths(container)[0]).toBe(before + 100)
   })
 })
+
+describe('LedgerTable — пустой результат', () => {
+  const columns: ReportColumnDto[] = [
+    {
+      code: 'Nomer',
+      titleRu: 'р/с.№ п/п',
+      role: 'ATTRIBUTE',
+      valueType: 'STRING',
+      columnNumber: '1',
+    },
+  ]
+
+  it('с showEmptyTable рисует шапку и строку номеров граф без строк, как 1С', () => {
+    const result = {
+      ...resultOf(columns),
+      rows: [],
+      showEmptyTable: true,
+    } as ReportResultDto
+
+    render(<LedgerTable result={result} columns={columns} />)
+
+    expect(screen.getByText('р/с.№ п/п')).toBeTruthy()
+    expect(screen.getByTestId('report-column-numbers')).toBeTruthy()
+  })
+
+  it('без showEmptyTable показывает «нет данных» вместо таблицы', () => {
+    const result = { ...resultOf(columns), rows: [] } as ReportResultDto
+
+    render(<LedgerTable result={result} columns={columns} />)
+
+    expect(screen.queryByText('р/с.№ п/п')).toBeNull()
+  })
+})

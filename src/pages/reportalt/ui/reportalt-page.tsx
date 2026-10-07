@@ -1065,7 +1065,10 @@ export const ReportAltPage = () => {
               {t('reportalt.print')}
             </Button>
           </div>
-          {result.rows.length === 0 && !result.form && !result.spreadsheet ? (
+          {result.rows.length === 0 &&
+          !result.form &&
+          !result.spreadsheet &&
+          !result.showEmptyTable ? (
             <Typography variant="body2" className="text-ui-05">
               {t('reportalt.noData')}
             </Typography>

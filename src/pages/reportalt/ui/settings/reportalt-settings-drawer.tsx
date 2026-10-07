@@ -1,31 +1,13 @@
-import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Button,
-  Divider,
-  Drawer,
-  IconButton,
-  Tab,
-  Tabs,
-  Typography,
-} from '@mui/material'
+import { Divider, Drawer, IconButton, Typography } from '@mui/material'
 
 import type {
-  ReportAltAppearanceFlagDto,
   ReportAltMetaDto,
   ReportAltParameterDto,
 } from '../../types/reportalt'
-import {
-  defaultFieldRows,
-  type ReportAltSettingsState,
-} from '../../lib/utils/user-settings'
+import type { ReportAltSettingsState } from '../../lib/utils/user-settings'
 import type { ParamValues, ReportAltParamValue } from '../../lib/utils/params'
-import { SettingsGeneralTab } from './settings-general-tab'
-import { SettingsFieldsTab } from './settings-fields-tab'
-import { SettingsFiltersTab } from './settings-filters-tab'
-import { SettingsOrderTab } from './settings-order-tab'
-import { SettingsGroupingTab } from './settings-grouping-tab'
-import { SettingsAppearanceTab } from './settings-appearance-tab'
+import { ReportAltSettingsBody } from './reportalt-settings-body'
 
 interface ReportAltSettingsDrawerProps {
   open: boolean
@@ -47,6 +29,7 @@ interface ReportAltSettingsDrawerProps {
   onLangChange?: (value: string) => void
   groupingTitles?: Record<string, string>
   settingsParams?: ReportAltParameterDto[]
+  byudzhetyParams?: ReportAltParameterDto[]
   paramValues?: ParamValues
   onParamChange?: (code: string, value: ReportAltParamValue) => void
 }
@@ -70,154 +53,11 @@ export const ReportAltSettingsDrawer = ({
   onLangChange,
   groupingTitles,
   settingsParams,
+  byudzhetyParams,
   paramValues,
   onParamChange,
 }: ReportAltSettingsDrawerProps) => {
-  const { t, i18n } = useTranslation()
-  const isKz = i18n.language === 'kz'
-  const [tab, setTab] = useState(0)
-
-  const availableFields = meta.availableFields ?? []
-  const columnFields = availableFields.filter(
-    (f) => f.availableAsColumn === true
-  )
-  const orderFields = availableFields.filter((f) => f.availableAsOrder === true)
-  const filterFields = meta.filters ?? []
-  const groupingOptions = (meta.availableGroupings ?? []).map((o) =>
-    groupingTitles?.[o.code]
-      ? {
-          ...o,
-          titleRu: groupingTitles[o.code],
-          titleKz: groupingTitles[o.code],
-        }
-      : o
-  )
-
-  // Флажки оформления: из meta; фолбэк — встроенный highlightNegatives
-  // (в 1С по умолчанию включён), пока meta-узел не зафиксирован контрактом.
-  const appearanceDefs = useMemo<ReportAltAppearanceFlagDto[]>(() => {
-    if (meta.appearanceFlags != null && meta.appearanceFlags.length > 0) {
-      return meta.appearanceFlags
-    }
-    if (columnFields.length === 0) return []
-    return [
-      {
-        code: 'highlightNegatives',
-        titleRu: t('reportalt.settings.highlightNegatives'),
-        defaultValue: true,
-      },
-    ]
-  }, [meta.appearanceFlags, columnFields.length, t])
-
-  const patch = (patchPart: Partial<ReportAltSettingsState>) => {
-    onDraftChange({ ...(draft ?? {}), ...patchPart })
-  }
-
-  const tabs: { key: string; label: string; content: ReactNode }[] = []
-  // «Основные» — «Язык формы» (параметр YazykFormy), как секция «Язык печатной
-  // формы» в 1С. Показывается, даже если у отчёта нет прочих настроек.
-  const parametryNastroek = settingsParams ?? []
-  if (langParam || parametryNastroek.length > 0) {
-    tabs.push({
-      key: 'general',
-      label: t('reportalt.settings.general'),
-      content: (
-        <SettingsGeneralTab
-          langParam={langParam ?? null}
-          value={langValue ?? ''}
-          onChange={(v) => {
-            onLangChange?.(v)
-          }}
-          isKz={isKz}
-          params={parametryNastroek}
-          paramValues={paramValues ?? {}}
-          onParamChange={onParamChange}
-        />
-      ),
-    })
-  }
-  if (columnFields.length > 0) {
-    tabs.push({
-      key: 'fields',
-      label: t('reportalt.settings.fields'),
-      content: (
-        <SettingsFieldsTab
-          availableFields={columnFields}
-          rows={draft?.selectedFields ?? defaultFieldRows(meta)}
-          onChange={(rows) => {
-            patch({ selectedFields: rows })
-          }}
-          isKz={isKz}
-        />
-      ),
-    })
-  }
-  if (filterFields.length > 0) {
-    tabs.push({
-      key: 'filters',
-      label: t('reportalt.settings.filters'),
-      content: (
-        <SettingsFiltersTab
-          fields={filterFields}
-          rows={draft?.filters ?? []}
-          onChange={(rows) => {
-            patch({ filters: rows })
-          }}
-          isKz={isKz}
-        />
-      ),
-    })
-  }
-  if (orderFields.length > 0) {
-    tabs.push({
-      key: 'order',
-      label: t('reportalt.settings.order'),
-      content: (
-        <SettingsOrderTab
-          orderFields={orderFields}
-          rows={draft?.order ?? []}
-          onChange={(rows) => {
-            patch({ order: rows })
-          }}
-          isKz={isKz}
-        />
-      ),
-    })
-  }
-  if (groupingOptions.length > 0) {
-    tabs.push({
-      key: 'grouping',
-      label: t('reportalt.settings.grouping'),
-      content: (
-        <SettingsGroupingTab
-          options={groupingOptions}
-          value={draft?.grouping ?? {}}
-          onChange={(value) => {
-            patch({ grouping: value })
-          }}
-          isKz={isKz}
-        />
-      ),
-    })
-  }
-  if (appearanceDefs.length > 0) {
-    tabs.push({
-      key: 'appearance',
-      label: t('reportalt.settings.appearance'),
-      content: (
-        <SettingsAppearanceTab
-          flagDefs={appearanceDefs}
-          flags={draft?.appearanceFlags ?? {}}
-          onChange={(flags) => {
-            patch({ appearanceFlags: flags })
-          }}
-          isKz={isKz}
-        />
-      ),
-    })
-  }
-
-  const activeTab = Math.min(tab, Math.max(tabs.length - 1, 0))
+  const { t } = useTranslation()
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}>
@@ -237,36 +77,22 @@ export const ReportAltSettingsDrawer = ({
 
         <Divider />
 
-        <Tabs
-          value={activeTab}
-          onChange={(_e, v: number) => {
-            setTab(v)
-          }}
-          variant="fullWidth"
-        >
-          {tabs.map((tb) => (
-            <Tab
-              key={tb.key}
-              label={tb.label}
-              sx={{ minWidth: 0, px: 1, textTransform: 'none' }}
-            />
-          ))}
-        </Tabs>
-
-        <div className="min-h-0 grow overflow-auto">
-          {tabs[activeTab]?.content}
-        </div>
-
-        <Divider />
-
-        <div className="flex items-center justify-between gap-2">
-          <Button variant="outlined" size="small" onClick={onReset}>
-            {t('reportalt.settings.reset')}
-          </Button>
-          <Button variant="contained" size="small" onClick={onApply}>
-            {t('reportalt.settings.apply')}
-          </Button>
-        </div>
+        <ReportAltSettingsBody
+          meta={meta}
+          draft={draft}
+          onDraftChange={onDraftChange}
+          onApply={onApply}
+          onReset={onReset}
+          langParam={langParam}
+          langValue={langValue}
+          onLangChange={onLangChange}
+          groupingTitles={groupingTitles}
+          settingsParams={settingsParams}
+          byudzhetyParams={byudzhetyParams}
+          paramValues={paramValues}
+          onParamChange={onParamChange}
+          fillHeight
+        />
       </div>
     </Drawer>
   )

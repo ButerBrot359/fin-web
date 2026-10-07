@@ -54,6 +54,7 @@ import {
   clearStoredSettings,
 } from '../lib/utils/user-settings'
 import {
+  GRUPPA_BYUDZHETY,
   GRUPPA_NASTROEK,
   LANG_PARAM_CODE,
   defaultParamValue,
@@ -81,7 +82,7 @@ import {
   type ReportAltMenuItem,
   type ReportAltMenuPosition,
 } from './reportalt-row-menu'
-import { ReportAltSettingsDrawer } from './settings/reportalt-settings-drawer'
+import { ReportAltSettingsPanel } from './settings/reportalt-settings-panel'
 import { printReportAlt } from '../api/reportalt-api'
 import type {
   ReportAltRowDto,
@@ -148,10 +149,17 @@ export const ReportAltPage = () => {
     () => meta?.parameters.filter((p) => p.group === GRUPPA_NASTROEK) ?? [],
     [meta]
   )
+  const byudzhetyParams = useMemo(
+    () => meta?.parameters.filter((p) => p.group === GRUPPA_BYUDZHETY) ?? [],
+    [meta]
+  )
   const visibleParams = useMemo(
     () =>
       meta?.parameters.filter(
-        (p) => p.code !== LANG_PARAM_CODE && p.group !== GRUPPA_NASTROEK
+        (p) =>
+          p.code !== LANG_PARAM_CODE &&
+          p.group !== GRUPPA_NASTROEK &&
+          p.group !== GRUPPA_BYUDZHETY
       ) ?? [],
     [meta]
   )
@@ -214,6 +222,12 @@ export const ReportAltPage = () => {
     persistDraft,
   } = useReportAltUserSettings(moduleCode, meta, searchParams)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const estNastroyki =
+    (supportsSettings ||
+      langParam != null ||
+      settingsParams.length > 0 ||
+      byudzhetyParams.length > 0) &&
+    !rezhimRasshifrovki
 
   // Клетки бланка, которые заполняет пользователь: в 1С ручная правка табличного документа
   // приоритетнее автозаполнения, поэтому значения уходят в тело /run и возвращаются в бланке.
@@ -923,6 +937,23 @@ export const ReportAltPage = () => {
         >
           {pustoyBlank ? t('reportalt.fill') : t('reportalt.generate')}
         </Button>
+        {/* Панель настроек — для отчётов с наполненным meta (F-S3) ИЛИ когда
+            есть «Язык формы» (у ГСМ/МО прочих настроек нет, но язык нужен). */}
+        {estNastroyki && (
+          <Button
+            variant="outlined"
+            size="medium"
+            sx={{ height: 48, flexShrink: 0 }}
+            aria-expanded={settingsOpen}
+            onClick={() => {
+              setSettingsOpen((open) => !open)
+            }}
+          >
+            {settingsOpen
+              ? t('reportalt.settings.hide')
+              : t('reportalt.settings.show')}
+          </Button>
+        )}
         {/* «Обновить» — сосед «Заполнить» на панели формы 1С: перезапрашивает те же данные.
             «Очистить» там всплывающее меню, оно ниже. */}
         {pustoyBlank && (
@@ -1027,21 +1058,34 @@ export const ReportAltPage = () => {
             </Button>
           </>
         )}
-        {/* Панель настроек — для отчётов с наполненным meta (F-S3) ИЛИ когда
-            есть «Язык формы» (у ГСМ/МО прочих настроек нет, но язык нужен). */}
-        {(supportsSettings || langParam != null) && !rezhimRasshifrovki && (
-          <Button
-            variant="outlined"
-            size="medium"
-            sx={{ height: 48, flexShrink: 0 }}
-            onClick={() => {
-              setSettingsOpen(true)
-            }}
-          >
-            {t('reportalt.settings.open')}
-          </Button>
-        )}
       </div>
+
+      {estNastroyki && settingsOpen && (
+        <ReportAltSettingsPanel
+          meta={meta}
+          draft={settingsDraft}
+          onDraftChange={setSettingsDraft}
+          onApply={() => {
+            setSettingsOpen(false)
+            handleSubmit()
+          }}
+          onReset={handleResetSettings}
+          langParam={langParam}
+          settingsParams={settingsParams}
+          byudzhetyParams={byudzhetyParams}
+          paramValues={values}
+          onParamChange={setParamValue}
+          langValue={
+            typeof values[LANG_PARAM_CODE] === 'string'
+              ? values[LANG_PARAM_CODE]
+              : ''
+          }
+          onLangChange={(v) => {
+            setParamValue(LANG_PARAM_CODE, v)
+          }}
+          groupingTitles={paramState.groupingTitles}
+        />
+      )}
 
       {/* Результат. */}
       {isRunning ? (
@@ -1203,36 +1247,6 @@ export const ReportAltPage = () => {
             )}
           </Typography>
         )
-      )}
-
-      {(supportsSettings || langParam != null) && !rezhimRasshifrovki && (
-        <ReportAltSettingsDrawer
-          open={settingsOpen}
-          onClose={() => {
-            setSettingsOpen(false)
-          }}
-          meta={meta}
-          draft={settingsDraft}
-          onDraftChange={setSettingsDraft}
-          onApply={() => {
-            setSettingsOpen(false)
-            handleSubmit()
-          }}
-          onReset={handleResetSettings}
-          langParam={langParam}
-          settingsParams={settingsParams}
-          paramValues={values}
-          onParamChange={setParamValue}
-          langValue={
-            typeof values[LANG_PARAM_CODE] === 'string'
-              ? values[LANG_PARAM_CODE]
-              : ''
-          }
-          onLangChange={(v) => {
-            setParamValue(LANG_PARAM_CODE, v)
-          }}
-          groupingTitles={paramState.groupingTitles}
-        />
       )}
 
       <ReportAltRowMenu

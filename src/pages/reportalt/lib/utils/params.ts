@@ -37,6 +37,8 @@ export const LANG_PARAM_CODE = 'YazykFormy'
 
 export const GRUPPA_NASTROEK = 'settings'
 
+export const GRUPPA_BYUDZHETY = 'byudzhety'
+
 export const isPeriod = (p: ReportAltParameterDto) => p.dataType === 'PERIOD'
 
 export const PERIODICHNOST_KVARTAL = 'QUARTER'

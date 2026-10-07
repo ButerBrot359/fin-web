@@ -236,6 +236,7 @@ export interface ReportAltResultDto {
   footerBlocks?: ReportAltFormSignatureDto[]
   groupFloorCodes?: string[]
   rowRefColumn?: string
+  rowRefColumnOnly?: boolean
   /** Пагинация LEDGER (F4): номер выданной страницы. */
   page?: number
   /** Пагинация LEDGER: размер страницы. */

@@ -5,6 +5,7 @@ import {
   dropCachedScreensFor,
   flushScreenEdits,
   forgetListMemory,
+  forgetTabsMemory,
   hasPendingScreenEdits,
   releaseClosedTabScreen,
   setWorkspaceTabGateway,
@@ -64,6 +65,7 @@ export function useWorkspaceTabGatewayBinding(): void {
       for (const tab of prev.tabs) {
         if (openIds.has(tab.id)) continue
         forgetListMemory(tab.id)
+        forgetTabsMemory(tab.id)
         if (tab.pageType !== 'sdui-panel') releaseClosedTabScreen(tab.id)
       }
     })

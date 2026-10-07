@@ -7,6 +7,10 @@ import { NodeRenderer } from '../../node-renderer'
 import { useSduiDispatch } from '../../../lib/dispatch'
 import { registerRevealHandler } from '../../../lib/validation/reveal-bus'
 import { subtreeHasBinding } from '../../../lib/validation/subtree-has-binding'
+import {
+  useRememberActiveTab,
+  useRestoredActiveTab,
+} from '../../../lib/hooks/use-tabs-memory'
 
 /**
  * Пол высоты РАСТЯНУТОЙ ленты вкладок.
@@ -27,12 +31,24 @@ import { subtreeHasBinding } from '../../../lib/validation/subtree-has-binding'
 const STRETCHED_MIN_HEIGHT = 336
 
 export const TabsNode: FC<NodeProps> = ({ node }) => {
-  const [activeIndex, setActiveIndex] = useState(0)
   const dispatch = useSduiDispatch()
 
   // Условные вкладки (напр. «График платежей» по галке «Использовать график»).
   // SCRUM-362 B-4: visible эмитится бэком явно — строгая проверка вместо ?? true.
   const tabs = (node.children ?? []).filter((t) => t.props?.visible === true)
+
+  const restoredTabId = useRestoredActiveTab(node.id)
+  const rememberActiveTab = useRememberActiveTab(node.id)
+  const [activeIndex, setActiveIndex] = useState(() =>
+    Math.max(
+      0,
+      tabs.findIndex((tab) => tab.id === restoredTabId)
+    )
+  )
+  const rememberRef = useRef(rememberActiveTab)
+  useEffect(() => {
+    rememberRef.current = rememberActiveTab
+  })
 
   // SCRUM-317: тултип-навигатор просит раскрыть вкладку с целью сообщения —
   // содержимое неактивной вкладки не смонтировано, искать в DOM там нечего.
@@ -49,7 +65,10 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
         const idx = tabsRef.current.findIndex((tab) =>
           subtreeHasBinding(tab, binding, kind)
         )
-        if (idx >= 0) setActiveIndex(idx)
+        if (idx >= 0) {
+          setActiveIndex(idx)
+          rememberRef.current(tabsRef.current[idx].id)
+        }
       }),
     []
   )
@@ -65,6 +84,7 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
 
     const tabNode = tabs[newIndex] as ViewNode | undefined
     if (tabNode) {
+      rememberActiveTab(tabNode.id)
       const fieldEventAction = tabNode.actions?.find(
         (a) => a.actionId === 'fieldEvent'
       )

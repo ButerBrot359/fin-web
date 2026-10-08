@@ -55,6 +55,7 @@ import {
 } from '../lib/utils/user-settings'
 import {
   GRUPPA_BYUDZHETY,
+  GRUPPA_KOMANDNOY_PANELI,
   GRUPPA_NASTROEK,
   LANG_PARAM_CODE,
   defaultParamValue,
@@ -159,8 +160,14 @@ export const ReportAltPage = () => {
         (p) =>
           p.code !== LANG_PARAM_CODE &&
           p.group !== GRUPPA_NASTROEK &&
-          p.group !== GRUPPA_BYUDZHETY
+          p.group !== GRUPPA_BYUDZHETY &&
+          p.group !== GRUPPA_KOMANDNOY_PANELI
       ) ?? [],
+    [meta]
+  )
+  const paramsKomandnoyPaneli = useMemo(
+    () =>
+      meta?.parameters.filter((p) => p.group === GRUPPA_KOMANDNOY_PANELI) ?? [],
     [meta]
   )
 
@@ -1069,6 +1076,22 @@ export const ReportAltPage = () => {
             </Button>
           </>
         )}
+        {paramsKomandnoyPaneli.map((param) => (
+          <div key={param.code} className="w-72">
+            <ReportAltParamField
+              param={param}
+              value={values[param.code]}
+              onChange={(v) => {
+                setParamValue(param.code, v)
+              }}
+              invalid={
+                showErrors &&
+                param.required &&
+                !isFilled(param, values[param.code])
+              }
+            />
+          </div>
+        ))}
       </div>
 
       {estNastroyki && settingsOpen && (

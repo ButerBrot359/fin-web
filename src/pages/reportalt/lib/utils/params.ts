@@ -39,6 +39,8 @@ export const GRUPPA_NASTROEK = 'settings'
 
 export const GRUPPA_BYUDZHETY = 'byudzhety'
 
+export const GRUPPA_KOMANDNOY_PANELI = 'komandnayaPanel'
+
 export const isPeriod = (p: ReportAltParameterDto) => p.dataType === 'PERIOD'
 
 export const PERIODICHNOST_KVARTAL = 'QUARTER'

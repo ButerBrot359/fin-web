@@ -113,6 +113,24 @@ describe('effect rebindRoute', () => {
   })
 })
 
+describe('effect closeForm', () => {
+  it('передаёт закрытие формы мосту, сам не навигирует', () => {
+    const deps = { ...makeDeps(), closeForm: vi.fn() }
+    createEffectHandler(deps).play({ type: 'closeForm' })
+    expect(deps.closeForm).toHaveBeenCalledTimes(1)
+    expect(deps.navigate).not.toHaveBeenCalled()
+    expect(deps.closeSession).not.toHaveBeenCalled()
+  })
+
+  it('без моста эффект молча пропускается', () => {
+    const deps = makeDeps()
+    expect(() => {
+      createEffectHandler(deps).play({ type: 'closeForm' })
+    }).not.toThrow()
+    expect(deps.navigate).not.toHaveBeenCalled()
+  })
+})
+
 describe('effect refresh', () => {
   it('вызывает инвалидацию списков', () => {
     const deps = makeDeps()

@@ -11,6 +11,7 @@ import { useFormSaveCommand } from '../../../lib/hooks/use-form-save-command'
 import { navestiFokusNaTablitsu } from '../../../lib/utils/table-keyboard-focus'
 import { useTableMultiSelection } from '../../../lib/hooks/use-table-multi-selection'
 import { useRowSelectionIdentity } from '../../../lib/hooks/use-row-selection-identity'
+import { useReselectAfterServerDelete } from '../../../lib/hooks/use-reselect-after-server-delete'
 import { useMasterDetailRows } from '../../../lib/hooks/use-master-detail-rows'
 import { useAutoAdvance } from '../../../lib/hooks/use-auto-advance'
 import { useStickyHeadOffset } from '../../../lib/hooks/use-sticky-head-offset'
@@ -212,6 +213,14 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const vydelennyeRowIds =
     selection.selectedRowId === null ? [] : vybor.vydelennyeRowIds
 
+  const ozhidatUdaleniya = useReselectAfterServerDelete(
+    visibleRows,
+    (rowId) => {
+      selection.selectRow(rowId)
+      vybor.tolkoOdna(rowId)
+    }
+  )
+
   const handleRowClick = (
     rowId: string,
     visibleIndex: number,
@@ -296,6 +305,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           search={search}
           selectedRowId={selection.selectedRowId}
           selectedRowIds={vydelennyeRowIds}
+          onServerDelete={ozhidatUdaleniya}
         />
       </div>
       {/* basis auto, а не 0: контейнер растёт до высоты колонки, но никогда не

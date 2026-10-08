@@ -84,6 +84,33 @@ describe('TableToolbar: построчные команды требуют вы�
     expect(mockDispatch).not.toHaveBeenCalled()
   })
 
+  it('«Удалить» сообщает таблице, какие строки уходят на сервер', () => {
+    const onServerDelete = vi.fn()
+    render(
+      <TableToolbar
+        {...baseProps}
+        commands={[udalit]}
+        selectedRowId="r-7"
+        onServerDelete={onServerDelete}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }))
+    expect(onServerDelete).toHaveBeenCalledWith(['r-7'])
+  })
+
+  it('другие команды не считаются удалением', () => {
+    const onServerDelete = vi.fn()
+    render(
+      <TableToolbar
+        {...baseProps}
+        commands={[podbor, raschet]}
+        selectedRowId="r-7"
+        onServerDelete={onServerDelete}
+      />
+    )
+    expect(onServerDelete).not.toHaveBeenCalled()
+  })
+
   it('без выделения подсказка называет причину', async () => {
     render(<TableToolbar {...baseProps} commands={[udalit]} />)
     const btn = screen.getByRole('button', { name: 'Удалить' })

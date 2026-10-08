@@ -307,3 +307,24 @@ describe('FormView — подгруппы шапки обычным шрифто
     expect(sub.fontWeight).toBe('700')
   })
 })
+
+describe('FormView — строки реквизитов под заголовком', () => {
+  const form: ReportFormDto = {
+    title: 'Карточка-справка (Лицевой счет)',
+    fieldLines: [
+      { label: 'Год и месяц рождения', value: '12.1990' },
+      { label: 'Воинское (специальное) звание', value: '' },
+    ],
+    sections: [],
+  }
+
+  it('подпись и значение на линии выводятся строками, а не графами таблицы', () => {
+    const { container } = render(<FormView form={form} />)
+
+    const znachenie = screen.getByText('12.1990')
+    expect(screen.getByText('Год и месяц рождения')).toBeTruthy()
+    expect(znachenie.className).toContain('border-b')
+    expect(screen.getByText('Воинское (специальное) звание')).toBeTruthy()
+    expect(container.querySelector('table')).toBeNull()
+  })
+})

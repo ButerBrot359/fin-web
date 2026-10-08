@@ -47,6 +47,7 @@ export const cellSx: SystemStyleObject<Theme> = {
     borderRadius: '0 !important',
     minHeight: '28px !important',
     height: 'auto !important',
+    padding: '0 !important',
   },
   '& .MuiInputBase-input': {
     padding: '4px 8px !important',

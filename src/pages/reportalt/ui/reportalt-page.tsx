@@ -923,6 +923,17 @@ export const ReportAltPage = () => {
         >
           {pustoyBlank ? t('reportalt.fill') : t('reportalt.generate')}
         </Button>
+        {!pustoyBlank && (
+          <Button
+            variant="outlined"
+            size="medium"
+            sx={{ height: 48, flexShrink: 0 }}
+            disabled={result == null || isRunning || isPrinting}
+            onClick={handlePrintPdf}
+          >
+            {t('reportalt.print')}
+          </Button>
+        )}
         {/* «Обновить» — сосед «Заполнить» на панели формы 1С: перезапрашивает те же данные.
             «Очистить» там всплывающее меню, оно ниже. */}
         {pustoyBlank && (
@@ -1056,14 +1067,16 @@ export const ReportAltPage = () => {
             <Button variant="outlined" size="small" onClick={handleExportExcel}>
               {t('reportalt.exportExcel')}
             </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              disabled={isPrinting}
-              onClick={handlePrintPdf}
-            >
-              {t('reportalt.print')}
-            </Button>
+            {pustoyBlank && (
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={isPrinting}
+                onClick={handlePrintPdf}
+              >
+                {t('reportalt.print')}
+              </Button>
+            )}
           </div>
           {result.rows.length === 0 &&
           !result.form &&

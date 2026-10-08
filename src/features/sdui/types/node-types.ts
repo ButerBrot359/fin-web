@@ -69,6 +69,7 @@ export type EffectType =
   | 'confirm'
   | 'replaceUrl'
   | 'rebindRoute'
+  | 'closeForm'
   // Диалог «Сохранить изменения?» с тремя ответами — тот же, что у карточки
   // документа. Эксклюзивен, как confirm.
   | 'unsavedChanges'

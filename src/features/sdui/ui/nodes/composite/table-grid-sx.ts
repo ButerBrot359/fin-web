@@ -36,8 +36,11 @@ const HEADER_LINE_COLOR = cssVar(semantic.headerLine)
  * объектность (см. историю файла).
  */
 export const TABLE_GRID_SX = {
+  borderTop: `1px solid ${GRID_LINE_COLOR}`,
+  borderLeft: `1px solid ${GRID_LINE_COLOR}`,
   '& .MuiTableCell-root': {
     borderBottomColor: GRID_LINE_COLOR,
+    borderRight: `1px solid ${GRID_LINE_COLOR}`,
   },
   '& .MuiTableHead-root .MuiTableRow-root:last-child .MuiTableCell-root, & .MuiTableHead-root .MuiTableCell-root[rowspan]':
     {

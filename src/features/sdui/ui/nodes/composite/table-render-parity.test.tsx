@@ -60,15 +60,17 @@ describe('сетка ТЧ', () => {
   // колонки разделяет воздух, строки — горизонтальный разделитель ui-03,
   // низ шапки — тёмная линия ui-06. Каскад дескендант-селекторов sx в jsdom
   // неполон, поэтому пиним сам объект стиля, а рендер — смоуком.
-  it('стиль по макету: горизонтали ui-03, тёмный низ шапки, без вертикалей', () => {
+  it('видимая сетка: рамка и вертикали ui-03, горизонтали ui-03, тёмный низ шапки', () => {
     expect(TABLE_GRID_SX).toEqual({
+      borderTop: '1px solid var(--ui-03, #c3cee0)',
+      borderLeft: '1px solid var(--ui-03, #c3cee0)',
       '& .MuiTableCell-root': {
         borderBottomColor: 'var(--ui-03, #c3cee0)',
+        borderRight: '1px solid var(--ui-03, #c3cee0)',
       },
       '& .MuiTableHead-root .MuiTableRow-root:last-child .MuiTableCell-root, & .MuiTableHead-root .MuiTableCell-root[rowspan]':
         { borderBottomColor: 'var(--ui-06, #222124)' },
     })
-    expect(JSON.stringify(TABLE_GRID_SX)).not.toContain('borderRight')
     renderTable(<TableNode node={flatTable()} />)
     expect(screen.getAllByRole('cell').length).toBeGreaterThan(0)
   })

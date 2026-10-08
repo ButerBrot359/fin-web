@@ -54,6 +54,19 @@ vi.mock('@/shared/lib/dictionary-entry/dictionary-entry-api', () => ({
     fetchByIdMock(...args) as unknown,
 }))
 
+const accountEntriesMock = vi.fn<
+  () => { id: number; code: string; nameRu: string }[]
+>(() => [])
+vi.mock('@/entities/account-plan', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  useAccountPlanList: () => ({
+    entries: accountEntriesMock(),
+    isLoading: false,
+    isError: false,
+    error: null,
+  }),
+}))
+
 afterEach(cleanup)
 
 const programma: ReportAltParameterDto = {
@@ -392,5 +405,95 @@ describe('ReportAltParamField — «Показать все»', () => {
 
     expect(await screen.findByText('Отметить все')).toBeTruthy()
     expect(screen.queryByText('Показать все')).toBeNull()
+  })
+})
+
+describe('ReportAltParamField — список счетов', () => {
+  const spisokSchetov: ReportAltParameterDto = {
+    code: 'SpisokSchetov',
+    titleRu: 'Список счетов',
+    dataType: 'ACCOUNT_LIST',
+    required: false,
+    referenceDomain: 'EdiniyPlanSchetovGosUchrezhdeniya',
+  }
+
+  beforeEach(() => {
+    openPickerMock.mockReset()
+    accountEntriesMock.mockReturnValue([
+      { id: 1, code: '0000', nameRu: 'Вспомогательный счет' },
+      { id: 2, code: '01', nameRu: 'Арендованные активы' },
+      { id: 3, code: '1010', nameRu: 'Денежные средства в кассе' },
+      { id: 4, code: '6110', nameRu: 'Доходы от реализации' },
+    ])
+  })
+
+  it('при открытии выбранные счета стоят первыми и отмечены галочками', async () => {
+    renderField(
+      <ReportAltParamField
+        param={spisokSchetov}
+        value={[4, 3]}
+        onChange={vi.fn()}
+      />
+    )
+
+    fireEvent.mouseDown(screen.getByRole('combobox'))
+    const options = await screen.findAllByRole('option')
+
+    expect(options.map((o) => o.textContent)).toEqual([
+      '6110 — Доходы от реализации',
+      '1010 — Денежные средства в кассе',
+      '0000 — Вспомогательный счет',
+      '01 — Арендованные активы',
+    ])
+    const checked = options.map(
+      (o) => o.querySelector<HTMLInputElement>('input')?.checked
+    )
+    expect(checked).toEqual([true, true, false, false])
+  })
+
+  it('«Показать все» открывает план счетов и добавляет выбранный в нём счёт', async () => {
+    const onChange = vi.fn()
+    renderField(
+      <ReportAltParamField
+        param={spisokSchetov}
+        value={[4]}
+        onChange={onChange}
+      />
+    )
+
+    fireEvent.mouseDown(screen.getByRole('combobox'))
+    fireEvent.click(await screen.findByText('Показать все'))
+
+    expect(openPickerMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'list',
+        domain: 'ACCOUNT_PLAN',
+        typeCode: 'EdiniyPlanSchetovGosUchrezhdeniya',
+      })
+    )
+    openPickerMock.mock.calls[0][0].onSelect({
+      id: 2,
+      code: '01',
+      label: '01 — Арендованные активы',
+    })
+    expect(onChange).toHaveBeenLastCalledWith([4, 2])
+  })
+
+  it('счёт вне списка ордера, выбранный через «Показать все», остаётся в поле', async () => {
+    renderField(
+      <ReportAltParamField
+        param={{ ...spisokSchetov, defaultValue: [4] }}
+        value={[4, 2]}
+        onChange={vi.fn()}
+      />
+    )
+
+    fireEvent.mouseDown(screen.getByRole('combobox'))
+    const options = await screen.findAllByRole('option')
+
+    expect(options.map((o) => o.textContent)).toEqual([
+      '6110 — Доходы от реализации',
+      '01 — Арендованные активы',
+    ])
   })
 })

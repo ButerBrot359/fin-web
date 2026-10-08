@@ -44,6 +44,7 @@ interface TableToolbarProps {
   selectedRowId?: string | null
   /** rowId всех выделенных строк — серверная «Удалить» снимает их разом, как в 1С. */
   selectedRowIds?: string[]
+  onServerDelete?: (rowIds: string[]) => void
 }
 
 export const TableToolbar = ({
@@ -64,6 +65,7 @@ export const TableToolbar = ({
   search,
   selectedRowId = null,
   selectedRowIds = [],
+  onServerDelete,
 }: TableToolbarProps) => {
   const { t, i18n } = useTranslation()
   const dispatch = useSduiDispatch()
@@ -98,6 +100,11 @@ export const TableToolbar = ({
   // rowId нужен построчным командам (table.copyRow, requiresSelectedRow); сервер
   // читает его только у них, прочие игнорируют (SCRUM-332 §1).
   const runCommand = (cmd: TableCommandDescriptor) => {
+    if (cmd.command.startsWith('table.deleteRow:') && selectedRowId) {
+      onServerDelete?.(
+        selectedRowIds.length > 1 ? selectedRowIds : [selectedRowId]
+      )
+    }
     void dispatch(
       buildTableCommandAction(cmd, selectedRowId, selectedRowIds),
       cmd.behavior

@@ -267,6 +267,14 @@ export const analyticsApi = {
           })
           .then(unwrap),
 
+  copyItem: (code: string, signal?: AbortSignal): Promise<AnalyticsItem> =>
+    apiService
+      .post<ApiResponse<AnalyticsItem>>({
+        url: `${BASE_URL}/items/${code}/copy`,
+        signal,
+      })
+      .then(unwrap),
+
   deleteItem: (code: string, signal?: AbortSignal): Promise<void> =>
     apiService
       .delete({ url: `${BASE_URL}/items/${code}`, signal })

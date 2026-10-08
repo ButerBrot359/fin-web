@@ -80,6 +80,24 @@ export const useSaveAnalyticsItem = (): UseMutationResult<
   })
 }
 
+export const useCopyAnalyticsItem = (): UseMutationResult<
+  AnalyticsItem,
+  unknown,
+  string
+> => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (code: string) => analyticsApi.copyItem(code),
+    onSuccess: (item) => {
+      void queryClient.invalidateQueries({ queryKey: analyticsKeys.items() })
+      void queryClient.invalidateQueries({
+        queryKey: analyticsKeys.items(item.kind),
+      })
+    },
+  })
+}
+
 /**
  * Удаление по коду. Вид удалённого объекта в ответе не приходит, поэтому
  * сбрасываем все варианты списка, а не только список своего вида.

@@ -15,6 +15,7 @@ export interface AnalyticsItemSummary {
   tags?: string | null
   isFavorite: boolean
   updatedAt?: string | null
+  shared?: boolean | null
 }
 
 export interface AnalyticsItem extends AnalyticsItemSummary {

@@ -481,6 +481,29 @@ export const FormView = ({
             «Список счетов» и примечание-Ескерту, не часть названия формы). */}
       </div>
 
+      {form.fieldLines && form.fieldLines.length > 0 && (
+        <div className="mt-3 flex max-w-[640px] flex-col gap-1">
+          {form.fieldLines.map((line, i) => (
+            <div key={i} className="flex items-end gap-2">
+              <Typography
+                variant="body2"
+                sx={{ color: cssVar(palette.pendingText1) }}
+                className="shrink-0"
+              >
+                {line.label}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: cssVar(palette.pendingText1) }}
+                className="min-h-5 min-w-0 flex-1 border-b border-pending-text-1"
+              >
+                {line.value ?? ''}
+              </Typography>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Навигация по страницам бланка: у ФНО бланк утверждён постранично, и 1С
           показывает такой же список слева. Состав страниц задаёт бэкенд. */}
       {stranitsy.length > 1 && (

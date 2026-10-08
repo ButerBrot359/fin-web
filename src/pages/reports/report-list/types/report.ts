@@ -108,6 +108,11 @@ export interface ReportHeaderBlockDto {
   placement?: 'BEFORE_TITLE' | 'AFTER_TITLE' | null
 }
 
+export interface ReportFormFieldLineDto {
+  label: string
+  value?: string | null
+}
+
 /** Официальный бланк (мемориальный ордер): шапка, секции, остатки, подписи. */
 export interface ReportFormDto {
   /** Правовой гриф (несколько строк, мелкий шрифт слева). */
@@ -124,6 +129,7 @@ export interface ReportFormDto {
   vedomostTitle?: string
   /** «№ 1010». */
   accountsLine?: string
+  fieldLines?: ReportFormFieldLineDto[]
   /** Страницы бланка; пусто — бланк показывается одним полотном. */
   pages?: ReportFormPageDto[]
   sections: ReportFormSectionDto[]

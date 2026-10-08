@@ -143,6 +143,11 @@ export interface ReportAltFormPageDto {
   title: string
 }
 
+export interface ReportAltFormFieldLineDto {
+  label: string
+  value?: string | null
+}
+
 /** Официальный бланк (layout=FORM): шапка, секции, подписи. */
 export interface ReportAltFormDto {
   legalHeader?: string[]
@@ -153,6 +158,7 @@ export interface ReportAltFormDto {
   periodLine?: string
   vedomostTitle?: string
   accountsLine?: string
+  fieldLines?: ReportAltFormFieldLineDto[]
   /** Страницы бланка; пусто — бланк показывается одним полотном. */
   pages?: ReportAltFormPageDto[]
   sections: ReportAltFormSectionDto[]

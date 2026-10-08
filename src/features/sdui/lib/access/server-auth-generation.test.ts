@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   observeServerAuthGeneration,
   resetServerAuthGeneration,
+  stripAccessPropPatches,
 } from './server-auth-generation'
 
 describe('server-auth-generation (SCRUM-400 §3.5)', () => {
@@ -26,5 +27,26 @@ describe('server-auth-generation (SCRUM-400 §3.5)', () => {
     expect(observeServerAuthGeneration(100)).toBe(true)
     resetServerAuthGeneration()
     expect(observeServerAuthGeneration(1)).toBe(true)
+  })
+})
+
+describe('stripAccessPropPatches — поздний ответ без права-патчей', () => {
+  it('режет setProp прав, оставляя значения, removeNode и прочее', () => {
+    const patches = [
+      { op: 'setProp', nodeId: 'btn.save', key: 'enabled', value: true },
+      { op: 'setProp', nodeId: 'page', key: 'readOnly', value: false },
+      { op: 'setProp', nodeId: 'field.x', key: 'error', value: null },
+      { op: 'setValue', binding: 'Summa', value: 5 },
+      { op: 'removeNode', nodeId: 'field.hidden' },
+    ] as never[]
+    expect(stripAccessPropPatches(patches)).toEqual([
+      { op: 'setProp', nodeId: 'field.x', key: 'error', value: null },
+      { op: 'setValue', binding: 'Summa', value: 5 },
+      { op: 'removeNode', nodeId: 'field.hidden' },
+    ])
+  })
+
+  it('пустые и отсутствующие патчи — пустой массив', () => {
+    expect(stripAccessPropPatches(undefined)).toEqual([])
   })
 })

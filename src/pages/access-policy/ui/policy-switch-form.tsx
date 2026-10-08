@@ -2,15 +2,14 @@ import { useState, type FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Dialog,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
-  Tooltip,
   Typography,
 } from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons'
+import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import {
@@ -22,10 +21,12 @@ import {
 } from '../api/access-policy-api'
 import { parseAccessPolicyError } from '../lib/access-policy-errors'
 import { ACCESS_POLICY_OVERVIEW_KEY } from '../lib/query-keys'
+import {
+  PolicyConfirmDialog,
+  type PendingAction,
+} from './policy-confirm-dialog'
 
 const MODES: AccessEnforcementMode[] = ['OFF', 'SHADOW', 'ENFORCE']
-
-type PendingAction = { kind: 'apply' } | { kind: 'rollback' } | { kind: 'off' }
 
 /**
  * Переключатель режима прав (SCRUM-400 §11.6 п.2–6, 8): глобальный режим,
@@ -120,7 +121,7 @@ export const PolicySwitchForm: FC<{ overview: AccessPolicyOverview }> = ({
     if (!pending) return
     setPending(null)
     setResult(null)
-    if (pending.kind === 'rollback') {
+    if (pending === 'rollback') {
       rollbackMutation.mutate({
         expectedPolicyRevision: overview.policyRevision,
         expectedActiveReleaseId: overview.activeRelease?.id ?? null,
@@ -129,9 +130,9 @@ export const PolicySwitchForm: FC<{ overview: AccessPolicyOverview }> = ({
       return
     }
     switchMutation.mutate({
-      mode: pending.kind === 'off' ? 'OFF' : mode,
+      mode: pending === 'off' ? 'OFF' : mode,
       // Аварийный OFF снимает и переопределения каналов (§11.5).
-      channelModes: pending.kind === 'off' ? {} : buildChannelModes(),
+      channelModes: pending === 'off' ? {} : buildChannelModes(),
       expectedPolicyRevision: overview.policyRevision,
       comment: comment.trim(),
     })
@@ -140,19 +141,6 @@ export const PolicySwitchForm: FC<{ overview: AccessPolicyOverview }> = ({
   const commentMissing = comment.trim() === ''
   // Подсказка (решает сервер): из OFF в ENFORCE нельзя — только через SHADOW.
   const enforceBlocked = overview.mode === 'OFF'
-
-  const confirmTitle =
-    pending?.kind === 'rollback'
-      ? t('accessPolicy.switch.confirmRollbackTitle')
-      : pending?.kind === 'off'
-        ? t('accessPolicy.switch.confirmOffTitle')
-        : t('accessPolicy.switch.confirmTitle')
-  const confirmMessage =
-    pending?.kind === 'rollback'
-      ? t('accessPolicy.switch.confirmRollbackMessage')
-      : pending?.kind === 'off'
-        ? t('accessPolicy.switch.confirmOffMessage')
-        : t('accessPolicy.switch.confirmMessage')
 
   return (
     <section className="flex flex-col gap-4">
@@ -224,45 +212,45 @@ export const PolicySwitchForm: FC<{ overview: AccessPolicyOverview }> = ({
         <Button variant="secondary" disabled={busy} onClick={runCheck}>
           {t('accessPolicy.switch.check')}
         </Button>
-        <Tooltip
-          title={commentMissing ? t('accessPolicy.switch.commentHint') : ''}
+        <DisabledReasonTooltip
+          reason={
+            commentMissing ? t('accessPolicy.switch.commentHint') : undefined
+          }
         >
-          <span style={{ display: 'inline-flex' }}>
-            <Button
-              variant="primary"
-              disabled={busy || commentMissing}
-              onClick={() => {
-                setPending({ kind: 'apply' })
-              }}
-            >
-              {t('accessPolicy.switch.apply')}
-            </Button>
-          </span>
-        </Tooltip>
+          <Button
+            variant="primary"
+            disabled={busy || commentMissing}
+            onClick={() => {
+              setPending('apply')
+            }}
+          >
+            {t('accessPolicy.switch.apply')}
+          </Button>
+        </DisabledReasonTooltip>
         <Button
           variant="secondary"
           disabled={busy}
           onClick={() => {
-            setPending({ kind: 'rollback' })
+            setPending('rollback')
           }}
         >
           {t('accessPolicy.switch.rollback')}
         </Button>
-        <Tooltip
-          title={commentMissing ? t('accessPolicy.switch.commentHint') : ''}
+        <DisabledReasonTooltip
+          reason={
+            commentMissing ? t('accessPolicy.switch.commentHint') : undefined
+          }
         >
-          <span style={{ display: 'inline-flex' }}>
-            <Button
-              variant="secondary"
-              disabled={busy || commentMissing}
-              onClick={() => {
-                setPending({ kind: 'off' })
-              }}
-            >
-              {t('accessPolicy.switch.emergencyOff')}
-            </Button>
-          </span>
-        </Tooltip>
+          <Button
+            variant="secondary"
+            disabled={busy || commentMissing}
+            onClick={() => {
+              setPending('off')
+            }}
+          >
+            {t('accessPolicy.switch.emergencyOff')}
+          </Button>
+        </DisabledReasonTooltip>
       </div>
 
       {result?.outcome === 'CHECK_PASSED' && (
@@ -294,37 +282,14 @@ export const PolicySwitchForm: FC<{ overview: AccessPolicyOverview }> = ({
         </div>
       )}
 
-      <Dialog
-        open={pending !== null}
-        onClose={() => {
+      <PolicyConfirmDialog
+        pending={pending}
+        enforceWarning={mode === 'ENFORCE'}
+        onCancel={() => {
           setPending(null)
         }}
-      >
-        <div className="flex max-w-[480px] flex-col gap-4 p-6">
-          <Typography component="h2" fontSize={18} fontWeight={700}>
-            {confirmTitle}
-          </Typography>
-          <Typography variant="body2">{confirmMessage}</Typography>
-          {pending?.kind === 'apply' && mode === 'ENFORCE' && (
-            <Typography variant="body2" color="error">
-              {t('accessPolicy.switch.confirmEnforceWarning')}
-            </Typography>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setPending(null)
-              }}
-            >
-              {t('accessPolicy.switch.cancel')}
-            </Button>
-            <Button variant="primary" onClick={confirmPending}>
-              {confirmTitle.replace('?', '')}
-            </Button>
-          </div>
-        </div>
-      </Dialog>
+        onConfirm={confirmPending}
+      />
     </section>
   )
 }

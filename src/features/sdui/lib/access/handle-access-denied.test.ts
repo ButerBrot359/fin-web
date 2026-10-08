@@ -11,12 +11,18 @@ import {
 import { useScreenAccessStore } from './screen-access-store'
 
 vi.mock('@/shared/ui/toast/show-toast', () => ({ showToast: vi.fn() }))
+vi.mock('../../api/view-transport', () => ({
+  viewTransport: { post: vi.fn().mockResolvedValue({}) },
+}))
 
 const session = (over: Partial<SduiSessionValue> = {}) =>
   ({
     kind: 'root',
     isDirty: false,
     resetDirty: vi.fn(),
+    getSession: () => ({ formSessionId: null, revision: null }),
+    getTree: () => null,
+    tree: null,
     ...over,
   }) as unknown as SduiSessionValue
 
@@ -110,6 +116,20 @@ describe('handleObjectNotFound — политика §9.5', () => {
     expect(useScreenAccessStore.getState().byRoute[c.screenKey]).toEqual({
       kind: 'not-found',
     })
+  })
+
+  it('грязная форма → предупреждение о потере правок и сброс dirty (§9.5)', () => {
+    const s = session({ isDirty: true })
+    handleObjectNotFound({
+      action: { type: 'COMMAND', command: 'save' } as never,
+      session: s,
+      screenKey: '/documents/Tabel/1',
+    })
+    expect(showToast).toHaveBeenCalled()
+    expect(s.resetDirty).toHaveBeenCalled()
+    expect(
+      useScreenAccessStore.getState().byRoute['/documents/Tabel/1']
+    ).toEqual({ kind: 'not-found' })
   })
 
   it('команда с целью-другой записью (ref.select) → тост, форма цела', () => {

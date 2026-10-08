@@ -9,6 +9,7 @@ import {
   useBindingValue,
   useSduiSession,
 } from '../../../../lib/sdui-session-context'
+import { isReadOnlyProps } from '../../../../lib/utils/form-read-only'
 import {
   findSotrudnikContract,
   parseTabelMatrixPayload,
@@ -36,7 +37,7 @@ export const TabelMatrixTable: FC<NodeProps> = ({ node }) => {
   // ограничения матрица пока не отражает — она рисуется из payload, открытый
   // пункт спеки). Отсутствие ключа allow* = прежнее поведение (кнопки есть).
   const sessionReadOnly = useSduiSession().readOnly
-  const matrixReadOnly = sessionReadOnly || node.props?.readOnly === true
+  const matrixReadOnly = sessionReadOnly || isReadOnlyProps(node.props)
   const allowAdd = !matrixReadOnly && node.props?.allowAdd !== false
   const allowDelete = !matrixReadOnly && node.props?.allowDelete !== false
   const addDeniedReason = node.props?.addDeniedReason as string | undefined

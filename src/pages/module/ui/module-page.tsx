@@ -67,7 +67,8 @@ const ServerDrivenModulePage = ({
   )
 }
 
-// Легаси-рендерер — штатный гейт раскатки (404/422 SCREEN_NOT_SDUI на OPEN),
+// Легаси-рендерер — штатный гейт раскатки (ТОЛЬКО 422 SCREEN_NOT_SDUI на
+// OPEN; 404 с SCRUM-400 — экран «Объект не найден», не фолбэк),
 // удаляется вместе с выводом старого бэка из эксплуатации.
 const LegacyModulePage = () => {
   const { pageCode = '' } = useParams<{ pageCode: string }>()

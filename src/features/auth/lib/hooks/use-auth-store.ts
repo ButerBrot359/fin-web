@@ -6,6 +6,7 @@ import {
   notifySignedIn,
   runBeforeSignOut,
   runIdentityReset,
+  seedLastUserId,
 } from '@/shared/api/auth/auth-lifecycle'
 import {
   clearSession,
@@ -72,6 +73,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // отрисовку всего приложения ради случая «токен успел протухнуть». Негодный токен
       // всё равно вскроется на первом же запросе — интерсептор продлит сессию или
       // объявит её законченной.
+      // SCRUM-400 §10: посеять «кто работал последним» — без этого вход
+      // ДРУГОГО пользователя после истечения восстановленной сессии не
+      // распознался бы как смена личности (кэши A достались бы B).
+      seedLastUserId(user.id)
       set({ status: 'authenticated', user })
       return
     }

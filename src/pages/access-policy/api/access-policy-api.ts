@@ -1,4 +1,5 @@
 import { apiService } from '@/shared/api/api'
+import type { ApiResponse } from '@/shared/types/api.types'
 
 /**
  * Экран «Режим прав доступа» (SCRUM-400 §11): чтение состояния политики прав
@@ -102,16 +103,12 @@ export interface AccessPolicyActivationResult {
   pendingSubjectsCount: number
 }
 
-interface ApiData<T> {
-  data: T
-}
-
 const BASE_URL = '/api/admin/access/policy'
 
 export const fetchAccessPolicyOverview = async (
   signal?: AbortSignal
 ): Promise<AccessPolicyOverview> => {
-  const res = await apiService.get<ApiData<AccessPolicyOverview>>({
+  const res = await apiService.get<ApiResponse<AccessPolicyOverview>>({
     url: `${BASE_URL}/overview`,
     signal,
   })
@@ -121,7 +118,7 @@ export const fetchAccessPolicyOverview = async (
 export const switchAccessPolicy = async (
   body: AccessPolicySwitchRequest
 ): Promise<AccessPolicySwitchResult> => {
-  const res = await apiService.post<ApiData<AccessPolicySwitchResult>>({
+  const res = await apiService.post<ApiResponse<AccessPolicySwitchResult>>({
     url: `${BASE_URL}/switch`,
     data: body,
   })
@@ -131,7 +128,7 @@ export const switchAccessPolicy = async (
 export const rollbackAccessPolicy = async (
   body: AccessPolicyRollbackRequest
 ): Promise<AccessPolicyActivationResult> => {
-  const res = await apiService.post<ApiData<AccessPolicyActivationResult>>({
+  const res = await apiService.post<ApiResponse<AccessPolicyActivationResult>>({
     url: `${BASE_URL}/rollback`,
     data: body,
   })

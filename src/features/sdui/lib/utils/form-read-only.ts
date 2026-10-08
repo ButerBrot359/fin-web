@@ -10,3 +10,13 @@ import type { ViewNode } from '../../types/view'
  */
 export const isFormReadOnly = (tree: ViewNode | null | undefined): boolean =>
   tree?.props?.readOnly === true
+
+/**
+ * Узел заперт собственными пропами (SCRUM-400 §5.4): раскладочный `readonly`
+ * (нижний регистр, 1С) ИЛИ `readOnly` прав (camelCase). Ключи НЕ
+ * нормализуются — оба могут стоять на одном узле, решает логическое ИЛИ.
+ * Единственная точка этого правила: новый виджет не должен копировать его сам.
+ */
+export const isReadOnlyProps = (
+  props: Record<string, unknown> | undefined
+): boolean => props?.readonly === true || props?.readOnly === true

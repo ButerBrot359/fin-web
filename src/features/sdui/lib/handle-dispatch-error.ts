@@ -1,3 +1,4 @@
+import axios from 'axios'
 import i18n from 'i18next'
 
 import { classifyAccessError } from '@/shared/api/access-denied'
@@ -48,6 +49,9 @@ export function handleDispatchError(
   ctx: DispatchErrorCtx
 ): void {
   const { action, session } = ctx
+  // Отменённый запрос (выход, смена пользователя — поколение авторизации)
+  // не показывает ничего: пользователь уже на другом экране.
+  if (axios.isCancel(error)) return
   if (
     error instanceof ViewHttpError &&
     error.status === 422 &&

@@ -1,4 +1,4 @@
-import type { ViewNode } from '../../types/view'
+import type { ActionBehavior, ViewNode } from '../../types/view'
 
 /**
  * Доступна ли команда хотя бы на одном узле дерева (SCRUM-400 §5.5):
@@ -24,4 +24,29 @@ export function isCommandUnavailable(
   }
   walk(tree)
   return total > 0 && total === disabled
+}
+
+/**
+ * resetsDirty команды — из её узла в дереве (SCRUM-400 §5.9): behavior —
+ * единственный серверный источник «пишущести»; когда диспатч пришёл без него
+ * (Ctrl+S, программный вызов), восстанавливаем по узлу-носителю команды.
+ */
+export function findCommandResetsDirty(
+  tree: ViewNode | null,
+  command: string
+): boolean {
+  if (!tree) return false
+  let found = false
+  const walk = (node: ViewNode): void => {
+    if (found) return
+    if (node.props?.command === command) {
+      const behavior =
+        (node.props.behavior as ActionBehavior | undefined) ??
+        node.actions?.find((a) => a.trigger === 'click')?.behavior
+      if (behavior?.resetsDirty === true) found = true
+    }
+    node.children?.forEach(walk)
+  }
+  walk(tree)
+  return found
 }

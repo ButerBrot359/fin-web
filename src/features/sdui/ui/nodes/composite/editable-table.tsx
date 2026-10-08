@@ -33,6 +33,7 @@ import { useSduiColumnSizing } from '../../../lib/hooks/use-sdui-column-sizing'
 import { buildFlatColumnDefs } from '../../../lib/utils/build-flat-column-defs'
 import { buildTableMutationPolicy } from '../../../lib/utils/table-mutation-policy'
 import { useSduiSession } from '../../../lib/sdui-session-context'
+import { isReadOnlyProps } from '../../../lib/utils/form-read-only'
 import { EditableTableHead } from './editable-table-head'
 import { ROW_NUMBER_WIDTH, TableSizingColgroup } from './table-sizing-colgroup'
 import { editableTableSx } from './editable-table-sx'
@@ -63,7 +64,7 @@ export const EditableTable: FC<EditableTableProps> = ({
   // (права) либо readOnly корня формы (наследуется через сессию). Все колонки
   // при этом заперты, любые мутации строк запрещены единой политикой.
   const sessionReadOnly = useSduiSession().readOnly
-  const tableReadOnly = sessionReadOnly || node.props?.readOnly === true
+  const tableReadOnly = sessionReadOnly || isReadOnlyProps(node.props)
   const policy = buildTableMutationPolicy({
     tableReadOnly,
     allowAdd,

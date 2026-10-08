@@ -63,9 +63,14 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
     (tab.props?.disabled as boolean | undefined) === true
 
   const handleChange = (_: React.SyntheticEvent, newIndex: number) => {
+    const tabNode = tabs[newIndex] as ViewNode | undefined
+    // SCRUM-400 §5.5: клик по погашенной вкладке (возможен сквозь span
+    // подсказки с pointerEvents: auto) не переключает и не шлёт EVENT —
+    // иначе сервер ответил бы 403 и форма переоткрылась бы из-за клика
+    // по серому заголовку.
+    if (tabNode && isDisabled(tabNode)) return
     setActiveIndex(newIndex)
 
-    const tabNode = tabs[newIndex] as ViewNode | undefined
     if (tabNode) {
       const fieldEventAction = tabNode.actions?.find(
         (a) => a.actionId === 'fieldEvent'

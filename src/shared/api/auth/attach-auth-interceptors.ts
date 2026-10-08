@@ -82,8 +82,9 @@ export const attachAuthInterceptors = (instance: AxiosInstance): void => {
 
       // SCRUM-400 §4.3: два 403 авторизации, которые НЕ являются отказом по правам,
       // перехватываются здесь — до любых обработчиков экранов, одинаково для
-      // общего клиента и SDUI-транспорта.
-      if (error.response?.status === 403) {
+      // общего клиента и SDUI-транспорта. Контур входа исключён: 403 от /login
+      // — обычный отказ входа, его показывает сама форма, а не «сессия истекла».
+      if (error.response?.status === 403 && !isAuthEndpoint(config?.url)) {
         const body = readErrorBody(error.response.data)
         const kind = classifyAccessError(403, body.code, body.message)
         if (kind?.kind === 'account-ineligible') {

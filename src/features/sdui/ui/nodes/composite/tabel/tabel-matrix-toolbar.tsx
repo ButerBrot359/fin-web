@@ -14,6 +14,7 @@ import {
 } from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons'
+import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
 import { figmaIcons } from '@/shared/ui/icons'
 
 import type { TabelManualWorkKind } from './tabel-matrix-contract'
@@ -72,33 +73,27 @@ export const TabelMatrixToolbar: FC<TabelMatrixToolbarProps> = ({
   return (
     <div className="flex items-center gap-2">
       {/* Figma 772:24370: «+ Добавить» ТЧ — secondary, primary на экране одна.
-          SCRUM-400 §5.6: при запрете добавления кнопки гаснут с причиной. */}
-      {(() => {
-        const addButtons = (
-          <span style={{ display: 'inline-flex', gap: 8 }}>
-            <Button
-              variant="secondary"
-              disabled={busy || !allowAdd}
-              onClick={onAddEmployee}
-              startIcon={figmaIcons.plus}
-            >
-              {t('sdui.tabel.addEmployee')}
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={busy || !allowAdd}
-              onClick={onOpenPodbor}
-            >
-              {t('sdui.tabel.podbor')}
-            </Button>
-          </span>
-        )
-        return !allowAdd && addDeniedReason ? (
-          <Tooltip title={addDeniedReason}>{addButtons}</Tooltip>
-        ) : (
-          addButtons
-        )
-      })()}
+          SCRUM-400 §5.6: при запрете добавления кнопки гаснут с причиной —
+          общий DisabledReasonTooltip на каждой (раскладку держит gap тулбара). */}
+      <DisabledReasonTooltip reason={!allowAdd ? addDeniedReason : undefined}>
+        <Button
+          variant="secondary"
+          disabled={busy || !allowAdd}
+          onClick={onAddEmployee}
+          startIcon={figmaIcons.plus}
+        >
+          {t('sdui.tabel.addEmployee')}
+        </Button>
+      </DisabledReasonTooltip>
+      <DisabledReasonTooltip reason={!allowAdd ? addDeniedReason : undefined}>
+        <Button
+          variant="secondary"
+          disabled={busy || !allowAdd}
+          onClick={onOpenPodbor}
+        >
+          {t('sdui.tabel.podbor')}
+        </Button>
+      </DisabledReasonTooltip>
       {!hasActiveEmployee && !busy && manualWorkKinds.length > 0 ? (
         // span-обёртка обязательна: без неё tooltip не работает на disabled-кнопке
         <Tooltip title={t('sdui.tabel.selectEmployeeFirst')}>

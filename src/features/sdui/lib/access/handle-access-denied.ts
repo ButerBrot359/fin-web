@@ -4,7 +4,9 @@ import type { AccessDenialScope } from '@/shared/api/access-denied'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { ActionBehavior, ViewAction } from '../../types/view'
+import { viewTransport } from '../../api/view-transport'
 import type { SduiSessionValue } from '../sdui-session-context'
+import { findCommandResetsDirty } from './command-availability'
 import { useScreenAccessStore } from './screen-access-store'
 
 /**
@@ -25,13 +27,20 @@ const WRITE_COMMANDS = new Set([
 
 const isWriteAction = (
   action: ViewAction,
-  behavior: ActionBehavior | null | undefined
+  behavior: ActionBehavior | null | undefined,
+  session: SduiSessionValue
 ): boolean => {
   if (behavior?.resetsDirty === true) return true
-  return (
-    action.type === 'COMMAND' &&
-    typeof action.command === 'string' &&
-    WRITE_COMMANDS.has(action.command)
+  if (action.type !== 'COMMAND' || typeof action.command !== 'string') {
+    return false
+  }
+  if (WRITE_COMMANDS.has(action.command)) return true
+  // Команда пришла без behavior, но её узел в дереве несёт resetsDirty —
+  // восстанавливаем поведение оттуда: новая серверная команда записи не
+  // должна зависеть от пополнения списка выше.
+  return findCommandResetsDirty(
+    session.getTree?.() ?? session.tree,
+    action.command
   )
 }
 
@@ -82,7 +91,7 @@ export function handleAccessDenied(
     return
   }
 
-  if (isWriteAction(action, ctx.behavior)) {
+  if (isWriteAction(action, ctx.behavior, session)) {
     showToast('warning', message ?? i18n.t('sdui.accessDenied.writeDenied'))
     return
   }
@@ -142,6 +151,19 @@ export function handleObjectNotFound(ctx: {
   if (ctx.session.kind === 'panel') {
     showToast('warning', i18n.t('sdui.objectNotFound.targetToast'))
     return
+  }
+  // §9.5: сессию закрыть (best effort) — запись формы недоступна; правки,
+  // если были, потеряны — предупредить. dirty снимаем, чтобы уход с мёртвого
+  // экрана не спрашивал «Сохранить изменения?» о несуществующей записи.
+  const { formSessionId } = ctx.session.getSession()
+  if (formSessionId) {
+    void viewTransport
+      .post({ formSessionId, action: { type: 'CLOSE' } })
+      .catch(() => undefined)
+  }
+  if (ctx.session.isDirty) {
+    showToast('warning', i18n.t('sdui.accessDenied.unsavedLost'))
+    ctx.session.resetDirty()
   }
   useScreenAccessStore.getState().setNotFound(ctx.screenKey)
 }

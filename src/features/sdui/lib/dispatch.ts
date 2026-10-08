@@ -47,7 +47,10 @@ import {
   replayDeferredResponses,
 } from './deferred-responses'
 import { useScreenAccessStore } from './access/screen-access-store'
-import { observeServerAuthGeneration } from './access/server-auth-generation'
+import {
+  observeServerAuthGeneration,
+  stripAccessPropPatches,
+} from './access/server-auth-generation'
 import { isSduiCloseSuppressed } from './sign-out-session-control'
 
 export function useSduiDispatch() {
@@ -226,7 +229,7 @@ export function useSduiDispatch() {
               }
             : action
         owner = captureResponseOwner(session, route)
-        const res = await viewTransport.post({
+        let res = await viewTransport.post({
           // SCRUM-330 Работа 2: на OPEN шлём formSessionId, переживший F5 в
           // sessionStorage. Сейчас бэк его игнорирует (резюм отложен — v2 §2);
           // включение резюма будет односторонним, серверным, без правок фронта.
@@ -248,10 +251,12 @@ export function useSduiDispatch() {
         })
 
         if (action.type === 'OPEN') {
-          // Поколение растёт и на OPEN — фиксируем максимум (сам OPEN
-          // применяется всегда: он несёт авторитетное свежее дерево).
-          observeServerAuthGeneration(res.authGeneration)
+          // Поздний OPEN из ПРОШЛОГО поколения (фоновый refresh, ушедший до
+          // публикации прав и обогнанный свежим OPEN) не должен перетирать
+          // дерево: он воскресил бы только что отозванные кнопки и поля.
+          const openIsFresh = observeServerAuthGeneration(res.authGeneration)
           if (
+            !openIsFresh ||
             (opts?.acceptOpenResponse && !opts.acceptOpenResponse()) ||
             (freshInstance && !freshInstance.commit())
           ) {
@@ -285,10 +290,15 @@ export function useSduiDispatch() {
           clearFormSession(route)
           dropDeferredResponses(route)
         } else {
-          // SCRUM-400 §3.5: ответ из прошлого поколения авторизации (права уже
-          // менялись) не должен откатывать применённые enabled/readOnly-патчи —
-          // отбрасываем целиком, не применяя ни патчей, ни эффектов.
-          if (!observeServerAuthGeneration(res.authGeneration)) return false
+          // SCRUM-400 §3.5: ответ из прошлого поколения авторизации (права
+          // менялись, пока запрос летел) не должен откатывать применённые
+          // enabled/readOnly-патчи — вырезаем из него ТОЛЬКО права-патчи.
+          // Целиком не выбрасываем: это мог быть успешный ответ записи, и
+          // его значения/эффекты/closeAfter обязаны примениться (иначе
+          // пользователь видит «ничего не произошло» и повторяет запись).
+          if (!observeServerAuthGeneration(res.authGeneration)) {
+            res = { ...res, patches: stripAccessPropPatches(res.patches) }
+          }
           // SCRUM-308 §5: владение ответом. Пока запрос летел, пользователь мог
           // уйти с экрана — исход маршрутизируется по владельцу: active —
           // применяем; deferred — вкладка жива, эффекты проиграются при

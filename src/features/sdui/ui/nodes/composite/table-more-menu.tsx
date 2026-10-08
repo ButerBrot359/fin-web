@@ -8,7 +8,7 @@ import {
   Typography,
 } from '@mui/material'
 
-import { Tooltip } from '@mui/material'
+import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
 
 import type { TableCommandDescriptor } from '../../../types/view'
 
@@ -105,10 +105,13 @@ export const TableMoreMenu = ({
         )}
       </MenuItem>
     )
+    // Оборачиваем ТОЛЬКО погашенный пункт с причиной: активные пункты MUI
+    // MenuList клонирует для клавиатурной навигации, и чужая обёртка съела бы
+    // его пропсы фокуса; погашенные из навигации исключены.
     return disabled && reason ? (
-      <Tooltip key={key} title={reason}>
-        <span style={{ display: 'block' }}>{menuItem}</span>
-      </Tooltip>
+      <DisabledReasonTooltip key={key} reason={reason} block>
+        {menuItem}
+      </DisabledReasonTooltip>
     ) : (
       menuItem
     )

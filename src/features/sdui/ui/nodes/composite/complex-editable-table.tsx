@@ -5,6 +5,7 @@ import { Paper, Table, TableBody, TableContainer } from '@mui/material'
 import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import { useTableSync } from '../../../lib/hooks/use-table-sync'
 import { useSduiSession } from '../../../lib/sdui-session-context'
+import { isReadOnlyProps } from '../../../lib/utils/form-read-only'
 import { useTableSearch } from '../../../lib/hooks/use-table-search'
 import { useSearchScroll } from '../../../lib/hooks/use-search-scroll'
 import { useTableRowCommands } from '../../../lib/hooks/use-table-row-commands'
@@ -74,7 +75,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // пути мутаций: кнопки, хоткеи, вставку, Undo. allow* при этом остаются
   // доменными правилами (master-detail ниже) — права их не подменяют.
   const sessionReadOnly = useSduiSession().readOnly
-  const tableReadOnly = sessionReadOnly || node.props?.readOnly === true
+  const tableReadOnly = sessionReadOnly || isReadOnlyProps(node.props)
   const addDeniedReason = node.props?.addDeniedReason as string | undefined
   // SCRUM-363: потоковый ввод строк «как в 1С». Строго по серверному флагу —
   // без веток по коду документа/route (серверная SDUI-мета управляет областью).
@@ -92,12 +93,15 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     [node.props]
   )
 
-  // Memoize columns by node.children — critical for preserving input focus
-  const flatColumns = useMemo(
-    () => extractAllLeafColumns(node.children),
-
-    [node.children]
-  )
+  // Memoize columns by node.children — critical for preserving input focus.
+  // При запертой ТЧ колонки принудительно readonly: реконсиляция use-table-sync
+  // и политика ячеек видят то же запирание, что и рендер (см. buildColumnDefs).
+  const flatColumns = useMemo(() => {
+    const cols = extractAllLeafColumns(node.children)
+    return tableReadOnly
+      ? cols.map((c) => (c.readonly ? c : { ...c, readonly: true }))
+      : cols
+  }, [node.children, tableReadOnly])
 
   // Постоянная заливка колонок (column-background.ts): ячейка на TanStack знает
   // только id колонки, props остались в исходном описании.
@@ -183,10 +187,13 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
         syncRef,
         validationRef,
         autoAdvanceCtx,
-        cellRefHandlers
+        cellRefHandlers,
+        // SCRUM-400 §5.6: форма/ТЧ только для чтения — ячейки заперты и на
+        // клиенте (тот же пояс, что у EditableTable), не только пропами колонок.
+        tableReadOnly
       ),
 
-    [node.children, autoAdvanceCtx, cellRefHandlers]
+    [node.children, autoAdvanceCtx, cellRefHandlers, tableReadOnly]
   )
 
   // ── Footer ──

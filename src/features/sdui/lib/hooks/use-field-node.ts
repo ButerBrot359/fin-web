@@ -2,6 +2,7 @@ import type { ViewNode } from '../../types/view'
 import { useSduiDispatch } from '../dispatch'
 import { useSduiSession, useBindingValue } from '../sdui-session-context'
 import { notifyFieldEdited } from '../validation/field-edit-bus'
+import { isReadOnlyProps } from '../utils/form-read-only'
 
 export interface FieldNodeCommon {
   label?: string
@@ -33,10 +34,7 @@ export function useFieldNode(node: ViewNode): FieldNodeCommon {
   // `readonly` (нижний регистр, был и раньше), `readOnly` прав (camelCase,
   // ключи НЕ нормализуются) и readOnly корня формы (наследуется через сессию).
   // `enabled: true` запирание НЕ снимает (это независимый проп зависимостей).
-  const readonly =
-    session.readOnly ||
-    node.props?.readonly === true ||
-    node.props?.readOnly === true
+  const readonly = session.readOnly || isReadOnlyProps(node.props)
 
   return {
     label: node.props?.label as string | undefined,

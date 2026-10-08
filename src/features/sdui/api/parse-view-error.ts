@@ -1,3 +1,5 @@
+import { readErrorBody } from '@/shared/api/access-denied'
+
 import type { ValidationErrorDetail } from '../types/view'
 
 function parseValidationErrors(
@@ -33,12 +35,12 @@ export function parseViewError(data: unknown): {
 } {
   if (!data || typeof data !== 'object') return {}
   const b = data as Record<string, unknown>
-  const code = (typeof b.error === 'string' && b.error) || undefined
+  // SCRUM-400: code/message/scope — общий разбор с REST (readErrorBody),
+  // чтобы переходный контракт 403 (FORBIDDEN → ACCESS_DENIED, scope) жил в
+  // одном месте для обоих транспортов.
+  const { code, message, scope: rawScope } = readErrorBody(b)
   const kind = typeof b.kind === 'string' ? b.kind : undefined
-  const message = typeof b.message === 'string' ? b.message : undefined
-  // SCRUM-400 §3.2: scope есть только у 403 по правам; неизвестные значения
-  // нормализует потребитель (отсутствие = SESSION).
-  const scope = typeof b.scope === 'string' ? b.scope : undefined
+  const scope = typeof rawScope === 'string' ? rawScope : undefined
   const errors = parseValidationErrors(b.errors)
   const out: {
     message?: string

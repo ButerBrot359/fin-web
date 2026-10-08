@@ -58,19 +58,25 @@ export const runIdentityReset = (): void => {
 }
 
 /**
+ * Восстановление сессии из localStorage при старте вкладки: кэши не трогаются,
+ * но «кто работал последним» обязан быть посеян — иначе смена пользователя
+ * после истечения восстановленной сессии не распознаётся (lastUserId остался
+ * бы null, и вошедший B увидел бы кэши A).
+ */
+export const seedLastUserId = (userId: number): void => {
+  lastUserId = userId
+}
+
+/**
  * Успешный вход. Кэши сбрасываются только при СМЕНЕ пользователя: вход того же
  * человека после истечения сессии не обязан терять состояние вкладок (§10 п.6).
  */
 export const notifySignedIn = (userId: number): void => {
   const changed = lastUserId !== null && lastUserId !== userId
+  // Единственная реализация сброса — runIdentityReset (она обнуляет
+  // lastUserId, поэтому новый пользователь записывается ПОСЛЕ).
+  if (changed) runIdentityReset()
   lastUserId = userId
-  if (changed) {
-    try {
-      identityReset?.()
-    } catch {
-      // см. runIdentityReset
-    }
-  }
   try {
     signedIn?.()
   } catch {

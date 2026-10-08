@@ -68,6 +68,10 @@ export const viewTransport = {
       })
       return res.data
     } catch (error) {
+      // Отмена (AbortSignal, смена поколения авторизации при выходе) — не
+      // ошибка запроса: пробрасываем как есть, иначе CanceledError завернулся
+      // бы в ViewHttpError и показал ложный тост поверх экрана входа.
+      if (axios.isCancel(error)) throw error
       if (axios.isAxiosError(error) && error.response?.status === 409) {
         throw new ViewConflictError(normalizeConflictBody(error.response.data))
       }

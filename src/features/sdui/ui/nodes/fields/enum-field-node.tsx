@@ -1,4 +1,4 @@
-import type { FC } from 'react'
+import { useRef, useState, type FC } from 'react'
 import {
   FormControl,
   InputLabel,
@@ -35,6 +35,8 @@ const EnumFieldSelect: FC<NodeProps> = ({ node }) => {
   // SCRUM-308 §3.1: причина недоступности узла — тот же props.tooltip, что у
   // кнопок (SCRUM-181); приезжает только вместе с признаком гашения.
   const reason = node.props?.tooltip as string | undefined
+  const controlRef = useRef<HTMLDivElement>(null)
+  const [menuWidth, setMenuWidth] = useState<number | undefined>(undefined)
 
   if (!f.visible) return null
 
@@ -51,6 +53,7 @@ const EnumFieldSelect: FC<NodeProps> = ({ node }) => {
   return (
     <DisabledReasonTooltip reason={reason} block>
       <FormControl
+        ref={controlRef}
         fullWidth
         variant="filled"
         error={!!f.error}
@@ -64,6 +67,13 @@ const EnumFieldSelect: FC<NodeProps> = ({ node }) => {
           value={value}
           readOnly={f.readonly}
           IconComponent={f.readonly ? () => null : undefined}
+          autoWidth
+          onOpen={() => {
+            setMenuWidth(controlRef.current?.getBoundingClientRect().width)
+          }}
+          MenuProps={{
+            slotProps: { paper: { style: { minWidth: menuWidth } } },
+          }}
           onChange={(e) => {
             const selectedValue = e.target.value
             const opt = options.find((o) => o.value === selectedValue)

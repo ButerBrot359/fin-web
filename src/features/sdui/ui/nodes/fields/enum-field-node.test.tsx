@@ -184,3 +184,35 @@ describe('EnumFieldNode — недоступность (SCRUM-308)', () => {
     expect(state.Pokazat).toBeUndefined()
   })
 })
+
+describe('EnumFieldNode ширина выпадающего списка при масштабе интерфейса', () => {
+  it('меню равно видимой ширине поля, а не немасштабированной clientWidth', () => {
+    delete state.VidOperatsii
+    const { container } = render(<EnumFieldNode node={node(false)} />)
+    const control = container.querySelector<HTMLElement>(
+      '.MuiFormControl-root'
+    )!
+    vi.spyOn(control, 'getBoundingClientRect').mockReturnValue({
+      width: 900,
+      height: 48,
+      top: 0,
+      left: 0,
+      right: 900,
+      bottom: 48,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    })
+    Object.defineProperty(control, 'clientWidth', {
+      configurable: true,
+      value: 1000,
+    })
+
+    fireEvent.mouseDown(screen.getByRole('combobox'))
+
+    const paper = screen
+      .getByRole('listbox')
+      .closest<HTMLElement>('.MuiPaper-root')!
+    expect(paper.style.minWidth).toBe('900px')
+  })
+})

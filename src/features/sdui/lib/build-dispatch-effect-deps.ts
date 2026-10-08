@@ -130,7 +130,16 @@ export function buildDispatchEffectHandler(ctx: DispatchEffectHandlerCtx) {
         // multipart. После успеха — серверная команда в ТУ ЖЕ сессию
         // (обычно reread): документ уже изменён в БД, и форма обязана его
         // перечитать, иначе на экране осталась бы прежняя табличная часть.
-        void uploadFileByEffect(effect, redispatch)
+        //
+        // Итог загрузки (причина отказа / замечания) уходит в панель проверки
+        // экрана — тем же ключом (pathname) и стором, что и validationReport:
+        // список не гаснет по таймеру, в отличие от тоста, где многострочный
+        // отказ исчезал раньше, чем его успевали прочитать (SCRUM-317).
+        void uploadFileByEffect(effect, redispatch, {
+          report: (report) => {
+            useValidationReportStore.getState().setReport(pathname, report)
+          },
+        })
       },
       unsavedChanges: (effect) => {
         // Три ответа — три исхода: «Да» и «Нет» уходят серверными командами в

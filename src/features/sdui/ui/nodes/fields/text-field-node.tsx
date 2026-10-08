@@ -8,7 +8,9 @@ import { useFieldNode } from '../../../lib/hooks/use-field-node'
 import { useChangeOnBlur } from '../../../lib/hooks/use-change-on-blur'
 import { useEditConfirm } from '../../../lib/hooks/use-edit-confirm'
 import { hasLeftLabel } from '../../../lib/utils/field-width'
+import { findStartChoiceAction } from '../../../lib/utils/start-choice-action'
 import { FieldLabelLeft } from './field-label-left'
+import { StartChoiceAdornment } from './start-choice-adornment'
 
 export const TextFieldNode: FC<NodeProps> = ({ node }) => {
   const f = useFieldNode(node)
@@ -20,6 +22,7 @@ export const TextFieldNode: FC<NodeProps> = ({ node }) => {
   const secret = node.props?.secret === true
   // SCRUM-355 §5: подпись слева и снаружи рамки; без пропа — как раньше.
   const leftLabel = hasLeftLabel(node.props)
+  const startChoice = findStartChoiceAction(node)
   const value = (f.value as string | undefined) ?? ''
   const changeOnBlur = useChangeOnBlur(f, value)
   const editConfirm = useEditConfirm(
@@ -55,7 +58,17 @@ export const TextFieldNode: FC<NodeProps> = ({ node }) => {
         }}
         onBlur={changeOnBlur.onBlur}
         slotProps={{
-          input: { readOnly: f.readonly },
+          input: {
+            readOnly: f.readonly,
+            endAdornment: startChoice ? (
+              <StartChoiceAdornment
+                nodeId={node.id}
+                action={startChoice}
+                label={f.label}
+                enabled={f.enabled}
+              />
+            ) : undefined,
+          },
           htmlInput: {
             ...(maxLength !== undefined && maxLength > 0 ? { maxLength } : {}),
             // Подпись ушла наружу — без aria-label поле теряет доступное имя

@@ -1102,6 +1102,7 @@ export const ReportAltPage = () => {
             <div className="flex min-h-0 flex-col overflow-auto pb-4">
               <ReportResultView
                 result={result}
+                fillScrollArea
                 blankValues={blankValuesEffektivnye}
                 onBlankValueChange={izmenitKletku}
                 vybrannayaOblast={vybrannayaOblast}

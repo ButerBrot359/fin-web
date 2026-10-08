@@ -1,6 +1,8 @@
 import type { NavigateFunction } from 'react-router-dom'
 import type { QueryClient } from '@tanstack/react-query'
 
+import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
+
 import type { ActionBehavior, ViewAction } from '../types/view'
 import { uploadFileByEffect } from './upload-file-effect'
 import {
@@ -8,6 +10,7 @@ import {
   buildDialogEffectDeps,
 } from './build-effect-deps'
 import { createEffectHandler } from './effect-handler'
+import { requestScreenRebind } from './screen-rebind'
 import type { SduiSessionValue } from './sdui-session-context'
 import { useConfirmStore } from './stores/confirm-store'
 import { useUnsavedChangesStore } from './stores/unsaved-changes-store'
@@ -25,6 +28,7 @@ export interface DispatchEffectHandlerCtx {
   setSearchParams: (search: string, opts?: { replace?: boolean }) => void
   /** Ключ вкладки экрана (tabRouteKey) — ключ стора отчёта о проверке. */
   pathname: string
+  closeAfter?: boolean
   /**
    * Рекурсивный вход обратно в dispatchAction: серверные ответы диалогов
    * confirm/unsavedChanges — команды в ТУ ЖЕ форм-сессию.
@@ -79,6 +83,22 @@ export function buildDispatchEffectHandler(ctx: DispatchEffectHandlerCtx) {
             )
           })
       },
+      rebindRoute:
+        ctx.closeAfter || session.kind !== 'root'
+          ? undefined
+          : (route) => {
+              const queryStart = route.indexOf('?')
+              const target =
+                queryStart >= 0
+                  ? tabRouteKey(
+                      route.slice(0, queryStart),
+                      route.slice(queryStart)
+                    )
+                  : route
+              if (target === pathname) return
+              requestScreenRebind(pathname, target)
+              void ctx.navigate(route, { replace: true })
+            },
       validationReport: (effect) => {
         // SCRUM-317 §3.1/§3.3: отчёт ПОЛНОСТЬЮ заменяет прежний список
         // экрана; пустой — гасит панель (успешная операция без замечаний).
@@ -110,7 +130,16 @@ export function buildDispatchEffectHandler(ctx: DispatchEffectHandlerCtx) {
         // multipart. После успеха — серверная команда в ТУ ЖЕ сессию
         // (обычно reread): документ уже изменён в БД, и форма обязана его
         // перечитать, иначе на экране осталась бы прежняя табличная часть.
-        void uploadFileByEffect(effect, redispatch)
+        //
+        // Итог загрузки (причина отказа / замечания) уходит в панель проверки
+        // экрана — тем же ключом (pathname) и стором, что и validationReport:
+        // список не гаснет по таймеру, в отличие от тоста, где многострочный
+        // отказ исчезал раньше, чем его успевали прочитать (SCRUM-317).
+        void uploadFileByEffect(effect, redispatch, {
+          report: (report) => {
+            useValidationReportStore.getState().setReport(pathname, report)
+          },
+        })
       },
       unsavedChanges: (effect) => {
         // Три ответа — три исхода: «Да» и «Нет» уходят серверными командами в

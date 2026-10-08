@@ -217,7 +217,8 @@
     "uncheckAll": "Снять все",
     "loading": "Загрузка...",
     "openReference": "Открыть запись",
-    "copyReference": "Скопировать запись"
+    "copyReference": "Скопировать запись",
+    "startChoice": "Выбрать"
   },
   "calendar": {
     "today": "Сегодня"

@@ -148,6 +148,10 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
   const placeholder =
     (node.props?.placeholder as string | undefined) ||
     t('sdui.reportResult.placeholder')
+  const outdatedMessage = node.props?.outdatedMessage as
+    | string
+    | null
+    | undefined
 
   // SCRUM-288 §3.2-3.5: READY download-эффекты от бэка — единственный путь
   // печати/экспорта (SCRUM-370 блок Г: легаси-ветки сняты).
@@ -444,25 +448,46 @@ export const ReportResultNode: FC<NodeProps> = ({ node }) => {
           <Typography className="text-ui-05">{t('sdui.loading')}</Typography>
         </div>
       ) : Renderer && result ? (
-        <Renderer
-          result={result}
-          onDrilldown={drilldownCommand ? handleDrilldown : undefined}
-          onRowMenu={
-            drilldownCommand
-              ? (row, ancestors, position, zone) => {
-                  window.getSelection()?.removeAllRanges()
-                  const menu = { row, ancestors, position, zone }
-                  const actions = rowMenuActionsFor(menu)
-                  if (actions.length === 1) {
-                    setRowMenu(null)
-                    actions[0].onSelect()
-                    return
-                  }
-                  setRowMenu(menu)
-                }
-              : undefined
-          }
-        />
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          {outdatedMessage && (
+            <div
+              data-testid="report-result-outdated"
+              role="status"
+              className="pointer-events-none absolute inset-x-0 top-6 z-10 flex justify-center"
+            >
+              <Typography className="rounded border border-ui-03 bg-ui-01 px-6 py-4 shadow-md">
+                {outdatedMessage}
+              </Typography>
+            </div>
+          )}
+          <div
+            className={
+              outdatedMessage
+                ? 'flex min-h-0 flex-1 flex-col overflow-hidden opacity-50'
+                : 'flex min-h-0 flex-1 flex-col overflow-hidden'
+            }
+          >
+            <Renderer
+              result={result}
+              onDrilldown={drilldownCommand ? handleDrilldown : undefined}
+              onRowMenu={
+                drilldownCommand
+                  ? (row, ancestors, position, zone) => {
+                      window.getSelection()?.removeAllRanges()
+                      const menu = { row, ancestors, position, zone }
+                      const actions = rowMenuActionsFor(menu)
+                      if (actions.length === 1) {
+                        setRowMenu(null)
+                        actions[0].onSelect()
+                        return
+                      }
+                      setRowMenu(menu)
+                    }
+                  : undefined
+              }
+            />
+          </div>
+        </div>
       ) : Renderer ? (
         // Рендерер на месте, результата нет (отчёт не построился — например,
         // сервер отклонил параметры): это состояние отчёта, а не поломка UI.

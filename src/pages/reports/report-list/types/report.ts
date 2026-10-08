@@ -384,6 +384,11 @@ export interface ReportRowDto {
    */
   rowRef?: ReportRowRefDto
   /**
+   * Ссылки отдельных ячеек: код колонки → объект, который открывает нажатие на
+   * эту ячейку вместо `rowRef` (напр. документ-регистратор рядом с ИЛ строки).
+   */
+  cellRefs?: Record<string, ReportRowRefDto>
+  /**
    * Правила оформления СТРОКИ — в отличие от `negativeRed`/`blankOnZero`, которые живут на
    * колонке. `BOLD_GROUP` — счёт-группа: эталон 1С выделяет её жирным, когда в отчёте видны
    * субсчета («Выделять группы счетов» в условном оформлении типовой ОСВ).
@@ -451,6 +456,7 @@ export interface ReportResultDto {
    */
   groupFloorCodes?: string[]
   rowRefColumn?: string
+  rowRefColumnOnly?: boolean
 }
 
 /**

@@ -64,6 +64,7 @@ interface ReportResultViewProps {
     event: ReactMouseEvent,
     zone: ReportRowClickZone
   ) => void
+  fillScrollArea?: boolean
 }
 
 /**
@@ -87,6 +88,7 @@ export const ReportResultView = ({
   onVyborOblasti,
   aktivnayaStranitsa,
   onVyborStranitsy,
+  fillScrollArea = false,
 }: ReportResultViewProps) => {
   // Скрываем колонки, выключенные настройками (показатели/группировка), и —
   // когда «Выделять отрицательные» выключено — гасим negativeRed на колонках
@@ -150,7 +152,9 @@ export const ReportResultView = ({
   }
 
   return (
-    <div className="flex min-h-0 flex-col gap-1">
+    <div
+      className={`flex ${fillScrollArea ? 'shrink-0' : 'min-h-0'} flex-col gap-1`}
+    >
       {blocksBeforeTitle.length > 0 && (
         <ReportHeaderBlocks blocks={blocksBeforeTitle} />
       )}
@@ -200,13 +204,16 @@ export const ReportResultView = ({
       {blocksAfterTitle.length > 0 && (
         <ReportHeaderBlocks blocks={blocksAfterTitle} />
       )}
-      <div className="mt-2 flex min-h-0 flex-col">
+      <div
+        className={`mt-2 flex ${fillScrollArea ? 'shrink-0' : 'min-h-0'} flex-col`}
+      >
         {isLedger ? (
           <LedgerTable
             result={result}
             columns={columns}
             onOpenDocument={onOpenDocument}
             onDrilldown={onDrilldown}
+            fillScrollArea={fillScrollArea}
           />
         ) : (
           <TreeTable

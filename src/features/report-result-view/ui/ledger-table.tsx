@@ -54,9 +54,27 @@ interface LedgerTableProps {
    * `groupRefId` и не трогается).
    */
   onDrilldown?: (row: ReportRowDto) => void
+  fillScrollArea?: boolean
 }
 
 const MIN_COL_WIDTH = 40
+
+const scrollAreaOf = (el: HTMLElement | null): HTMLElement | null => {
+  for (let node = el; node; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node)
+    if (overflowY === 'auto' || overflowY === 'scroll') return node
+  }
+  return null
+}
+
+const innerHeightOf = (el: HTMLElement): number => {
+  const style = getComputedStyle(el)
+  return (
+    el.clientHeight -
+    (parseFloat(style.paddingTop) || 0) -
+    (parseFloat(style.paddingBottom) || 0)
+  )
+}
 
 /** Ширина одного символа колонки (`width` приходит в символах, как в 1С). */
 const CHAR_PX = 8
@@ -112,6 +130,7 @@ export const LedgerTable = ({
   columns,
   onOpenDocument,
   onDrilldown,
+  fillScrollArea = false,
 }: LedgerTableProps) => {
   const { t, i18n } = useTranslation()
   // Язык рендера = язык отчёта (result.language), иначе — язык приложения.
@@ -143,6 +162,27 @@ export const LedgerTable = ({
   const fitDoneRef = useRef(false)
   const manualResizeRef = useRef(false)
   const scrollRatioRef = useRef<number | null>(null)
+  const [maxHeight, setMaxHeight] = useState<number | undefined>(undefined)
+
+  useLayoutEffect(() => {
+    if (!fillScrollArea) {
+      setMaxHeight(undefined)
+      return
+    }
+    const area = scrollAreaOf(containerRef.current?.parentElement ?? null)
+    if (!area) return
+    const update = () => {
+      const height = innerHeightOf(area)
+      if (height > 0) setMaxHeight(height)
+    }
+    update()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(update)
+    observer.observe(area)
+    return () => {
+      observer.disconnect()
+    }
+  }, [fillScrollArea])
 
   // Сбрасываем ширины и флаг auto-fit при смене набора колонок.
   useLayoutEffect(() => {
@@ -308,43 +348,68 @@ export const LedgerTable = ({
       row.groupRefId != null &&
       onOpenDocument != null
     const openRow = canDrilldown ? onDrilldown : canOpen ? onOpenDocument : null
+    const openRowByRow =
+      result.rowRefColumnOnly === true && result.rowRefColumn != null
+        ? null
+        : openRow
     return (
       <tr
         key={key}
         className={
           highlight
             ? ''
-            : `transition-colors hover:bg-ui-07 ${openRow ? 'cursor-pointer' : ''}`
+            : `transition-colors hover:bg-ui-07 ${openRowByRow ? 'cursor-pointer' : ''}`
         }
         onDoubleClick={
-          openRow
+          openRowByRow
             ? () => {
                 // Двойной клик выделяет текст ячейки — снимаем выделение.
                 window.getSelection()?.removeAllRanges()
-                openRow(row)
+                openRowByRow(row)
               }
             : undefined
         }
       >
         {columns.map((col) => {
+          const cellRef =
+            isDataRow && onDrilldown != null
+              ? row.cellRefs?.[col.code]
+              : undefined
+          const openCell =
+            cellRef != null && onDrilldown != null
+              ? () => {
+                  onDrilldown({ ...row, rowRef: cellRef })
+                }
+              : openRow != null &&
+                  result.rowRefColumn === col.code &&
+                  row.rowRef != null
+                ? () => {
+                    openRow(row)
+                  }
+                : null
           const asLink =
-            openRow != null &&
-            result.rowRefColumn === col.code &&
-            row.rowRef != null &&
+            openCell != null &&
             row.cells[col.code] !== '' &&
             row.cells[col.code] != null
           return (
             <td
               key={col.code}
               className={`${td} ${isRightAligned(col) ? 'text-right' : ''}`}
+              onDoubleClick={
+                cellRef != null && openCell != null
+                  ? (event) => {
+                      event.stopPropagation()
+                      window.getSelection()?.removeAllRanges()
+                      openCell()
+                    }
+                  : undefined
+              }
             >
               {asLink ? (
                 <button
                   type="button"
                   className="cursor-pointer text-left text-accent-02 underline"
-                  onClick={() => {
-                    openRow(row)
-                  }}
+                  onClick={openCell}
                 >
                   <ReportCell
                     value={row.cells[col.code]}
@@ -411,6 +476,7 @@ export const LedgerTable = ({
     <div
       ref={containerRef}
       className="overflow-auto rounded-md border border-pending-gray-1"
+      style={maxHeight != null ? { maxHeight } : undefined}
     >
       {/* relative-обёртка: поверх таблицы — разделители-ручки на всю высоту. */}
       <div className="relative" style={{ width: totalWidth }}>

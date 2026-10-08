@@ -329,3 +329,204 @@ describe('LedgerTable — пустой результат', () => {
     expect(screen.queryByText('р/с.№ п/п')).toBeNull()
   })
 })
+
+describe('LedgerTable — ссылка ячейки', () => {
+  const columns: ReportColumnDto[] = [
+    {
+      code: 'NomerIspolnitelnogoLista',
+      titleRu: '№ ИЛ',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+    },
+    {
+      code: 'NomerDokumenta',
+      titleRu: '№ документа-регистратора',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+    },
+  ]
+  const ilRef = { domain: 'DOCUMENT', typeCode: 'IspolnitelnyyList', id: 1 }
+  const recorderRef = { domain: 'DOCUMENT', typeCode: 'SchetKOplate', id: 26 }
+  const result = {
+    ...resultOf(columns),
+    rowRefColumn: 'NomerIspolnitelnogoLista',
+    rows: [
+      {
+        level: 0,
+        rowKind: 'DATA',
+        rowRef: ilRef,
+        cellRefs: { NomerDokumenta: recorderRef },
+        cells: {
+          NomerIspolnitelnogoLista: 'AAY00-00001',
+          NomerDokumenta: 'AAY00-00026',
+        },
+        children: [],
+      },
+    ],
+  } as unknown as ReportResultDto
+
+  it('нажатие на № документа-регистратора открывает регистратор, на № ИЛ — исполнительный лист', () => {
+    const onDrilldown = vi.fn()
+    render(
+      <LedgerTable
+        result={result}
+        columns={columns}
+        onDrilldown={onDrilldown}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'AAY00-00026' }))
+    fireEvent.click(screen.getByRole('button', { name: 'AAY00-00001' }))
+
+    expect(onDrilldown).toHaveBeenCalledTimes(2)
+    expect(onDrilldown.mock.calls[0][0]).toMatchObject({ rowRef: recorderRef })
+    expect(onDrilldown.mock.calls[1][0]).toMatchObject({ rowRef: ilRef })
+  })
+
+  it('двойной клик по ячейке со своей ссылкой открывает только её', () => {
+    const onDrilldown = vi.fn()
+    render(
+      <LedgerTable
+        result={result}
+        columns={columns}
+        onDrilldown={onDrilldown}
+      />
+    )
+
+    fireEvent.doubleClick(screen.getByText('AAY00-00026'))
+
+    expect(onDrilldown).toHaveBeenCalledTimes(1)
+    expect(onDrilldown.mock.calls[0][0]).toMatchObject({ rowRef: recorderRef })
+  })
+})
+
+describe('LedgerTable — высота таблицы в области прокрутки', () => {
+  const columns: ReportColumnDto[] = [
+    { code: 'Nomer', titleRu: '№', role: 'ATTRIBUTE', valueType: 'STRING' },
+  ]
+  const original = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'clientHeight'
+  )
+
+  beforeEach(() => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.dataset.testid === 'area' ? 600 : 0
+      },
+    })
+  })
+
+  afterEach(() => {
+    if (original)
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', original)
+  })
+
+  const renderIn = (fillScrollArea: boolean) =>
+    render(
+      <div
+        data-testid="area"
+        style={{ overflowY: 'auto', paddingBottom: '16px' }}
+      >
+        <p>Согласовано</p>
+        <LedgerTable
+          result={resultOf(columns)}
+          columns={columns}
+          fillScrollArea={fillScrollArea}
+        />
+      </div>
+    )
+
+  it('занимает всю видимую высоту области результата, а не её остаток', () => {
+    renderIn(true)
+
+    const container = screen.getByRole('table').parentElement?.parentElement
+    expect(container?.style.maxHeight).toBe('584px')
+  })
+
+  it('без признака высоту не ограничивает', () => {
+    renderIn(false)
+
+    const container = screen.getByRole('table').parentElement?.parentElement
+    expect(container?.style.maxHeight).toBe('')
+  })
+})
+
+describe('LedgerTable — расшифровка через графу rowRefColumn', () => {
+  const columns: ReportColumnDto[] = [
+    {
+      code: 'Podrazdelenie',
+      titleRu: 'Подразделение',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+    },
+    {
+      code: 'FizicheskoeLitso',
+      titleRu: 'Сотрудник',
+      role: 'DIMENSION',
+      valueType: 'STRING',
+    },
+  ]
+
+  const resultWith = (rowRefColumnOnly?: boolean): ReportResultDto =>
+    ({
+      ...resultOf(columns),
+      rowRefColumn: 'FizicheskoeLitso',
+      rowRefColumnOnly,
+      rows: [
+        {
+          level: 0,
+          rowKind: 'DATA',
+          rowRef: { domain: 'DICTIONARY', typeCode: 'FizicheskieLitsa', id: 7 },
+          cells: { Podrazdelenie: 'Бухгалтерия', FizicheskoeLitso: 'Ким Ким' },
+          children: [],
+        },
+      ],
+    }) as unknown as ReportResultDto
+
+  it('при rowRefColumnOnly двойной клик по другой графе ничего не открывает', () => {
+    const onDrilldown = vi.fn()
+    render(
+      <LedgerTable
+        result={resultWith(true)}
+        columns={columns}
+        onDrilldown={onDrilldown}
+      />
+    )
+
+    fireEvent.doubleClick(screen.getByText('Бухгалтерия'))
+
+    expect(onDrilldown).not.toHaveBeenCalled()
+  })
+
+  it('при rowRefColumnOnly клик по ссылке в графе rowRefColumn открывает расшифровку', () => {
+    const onDrilldown = vi.fn()
+    render(
+      <LedgerTable
+        result={resultWith(true)}
+        columns={columns}
+        onDrilldown={onDrilldown}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ким Ким' }))
+
+    expect(onDrilldown).toHaveBeenCalledTimes(1)
+  })
+
+  it('без rowRefColumnOnly двойной клик по любой графе строки открывает расшифровку', () => {
+    const onDrilldown = vi.fn()
+    render(
+      <LedgerTable
+        result={resultWith()}
+        columns={columns}
+        onDrilldown={onDrilldown}
+      />
+    )
+
+    fireEvent.doubleClick(screen.getByText('Бухгалтерия'))
+
+    expect(onDrilldown).toHaveBeenCalledTimes(1)
+  })
+})

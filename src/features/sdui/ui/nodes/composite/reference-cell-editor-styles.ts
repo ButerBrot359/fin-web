@@ -16,6 +16,7 @@ export const wrapperSx: SystemStyleObject<Theme> = {
   '& .MuiFormControl-root': { mb: 0, position: 'static' },
   '& .MuiFilledInput-root': {
     ...inputBase,
+    height: 'auto !important',
     // Кнопки (стрелка списка, «открыть карточку») прижаты к ВЕРХУ, а не к
     // середине: значение многострочное, и на двух строках центрированные
     // иконки уезжали бы к середине текста.

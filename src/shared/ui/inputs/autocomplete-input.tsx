@@ -16,6 +16,7 @@ import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
 import { CheckAllActionsContext } from './check-all-context'
 import { createFooterPaper } from './footer-paper'
+import { useExclusivePopup } from './use-exclusive-popup'
 
 interface AutocompleteInputBaseProps {
   inputValue?: string
@@ -109,6 +110,13 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
     openOnFocus = false,
   } = props
   const { t } = useTranslation()
+  const {
+    open: popupOpen,
+    onOpen: handlePopupOpen,
+    onClose: handlePopupClose,
+    rootRef,
+    popperOwnerProps,
+  } = useExclusivePopup(onOpen)
 
   // ВНИМАНИЕ: `autoHighlight` уходит в MUI КАК ЕСТЬ. Вычислять его от `loading` НЕЛЬЗЯ —
   // проверено по исходнику @mui/material/useAutocomplete:
@@ -225,7 +233,9 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
     inputValue,
     options,
     onInputChange,
-    onOpen,
+    open: popupOpen,
+    onOpen: handlePopupOpen,
+    onClose: handlePopupClose,
     openOnFocus,
     autoHighlight,
     filterOptions: onInputChange ? (x: SelectOption[]) => x : undefined,
@@ -241,7 +251,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
     sx,
     slots: PaperComponent ? { paper: PaperComponent } : undefined,
     slotProps: {
-      popper: { style: { minWidth: 300 } },
+      popper: { style: { minWidth: 300 }, ...popperOwnerProps },
     },
     loadingText: t('inputs.loading'),
     noOptionsText: t('inputs.noOptions'),
@@ -252,6 +262,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
     const { value, onChange } = props
     const autocomplete = (
       <Autocomplete
+        ref={rootRef}
         multiple
         {...commonProps}
         sx={[
@@ -323,6 +334,7 @@ export const AutocompleteInput = (props: AutocompleteInputProps) => {
       }}
     >
       <Autocomplete
+        ref={rootRef}
         {...commonProps}
         value={props.value}
         onChange={(_e, newValue) => {

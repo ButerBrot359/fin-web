@@ -83,7 +83,7 @@ import {
   type ReportAltMenuItem,
   type ReportAltMenuPosition,
 } from './reportalt-row-menu'
-import { ReportAltSettingsPanel } from './settings/reportalt-settings-panel'
+import { ReportAltSettingsDrawer } from './settings/reportalt-settings-drawer'
 import { printReportAlt } from '../api/reportalt-api'
 import type {
   ReportAltRowDto,
@@ -951,14 +951,11 @@ export const ReportAltPage = () => {
             variant="outlined"
             size="medium"
             sx={{ height: 48, flexShrink: 0 }}
-            aria-expanded={settingsOpen}
             onClick={() => {
-              setSettingsOpen((open) => !open)
+              setSettingsOpen(true)
             }}
           >
-            {settingsOpen
-              ? t('reportalt.settings.hide')
-              : t('reportalt.settings.show')}
+            {t('reportalt.settings.show')}
           </Button>
         )}
         {!pustoyBlank && (
@@ -1094,8 +1091,12 @@ export const ReportAltPage = () => {
         ))}
       </div>
 
-      {estNastroyki && settingsOpen && (
-        <ReportAltSettingsPanel
+      {estNastroyki && (
+        <ReportAltSettingsDrawer
+          open={settingsOpen}
+          onClose={() => {
+            setSettingsOpen(false)
+          }}
           meta={meta}
           draft={settingsDraft}
           onDraftChange={setSettingsDraft}

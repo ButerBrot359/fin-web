@@ -7,7 +7,7 @@ import type {
   ReportAltParameterDto,
 } from '../../types/reportalt'
 import { GRUPPA_BYUDZHETY } from '../../lib/utils/params'
-import { ReportAltSettingsPanel } from './reportalt-settings-panel'
+import { ReportAltSettingsDrawer } from './reportalt-settings-drawer'
 
 const detalnoPoProgrammam: ReportAltParameterDto = {
   code: 'DetalnoPoProgrammam',
@@ -38,7 +38,9 @@ const meta: ReportAltMetaDto = {
 const renderPanel = (onParamChange = vi.fn()) =>
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <ReportAltSettingsPanel
+      <ReportAltSettingsDrawer
+        open
+        onClose={vi.fn()}
         meta={meta}
         draft={null}
         onDraftChange={vi.fn()}
@@ -51,7 +53,7 @@ const renderPanel = (onParamChange = vi.fn()) =>
     </QueryClientProvider>
   )
 
-describe('Панель настроек отчёта под командной панелью', () => {
+describe('Боковая панель настроек отчёта', () => {
   it('вкладки идут как в 1С: распределение по бюджетам, отбор, сортировка, оформление', () => {
     renderPanel()
 

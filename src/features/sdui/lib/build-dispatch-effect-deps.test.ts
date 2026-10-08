@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 
 import { buildDispatchEffectHandler } from './build-dispatch-effect-deps'
+import { consumeDiscardDraftClose } from './close-intent'
 import { consumeAdoptedScreen, takeScreenRebind } from './screen-rebind'
 import type { SduiSessionValue } from './sdui-session-context'
 
@@ -45,5 +46,42 @@ describe('buildDispatchEffectHandler: rebindRoute', () => {
       expect(navigate).not.toHaveBeenCalled()
       expect(takeScreenRebind(CREATE_KEY, RECORD_ROUTE)).toBe(false)
     }
+  })
+})
+
+describe('buildDispatchEffectHandler: closeForm', () => {
+  const buildWithClose = (kind: 'root' | 'panel') => {
+    const closeAfter = vi.fn()
+    const handler = buildDispatchEffectHandler({
+      navigate: vi.fn(),
+      session: {
+        kind,
+        getSession: () => ({ formSessionId: 'fs-1', revision: 1 }),
+        closeAfter,
+      } as unknown as SduiSessionValue,
+      queryClient: new QueryClient(),
+      setSearchParams: vi.fn(),
+      pathname: CREATE_KEY,
+      redispatch: vi.fn(() => Promise.resolve(true)),
+    })
+    return { closeAfter, handler }
+  }
+
+  it('закрывает вкладку формы со сбросом черновика', () => {
+    const { closeAfter, handler } = buildWithClose('root')
+
+    handler.play({ type: 'closeForm' })
+
+    expect(closeAfter).toHaveBeenCalledWith(false)
+    expect(consumeDiscardDraftClose(CREATE_KEY)).toBe(true)
+  })
+
+  it('панельную сессию не трогает', () => {
+    const { closeAfter, handler } = buildWithClose('panel')
+
+    handler.play({ type: 'closeForm' })
+
+    expect(closeAfter).not.toHaveBeenCalled()
+    expect(consumeDiscardDraftClose(CREATE_KEY)).toBe(false)
   })
 })

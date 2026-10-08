@@ -10,6 +10,7 @@ import {
   buildDialogEffectDeps,
 } from './build-effect-deps'
 import { createEffectHandler } from './effect-handler'
+import { markDiscardDraftClose } from './close-intent'
 import { requestScreenRebind } from './screen-rebind'
 import type { SduiSessionValue } from './sdui-session-context'
 import { useConfirmStore } from './stores/confirm-store'
@@ -98,6 +99,13 @@ export function buildDispatchEffectHandler(ctx: DispatchEffectHandlerCtx) {
               if (target === pathname) return
               requestScreenRebind(pathname, target)
               void ctx.navigate(route, { replace: true })
+            },
+      closeForm:
+        session.kind !== 'root'
+          ? undefined
+          : () => {
+              markDiscardDraftClose(pathname)
+              session.closeAfter?.(false)
             },
       validationReport: (effect) => {
         // SCRUM-317 §3.1/§3.3: отчёт ПОЛНОСТЬЮ заменяет прежний список

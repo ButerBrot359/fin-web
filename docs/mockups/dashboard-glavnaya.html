@@ -490,7 +490,7 @@ select.input { appearance: auto; background: var(--ui-01); }
     </header>
 
     <main class="main" id="main">
-      <div class="mock-banner"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h0"/></svg>Мокап главной. Выберите сотрудника ниже — у каждого профиль доступа КБП и свой шаблон роли. Вверху — организации (только доступные) и период по умолчанию. «Настроить» — перестановка, ширина, ⚙ настройки виджета (в том числе свой период), готовые шаблоны ролей и «Свой виджет». В каталоге только доступные виджеты. Настройки сохраняются в этом браузере; цифры демонстрационные.</div>
+      <div class="mock-banner"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h0"/></svg>Мокап главной. Выберите сотрудника ниже — у каждого профиль доступа КБП и свой шаблон роли. Вверху — организации (только доступные) и период по умолчанию. «Настроить» — перестановка, ширина, ⚙ настройки виджета (в том числе свой период), готовые шаблоны ролей и «Свой виджет». В каталоге только доступные виджеты. Виджеты показывают только готовые данные: отчёты и проверки не формируются на главной, для них есть свои разделы. Настройки сохраняются в этом браузере; цифры демонстрационные.</div>
 
       <div class="who">
         <span class="micro">Демонстрация · войти как</span>
@@ -789,12 +789,12 @@ const W = {
     r: el => { el.innerHTML = tile('12,4 <small>млн ₸</small>', 'остатки ТМЗ · 3 поступления не проведены'); } },
   'os': { t: 'Основные средства', area: 'sklad', d: 'Остаточная стоимость, амортизация, ОС к вводу в эксплуатацию', sizes: ['s', 'm'], hint: 'на 25.09.2026',
     r: () => tile('772,3 <small>млн ₸</small>', 'остаточная стоимость · первоначальная 1 284,6 · амортизация 512,3 · 2 ОС не введены в эксплуатацию') },
-  'clean': { t: 'Проверка учёта', area: 'common', d: 'Уборка бухгалтерии — только по вашим участкам', sizes: ['s', 'm', 'l'], hint: 'уборка бухгалтерии',
+  'clean': { t: 'Проверка учёта', area: 'common', d: 'Результат последней проверки учёта — только по вашим участкам', sizes: ['s', 'm', 'l'], hint: 'последняя проверка 25.09 в 08:00',
     params: [{ k: 'areas', l: 'Мои участки', type: 'many', o: Object.entries(CHECK_AREAS), def: Object.keys(CHECK_AREAS), d: 'Показываются только проверки по выбранным участкам' }],
     r: (el, c) => {
       const L = CHECKS.filter(k => c.areas.includes(k[2])), cnt = s => L.filter(k => k[0] === s).reduce((a, k) => a + k[3], 0);
       el.innerHTML = `<div class="clean-counters"><div class="cc critical"><span class="ic">!</span><span><span class="n">${cnt('critical')}</span><span class="t" style="display:block">Критические</span></span></div><div class="cc warning"><span class="ic">!</span><span><span class="n">${cnt('warning') + cnt('info')}</span><span class="t" style="display:block">Требуют внимания</span></span></div></div>` +
-        L.slice(0, 5).map(k => `<div class="problem">${st(k[0])}<div class="two-line"><div class="a">${k[1]}</div><div class="meta">${CHECK_AREAS[k[2]]}</div></div><b class="num">${k[3]}</b></div>`).join('') + (L.length ? '' : '<div class="placeholder">По вашим участкам замечаний нет</div>');
+        L.slice(0, 5).map(k => `<div class="problem">${st(k[0])}<div class="two-line"><div class="a">${k[1]}</div><div class="meta">${CHECK_AREAS[k[2]]}</div></div><b class="num">${k[3]}</b></div>`).join('') + (L.length ? '' : '<div class="placeholder">По вашим участкам замечаний нет</div>') + '<div class="links" style="margin-top:10px"><a href="#" onclick="return false">Запустить проверку в разделе ФЛК →</a></div>';
     } },
   'org': { t: 'Государственное учреждение', area: 'common', d: 'Реквизиты организации', sizes: ['m', 'l'], hint: 'справочник «Организации»',
     r: el => { el.innerHTML = [['Наименование', 'КГУ «Средняя школа №25»'], ['БИН', '120540012345'], ['АБП', '464 · Отдел образования'], ['Код учреждения', '4520117'], ['Основной счёт', 'KZ24070105KSN0000000']].map(k => `<div class="row"><span class="grow muted">${k[0]}</span><span>${k[1]}</span></div>`).join(''); } },
@@ -806,7 +806,6 @@ const W = {
 
 const KINDS = {
   docs: { t: 'Список документов', d: 'Любой тип документа с отбором: статус, период, автор', ic: 'reports', sizes: ['s', 'm', 'l'] },
-  report: { t: 'Показатель из отчёта', d: 'Итог любого отчёта с сохранёнными параметрами', ic: 'reg', sizes: ['s', 'm'] },
   account: { t: 'Остаток по счёту', d: 'Сальдо, обороты или динамика по счёту плана счетов', ic: 'bank', sizes: ['s', 'm', 'l'] },
   register: { t: 'Остатки регистра', d: 'Подотчёт, зарплата к выплате, налоги, заявки ГПС, планы', ic: 'warehouse', sizes: ['s', 'm'] },
   ai: { t: 'ИИ-виджет', d: 'Пустая карточка — опишите ассистенту, что на ней показать', ic: 'analytics', sizes: ['m', 'l'] },

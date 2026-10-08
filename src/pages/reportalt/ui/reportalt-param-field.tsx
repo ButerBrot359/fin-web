@@ -14,6 +14,7 @@ import {
 } from '@mui/material'
 
 import {
+  DEFAULT_ACCOUNT_PLAN_TYPE_CODE,
   SUBCONTO_BU_TYPE_CODE,
   useAccountPlanList,
   useSubcontoBuTypes,
@@ -208,10 +209,23 @@ export const ReportAltParamField = ({
     return new Set(def.map((v) => Number(v)))
   }, [param.dataType, param.defaultValue])
 
+  const selectedAccountIds = useMemo<Set<number>>(
+    () =>
+      param.dataType === 'ACCOUNT_LIST' && Array.isArray(value)
+        ? new Set(value)
+        : new Set(),
+    [param.dataType, value]
+  )
+
   const refOptions = useMemo<SelectOption[]>(() => {
     if (isAccountRef) {
       return accounts
-        .filter((a) => !allowedAccountIds || allowedAccountIds.has(a.id))
+        .filter(
+          (a) =>
+            !allowedAccountIds ||
+            allowedAccountIds.has(a.id) ||
+            selectedAccountIds.has(a.id)
+        )
         .map((a) => ({
           id: a.id,
           code: a.code,
@@ -241,6 +255,7 @@ export const ReportAltParamField = ({
     dictEntries,
     subcontoTypes,
     allowedAccountIds,
+    selectedAccountIds,
   ])
 
   const optionsUrl =
@@ -265,6 +280,8 @@ export const ReportAltParamField = ({
         : Promise.resolve([]),
     JSON.stringify(optionsSource ?? null)
   )
+  const [pinnedIds, setPinnedIds] = useState<number[]>([])
+  const [listSearch, setListSearch] = useState('')
   const [pickedLabels, setPickedLabels] = useState<
     Partial<Record<number, string>>
   >({})
@@ -332,21 +349,25 @@ export const ReportAltParamField = ({
     [sourceListSignature]
   )
   const showAllSearchParams = optionsSource?.params
+  const isAccountList = param.dataType === 'ACCOUNT_LIST'
   const canShowAll =
     !disabled &&
-    !!param.referenceDomain &&
-    ((isServerDictRef && !param.referenceDomain.includes(':')) ||
-      isServerDictList)
+    (isAccountList ||
+      (!!param.referenceDomain &&
+        ((isServerDictRef && !param.referenceDomain.includes(':')) ||
+          isServerDictList)))
   const openShowAll = (
     selectedId: number | undefined,
     onPicked: (option: SelectOption) => void
   ) => {
     openReferencePicker({
       mode: 'list',
-      domain: 'DICTIONARY',
-      typeCode: param.referenceDomain!,
+      domain: isAccountList ? 'ACCOUNT_PLAN' : 'DICTIONARY',
+      typeCode: isAccountList
+        ? (accountTypeCode ?? DEFAULT_ACCOUNT_PLAN_TYPE_CODE)
+        : param.referenceDomain!,
       selectedId,
-      searchParams: showAllSearchParams,
+      searchParams: isAccountList ? undefined : showAllSearchParams,
       onSelect: (option) => {
         if (!option) return
         setPickedLabels((prev) => ({
@@ -417,10 +438,21 @@ export const ReportAltParamField = ({
     case 'REF_LIST': {
       // Множественный выбор; значение — массив ID записей.
       const selectedIds = Array.isArray(value) ? value : []
-      const listOptions = optionsUrl ? sourceOptions : refOptions
+      const baseOptions = optionsUrl ? sourceOptions : refOptions
       const selected = optionsUrl
         ? sourceListSelected
         : refOptions.filter((o) => selectedIds.includes(Number(o.id)))
+      const pinnedOptions =
+        optionsUrl && listSearch !== ''
+          ? []
+          : pinnedIds.flatMap((id) => {
+              const option = selected.find((o) => Number(o.id) === id)
+              return option ? [option] : []
+            })
+      const listOptions = [
+        ...pinnedOptions,
+        ...baseOptions.filter((o) => !pinnedOptions.some((p) => p.id === o.id)),
+      ]
       const multiSelectActions: MultiSelectActions = {
         onCheckAll: () => {
           if (optionsUrl) {
@@ -460,20 +492,21 @@ export const ReportAltParamField = ({
             slots={{ paper: MultiSelectPaper }}
             forcePopupIcon
             disabled={disabled}
+            onOpen={() => {
+              setPinnedIds(selectedIds)
+              setListSearch('')
+              if (optionsUrl) loadSourceOptions()
+            }}
+            onInputChange={(_e, text, reason) => {
+              setListSearch(reason === 'input' ? text : '')
+              if (optionsUrl && reason === 'input') {
+                loadSourceOptionsDebounced(text)
+              }
+            }}
             {...(optionsUrl
               ? {
                   filterOptions: (opts: SelectOption[]) => opts,
                   loading: sourceLoading,
-                  onOpen: () => {
-                    loadSourceOptions()
-                  },
-                  onInputChange: (
-                    _e: unknown,
-                    text: string,
-                    reason: string
-                  ) => {
-                    if (reason === 'input') loadSourceOptionsDebounced(text)
-                  },
                 }
               : {})}
             // Ширину задаёт контейнер строки параметров (w-72) — поле не шире

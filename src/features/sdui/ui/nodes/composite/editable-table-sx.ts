@@ -23,6 +23,7 @@ export function editableTableSx(
   return {
     ...TABLE_GRID_SX,
     ...tableTextColorSx(nodeProps),
+    '& .MuiTableBody-root .MuiTableCell-root': { verticalAlign: 'top' },
     ...(isResizable
       ? {
           tableLayout: 'fixed' as const,

@@ -8,6 +8,7 @@ const inputBase = {
   border: 'none !important',
   borderRadius: '0 !important',
   minHeight: '28px !important',
+  height: 'auto !important',
   padding: '0 8px !important',
 }
 
@@ -21,7 +22,7 @@ export const wrapperSx: SystemStyleObject<Theme> = {
     // иконки уезжали бы к середине текста.
     alignItems: 'flex-start',
   },
-  '& .MuiAutocomplete-input': {
+  '& .MuiAutocomplete-root .MuiAutocomplete-input': {
     padding: '4px 0 !important',
     fontSize: '14px !important',
     // Значение поля — textarea (multilineInput), перенос по ширине колонки.
@@ -42,7 +43,7 @@ export const nowrapWrapperSx: SystemStyleObject<Theme> = {
   width: '100%',
   '& .MuiFormControl-root': { mb: 0, position: 'static' },
   '& .MuiFilledInput-root': { ...inputBase, alignItems: 'center' },
-  '& .MuiAutocomplete-input': {
+  '& .MuiAutocomplete-root .MuiAutocomplete-input': {
     padding: '4px 0 !important',
     fontSize: '14px !important',
     textOverflow: 'ellipsis',

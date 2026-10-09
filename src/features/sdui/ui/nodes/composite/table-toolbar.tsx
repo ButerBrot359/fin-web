@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons'
+import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
 import { figmaIcons } from '@/shared/ui/icons'
 
 import type { TableCommandDescriptor } from '../../../types/view'
@@ -39,6 +40,9 @@ interface TableToolbarProps {
   allowAdd?: boolean
   allowReorder?: boolean
   allowDelete?: boolean
+  /** SCRUM-400 §5.6.1: причина, почему нельзя добавлять, — подсказка на
+   * погашенной «Добавить» (без причины кнопка, как раньше, скрывается). */
+  addDeniedReason?: string
   commands?: TableCommandDescriptor[]
   search: Omit<TableSearchApi, 'rows'>
   selectedRowId?: string | null
@@ -61,6 +65,7 @@ export const TableToolbar = ({
   allowAdd = true,
   allowReorder = true,
   allowDelete = true,
+  addDeniedReason,
   commands = [],
   search,
   selectedRowId = null,
@@ -113,17 +118,22 @@ export const TableToolbar = ({
 
   return (
     <div className="flex items-center gap-2">
-      {allowAdd && (
-        // Figma 772:24370: «+ Добавить» — secondary; primary на экране одна,
-        // и это главное действие тулбара документа («Провести и закрыть»).
-        <Button
-          variant="secondary"
-          disabled={!canAdd}
-          onClick={onAdd}
-          startIcon={figmaIcons.plus}
+      {/* Figma 772:24370: «+ Добавить» — secondary; primary на экране одна.
+          SCRUM-400 §5.6.1: при запрете правами кнопка не исчезает, а гаснет
+          с причиной (addDeniedReason) — пользователь видит, почему нельзя. */}
+      {(allowAdd || addDeniedReason) && (
+        <DisabledReasonTooltip
+          reason={!allowAdd || !canAdd ? addDeniedReason : undefined}
         >
-          {t('table.add')}
-        </Button>
+          <Button
+            variant="secondary"
+            disabled={!allowAdd || !canAdd}
+            onClick={onAdd}
+            startIcon={figmaIcons.plus}
+          >
+            {t('table.add')}
+          </Button>
+        </DisabledReasonTooltip>
       )}
       {allowReorder && (
         <>
@@ -168,7 +178,7 @@ export const TableToolbar = ({
             >
               {groupCmds.map((cmd) => {
                 const needsRow = rowScoped(cmd) && !selectedRowId
-                return (
+                const item = (
                   <MenuItem
                     key={cmd.command}
                     disabled={!cmd.enabled || needsRow}
@@ -179,6 +189,21 @@ export const TableToolbar = ({
                   >
                     {commandLabel(cmd)}
                   </MenuItem>
+                )
+                // SCRUM-400 §5.6.1: причина гашения — общий DisabledReasonTooltip
+                // (SCRUM-308: «одно решение, не пять»). Оборачивается ТОЛЬКО
+                // погашенный пункт: активные MUI MenuList клонирует для
+                // клавиатурной навигации, чужая обёртка съела бы пропсы фокуса.
+                return !cmd.enabled && cmd.disabledReason ? (
+                  <DisabledReasonTooltip
+                    key={cmd.command}
+                    reason={cmd.disabledReason}
+                    block
+                  >
+                    {item}
+                  </DisabledReasonTooltip>
+                ) : (
+                  item
                 )
               })}
             </Menu>
@@ -292,6 +317,7 @@ export const TableToolbar = ({
         onClearSearch={search.clear}
         commands={commands}
         commandLabel={commandLabel}
+        addDeniedReason={addDeniedReason}
         onCommand={runCommand}
         isCommandDisabled={(cmd) =>
           !cmd.enabled || (rowScoped(cmd) && !selectedRowId)

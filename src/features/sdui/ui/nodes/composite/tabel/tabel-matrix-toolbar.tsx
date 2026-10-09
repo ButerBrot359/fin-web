@@ -14,12 +14,17 @@ import {
 } from '@mui/material'
 
 import { Button } from '@/shared/ui/buttons'
+import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
 import { figmaIcons } from '@/shared/ui/icons'
 
 import type { TabelManualWorkKind } from './tabel-matrix-contract'
 
 interface TabelMatrixToolbarProps {
   busy: boolean
+  /** SCRUM-400 §5.6: добавление запрещено (allowAdd=false или матрица readOnly). */
+  allowAdd?: boolean
+  /** Причина запрета — подсказка на погашенных кнопках добавления. */
+  addDeniedReason?: string
   hasActiveEmployee: boolean
   manualWorkKinds: TabelManualWorkKind[]
   query: string
@@ -35,6 +40,8 @@ interface TabelMatrixToolbarProps {
  * не входят — они живут в командной панели формы от бэка (spec v1 §6). */
 export const TabelMatrixToolbar: FC<TabelMatrixToolbarProps> = ({
   busy,
+  allowAdd = true,
+  addDeniedReason,
   hasActiveEmployee,
   manualWorkKinds,
   query,
@@ -49,7 +56,7 @@ export const TabelMatrixToolbar: FC<TabelMatrixToolbarProps> = ({
   const [kindAnchor, setKindAnchor] = useState<HTMLElement | null>(null)
 
   const addKindDisabled =
-    busy || !hasActiveEmployee || manualWorkKinds.length === 0
+    busy || !allowAdd || !hasActiveEmployee || manualWorkKinds.length === 0
   const addKindButton = (
     <Button
       variant="secondary"
@@ -65,18 +72,28 @@ export const TabelMatrixToolbar: FC<TabelMatrixToolbarProps> = ({
 
   return (
     <div className="flex items-center gap-2">
-      {/* Figma 772:24370: «+ Добавить» ТЧ — secondary, primary на экране одна */}
-      <Button
-        variant="secondary"
-        disabled={busy}
-        onClick={onAddEmployee}
-        startIcon={figmaIcons.plus}
-      >
-        {t('sdui.tabel.addEmployee')}
-      </Button>
-      <Button variant="secondary" disabled={busy} onClick={onOpenPodbor}>
-        {t('sdui.tabel.podbor')}
-      </Button>
+      {/* Figma 772:24370: «+ Добавить» ТЧ — secondary, primary на экране одна.
+          SCRUM-400 §5.6: при запрете добавления кнопки гаснут с причиной —
+          общий DisabledReasonTooltip на каждой (раскладку держит gap тулбара). */}
+      <DisabledReasonTooltip reason={!allowAdd ? addDeniedReason : undefined}>
+        <Button
+          variant="secondary"
+          disabled={busy || !allowAdd}
+          onClick={onAddEmployee}
+          startIcon={figmaIcons.plus}
+        >
+          {t('sdui.tabel.addEmployee')}
+        </Button>
+      </DisabledReasonTooltip>
+      <DisabledReasonTooltip reason={!allowAdd ? addDeniedReason : undefined}>
+        <Button
+          variant="secondary"
+          disabled={busy || !allowAdd}
+          onClick={onOpenPodbor}
+        >
+          {t('sdui.tabel.podbor')}
+        </Button>
+      </DisabledReasonTooltip>
       {!hasActiveEmployee && !busy && manualWorkKinds.length > 0 ? (
         // span-обёртка обязательна: без неё tooltip не работает на disabled-кнопке
         <Tooltip title={t('sdui.tabel.selectEmployeeFirst')}>

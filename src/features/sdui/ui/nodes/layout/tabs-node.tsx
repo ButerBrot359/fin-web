@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { FC } from 'react'
 import { Tabs, Tab } from '@mui/material'
 
+import { DisabledReasonTooltip } from '@/shared/ui/disabled-reason-tooltip'
+
 import type { NodeProps, ViewNode } from '../../../types/view'
 import { NodeRenderer } from '../../node-renderer'
 import { useSduiDispatch } from '../../../lib/dispatch'
@@ -80,9 +82,14 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
     (tab.props?.disabled as boolean | undefined) === true
 
   const handleChange = (_: React.SyntheticEvent, newIndex: number) => {
+    const tabNode = tabs[newIndex] as ViewNode | undefined
+    // SCRUM-400 §5.5: клик по погашенной вкладке (возможен сквозь span
+    // подсказки с pointerEvents: auto) не переключает и не шлёт EVENT —
+    // иначе сервер ответил бы 403 и форма переоткрылась бы из-за клика
+    // по серому заголовку.
+    if (tabNode && isDisabled(tabNode)) return
     setActiveIndex(newIndex)
 
-    const tabNode = tabs[newIndex] as ViewNode | undefined
     if (tabNode) {
       rememberActiveTab(tabNode.id)
       const fieldEventAction = tabNode.actions?.find(
@@ -141,17 +148,31 @@ export const TabsNode: FC<NodeProps> = ({ node }) => {
           : undefined
       }
     >
-      {tabs.map((tab, idx) => (
-        <Tab
-          key={tab.id}
-          disabled={isDisabled(tab)}
-          label={
-            (tab.props?.title as string | undefined) ??
-            (tab.props?.label as string | undefined) ??
-            `Tab ${String(idx + 1)}`
-          }
-        />
-      ))}
+      {tabs.map((tab, idx) => {
+        const labelText =
+          (tab.props?.title as string | undefined) ??
+          (tab.props?.label as string | undefined) ??
+          `Tab ${String(idx + 1)}`
+        const reason = tab.props?.tooltip as string | undefined
+        return (
+          <Tab
+            key={tab.id}
+            disabled={isDisabled(tab)}
+            label={
+              // SCRUM-400 §5.5: причина гашения вкладки — подсказкой на её
+              // заголовке. pointerEvents: заголовок disabled-вкладки не ловит
+              // события, без этого tooltip не всплывает.
+              isDisabled(tab) && reason ? (
+                <DisabledReasonTooltip reason={reason}>
+                  <span style={{ pointerEvents: 'auto' }}>{labelText}</span>
+                </DisabledReasonTooltip>
+              ) : (
+                labelText
+              )
+            }
+          />
+        )
+      })}
     </Tabs>
   )
 

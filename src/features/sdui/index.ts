@@ -71,3 +71,8 @@ export { dropCachedScreensFor } from './lib/fresh-form-instance'
 export { forgetListMemory } from './lib/stores/list-memory-store'
 export { forgetTabsMemory } from './lib/stores/tabs-memory-store'
 export { resetAdminCustomizeAutoOpen } from './ui/admin-customize-auto-open'
+export {
+  closeSduiSessionsForSignOut,
+  resetSduiClientState,
+  resumeSduiClose,
+} from './lib/sign-out-session-control'

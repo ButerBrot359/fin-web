@@ -9,7 +9,11 @@ import { TreeItemNode } from './tree-item-node'
  * узлу — обычный COMMAND тем же каналом, что кнопка (нового механизма нет).
  */
 export const TreeNode: FC<NodeProps> = ({ node }) => {
-  const items = (node.children ?? []).filter((c) => c.type === 'TREE_NODE')
+  const items = (node.children ?? []).filter(
+    // SCRUM-400: узлы без права сервер обычно не присылает вовсе; фильтр
+    // visible=false — безвредная вторая линия для компонентов, рисующих детей сами.
+    (c) => c.type === 'TREE_NODE' && c.props?.visible !== false
+  )
   if (items.length === 0) return null
   return (
     <ul className="m-0 list-none p-0">

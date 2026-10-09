@@ -39,7 +39,18 @@ export function handleConflict(
     // переоткрытием и пропало, а повтор вслепую упёрся бы в ту же версию. Показываем текст
     // бэка — он объясняет, что документ надо открыть заново, — и оставляем данные на экране,
     // чтобы человек мог их перенести. То же поведение, что у OBJECT_LOCKED ниже.
-    showToast('warning', err.message ?? i18n.t('sdui.conflict.objectVersionConflict'))
+    showToast(
+      'warning',
+      err.message ?? i18n.t('sdui.conflict.objectVersionConflict')
+    )
+  } else if (err.code === 'ACCESS_POLICY_CONFLICT') {
+    // SCRUM-400 §3.4: идёт публикация прав доступа — операция НЕ выполнена,
+    // правки целы. Без автоповтора и без переоткрытия: пользователь повторит
+    // той же кнопкой, когда публикация закончится (секунды).
+    showToast(
+      'warning',
+      err.message ?? i18n.t('sdui.conflict.accessPolicyConflict')
+    )
   } else if (err.code === 'OBJECT_LOCKED' || err.code === 'LOCK_CONFLICT') {
     // SCRUM-330 Работа 1: объект занят (другой пользователь / конкурентная
     // запись / фоновая задача). Запись НЕ выполнена, но правки целы: форму не

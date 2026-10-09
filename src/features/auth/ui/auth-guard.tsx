@@ -1,7 +1,10 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 
-import { onSessionExpired } from '@/shared/api/auth/session-events'
+import {
+  onPasswordChangeRequired,
+  onSessionExpired,
+} from '@/shared/api/auth/session-events'
 import { PageSkeleton } from '@/shared/ui/page-skeleton/page-skeleton'
 
 import {
@@ -43,6 +46,18 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     [handleSessionExpired]
   )
 
+  // SCRUM-400 §4.3: сервер потребовал смену пароля ПОСЛЕ входа (точный message
+  // фильтра пойман интерсептором) — сохранённый пользователь ещё с
+  // mustChangePassword=false, поэтому признак дублируется локальным флагом.
+  const [passwordChangeRequired, setPasswordChangeRequired] = useState(false)
+  useEffect(
+    () =>
+      onPasswordChangeRequired(() => {
+        setPasswordChangeRequired(true)
+      }),
+    []
+  )
+
   if (!AUTH_ENABLED) {
     return <>{children}</>
   }
@@ -64,7 +79,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
   // Пароль потребовали сменить — остальное приложение всё равно закрыто сервером (403,
   // ТЗ §А5). Ведём на смену пароля сами, иначе человек видел бы пустые экраны с отказами и
   // не понимал, чего от него хотят.
-  if (mustChangePassword) {
+  if (mustChangePassword || passwordChangeRequired) {
     return <Navigate to={CHANGE_PASSWORD_ROUTE} replace />
   }
 

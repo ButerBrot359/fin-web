@@ -19,6 +19,7 @@ import { applyPatches, clearErrors } from '../lib/patch-applier'
 import type { ViewNode, ViewPatch } from '../types/view'
 import { NodeRenderer } from './node-renderer'
 import { PanelStateProvider } from '../lib/panel-state-provider'
+import { isFormReadOnly } from '../lib/utils/form-read-only'
 import {
   registerPanelPatchSink,
   unregisterPanelPatchSink,
@@ -72,6 +73,10 @@ const PanelFormProvider = ({ panel }: { panel: PanelEntry }) => {
         setViewState((s) => ({ ...s, ...patch }))
       },
       isDirty: dirty,
+      // Дочерний диалог «только для чтения» приходит с readOnly в props корня
+      // effect.node (SCRUM-400 §5.3); патчи setProp на корень панели применяются
+      // к этому же дереву.
+      readOnly: isFormReadOnly(tree),
       resetDirty: () => {
         setDirty(false)
       },

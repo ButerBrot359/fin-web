@@ -23,6 +23,17 @@ export interface ModuleElement {
   nameRu: string
   nameKz: string
   /**
+   * SCRUM-400 §6.1: исполняемый объект пункта (отчёт/обработка) — для прав
+   * бэка; фронт пути строит по type/code, поля справочные.
+   */
+  executableObjectKind?: 'REPORT_ALT' | 'REPORT' | 'DATA_PROCESSOR' | null
+  executableObjectCode?: string | null
+  /**
+   * SCRUM-400 §6.1: READY | UNAVAILABLE | NAV_SUPPRESSED (прежний ROLE_HIDDEN
+   * переименован и больше не приходит). Фронт значение не использует.
+   */
+  availability?: string
+  /**
    * Готовый маршрут вместо вычисляемого `/modules/{pageCode}/{type}/{code}`.
    *
    * Нужен собственным экранам, которых нет в SDUI-контуре, — журналу регистрации и снятию

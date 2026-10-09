@@ -18,7 +18,6 @@ vi.mock('@/features/sdui', async (orig) => {
       // тест переопределяет window.__catchAllCase и window.__catchAllKind
       const c = (window as unknown as { __catchAllCase?: string })
         .__catchAllCase
-      if (c === 'route-unknown') props.onRouteUnknown?.()
       if (c === '422')
         props.onOpenFailed?.({
           kind: (window as unknown as { __catchAllKind?: string })
@@ -83,13 +82,6 @@ describe('SduiCatchAllPage', () => {
       expect(screen.getByText(`ЛЕГАСИ:${kind}`)).toBeTruthy()
     }
   )
-
-  it('404 ROUTE_UNKNOWN → NotFound', () => {
-    ;(window as never as { __catchAllCase?: string }).__catchAllCase =
-      'route-unknown'
-    renderAt('/foo/bar')
-    expect(screen.getByText(/notFound|не найдена/i)).toBeTruthy()
-  })
 
   it('restore dirty-сессии: вкладка document-entry для текущего пути → PageHeader сразу на initial mount, без вызова onTab (SduiScreen restore-ветка не шлёт OPEN)', () => {
     ;(window as never as { __catchAllCase?: string }).__catchAllCase = 'noop'

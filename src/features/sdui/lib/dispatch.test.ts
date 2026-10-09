@@ -19,6 +19,7 @@ import { apiService } from '@/shared/api/api'
 import { formInstanceIdFor } from '@/features/workspace-tabs/lib/utils/form-instance-id'
 import { tabRouteKey } from '@/shared/lib/router/form-instance-route'
 import { useValidationReportStore } from '@/entities/validation-report'
+import { useScreenAccessStore } from './access/screen-access-store'
 
 // Мутабельная локация: тесты подменяют search между рендерами
 const router = vi.hoisted(() => ({
@@ -715,17 +716,16 @@ describe('useSduiDispatch: res.dirty авторитетно (SCRUM-288 §2.5)', 
   })
 })
 
-// I-1 (ревью SCRUM-244): 404 на OPEN — штатный гейт раскатки, но тост должен
-// подавляться ТОЛЬКО когда хост реально обрабатывает фолбэк (opts.onOpenNotFound
-// передан). Без обработчика — прежнее поведение (тост), иначе документы без
-// фолбэка на легаси молча остаются на пустом скелетоне.
-describe('useSduiDispatch: 404 на OPEN (SCRUM-244 I-1)', () => {
+// SCRUM-400 §9.5: 404 на OPEN — экран «Объект не найден» (screen-access-store),
+// НЕ легаси-фолбэк и не тост: запись не существует либо вне области (RLS).
+describe('useSduiDispatch: 404 на OPEN (SCRUM-400 §9.5)', () => {
   let queryClient: QueryClient
   let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
 
   beforeEach(() => {
     vi.clearAllMocks()
     router.search = ''
+    useScreenAccessStore.getState().clearAll()
     vi.spyOn(viewTransport, 'post').mockRejectedValue(
       new ViewHttpError('Not Found', 404)
     )
@@ -738,7 +738,7 @@ describe('useSduiDispatch: 404 на OPEN (SCRUM-244 I-1)', () => {
       )
   })
 
-  it('с opts.onOpenNotFound: колбэк вызван, showToast НЕ вызван', async () => {
+  it('404 → not-found в screen-access-store, легаси-колбэк НЕ вызван, тоста нет', async () => {
     const onOpenNotFound = vi.fn()
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     const ok = await result.current(
@@ -749,19 +749,12 @@ describe('useSduiDispatch: 404 на OPEN (SCRUM-244 I-1)', () => {
     )
 
     expect(ok).toBe(false)
-    expect(onOpenNotFound).toHaveBeenCalledTimes(1)
+    expect(onOpenNotFound).not.toHaveBeenCalled()
     expect(showToast).not.toHaveBeenCalled()
-  })
-
-  it('без opts: showToast вызван (прежнее поведение документов без фолбэка)', async () => {
-    const { result } = renderHook(() => useSduiDispatch(), { wrapper })
-    const ok = await result.current({
-      type: 'OPEN',
-      layoutCode: 'X.Layout',
+    const key = tabRouteKey(router.pathname, router.search)
+    expect(useScreenAccessStore.getState().byRoute[key]).toEqual({
+      kind: 'not-found',
     })
-
-    expect(ok).toBe(false)
-    expect(showToast).toHaveBeenCalledTimes(1)
   })
 
   it('ошибка CLOSE не показывает тост', async () => {
@@ -775,10 +768,10 @@ describe('useSduiDispatch: 404 на OPEN (SCRUM-244 I-1)', () => {
   })
 })
 
-// Гейт ошибок OPEN на 3 ветки (SCRUM-290 §2 бэк-спеки): ROUTE_UNKNOWN →
-// onRouteUnknown; SCREEN_NOT_SDUI → onOpenNotFound({kind}); унаследованный
-// 404 NOT_FOUND → onOpenNotFound() без kind. Без подходящего колбэка — тост.
-describe('useSduiDispatch: гейт ошибок OPEN на 3 ветки (SCRUM-290)', () => {
+// Гейт ошибок OPEN (SCRUM-290 → SCRUM-400): легаси-фолбэк ТОЛЬКО по
+// 422 SCREEN_NOT_SDUI; любой 404 (в т.ч. ROUTE_UNKNOWN) — «Объект не найден»
+// через screen-access-store, тоста и легаси нет.
+describe('useSduiDispatch: гейт ошибок OPEN (SCRUM-290/SCRUM-400)', () => {
   let queryClient: QueryClient
   let wrapper: ({ children }: { children: React.ReactNode }) => React.ReactNode
 
@@ -809,22 +802,24 @@ describe('useSduiDispatch: гейт ошибок OPEN на 3 ветки (SCRUM-2
     expect(showToast).not.toHaveBeenCalled()
   })
 
-  it('OPEN 404 ROUTE_UNKNOWN → onRouteUnknown, без тоста', async () => {
+  it('OPEN 404 ROUTE_UNKNOWN → «Объект не найден», без тоста', async () => {
+    useScreenAccessStore.getState().clearAll()
     vi.spyOn(viewTransport, 'post').mockRejectedValue(
       new ViewHttpError('nope', 404, 'ROUTE_UNKNOWN')
     )
-    const onRouteUnknown = vi.fn()
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
-    const ok = await result.current({ type: 'OPEN' }, null, false, {
-      onRouteUnknown,
-    })
+    const ok = await result.current({ type: 'OPEN' })
 
     expect(ok).toBe(false)
-    expect(onRouteUnknown).toHaveBeenCalledTimes(1)
     expect(showToast).not.toHaveBeenCalled()
+    const key = tabRouteKey(router.pathname, router.search)
+    expect(useScreenAccessStore.getState().byRoute[key]).toEqual({
+      kind: 'not-found',
+    })
   })
 
-  it('OPEN 404 NOT_FOUND → onOpenNotFound() без kind (унаследованный тракт)', async () => {
+  it('OPEN 404 NOT_FOUND → «Объект не найден», легаси-колбэк НЕ вызван', async () => {
+    useScreenAccessStore.getState().clearAll()
     vi.spyOn(viewTransport, 'post').mockRejectedValue(
       new ViewHttpError('nope', 404, 'NOT_FOUND')
     )
@@ -832,7 +827,11 @@ describe('useSduiDispatch: гейт ошибок OPEN на 3 ветки (SCRUM-2
     const { result } = renderHook(() => useSduiDispatch(), { wrapper })
     await result.current({ type: 'OPEN' }, null, false, { onOpenNotFound })
 
-    expect(onOpenNotFound).toHaveBeenCalledWith(undefined)
+    expect(onOpenNotFound).not.toHaveBeenCalled()
+    const key = tabRouteKey(router.pathname, router.search)
+    expect(useScreenAccessStore.getState().byRoute[key]).toEqual({
+      kind: 'not-found',
+    })
   })
 })
 

@@ -25,6 +25,10 @@ interface TabelMatrixGridProps {
   collapsed: Set<string>
   activeId: string | null
   busy: boolean
+  /** SCRUM-400 §5.6: матрица только для чтения — ячейки заперты. */
+  readOnly?: boolean
+  /** Право «Удаление» снято (allowDelete=false или readOnly): корзинки гаснут. */
+  deleteDisabled?: boolean
   draftKindsFor: (employeeNodeId: string) => TabelManualWorkKind[]
   onToggle: (employeeNodeId: string) => void
   onSelect: (employee: TabelEmployee) => void
@@ -56,6 +60,8 @@ export const TabelMatrixGrid: FC<TabelMatrixGridProps> = ({
   collapsed,
   activeId,
   busy,
+  readOnly = false,
+  deleteDisabled = false,
   draftKindsFor,
   onToggle,
   onSelect,
@@ -141,7 +147,7 @@ export const TabelMatrixGrid: FC<TabelMatrixGridProps> = ({
                   days={days}
                   expanded={expanded}
                   active={activeId === employee.employeeNodeId}
-                  disabled={busy}
+                  disabled={busy || deleteDisabled}
                   onToggle={() => {
                     onToggle(employee.employeeNodeId)
                   }}
@@ -159,7 +165,8 @@ export const TabelMatrixGrid: FC<TabelMatrixGridProps> = ({
                       kind={kind}
                       draft={draft}
                       days={days}
-                      disabled={busy}
+                      disabled={busy || deleteDisabled}
+                      readOnly={readOnly}
                       onCommitCell={onCommitCell(
                         employee.employeeNodeId,
                         kind.workTimeKindRef

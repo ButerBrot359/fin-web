@@ -140,6 +140,8 @@ interface KindRowProps {
   draft?: boolean
   days: DayHeader[]
   disabled: boolean
+  /** SCRUM-400 §5.6: вся матрица только для чтения (readOnly ТЧ или формы). */
+  readOnly?: boolean
   onCommitCell: (date: string, raw: string) => boolean | Promise<boolean>
   onDelete: () => void
 }
@@ -150,6 +152,7 @@ export const TabelKindRow: FC<KindRowProps> = ({
   draft = false,
   days,
   disabled,
+  readOnly = false,
   onCommitCell,
   onDelete,
 }) => {
@@ -197,7 +200,7 @@ export const TabelKindRow: FC<KindRowProps> = ({
         <TableCell key={d.iso} sx={d.weekend ? weekendSx : dayCellSx}>
           <TabelMatrixCell
             value={kind.cells[d.iso]}
-            readOnly={kind.protected}
+            readOnly={kind.protected || readOnly}
             weekend={d.weekend}
             onCommit={(raw) => onCommitCell(d.iso, raw)}
           />

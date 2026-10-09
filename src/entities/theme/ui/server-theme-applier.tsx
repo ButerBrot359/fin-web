@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import { applyServerTheme } from '@/shared/design/apply-server-theme'
 
 import { themeApi } from '../api/theme-api'
+import { useAuthUserId } from '@/shared/lib/hooks/use-auth-user-id'
+
 import { themeKeys } from '../lib/query-keys'
 
 /**
@@ -16,8 +18,9 @@ import { themeKeys } from '../lib/query-keys'
  * дефолтную тему, retry не нужен: тема не стоит шума при нестабильной сети.
  */
 export const ServerThemeApplier = () => {
+  const userId = useAuthUserId()
   const { data } = useQuery({
-    queryKey: themeKeys.merged(),
+    queryKey: themeKeys.merged(userId),
     queryFn: ({ signal }) => themeApi.getTheme(signal),
     staleTime: Infinity,
     retry: false,

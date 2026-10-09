@@ -45,6 +45,10 @@ const InactivityLocksPage = lazyNamed(
   () => import('@/pages/inactivity-locks'),
   'InactivityLocksPage'
 )
+const AccessPolicyPage = lazyNamed(
+  () => import('@/pages/access-policy'),
+  'AccessPolicyPage'
+)
 const SduiCatchAllPage = lazyNamed(
   () => import('@/pages/sdui-catch-all'),
   'SduiCatchAllPage'
@@ -88,6 +92,9 @@ export const AppRoutes = () => {
           />
           {/* Журнал регистрации действий (приказ МФ РК № 254, п. 27) — только чтение. */}
           <Route path="/admin/audit" element={<AuditLogPage />} />
+          {/* Режим прав доступа (SCRUM-400 §11): видит и переключает только
+              администратор политики прав; содержимое защищает сервер (403). */}
+          <Route path="/admin/access-policy" element={<AccessPolicyPage />} />
           <Route
             path="/admin/users/:userEntryId/face-id"
             element={<FaceIdUserPage />}

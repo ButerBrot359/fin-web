@@ -32,3 +32,19 @@ export function clearFormSession(route: string): void {
     // см. saveFormSession
   }
 }
+
+/** Выход/смена пользователя (SCRUM-400 §10): резюм чужих сессий недопустим. */
+export function clearAllFormSessions(): void {
+  try {
+    const keys: string[] = []
+    for (let i = 0; i < sessionStorage.length; i += 1) {
+      const key = sessionStorage.key(i)
+      if (key?.startsWith(KEY_PREFIX)) keys.push(key)
+    }
+    keys.forEach((key) => {
+      sessionStorage.removeItem(key)
+    })
+  } catch {
+    // см. saveFormSession
+  }
+}

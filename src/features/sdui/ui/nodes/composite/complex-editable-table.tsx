@@ -4,10 +4,13 @@ import { Paper, Table, TableBody, TableContainer } from '@mui/material'
 
 import type { ViewNode, TableCommandDescriptor } from '../../../types/view'
 import { useTableSync } from '../../../lib/hooks/use-table-sync'
+import { useSduiSession } from '../../../lib/sdui-session-context'
+import { isReadOnlyProps } from '../../../lib/utils/form-read-only'
 import { useTableSearch } from '../../../lib/hooks/use-table-search'
 import { useSearchScroll } from '../../../lib/hooks/use-search-scroll'
 import { useTableRowCommands } from '../../../lib/hooks/use-table-row-commands'
 import { useFormSaveCommand } from '../../../lib/hooks/use-form-save-command'
+import { buildTableMutationPolicy } from '../../../lib/utils/table-mutation-policy'
 import { navestiFokusNaTablitsu } from '../../../lib/utils/table-keyboard-focus'
 import { useTableMultiSelection } from '../../../lib/hooks/use-table-multi-selection'
 import { useRowSelectionIdentity } from '../../../lib/hooks/use-row-selection-identity'
@@ -66,6 +69,15 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const allowDelete = node.props?.allowDelete === true
   const allowReorder = node.props?.allowReorder === true
   const showRowNumbers = node.props?.showRowNumbers === true
+
+  // SCRUM-400 §5.6: запирание ТЧ правами приходит как props.readOnly узла
+  // TABLE (сервер дублирует readOnly и на колонки — ячейки запираются своими
+  // пропами) либо наследуется от readOnly корня формы. Политика закрывает все
+  // пути мутаций: кнопки, хоткеи, вставку, Undo. allow* при этом остаются
+  // доменными правилами (master-detail ниже) — права их не подменяют.
+  const sessionReadOnly = useSduiSession().readOnly
+  const tableReadOnly = sessionReadOnly || isReadOnlyProps(node.props)
+  const addDeniedReason = node.props?.addDeniedReason as string | undefined
   // SCRUM-363: потоковый ввод строк «как в 1С». Строго по серверному флагу —
   // без веток по коду документа/route (серверная SDUI-мета управляет областью).
   const autoAdvance = node.props?.autoAdvance === true
@@ -82,12 +94,15 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
     [node.props]
   )
 
-  // Memoize columns by node.children — critical for preserving input focus
-  const flatColumns = useMemo(
-    () => extractAllLeafColumns(node.children),
-
-    [node.children]
-  )
+  // Memoize columns by node.children — critical for preserving input focus.
+  // При запертой ТЧ колонки принудительно readonly: реконсиляция use-table-sync
+  // и политика ячеек видят то же запирание, что и рендер (см. buildColumnDefs).
+  const flatColumns = useMemo(() => {
+    const cols = extractAllLeafColumns(node.children)
+    return tableReadOnly
+      ? cols.map((c) => (c.readonly ? c : { ...c, readonly: true }))
+      : cols
+  }, [node.children, tableReadOnly])
 
   // Постоянная заливка колонок (column-background.ts): ячейка на TanStack знает
   // только id колонки, props остались в исходном описании.
@@ -110,6 +125,13 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   // notify. Правило авторитетно на сервере, активная кнопка данные не портит
   // (frontend-spec-table-row-activate §3.4/§6).
   const showAdd = allowAdd || isMasterDetail
+
+  const policy = buildTableMutationPolicy({
+    tableReadOnly,
+    allowAdd: showAdd,
+    allowDelete,
+    allowReorder: allowReorder && !isMasterDetail,
+  })
 
   // Отбор по внешнему списку (панель сотрудников) — независим от master-detail:
   // тот связывает ДВЕ ТЧ одного документа, этот фильтрует по витрине формы и не
@@ -166,10 +188,13 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
         syncRef,
         validationRef,
         autoAdvanceCtx,
-        cellRefHandlers
+        cellRefHandlers,
+        // SCRUM-400 §5.6: форма/ТЧ только для чтения — ячейки заперты и на
+        // клиенте (тот же пояс, что у EditableTable), не только пропами колонок.
+        tableReadOnly
       ),
 
-    [node.children, autoAdvanceCtx, cellRefHandlers]
+    [node.children, autoAdvanceCtx, cellRefHandlers, tableReadOnly]
   )
 
   // ── Footer ──
@@ -241,6 +266,7 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
   const commands = useTableRowCommands({
     sync,
     columns: flatColumns,
+    policy,
     visibleRows,
     selectedRowId: selection.selectedRowId,
     selectedRowIds: vydelennyeRowIds,
@@ -297,10 +323,13 @@ export const ComplexEditableTable: FC<ComplexEditableTableProps> = ({
           {...commands.toolbarProps}
           canMoveUp={!isMasterDetail && commands.canMoveUp}
           canMoveDown={!isMasterDetail && commands.canMoveDown}
-          canAdd={!isMasterDetail || masterKeyValue !== undefined}
+          canAdd={
+            policy.canAdd && (!isMasterDetail || masterKeyValue !== undefined)
+          }
           allowAdd={showAdd}
-          allowReorder={allowReorder && !isMasterDetail}
-          allowDelete={allowDelete}
+          allowReorder={policy.canReorder}
+          allowDelete={policy.canDelete}
+          addDeniedReason={addDeniedReason}
           commands={tableCommands}
           search={search}
           selectedRowId={selection.selectedRowId}

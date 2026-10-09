@@ -1,15 +1,38 @@
+import { CanceledError } from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
 
+import { classifyAccessError, readErrorBody } from '@/shared/api/access-denied'
+
 import { isAuthEndpoint } from './auth-endpoints'
+import { getAuthGeneration } from './auth-generation'
 import { refreshSession } from './refresh-session'
-import { getAccessToken } from './token-storage'
+import {
+  emitPasswordChangeRequired,
+  emitSessionExpired,
+} from './session-events'
+import { clearSession, getAccessToken } from './token-storage'
 
 /**
  * Запрос, для которого продление уже пробовали. Повторять его второй раз нельзя: если
  * ресурс отдаёт 401 даже со свежим токеном (право отобрали, объект чужой), цикл
  * «401 → refresh → 401» крутился бы бесконечно.
  */
-type RetriableConfig = AxiosRequestConfig & { _authRetry?: boolean }
+type RetriableConfig = AxiosRequestConfig & {
+  _authRetry?: boolean
+  /** Поколение авторизации на момент отправки (SCRUM-400 §10 п.4). */
+  _authGeneration?: number
+}
+
+/**
+ * Ответ пришёл в ЧУЖОМ поколении личности: между отправкой и ответом случился
+ * выход или вход другого пользователя. Такой ответ не должен дойти ни до
+ * одного обработчика — превращаем его в отмену (ERR_CANCELED обрабатывается
+ * всеми слоями как «не показывать»).
+ */
+const isStaleAuthGeneration = (config: unknown): boolean => {
+  const stamped = (config as RetriableConfig | undefined)?._authGeneration
+  return stamped !== undefined && stamped !== getAuthGeneration()
+}
 
 /**
  * Навешивает на инстанс axios подстановку Bearer-токена и автопродление сессии по 401.
@@ -32,6 +55,10 @@ type RetriableConfig = AxiosRequestConfig & { _authRetry?: boolean }
  */
 export const attachAuthInterceptors = (instance: AxiosInstance): void => {
   instance.interceptors.request.use((config) => {
+    // Поколение фиксируется при ПЕРВОЙ отправке (retry после refresh сохраняет
+    // исходное: продление сессии того же пользователя поколение не меняет).
+    const retriable = config as RetriableConfig
+    retriable._authGeneration ??= getAuthGeneration()
     const token = getAccessToken()
     if (token) {
       config.headers.set('Authorization', `Bearer ${token}`)
@@ -40,9 +67,37 @@ export const attachAuthInterceptors = (instance: AxiosInstance): void => {
   })
 
   instance.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      if (isStaleAuthGeneration(response.config)) {
+        throw new CanceledError('auth generation changed')
+      }
+      return response
+    },
     async (error: AxiosError) => {
       const config = error.config as RetriableConfig | undefined
+
+      if (isStaleAuthGeneration(config)) {
+        return Promise.reject(new CanceledError('auth generation changed'))
+      }
+
+      // SCRUM-400 §4.3: два 403 авторизации, которые НЕ являются отказом по правам,
+      // перехватываются здесь — до любых обработчиков экранов, одинаково для
+      // общего клиента и SDUI-транспорта. Контур входа исключён: 403 от /login
+      // — обычный отказ входа, его показывает сама форма, а не «сессия истекла».
+      if (error.response?.status === 403 && !isAuthEndpoint(config?.url)) {
+        const body = readErrorBody(error.response.data)
+        const kind = classifyAccessError(403, body.code, body.message)
+        if (kind?.kind === 'account-ineligible') {
+          // Учётная запись стала недействительной: сессия мертва. Токены чистим
+          // и уводим на вход с текстом сервера — «Нет доступа» здесь ложь.
+          clearSession()
+          emitSessionExpired(kind.message ?? undefined)
+        } else if (kind?.kind === 'password-change') {
+          // Обязательная смена пароля включилась ПОСЛЕ входа: гвард по
+          // сохранённому пользователю её не видит — уводим событием.
+          emitPasswordChangeRequired()
+        }
+      }
 
       const shouldTryRefresh =
         error.response?.status === 401 &&

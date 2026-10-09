@@ -14,6 +14,10 @@ import {
   type ClipboardRowValues,
 } from '../utils/table-clipboard'
 import { buildEmptyRow } from './table-sync-model'
+import {
+  PERMISSIVE_TABLE_POLICY,
+  type TableMutationPolicy,
+} from '../utils/table-mutation-policy'
 import type {
   TableColumnDef,
   TableRow,
@@ -80,6 +84,12 @@ export interface UseTableRowCommandsParams {
    * хука не нужен, поэтому опционален.
    */
   onSave?: () => void
+  /**
+   * SCRUM-400 §5.6.1: разрешения мутаций — ЕДИНЫЕ для кнопок, хоткеев, вставки
+   * и Undo. Не передан — поведение прежнее (всё разрешено на этом уровне,
+   * кнопки гасятся флагами тулбара).
+   */
+  policy?: TableMutationPolicy
 }
 
 export interface UseTableRowCommandsResult {
@@ -133,13 +143,20 @@ export function useTableRowCommands({
   onMoved,
   search,
   onSave,
+  policy = PERMISSIVE_TABLE_POLICY,
 }: UseTableRowCommandsParams): UseTableRowCommandsResult {
-  const handleAdd = onAdd
+  // Все пути мутации проходят через эти обработчики (тулбар, «Ещё», хоткеи,
+  // вставка, Undo) — гард здесь закрывает их разом.
+  const handleAdd = () => {
+    if (!policy.canAdd) return
+    onAdd()
+  }
 
   // Удаляем по rowId из ПОЛНОГО массива sync.rows (SCRUM-282 C1): видимый
   // индекс указывает на позицию в отфильтрованном visibleRows и не годится
   // для sync.deleteRow.
   const handleRemove = () => {
+    if (!policy.canDelete) return
     const udalyaemye = udalyaemyeRowIds()
     if (udalyaemye.length === 0) return
     const nabor = new Set(udalyaemye)
@@ -195,6 +212,8 @@ export function useTableRowCommands({
   // копия заблокированной строки приезжала бы заблокированной ещё до ответа
   // сервера (см. service-row-keys).
   const handleCopy = () => {
+    // Копия строки — то же добавление (право «Добавление», спека §5.5).
+    if (!policy.canAdd) return
     if (selectedRowId === null) return
     const src = sync.rows.find((r) => r.rowId === selectedRowId)
     if (!src) return
@@ -206,6 +225,7 @@ export function useTableRowCommands({
   // между ними принадлежат другим сотрудникам, и перестановка через них
   // сдвинула бы чужие данные.
   const handleMoveUp = () => {
+    if (!policy.canReorder) return
     if (selectedVisibleIndex <= 0) return
     const from = globalIndexOf(selectedVisibleIndex)
     const to = globalIndexOf(selectedVisibleIndex - 1)
@@ -214,6 +234,7 @@ export function useTableRowCommands({
     onMoved?.(selectedVisibleIndex - 1)
   }
   const handleMoveDown = () => {
+    if (!policy.canReorder) return
     if (
       selectedVisibleIndex < 0 ||
       selectedVisibleIndex >= visibleRows.length - 1
@@ -278,6 +299,8 @@ export function useTableRowCommands({
 
   /** Ctrl+V: строки из буфера дописываются в конец ТЧ — как «Вставить» в 1С. */
   const vstavit = (znacheniya: ClipboardRowValues[]) => {
+    // Вставка добавляет строки — это «Добавление» (SCRUM-400 §5.6.1).
+    if (!policy.canAdd) return
     if (znacheniya.length === 0) return
     const novye = znacheniya.map((values) => ({
       ...buildEmptyRow(columns),
@@ -298,6 +321,9 @@ export function useTableRowCommands({
   }
 
   const handleUndo = () => {
+    // Запертая ТЧ не меняется и через отмену. Точечные allow* Undo не
+    // анализирует: история содержит только действия, прошедшие эти же гарды.
+    if (policy.readOnly) return
     sync.undo()
   }
 
@@ -327,11 +353,14 @@ export function useTableRowCommands({
     onSave: onSave,
   })
 
-  const canMoveUp = selectedVisibleIndex > 0
+  const canMoveUp = policy.canReorder && selectedVisibleIndex > 0
   const canMoveDown =
-    selectedVisibleIndex >= 0 && selectedVisibleIndex < visibleRows.length - 1
-  const canRemove = selectedRowId !== null || selectedRowIds.length > 0
-  const canCopy = selectedRowId !== null
+    policy.canReorder &&
+    selectedVisibleIndex >= 0 &&
+    selectedVisibleIndex < visibleRows.length - 1
+  const canRemove =
+    policy.canDelete && (selectedRowId !== null || selectedRowIds.length > 0)
+  const canCopy = policy.canAdd && selectedRowId !== null
 
   return {
     handleAdd,

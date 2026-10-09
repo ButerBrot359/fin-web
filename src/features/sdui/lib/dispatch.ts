@@ -47,6 +47,12 @@ import {
   dropDeferredResponses,
   replayDeferredResponses,
 } from './deferred-responses'
+import { useScreenAccessStore } from './access/screen-access-store'
+import {
+  observeServerAuthGeneration,
+  stripAccessPropPatches,
+} from './access/server-auth-generation'
+import { isSduiCloseSuppressed } from './sign-out-session-control'
 
 export function useSduiDispatch() {
   const location = useLocation()
@@ -66,7 +72,6 @@ export function useSduiDispatch() {
       isRetry = false,
       opts?: {
         onOpenNotFound?: (info?: { kind?: string }) => void
-        onRouteUnknown?: () => void
         onOpenTab?: (tab: ViewTabMeta | null) => void
         // Background refresh may finish after the user edits or changes tabs.
         acceptOpenResponse?: () => boolean
@@ -137,6 +142,24 @@ export function useSduiDispatch() {
         effectHandler.playAll(effects)
       }
 
+      // SCRUM-400 §5.9: восстановление после отзыва прав — ровно один свежий
+      // OPEN БЕЗ старого formSessionId (freshOpen). Старую сессию закрываем
+      // best effort: сервер и так знает, что «Просмотр» потерян, но не держим
+      // её до TTL. isRetry=true у OPEN не даёт зациклиться: повторный 403
+      // уводит в экран «Нет доступа» (handle-access-denied).
+      const reopenFresh = async () => {
+        const staleSessionId = session.getSession().formSessionId
+        if (staleSessionId) {
+          void viewTransport
+            .post({ formSessionId: staleSessionId, action: { type: 'CLOSE' } })
+            .catch(() => undefined)
+        }
+        await dispatchAction({ type: 'OPEN' }, null, true, {
+          freshOpen: true,
+          onOpenTab: opts?.onOpenTab,
+        })
+      }
+
       const reopen = async () => {
         // isRetry: мы уже внутри повтора после восстановления — второй
         // SESSION_NOT_FOUND подряд означает нестабильный бэк; не зацикливаемся.
@@ -166,6 +189,15 @@ export function useSduiDispatch() {
       let releaseTurn: (() => void) | null = null
 
       try {
+        // SCRUM-400 §10 п.5: CLOSE после выхода не отправлять — без токена он
+        // ответит 401 и породит ложное «сессия истекла». Локальную уборку
+        // делаем как обычно.
+        if (action.type === 'CLOSE' && isSduiCloseSuppressed()) {
+          clearFormSession(route)
+          dropDeferredResponses(route)
+          return true
+        }
+
         if (action.type === 'COMMAND' && shouldFlush) {
           try {
             await flushAllPendingTableCommits()
@@ -206,7 +238,7 @@ export function useSduiDispatch() {
               }
             : action
         owner = captureResponseOwner(session, route)
-        const res = await viewTransport.post({
+        let res = await viewTransport.post({
           // SCRUM-330 Работа 2: на OPEN шлём formSessionId, переживший F5 в
           // sessionStorage. Сейчас бэк его игнорирует (резюм отложен — v2 §2);
           // включение резюма будет односторонним, серверным, без правок фронта.
@@ -228,7 +260,12 @@ export function useSduiDispatch() {
         })
 
         if (action.type === 'OPEN') {
+          // Поздний OPEN из ПРОШЛОГО поколения (фоновый refresh, ушедший до
+          // публикации прав и обогнанный свежим OPEN) не должен перетирать
+          // дерево: он воскресил бы только что отозванные кнопки и поля.
+          const openIsFresh = observeServerAuthGeneration(res.authGeneration)
           if (
+            !openIsFresh ||
             (opts?.acceptOpenResponse && !opts.acceptOpenResponse()) ||
             (freshInstance && !freshInstance.commit())
           ) {
@@ -249,6 +286,11 @@ export function useSduiDispatch() {
             playEffects,
           })
           opts?.onOpenResponse?.(res)
+          // SCRUM-400: успешный OPEN снимает «Нет доступа»/«Объект не найден»
+          // этой вкладки (права могли вернуть, язык могли сменить).
+          useScreenAccessStore
+            .getState()
+            .clear(tabRouteKey(location.pathname, location.search))
           // SCRUM-308 §5: дерево и значения восстановлены — теперь можно
           // проиграть исходы, отложенные, пока вкладка была скрыта.
           replayDeferredResponses(route)
@@ -258,6 +300,15 @@ export function useSduiDispatch() {
           clearFormSession(route)
           dropDeferredResponses(route)
         } else {
+          // SCRUM-400 §3.5: ответ из прошлого поколения авторизации (права
+          // менялись, пока запрос летел) не должен откатывать применённые
+          // enabled/readOnly-патчи — вырезаем из него ТОЛЬКО права-патчи.
+          // Целиком не выбрасываем: это мог быть успешный ответ записи, и
+          // его значения/эффекты/closeAfter обязаны примениться (иначе
+          // пользователь видит «ничего не произошло» и повторяет запись).
+          if (!observeServerAuthGeneration(res.authGeneration)) {
+            res = { ...res, patches: stripAccessPropPatches(res.patches) }
+          }
           // SCRUM-308 §5: владение ответом. Пока запрос летел, пользователь мог
           // уйти с экрана — исход маршрутизируется по владельцу: active —
           // применяем; deferred — вкладка жива, эффекты проиграются при
@@ -337,12 +388,14 @@ export function useSduiDispatch() {
         }
         handleDispatchError(error, {
           action,
+          behavior,
           isRetry,
           pathname: tabRouteKey(location.pathname, location.search),
           session,
           opts,
           retry: () => dispatchAction(action, behavior, true),
           reopen,
+          reopenFresh,
         })
         return false
       } finally {

@@ -2,6 +2,8 @@ import type { NavigateFunction } from 'react-router-dom'
 
 import i18n from '@/app/config/i18n'
 import { apiService } from '@/shared/api/api'
+import { isApiHttpError } from '@/shared/api/api-error'
+import { parseBlobErrorBody, readErrorBody } from '@/shared/api/access-denied'
 import { showToast } from '@/shared/ui/toast/show-toast'
 
 import type { ViewEffect } from '../types/view'
@@ -243,8 +245,16 @@ export function createEffectHandler(deps: EffectHandlerDeps) {
           .then((res) => {
             saveOrPreviewBlob(res as never)
           })
-          .catch(() => {
-            showToast('error', i18n.t('sdui.downloadError'))
+          .catch(async (err: unknown) => {
+            // SCRUM-400 §8.4: отказ печати/выгрузки приходит JSON-телом до
+            // первого байта файла, но из-за responseType: 'blob' тело — Blob.
+            // Разбираем его и показываем message сервера («Нет права на
+            // печать: …»), а не общую «Ошибка скачивания файла».
+            const body = isApiHttpError(err)
+              ? await parseBlobErrorBody(err.body)
+              : null
+            const { message } = readErrorBody(body)
+            showToast('error', message ?? i18n.t('sdui.downloadError'))
           })
         break
       }

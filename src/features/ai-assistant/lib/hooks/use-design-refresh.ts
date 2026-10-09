@@ -25,7 +25,7 @@ export const useDesignRefresh = (): ((answer: AiAssistantAnswer) => void) => {
       void queryClient.invalidateQueries({ queryKey: ['sdui-list'] })
     }
     if (answer.themeChanged) {
-      void queryClient.invalidateQueries({ queryKey: themeKeys.merged() })
+      void queryClient.invalidateQueries({ queryKey: themeKeys.root })
     }
   }
 }

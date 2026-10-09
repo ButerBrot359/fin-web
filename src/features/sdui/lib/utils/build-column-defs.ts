@@ -130,6 +130,13 @@ interface CellEditorDeps {
   validationRef?: RefObject<UseTableValidationResult>
   autoAdvance?: AutoAdvanceColumnContext
   cellRefHandlers?: CellRefHandlersFactory
+  /**
+   * SCRUM-400 §5.6: ТЧ целиком «только для чтения» (readOnly узла TABLE или
+   * корня формы) — каждая колонка запирается независимо от собственных
+   * пропов. Пояс к серверной гарантии «колонки дублируются readOnly»: обе
+   * таблицы (flat и complex) получают одинаковое запирание на клиенте.
+   */
+  forceReadOnly?: boolean
 }
 
 /**
@@ -191,15 +198,24 @@ export function buildColumnDefs(
   syncRef: RefObject<UseTableSyncResult>,
   validationRef?: RefObject<UseTableValidationResult>,
   autoAdvance?: AutoAdvanceColumnContext,
-  cellRefHandlers?: CellRefHandlersFactory
+  cellRefHandlers?: CellRefHandlersFactory,
+  forceReadOnly?: boolean
 ): ColumnDef<TableRow>[] {
   // Число под-строк считается по ВСЕЙ таблице и одно на все вертикальные
   // группы — иначе их разделители встают на разной высоте (см. verticalSubRows).
   return buildColumnDefsInner(
     children,
-    { syncRef, validationRef, autoAdvance, cellRefHandlers },
+    { syncRef, validationRef, autoAdvance, cellRefHandlers, forceReadOnly },
     maxVerticalSubRows(children)
   )
+}
+
+/** Колонка с учётом запирания ТЧ целиком (deps.forceReadOnly). */
+function lockedColumnDef(node: ViewNode, deps: CellEditorDeps) {
+  const col = nodeToTableColumnDef(node)
+  return deps.forceReadOnly === true && !col.readonly
+    ? { ...col, readonly: true }
+    : col
 }
 
 function buildColumnDefsInner(
@@ -218,7 +234,7 @@ function buildColumnDefsInner(
     const nodeType = node.type as string
 
     if (nodeType === 'TABLE_COLUMN') {
-      const col = nodeToTableColumnDef(node)
+      const col = lockedColumnDef(node, deps)
       const colDef: ColumnDef<TableRow> = {
         id: col.id,
         ...columnSizeProps(node.props),
@@ -265,8 +281,8 @@ function buildColumnDefsInner(
           isHorizontalSubGroup(child)
             ? (child.children ?? [])
                 .filter((leaf) => leaf.props?.visible !== false)
-                .map((leaf) => nodeToTableColumnDef(leaf))
-            : [nodeToTableColumnDef(child)]
+                .map((leaf) => lockedColumnDef(leaf, deps))
+            : [lockedColumnDef(child, deps)]
 
         /** Под-строка: одна ячейка либо ряд ячеек вложенной подгруппы. */
         const subRow = (

@@ -35,6 +35,9 @@ export const LoginForm = () => {
   const signIn = useAuthStore((state) => state.signIn)
   const completeSignIn = useAuthStore((state) => state.completeSignIn)
   const sessionExpired = useAuthStore((state) => state.sessionExpired)
+  const sessionExpiredMessage = useAuthStore(
+    (state) => state.sessionExpiredMessage
+  )
 
   // Логин предзаполняется значением последнего успешного входа НА ЭТОМ УСТРОЙСТВЕ
   // (ТЗ §А1). Это единственный источник: серверного эндпоинта «кто заходил последним»
@@ -104,7 +107,7 @@ export const LoginForm = () => {
           color="text.secondary"
           className="w-full"
         >
-          {t('auth.sessionExpired')}
+          {sessionExpiredMessage ?? t('auth.sessionExpired')}
         </Typography>
       )}
 

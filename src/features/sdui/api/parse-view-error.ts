@@ -1,3 +1,5 @@
+import { readErrorBody } from '@/shared/api/access-denied'
+
 import type { ValidationErrorDetail } from '../types/view'
 
 function parseValidationErrors(
@@ -27,25 +29,31 @@ export function parseViewError(data: unknown): {
   message?: string
   code?: string
   kind?: string
+  scope?: string
   errors?: ValidationErrorDetail[]
   validation?: unknown
 } {
   if (!data || typeof data !== 'object') return {}
   const b = data as Record<string, unknown>
-  const code = (typeof b.error === 'string' && b.error) || undefined
+  // SCRUM-400: code/message/scope — общий разбор с REST (readErrorBody),
+  // чтобы переходный контракт 403 (FORBIDDEN → ACCESS_DENIED, scope) жил в
+  // одном месте для обоих транспортов.
+  const { code, message, scope: rawScope } = readErrorBody(b)
   const kind = typeof b.kind === 'string' ? b.kind : undefined
-  const message = typeof b.message === 'string' ? b.message : undefined
+  const scope = typeof rawScope === 'string' ? rawScope : undefined
   const errors = parseValidationErrors(b.errors)
   const out: {
     message?: string
     code?: string
     kind?: string
+    scope?: string
     errors?: ValidationErrorDetail[]
     validation?: unknown
   } = {}
   if (code) out.code = code
   if (kind) out.kind = kind
   if (message) out.message = message
+  if (scope) out.scope = scope
   if (errors) out.errors = errors
   // SCRUM-317 §3.2: отчёт о проверке в теле 422 DOCUMENT_VALIDATION. Ключ
   // есть только там; на пустом списке приходит null — оба случая пробрасываем

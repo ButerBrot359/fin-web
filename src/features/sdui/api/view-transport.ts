@@ -45,7 +45,10 @@ export class ViewHttpError extends Error {
     public kind?: string,
     public errors?: ValidationErrorDetail[],
     // SCRUM-317 §3.2: сырой отчёт о проверке из тела 422 DOCUMENT_VALIDATION
-    public validation?: unknown
+    public validation?: unknown,
+    // SCRUM-400 §3.2: scope 403 по правам ('TARGET' | 'SESSION'); отсутствие
+    // или неизвестное значение трактуется как SESSION на стороне политики.
+    public scope?: string
   ) {
     super(message)
   }
@@ -65,6 +68,10 @@ export const viewTransport = {
       })
       return res.data
     } catch (error) {
+      // Отмена (AbortSignal, смена поколения авторизации при выходе) — не
+      // ошибка запроса: пробрасываем как есть, иначе CanceledError завернулся
+      // бы в ViewHttpError и показал ложный тост поверх экрана входа.
+      if (axios.isCancel(error)) throw error
       if (axios.isAxiosError(error) && error.response?.status === 409) {
         throw new ViewConflictError(normalizeConflictBody(error.response.data))
       }
@@ -76,7 +83,8 @@ export const viewTransport = {
           meta.code,
           meta.kind,
           meta.errors,
-          meta.validation
+          meta.validation,
+          meta.scope
         )
       }
       throw error

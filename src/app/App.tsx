@@ -26,6 +26,7 @@ import { Layout } from './layout/layout'
 import { AppRoutes } from './routes'
 import { useWorkspaceTabGatewayBinding } from './providers/workspace-tab-binding'
 import { useSduiGateways } from './providers/use-sdui-gateways'
+import { useAuthLifecycleBinding } from './providers/use-auth-lifecycle-binding'
 
 // Дровер легаси-справочников: всегда смонтирован, но тянет form-renderer и
 // компанию — лениво, чтобы не грузить их в главном чанке. Чанк докачивается
@@ -39,6 +40,9 @@ function App() {
   useWorkspaceTabGatewayBinding()
   useSduiGateways()
   useApplyInterfaceScale()
+  // SCRUM-400 §10: выход и смена пользователя в одной вкладке — CLOSE сессий,
+  // сброс кэшей запросов, SDUI-состояния и рабочих вкладок.
+  useAuthLifecycleBinding()
 
   // SCRUM-317 канал №8: центр оповещений копит всё показанное всплывашками
   useEffect(() => connectToastHistory(), [])

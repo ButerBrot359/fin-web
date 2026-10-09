@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 
 import { requestLogin, requestLogout } from '@/shared/api/auth/auth-endpoints'
+import { bumpAuthGeneration } from '@/shared/api/auth/auth-generation'
+import {
+  notifySignedIn,
+  runBeforeSignOut,
+  runIdentityReset,
+  seedLastUserId,
+} from '@/shared/api/auth/auth-lifecycle'
 import {
   clearSession,
   getAccessToken,
@@ -29,6 +36,11 @@ interface AuthState {
    * пустой форме входа посреди работы без единого объяснения, почему.
    */
   sessionExpired: boolean
+  /**
+   * Серверный текст причины обрыва (SCRUM-400: `403 ACCOUNT_INELIGIBLE` несёт
+   * «Вход запрещён: …»). null — причина общая, форма входа показывает свой текст.
+   */
+  sessionExpiredMessage: string | null
   /** Восстановление сессии из localStorage при старте приложения. */
   restore: () => void
   /** @throws ошибку axios с телом `ApiErrorBody` — текст отказа показывает форма входа. */
@@ -44,13 +56,14 @@ interface AuthState {
   completeSignIn: (tokens: TokenPair, fallbackLogin: string) => CurrentUser
   signOut: () => Promise<void>
   /** Сессия закончилась не по воле пользователя (refresh истёк, доступ отозван). */
-  handleSessionExpired: () => void
+  handleSessionExpired: (message?: string) => void
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   status: 'unknown',
   user: null,
   sessionExpired: false,
+  sessionExpiredMessage: null,
 
   restore: () => {
     const token = getAccessToken()
@@ -60,6 +73,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // отрисовку всего приложения ради случая «токен успел протухнуть». Негодный токен
       // всё равно вскроется на первом же запросе — интерсептор продлит сессию или
       // объявит её законченной.
+      // SCRUM-400 §10: посеять «кто работал последним» — без этого вход
+      // ДРУГОГО пользователя после истечения восстановленной сессии не
+      // распознался бы как смена личности (кэши A достались бы B).
+      seedLastUserId(user.id)
       set({ status: 'authenticated', user })
       return
     }
@@ -79,19 +96,39 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // человек каждый раз видел бы собственную опечатку вместо «Айбас Сара».
     // Запасной вариант — введённое значение: без него пустой ответ сервера стёр бы память.
     saveLastLogin(tokens.user.login || fallbackLogin)
-    set({ status: 'authenticated', user: tokens.user, sessionExpired: false })
+    // SCRUM-400 §10: новое поколение личности (поздние ответы прежней
+    // отбрасываются); вход ДРУГОГО пользователя дополнительно сбрасывает кэши.
+    bumpAuthGeneration()
+    notifySignedIn(tokens.user.id)
+    set({
+      status: 'authenticated',
+      user: tokens.user,
+      sessionExpired: false,
+      sessionExpiredMessage: null,
+    })
     return tokens.user
   },
 
   signOut: async () => {
     const refreshToken = getRefreshToken()
+    // SCRUM-400 §10 п.1: SDUI-сессии закрываются ДО очистки токенов (после неё
+    // CLOSE ответил бы 401) — с потолком по времени, выход не зависает.
+    await runBeforeSignOut()
     // Локальное состояние чистим ПЕРВЫМ и не ждём сервер: выход обязан сработать даже
     // при недоступном бэкенде, иначе пользователь остаётся в системе на чужой машине.
     // Отзыв refresh-токена на сервере — попытка; провалилась — токен умрёт по своему TTL.
     clearSession()
+    // Поздние ответы этого пользователя — в мусор; кэши и SDUI-состояние — сброс.
+    bumpAuthGeneration()
+    runIdentityReset()
     // Осознанный выход — не «истекла»: сообщать человеку, что его выкинуло, когда он сам
     // нажал «выйти», значит врать.
-    set({ status: 'anonymous', user: null, sessionExpired: false })
+    set({
+      status: 'anonymous',
+      user: null,
+      sessionExpired: false,
+      sessionExpiredMessage: null,
+    })
     if (!refreshToken) return
     try {
       await requestLogout(refreshToken)
@@ -100,8 +137,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  handleSessionExpired: () => {
+  handleSessionExpired: (message) => {
     clearSession()
-    set({ status: 'anonymous', user: null, sessionExpired: true })
+    // Сессия мертва — поздние ответы по ней не нужны. Кэши НЕ чистим: вход
+    // того же пользователя не обязан терять вкладки (§10 п.6); смену
+    // пользователя поймает notifySignedIn при следующем входе.
+    bumpAuthGeneration()
+    set({
+      status: 'anonymous',
+      user: null,
+      sessionExpired: true,
+      sessionExpiredMessage: message ?? null,
+    })
   },
 }))

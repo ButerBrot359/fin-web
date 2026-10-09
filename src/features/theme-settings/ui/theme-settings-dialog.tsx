@@ -93,7 +93,7 @@ export const ThemeSettingsDialog: FC<ThemeSettingsDialogProps> = ({
   const saveMutation = useMutation({
     mutationFn: (tokens: ThemeTokens) => themeApi.putOverrides(tokens),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: themeKeys.merged() })
+      await queryClient.invalidateQueries({ queryKey: themeKeys.root })
       await queryClient.invalidateQueries({ queryKey: ['theme', 'overrides'] })
       onClose()
     },

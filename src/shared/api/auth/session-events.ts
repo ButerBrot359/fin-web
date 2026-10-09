@@ -8,7 +8,7 @@
  * событие, `app`/`features` на него реагируют.
  */
 
-type SessionExpiredListener = () => void
+type SessionExpiredListener = (message?: string) => void
 
 const listeners = new Set<SessionExpiredListener>()
 
@@ -27,13 +27,45 @@ export const onSessionExpired = (
  *
  * Слушатель может отсутствовать (событие пришло до монтирования React) — это не ошибка:
  * токены к этому моменту уже стёрты, и первый же защищённый маршрут отправит на вход.
+ *
+ * @param message серверный текст причины (SCRUM-400: `403 ACCOUNT_INELIGIBLE` несёт
+ * «Вход запрещён: …» — экран входа показывает его вместо общего «сессия истекла»).
  */
-export const emitSessionExpired = (): void => {
+export const emitSessionExpired = (message?: string): void => {
   listeners.forEach((listener) => {
+    try {
+      listener(message)
+    } catch {
+      // Падение одного подписчика не должно мешать остальным узнать о конце сессии.
+    }
+  })
+}
+
+type PasswordChangeRequiredListener = () => void
+
+const passwordChangeListeners = new Set<PasswordChangeRequiredListener>()
+
+/**
+ * Серверный фильтр ответил «Требуется сменить пароль» на произвольном запросе
+ * (SCRUM-400 §4.3): признак включили ПОСЛЕ входа, и `mustChangePassword` в
+ * сохранённом пользователе ещё false. Подписчик (гвард) уводит на экран смены
+ * пароля — этот 403 не должен попасть в общий предикат «отказ по правам».
+ */
+export const onPasswordChangeRequired = (
+  listener: PasswordChangeRequiredListener
+): (() => void) => {
+  passwordChangeListeners.add(listener)
+  return () => {
+    passwordChangeListeners.delete(listener)
+  }
+}
+
+export const emitPasswordChangeRequired = (): void => {
+  passwordChangeListeners.forEach((listener) => {
     try {
       listener()
     } catch {
-      // Падение одного подписчика не должно мешать остальным узнать о конце сессии.
+      // см. emitSessionExpired
     }
   })
 }

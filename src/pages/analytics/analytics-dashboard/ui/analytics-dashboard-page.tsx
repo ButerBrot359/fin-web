@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Typography } from '@mui/material'
 
 import type { AnalyticsItem } from '@/entities/analytics'
+import { AnalyticsItemCopyBar } from '@/features/analytics-item-copy'
 import { useTabMeta, useWorkspaceTabsStore } from '@/features/workspace-tabs'
 import { PageHeader } from '@/widgets/page-header'
 
@@ -36,6 +37,8 @@ export const AnalyticsDashboardPage = ({
   return (
     <div className="flex h-full flex-col gap-5 pt-5">
       <PageHeader title={title} onClose={handleClose} />
+
+      <AnalyticsItemCopyBar item={item} />
 
       {item.description && (
         <Typography variant="body2" className="max-w-[70ch] text-ui-05">

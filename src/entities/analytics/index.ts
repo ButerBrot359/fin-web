@@ -23,6 +23,7 @@ export {
   useAnalyticsItem,
   useSaveAnalyticsItem,
   useDeleteAnalyticsItem,
+  useCopyAnalyticsItem,
 } from './lib/hooks/use-analytics-items'
 export {
   useAiSettings,

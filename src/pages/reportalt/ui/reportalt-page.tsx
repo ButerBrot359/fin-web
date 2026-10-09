@@ -955,7 +955,7 @@ export const ReportAltPage = () => {
               setSettingsOpen(true)
             }}
           >
-            {t('reportalt.settings.show')}
+            {t('reportalt.settings.open')}
           </Button>
         )}
         {!pustoyBlank && (

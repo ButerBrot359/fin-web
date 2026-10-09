@@ -1,5 +1,9 @@
 import { useTranslation } from 'react-i18next'
-import { Divider, Drawer, IconButton, Typography } from '@mui/material'
+import { Drawer, IconButton } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+
+import { panelZIndex } from '@/shared/lib/utils/overlay-z-index'
+import { cssVar, palette, semantic } from '@/shared/design/tokens'
 
 import type {
   ReportAltMetaDto,
@@ -8,6 +12,10 @@ import type {
 import type { ReportAltSettingsState } from '../../lib/utils/user-settings'
 import type { ParamValues, ReportAltParamValue } from '../../lib/utils/params'
 import { ReportAltSettingsBody } from './reportalt-settings-body'
+
+const SHIRINA_PANELI = 766
+const FON_PANELI = cssVar(palette.ui02)
+const FON_PODLOZHKI = cssVar(semantic.backdrop)
 
 interface ReportAltSettingsDrawerProps {
   open: boolean
@@ -60,22 +68,34 @@ export const ReportAltSettingsDrawer = ({
   const { t } = useTranslation()
 
   return (
-    <Drawer anchor="right" open={open} onClose={onClose}>
-      <div className="flex h-full w-[480px] max-w-[92vw] flex-col gap-3 p-4">
-        <div className="flex items-center justify-between">
-          <Typography variant="h6" className="font-semibold text-ui-06">
-            {t('reportalt.settings.title')}
-          </Typography>
+    <Drawer
+      anchor="right"
+      open={open}
+      onClose={onClose}
+      style={{ zIndex: panelZIndex(0) }}
+      slotProps={{
+        paper: {
+          sx: {
+            width: SHIRINA_PANELI,
+            maxWidth: '100vw',
+            borderTopLeftRadius: 40,
+            borderBottomLeftRadius: 40,
+            backgroundColor: FON_PANELI,
+            overflow: 'hidden',
+          },
+        },
+        backdrop: { sx: { backgroundColor: FON_PODLOZHKI } },
+      }}
+    >
+      <div className="flex h-full flex-col gap-3 p-10">
+        <div className="flex shrink-0 items-center justify-end">
           <IconButton
-            size="small"
             onClick={onClose}
             aria-label={t('reportalt.settings.close')}
           >
-            ✕
+            <CloseIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </div>
-
-        <Divider />
 
         <ReportAltSettingsBody
           meta={meta}

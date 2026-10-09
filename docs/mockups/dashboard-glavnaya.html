@@ -490,7 +490,7 @@ select.input { appearance: auto; background: var(--ui-01); }
     </header>
 
     <main class="main" id="main">
-      <div class="mock-banner"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h0"/></svg>Мокап главной. Выберите сотрудника ниже — у каждого профиль доступа КБП и свой шаблон роли. Вверху — организации (только доступные) и период по умолчанию. «Настроить» — перестановка, ширина, ⚙ настройки виджета (в том числе свой период), готовые шаблоны ролей и «Свой виджет». В каталоге только доступные виджеты. Виджеты показывают только готовые данные: отчёты и проверки не формируются на главной, для них есть свои разделы. Настройки сохраняются в этом браузере; цифры демонстрационные.</div>
+      <div class="mock-banner"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h0"/></svg>Мокап главной по решениям ADR-0096 (ревизия 6). Выберите сотрудника ниже — у каждого профиль доступа КБП и свой шаблон роли. Вверху — организации (только доступные) и период по умолчанию; у каждого виджета можно задать свой период через ⚙. Освоение бюджета — как в форме 4-20, без прогноза. «Порядок в учёте» — непроведённые и помеченные на удаление документы. «Только мои» — документы, где вы ответственный. ИИ-виджет на главной один и виден только вам. Цифры демонстрационные; настройки сохраняются в этом браузере.</div>
 
       <div class="who">
         <span class="micro">Демонстрация · войти как</span>
@@ -637,15 +637,15 @@ const TPL = {
 };
 
 const TEMPLATES = {
-  glavbuh: [['budget-kpi', 's'], ['gz-kpi', 's'], ['money', 's'], ['budget-chart', 'l'], ['gz-risk', 'm'], ['clean', 'm', { areas: ['kontr', 'dok', 'dogovory', 'podot', 'zp', 'kadry'] }], ['debt', 'm'], ['absent', 'm'], ['rates', 'm'], ['org', 'm'], ['custom', 'm', { kind: 'docs', source: 'PlatezhnoePoruchenieIskhodyashchee', status: 'draft', period: 'default', author: 'all', view: 'list', title: '' }]],
-  gz: [['gz-kpi', 's'], ['advances', 's'], ['gz-noreg', 's'], ['gz-risk', 'm', { mine: true }], ['debt', 'm', { mine: true, accounts: ['3210', '1410'] }], ['gz-funnel', 'm'], ['clean', 'm', { areas: ['kontr', 'dogovory'] }], ['gz-expiring', 's'], ['budget-kpi', 's'], ['quick', 's'], ['custom', 's', { kind: 'docs', source: 'ZayavkaNaRegistratsiyuGPSdelki', status: 'draft', period: 'default', author: 'mine', view: 'count', title: 'Мои непроведённые заявки ГПС' }]],
-  zp: [['zp-fot', 'm'], ['zp-taxes', 'm'], ['absent', 'm', { states: ['otpusk', 'bolezn', 'bs'] }], ['clean', 'm', { areas: ['zp', 'kadry'] }], ['custom', 'm', { kind: 'ai', prompt: 'ФОТ по месяцам за 2026 год', title: '' }], ['rates', 'm'], ['quick', 'm']],
-  kadry: [['vacations', 's'], ['sick', 's'], ['trips', 's'], ['absent', 'm'], ['clean', 'm', { areas: ['kadry'] }], ['rates', 'm'], ['custom', 'm', { kind: 'links', targets: ['doc:Otpusk', 'doc:BolnichnyyList', 'doc:Komandirovka', 'dict:sotrudniki', 'rep:rved'], title: 'Мои ярлыки' }]],
-  podot: [['trips', 's'], ['podot', 's'], ['cash-day', 's'], ['absent', 'm', { states: ['kom'] }], ['clean', 'm', { areas: ['podot'] }], ['money', 'm'], ['quick', 'm']],
-  kassa: [['money', 'm'], ['podot', 'm'], ['cash-day', 's'], ['vypiska', 's'], ['quick', 's'], ['clean', 'm', { areas: ['dok', 'podot'] }], ['debt', 'm']],
-  ruk: [['budget-kpi', 's'], ['gz-kpi', 's'], ['money', 's'], ['budget-chart', 'l'], ['ekk', 'm'], ['zp-fot', 'm'], ['gz-risk', 'm'], ['an-top', 'm'], ['org', 'm']],
-  material: [['stock', 's'], ['os', 's'], ['custom', 's', { kind: 'docs', source: 'SpisanieTMZ', status: 'draft', period: 'default', author: 'all', view: 'count', title: '' }], ['debt', 'm', { accounts: ['3210', '1410'] }], ['clean', 'm', { areas: ['dok', 'kontr', 'dogovory'] }], ['quick', 'm'], ['rates', 'm']],
-  common: [['org', 'm'], ['rates', 'm'], ['money', 's'], ['clean', 's'], ['quick', 's']]
+  glavbuh: [['budget-kpi', 's'], ['gz-kpi', 's'], ['money', 's'], ['budget-chart', 'l'], ['gz-risk', 'm'], ['poryadok', 'm'], ['debt', 'm'], ['absent', 'm'], ['rates', 'm'], ['org', 'm'], ['custom', 'm', { kind: 'docs', source: 'PlatezhnoePoruchenieIskhodyashchee', status: 'draft', period: 'default', author: 'all', view: 'list', title: '' }]],
+  gz: [['gz-kpi', 's'], ['advances', 's'], ['gz-noreg', 's'], ['gz-risk', 'm', { mine: true }], ['debt', 'm', { accounts: ['3210', '1410'] }], ['gz-funnel', 'm'], ['poryadok', 'm', { mine: true }], ['gz-expiring', 's'], ['budget-kpi', 's'], ['quick', 's'], ['custom', 's', { kind: 'docs', source: 'ZayavkaNaRegistratsiyuGPSdelki', status: 'draft', period: 'default', author: 'mine', view: 'count', title: 'Мои непроведённые заявки ГПС' }]],
+  zp: [['zp-fot', 'm'], ['zp-taxes', 'm'], ['absent', 'm', { states: ['otpusk', 'bolezn', 'bs'] }], ['poryadok', 'm'], ['rates', 'm'], ['quick', 'm']],
+  kadry: [['vacations', 's'], ['sick', 's'], ['trips', 's'], ['absent', 'm'], ['poryadok', 'm'], ['rates', 'm'], ['custom', 'm', { kind: 'links', targets: ['doc:Otpusk', 'doc:BolnichnyyList', 'doc:Komandirovka', 'dict:sotrudniki', 'rep:rved'], title: 'Мои ярлыки' }]],
+  podot: [['trips', 's'], ['podot', 's'], ['cash-day', 's'], ['absent', 'm', { states: ['kom'] }], ['poryadok', 'm'], ['money', 'm'], ['quick', 'm']],
+  kassa: [['money', 'm'], ['podot', 'm'], ['cash-day', 's'], ['vypiska', 's'], ['quick', 's'], ['poryadok', 'm'], ['debt', 'm']],
+  ruk: [['budget-kpi', 's'], ['gz-kpi', 's'], ['money', 's'], ['budget-chart', 'l'], ['ekk', 'm'], ['zp-fot', 'm'], ['gz-risk', 'm'], ['top-postavshchikov', 'm'], ['org', 'm']],
+  material: [['stock', 's'], ['os', 's'], ['custom', 's', { kind: 'docs', source: 'SpisanieTMZ', status: 'draft', period: 'default', author: 'all', view: 'count', title: '' }], ['debt', 'm', { accounts: ['3210', '1410'] }], ['poryadok', 'm'], ['quick', 'm'], ['rates', 'm']],
+  common: [['org', 'm'], ['rates', 'm'], ['money', 's'], ['poryadok', 's'], ['quick', 's']]
 };
 
 const BUDGET = {
@@ -664,21 +664,21 @@ function lineChart(el, mode, compact) {
   const max = Math.ceil(yearPlan / 100000) * 100000;
   const x = i => L + (iw / 11) * i, y = v => T + ih - (v / max) * ih;
   const path = arr => arr.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
-  let s = `<div class="legend"><span><i style="background:${C_PLAN}"></i>${d.planName}</span><span><i style="background:${C_FACT}"></i>${d.factName}</span><span><i class="dash"></i>Прогноз</span></div><div class="chart-wrap"><svg viewBox="0 0 ${W} ${H}">`;
+  let s = `<div class="legend"><span><i style="background:${C_PLAN}"></i>${d.planName}</span><span><i style="background:${C_FACT}"></i>${d.factName}</span></div><div class="kpi-foot" style="margin:4px 0 6px">Остаток плана до конца года: <b>${fmtM(yearPlan - cf[n - 1])} млн ₸</b> · кассовый расход — по счёту «Обязательства», как в форме 4-20</div><div class="chart-wrap"><svg viewBox="0 0 ${W} ${H}">`;
   s += `<rect x="${x(n - 1)}" y="${T}" width="${x(11) - x(n - 1)}" height="${ih}" fill="var(--ui-02)"/>`;
   for (let v = 0; v <= max; v += 200000) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${v ? 'var(--chart-grid)' : 'var(--ui-03)'}"/><text class="axis-text" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v / 1000}</text>`;
   s += MONTHS.map((m, i) => `<text class="axis-text" x="${x(i)}" y="${H - 8}" text-anchor="middle">${m}</text>`).join('');
-  s += `<path d="${path(cp)}" fill="none" stroke="${C_PLAN}" stroke-width="2"/><path d="${fc.map((v, k) => `${k ? 'L' : 'M'}${x(n - 1 + k)},${y(v)}`).join('')}" fill="none" stroke="${C_FACT}" stroke-width="2" stroke-dasharray="5 4"/><path d="${path(cf)}" fill="none" stroke="${C_FACT}" stroke-width="2"/>`;
+  s += `<path d="${path(cp)}" fill="none" stroke="${C_PLAN}" stroke-width="2"/><path d="${path(cf)}" fill="none" stroke="${C_FACT}" stroke-width="2"/>`;
   s += `<circle cx="${x(11)}" cy="${y(yearPlan)}" r="4" fill="${C_PLAN}" stroke="#fff" stroke-width="2"/><circle cx="${x(n - 1)}" cy="${y(cf[n - 1])}" r="4" fill="${C_FACT}" stroke="#fff" stroke-width="2"/>`;
-  const yp = y(yearPlan) + 4, yf = Math.max(y(fc[fc.length - 1]) + 4, yp + 18);
-  s += `<text x="${x(11) + 10}" y="${yp}" font-size="12"><tspan font-weight="700">${fmtM(yearPlan)}</tspan><tspan fill="var(--ui-05)"> план</tspan></text><text x="${x(11) + 10}" y="${yf}" font-size="12"><tspan font-weight="700">${fmtM(fc[fc.length - 1])}</tspan><tspan fill="var(--ui-05)"> прогноз</tspan></text>`;
+  const yp = y(yearPlan) + 4, yf = Math.max(y(cf[n - 1]) + 4, yp + 18);
+  s += `<text x="${x(11) + 10}" y="${yp}" font-size="12"><tspan font-weight="700">${fmtM(yearPlan)}</tspan><tspan fill="var(--ui-05)"> план</tspan></text><text x="${x(11) + 10}" y="${yf}" font-size="12"><tspan font-weight="700">${fmtM(cf[n - 1])}</tspan><tspan fill="var(--ui-05)"> факт</tspan></text>`;
   s += `<rect class="hit" x="${L - 10}" y="${T}" width="${iw + 20}" height="${ih}" fill="transparent"/></svg></div>`;
   el.innerHTML = s;
   const svg = el.querySelector('svg');
   el.querySelector('.hit').addEventListener('mousemove', e => {
     const r = svg.getBoundingClientRect();
     const i = Math.max(0, Math.min(11, Math.round(((e.clientX - r.left) * (W / r.width) - L) / (iw / 11))));
-    showTip(`<div class="t">${MONTHS[i]} 2026, нарастающим итогом</div><div><span class="sw" style="background:${C_PLAN}"></span>${d.planName}: <b>${fmt(cp[i])}</b></div>` + (i < n ? `<div><span class="sw" style="background:${C_FACT}"></span>${d.factName}: <b>${fmt(cf[i])}</b> · ${pct(cf[i] / cp[i] * 100)}</div>` : `<div>Прогноз: <b>${fmt(Math.round(fc[i - n + 1]))}</b></div>`) + '<div style="opacity:.7">тыс. ₸</div>', e.clientX, e.clientY);
+    showTip(`<div class="t">${MONTHS[i]} 2026, нарастающим итогом</div><div><span class="sw" style="background:${C_PLAN}"></span>${d.planName}: <b>${fmt(cp[i])}</b></div>` + (i < n ? `<div><span class="sw" style="background:${C_FACT}"></span>${d.factName}: <b>${fmt(cf[i])}</b> · ${pct(cf[i] / cp[i] * 100)}</div>` : `<div>Остаток плана: <b>${fmt(cp[11] - cf[n - 1])}</b></div>`) + '<div style="opacity:.7">тыс. ₸</div>', e.clientX, e.clientY);
   });
   el.querySelector('.hit').addEventListener('mouseleave', hideTip);
 }
@@ -712,17 +712,23 @@ const CHECKS = [
   ['warning', 'Незакрытые подотчётные суммы', 'podot', 3], ['warning', 'Начисление зарплаты за сентябрь не проведено', 'zp', 1], ['warning', 'Больничный не рассчитан', 'kadry', 1],
   ['info', 'Документы с пометкой на удаление', 'dok', 6]
 ];
+const ORDER_DOCS = [
+  ['PlatezhnoePoruchenieIskhodyashchee', 'Платёжное поручение исходящее', 'bank', 5, 1], ['SchetKOplate', 'Счёт к оплате', 'bank', 3, 2],
+  ['PostuplenieOtKontragenta', 'Поступление от контрагента', 'rasch', 4, 0], ['ZayavkaNaRegistratsiyuGPSdelki', 'Заявка на регистрацию ГП-сделки', 'gz', 2, 0],
+  ['NachislenieZarplatySotrudnikam', 'Начисление зарплаты', 'zp', 1, 0], ['Otpusk', 'Отпуск', 'kadry', 2, 1],
+  ['AvansovyyOtchet', 'Авансовый отчёт', 'podot', 3, 1], ['SpisanieTMZ', 'Списание ТМЗ', 'sklad', 2, 1]
+];
 const CHECK_AREAS = { kontr: 'Контрагенты', dok: 'Документы', dogovory: 'Договоры', podot: 'Подотчёт', zp: 'Зарплата', kadry: 'Кадры' };
 const QUICK = [
   ['bank', 'Платёжное поручение', 'bank'], ['reports', 'Загрузить выписку 5‑15', 'bank'], ['company', 'Заявка ГПС', 'gz'], ['warehouse', 'Поступление от контрагента', 'gz'],
   ['salary', 'Начисление зарплаты', 'zp'], ['tariffs', 'Отпуск', 'kadry'], ['tariffs', 'Больничный лист', 'kadry'], ['actives', 'Командировка', 'podot'],
-  ['actives', 'Авансовый отчёт', 'podot'], ['bank', 'Расходный кассовый ордер', 'bank'], ['analytics', 'Акт сверки', 'rasch'], ['warehouse', 'Списание ТМЗ', 'sklad'], ['actives', 'Принятие к учёту ОС', 'sklad'], ['flk', 'Уборка бухгалтерии', 'common']
+  ['actives', 'Авансовый отчёт', 'podot'], ['bank', 'Расходный кассовый ордер', 'bank'], ['analytics', 'Акт сверки', 'rasch'], ['warehouse', 'Списание ТМЗ', 'sklad'], ['actives', 'Принятие к учёту ОС', 'sklad']
 ];
 
 const W = {
   'budget-kpi': { t: 'Освоение бюджета', area: 'budget', d: 'Процент исполнения плана по ИПФ за период', sizes: ['s', 'm'], hint: 'по платежам',
-    r: () => tile('92,8%', '586,2 из 632,0 млн ₸ по ИПФ платежей · годовой план освоен на 69,6%', 92.8) },
-  'budget-chart': { t: 'Освоение бюджета по месяцам', area: 'budget', d: 'План по ИПФ против факта нарастающим итогом, прогноз до конца года', sizes: ['m', 'l'], hint: 'нарастающим итогом, млн ₸',
+    r: () => tile('92,8%', 'кассовый расход 586,2 из 632,0 млн ₸ плана по платежам — как в форме 4-20 · годовой план освоен на 69,6%', 92.8) },
+  'budget-chart': { t: 'Освоение бюджета по месяцам', area: 'budget', d: 'План по ИПФ против кассового расхода нарастающим итогом и остаток плана до конца года — как в форме 4-20', sizes: ['m', 'l'], hint: 'нарастающим итогом, млн ₸',
     params: [{ k: 'mode', l: 'Показывать', type: 'one', o: [['pay', 'По платежам'], ['obl', 'По обязательствам']], def: 'pay' }],
     r: (el, c, size) => lineChart(el, c.mode, size !== 'l') },
   'ekk': { t: 'Исполнение по спецификам', area: 'budget', d: 'Специфики ЭКК с наибольшим отставанием от плана', sizes: ['m', 'l'], hint: 'тыс. ₸',
@@ -740,7 +746,7 @@ const W = {
     } },
   'gz-risk': { t: 'Договоры в зоне риска', area: 'gz', d: 'Авансы без поставки, истёкшие сроки, договоры без заявки ГПС', sizes: ['m', 'l'], hint: 'требуют действий',
     params: [{ k: 'types', l: 'Какие риски показывать', type: 'many', o: [['avans', 'Аванс без поставки'], ['srok', 'Сроки договоров'], ['gps', 'Нет заявки ГПС']], def: ['avans', 'srok', 'gps'] },
-             { k: 'mine', l: 'Только договоры, где я ответственный', type: 'bool', def: false, d: 'Ответственный берётся из карточки договора' }],
+             { k: 'mine', l: 'Только мои договоры', type: 'bool', def: false, d: 'Договоры, по которым я оформил заявку ГПС (ответственный в заявке)' }],
     r: (el, c, s, u) => {
       const list = RISKS.filter(r => c.types.includes(r[5]) && (!c.mine || u.name.startsWith(r[6])));
       el.innerHTML = list.length ? list.map(r => `<div class="risk" style="grid-template-columns:150px minmax(0,1fr) auto">${st(r[0], r[1])}<div class="two-line"><div class="a">${r[2]}</div><div class="b">${r[3]}</div></div><span class="sum">${fmt(r[4])} ₸</span></div>`).join('') : '<div class="placeholder">Рисков нет</div>';
@@ -751,7 +757,6 @@ const W = {
     r: el => { el.innerHTML = row('№41 · АО «Казахтелеком»', 'до 30.09 · исполнен на 70%', '', '<span class="tag red">5 дн.</span>') + row('№58 · ТОО «Энерго Сбыт»', 'до 15.10 · исполнен на 81%', '', '<span class="tag amber">20 дн.</span>') + row('№77 · ИП «Кулинар»', 'до 24.10 · исполнен на 64%', '', '<span class="tag">29 дн.</span>'); } },
   'debt': { t: 'Расчёты с контрагентами', area: 'rasch', d: 'Дебет и кредит по счетам расчётов, крупнейшие контрагенты', sizes: ['s', 'm', 'l'], hint: 'на 25.09.2026',
     params: [{ k: 'accounts', l: 'Счета', type: 'many', o: [['3210', '3210 Поставщики'], ['1410', '1410 Авансы выданные'], ['1231', '1231 Покупатели']], def: ['3210', '1410'] },
-             { k: 'mine', l: 'Только мои контрагенты', type: 'bool', def: false, d: 'Контрагенты, закреплённые за мной' },
              { k: 'n', l: 'Сколько контрагентов', type: 'one', o: [['3', '3'], ['5', '5'], ['8', '8']], def: '5' }],
     r: (el, c, s, u) => {
       const list = DEBT.filter(d => c.accounts.includes(d[1]) && (!c.mine || u.name.startsWith(d[3]))).sort((a, b) => b[2] - a[2]);
@@ -789,23 +794,27 @@ const W = {
     r: el => { el.innerHTML = tile('12,4 <small>млн ₸</small>', 'остатки ТМЗ · 3 поступления не проведены'); } },
   'os': { t: 'Основные средства', area: 'sklad', d: 'Остаточная стоимость, амортизация, ОС к вводу в эксплуатацию', sizes: ['s', 'm'], hint: 'на 25.09.2026',
     r: () => tile('772,3 <small>млн ₸</small>', 'остаточная стоимость · первоначальная 1 284,6 · амортизация 512,3 · 2 ОС не введены в эксплуатацию') },
-  'clean': { t: 'Проверка учёта', area: 'common', d: 'Результат последней проверки учёта — только по вашим участкам', sizes: ['s', 'm', 'l'], hint: 'последняя проверка 25.09 в 08:00',
-    params: [{ k: 'areas', l: 'Мои участки', type: 'many', o: Object.entries(CHECK_AREAS), def: Object.keys(CHECK_AREAS), d: 'Показываются только проверки по выбранным участкам' }],
-    r: (el, c) => {
-      const L = CHECKS.filter(k => c.areas.includes(k[2])), cnt = s => L.filter(k => k[0] === s).reduce((a, k) => a + k[3], 0);
-      el.innerHTML = `<div class="clean-counters"><div class="cc critical"><span class="ic">!</span><span><span class="n">${cnt('critical')}</span><span class="t" style="display:block">Критические</span></span></div><div class="cc warning"><span class="ic">!</span><span><span class="n">${cnt('warning') + cnt('info')}</span><span class="t" style="display:block">Требуют внимания</span></span></div></div>` +
-        L.slice(0, 5).map(k => `<div class="problem">${st(k[0])}<div class="two-line"><div class="a">${k[1]}</div><div class="meta">${CHECK_AREAS[k[2]]}</div></div><b class="num">${k[3]}</b></div>`).join('') + (L.length ? '' : '<div class="placeholder">По вашим участкам замечаний нет</div>') + '<div class="links" style="margin-top:10px"><a href="#" onclick="return false">Запустить проверку в разделе ФЛК →</a></div>';
+  'poryadok': { t: 'Порядок в учёте', area: 'common', d: 'Непроведённые и помеченные на удаление документы по видам — только доступные вам виды', sizes: ['s', 'm', 'l'], hint: 'по видам документов',
+    params: [{ k: 'show', l: 'Показывать', type: 'many', o: [['draft', 'Не проведены'], ['deleted', 'Помечены на удаление']], def: ['draft', 'deleted'] },
+             { k: 'mine', l: 'Только мои документы', type: 'bool', def: false, d: 'Документы, где ответственный — я' }],
+    r: (el, c, size, u) => {
+      const k = v => c.mine ? Math.ceil(v * 0.4) : v;
+      const L = ORDER_DOCS.filter(d => ROLES[u.role].rights.includes(d[2])).map(d => [d[1], c.show.includes('draft') ? k(d[3]) : 0, c.show.includes('deleted') ? k(d[4]) : 0]).filter(d => d[1] + d[2] > 0);
+      const draft = L.reduce((a, d) => a + d[1], 0), del = L.reduce((a, d) => a + d[2], 0);
+      el.innerHTML = `<div class="clean-counters"><div class="cc warning"><span class="ic">!</span><span><span class="n">${draft}</span><span class="t" style="display:block">Не проведены</span></span></div><div class="cc warning"><span class="ic">✕</span><span><span class="n">${del}</span><span class="t" style="display:block">Помечены на удаление</span></span></div></div>` +
+        L.slice(0, size === 's' ? 3 : 6).map(d => row(d[0], '', '', `${d[1] ? `<span class="tag amber">не проведено · ${d[1]}</span>` : ''} ${d[2] ? `<span class="tag red">на удаление · ${d[2]}</span>` : ''}`)).join('') +
+        (L.length ? '<div class="links" style="margin-top:10px"><a href="#" onclick="return false">Открыть список документов →</a></div>' : '<div class="placeholder">Всё проведено, пометок на удаление нет</div>');
     } },
   'org': { t: 'Государственное учреждение', area: 'common', d: 'Реквизиты организации', sizes: ['m', 'l'], hint: 'справочник «Организации»',
     r: el => { el.innerHTML = [['Наименование', 'КГУ «Средняя школа №25»'], ['БИН', '120540012345'], ['АБП', '464 · Отдел образования'], ['Код учреждения', '4520117'], ['Основной счёт', 'KZ24070105KSN0000000']].map(k => `<div class="row"><span class="grow muted">${k[0]}</span><span>${k[1]}</span></div>`).join(''); } },
   'quick': { t: 'Быстрые действия', area: 'common', d: 'Создание документов вашего участка в один клик', sizes: ['s', 'm', 'l'], hint: 'по вашим участкам',
     r: (el, c, size, u) => { const L = QUICK.filter(q => ROLES[u.role].rights.includes(q[2])).slice(0, size === 's' ? 4 : size === 'm' ? 6 : 9); el.innerHTML = `<div class="quick" style="grid-template-columns:repeat(${size === 's' ? 2 : 3},minmax(0,1fr))">${L.map(q => `<button><span class="qi">${ICONS[q[0]]}</span>${q[1]}</button>`).join('')}</div>`; } },
-  'an-top': { t: 'Топ поставщиков по оплатам', area: 'analytics', d: 'Виджет, собранный в Аналитике и закреплённый на главной', sizes: ['m', 'l'], hint: '<span class="an-badge">из Аналитики</span>',
+  'top-postavshchikov': { t: 'Топ поставщиков по оплатам', area: 'rasch', d: 'Оплаты поставщикам за период по контрагентам (дебетовые обороты счёта 3210)', sizes: ['m', 'l'], hint: 'тыс. ₸',
     r: el => { const T = [['ТОО «Энерго Сбыт»', 38400], ['ТОО «Азия Продукт»', 31250], ['АО «Казахтелеком»', 12900], ['ТОО «КазСтройСервис»', 11400], ['ТОО «Office Pro»', 6100]]; el.innerHTML = `<div class="bars">${T.map(t => `<div class="hbar"><div>${t[0]}</div><div class="track"><span style="width:${t[1] / T[0][1] * 100}%"></span></div><div class="v">${fmt(t[1])} тыс.</div></div>`).join('')}</div>`; } }
 };
 
 const KINDS = {
-  docs: { t: 'Список документов', d: 'Любой тип документа с отбором: статус, период, автор', ic: 'reports', sizes: ['s', 'm', 'l'] },
+  docs: { t: 'Список документов', d: 'Любой тип документа с отбором: статус, период, ответственный', ic: 'reports', sizes: ['s', 'm', 'l'] },
   account: { t: 'Остаток по счёту', d: 'Сальдо, обороты или динамика по счёту плана счетов', ic: 'bank', sizes: ['s', 'm', 'l'] },
   register: { t: 'Остатки регистра', d: 'Подотчёт, зарплата к выплате, налоги, заявки ГПС, планы', ic: 'warehouse', sizes: ['s', 'm'] },
   ai: { t: 'ИИ-виджет', d: 'Пустая карточка — опишите ассистенту, что на ней показать', ic: 'analytics', sizes: ['m', 'l'] },
@@ -914,7 +923,7 @@ function renderCustom(c, size, u) {
     if (c.author === 'mine') n = Math.max(1, Math.ceil(n * 0.4));
     const tagFor = i => { const s = c.status === 'all' ? ['posted', 'draft', 'posted', 'deleted', 'posted'][i] : c.status; return s === 'draft' ? '<span class="tag amber">не проведён</span>' : s === 'deleted' ? '<span class="tag red">на удаление</span>' : '<span class="tag green">проведён</span>'; };
     const rows = Array.from({ length: Math.min(n, size === 's' ? 3 : 5) }, (_, i) => row(`${I_DOC}${d[1]} №${100 + h % 50 + i * 3}`, `от ${String(24 - i * 2).padStart(2, '0')}.09.2026 · ${c.author === 'mine' ? u.name : ['Иванова А. А.', 'Бекова С. Т.', 'Омарова Л. С.'][i % 3]}`, fmt(((h * (i + 3)) % 900 + 40) * 1000) + ' ₸', tagFor(i)));
-    return `<div class="stack" style="gap:4px"><div class="big">${n} <small>${DSTAT[c.status || 'all'].toLowerCase()}</small></div><div class="kpi-foot">${PERIOD[perKey(c.period)][0]}${c.author === 'mine' ? ' · автор — я' : ''}</div></div>` + (c.view === 'count' ? '' : `<div style="margin-top:8px">${rows.join('')}</div>`) + `<div class="links" style="margin-top:10px"><a href="#" onclick="return false">Открыть список →</a></div>`;
+    return `<div class="stack" style="gap:4px"><div class="big">${n} <small>${DSTAT[c.status || 'all'].toLowerCase()}</small></div><div class="kpi-foot">${PERIOD[perKey(c.period)][0]}${c.author === 'mine' ? ' · ответственный — я' : ''}</div></div>` + (c.view === 'count' ? '' : `<div style="margin-top:8px">${rows.join('')}</div>`) + `<div class="links" style="margin-top:10px"><a href="#" onclick="return false">Открыть список →</a></div>`;
   }
   if (c.kind === 'report') {
     const r = findBy(REPORTS, c.source), m = r[3][+(c.metric || 0)] || r[3][0];
@@ -945,7 +954,7 @@ function renderCustom(c, size, u) {
 }
 
 W.custom = { t: 'Свой виджет', area: 'common', d: '', sizes: ['s', 'm', 'l'], hidden: true, r: (el, c, size, u) => renderCustom(c, size, u) };
-const PERIOD_WIDGETS = { 'budget-kpi': 'year', 'gz-kpi': 'year', 'gz-funnel': 'year', 'ekk': 'default', 'cash-day': 'today', 'zp-fot': 'default', 'zp-taxes': 'default', 'advances': 'default', 'an-top': 'default' };
+const PERIOD_WIDGETS = { 'budget-kpi': 'year', 'gz-kpi': 'year', 'gz-funnel': 'year', 'ekk': 'default', 'cash-day': 'today', 'zp-fot': 'default', 'zp-taxes': 'default', 'advances': 'default', 'top-postavshchikov': 'default' };
 Object.entries(PERIOD_WIDGETS).forEach(([code, def]) => {
   const w = W[code];
   w.period = true;
@@ -989,7 +998,7 @@ function wizardFields(u) {
   if (c.kind === 'docs') return fld('Тип документа', srcSelect('source', DOCS, u), 'Доступны все типы документов системы — список строится из метаданных') +
     fld('Статус', optsHtml('status', Object.entries(DSTAT))) +
     fld('Период', optsHtml('period', PERIOD_OPTS), '«Как по умолчанию» — период, выбранный вами для главной') +
-    fld('Автор', optsHtml('author', [['all', 'Все'], ['mine', 'Только мои']])) +
+    fld('Ответственный', optsHtml('author', [['all', 'Все'], ['mine', 'Только мои']]), 'Мои — документы, где ответственный — я') +
     fld('Показывать', optsHtml('view', [['count', 'Только количество'], ['list', 'Количество и последние документы']]));
   if (c.kind === 'report') { const r = findBy(REPORTS, c.source); return fld('Отчёт', srcSelect('source', REPORTS, u)) + fld('Показатель', optsHtml('metric', r[3].map((m, i) => [String(i), m[0]])), 'Параметры отчёта (период, организация, отборы) сохраняются вместе с виджетом') + fld('Период', optsHtml('period', PERIOD_OPTS)) + fld('Сравнение', optsHtml('compare', [['none', 'Без сравнения'], ['prev', 'С прошлым периодом']])); }
   if (c.kind === 'account') return fld('Счёт', srcSelect('source', ACCOUNTS, u, a => a[0] + ' · ' + a[1])) + fld('Показывать', optsHtml('show', [['saldo', 'Сальдо на дату'], ['obor', 'Обороты за период'], ['dyn', 'Динамика по месяцам']])) + (c.show === 'obor' ? fld('Период', optsHtml('period', PERIOD_OPTS)) : '') + fld('Разрез', optsHtml('sub', [['all', 'Итогом'], ['top', 'Топ-5 контрагентов']]), 'Разрез по контрагентам — для счетов расчётов 1231, 1410, 3210');
@@ -1046,7 +1055,7 @@ function drawWizard() {
   $('#wz-cancel').addEventListener('click', () => { wz = null; closeAll(); });
 }
 
-const KEY = 'webbuh-dash-mock-v5';
+const KEY = 'webbuh-dash-mock-v6';
 let store = {};
 try { store = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { store = {}; }
 store.layouts = store.layouts || {};
@@ -1182,7 +1191,7 @@ function renderCatalog() {
   $('#cat-chips').innerHTML = [['all', 'Все']].concat(Object.entries(AREAS).filter(([k]) => ROLES[u.role].rights.includes(k)).map(([k, v]) => [k, v[0]])).map(a => `<button class="opt${catArea === a[0] ? ' on' : ''}" data-a="${a[0]}">${a[1]}</button>`).join('');
   document.querySelectorAll('#cat-chips .opt').forEach(b => b.addEventListener('click', () => { catArea = b.dataset.a; renderCatalog(); }));
   const groups = Object.keys(AREAS).filter(a => ROLES[u.role].rights.includes(a) && (catArea === 'all' || a === catArea));
-  const ownHtml = catArea === 'all' ? `<div class="cat-group" style="margin-top:4px"><div class="micro">Свой виджет — соберите сами из любых данных</div><div class="kinds">${Object.entries(KINDS).filter(([key, v]) => !q || (v.t + ' ' + v.d).toLowerCase().includes(q)).map(([key, v]) => `<button class="kind" data-kind="${key}"><span class="qi">${ICONS[v.ic]}</span><span><b>${v.t}</b><span class="d">${v.d}</span></span></button>`).join('')}</div><div class="own-note">Нужного готового виджета нет? Выберите тип, источник и отбор — виджет появится на вашей главной.</div></div>` : '';
+  const ownHtml = catArea === 'all' ? `<div class="cat-group" style="margin-top:4px"><div class="micro">Свой виджет — соберите сами из любых данных</div><div class="kinds">${Object.entries(KINDS).filter(([key]) => key !== 'ai' || !layout().some(i => i.code === 'custom' && i.cfg.kind === 'ai')).filter(([key, v]) => !q || (v.t + ' ' + v.d).toLowerCase().includes(q)).map(([key, v]) => `<button class="kind" data-kind="${key}"><span class="qi">${ICONS[v.ic]}</span><span><b>${v.t}</b><span class="d">${v.d}</span></span></button>`).join('')}</div><div class="own-note">Нужного готового виджета нет? Выберите тип, источник и отбор — виджет появится на вашей главной.</div></div>` : '';
   $('#cat-list').innerHTML = ownHtml + groups.map(a => {
     const items = Object.entries(W).filter(([k, w]) => !w.hidden && w.area === a && (!q || (w.t + ' ' + w.d).toLowerCase().includes(q)));
     if (!items.length) return '';

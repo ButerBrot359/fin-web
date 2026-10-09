@@ -490,18 +490,9 @@ select.input { appearance: auto; background: var(--ui-01); }
     </header>
 
     <main class="main" id="main">
-      <div class="mock-banner"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h0"/></svg>Мокап главной по решениям ADR-0096 (ревизия 6). Выберите сотрудника ниже — у каждого профиль доступа КБП и свой шаблон роли. Вверху — организации (только доступные) и период по умолчанию; у каждого виджета можно задать свой период через ⚙. Освоение бюджета — как в форме 4-20, без прогноза. «Порядок в учёте» — непроведённые и помеченные на удаление документы. «Только мои» — документы, где вы ответственный. ИИ-виджет на главной один и виден только вам. Цифры демонстрационные; настройки сохраняются в этом браузере.</div>
-
-      <div class="who">
-        <span class="micro">Демонстрация · войти как</span>
-        <div class="people" id="people"></div>
-      </div>
+      <div class="mock-banner"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h0"/></svg>Мокап главной по решениям ADR-0096 (ревизия 6). Показана главная главного бухгалтера; готовые шаблоны других ролей — «Настроить главную» → «Готовые шаблоны». Вверху — организации (только доступные) и период по умолчанию; у каждого виджета можно задать свой период через ⚙. Освоение бюджета — как в форме 4-20, без прогноза. «Порядок в учёте» — непроведённые и помеченные на удаление документы. «Только мои» — документы, где вы ответственный. ИИ-виджет на главной один и виден только вам. Цифры демонстрационные; настройки сохраняются в этом браузере.</div>
 
       <div class="page-head">
-        <div>
-          <h1 id="hello">Главная</h1>
-          <div class="sub" id="tpl-sub"></div>
-        </div>
         <div class="actions">
           <div class="dd"><button class="field" data-dd="org-menu"><span class="lbl">Организации</span><span class="val" id="org-val"></span><svg viewBox="0 0 13 7" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M11.3636 0.751709L6.01159 5.44873L0.659623 0.751709" stroke="currentColor" stroke-width="2"/> </svg></button><div class="dd-menu" id="org-menu"></div></div><div class="dd"><button class="field" data-dd="per-menu"><span class="lbl">Период по умолчанию</span><span class="val" id="per-val"></span><svg viewBox="0 0 13 7" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M11.3636 0.751709L6.01159 5.44873L0.659623 0.751709" stroke="currentColor" stroke-width="2"/> </svg></button><div class="dd-menu" id="per-menu"></div></div>
           <button class="btn" id="btn-refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>Обновить</button>
@@ -1061,7 +1052,7 @@ try { store = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { store
 store.layouts = store.layouts || {};
 store.prefs = store.prefs || {};
 store.tplOf = store.tplOf || {};
-let cur = store.user || 'ivanova', editing = false;
+let cur = 'ivanova', editing = false;
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} };
 const userOf = id => { const u = USERS.find(x => x[0] === id); return { id: u[0], name: u[1], role: u[2] }; };
 let seq = 0;
@@ -1084,9 +1075,6 @@ function renderPeople() {
 function renderHead() {
   const u = userOf(cur), mod = sig(layout()) !== sig(fromTemplate(baseTpl()));
   $('#tb-user span').textContent = u.name;
-  $('#hello').textContent = 'Главная · ' + u.name.split(' ')[0];
-  const p = prefs(), base = baseTpl();
-  $('#tpl-sub').innerHTML = `<span class="tpl-note">Профиль: <b style="color:var(--ui-06)">${ROLES[u.role].title}</b> · шаблон «${TPL[base][0]}»${mod || p.period !== 'month' || p.orgs.length ? ' · <span class="dot-mod"></span> личная настройка' : ' · без изменений'}</span>`;
   renderFilters();
 }
 
@@ -1139,7 +1127,7 @@ function renderFilters() {
     `<div class="dd-note">Подставляется во все виджеты, где выбран период «Как по умолчанию». Свой период виджета задаётся через ⚙ в режиме настройки.</div>`;
 }
 function commit() { save(); renderHead(); renderDash(); }
-function renderAll() { renderPeople(); renderHead(); renderDash(); }
+function renderAll() { renderHead(); renderDash(); }
 
 let dragId = null;
 function bindDnd(el, it) {

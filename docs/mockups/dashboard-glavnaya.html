@@ -458,6 +458,41 @@ select.input { appearance: auto; background: var(--ui-01); }
 .tpl-card .d { font-size: 12px; line-height: 16px; color: var(--ui-05); margin-top: 2px; }
 .tpl-card .grow { flex: 1; min-width: 0; }
 .warn-note { padding: 8px 12px; margin-bottom: 16px; border-radius: 8px; background: var(--warning-bg); color: var(--warning-ink); font-size: 13px; line-height: 18px; }
+.cal-list .row { cursor: pointer; }
+.cal-list .row:hover .grow > div:first-child { color: var(--accent-02); }
+.cal-date { width: 44px; flex: none; text-align: center; border-radius: 8px; background: var(--ui-02); padding: 4px 0; font-size: 11px; line-height: 14px; color: var(--ui-05); }
+.cal-date b { display: block; font-size: 18px; line-height: 22px; color: var(--ui-06); }
+.cal-date.today { background: var(--accent-01); }
+.cal-split { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 20px; }
+.mini-month { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; font-size: 12px; text-align: center; align-self: start; }
+.mini-month .h { color: var(--ui-05); padding: 2px 0; }
+.mini-month .d { position: relative; padding: 5px 0; border-radius: 6px; }
+.mini-month .d.off { color: var(--ui-05); }
+.mini-month .d.today { background: var(--accent-01); font-weight: 700; }
+.mini-month .d i { position: absolute; left: 50%; bottom: 1px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accent-02); }
+.mini-month .d i.dl { background: var(--support-01); }
+.cal-legend { display: flex; gap: 12px; font-size: 12px; color: var(--ui-05); margin-top: 8px; }
+.cal-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; background: var(--accent-02); }
+.cal-legend i.dl { background: var(--support-01); }
+.cal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.cal-head h3 { margin: 0; flex: 1; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 1px solid var(--ui-03); border-left: 1px solid var(--ui-03); }
+.cal-grid .h { padding: 6px 8px; font-size: 12px; color: var(--ui-05); border-right: 1px solid var(--ui-03); border-bottom: 1px solid var(--ui-03); }
+.cal-grid .c { min-height: 92px; padding: 4px 6px; border-right: 1px solid var(--ui-03); border-bottom: 1px solid var(--ui-03); cursor: pointer; min-width: 0; }
+.cal-grid .c:hover { background: var(--ui-02); }
+.cal-grid .c.off { background: var(--ui-02); color: var(--ui-05); cursor: default; }
+.cal-grid .c.hol .n { color: var(--support-01); }
+.cal-grid .c.today .n { display: inline-block; min-width: 22px; border-radius: 11px; background: var(--accent-01); color: var(--ui-06); text-align: center; }
+.cal-grid .n { font-size: 12px; font-weight: 700; }
+.cal-ev { display: block; margin-top: 3px; padding: 2px 6px; border-radius: 6px; font-size: 11px; line-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--info-bg); color: var(--accent-02); }
+.cal-ev.dl { background: var(--negative-bg); color: var(--support-01); }
+.frm { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.frm .full { grid-column: 1 / -1; }
+.frm label { display: block; font-size: 12px; color: var(--ui-05); margin-bottom: 4px; }
+.bell-badge { position: absolute; top: 4px; right: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--support-01); color: #fff; font-size: 10px; line-height: 16px; font-weight: 700; }
+.notif { position: fixed; z-index: 70; width: 380px; max-height: 70vh; overflow: auto; padding: 12px 16px; border-radius: 12px; background: var(--ui-01); box-shadow: var(--shadow-popup); display: none; }
+.notif.open { display: block; }
+.notif .row.unread .grow > div:first-child { font-weight: 700; }
 </style>
 </head>
 <body>
@@ -475,7 +510,7 @@ select.input { appearance: auto; background: var(--ui-01); }
         <div class="tb-sep"></div>
         <button class="tb-btn" title="Поиск"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"> <g clip-path="url(#clip0_214_6355)"> <circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="3"/> <path d="M14 14L19 19" stroke="currentColor" stroke-width="3"/> </g> <defs> <clipPath id="clip0_214_6355"> <rect width="20" height="20" fill="white"/> </clipPath> </defs> </svg></button>
         <div class="tb-sep"></div>
-        <button class="tb-btn" title="Оповещения"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"> <g clip-path="url(#clip0_214_6360)"> <path d="M4.82366 5.82312C5.52287 3.55068 7.62242 2 10 2C12.3776 2 14.4771 3.55068 15.1763 5.82312L18 15H2L4.82366 5.82312Z" stroke="currentColor" stroke-width="3"/> <path d="M14 16C14 17.0609 13.5786 18.0783 12.8284 18.8284C12.0783 19.5786 11.0609 20 10 20C8.93913 20 7.92172 19.5786 7.17157 18.8284C6.42143 18.0783 6 17.0609 6 16L10 16H14Z" fill="currentColor"/> </g> <defs> <clipPath id="clip0_214_6360"> <rect width="20" height="20" fill="white"/> </clipPath> </defs> </svg><span class="tb-badge">3</span></button>
+        <button class="tb-btn" title="Оповещения" id="tb-bell"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"> <g clip-path="url(#clip0_214_6360)"> <path d="M4.82366 5.82312C5.52287 3.55068 7.62242 2 10 2C12.3776 2 14.4771 3.55068 15.1763 5.82312L18 15H2L4.82366 5.82312Z" stroke="currentColor" stroke-width="3"/> <path d="M14 16C14 17.0609 13.5786 18.0783 12.8284 18.8284C12.0783 19.5786 11.0609 20 10 20C8.93913 20 7.92172 19.5786 7.17157 18.8284C6.42143 18.0783 6 17.0609 6 16L10 16H14Z" fill="currentColor"/> </g> <defs> <clipPath id="clip0_214_6360"> <rect width="20" height="20" fill="white"/> </clipPath> </defs> </svg><span class="tb-badge">3</span></button>
         <div class="tb-sep"></div>
         <button class="tb-btn" title="История"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"> <g clip-path="url(#clip0_214_6365)"> <path d="M4.70335 4.8668C5.89097 3.64136 7.46676 2.86563 9.16221 2.67177C10.8577 2.47792 12.5679 2.87793 14.0015 3.80366C15.435 4.7294 16.5033 6.12356 17.0242 7.74862C17.5451 9.37368 17.4864 11.1291 16.8581 12.7157C16.2299 14.3024 15.0709 15.6221 13.5787 16.45C12.0865 17.2779 10.3534 17.5628 8.67464 17.2561C6.99592 16.9495 5.47547 16.0703 4.37234 14.7682C3.26921 13.4662 2.65167 11.822 2.62493 10.1157" stroke="currentColor" stroke-width="3"/> <path d="M9.62769 6.41504V10.88L11.5652 12.8175" stroke="currentColor" stroke-width="3"/> <path d="M1.77319 6.2345V1.87793L7.00089 6.98959C5.5939 6.99604 2.69085 7.00508 2.33458 6.98959C1.97832 6.9741 1.81188 6.47974 1.77319 6.2345Z" fill="currentColor"/> </g> <defs> <clipPath id="clip0_214_6365"> <rect width="18" height="18" fill="white" transform="translate(1 1)"/> </clipPath> </defs> </svg></button>
         <div class="tb-sep"></div>
@@ -490,7 +525,7 @@ select.input { appearance: auto; background: var(--ui-01); }
     </header>
 
     <main class="main" id="main">
-      <div class="mock-banner"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h0"/></svg>Мокап главной по решениям ADR-0096 (ревизия 6). Показана главная главного бухгалтера; готовые шаблоны других ролей — «Настроить главную» → «Готовые шаблоны». Вверху — организации (только доступные) и период по умолчанию; у каждого виджета можно задать свой период через ⚙. Освоение бюджета — как в форме 4-20, без прогноза. «Порядок в учёте» — непроведённые и помеченные на удаление документы. «Только мои» — документы, где вы ответственный. ИИ-виджет на главной один и виден только вам. Цифры демонстрационные; настройки сохраняются в этом браузере.</div>
+      <div class="mock-banner"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h0"/></svg>Мокап главной по решениям ADR-0096 (ревизия 9). Показана главная главного бухгалтера; готовые шаблоны других ролей — «Настроить главную» → «Готовые шаблоны». Вверху — организации (только доступные) и период по умолчанию; у каждого виджета можно задать свой период через ⚙. Освоение бюджета — как в форме 4-20, без прогноза. «Порядок в учёте» — непроведённые и помеченные на удаление документы. «Только мои» — документы, где вы ответственный. ИИ-виджет на главной один и виден только вам. «Календарь сроков отчётности» — в «Добавить виджет» (участок «Общее»), в шаблоны не входит: сроки задаёт администратор, ваши события и напоминания видите только вы; сроки в мокапе — примеры. Цифры демонстрационные; настройки сохраняются в этом браузере.</div>
 
       <div class="page-head">
         <div class="actions">
@@ -529,6 +564,7 @@ select.input { appearance: auto; background: var(--ui-01); }
 </aside>
 
 <div class="modal-back" id="modal"><div class="modal" id="modal-box"></div></div>
+<div class="notif" id="notif"></div>
 <div class="tooltip" id="tip"></div>
 <div class="toast" id="toast"></div>
 
@@ -716,6 +752,208 @@ const QUICK = [
   ['actives', 'Авансовый отчёт', 'podot'], ['bank', 'Расходный кассовый ордер', 'bank'], ['analytics', 'Акт сверки', 'rasch'], ['warehouse', 'Списание ТМЗ', 'sklad'], ['actives', 'Принятие к учёту ОС', 'sklad']
 ];
 
+const DL_GROUPS = { tax: 'Налоговая', budget: 'Бюджетная', stat: 'Статистическая', social: 'Соцплатежи' };
+const DEADLINES = [
+  ['d1', 'budget', 'Отчёт об исполнении планов финансирования (4-20) за сентябрь', '2026-10-12', '2026-10-10'],
+  ['d2', 'budget', 'Бюджетная отчётность за 9 месяцев', '2026-10-15'],
+  ['d3', 'stat', 'Статистический отчёт по труду за III квартал', '2026-10-23'],
+  ['d4', 'social', 'ОПВ, СО и ОСМС за сентябрь — перечисление', '2026-10-26', '2026-10-25'],
+  ['d5', 'tax', 'ИПН и социальный налог за сентябрь — уплата', '2026-10-26', '2026-10-25'],
+  ['d6', 'budget', 'Отчёт об исполнении планов финансирования (4-20) за октябрь', '2026-11-10'],
+  ['d7', 'tax', 'ФНО 200.00 за III квартал', '2026-11-16', '2026-11-15'],
+  ['d8', 'social', 'ОПВ, СО и ОСМС за октябрь — перечисление', '2026-11-25']
+];
+const HOLIDAYS = ['2026-10-25', '2026-12-16', '2026-12-17'];
+const TODAY = '2026-10-09';
+const REPEAT = { none: 'Не повторять', month: 'Ежемесячно', quarter: 'Ежеквартально', year: 'Ежегодно' };
+const REM_DAYS = [['0', 'в день'], ['1', 'за 1 день'], ['3', 'за 3 дня'], ['7', 'за 7 дней']];
+const REM_CH = [['bell', 'В webbuh (колокольчик)'], ['email', 'На e-mail']];
+const WD = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+const MONTHS_FULL = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const pd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = pd(s); d.setDate(d.getDate() + n); return iso(d); };
+const diffDays = (a, b) => Math.round((pd(b) - pd(a)) / 86400000);
+const dayLbl = s => { const d = pd(s); return `${d.getDate()} ${MONTHS_GEN[d.getMonth()]}`; };
+const leftLbl = n => n < 0 ? 'прошёл' : n === 0 ? 'сегодня' : n === 1 ? 'завтра' : `через ${n} дн.`;
+const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const monthEnd = ym => iso(new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0));
+
+function calEvents() { store.events = store.events || {}; if (!store.events[cur]) store.events[cur] = [{ id: 'e1', date: '2026-10-16', time: '10:00', title: 'Сверка с казначейством', org: 1, repeat: 'none' }, { id: 'e2', date: '2026-09-30', time: '', title: 'Инвентаризация кассы', org: 0, repeat: 'month' }]; return store.events[cur]; }
+function calRems() { store.rems = store.rems || {}; if (!store.rems[cur]) store.rems[cur] = { 'group:budget': { ch: ['bell', 'email'], days: ['3'] }, 'event:e1': { ch: ['bell'], days: ['7'] } }; return store.rems[cur]; }
+function calRead() { store.read = store.read || {}; return store.read[cur] = store.read[cur] || []; }
+function evOccurs(e, from, to) {
+  const out = [], step = { month: 1, quarter: 3, year: 12 }[e.repeat], base = pd(e.date), day = base.getDate();
+  for (let i = 0; i < 400; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth() + (step || 0) * i, 1);
+    d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+    const s = iso(d);
+    if (s > to) break;
+    if (s >= from) out.push(s);
+    if (!step) break;
+  }
+  return out;
+}
+function calItems(from, to, c) {
+  const p = prefs(), groups = c ? c.groups : Object.keys(DL_GROUPS), mine = c ? c.mine : true;
+  const L = DEADLINES.filter(d => groups.includes(d[1]) && d[3] >= from && d[3] <= to).map(d => ({ kind: 'dl', id: d[0], date: d[3], title: d[2], group: d[1], moved: d[4] }));
+  if (mine) calEvents().filter(e => !e.org || !p.orgs.length || p.orgs.includes(e.org)).forEach(e => evOccurs(e, from, to).forEach(s => L.push({ kind: 'ev', id: e.id, date: s, title: e.title, time: e.time, ev: e })));
+  return L.sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
+}
+function remFor(it) { const R = calRems(); return it.kind === 'ev' ? R['event:' + it.id] : (R['dl:' + it.id] || R['group:' + it.group]); }
+function remText(r) { return r && r.days.length ? 'напомнить ' + r.days.map(d => REM_DAYS.find(x => x[0] === d)[1]).join(', ') + (r.ch.includes('email') ? ' · e-mail' : '') : ''; }
+function openItem(key) { const [k, id] = key.split(':'); if (k === 'ev') openEvent(calEvents().find(x => x.id === id)); else openDeadline(DEADLINES.find(x => x[0] === id)); }
+function miniMonth(ym, items) {
+  const [y, m] = ym.split('-').map(Number), start = (new Date(y, m - 1, 1).getDay() + 6) % 7, n = new Date(y, m, 0).getDate();
+  const marks = {};
+  items.forEach(i => { marks[i.date] = marks[i.date] === 'dl' || i.kind === 'dl' ? 'dl' : 'ev'; });
+  let h = `<div><div class="micro" style="margin-bottom:6px">${MONTHS_FULL[m - 1]} ${y}</div><div class="mini-month">${WD.map(w => `<div class="h">${w}</div>`).join('')}`;
+  for (let i = 0; i < start; i++) h += '<div></div>';
+  for (let d = 1; d <= n; d++) {
+    const s = iso(new Date(y, m - 1, d)), wd = (start + d - 1) % 7;
+    h += `<div class="d${wd > 4 || HOLIDAYS.includes(s) ? ' off' : ''}${s === TODAY ? ' today' : ''}">${d}${marks[s] ? `<i class="${marks[s]}"></i>` : ''}</div>`;
+  }
+  return h + '</div><div class="cal-legend"><span><i class="dl"></i>срок отчёта</span><span><i></i>ваше событие</span></div></div>';
+}
+function calRow(it) {
+  const n = diffDays(TODAY, it.date), d = pd(it.date), r = remText(remFor(it));
+  const sub = it.kind === 'dl'
+    ? `${DL_GROUPS[it.group]} · срок задал администратор${it.moved ? ` · перенесён с ${dayLbl(it.moved)} — выходной` : ''}`
+    : `Ваше событие${it.time ? ' · ' + it.time : ''}${it.ev.repeat !== 'none' ? ' · ' + REPEAT[it.ev.repeat].toLowerCase() : ''}${it.ev.org ? ' · ' + ORGS.find(o => o[0] === it.ev.org)[1] : ''}`;
+  return `<div class="row" data-cal="${it.kind}:${it.id}:${it.date}"><div class="cal-date${n === 0 ? ' today' : ''}"><b>${d.getDate()}</b>${MONTHS[d.getMonth()]}</div><div class="grow"><div>${esc(it.title)}</div><div class="sub">${sub}${r ? ' · ' + r : ''}</div></div><span class="tag ${it.kind === 'ev' ? 'blue' : n <= 3 ? 'red' : n <= 7 ? 'amber' : ''}">${leftLbl(n)}</span></div>`;
+}
+function calWidget(el, c, size) {
+  const to = addDays(TODAY, +c.days), L = calItems(TODAY, to, c), max = size === 'l' ? 8 : 5, ym = TODAY.slice(0, 7);
+  const list = L.length
+    ? `<div class="cal-list">${L.slice(0, max).map(calRow).join('')}</div>${L.length > max ? `<div class="kpi-foot" style="margin-top:6px">и ещё ${L.length - max} — в календаре</div>` : ''}`
+    : '<div class="placeholder">В ближайшие дни сроков и событий нет</div>';
+  el.innerHTML = (size === 'l' ? `<div class="cal-split"><div>${list}</div>${miniMonth(ym, calItems(ym + '-01', monthEnd(ym), c))}</div>` : list) +
+    '<div class="links" style="margin-top:12px"><a href="#" data-cal-add>+ Добавить событие</a><a href="#" data-cal-open>Открыть календарь →</a></div>';
+  el.querySelectorAll('[data-cal]').forEach(r => r.addEventListener('click', () => openItem(r.dataset.cal)));
+  el.querySelector('[data-cal-add]').addEventListener('click', e => { e.preventDefault(); openEvent(null, TODAY); });
+  el.querySelector('[data-cal-open]').addEventListener('click', e => { e.preventDefault(); openCalendar(ym); });
+}
+let calMonth = null;
+function openCalendar(ym) {
+  const [y, m] = ym.split('-').map(Number), start = (new Date(y, m - 1, 1).getDay() + 6) % 7, n = new Date(y, m, 0).getDate();
+  const items = calItems(ym + '-01', monthEnd(ym));
+  let g = WD.map(w => `<div class="h">${w}</div>`).join('');
+  for (let i = 0; i < start; i++) g += '<div class="c off"></div>';
+  for (let d = 1; d <= n; d++) {
+    const s = iso(new Date(y, m - 1, d)), wd = (start + d - 1) % 7, its = items.filter(i => i.date === s);
+    g += `<div class="c${s === TODAY ? ' today' : ''}${wd > 4 || HOLIDAYS.includes(s) ? ' hol' : ''}" data-day="${s}"><span class="n">${d}</span>${its.map(i => `<span class="cal-ev${i.kind === 'dl' ? ' dl' : ''}" data-cal="${i.kind}:${i.id}:${i.date}" title="${esc(i.title)}">${i.time ? i.time + ' ' : ''}${esc(i.title)}</span>`).join('')}</div>`;
+  }
+  const prev = iso(new Date(y, m - 2, 1)).slice(0, 7), next = iso(new Date(y, m, 1)).slice(0, 7);
+  $('#modal-box').classList.add('wide');
+  $('#modal-box').innerHTML = `<div class="cal-head"><h3>Календарь · ${MONTHS_FULL[m - 1]} ${y}</h3><button class="btn on-card small" data-m="${prev}">←</button><button class="btn on-card small" data-m="${TODAY.slice(0, 7)}">Сегодня</button><button class="btn on-card small" data-m="${next}">→</button><button class="btn primary small" id="cal-new">+ Событие</button></div>
+    <div class="sub">Красные — сроки обязательных отчётов: их задаёт администратор, они одинаковы для всех. Синие — ваши события, их видите только вы. Срок, выпавший на выходной, переносится на следующий рабочий день по производственному календарю. Нажмите на день, чтобы добавить событие.</div>
+    <div class="cal-grid">${g}</div>
+    <div class="modal-foot"><button class="btn tertiary" id="cal-close">Закрыть</button></div>`;
+  calMonth = ym;
+  $('#modal-box').querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => openCalendar(b.dataset.m)));
+  $('#modal-box').querySelectorAll('[data-day]').forEach(c => c.addEventListener('click', e => { if (!e.target.closest('[data-cal]')) openEvent(null, c.dataset.day); }));
+  $('#modal-box').querySelectorAll('[data-cal]').forEach(r => r.addEventListener('click', e => { e.stopPropagation(); openItem(r.dataset.cal); }));
+  $('#cal-new').addEventListener('click', () => openEvent(null, TODAY));
+  $('#cal-close').addEventListener('click', closeAll);
+  $('#modal').classList.add('open');
+}
+const backToCal = () => { if (calMonth) openCalendar(calMonth); else closeAll(); };
+function remEditor(r) {
+  return `<div class="prm"><div class="lbl">Напомнить</div><div class="opts">${REM_DAYS.map(o => `<button class="opt${r.days.includes(o[0]) ? ' on' : ''}" data-rd="${o[0]}">${o[1]}</button>`).join('')}</div>
+    <div class="opts" style="margin-top:8px">${REM_CH.map(o => `<button class="opt${r.ch.includes(o[0]) ? ' on' : ''}" data-rc="${o[0]}">${o[1]}</button>`).join('')}</div>
+    <div class="d">Напоминание приходит в 08:00 в выбранные дни; можно выбрать несколько. Без выбранных дней напоминаний нет. Письмо уходит на адрес из карточки пользователя.</div></div>`;
+}
+function bindRem(r, redraw) {
+  $('#modal-box').querySelectorAll('[data-rd]').forEach(b => b.addEventListener('click', () => { const i = r.days.indexOf(b.dataset.rd); if (i >= 0) r.days.splice(i, 1); else r.days.push(b.dataset.rd); r.days.sort((a, b2) => a - b2); redraw(); }));
+  $('#modal-box').querySelectorAll('[data-rc]').forEach(b => b.addEventListener('click', () => { const i = r.ch.indexOf(b.dataset.rc); if (i >= 0) { if (r.ch.length > 1) r.ch.splice(i, 1); } else r.ch.push(b.dataset.rc); redraw(); }));
+}
+function openEvent(ev, date) {
+  const isNew = !ev, R = calRems();
+  const e = ev ? JSON.parse(JSON.stringify(ev)) : { id: 'e' + Date.now(), date, time: '', title: '', org: 0, repeat: 'none' };
+  const r = JSON.parse(JSON.stringify(R['event:' + e.id] || { ch: ['bell'], days: ['1'] }));
+  const draw = () => {
+    $('#modal-box').classList.remove('wide');
+    $('#modal-box').innerHTML = `<h3>${isNew ? 'Новое событие' : 'Событие'}</h3><div class="sub">Ваше событие — его видите только вы</div>
+      <div class="frm"><div class="full"><label>Что</label><input class="input" id="ev-title" value="${esc(e.title)}" placeholder="Например: сверка с казначейством"></div>
+      <div><label>Дата</label><input class="input" type="date" id="ev-date" value="${e.date}"></div>
+      <div><label>Время (необязательно)</label><input class="input" type="time" id="ev-time" value="${e.time}"></div>
+      <div><label>Организация</label><select class="input" id="ev-org"><option value="0">Любая</option>${orgsOf(cur).map(o => `<option value="${o[0]}"${e.org === o[0] ? ' selected' : ''}>${o[1]}</option>`).join('')}</select></div>
+      <div><label>Повтор</label><select class="input" id="ev-rep">${Object.entries(REPEAT).map(([k, v]) => `<option value="${k}"${e.repeat === k ? ' selected' : ''}>${v}</option>`).join('')}</select></div></div>
+      ${remEditor(r)}
+      <div class="modal-foot"><button class="btn primary" id="ev-ok">Сохранить</button>${isNew ? '' : '<button class="btn on-card" id="ev-del">Удалить</button>'}<button class="btn tertiary" id="ev-cancel">Отмена</button></div>`;
+    const keep = () => { e.title = $('#ev-title').value; e.date = $('#ev-date').value || e.date; e.time = $('#ev-time').value; e.org = +$('#ev-org').value; e.repeat = $('#ev-rep').value; };
+    bindRem(r, () => { keep(); draw(); });
+    $('#ev-ok').addEventListener('click', () => {
+      keep();
+      if (!e.title.trim()) { toast('Укажите, что за событие'); return; }
+      const L = calEvents(), i = L.findIndex(x => x.id === e.id);
+      if (i >= 0) L[i] = e; else L.push(e);
+      R['event:' + e.id] = r;
+      commit(); backToCal(); toast(isNew ? 'Событие добавлено — видно только вам' : 'Событие сохранено');
+    });
+    if (!isNew) $('#ev-del').addEventListener('click', () => { store.events[cur] = calEvents().filter(x => x.id !== e.id); delete R['event:' + e.id]; commit(); backToCal(); toast('Событие удалено'); });
+    $('#ev-cancel').addEventListener('click', backToCal);
+  };
+  draw();
+  $('#modal').classList.add('open');
+}
+function openDeadline(d) {
+  const R = calRems(), own = R['dl:' + d[0]], grp = R['group:' + d[1]];
+  let scope = own ? 'dl' : 'group';
+  const r = JSON.parse(JSON.stringify(own || grp || { ch: ['bell'], days: [] }));
+  const draw = () => {
+    $('#modal-box').classList.remove('wide');
+    $('#modal-box').innerHTML = `<h3>${d[2]}</h3><div class="sub">${DL_GROUPS[d[1]]} отчётность · срок ${dayLbl(d[3])}, ${leftLbl(diffDays(TODAY, d[3]))}</div>
+      ${d[4] ? `<div class="warn-note">Срок перенесён с ${dayLbl(d[4])}: это выходной по производственному календарю.</div>` : ''}
+      <div class="kpi-foot">Срок задаёт администратор, изменить его нельзя. Напоминание — ваше, его видите только вы.</div>
+      <div class="prm"><div class="lbl">К чему напоминание</div><div class="opts"><button class="opt${scope === 'dl' ? ' on' : ''}" data-sc="dl">Только этот срок</button><button class="opt${scope === 'group' ? ' on' : ''}" data-sc="group">Все сроки группы «${DL_GROUPS[d[1]]}»</button></div></div>
+      ${remEditor(r)}
+      <div class="modal-foot"><button class="btn primary" id="dl-ok">Сохранить</button><button class="btn tertiary" id="dl-cancel">Отмена</button></div>`;
+    $('#modal-box').querySelectorAll('[data-sc]').forEach(b => b.addEventListener('click', () => { scope = b.dataset.sc; draw(); }));
+    bindRem(r, draw);
+    $('#dl-ok').addEventListener('click', () => {
+      if (scope === 'dl') R['dl:' + d[0]] = r; else { R['group:' + d[1]] = r; delete R['dl:' + d[0]]; }
+      commit(); backToCal(); toast(r.days.length ? 'Напоминание сохранено' : 'Напоминание выключено');
+    });
+    $('#dl-cancel').addEventListener('click', backToCal);
+  };
+  draw();
+  $('#modal').classList.add('open');
+}
+function notifications() {
+  return calItems(TODAY, addDays(TODAY, 7)).filter(it => {
+    const r = remFor(it);
+    return r && r.ch.includes('bell') && r.days.some(dd => addDays(it.date, -dd) === TODAY);
+  }).map(it => ({ key: `${it.kind}:${it.id}:${it.date}`, it }));
+}
+function renderBell() {
+  const N = notifications(), read = calRead(), unread = N.filter(n => !read.includes(n.key)).length, b = $('#tb-bell');
+  let badge = b.querySelector('.bell-badge');
+  if (!badge) { badge = document.createElement('span'); badge.className = 'bell-badge'; b.appendChild(badge); }
+  badge.textContent = unread;
+  badge.style.display = unread ? '' : 'none';
+  const box = $('#notif');
+  box.innerHTML = '<div class="micro" style="margin-bottom:6px">Уведомления</div>' + (N.length
+    ? N.map(n => `<div class="row${read.includes(n.key) ? '' : ' unread'}" data-cal="${n.key}" style="cursor:pointer"><div class="grow"><div>${esc(n.it.title)}</div><div class="sub">${n.it.kind === 'dl' ? 'Срок отчёта' : 'Ваше событие'} · ${dayLbl(n.it.date)}, ${leftLbl(diffDays(TODAY, n.it.date))}</div></div></div>`).join('') + '<div class="links" style="margin-top:8px"><a href="#" id="notif-all">Прочитать все</a></div>'
+    : '<div class="placeholder">Новых уведомлений нет</div>');
+  box.querySelectorAll('[data-cal]').forEach(r => r.addEventListener('click', () => {
+    if (!read.includes(r.dataset.cal)) read.push(r.dataset.cal);
+    save(); box.classList.remove('open'); renderBell(); openItem(r.dataset.cal);
+  }));
+  const all = box.querySelector('#notif-all');
+  if (all) all.addEventListener('click', e => { e.preventDefault(); N.forEach(n => { if (!read.includes(n.key)) read.push(n.key); }); save(); renderBell(); });
+}
+$('#tb-bell').addEventListener('click', e => {
+  e.stopPropagation();
+  const box = $('#notif'), r = $('#tb-bell').getBoundingClientRect();
+  renderBell();
+  box.style.top = (r.bottom + 8) + 'px';
+  box.style.left = Math.max(8, r.right - 380) + 'px';
+  box.classList.toggle('open');
+});
+document.addEventListener('click', e => { if (!e.target.closest('#notif')) $('#notif').classList.remove('open'); });
+
 const W = {
   'budget-kpi': { t: 'Освоение бюджета', area: 'budget', d: 'Процент исполнения плана по ИПФ за период', sizes: ['s', 'm'], hint: 'по платежам',
     r: () => tile('92,8%', 'кассовый расход 586,2 из 632,0 млн ₸ плана по платежам — как в форме 4-20 · годовой план освоен на 69,6%', 92.8) },
@@ -801,7 +1039,12 @@ const W = {
   'quick': { t: 'Быстрые действия', area: 'common', d: 'Создание документов вашего участка в один клик', sizes: ['s', 'm', 'l'], hint: 'по вашим участкам',
     r: (el, c, size, u) => { const L = QUICK.filter(q => ROLES[u.role].rights.includes(q[2])).slice(0, size === 's' ? 4 : size === 'm' ? 6 : 9); el.innerHTML = `<div class="quick" style="grid-template-columns:repeat(${size === 's' ? 2 : 3},minmax(0,1fr))">${L.map(q => `<button><span class="qi">${ICONS[q[0]]}</span>${q[1]}</button>`).join('')}</div>`; } },
   'top-postavshchikov': { t: 'Топ поставщиков по оплатам', area: 'rasch', d: 'Оплаты поставщикам за период по контрагентам (дебетовые обороты счёта 3210)', sizes: ['m', 'l'], hint: 'тыс. ₸',
-    r: el => { const T = [['ТОО «Энерго Сбыт»', 38400], ['ТОО «Азия Продукт»', 31250], ['АО «Казахтелеком»', 12900], ['ТОО «КазСтройСервис»', 11400], ['ТОО «Office Pro»', 6100]]; el.innerHTML = `<div class="bars">${T.map(t => `<div class="hbar"><div>${t[0]}</div><div class="track"><span style="width:${t[1] / T[0][1] * 100}%"></span></div><div class="v">${fmt(t[1])} тыс.</div></div>`).join('')}</div>`; } }
+    r: el => { const T = [['ТОО «Энерго Сбыт»', 38400], ['ТОО «Азия Продукт»', 31250], ['АО «Казахтелеком»', 12900], ['ТОО «КазСтройСервис»', 11400], ['ТОО «Office Pro»', 6100]]; el.innerHTML = `<div class="bars">${T.map(t => `<div class="hbar"><div>${t[0]}</div><div class="track"><span style="width:${t[1] / T[0][1] * 100}%"></span></div><div class="v">${fmt(t[1])} тыс.</div></div>`).join('')}</div>`; } },
+  'calendar': { t: 'Календарь сроков отчётности', area: 'common', d: 'Сроки обязательных отчётов от администратора и ваши события с напоминаниями', sizes: ['m', 'l'], hint: 'сроки и ваши события',
+    params: [{ k: 'days', l: 'Показывать вперёд', type: 'one', o: [['7', '7 дней'], ['14', '14 дней'], ['30', '30 дней']], def: '14' },
+      { k: 'groups', l: 'Группы сроков', type: 'many', o: Object.entries(DL_GROUPS), def: Object.keys(DL_GROUPS), d: 'Ваши события показываются всегда, если включены ниже' },
+      { k: 'mine', l: 'Мои события', type: 'bool', def: true }],
+    r: (el, c, size) => calWidget(el, c, size) }
 };
 
 const KINDS = {
@@ -1074,6 +1317,7 @@ function renderPeople() {
 
 function renderHead() {
   const u = userOf(cur), mod = sig(layout()) !== sig(fromTemplate(baseTpl()));
+  renderBell();
   $('#tb-user span').textContent = u.name;
   renderFilters();
 }
@@ -1169,7 +1413,7 @@ function openCatalog() {
   $('#catalog').classList.add('open'); $('#backdrop').classList.add('open');
   $('#cat-q').value = ''; catArea = 'all'; renderCatalog();
 }
-function closeAll() { $('#catalog').classList.remove('open'); $('#backdrop').classList.remove('open'); $('#modal').classList.remove('open'); $('#modal-box').classList.remove('wide'); wz = null; }
+function closeAll() { calMonth = null; $('#catalog').classList.remove('open'); $('#backdrop').classList.remove('open'); $('#modal').classList.remove('open'); $('#modal-box').classList.remove('wide'); wz = null; }
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeAll));
 $('#backdrop').addEventListener('click', closeAll);
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeAll(); });

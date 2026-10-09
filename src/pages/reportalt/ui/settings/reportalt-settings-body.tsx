@@ -31,19 +31,15 @@ export const ReportAltSettingsBody = ({
         onChange={(_e, v: number) => {
           setTab(v)
         }}
-        variant={fillHeight ? 'fullWidth' : 'scrollable'}
-        scrollButtons={fillHeight ? undefined : 'auto'}
+        variant="scrollable"
+        scrollButtons="auto"
       >
         {tabs.map((tb) => (
-          <Tab
-            key={tb.key}
-            label={tb.label}
-            sx={{ minWidth: 0, px: 1, textTransform: 'none' }}
-          />
+          <Tab key={tb.key} label={tb.label} />
         ))}
       </Tabs>
 
-      <div className={fillHeight ? 'min-h-0 grow overflow-auto' : 'pt-2'}>
+      <div className={fillHeight ? 'min-h-0 grow overflow-auto pt-4' : 'pt-4'}>
         {tabs[activeTab]?.content}
       </div>
 
